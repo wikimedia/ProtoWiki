@@ -27,8 +27,5 @@ export const SNAPSHOT_FETCH_SCRIPT = '.agents/skills/wiki-snapshot-data/assets/f
  */
 export function snapshotPullCommandLines(article: string, slug: string): string[] {
   const titleArg = JSON.stringify(article.trim())
-  return [
-    `python3 ${SNAPSHOT_FETCH_SCRIPT} ${titleArg} \\`,
-    `  -o public/snapshots/${slug}.html`,
-  ]
+  return [`python3 ${SNAPSHOT_FETCH_SCRIPT} ${titleArg} \\`, `  -o public/snapshots/${slug}.html`]
 }

@@ -76,9 +76,7 @@ const prototypes = computed<PrototypeEntry[]>(() => {
     })
 })
 
-const regularPrototypes = computed(() =>
-  prototypes.value.filter((e) => e.bucket === 'regular'),
-)
+const regularPrototypes = computed(() => prototypes.value.filter((e) => e.bucket === 'regular'))
 
 const templateAndExamplePrototypes = computed(() =>
   prototypes.value.filter((e) => e.bucket !== 'regular'),

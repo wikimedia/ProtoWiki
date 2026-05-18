@@ -81,10 +81,7 @@ const showHelpRegion = computed(() => Boolean(slots.help) || props.help === true
 const showActionsRegion = computed(() => props.actions || Boolean(slots.actions))
 
 const showHeaderNav = computed(
-  () =>
-    hasTitleCluster.value ||
-    showHelpRegion.value ||
-    showActionsRegion.value,
+  () => hasTitleCluster.value || showHelpRegion.value || showActionsRegion.value,
 )
 </script>
 

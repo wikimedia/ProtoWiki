@@ -52,31 +52,19 @@ const MODULE = {
             <DashboardModule class="dashboard-slot--mobile-sidebar" :title="MODULE.impactTitle">
               <div class="dashboard-impact-rows">
                 <div class="dashboard-impact-row">
-                  <CdxIcon
-                    :icon="cdxIconUserTalk"
-                    size="small"
-                    class="dashboard-impact-icon"
-                  />
+                  <CdxIcon :icon="cdxIconUserTalk" size="small" class="dashboard-impact-icon" />
                   <span class="dashboard-impact-metric">—</span>
                   <span>Thanks sent.</span>
                 </div>
                 <div class="dashboard-impact-row">
-                  <CdxIcon
-                    :icon="cdxIconCheck"
-                    size="small"
-                    class="dashboard-impact-icon"
-                  />
+                  <CdxIcon :icon="cdxIconCheck" size="small" class="dashboard-impact-icon" />
                   <span class="dashboard-impact-metric">—</span>
                   <span>Edits completed.</span>
                 </div>
               </div>
             </DashboardModule>
 
-            <DashboardModule
-              :to="HOME"
-              :title="MODULE.policiesTitle"
-              hide-cta
-            >
+            <DashboardModule :to="HOME" :title="MODULE.policiesTitle" hide-cta>
               <p class="dashboard-template-placeholder">{{ MODULE.policiesBody }}</p>
             </DashboardModule>
           </template>
@@ -88,26 +76,15 @@ const MODULE = {
           </template>
 
           <template #sidebar>
-            <DashboardModule
-              class="dashboard-slot--desktop-sidebar"
-              :title="MODULE.impactTitle"
-            >
+            <DashboardModule class="dashboard-slot--desktop-sidebar" :title="MODULE.impactTitle">
               <div class="dashboard-impact-rows">
                 <div class="dashboard-impact-row">
-                  <CdxIcon
-                    :icon="cdxIconUserTalk"
-                    size="small"
-                    class="dashboard-impact-icon"
-                  />
+                  <CdxIcon :icon="cdxIconUserTalk" size="small" class="dashboard-impact-icon" />
                   <span class="dashboard-impact-metric">—</span>
                   <span>Thanks sent.</span>
                 </div>
                 <div class="dashboard-impact-row">
-                  <CdxIcon
-                    :icon="cdxIconCheck"
-                    size="small"
-                    class="dashboard-impact-icon"
-                  />
+                  <CdxIcon :icon="cdxIconCheck" size="small" class="dashboard-impact-icon" />
                   <span class="dashboard-impact-metric">—</span>
                   <span>Edits completed.</span>
                 </div>

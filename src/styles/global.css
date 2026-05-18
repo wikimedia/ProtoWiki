@@ -37,7 +37,8 @@ body {
   padding: 0;
   /* Codex typography guide — Body row + platform stack
    * https://doc.wikimedia.org/codex/latest/style-guide/typography.html */
-  font-family: var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
+  font-family:
+    var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
   font-size: var(--font-size-medium, 1rem);
   font-weight: var(--font-weight-normal, 400);
   line-height: var(--line-height-medium, 1.6);
@@ -54,7 +55,8 @@ body {
 .plain-wrapper,
 .article-wrapper__body,
 .special-page-wrapper__body {
-  font-family: var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
+  font-family:
+    var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
   font-size: var(--font-size-medium);
   font-weight: var(--font-weight-normal);
   line-height: var(--line-height-medium);
@@ -176,7 +178,8 @@ dl {
 
 dt {
   margin-block: var(--spacing-75, 12px) var(--spacing-25, 4px);
-  font-family: var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
+  font-family:
+    var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
   font-size: var(--font-size-medium);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-medium);
@@ -190,7 +193,8 @@ dt:first-child {
 dd {
   margin-inline-start: 0;
   margin-block: 0 var(--spacing-50, 8px);
-  font-family: var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
+  font-family:
+    var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
   font-size: var(--font-size-medium);
   font-weight: var(--font-weight-normal);
   line-height: var(--line-height-medium);
@@ -204,7 +208,8 @@ figure {
 
 caption {
   padding-block: var(--spacing-50, 8px);
-  font-family: var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
+  font-family:
+    var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
   font-size: var(--font-size-small);
   font-weight: var(--font-weight-normal);
   line-height: var(--line-height-small);
@@ -213,7 +218,8 @@ caption {
 }
 
 small {
-  font-family: var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
+  font-family:
+    var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
   font-size: var(--font-size-small);
   font-weight: var(--font-weight-normal);
   line-height: var(--line-height-small);
@@ -232,7 +238,8 @@ blockquote {
 }
 
 cite {
-  font-family: var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
+  font-family:
+    var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
   font-size: var(--font-size-small);
   font-weight: var(--font-weight-normal);
   line-height: var(--line-height-small);
@@ -240,7 +247,8 @@ cite {
 }
 
 figcaption {
-  font-family: var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
+  font-family:
+    var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
   font-size: var(--font-size-small);
   line-height: var(--line-height-small);
   font-weight: var(--font-weight-normal);

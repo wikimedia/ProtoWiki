@@ -37,12 +37,7 @@ const props = withDefaults(defineProps<Props>(), {
     :theme="props.theme"
     :languages-count="props.languagesCount"
   >
-    <ArticleRenderer
-      :lang="props.lang"
-      :dir="props.dir"
-      :skin="props.skin"
-      :theme="props.theme"
-    >
+    <ArticleRenderer :lang="props.lang" :dir="props.dir" :skin="props.skin" :theme="props.theme">
       <slot />
     </ArticleRenderer>
   </ArticleWrapper>

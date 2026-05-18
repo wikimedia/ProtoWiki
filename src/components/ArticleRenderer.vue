@@ -334,14 +334,8 @@ onUpdated(() => {
   flex-direction: column;
 }
 
-.article[data-skin='mobile']
-  .mw-parser-output
-  section[data-mw-section-id='0']
-  > table.infobox,
-.article[data-skin='mobile']
-  .mw-parser-output
-  section.hand-authored-lead
-  > table.infobox {
+.article[data-skin='mobile'] .mw-parser-output section[data-mw-section-id='0'] > table.infobox,
+.article[data-skin='mobile'] .mw-parser-output section.hand-authored-lead > table.infobox {
   order: 2;
 }
 
