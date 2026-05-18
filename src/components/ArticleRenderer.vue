@@ -140,7 +140,7 @@ onUpdated(() => {
   >
     <!--
       Caller supplies default slot — Parsoid / snapshot markup via Vue v-html
-      wrappers is fine (see LiveArticle). Inner :key resets DOM on skin toggle
+      wrappers is fine (see ArticleLive). Inner :key resets DOM on skin toggle
       so desktop gets a fresh tree without mobile accordion mutations.
       Parser RL (.mw-parser-output) ships from src/styles/wiki-content/.
     -->
@@ -326,7 +326,7 @@ onUpdated(() => {
  * Lead vs infobox order: Parsoid usually emits `table.infobox` before the lead
  * `<p>` blocks inside `section[data-mw-section-id="0"]`. Mobile Wikipedia shows
  * the lead first — flex `order` stacks lead above the infobox. Hand-authored prototypes
- * opt in with `section.hand-authored-lead` (see `hand-written-article` prototype).
+ * opt in with `section.hand-authored-lead` (see `article-custom` prototype).
  */
 .article[data-skin='mobile'] .mw-parser-output section[data-mw-section-id='0'],
 .article[data-skin='mobile'] .mw-parser-output section.hand-authored-lead {

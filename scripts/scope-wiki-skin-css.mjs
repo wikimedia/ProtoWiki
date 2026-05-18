@@ -59,7 +59,7 @@ const ROOT_ONLY = /^(?:html|body|:root)(?::[\w-]+(?:\([^)]*\))?)*$/
  *
  * ProtoWiki provides all page-root styling itself: body typography in
  * `global.css`, page background / colour in our wrappers (`ChromeWrapper`,
- * `ArticleWrapper`, `ArticleRenderer`, `LiveArticle`, `ArticleSnapshot`), and theme tokens via `data-theme`.
+ * `ArticleWrapper`, `ArticleRenderer`, `ArticleLive`, `ArticleSnapshot`, `ArticleCustom`), and theme tokens via `data-theme`.
  *
  * Rules with longer selectors (e.g. `[data-skin] .mw-parser-output > p`)
  * are RL's intentional article-content styling and stay.

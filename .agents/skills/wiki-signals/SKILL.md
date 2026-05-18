@@ -110,5 +110,5 @@ In the ProtoWiki repo:
   shape, `SuggestionCard`, dismiss state, "apply" semantics), see
   [`protowiki-components/references/edit-suggestions.md`](../protowiki-components/references/edit-suggestions.md).
 - The off-wiki "answer card with proper credit" idea is wired through
-  **`LiveArticle`** plus the attribution endpoint described in
+  **`ArticleLive`** plus the attribution endpoint described in
   [`references/attribution.md`](references/attribution.md).

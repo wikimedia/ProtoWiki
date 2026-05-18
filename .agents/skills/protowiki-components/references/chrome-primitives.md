@@ -93,7 +93,7 @@ Use them directly when:
 
 - You want the chrome but with a non-default layout between header and
   footer (e.g., a 3-column layout with sticky toolbars that isn't covered
-  by `LiveArticle` / `ArticleSnapshot` / `ArticleWrapper` / `ArticleRenderer` /
+  by `ArticleLive` / `ArticleSnapshot` / `ArticleCustom` / `ArticleWrapper` / `ArticleRenderer` /
   `SpecialPageWrapper`).
 - You want the header but no footer (or vice versa).
 - You're building your own wrapper and the new wrapper genuinely warrants
@@ -119,7 +119,7 @@ import ChromeFooter from '@/components/ChromeFooter.vue'
 ## Inheriting skin/theme inside `ChromeWrapper`
 
 `ChromeWrapper` **provides** effective skin and theme to descendants.
-`LiveArticle`, **`ArticleSnapshot`**, **`ArticleWrapper`**, **`ArticleRenderer`** **inject** them when their own
+**`ArticleLive`**, **`ArticleSnapshot`**, **`ArticleCustom`**, **`ArticleWrapper`**, **`ArticleRenderer`** **inject** them when their own
 `skin` / `theme` props are omitted, so article columns and special-page
 typography track embedded `<ChromeWrapper skin="mobile">` previews without
 repeating props on every child.

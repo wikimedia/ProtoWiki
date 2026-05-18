@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePage({
   meta: {
-    title: 'Template: Hand-written article',
+    title: 'Template: Article (custom)',
     description:
       'Template for an article page where the article is written out within the template itself. Useful for when you want to directly change some part of the article.',
   },
@@ -9,8 +9,7 @@ definePage({
 
 import { RouterLink } from 'vue-router'
 
-import ArticleRenderer from '@/components/ArticleRenderer.vue'
-import ArticleWrapper from '@/components/ArticleWrapper.vue'
+import ArticleCustom from '@/components/ArticleCustom.vue'
 import ChromeWrapper from '@/components/ChromeWrapper.vue'
 
 const leadPhotoUrl = `${import.meta.env.BASE_URL}images/wet-leg-o2-infobox.jpg`
@@ -19,9 +18,8 @@ const leadPhotoUrl = `${import.meta.env.BASE_URL}images/wet-leg-o2-infobox.jpg`
 <template>
   <ChromeWrapper>
     <main>
-      <ArticleWrapper>
-        <ArticleRenderer>
-          <section class="hand-authored-lead">
+      <ArticleCustom>
+        <section class="hand-authored-lead">
             <table class="infobox vcard plainlist">
               <tbody>
                 <tr>
@@ -289,8 +287,7 @@ const leadPhotoUrl = `${import.meta.env.BASE_URL}images/wet-leg-o2-infobox.jpg`
               (<abbr title="Creative Commons Attribution Share-Alike licence">CC BY-SA</abbr>).
             </p>
           </section>
-        </ArticleRenderer>
-      </ArticleWrapper>
+      </ArticleCustom>
     </main>
   </ChromeWrapper>
 </template>

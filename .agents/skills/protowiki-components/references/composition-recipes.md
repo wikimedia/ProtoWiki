@@ -7,7 +7,7 @@ A page is one or more wrappers + the components inside. There is no
 
 ```vue
 <ChromeWrapper>
-  <LiveArticle article="Albert Einstein" />
+  <ArticleLive article="Albert Einstein" />
 </ChromeWrapper>
 ```
 
@@ -43,16 +43,16 @@ definePage({
 </template>
 ```
 
-**Reference implementation:** **`src/prototypes/hand-written-article/`** (Wet Leg intro + History, enwiki-shaped infobox). Infobox header colours, **`hand-authored-lead`**, and RL vs template styles are documented in [`article.md`](article.md#hand-authored-article-markup-no-fetch-no-snapshot).
+**Reference implementation:** **`src/prototypes/article-custom/`** (Wet Leg intro + History, enwiki-shaped infobox). Infobox header colours, **`hand-authored-lead`**, and RL vs template styles are documented in [`article.md`](article.md#hand-authored-article-markup-no-fetch-no-snapshot).
 
 ## Article page with extra markup beside the parser output
 
-Place experiments as siblings before or after `<LiveArticle>` or `<ArticleSnapshot>` in the padded article region.
+Place experiments as siblings before or after `<ArticleLive>` or `<ArticleSnapshot>` in the padded article region.
 
 ```vue
 <ChromeWrapper>
   <MyInfoboxExperiment />
-  <LiveArticle article="Talk:Albert Einstein" />
+  <ArticleLive article="Talk:Albert Einstein" />
 </ChromeWrapper>
 ```
 
@@ -92,10 +92,10 @@ Special pages usually **omit** the mock last-edited notice (desktop block **and*
 ```vue
 <div class="protowiki-ab">
   <ChromeWrapper theme="light">
-    <LiveArticle article="Albert Einstein" />
+    <ArticleLive article="Albert Einstein" />
   </ChromeWrapper>
   <ChromeWrapper theme="dark">
-    <LiveArticle article="Albert Einstein" />
+    <ArticleLive article="Albert Einstein" />
   </ChromeWrapper>
 </div>
 
@@ -112,7 +112,7 @@ Special pages usually **omit** the mock last-edited notice (desktop block **and*
 
 ```vue
 <ChromeWrapper skin="mobile" style="max-width: 360px">
-  <LiveArticle article="Albert Einstein" />
+  <ArticleLive article="Albert Einstein" />
 </ChromeWrapper>
 ```
 
@@ -156,7 +156,7 @@ function onPublish() {
 
 ```vue
 <MyDashboard>
-  <LiveArticle article="Solar energy" />
+  <ArticleLive article="Solar energy" />
 </MyDashboard>
 ```
 
@@ -166,14 +166,14 @@ function onPublish() {
 <script setup lang="ts">
 import ChromeHeader from '@/components/ChromeHeader.vue'
 import ChromeFooter from '@/components/ChromeFooter.vue'
-import LiveArticle from '@/components/LiveArticle.vue'
+import ArticleLive from '@/components/ArticleLive.vue'
 </script>
 
 <template>
   <div class="custom-shell">
     <ChromeHeader />
     <main>
-      <LiveArticle article="Albert Einstein" />
+      <ArticleLive article="Albert Einstein" />
     </main>
     <ChromeFooter />
   </div>

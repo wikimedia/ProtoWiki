@@ -103,14 +103,14 @@ shows a **`Codex`** error with a repo-root-relative **`fetch_page.py`** command 
 
 ## Hand-authored markup vs snapshots
 
-Use committed HTML when you want **full Parsoid fidelity** and a **frozen** page. Use **`LiveArticle`** when you want **always-current** **`page/html`**. When you need **partial content**, **fixture-free** setup, or markup that is **easier to edit in Vue** than in a snapshot file, compose **`ArticleWrapper`** + **`ArticleRenderer`** with a hand-filled slot — canonical example **`src/prototypes/hand-written-article/`**, documented in [`protowiki-components` → `article.md`](../protowiki-components/references/article.md#hand-authored-article-markup-no-fetch-no-snapshot).
+Use committed HTML when you want **full Parsoid fidelity** and a **frozen** page. Use **`ArticleLive`** when you want **always-current** **`page/html`**. When you need **partial content**, **fixture-free** setup, or markup that is **easier to edit in Vue** than in a snapshot file, use **`ArticleCustom`** (or compose **`ArticleWrapper`** + **`ArticleRenderer`**) with a hand-filled slot — canonical example **`src/prototypes/article-custom/`**, documented in [`protowiki-components` → `article.md`](../protowiki-components/references/article.md#hand-authored-article-markup-no-fetch-no-snapshot).
 
 ## See also
 
 - [`wiki-snapshot-data`](../wiki-snapshot-data/SKILL.md) — the universal
   pattern and the underlying fetch scripts.
 - [`protowiki-components`](../protowiki-components/SKILL.md) —
-  **`ArticleSnapshot`**, **`LiveArticle`**, **`ArticleWrapper`**, and **`ArticleRenderer`** APIs.
+  **`ArticleSnapshot`**, **`ArticleLive`**, **`ArticleCustom`**, **`ArticleWrapper`**, and **`ArticleRenderer`** APIs.
 - [`protowiki-skins`](../protowiki-skins/SKILL.md) — the `[data-skin]`
   cascade that the scoped CSS plugs into.
 - [`wiki-apis`](../wiki-apis/SKILL.md) — fetching live data, the

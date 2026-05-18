@@ -9,7 +9,7 @@
  * This file holds **site-wide** defaults only: a tiny reset, semantic HTML
  * typography from the Codex style guide (`h1`–`h6`, `p`, lists, `blockquote`, …),
  * links / focus, and reader-only `.mw-first-heading` underline. Layout shells
- * (`ChromeWrapper`, `LiveArticle`, `ArticleSnapshot`, `ArticleWrapper`, `ArticleRenderer`, `SpecialPageWrapper`, etc.) live next to those
+ * (`ChromeWrapper`, `ArticleLive`, `ArticleSnapshot`, `ArticleCustom`, `ArticleWrapper`, `ArticleRenderer`, `SpecialPageWrapper`, etc.) live next to those
  * components as `<style scoped>`.
  *
  * Theme-specific tweaks for shared classes live in `dark.css`.

@@ -116,5 +116,5 @@ Before you call a piece of work done, walk through this checklist:
 
 ProtoWiki ships these principles as defaults: `ChromeWrapper`,
 `SpecialPageWrapper`, and `PlainWrapper` paint layout shells and site chrome.
-`ArticleWrapper`, `ArticleRenderer`, `LiveArticle`, and `ArticleSnapshot` orchestrate reader shells and parser HTML. Edit UX prototypes belong in forked
+`ArticleWrapper`, `ArticleRenderer`, `ArticleLive`, `ArticleSnapshot`, and `ArticleCustom` orchestrate reader shells and parser HTML. Edit UX prototypes belong in forked
 upstream demos — see [`references/editors.md`](../protowiki-components/references/editors.md).

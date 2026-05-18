@@ -2,7 +2,7 @@
 
 `ChromeWrapper`, `SpecialPageWrapper`, `PlainWrapper`.
 Each is a layout shell with one concern. Compose by nesting — there is no
-chrome-bundled convenience wrapper. **`LiveArticle`** and **`ArticleSnapshot`**
+chrome-bundled convenience wrapper. **`ArticleLive`**, **`ArticleSnapshot`**, and **`ArticleCustom`**
 (reader surfaces) live in [`article.md`](article.md).
 
 ## Defaults, props, and slots
@@ -24,9 +24,10 @@ Components **emit** that class from their templates — you pass a **prop** or
 | --- | --- | --- | --- |
 | `PlainWrapper` | `heading?` | `#heading` | Omit both when there is no primary title |
 | `ArticleWrapper` | `title?`, **`header?`**, **`languagesCount?`**, **`lang?`, `dir?`**, … chrome only | **default** | Always **`ArticleHeader`**; **`ArticleRenderer`** (or bespoke markup) in **default**. |
-| `ArticleRenderer` | **`lang?`/`dir?`/`skin?`/`theme?`** | **default** | **`.article-content`** + **`.mw-parser-output`** + keyed slot root; **`LiveArticle`** / **`ArticleSnapshot`** gate mounting. |
-| `LiveArticle` | **`article`** (REST title) + chrome keys (same **`ArticleWrapper`**) + **`host`** | **default** → **`ArticleRenderer`** | Fetches **`page/html`**; progress/errors ship in **default** before **`ArticleRenderer`**. |
+| `ArticleRenderer` | **`lang?`/`dir?`/`skin?`/`theme?`** | **default** | **`.article-content`** + **`.mw-parser-output`** + keyed slot root; **`ArticleLive`** / **`ArticleSnapshot`** gate mounting. |
+| `ArticleLive` | **`article`** (REST title) + chrome keys (same **`ArticleWrapper`**) + **`host`** | **default** → **`ArticleRenderer`** | Fetches **`page/html`**; progress/errors ship in **default** before **`ArticleRenderer`**. |
 | `ArticleSnapshot` | **`article`** + chrome (**no **`host**) | **default** → **`ArticleRenderer`** | Snapshot HTML; **`Cdx`** load/error UI **default** before **`ArticleRenderer`**. |
+| `ArticleCustom` | **`title?`**, **`header?`**, **`languagesCount?`**, **`lang`**, **`dir`**, **`skin`**, **`theme`** (no **`article`**, no **`host`**) | **default** → **`ArticleRenderer`** | Hand-authored parser body only. |
 | `SpecialPageWrapper` | `title?` (`null` hides default **`h1`** unless `#title`); `#header` replaces cluster | `title` / `#title` (inner), `#header` (cluster) | Scoped special-page title typography (not **`mw-first-heading`**) |
 
 `ChromeWrapper` does **not** render a page title — compose with
@@ -59,7 +60,7 @@ footer mock last-edited chrome, username, and header logo / nav-tool configurati
 `ChromeNavTool` literals: `'appearance' \| 'notifications' \| 'notices' \| 'watchlist' \| 'user'` (see `src/lib/chromeHeader.ts`).
 
 `lang` and `dir` are the usual top-of-tree handles: primitives inside don't need their
-own `lang` prop because the value is inherited via the DOM. **`LiveArticle`** and **`ArticleSnapshot`** also accept
+own `lang` prop because the value is inherited via the DOM. **`ArticleLive`**, **`ArticleSnapshot`**, and **`ArticleCustom`** also accept
 `lang` / `dir` when you need them on the article subtree only.
 
 ### Slots
@@ -189,7 +190,7 @@ chrome, which one bundled columns, which one was a presentation device.
 The current set covers:
 
 - chrome (`ChromeWrapper`)
-- article reader surface (`LiveArticle` / `ArticleSnapshot`; see [`article.md`](article.md))
+- article reader surface (`ArticleLive` / `ArticleSnapshot` / `ArticleCustom`; see [`article.md`](article.md))
 - special-page shell (`SpecialPageWrapper`)
 - plain centred column (`PlainWrapper`)
 

@@ -30,13 +30,13 @@ definePage({
   },
 })
 
-import LiveArticle from '@/components/LiveArticle.vue'
+import ArticleLive from '@/components/ArticleLive.vue'
 import ChromeWrapper from '@/components/ChromeWrapper.vue'
 </script>
 
 <template>
   <ChromeWrapper>
-    <LiveArticle article="Albert Einstein" />
+    <ArticleLive article="Albert Einstein" />
   </ChromeWrapper>
 </template>
 ```
@@ -65,9 +65,9 @@ no other file needs to change.
 
 | Goal | Composition |
 | --- | --- |
-| Article-style page with chrome (live) | `<ChromeWrapper><LiveArticle article="…"/></ChromeWrapper>` |
+| Article-style page with chrome (live) | `<ChromeWrapper><ArticleLive article="…"/></ChromeWrapper>` |
 | Article-style page with committed snapshot fixture | `<ChromeWrapper><ArticleSnapshot article="…"/></ChromeWrapper>` |
-| Article-style page with **hand-written** body HTML (no REST, no snapshot file) | `<ChromeWrapper><ArticleWrapper>…<ArticleRenderer>…</ArticleRenderer></ArticleWrapper></ChromeWrapper>` — canonical: **`src/prototypes/hand-written-article/`**; see [`protowiki-components` → `article.md`](../protowiki-components/references/article.md) ( **`hand-authored-lead`**, infobox classes) |
+| Article-style page with **hand-written** body HTML (no REST, no snapshot file) | `<ChromeWrapper><ArticleCustom>…</ArticleCustom></ChromeWrapper>` — canonical: **`src/prototypes/article-custom/`**; see [`protowiki-components` → `article.md`](../protowiki-components/references/article.md) ( **`hand-authored-lead`**, infobox classes) |
 | Special-page-style page | `<ChromeWrapper><SpecialPageWrapper title="…">…</SpecialPageWrapper></ChromeWrapper>` |
 | Bare canvas with chrome | `<ChromeWrapper>…</ChromeWrapper>` |
 | A/B preview, two themes side by side | Two `<ChromeWrapper>`s, one `theme="light"`, one `theme="dark"` |

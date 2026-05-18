@@ -51,7 +51,7 @@ function articleCacheKey(host: string, title: string) {
   return `${host}\0${normalizeTitleForCache(title)}`
 }
 
-const LOG_PREFIX = '[ProtoWiki][LiveArticle]'
+const LOG_PREFIX = '[ProtoWiki][ArticleLive]'
 
 interface Props {
   lang?: string

@@ -60,7 +60,7 @@ Then open [localhost:5173](https://localhost:5173) in your browser.
 2. Put an `index.vue` file in the folder containing your prototype.
 3. Click your prototype from the home page!
 
-I recommend copying one of the `-template` prototypes as a starting point. For example, copy+paste the `chrome-template`, give it a new name, and change its name and description inside its `index.vue` file. For **article HTML you write yourself** in Vue (infobox + sections, no live fetch or snapshot file), use **`hand-written-article`** as the reference — see [`.agents/skills/protowiki-components/references/article.md`](.agents/skills/protowiki-components/references/article.md).
+I recommend copying one of the `-template` prototypes as a starting point. For example, copy+paste the `chrome-template`, give it a new name, and change its name and description inside its `index.vue` file. For **article HTML you write yourself** in Vue (infobox + sections, no live fetch or snapshot file), use **`article-custom`** as the reference — see [`.agents/skills/protowiki-components/references/article.md`](.agents/skills/protowiki-components/references/article.md).
 
 Trouble-shooting: If it doesn't appear at first or you see a blank screeen, try restarting the dev server. If you don't know how to do this, ask a friendly human or AI agent to help you.
 
