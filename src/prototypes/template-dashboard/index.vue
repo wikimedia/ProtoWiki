@@ -15,9 +15,6 @@ definePage({
   },
 })
 
-/** Gallery / app home (file-based route `/`). */
-const HOME = '/'
-
 /** Shared across mobile + desktop for each matching module */
 const MODULE = {
   thankTitle: 'Contribute',
@@ -34,7 +31,7 @@ const MODULE = {
       <div class="template-dashboard-shell">
         <Dashboard>
           <template #banner>
-            <RouterLink :to="HOME" class="dashboard-mobile-banner__feedback">
+            <RouterLink to="/" class="dashboard-mobile-banner__feedback">
               Share feedback
             </RouterLink>
           </template>
@@ -42,9 +39,9 @@ const MODULE = {
           <template #mobile>
             <DashboardModule
               class="dashboard-slot--mobile-primary"
-              :to="HOME"
+              to="/"
               :title="MODULE.thankTitle"
-              cta-label="Open module"
+              cta="Open module"
             >
               <p class="dashboard-template-placeholder">{{ MODULE.thankBody }}</p>
             </DashboardModule>
@@ -64,7 +61,7 @@ const MODULE = {
               </div>
             </DashboardModule>
 
-            <DashboardModule :to="HOME" :title="MODULE.policiesTitle" hide-cta>
+            <DashboardModule to="/" :title="MODULE.policiesTitle" :cta="null">
               <p class="dashboard-template-placeholder">{{ MODULE.policiesBody }}</p>
             </DashboardModule>
           </template>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
 import { CdxIcon } from '@wikimedia/codex'
@@ -8,32 +9,37 @@ interface Props {
   /** Shown as the module heading row. */
   title?: string
   /**
-   * In-app route — renders a tappable mobile link card (title row, arrow, body, optional blue CTA).
+   * Navigation target — tappable link card (title row, arrow, body, optional blue CTA).
+   * Any Vue Router **`RouteLocationRaw`** (paths, named routes, queries, or **`https://…`** strings).
    */
   to?: RouteLocationRaw
   /**
-   * External URL — same link-card layout as **`to`**, as **`<a target="_blank">`**.
+   * Label for the bottom **`.mobile-card__button`** strip when **`to`** is set.
+   * **`null`** hides the strip entirely (link behaviour unchanged).
+   * **`''`** keeps the strip for a custom **`#cta`** slot without default button text.
    */
-  href?: string
-  /**
-   * Label for the bottom **`.mobile-card__button`** strip when **`to`** or **`href`** is set.
-   * Omit **`ctaLabel`** (and **`#cta`**) for a link card with no blue strip — the row stays tappable.
-   * Override with the **`#cta`** slot for custom strip content.
-   */
-  ctaLabel?: string
-  /**
-   * When **`true`**, the progressive CTA row is not rendered (link /RouterLink behavior unchanged).
-   * Prefer omitting **`ctaLabel`** / **`#cta`**; use this to explicitly suppress the strip.
-   */
-  hideCta?: boolean
+  cta?: string | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
   title: undefined,
   to: undefined,
-  href: undefined,
-  ctaLabel: undefined,
-  hideCta: false,
+  cta: '',
+})
+
+/** Resolves **`to`** for **`RouterLink`**; plain **string** targets are trimmed (whitespace-only → no link card). */
+const linkCard = computed((): { to: RouteLocationRaw } | null => {
+  const to = props.to
+  if (to == null) return null
+  if (typeof to === 'string') {
+    const t = to.trim()
+    if (!t.length) return null
+    return { to: t }
+  }
+  if (typeof to === 'object') {
+    return { to }
+  }
+  return null
 })
 
 function trimmedTitle(): string {
@@ -45,40 +51,21 @@ function trimmedTitle(): string {
 
 <template>
   <RouterLink
-    v-if="props.to != null && String(props.to).length > 0"
-    :to="props.to"
+    v-if="linkCard"
+    :to="linkCard.to"
     class="mobile-card mobile-card--link dashboard-module dashboard-slot"
   >
     <div v-if="trimmedTitle()" class="mobile-card__header">
       <span class="mobile-card__title">{{ trimmedTitle() }}</span>
-      <CdxIcon :icon="cdxIconArrowNext" size="medium" class="mobile-card__arrow" />
+      <CdxIcon :icon="cdxIconArrowNext" size="small" class="mobile-card__arrow" />
     </div>
     <div class="mobile-card__content mobile-card__content--preview dashboard-module__body">
       <slot />
     </div>
-    <slot v-if="!props.hideCta" name="cta">
-      <span v-if="props.ctaLabel?.trim()" class="mobile-card__button">{{ props.ctaLabel }}</span>
+    <slot v-if="props.cta !== null" name="cta">
+      <span v-if="props.cta?.trim()" class="mobile-card__button">{{ props.cta }}</span>
     </slot>
   </RouterLink>
-
-  <a
-    v-else-if="props.href?.trim()"
-    :href="props.href.trim()"
-    target="_blank"
-    rel="noopener noreferrer"
-    class="mobile-card mobile-card--link dashboard-module dashboard-slot"
-  >
-    <div v-if="trimmedTitle()" class="mobile-card__header">
-      <span class="mobile-card__title">{{ trimmedTitle() }}</span>
-      <CdxIcon :icon="cdxIconArrowNext" size="medium" class="mobile-card__arrow" />
-    </div>
-    <div class="mobile-card__content mobile-card__content--preview dashboard-module__body">
-      <slot />
-    </div>
-    <slot v-if="!props.hideCta" name="cta">
-      <span v-if="props.ctaLabel?.trim()" class="mobile-card__button">{{ props.ctaLabel }}</span>
-    </slot>
-  </a>
 
   <section v-else class="sidebar-card dashboard-module dashboard-slot">
     <div v-if="trimmedTitle()" class="sidebar-card__title">
