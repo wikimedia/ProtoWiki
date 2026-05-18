@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
-import { CdxIcon } from '@wikimedia/codex'
+import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconArrowNext } from '@wikimedia/codex-icons'
 
 interface Props {
@@ -57,7 +57,9 @@ function trimmedTitle(): string {
   >
     <div v-if="trimmedTitle()" class="mobile-card__header">
       <span class="mobile-card__title">{{ trimmedTitle() }}</span>
-      <CdxIcon :icon="cdxIconArrowNext" size="small" class="mobile-card__arrow" />
+      <CdxButton weight="quiet" :icon-only="true" aria-label="Open" tabindex="-1">
+        <CdxIcon :icon="cdxIconArrowNext" />
+      </CdxButton>
     </div>
     <div class="mobile-card__content mobile-card__content--preview dashboard-module__body">
       <slot />
@@ -116,26 +118,15 @@ function trimmedTitle(): string {
 
 .mobile-card__title {
   font-weight: bold;
-  font-size: 16px;
-}
-
-.mobile-card__arrow {
-  color: var(--color-base--subtle, #54595d);
-  flex-shrink: 0;
-  padding: 0;
-  transform: scale(1.4);
-}
-
-.mobile-card__arrow .cdx-icon {
-  padding: 0;
+  font-size: var(--font-size-medium);
 }
 
 .mobile-card__content {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
-  line-height: 1.4;
-  font-size: 14px;
+  line-height: var(--line-height-medium);
+  font-size: var(--font-size-medium);
 }
 
 .mobile-card__content--stacked {
@@ -202,7 +193,7 @@ function trimmedTitle(): string {
   padding: 0.25rem 1rem;
   background-color: var(--background-color-progressive, #36c);
   color: var(--color-inverted, #fff);
-  font-size: 14px;
+  font-size: var(--font-size-small);
   font-weight: 700;
   text-align: center;
   border-radius: 2px;
@@ -218,10 +209,10 @@ function trimmedTitle(): string {
 }
 
 .sidebar-card__title {
-  margin: 0 0 0.75rem 0;
+  margin: 0 0 var(--spacing-75) 0;
   padding: 0;
-  font-weight: bold;
-  font-size: 18px;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-medium);
 }
 
 .sidebar-card .cdx-label {
@@ -232,67 +223,4 @@ function trimmedTitle(): string {
   min-width: 0;
 }
 
-.your-impact__metrics {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: 0;
-}
-
-.your-impact__metric {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.25rem;
-  flex: 1;
-  min-width: 0;
-  padding: 0 0.75rem;
-}
-
-.your-impact__metric:first-child {
-  padding-left: 0;
-}
-
-.your-impact__metric:last-child {
-  padding-right: 0;
-}
-
-.your-impact__divider {
-  flex-shrink: 0;
-  width: 1px;
-  min-height: 2.5rem;
-  align-self: stretch;
-  background-color: var(--border-color-subtle, #a2a9b1);
-}
-
-.your-impact__value-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.your-impact__icon {
-  color: var(--color-base--subtle, #54595d);
-}
-
-.your-impact__value {
-  font-weight: 400;
-  line-height: 1.2;
-  color: var(--color-base, #202122);
-}
-
-.your-impact__value-link {
-  color: var(--color-progressive, #36c);
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.your-impact__value-link:hover {
-  text-decoration: underline;
-}
-
-.your-impact__label {
-  color: var(--color-base--subtle, #54595d);
-  flex-shrink: 0;
-}
 </style>

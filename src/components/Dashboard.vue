@@ -37,7 +37,7 @@ const slots = useSlots()
 .personal-dashboard-clone {
   width: 100%;
   margin: 0 auto;
-  font-size: 14px;
+  font-size: var(--font-size-small);
 }
 
 .dashboard-mobile-banner {
@@ -48,7 +48,20 @@ const slots = useSlots()
   display: none;
 }
 
+/* Two columns when desktop grid is shown (>640px). */
+.dashboard-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 34%);
+  gap: var(--spacing-200, 2rem);
+  align-items: start;
+  padding-bottom: var(--spacing-100, 1rem);
+}
+
 @media (max-width: 640px) {
+  .personal-dashboard-clone {
+    font-size: var(--font-size-medium);
+  }
+
   .dashboard-mobile-banner {
     display: flex;
     align-items: center;
@@ -61,9 +74,9 @@ const slots = useSlots()
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
-    color: #3366cc;
+    color: var(--color-progressive, #3366cc);
     text-decoration: none;
-    font-size: 14px;
+    font-size: inherit;
   }
 
   .dashboard-mobile-banner__feedback:hover {
@@ -71,78 +84,20 @@ const slots = useSlots()
   }
 
   .dashboard-main {
-    display: none !important;
+    display: none;
   }
 
   .dashboard-mobile-cards {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: var(--spacing-125, 1.25rem);
   }
-}
-
-/* Two columns when desktop grid is shown (>640px). */
-.dashboard-main {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 34%);
-  gap: 2rem;
-  align-items: start;
-  padding-bottom: 1rem;
-}
-
-/* Primary column: e.g. Review Changes feed */
-.personal-dashboard-clone .review-changes {
-  min-width: 0;
-  border: 1px solid var(--border-color-subtle, #a2a9b1);
-  border-radius: 2px;
-}
-
-.personal-dashboard-clone .review-changes.review-changes--no-border {
-  border: none;
-  border-radius: 0;
-  padding: 0;
-  padding-top: 17px;
 }
 
 .dashboard-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-}
-
-.review-changes-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.review-changes-controls__checkboxes {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.review-changes-controls__row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.ratio-slider-line {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.ratio-slider {
-  flex: 1;
-  min-width: 80px;
-}
-
-.ratio-slider-value {
-  font-size: 0.875rem;
-  font-weight: 500;
-  min-width: 2.5em;
+  gap: var(--spacing-125, 1.25rem);
 }
 
 .dashboard-slot {

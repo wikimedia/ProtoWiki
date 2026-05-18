@@ -115,8 +115,8 @@ on `<html>`):
 ```ts
 import { useTheme } from '@/composables/useTheme'
 
-const theme = useTheme()      // Ref<'light' | 'dark'>, read-only
-console.log(theme.value)      // 'light' or 'dark'
+const theme = useTheme() // Ref<'light' | 'dark'>, read-only
+console.log(theme.value) // 'light' or 'dark'
 ```
 
 It does **not** mutate page state, and it does **not** reflect local

@@ -15,6 +15,9 @@ definePage({
   },
 })
 
+/** Gallery / app home (file-based route `/`). */
+const HOME = '/'
+
 /** Shared across mobile + desktop for each matching module */
 const MODULE = {
   thankTitle: 'Contribute',
@@ -31,7 +34,7 @@ const MODULE = {
       <div class="template-dashboard-shell">
         <Dashboard>
           <template #banner>
-            <RouterLink to="/" class="dashboard-mobile-banner__feedback">
+            <RouterLink :to="HOME" class="dashboard-mobile-banner__feedback">
               Share feedback
             </RouterLink>
           </template>
@@ -39,7 +42,7 @@ const MODULE = {
           <template #mobile>
             <DashboardModule
               class="dashboard-slot--mobile-primary"
-              to="/"
+              :to="HOME"
               :title="MODULE.thankTitle"
               cta="Open module"
             >
@@ -49,19 +52,31 @@ const MODULE = {
             <DashboardModule class="dashboard-slot--mobile-sidebar" :title="MODULE.impactTitle">
               <div class="dashboard-impact-rows">
                 <div class="dashboard-impact-row">
-                  <CdxIcon :icon="cdxIconUserTalk" size="small" class="dashboard-impact-icon" />
+                  <CdxIcon
+                    :icon="cdxIconUserTalk"
+                    size="small"
+                    class="dashboard-impact-icon"
+                  />
                   <span class="dashboard-impact-metric">—</span>
                   <span>Thanks sent.</span>
                 </div>
                 <div class="dashboard-impact-row">
-                  <CdxIcon :icon="cdxIconCheck" size="small" class="dashboard-impact-icon" />
+                  <CdxIcon
+                    :icon="cdxIconCheck"
+                    size="small"
+                    class="dashboard-impact-icon"
+                  />
                   <span class="dashboard-impact-metric">—</span>
                   <span>Edits completed.</span>
                 </div>
               </div>
             </DashboardModule>
 
-            <DashboardModule to="/" :title="MODULE.policiesTitle" :cta="null">
+            <DashboardModule
+              :to="HOME"
+              :title="MODULE.policiesTitle"
+              :cta="null"
+            >
               <p class="dashboard-template-placeholder">{{ MODULE.policiesBody }}</p>
             </DashboardModule>
           </template>
@@ -73,15 +88,26 @@ const MODULE = {
           </template>
 
           <template #sidebar>
-            <DashboardModule class="dashboard-slot--desktop-sidebar" :title="MODULE.impactTitle">
+            <DashboardModule
+              class="dashboard-slot--desktop-sidebar"
+              :title="MODULE.impactTitle"
+            >
               <div class="dashboard-impact-rows">
                 <div class="dashboard-impact-row">
-                  <CdxIcon :icon="cdxIconUserTalk" size="small" class="dashboard-impact-icon" />
+                  <CdxIcon
+                    :icon="cdxIconUserTalk"
+                    size="small"
+                    class="dashboard-impact-icon"
+                  />
                   <span class="dashboard-impact-metric">—</span>
                   <span>Thanks sent.</span>
                 </div>
                 <div class="dashboard-impact-row">
-                  <CdxIcon :icon="cdxIconCheck" size="small" class="dashboard-impact-icon" />
+                  <CdxIcon
+                    :icon="cdxIconCheck"
+                    size="small"
+                    class="dashboard-impact-icon"
+                  />
                   <span class="dashboard-impact-metric">—</span>
                   <span>Edits completed.</span>
                 </div>

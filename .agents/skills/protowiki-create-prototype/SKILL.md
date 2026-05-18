@@ -63,15 +63,15 @@ no other file needs to change.
 
 ## Common shapes
 
-| Goal | Composition |
-| --- | --- |
-| Article-style page with chrome (live) | `<ChromeWrapper><ArticleLive article="…"/></ChromeWrapper>` |
-| Article-style page with committed snapshot fixture | `<ChromeWrapper><ArticleSnapshot article="…"/></ChromeWrapper>` |
+| Goal                                                                           | Composition                                                                                                                                                                                                                                                  |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Article-style page with chrome (live)                                          | `<ChromeWrapper><ArticleLive article="…"/></ChromeWrapper>`                                                                                                                                                                                                  |
+| Article-style page with committed snapshot fixture                             | `<ChromeWrapper><ArticleSnapshot article="…"/></ChromeWrapper>`                                                                                                                                                                                              |
 | Article-style page with **hand-written** body HTML (no REST, no snapshot file) | `<ChromeWrapper><ArticleCustom>…</ArticleCustom></ChromeWrapper>` — canonical: **`src/prototypes/article-custom/`**; see [`protowiki-components` → `article.md`](../protowiki-components/references/article.md) ( **`hand-authored-lead`**, infobox classes) |
-| Special-page-style page | `<ChromeWrapper><SpecialPageWrapper title="…">…</SpecialPageWrapper></ChromeWrapper>` |
-| Bare canvas with chrome | `<ChromeWrapper>…</ChromeWrapper>` |
-| A/B preview, two themes side by side | Two `<ChromeWrapper>`s, one `theme="light"`, one `theme="dark"` |
-| Mobile preview embedded in a desktop page | `<ChromeWrapper skin="mobile" style="max-width: 360px">…</ChromeWrapper>` |
+| Special-page-style page                                                        | `<ChromeWrapper><SpecialPageWrapper title="…">…</SpecialPageWrapper></ChromeWrapper>`                                                                                                                                                                        |
+| Bare canvas with chrome                                                        | `<ChromeWrapper>…</ChromeWrapper>`                                                                                                                                                                                                                           |
+| A/B preview, two themes side by side                                           | Two `<ChromeWrapper>`s, one `theme="light"`, one `theme="dark"`                                                                                                                                                                                              |
+| Mobile preview embedded in a desktop page                                      | `<ChromeWrapper skin="mobile" style="max-width: 360px">…</ChromeWrapper>`                                                                                                                                                                                    |
 
 See [`protowiki-components`](../protowiki-components/SKILL.md) for full
 component docs and [`protowiki-components/references/composition-recipes.md`](../protowiki-components/references/composition-recipes.md)

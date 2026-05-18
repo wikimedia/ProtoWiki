@@ -114,19 +114,17 @@ const mobileFooterLinks = [
                 rel="noopener noreferrer"
                 title="Creative Commons Attribution-ShareAlike 4.0"
               >
-                Creative Commons Attribution-ShareAlike 4.0 License </a
-              >; additional terms may apply. By using this site, you agree to the
+                Creative Commons Attribution-ShareAlike 4.0 License
+              </a>; additional terms may apply. By using this site, you agree to the
               <a
                 href="https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Terms_of_Use"
                 rel="noopener noreferrer"
-                >Terms of Use</a
-              >
+                >Terms of Use</a>
               and the
               <a
                 href="https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Privacy_policy"
                 rel="noopener noreferrer"
-                >Privacy Policy</a
-              >. Wikimedia Foundation, Inc. is a non-profit organization.
+                >Privacy Policy</a>. Wikimedia Foundation, Inc. is a non-profit organization.
             </p>
           </template>
 

@@ -69,9 +69,7 @@ function dropCollapsedRootRules(skinPrefix) {
   return {
     postcssPlugin: 'drop-collapsed-root-rules',
     Rule(rule) {
-      const remaining = rule.selectors.filter(
-        (sel) => sel.trim() !== collapsedRoot,
-      )
+      const remaining = rule.selectors.filter((sel) => sel.trim() !== collapsedRoot)
       if (remaining.length === 0) {
         rule.remove()
       } else if (remaining.length !== rule.selectors.length) {
