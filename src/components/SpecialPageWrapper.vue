@@ -222,6 +222,7 @@ const showHeaderNav = computed(
 
 .special-page-wrapper[data-skin='mobile'] {
   padding: var(--spacing-100);
+  padding-block: var(--spacing-150);
 }
 
 .special-page-wrapper[data-skin='mobile'] .special-page-wrapper__help {
