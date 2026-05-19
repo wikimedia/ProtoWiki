@@ -166,6 +166,9 @@ into review tickets to pin a specific preview.
 - **Preview deep link shows the gallery with `?template-…` in the URL.** That was
   an older `?/` redirect experiment; current builds use `sessionStorage` and should
   end on `…/pr-N/template-…` with no query hack.
+- **Preview deep link always lands on the gallery (URL is only `…/pr-N/`).** Usually
+  `gh-pages-restore.js` ran on root `404.html` and cleared `sessionStorage` before
+  the redirect finished — ensure restore skips pr-preview deep paths on the 404 page.
 - **Asset URLs missing the base path.** Check `import.meta.env.BASE_URL`
   matches the deployed URL prefix; the router uses it.
 - **Blank app on Pages or preview.** Wrong `PROTOWIKI_BASE` (missing repo
