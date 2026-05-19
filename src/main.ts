@@ -11,6 +11,7 @@ import './styles/wiki-content/minerva.css'
 import './styles/wiki-content/mobile-wiki-overrides.css'
 import './styles/dark.css'
 
+import { syncGithubPagesPreviewRoute } from './lib/githubPagesPreviewRoute'
 import { initTheming } from './lib/theming'
 
 initTheming()
@@ -19,6 +20,8 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 })
+
+syncGithubPagesPreviewRoute(router)
 
 if (import.meta.hot) {
   handleHotUpdate(router)
