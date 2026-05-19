@@ -18,7 +18,13 @@ export default defineConfig(({ command }) => ({
     // Plugin order matters: VueRouter must come before vue() so the routes
     // virtual module is generated first.
     VueRouter({
-      routesFolder: 'src/prototypes',
+      routesFolder: [
+        {
+          src: 'src/prototypes',
+          // Only `index.vue` files are routes; co-located modules (e.g. HelpModule.vue) are imports.
+          filePatterns: ['**/index'],
+        },
+      ],
       dts: 'src/typed-router.d.ts',
     }),
     vue(),

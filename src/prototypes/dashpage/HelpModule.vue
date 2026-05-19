@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { RouteLocationRaw } from 'vue-router'
 import { CdxIcon } from '@wikimedia/codex'
 import { cdxIconHelp } from '@wikimedia/codex-icons'
 
@@ -11,27 +12,29 @@ interface HelpLink {
 
 interface Props {
   compact?: boolean
+  to?: RouteLocationRaw
   helpLinks?: HelpLink[]
   viewMoreHref?: string
 }
 
 withDefaults(defineProps<Props>(), {
   compact: false,
+  to: undefined,
   helpLinks: () => [],
   viewMoreHref: undefined,
 })
 </script>
 
 <template>
-  <!-- Mobile: compact static card -->
-  <DashboardModule v-if="compact" title="Get help with editing">
+  <!-- Mobile: compact link card when `to` is set -->
+  <DashboardModule v-if="compact" title="Get help with editing" :to="to">
     <p class="help-module__summary">Ask the help desk or read help pages.</p>
   </DashboardModule>
 
   <!-- Desktop: full static card with icon, link list, footer -->
   <DashboardModule v-else>
     <div class="help-module__full">
-      <CdxIcon :icon="cdxIconHelp" size="large" class="help-module__icon" />
+      <CdxIcon :icon="cdxIconHelp" size="medium" class="help-module__icon" />
       <div class="sidebar-card__title">Get help with editing</div>
       <template v-if="helpLinks.length > 0">
         <p class="help-module__section-label">Top help pages about editing</p>
