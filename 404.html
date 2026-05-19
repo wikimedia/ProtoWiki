@@ -4,7 +4,7 @@
 // serves 404.html at the site root; deep links under pr-preview/pr-N/... hit
 // that file with the production base. Redirect into the preview base and stash
 // the path for gh-pages-restore.js on the preview index.
-;(function (l) {
+;(function (l, doc) {
   var m = l.pathname.match(/^(.+\/pr-preview\/pr-\d+)\/?(.*)$/)
   if (!m) return
   var base = m[1] + '/'
@@ -14,8 +14,11 @@
     'protowiki-gh-pages-path',
     path + (l.search || '') + (l.hash || ''),
   )
+  // Do not let the production SPA in this file boot (wrong PROTOWIKI_BASE).
+  doc.documentElement.innerHTML =
+    '<head><meta charset="utf-8"><title>ProtoWiki</title></head><body></body>'
   l.replace(base)
-})(location)
+})(location, document)
 </script>
     <script>// Injected at the top of <head> on build (see vite.config.ts). Runs before the
 // Vite bundle so Vue Router sees the deep path. Pairs with gh-pages-preview-404.js.
@@ -37,7 +40,7 @@
     <link rel="icon" type="image/svg+xml" href="/ProtoWiki/images/ProtoWiki.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ProtoWiki</title>
-    <script type="module" crossorigin src="/ProtoWiki/assets/index-BtQQIYMj.js"></script>
+    <script type="module" crossorigin src="/ProtoWiki/assets/index-07TfVC-3.js"></script>
     <link rel="stylesheet" crossorigin href="/ProtoWiki/assets/index-BW4q3DFA.css">
   </head>
   <body>
