@@ -1,6 +1,5 @@
+import { readFileSync } from 'node:fs'
 import { fileURLToPath, URL } from 'node:url'
-import { copyFileSync, existsSync } from 'node:fs'
-import { resolve } from 'node:path'
 
 import { defineConfig } from 'vite'
 import VueRouter from 'unplugin-vue-router/vite'
@@ -11,6 +10,11 @@ import vue from '@vitejs/plugin-vue'
 // matches your routes (blank app). CI sets PROTOWIKI_BASE from the repo name.
 // Override locally, e.g. PROTOWIKI_BASE='/ProtoWiki/' npm run build
 const buildBase = process.env.PROTOWIKI_BASE ?? '/protowiki/'
+
+const ghPagesRestoreScript = readFileSync(
+  new URL('./public/gh-pages-restore.js', import.meta.url),
+  'utf8',
+)
 
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? buildBase : '/',
@@ -28,21 +32,25 @@ export default defineConfig(({ command }) => ({
       dts: 'src/typed-router.d.ts',
     }),
     vue(),
-    // GitHub Pages serves a static 404.html for unknown paths. By copying
-    // index.html to 404.html on build, history-mode routing works without a
-    // server-side rewrite: the SPA boots from any deep link.
+    // Run before Vite hoists the module script into <head>.
     {
-      name: 'protowiki-spa-404',
+      name: 'protowiki-gh-pages-restore',
       apply: 'build',
-      closeBundle() {
-        const dist = resolve(__dirname, 'dist')
-        const index = resolve(dist, 'index.html')
-        const fallback = resolve(dist, '404.html')
-        if (existsSync(index)) {
-          copyFileSync(index, fallback)
-        }
+      transformIndexHtml: {
+        order: 'pre',
+        handler() {
+          return [
+            {
+              tag: 'script',
+              children: ghPagesRestoreScript,
+              injectTo: 'head-prepend',
+            },
+          ]
+        },
       },
     },
+    // Root SPA fallback: public/404.html (redirect script) is copied to dist/.
+    // restoreGithubPagesSpaRedirect in main.ts is a backup after the bundle loads.
   ],
   resolve: {
     alias: {

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ProtoWiki</title>
+    <script>
+      // GitHub Pages only applies 404.html at the site root. Deep links under
+      // /{repo}/pr-preview/pr-N/... must redirect into that preview base with the
+      // ?/path query form (see src/lib/githubPagesSpaRedirect.ts), then index.html
+      // + Vue Router take over. Adapted from https://github.com/rafgraph/spa-github-pages
+      ;(function (location) {
+        var search = location.search || ''
+        if (search.indexOf('?/') === 0 || search.indexOf('?%2F') === 0) {
+          return
+        }
+
+        var parts = location.pathname.split('/').filter(Boolean)
+        if (parts.length < 2) {
+          return
+        }
+
+        var pathSegmentsToKeep = 1
+        if (
+          parts[1] === 'pr-preview' &&
+          parts[2] &&
+          /^pr-\d+$/.test(parts[2])
+        ) {
+          pathSegmentsToKeep = 3
+        }
+
+        var rest = parts.slice(pathSegmentsToKeep).join('/')
+        if (!rest) {
+          return
+        }
+
+        var base =
+          '/' + parts.slice(0, pathSegmentsToKeep).join('/') + '/'
+        var redirect =
+          location.protocol +
+          '//' +
+          location.hostname +
+          (location.port ? ':' + location.port : '') +
+          base +
+          '?/' +
+          rest.replace(/&/g, '~and~') +
+          (location.search
+            ? '&' + location.search.slice(1).replace(/&/g, '~and~')
+            : '') +
+          location.hash
+
+        location.replace(redirect)
+      })(window.location)
+    </script>
+  </head>
+  <body></body>
+</html>
