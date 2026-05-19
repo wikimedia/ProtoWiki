@@ -1,6 +1,34 @@
 <!doctype html>
 <html lang="en">
-  <head>
+  <head><script>// Prepended to dist/404.html on build (see vite.config.ts). GitHub Pages only
+// serves 404.html at the site root; deep links under pr-preview/pr-N/... hit
+// that file with the production base. Redirect into the preview base and stash
+// the path for gh-pages-restore.js on the preview index.
+;(function (l) {
+  var m = l.pathname.match(/^(.+\/pr-preview\/pr-\d+)\/?(.*)$/)
+  if (!m) return
+  var base = m[1] + '/'
+  var rest = m[2] || ''
+  var path = rest ? '/' + rest : '/'
+  sessionStorage.setItem(
+    'protowiki-gh-pages-path',
+    path + (l.search || '') + (l.hash || ''),
+  )
+  l.replace(base)
+})(location)
+</script>
+    <script>// Injected at the top of <head> on build (see vite.config.ts). Runs before the
+// Vite bundle so Vue Router sees the deep path. Pairs with gh-pages-preview-404.js.
+;(function (l) {
+  var key = 'protowiki-gh-pages-path'
+  var stored = sessionStorage.getItem(key)
+  if (!stored) return
+  sessionStorage.removeItem(key)
+  var base = l.pathname.replace(/\/$/, '') || l.pathname
+  l.replaceState(null, '', base + stored)
+})(location)
+</script>
+
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/ProtoWiki/images/ProtoWiki.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
