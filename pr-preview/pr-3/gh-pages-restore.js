@@ -1,7 +1,4 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <script>// Injected at the top of <head> on build (see vite.config.ts). Runs before the Vite bundle.
+// Injected at the top of <head> on build (see vite.config.ts). Runs before the Vite bundle.
 // Pairs with public/404.html and src/lib/githubPagesSpaRedirect.ts.
 ;(function (l) {
   var search = l.search
@@ -22,16 +19,3 @@
     l.replaceState(null, '', base + '/' + search.slice(1) + l.hash)
   }
 })(window.location)
-</script>
-
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/ProtoWiki/pr-preview/pr-3/images/ProtoWiki.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ProtoWiki</title>
-    <script type="module" crossorigin src="/ProtoWiki/pr-preview/pr-3/assets/index-B9LtjOvz.js"></script>
-    <link rel="stylesheet" crossorigin href="/ProtoWiki/pr-preview/pr-3/assets/index-BW4q3DFA.css">
-  </head>
-  <body>
-    <div id="app"></div>
-  </body>
-</html>
