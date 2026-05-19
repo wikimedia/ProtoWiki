@@ -1,56 +1,42 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
+  <head><script>// Prepended to dist/404.html on build (see vite.config.ts). GitHub Pages only
+// serves 404.html at the site root; deep links under pr-preview/pr-N/... hit
+// that file with the production base. Redirect into the preview base and stash
+// the path for gh-pages-restore.js on the preview index.
+;(function (l) {
+  var m = l.pathname.match(/^(.+\/pr-preview\/pr-\d+)\/?(.*)$/)
+  if (!m) return
+  var base = m[1] + '/'
+  var rest = m[2] || ''
+  var path = rest ? '/' + rest : '/'
+  sessionStorage.setItem(
+    'protowiki-gh-pages-path',
+    path + (l.search || '') + (l.hash || ''),
+  )
+  l.replace(base)
+})(location)
+</script>
+    <script>// Injected at the top of <head> on build (see vite.config.ts). Runs before the
+// Vite bundle so Vue Router sees the deep path. Pairs with gh-pages-preview-404.js.
+;(function (l) {
+  var key = 'protowiki-gh-pages-path'
+  var stored = sessionStorage.getItem(key)
+  if (!stored) return
+  sessionStorage.removeItem(key)
+  var base = l.pathname.replace(/\/$/, '') || l.pathname
+  l.replaceState(null, '', base + stored)
+})(location)
+</script>
+
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/ProtoWiki/pr-preview/pr-3/images/ProtoWiki.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ProtoWiki</title>
-    <script>
-      // GitHub Pages only applies 404.html at the site root. Deep links under
-      // /{repo}/pr-preview/pr-N/... must redirect into that preview base with the
-      // ?/path query form (see src/lib/githubPagesSpaRedirect.ts), then index.html
-      // + Vue Router take over. Adapted from https://github.com/rafgraph/spa-github-pages
-      ;(function (location) {
-        var search = location.search || ''
-        if (search.indexOf('?/') === 0 || search.indexOf('?%2F') === 0) {
-          return
-        }
-
-        var parts = location.pathname.split('/').filter(Boolean)
-        if (parts.length < 2) {
-          return
-        }
-
-        var pathSegmentsToKeep = 1
-        if (
-          parts[1] === 'pr-preview' &&
-          parts[2] &&
-          /^pr-\d+$/.test(parts[2])
-        ) {
-          pathSegmentsToKeep = 3
-        }
-
-        var rest = parts.slice(pathSegmentsToKeep).join('/')
-        if (!rest) {
-          return
-        }
-
-        var base =
-          '/' + parts.slice(0, pathSegmentsToKeep).join('/') + '/'
-        var redirect =
-          location.protocol +
-          '//' +
-          location.hostname +
-          (location.port ? ':' + location.port : '') +
-          base +
-          '?/' +
-          rest.replace(/&/g, '~and~') +
-          (location.search
-            ? '&' + location.search.slice(1).replace(/&/g, '~and~')
-            : '') +
-          location.hash
-
-        location.replace(redirect)
-      })(window.location)
-    </script>
+    <script type="module" crossorigin src="/ProtoWiki/pr-preview/pr-3/assets/index-DmLZXGS6.js"></script>
+    <link rel="stylesheet" crossorigin href="/ProtoWiki/pr-preview/pr-3/assets/index-BW4q3DFA.css">
   </head>
-  <body></body>
+  <body>
+    <div id="app"></div>
+  </body>
 </html>

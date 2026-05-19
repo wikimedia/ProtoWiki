@@ -1,21 +1,10 @@
-// Injected at the top of <head> on build (see vite.config.ts). Runs before the Vite bundle.
-// Pairs with public/404.html and src/lib/githubPagesSpaRedirect.ts.
+// Injected at the top of <head> on build (see vite.config.ts). Runs before the
+// Vite bundle so Vue Router sees the deep path. Pairs with gh-pages-preview-404.js.
 ;(function (l) {
-  var search = l.search
-  if (search.length > 1 && search[1] === '/') {
-    var decoded = search
-      .slice(1)
-      .split('&')
-      .map(function (s) {
-        return s.replace(/~and~/g, '&')
-      })
-      .join('?')
-    var basePath = l.pathname.endsWith('/') ? l.pathname.slice(0, -1) : l.pathname
-    l.replaceState(null, '', basePath + decoded + l.hash)
-    return
-  }
-  if (search.length > 1 && search[1] !== '/' && search.indexOf('=') === -1) {
-    var base = l.pathname.endsWith('/') ? l.pathname.slice(0, -1) : l.pathname
-    l.replaceState(null, '', base + '/' + search.slice(1) + l.hash)
-  }
-})(window.location)
+  var key = 'protowiki-gh-pages-path'
+  var stored = sessionStorage.getItem(key)
+  if (!stored) return
+  sessionStorage.removeItem(key)
+  var base = l.pathname.replace(/\/$/, '') || l.pathname
+  l.replaceState(null, '', base + stored)
+})(location)
