@@ -13,7 +13,7 @@ endpoints, and how to refresh the committed schema snapshots.
 | `ArticleCustom` | (none) | Thin **`ArticleWrapper` → `ArticleRenderer`**; **`#default`** is hand-authored markup. |
 | `SearchBar` | Action `?action=opensearch` | Debounced + `AbortController`-cancelled. Defaults to `en.wikipedia.org`; takes a `host` prop. |
 
-**No API:** **`ArticleCustom`** (or **`ArticleWrapper`** + **`ArticleRenderer`**) with a hand-filled **`#default`** slot (static or computed markup) does not call REST or Action APIs. Use that when fetch and committed snapshots are both wrong — see **`src/prototypes/article-custom/`** and [`protowiki-components` → `article.md`](../../protowiki-components/references/article.md#hand-authored-article-markup-no-fetch-no-snapshot).
+**No API:** **`ArticleCustom`** (or **`ArticleWrapper`** + **`ArticleRenderer`**) with a hand-filled **`#default`** slot (static or computed markup) does not call REST or Action APIs. Use that when fetch and committed snapshots are both wrong — see **`src/prototypes/template-article-custom/`** and [`protowiki-components` → `article.md`](../../protowiki-components/references/article.md#hand-authored-article-markup-no-fetch-no-snapshot).
 
 If you find yourself reaching for `fetch` directly to one of these
 endpoints, use the component instead — they already do the etiquette

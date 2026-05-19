@@ -326,7 +326,7 @@ onUpdated(() => {
  * Lead vs infobox order: Parsoid usually emits `table.infobox` before the lead
  * `<p>` blocks inside `section[data-mw-section-id="0"]`. Mobile Wikipedia shows
  * the lead first — flex `order` stacks lead above the infobox. Hand-authored prototypes
- * opt in with `section.hand-authored-lead` (see `article-custom` prototype).
+ * opt in with `section.hand-authored-lead` (see `template-article-custom` prototype).
  */
 .article[data-skin='mobile'] .mw-parser-output section[data-mw-section-id='0'],
 .article[data-skin='mobile'] .mw-parser-output section.hand-authored-lead {

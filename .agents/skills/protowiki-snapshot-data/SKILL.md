@@ -103,7 +103,7 @@ shows a **`Codex`** error with a repo-root-relative **`fetch_page.py`** command 
 
 ## Hand-authored markup vs snapshots
 
-Use committed HTML when you want **full Parsoid fidelity** and a **frozen** page. Use **`ArticleLive`** when you want **always-current** **`page/html`**. When you need **partial content**, **fixture-free** setup, or markup that is **easier to edit in Vue** than in a snapshot file, use **`ArticleCustom`** (or compose **`ArticleWrapper`** + **`ArticleRenderer`**) with a hand-filled slot — canonical example **`src/prototypes/article-custom/`**, documented in [`protowiki-components` → `article.md`](../protowiki-components/references/article.md#hand-authored-article-markup-no-fetch-no-snapshot).
+Use committed HTML when you want **full Parsoid fidelity** and a **frozen** page. Use **`ArticleLive`** when you want **always-current** **`page/html`**. When you need **partial content**, **fixture-free** setup, or markup that is **easier to edit in Vue** than in a snapshot file, use **`ArticleCustom`** (or compose **`ArticleWrapper`** + **`ArticleRenderer`**) with a hand-filled slot — canonical example **`src/prototypes/template-article-custom/`**, documented in [`protowiki-components` → `article.md`](../protowiki-components/references/article.md#hand-authored-article-markup-no-fetch-no-snapshot).
 
 ## See also
 

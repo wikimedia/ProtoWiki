@@ -6,7 +6,7 @@ Card with title, optional description, optional thumbnail / icon, and
 default body slot.
 
 ```vue
-<CdxCard url="/chrome-template">
+<CdxCard url="/template-chrome">
   <template #title>Example prototype</template>
   <template #description>An article view + lightweight edit demo.</template>
 </CdxCard>

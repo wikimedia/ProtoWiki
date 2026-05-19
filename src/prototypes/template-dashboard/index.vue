@@ -20,7 +20,7 @@ const HOME = '/'
 
 /** Shared across mobile + desktop for each matching module */
 const MODULE = {
-  thankTitle: 'Contribute',
+  thankTitle: 'Review changes',
   thankBody: 'No suggestions (yet)',
   impactTitle: 'Your impact',
   policiesTitle: 'Learn',
@@ -30,7 +30,7 @@ const MODULE = {
 
 <template>
   <ChromeWrapper :last-edited-notice="false">
-    <SpecialPageWrapper title="Dashboard" help>
+    <SpecialPageWrapper title="Hello, Username!" help>
       <div class="template-dashboard-shell">
         <Dashboard>
           <template #banner>

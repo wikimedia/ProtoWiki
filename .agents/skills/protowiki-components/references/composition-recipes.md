@@ -43,7 +43,7 @@ definePage({
 </template>
 ```
 
-**Reference implementation:** **`src/prototypes/article-custom/`** (Wet Leg intro + History, enwiki-shaped infobox). Infobox header colours, **`hand-authored-lead`**, and RL vs template styles are documented in [`article.md`](article.md#hand-authored-article-markup-no-fetch-no-snapshot).
+**Reference implementation:** **`src/prototypes/template-article-custom/`** (Wet Leg intro + History, enwiki-shaped infobox). Infobox header colours, **`hand-authored-lead`**, and RL vs template styles are documented in [`article.md`](article.md#hand-authored-article-markup-no-fetch-no-snapshot).
 
 ## Article page with extra markup beside the parser output
 
@@ -69,7 +69,7 @@ Place experiments as siblings before or after `<ArticleLive>` or `<ArticleSnapsh
 </ChromeWrapper>
 ```
 
-Special pages usually **omit** the mock last-edited notice (desktop block **and** mobile strip) — mirror **`src/prototypes/special-page-template/index.vue`**:
+Special pages usually **omit** the mock last-edited notice (desktop block **and** mobile strip) — mirror **`src/prototypes/template-special-page/index.vue`**:
 
 ```vue
 <ChromeWrapper :last-edited-notice="false">
@@ -179,7 +179,7 @@ responsive grid and **`DashboardModule`** for each box.
 ```
 
 - **Starter:** **`src/prototypes/template-dashboard/`** — inline placeholder modules
-- **Full example:** **`src/prototypes/dashpage/`** — co-located `HelpModule.vue`, `ImpactModule.vue`, `MentorModule.vue`, plus **`dashpage-fixtures.ts`**
+- **Full example:** **`src/prototypes/template-homepage/`** — co-located `HelpModule.vue`, `ImpactModule.vue`, `MentorModule.vue`, plus **`dashpage-fixtures.ts`**
 
 See [`dashboard.md`](dashboard.md) for slot/prop detail. **`SpecialPageWrapper` `help`** is the title-row Help link — not the same as dashpage's **`HelpModule`** card.
 

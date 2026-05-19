@@ -7,7 +7,7 @@ Compose inside **`SpecialPageWrapper`** (see [`composition-recipes.md`](composit
 Reference prototypes:
 
 - **`src/prototypes/template-dashboard/`** — minimal placeholder modules inline in `index.vue`
-- **`src/prototypes/dashpage/`** — full homepage with co-located `*Module.vue` files and **`dashpage-fixtures.ts`**
+- **`src/prototypes/template-homepage/`** — full homepage with co-located `*Module.vue` files and **`dashpage-fixtures.ts`**
 
 ## Naming note
 

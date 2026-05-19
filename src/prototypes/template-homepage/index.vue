@@ -20,7 +20,7 @@ definePage({
 
 <template>
   <ChromeWrapper :last-edited-notice="false">
-    <SpecialPageWrapper title="Dashboard" help>
+    <SpecialPageWrapper title="Hello, Username!" help>
       <div class="prototype-dashpage-shell">
         <Dashboard>
           <template #banner>

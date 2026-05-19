@@ -62,9 +62,9 @@ Once deployed:
 
 ```
 https://<org>.github.io/protowiki/                   ← gallery
-https://<org>.github.io/protowiki/chrome-template            ← chrome template prototype
-https://<org>.github.io/protowiki/chrome-template?theme=dark ← forced dark
-https://<org>.github.io/protowiki/chrome-template?skin=mobile ← forced mobile
+https://<org>.github.io/protowiki/template-chrome            ← chrome template prototype
+https://<org>.github.io/protowiki/template-chrome?theme=dark ← forced dark
+https://<org>.github.io/protowiki/template-chrome?skin=mobile ← forced mobile
 ```
 
 The `?skin=` and `?theme=` URL params are handled at boot — paste them

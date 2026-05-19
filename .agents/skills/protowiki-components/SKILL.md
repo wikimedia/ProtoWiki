@@ -1,6 +1,6 @@
 ---
 name: protowiki-components
-description: Catalog of every shipped component in src/components/ — the three single-concern layout wrappers (ChromeWrapper, SpecialPageWrapper, PlainWrapper), the chrome primitives (ChromeHeader, ChromeFooter), Article surfaces (`ArticleWrapper` + `ArticleRenderer`, ArticleLive, ArticleSnapshot, ArticleCustom, ArticleHeader), dashboard layout (`Dashboard`, `DashboardModule`), and SearchBar — including hand-authored article HTML in `ArticleRenderer`'s default slot (see `src/prototypes/article-custom/`) and newcomer homepage templates (`template-dashboard`, `dashpage`). Use when picking a wrapper, composing a page, looking up props/slots/events for any ProtoWiki component, or asking "what components does ProtoWiki ship?".
+description: Catalog of every shipped component in src/components/ — the three single-concern layout wrappers (ChromeWrapper, SpecialPageWrapper, PlainWrapper), the chrome primitives (ChromeHeader, ChromeFooter), Article surfaces (`ArticleWrapper` + `ArticleRenderer`, ArticleLive, ArticleSnapshot, ArticleCustom, ArticleHeader), dashboard layout (`Dashboard`, `DashboardModule`), and SearchBar — including hand-authored article HTML in `ArticleRenderer`'s default slot (see `src/prototypes/template-article-custom/`) and newcomer homepage templates (`template-dashboard`, `template-homepage`). Use when picking a wrapper, composing a page, looking up props/slots/events for any ProtoWiki component, or asking "what components does ProtoWiki ship?".
 license: MIT
 ---
 
@@ -70,7 +70,7 @@ page, you nest:
 </ChromeWrapper>
 ```
 
-Two lines, top-down: chrome → article surface. **`ArticleLive`** and **`ArticleSnapshot`** each compose **`ArticleWrapper`** with an **`ArticleRenderer`** in its default slot (plus fetch or snapshot UI). **`ArticleCustom`** is the same **`ArticleRenderer`** slot without fetching — use for hand-authored markup (**`src/prototypes/article-custom/`**).
+Two lines, top-down: chrome → article surface. **`ArticleLive`** and **`ArticleSnapshot`** each compose **`ArticleWrapper`** with an **`ArticleRenderer`** in its default slot (plus fetch or snapshot UI). **`ArticleCustom`** is the same **`ArticleRenderer`** slot without fetching — use for hand-authored markup (**`src/prototypes/template-article-custom/`**).
 
 ### 2. Shared `skin` / `theme` on every themable component; `lang` / `dir` on layout shells + article surfaces
 

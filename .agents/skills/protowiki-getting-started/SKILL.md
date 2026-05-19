@@ -49,7 +49,7 @@ protowiki/
 │   ├── App.vue             ← thin shell (RouterView)
 │   ├── prototypes/         ← prototypes (each folder = one route)
 │   │   ├── index.vue       ← home / gallery (auto-lists prototypes)
-│   │   ├── chrome-template/index.vue
+│   │   ├── template-chrome/index.vue
 │   │   ├── template-dashboard/index.vue
 │   │   └── dashpage/index.vue
 │   ├── components/         ← shipped components (wrappers, primitives, article, dashboard)

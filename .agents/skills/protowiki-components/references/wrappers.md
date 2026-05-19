@@ -139,7 +139,7 @@ Regions appear when **`actions`** is true **or** the matching **slot** is suppli
 <SpecialPageWrapper title="My special page" help />
 ```
 
-Mirror FakeMediaWiki `SpecialView`: title row flex + optional Help. See **`src/prototypes/special-page-template/index.vue`**.
+Mirror FakeMediaWiki `SpecialView`: title row flex + optional Help. See **`src/prototypes/template-special-page/index.vue`**.
 
 ## PlainWrapper
 
@@ -192,7 +192,7 @@ The current set covers:
 - chrome (`ChromeWrapper`)
 - article reader surface (`ArticleLive` / `ArticleSnapshot` / `ArticleCustom`; see [`article.md`](article.md))
 - special-page shell (`SpecialPageWrapper`)
-- newcomer homepage grid (`Dashboard` + `DashboardModule`; see [`dashboard.md`](dashboard.md) and **`src/prototypes/dashpage/`**)
+- newcomer homepage grid (`Dashboard` + `DashboardModule`; see [`dashboard.md`](dashboard.md) and **`src/prototypes/template-homepage/`**)
 - plain centred column (`PlainWrapper`)
 
 Everything else (mobile preview, A/B comparison, dark snippet on a light

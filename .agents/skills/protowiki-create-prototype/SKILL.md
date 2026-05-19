@@ -46,9 +46,11 @@ no other file needs to change.
 
 ## Conventions
 
-- **One folder per prototype.** `src/prototypes/<kebab-case-name>/index.vue`. The
-  folder name is the URL path. Keep names short (`/article`, `/edit-check`,
-  `/related-strip`) and unique.
+- **Folder naming by kind.** The folder name is the URL path (`src/prototypes/<name>/index.vue`):
+  - **Templates** (starters to copy): `template-<name>/` — e.g. `template-chrome`, `template-article-live`. Set `meta.title` to `Template: …` so the home gallery groups them below regular prototypes.
+  - **Examples** (worked demos): `example-<name>/` — e.g. `example-event-worklist`. Set `meta.title` to `Example: …`.
+  - **Feature prototypes** (real work in progress): unprefixed kebab-case — e.g. `edit-check`, `related-strip`. No `Template:` / `Example:` in the title.
+- **One folder per prototype.** Keep names short and unique.
 - **Always set `definePage({ meta: { title, description } })`.** It powers
   the gallery card. Without it, the gallery falls back to a humanized path.
 - **Co-locate prototype-specific assets** inside the folder
@@ -69,9 +71,9 @@ no other file needs to change.
 | --- | --- |
 | Article-style page with chrome (live) | `<ChromeWrapper><ArticleLive article="…"/></ChromeWrapper>` |
 | Article-style page with committed snapshot fixture | `<ChromeWrapper><ArticleSnapshot article="…"/></ChromeWrapper>` |
-| Article-style page with **hand-written** body HTML (no REST, no snapshot file) | `<ChromeWrapper><ArticleCustom>…</ArticleCustom></ChromeWrapper>` — canonical: **`src/prototypes/article-custom/`**; see [`protowiki-components` → `article.md`](../protowiki-components/references/article.md) ( **`hand-authored-lead`**, infobox classes) |
+| Article-style page with **hand-written** body HTML (no REST, no snapshot file) | `<ChromeWrapper><ArticleCustom>…</ArticleCustom></ChromeWrapper>` — canonical: **`src/prototypes/template-article-custom/`**; see [`protowiki-components` → `article.md`](../protowiki-components/references/article.md) ( **`hand-authored-lead`**, infobox classes) |
 | Special-page-style page | `<ChromeWrapper><SpecialPageWrapper title="…">…</SpecialPageWrapper></ChromeWrapper>` |
-| Newcomer homepage / dashboard | `<ChromeWrapper :last-edited-notice="false"><SpecialPageWrapper title="Dashboard" help><Dashboard>…</Dashboard></SpecialPageWrapper></ChromeWrapper>` — starter: **`template-dashboard/`**; full modules: **`dashpage/`** |
+| Newcomer homepage / dashboard | `<ChromeWrapper :last-edited-notice="false"><SpecialPageWrapper title="Dashboard" help><Dashboard>…</Dashboard></SpecialPageWrapper></ChromeWrapper>` — starter: **`template-dashboard/`**; full modules: **`template-homepage/`** |
 | Bare canvas with chrome | `<ChromeWrapper>…</ChromeWrapper>` |
 | A/B preview, two themes side by side | Two `<ChromeWrapper>`s, one `theme="light"`, one `theme="dark"` |
 | Mobile preview embedded in a desktop page | `<ChromeWrapper skin="mobile" style="max-width: 360px">…</ChromeWrapper>` |
