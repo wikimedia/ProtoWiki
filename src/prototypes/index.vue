@@ -88,8 +88,7 @@ const showBucketDivider = computed(
 </script>
 
 <template>
-  <!--  -->
-  <PlainWrapper heading="ProtoWiki">
+  <PlainWrapper heading="ProtoWiki preview test (it works!)">
     <div class="prototype-index">
       <div class="prototype-index__list">
         <div v-for="entry in regularPrototypes" :key="entry.path" class="prototype-index__card">
