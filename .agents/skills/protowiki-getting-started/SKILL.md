@@ -82,9 +82,10 @@ read and that AI agents auto-discover.
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
-npm run build    # produces dist/ (with index.html → 404.html SPA fallback)
+npm run dev      # http://localhost:5173 — use this for prototyping
 ```
 
 That's it — there's no registration step for new prototypes. Drop a folder
-under `src/prototypes/` and the route is live.
+under `src/prototypes/` and the route is live. CI runs `npm run build` when
+you push or open a PR; you only need a local build to debug GitHub Pages
+issues — see [`protowiki-deploy`](../protowiki-deploy/SKILL.md).

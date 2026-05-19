@@ -20,8 +20,9 @@ just orients you.
   and `assets/`. There is no parallel `resources/` folder, no
   `.cursor/rules/` folder, and no `CLAUDE.md`.
 - **`public/`** — static assets served as-is.
-- **`.github/workflows/deploy.yml`** — GitHub Actions deploys `dist/` to
-  GitHub Pages on push to `main`.
+- **`.github/workflows/`** — `deploy.yml` publishes production to the
+  `gh-pages` branch on push to `main`; `preview.yml` deploys PR previews
+  under `pr-preview/pr-<n>/` on the same site.
 
 ## How to use the skills
 
@@ -67,7 +68,7 @@ trailing **Inside ProtoWiki** section.
 | [`protowiki-components`](.agents/skills/protowiki-components/SKILL.md)             | Shipped Vue components: wrappers, chrome, article surfaces, search      |
 | [`protowiki-skins`](.agents/skills/protowiki-skins/SKILL.md)                       | Vector 2022 (desktop) vs Minerva (mobile); per-component skin overrides |
 | [`protowiki-theme`](.agents/skills/protowiki-theme/SKILL.md)                       | Light / dark theming; per-component theme overrides                     |
-| [`protowiki-deploy`](.agents/skills/protowiki-deploy/SKILL.md)                     | `npm run build`, GitHub Pages base path, SPA 404 redirect, CI workflow  |
+| [`protowiki-deploy`](.agents/skills/protowiki-deploy/SKILL.md)                     | GitHub Pages deploy, PR previews, base path, fork setup, SPA 404        |
 
 ### Codex (design system)
 

@@ -98,11 +98,9 @@ for more recipes.
 
 When the design review is local: `npm run dev`, share the URL.
 
-When you want a stable URL on GitHub Pages: push to `main`. The GitHub Action
-in `.github/workflows/deploy.yml` runs `npm run build` and deploys `dist/`.
-The base path is `/protowiki/` by default; the route map is unchanged so
-`/my-feature` becomes `https://<org>.github.io/protowiki/my-feature`. See
-[`protowiki-deploy`](../protowiki-deploy/SKILL.md).
+When you want a stable URL on GitHub Pages: push to `main` (CI builds and
+deploys). Open a PR in your fork for an automatic preview URL on the PR.
+See [`protowiki-deploy`](../protowiki-deploy/SKILL.md).
 
 ## When to break the conventions
 

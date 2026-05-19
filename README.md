@@ -54,6 +54,16 @@ npm run dev
 
 Then open [localhost:5173](https://localhost:5173) in your browser.
 
+You do not need `npm run build` for local prototyping — CI builds when you push.
+
+### Deploying and PR previews
+
+Production: [wikimedia.github.io/ProtoWiki](https://wikimedia.github.io/ProtoWiki) (push to `main`).
+
+**PR previews** deploy to GitHub Pages automatically when you open a pull request **in your fork** (e.g. `feature` → `main` on `youruser/ProtoWiki`). One-time on the fork: enable **Pages → Deploy from branch → `gh-pages`**, and **Actions → Read and write** permissions. The preview URL is posted as a comment on the PR.
+
+Full steps, fork setup, and troubleshooting: [`.agents/skills/protowiki-deploy/SKILL.md`](.agents/skills/protowiki-deploy/SKILL.md).
+
 ### Creating a prototype
 
 1. Make a new folder in the `prototypes` folder.
