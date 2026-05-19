@@ -35,31 +35,31 @@ that grounds product ideas in real signals.
 
 ## Quick map of signals
 
-| Signal                                             | Surface                                                                        | Skill reference       |
-| -------------------------------------------------- | ------------------------------------------------------------------------------ | --------------------- |
-| Article text / HTML                                | REST `/page/html`                                                              | `wiki-apis`           |
-| Lead summary + thumbnail                           | REST `/page/summary`                                                           | `wiki-apis`           |
-| Pageviews (article / aggregate / top)              | Metrics REST                                                                   | `analytics.md`        |
-| Watcher count                                      | Action `query&prop=info&inprop=watchers`                                       | `inference.md`        |
-| Recent contributors                                | Action `query&prop=revisions&rvlimit=N`                                        | `inference.md`        |
-| Edit frequency                                     | Action `query&prop=revisions` (count)                                          | `inference.md`        |
-| Page age                                           | Action `query&prop=info` (`firstrevid`)                                        | `inference.md`        |
-| Stub / start / B / GA / FA                         | Categories + page-assessment data                                              | `inference.md`        |
-| Infobox shape                                      | Parse the rendered HTML — `.infobox`                                           | `inference.md`        |
-| Outgoing links                                     | Action `query&prop=links`                                                      | `links.md`            |
-| Incoming links (backlinks)                         | Action `query&list=backlinks`                                                  | `links.md`            |
-| Redirects to a page                                | Action `query&list=backlinks&blfilterredir=redirects`                          | `links.md`            |
-| Related articles                                   | REST `/page/related`                                                           | `links.md`            |
-| Categories of a page                               | Action `query&prop=categories`                                                 | `links.md`            |
-| Pages in a category                                | Action `query&list=categorymembers`                                            | `links.md`            |
-| Articles from category (related titles)            | Toolforge `POST https://microtask-generator.toolforge.org/related-articles`    | `inference.md`        |
-| Category name prefix suggestions                   | Toolforge `GET https://microtask-generator.toolforge.org/category-suggestions` | `inference.md`        |
-| Article quality + suggested edits (batched titles) | Toolforge `POST https://microtask-generator.toolforge.org/quality-check`       | `inference.md`        |
-| Today's Featured Article                           | REST `/feed/featured/{date}`                                                   | `curation.md`         |
-| Picture of the Day                                 | REST `/feed/featured/{date}`                                                   | `curation.md`         |
-| On This Day                                        | REST `/feed/onthisday/{type}/{mm}/{dd}`                                        | `curation.md`         |
-| Most-read articles                                 | REST `/feed/featured/{date}`                                                   | `curation.md`         |
-| Page attribution (license, brand marks)            | REST `/attribution/v0-beta/pages/{title}/signals`                              | `attribution.md`      |
+| Signal                                             | Surface                                                                        | Skill reference  |
+| -------------------------------------------------- | ------------------------------------------------------------------------------ | ---------------- |
+| Article text / HTML                                | REST `/page/html`                                                              | `wiki-apis`      |
+| Lead summary + thumbnail                           | REST `/page/summary`                                                           | `wiki-apis`      |
+| Pageviews (article / aggregate / top)              | Metrics REST                                                                   | `analytics.md`   |
+| Watcher count                                      | Action `query&prop=info&inprop=watchers`                                       | `inference.md`   |
+| Recent contributors                                | Action `query&prop=revisions&rvlimit=N`                                        | `inference.md`   |
+| Edit frequency                                     | Action `query&prop=revisions` (count)                                          | `inference.md`   |
+| Page age                                           | Action `query&prop=info` (`firstrevid`)                                        | `inference.md`   |
+| Stub / start / B / GA / FA                         | Categories + page-assessment data                                              | `inference.md`   |
+| Infobox shape                                      | Parse the rendered HTML — `.infobox`                                           | `inference.md`   |
+| Outgoing links                                     | Action `query&prop=links`                                                      | `links.md`       |
+| Incoming links (backlinks)                         | Action `query&list=backlinks`                                                  | `links.md`       |
+| Redirects to a page                                | Action `query&list=backlinks&blfilterredir=redirects`                          | `links.md`       |
+| Related articles                                   | REST `/page/related`                                                           | `links.md`       |
+| Categories of a page                               | Action `query&prop=categories`                                                 | `links.md`       |
+| Pages in a category                                | Action `query&list=categorymembers`                                            | `links.md`       |
+| Articles from category (related titles)            | Toolforge `POST https://microtask-generator.toolforge.org/related-articles`    | `inference.md`   |
+| Category name prefix suggestions                   | Toolforge `GET https://microtask-generator.toolforge.org/category-suggestions` | `inference.md`   |
+| Article quality + suggested edits (batched titles) | Toolforge `POST https://microtask-generator.toolforge.org/quality-check`       | `inference.md`   |
+| Today's Featured Article                           | REST `/feed/featured/{date}`                                                   | `curation.md`    |
+| Picture of the Day                                 | REST `/feed/featured/{date}`                                                   | `curation.md`    |
+| On This Day                                        | REST `/feed/onthisday/{type}/{mm}/{dd}`                                        | `curation.md`    |
+| Most-read articles                                 | REST `/feed/featured/{date}`                                                   | `curation.md`    |
+| Page attribution (license, brand marks)            | REST `/attribution/v0-beta/pages/{title}/signals`                              | `attribution.md` |
 | Tone / quality predictions                         | Lift Wing `edit-check:predict`                                                 | `edit-suggestions.md` |
 | Mocked Edit Check suggestion stream                | Static per-page JSON fixtures                                                  | `edit-suggestions.md` |
 

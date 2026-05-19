@@ -20,15 +20,15 @@ class; ProtoWiki defines its look once in `src/styles/global.css`.
 Components **emit** that class from their templates — you pass a **prop** or
 **named slot** instead of hand-writing `<h1>`:
 
-| Surface              | Prop                                                                                                                                 | Slot                                            | Notes                                                                                                                        |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `PlainWrapper`       | `heading?`                                                                                                                           | `#heading`                                      | Omit both when there is no primary title                                                                                     |
-| `ArticleWrapper`     | `title?`, **`header?`**, **`languagesCount?`**, **`lang?`, `dir?`**, … chrome only                                                   | **default**                                     | Always **`ArticleHeader`**; **`ArticleRenderer`** (or bespoke markup) in **default**.                                        |
-| `ArticleRenderer`    | **`lang?`/`dir?`/`skin?`/`theme?`**                                                                                                  | **default**                                     | **`.article-content`** + **`.mw-parser-output`** + keyed slot root; **`ArticleLive`** / **`ArticleSnapshot`** gate mounting. |
-| `ArticleLive`        | **`article`** (REST title) + chrome keys (same **`ArticleWrapper`**) + **`host`**                                                    | **default** → **`ArticleRenderer`**             | Fetches **`page/html`**; progress/errors ship in **default** before **`ArticleRenderer`**.                                   |
-| `ArticleSnapshot`    | **`article`** + chrome (**no **`host\*\*)                                                                                            | **default** → **`ArticleRenderer`**             | Snapshot HTML; **`Cdx`** load/error UI **default** before **`ArticleRenderer`**.                                             |
-| `ArticleCustom`      | **`title?`**, **`header?`**, **`languagesCount?`**, **`lang`**, **`dir`**, **`skin`**, **`theme`** (no **`article`**, no **`host`**) | **default** → **`ArticleRenderer`**             | Hand-authored parser body only.                                                                                              |
-| `SpecialPageWrapper` | `title?` (`null` hides default **`h1`** unless `#title`); `#header` replaces cluster                                                 | `title` / `#title` (inner), `#header` (cluster) | Scoped special-page title typography (not **`mw-first-heading`**)                                                            |
+| Surface | Prop | Slot | Notes |
+| --- | --- | --- | --- |
+| `PlainWrapper` | `heading?` | `#heading` | Omit both when there is no primary title |
+| `ArticleWrapper` | `title?`, **`header?`**, **`languagesCount?`**, **`lang?`, `dir?`**, … chrome only | **default** | Always **`ArticleHeader`**; **`ArticleRenderer`** (or bespoke markup) in **default**. |
+| `ArticleRenderer` | **`lang?`/`dir?`/`skin?`/`theme?`** | **default** | **`.article-content`** + **`.mw-parser-output`** + keyed slot root; **`ArticleLive`** / **`ArticleSnapshot`** gate mounting. |
+| `ArticleLive` | **`article`** (REST title) + chrome keys (same **`ArticleWrapper`**) + **`host`** | **default** → **`ArticleRenderer`** | Fetches **`page/html`**; progress/errors ship in **default** before **`ArticleRenderer`**. |
+| `ArticleSnapshot` | **`article`** + chrome (**no **`host**) | **default** → **`ArticleRenderer`** | Snapshot HTML; **`Cdx`** load/error UI **default** before **`ArticleRenderer`**. |
+| `ArticleCustom` | **`title?`**, **`header?`**, **`languagesCount?`**, **`lang`**, **`dir`**, **`skin`**, **`theme`** (no **`article`**, no **`host`**) | **default** → **`ArticleRenderer`** | Hand-authored parser body only. |
+| `SpecialPageWrapper` | `title?` (`null` hides default **`h1`** unless `#title`); `#header` replaces cluster | `title` / `#title` (inner), `#header` (cluster) | Scoped special-page title typography (not **`mw-first-heading`**) |
 
 `ChromeWrapper` does **not** render a page title — compose with
 the rows above.
@@ -44,18 +44,18 @@ footer mock last-edited chrome, username, and header logo / nav-tool configurati
 
 ### Props
 
-| Prop                | Type                    | Default          | Notes                                                                                                                                                                                                               |
-| ------------------- | ----------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lang`              | `string`                | `undefined`      | BCP-47 language tag; sets `lang` on the wrapper root and is inherited by descendants via the DOM                                                                                                                    |
-| `dir`               | `'ltr' \| 'rtl'`        | `undefined`      | Writing direction; sets `dir` on the wrapper root. Pass explicitly — we don't infer it from `lang`                                                                                                                  |
-| `skin`              | `'desktop' \| 'mobile'` | `undefined`      | Local skin override; forwarded to **`ChromeHeader`** / **`ChromeFooter`**                                                                                                                                           |
-| `theme`             | `'light' \| 'dark'`     | `undefined`      | Local theme override; forwarded to **`ChromeHeader`** / **`ChromeFooter`**                                                                                                                                          |
-| `lastEditedNotice`  | `boolean`               | `true`           | Forwarded to **`ChromeFooter`**: mock **last edited** notice — **desktop:** Vector-style timestamp + CC licence lines; **mobile:** Minerva strip above the grey well. Set **`false`** for special-page–style shells |
-| `username`          | `string`                | `'Username'`     | Forwarded to **`ChromeHeader`** / **`ChromeFooter`**: desktop chrome user link + mobile “last edited by …”. Trimmed; **`''`** hides the header link (footer still falls back to **`Username`** for that line)       |
-| `wordmarkSrc`       | `string`                | `undefined`      | Forwarded to **`ChromeHeader`** — desktop default wordmark **`#logo`** image URL                                                                                                                                    |
-| `taglineSrc`        | `string`                | `undefined`      | Forwarded to **`ChromeHeader`** — desktop tagline image under the wordmark                                                                                                                                          |
-| `mobileWordmarkSrc` | `string`                | `undefined`      | Forwarded to **`ChromeHeader`** — Minerva bar wordmark; defaults to **`wordmarkSrc`** then EN constant                                                                                                              |
-| `navTools`          | `ChromeNavTool[]`       | full desktop set | Forwarded to **`ChromeHeader`** — which mocked Vector tool icons appear (**desktop**); **`#nav`** still replaces the cluster                                                                                        |
+| Prop | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `lang` | `string` | `undefined` | BCP-47 language tag; sets `lang` on the wrapper root and is inherited by descendants via the DOM |
+| `dir` | `'ltr' \| 'rtl'` | `undefined` | Writing direction; sets `dir` on the wrapper root. Pass explicitly — we don't infer it from `lang` |
+| `skin` | `'desktop' \| 'mobile'` | `undefined` | Local skin override; forwarded to **`ChromeHeader`** / **`ChromeFooter`** |
+| `theme` | `'light' \| 'dark'` | `undefined` | Local theme override; forwarded to **`ChromeHeader`** / **`ChromeFooter`** |
+| `lastEditedNotice` | `boolean` | `true` | Forwarded to **`ChromeFooter`**: mock **last edited** notice — **desktop:** Vector-style timestamp + CC licence lines; **mobile:** Minerva strip above the grey well. Set **`false`** for special-page–style shells |
+| `username` | `string` | `'Username'` | Forwarded to **`ChromeHeader`** / **`ChromeFooter`**: desktop chrome user link + mobile “last edited by …”. Trimmed; **`''`** hides the header link (footer still falls back to **`Username`** for that line) |
+| `wordmarkSrc` | `string` | `undefined` | Forwarded to **`ChromeHeader`** — desktop default wordmark **`#logo`** image URL |
+| `taglineSrc` | `string` | `undefined` | Forwarded to **`ChromeHeader`** — desktop tagline image under the wordmark |
+| `mobileWordmarkSrc` | `string` | `undefined` | Forwarded to **`ChromeHeader`** — Minerva bar wordmark; defaults to **`wordmarkSrc`** then EN constant |
+| `navTools` | `ChromeNavTool[]` | full desktop set | Forwarded to **`ChromeHeader`** — which mocked Vector tool icons appear (**desktop**); **`#nav`** still replaces the cluster |
 
 `ChromeNavTool` literals: `'appearance' \| 'notifications' \| 'notices' \| 'watchlist' \| 'user'` (see `src/lib/chromeHeader.ts`).
 
@@ -65,11 +65,11 @@ own `lang` prop because the value is inherited via the DOM. **`ArticleLive`**, *
 
 ### Slots
 
-| Slot      | Default content                                                             | Use for                                                                              |
-| --------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| default   | (your prototype)                                                            | Page body between header and footer                                                  |
-| `#header` | `<ChromeHeader>` with props above                                           | Replace the entire header (custom header does not receive automatic prop forwarding) |
-| `#footer` | `<ChromeFooter>` (`lastEditedNotice` + `username` from **`ChromeWrapper`**) | Replace the entire footer                                                            |
+| Slot | Default content | Use for |
+| --- | --- | --- |
+| default | (your prototype) | Page body between header and footer |
+| `#header` | `<ChromeHeader>` with props above | Replace the entire header (custom header does not receive automatic prop forwarding) |
+| `#footer` | `<ChromeFooter>` (`lastEditedNotice` + `username` from **`ChromeWrapper`**) | Replace the entire footer |
 
 The chrome user link and search are **built-ins** on **`ChromeHeader`**; tweak them via **`ChromeWrapper`** props unless you replace **`#header`**.
 
@@ -102,25 +102,25 @@ Regions appear when **`actions`** is true **or** the matching **slot** is suppli
 
 ### Props
 
-| Prop      | Type                    | Default     | Notes                                                                                                                                                                                                                |
-| --------- | ----------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `title`   | `string \| null`        | `undefined` | Default inner text of the special-page **`h1`**; **`#title`** overrides inner markup. **`null`** suppresses that default **`h1`** unless **`#title`** is supplied, or use **`#header`** for the whole title cluster. |
-| `help`    | `boolean`               | `false`     | **`true`** shows default **"Help"** link to Codex docs (**desktop**). **`#help`** overrides inner markup. URL is fixed in the component.                                                                             |
-| `actions` | `boolean`               | `false`     | Reserve the actions aside (**empty** when no **`#actions`**)                                                                                                                                                         |
-| `lang`    | `string`                | `undefined` | BCP-47 language tag; sets `lang` on the root                                                                                                                                                                         |
-| `dir`     | `'ltr' \| 'rtl'`        | `undefined` | Pass `'rtl'` explicitly for RTL previews                                                                                                                                                                             |
-| `skin`    | `'desktop' \| 'mobile'` | `undefined` |                                                                                                                                                                                                                      |
-| `theme`   | `'light' \| 'dark'`     | `undefined` |                                                                                                                                                                                                                      |
+| Prop | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `title` | `string \| null` | `undefined` | Default inner text of the special-page **`h1`**; **`#title`** overrides inner markup. **`null`** suppresses that default **`h1`** unless **`#title`** is supplied, or use **`#header`** for the whole title cluster. |
+| `help` | `boolean` | `false` | **`true`** shows default **"Help"** link to Codex docs (**desktop**). **`#help`** overrides inner markup. URL is fixed in the component. |
+| `actions` | `boolean` | `false` | Reserve the actions aside (**empty** when no **`#actions`**) |
+| `lang` | `string` | `undefined` | BCP-47 language tag; sets `lang` on the root |
+| `dir` | `'ltr' \| 'rtl'` | `undefined` | Pass `'rtl'` explicitly for RTL previews |
+| `skin` | `'desktop' \| 'mobile'` | `undefined` | |
+| `theme` | `'light' \| 'dark'` | `undefined` | |
 
 ### Slots
 
-| Slot       | Use for                                                                                                                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| default    | Page body                                                                                                                                                                                        |
-| `#header`  | Replaces the **title cluster** on the left (default: scoped **`h1`** + **`#title`** / **`title`** inner). Unrelated to **`ChromeWrapper`'s **`#header`** slot (whole site **`ChromeHeader`\*\*). |
-| `#title`   | Replaces inner content of the default **`h1`** (not used when **`#header`** replaces the cluster).                                                                                               |
-| `#help`    | Right side of the title row (**overrides** default Help link; still **desktop**-only in the default skin)                                                                                        |
-| `#actions` | Secondary toolbar beside `#help`                                                                                                                                                                 |
+| Slot | Use for |
+| --- | --- |
+| default | Page body |
+| `#header` | Replaces the **title cluster** on the left (default: scoped **`h1`** + **`#title`** / **`title`** inner). Unrelated to **`ChromeWrapper`'s **`#header`** slot (whole site **`ChromeHeader`**). |
+| `#title` | Replaces inner content of the default **`h1`** (not used when **`#header`** replaces the cluster). |
+| `#help` | Right side of the title row (**overrides** default Help link; still **desktop**-only in the default skin) |
+| `#actions` | Secondary toolbar beside `#help` |
 
 ### Example
 
@@ -151,18 +151,18 @@ The **home gallery** (`src/prototypes/index.vue`) uses `PlainWrapper`.
 
 ### Props
 
-| Prop      | Type             | Default     | Notes                                                                |
-| --------- | ---------------- | ----------- | -------------------------------------------------------------------- |
-| `heading` | `string`         | `undefined` | Plain-text primary heading — renders `<h1 class="mw-first-heading">` |
-| `lang`    | `string`         | `undefined` | Sets `lang` on the root                                              |
-| `dir`     | `'ltr' \| 'rtl'` | `undefined` | Sets `dir` on the root                                               |
+| Prop | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `heading` | `string` | `undefined` | Plain-text primary heading — renders `<h1 class="mw-first-heading">` |
+| `lang` | `string` | `undefined` | Sets `lang` on the root |
+| `dir` | `'ltr' \| 'rtl'` | `undefined` | Sets `dir` on the root |
 
 ### Slots
 
-| Slot       | Use for                                                                 |
-| ---------- | ----------------------------------------------------------------------- |
+| Slot | Use for |
+| --- | --- |
 | `#heading` | Replaces inner content of the `<h1>` (use with or instead of `heading`) |
-| default    | Body below the heading                                                  |
+| default | Body below the heading |
 
 ### Example
 
@@ -192,6 +192,7 @@ The current set covers:
 - chrome (`ChromeWrapper`)
 - article reader surface (`ArticleLive` / `ArticleSnapshot` / `ArticleCustom`; see [`article.md`](article.md))
 - special-page shell (`SpecialPageWrapper`)
+- newcomer homepage grid (`Dashboard` + `DashboardModule`; see [`dashboard.md`](dashboard.md) and **`src/prototypes/dashpage/`**)
 - plain centred column (`PlainWrapper`)
 
 Everything else (mobile preview, A/B comparison, dark snippet on a light

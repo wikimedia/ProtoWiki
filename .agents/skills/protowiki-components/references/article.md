@@ -30,17 +30,17 @@ When any of these roots sit inside **`ChromeWrapper`**, they **inherit** effecti
 
 ## `ArticleWrapper`
 
-| Concern      | Notes                                                                                                |
-| ------------ | ---------------------------------------------------------------------------------------------------- |
+| Concern | Notes |
+| --- | --- |
 | Chrome props | **`title?`**, **`header`**, **`languagesCount?`**, **`lang`**, **`dir`**, **`skin`**, **`theme`**, … |
-| Slots        | **default** (**main reader column** — **`ArticleRenderer`** or bespoke markup)                       |
+| Slots | **default** (**main reader column** — **`ArticleRenderer`** or bespoke markup) |
 
 ## `ArticleRenderer`
 
-| Concern | Notes                                                                                                                                                                                   |
-| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Props   | **`lang`/`dir`/`skin`/`theme`** (no parser string prop — use **`#default`**)                                                                                                            |
-| Slots   | **`#default`** — contents appear inside **`.mw-parser-output`**; omit **`ArticleRenderer`** when there is nothing to render ( **`ArticleLive`** / **`ArticleSnapshot`** gate mounting). |
+| Concern | Notes |
+| --- | --- |
+| Props | **`lang`/`dir`/`skin`/`theme`** (no parser string prop — use **`#default`**) |
+| Slots | **`#default`** — contents appear inside **`.mw-parser-output`**; omit **`ArticleRenderer`** when there is nothing to render ( **`ArticleLive`** / **`ArticleSnapshot`** gate mounting). |
 
 Companion CSS (**`mobile-wiki-overrides.css`**, **`ArticleRenderer.vue`** unscoped block: wide tables, mobile infobox / lead order, hatnotes) keys off **`.article[data-skin] .mw-parser-output`**, so **`ArticleWrapper`** + bare **`div.mw-parser-output`** behaves like **`ArticleRenderer`** for those rules (the **`.article-content`** wrapper still adds its own padding / **`min-width: 0`**). Prefer **`ArticleRenderer`** for **`ArticleLive`**, **`ArticleSnapshot`**, **`page/html`**, snapshots, and mobile **`innerHTML`** **`section > h2`** affordances. Fetched **`page/html`** emits **`section[data-mw-section-id=&quot;0&quot;]`** for lead/infobox order on mobile — hand-authored prototypes use **`class=&quot;hand-authored-lead&quot;`** on the wrapping **`section`** instead (**`src/prototypes/article-custom/`**).
 
@@ -78,8 +78,8 @@ Same chrome / i18n / theme surface as **`ArticleWrapper`** — **`title?`**, **`
 
 ### Slots
 
-| Slot    | Notes                                                               |
-| ------- | ------------------------------------------------------------------- |
+| Slot | Notes |
+| --- | --- |
 | default | Parser body inside **`ArticleRenderer`** (**`.mw-parser-output`**). |
 
 ## `ArticleLive`
@@ -100,8 +100,8 @@ Live fetch via **`page/html`** (in-memory cache + **`localStorage`**). Single im
 
 ### Slots
 
-| Slot    | Notes                                                                                                                                                                         |
-| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Slot | Notes |
+| --- | --- |
 | default | Forwarded inside **`ArticleRenderer`** when passed — replaces the **`v-html`** wrapper **`ArticleLive`** / **`ArticleSnapshot`** emit for **`page/html`** / snapshot bundles. |
 
 ## `ArticleSnapshot`
@@ -114,9 +114,10 @@ Loads **`public/snapshots/{slug}.html`** where **`slug`** comes from **`articleS
 <ArticleSnapshot article="Wet Leg" />
 ```
 
+
 ### Props (`ArticleSnapshot`)
 
-**`article`** (**required**) — **`articleSnapshotSlug(article)`** → **`public/snapshots/&lt;slug&gt;.html`**, and the same string seeds **`ArticleWrapper`** **`title`**. Same **`ArticleWrapper`** chrome passthroughs as **`ArticleLive`** except **`host`** and **`ArticleLive`'s **`header`\*\* (no title override prop on snapshots).
+**`article`** (**required**) — **`articleSnapshotSlug(article)`** → **`public/snapshots/&lt;slug&gt;.html`**, and the same string seeds **`ArticleWrapper`** **`title`**. Same **`ArticleWrapper`** chrome passthroughs as **`ArticleLive`** except **`host`** and **`ArticleLive`'s **`header`** (no title override prop on snapshots).
 
 ### Slots
 
@@ -126,11 +127,11 @@ Same as **`ArticleLive`**.
 
 Vector-like **page** chrome above the parser output (not the site **`ChromeHeader`**).
 
-| Prop                  | Notes                                                                                                                           |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| **`title`**           | Required display string (usually from **`ArticleWrapper`**).                                                                    |
+| Prop | Notes |
+| --- | --- |
+| **`title`** | Required display string (usually from **`ArticleWrapper`**). |
 | **`languagesCount?`** | Number for the interlanguage control label (default **18** → “18 languages”). Language rows in the popover are fixed mock data. |
-| **`skin?`**           | Desktop vs mobile layout.                                                                                                       |
+| **`skin?`** | Desktop vs mobile layout. |
 
 Fixed copy: desktop tagline **“From Wikipedia, the free encyclopedia”**; Article / Read tabs are visually active (not prop-driven). **`#title`** slot replaces the **`h1`** inner markup. Emits language pick / settings and tab/tool clicks.
 

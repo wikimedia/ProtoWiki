@@ -6,12 +6,12 @@ endpoints, and how to refresh the committed schema snapshots.
 
 ## Components that already hit the API
 
-| Component         | API                                                      | Notes                                                                                                                                                                                                                                                                                          |
-| ----------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ArticleLive`     | REST `/page/html/{title}`                                | **`ArticleWrapper`** + **`ArticleRenderer`**; **`ArticleRenderer`** mounts when fetch supplies HTML or **`#default`** is passed (**`null`** fetch state omits **`ArticleRenderer`**). **`lang`** / **`dir`** passthrough unchanged. Defaults **`en.wikipedia.org`**; **`host`** switches wiki. |
-| `ArticleSnapshot` | (none — static **`public/snapshots/&lt;slug&gt;.html`**) | No REST body fetch; slug from **`articleSnapshotSlug(article)`**.                                                                                                                                                                                                                              |
-| `ArticleCustom`   | (none)                                                   | Thin **`ArticleWrapper` → `ArticleRenderer`**; **`#default`** is hand-authored markup.                                                                                                                                                                                                         |
-| `SearchBar`       | Action `?action=opensearch`                              | Debounced + `AbortController`-cancelled. Defaults to `en.wikipedia.org`; takes a `host` prop.                                                                                                                                                                                                  |
+| Component | API | Notes |
+| --- | --- | --- |
+| `ArticleLive` | REST `/page/html/{title}` | **`ArticleWrapper`** + **`ArticleRenderer`**; **`ArticleRenderer`** mounts when fetch supplies HTML or **`#default`** is passed (**`null`** fetch state omits **`ArticleRenderer`**). **`lang`** / **`dir`** passthrough unchanged. Defaults **`en.wikipedia.org`**; **`host`** switches wiki. |
+| `ArticleSnapshot` | (none — static **`public/snapshots/&lt;slug&gt;.html`**) | No REST body fetch; slug from **`articleSnapshotSlug(article)`**. |
+| `ArticleCustom` | (none) | Thin **`ArticleWrapper` → `ArticleRenderer`**; **`#default`** is hand-authored markup. |
+| `SearchBar` | Action `?action=opensearch` | Debounced + `AbortController`-cancelled. Defaults to `en.wikipedia.org`; takes a `host` prop. |
 
 **No API:** **`ArticleCustom`** (or **`ArticleWrapper`** + **`ArticleRenderer`**) with a hand-filled **`#default`** slot (static or computed markup) does not call REST or Action APIs. Use that when fetch and committed snapshots are both wrong — see **`src/prototypes/article-custom/`** and [`protowiki-components` → `article.md`](../../protowiki-components/references/article.md#hand-authored-article-markup-no-fetch-no-snapshot).
 
@@ -33,7 +33,7 @@ In-browser, the browser sets its own UA — you don't need to override it.
 ## Never hit `action=edit` from a prototype
 
 Do not POST edits to a real wiki from ProtoWiki routes. Demonstrate the
-publish _flow_ with mocked handlers (toast, `console`, emit). For VisualEditor-shaped
+publish *flow* with mocked handlers (toast, `console`, emit). For VisualEditor-shaped
 chrome, fork **[Bárbara Martínez Calvo’s article template and suggestion-mode repos](https://github.com/bmartinezcalvo/wikipedia-article-template)** (details in [`editors.md`](../../protowiki-components/references/editors.md)) rather than wiring real edit APIs here.
 Suggestion-overlay payloads alongside your surface are documented in
 [`protowiki-components` → `edit-suggestions.md`](../../protowiki-components/references/edit-suggestions.md).

@@ -78,9 +78,9 @@ value on `<html>`):
 ```ts
 import { useSkin } from '@/composables/useSkin'
 
-const skin = useSkin() // Ref<'desktop' | 'mobile'>, read-only
+const skin = useSkin()        // Ref<'desktop' | 'mobile'>, read-only
 
-console.log(skin.value) // 'desktop' or 'mobile'
+console.log(skin.value)       // 'desktop' or 'mobile'
 ```
 
 It does **not** mutate page state, and it does **not** reflect local

@@ -18,20 +18,20 @@ usually wins on shape and caching.
 
 ## Picking the right surface
 
-| You want                                | Surface                  | Endpoint                                                |
-| --------------------------------------- | ------------------------ | ------------------------------------------------------- |
-| Page HTML                               | REST                     | `/api/rest_v1/page/html/{title}`                        |
-| Page summary (lead extract + thumbnail) | REST                     | `/api/rest_v1/page/summary/{title}`                     |
-| Media in a page                         | REST                     | `/api/rest_v1/page/media-list/{title}`                  |
-| Related articles                        | REST                     | `/api/rest_v1/page/related/{title}`                     |
-| Page revision history                   | REST                     | `/api/rest_v1/page/history/{title}`                     |
-| Random page                             | REST                     | `/api/rest_v1/page/random/summary`                      |
-| Featured / On-this-day                  | REST                     | `/api/rest_v1/feed/featured/{date}`                     |
-| Pageviews                               | REST (Wikimedia metrics) | `https://wikimedia.org/api/rest_v1/metrics/pageviews/…` |
-| Typeahead search                        | Action                   | `?action=opensearch&search=…`                           |
-| Faceted query (categories, links, etc.) | Action                   | `?action=query&prop=…`                                  |
-| Rendered wikitext                       | Action                   | `?action=parse`                                         |
-| Login, edit, watch                      | Action                   | `?action=login` / `edit` / `watch`                      |
+| You want | Surface | Endpoint |
+| --- | --- | --- |
+| Page HTML | REST | `/api/rest_v1/page/html/{title}` |
+| Page summary (lead extract + thumbnail) | REST | `/api/rest_v1/page/summary/{title}` |
+| Media in a page | REST | `/api/rest_v1/page/media-list/{title}` |
+| Related articles | REST | `/api/rest_v1/page/related/{title}` |
+| Page revision history | REST | `/api/rest_v1/page/history/{title}` |
+| Random page | REST | `/api/rest_v1/page/random/summary` |
+| Featured / On-this-day | REST | `/api/rest_v1/feed/featured/{date}` |
+| Pageviews | REST (Wikimedia metrics) | `https://wikimedia.org/api/rest_v1/metrics/pageviews/…` |
+| Typeahead search | Action | `?action=opensearch&search=…` |
+| Faceted query (categories, links, etc.) | Action | `?action=query&prop=…` |
+| Rendered wikitext | Action | `?action=parse` |
+| Login, edit, watch | Action | `?action=login` / `edit` / `watch` |
 
 Detailed call shapes:
 
@@ -152,7 +152,9 @@ const url = `https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.
 ### Related articles
 
 ```ts
-fetch(`https://en.wikipedia.org/api/rest_v1/page/related/${encodeURIComponent(title)}`)
+fetch(
+  `https://en.wikipedia.org/api/rest_v1/page/related/${encodeURIComponent(title)}`,
+)
 ```
 
 ## Looking up endpoints offline
@@ -187,7 +189,7 @@ format of each file, and how to navigate them.
 
 ## See also
 
-- [`wiki-signals`](../wiki-signals/SKILL.md) — _what_ data is available
+- [`wiki-signals`](../wiki-signals/SKILL.md) — *what* data is available
   (catalog of signals).
 - [`wiki-snapshot-data`](../wiki-snapshot-data/SKILL.md) — when to
   snapshot data ahead of time vs fetch live.

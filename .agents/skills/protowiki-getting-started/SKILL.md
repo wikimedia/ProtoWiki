@@ -49,8 +49,10 @@ protowiki/
 │   ├── App.vue             ← thin shell (RouterView)
 │   ├── prototypes/         ← prototypes (each folder = one route)
 │   │   ├── index.vue       ← home / gallery (auto-lists prototypes)
-│   │   └── chrome-template/index.vue
-│   ├── components/         ← shipped components (wrappers, primitives, article)
+│   │   ├── chrome-template/index.vue
+│   │   ├── template-dashboard/index.vue
+│   │   └── dashpage/index.vue
+│   ├── components/         ← shipped components (wrappers, primitives, article, dashboard)
 │   ├── composables/        ← useSkin / useTheme (read-only hooks)
 │   ├── lib/                ← theming logic, helpers
 │   └── styles/             ← global.css, wiki-content/, dark.css

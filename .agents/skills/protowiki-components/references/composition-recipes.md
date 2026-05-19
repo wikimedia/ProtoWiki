@@ -152,13 +152,46 @@ function onPublish() {
 </ChromeWrapper>
 ```
 
-## Article embedded in something else (no chrome)
+## Newcomer homepage / dashboard
+
+Growth-style personal dashboard inside wiki chrome. Use **`Dashboard`** for the
+responsive grid and **`DashboardModule`** for each box.
 
 ```vue
-<MyDashboard>
-  <ArticleLive article="Solar energy" />
-</MyDashboard>
+<ChromeWrapper :last-edited-notice="false">
+  <SpecialPageWrapper title="Dashboard" help>
+    <Dashboard>
+      <template #banner>
+        <!-- mobile-only strip, e.g. Share feedback -->
+      </template>
+      <template #mobile>
+        <!-- DashboardModule with :to — tappable link cards -->
+      </template>
+      <template #primary>
+        <!-- desktop main column — DashboardModule without :to -->
+      </template>
+      <template #sidebar>
+        <!-- desktop sidebar modules — DashboardModule without :to -->
+      </template>
+    </Dashboard>
+  </SpecialPageWrapper>
+</ChromeWrapper>
 ```
+
+- **Starter:** **`src/prototypes/template-dashboard/`** — inline placeholder modules
+- **Full example:** **`src/prototypes/dashpage/`** — co-located `HelpModule.vue`, `ImpactModule.vue`, `MentorModule.vue`, plus **`dashpage-fixtures.ts`**
+
+See [`dashboard.md`](dashboard.md) for slot/prop detail. **`SpecialPageWrapper` `help`** is the title-row Help link — not the same as dashpage's **`HelpModule`** card.
+
+## Article embedded in a dashboard module (no extra chrome)
+
+```vue
+<DashboardModule title="Suggested article">
+  <ArticleLive article="Solar energy" />
+</DashboardModule>
+```
+
+See also the **Newcomer homepage / dashboard** recipe above for the full page stack.
 
 ## Power-user — chrome primitives directly
 

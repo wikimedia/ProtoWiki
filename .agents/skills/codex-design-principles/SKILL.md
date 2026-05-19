@@ -18,8 +18,8 @@ make Wikipedia and the broader Wikimedia ecosystem feel coherent.
 
 ## 1. Familiar
 
-The interface should feel like Wikipedia, _because it's a Wikipedia
-surface_. That means:
+The interface should feel like Wikipedia, *because it's a Wikipedia
+surface*. That means:
 
 - Use the same chrome (Vector 2022 desktop / Minerva mobile) — paint
   the same header, sidebar, and footer rather than inventing a layout.
@@ -47,7 +47,7 @@ useful. Specifically:
 ## 3. Accessible
 
 Codex components cover keyboard, focus, ARIA roles, contrast and
-RTL. _Use them as designed_:
+RTL. *Use them as designed*:
 
 - Don't strip `aria-label`s from buttons that only show an icon.
 - Don't replace `<a>` with `<div @click>`.
@@ -88,7 +88,7 @@ Wikipedia is a public good. The interface should feel cared for.
 
 ## Minimise chrome (a Wikimedia-specific addition)
 
-The Wikipedia article _is_ the product. Anything beyond it competes for
+The Wikipedia article *is* the product. Anything beyond it competes for
 the reader's attention. When in doubt, be more conservative — a
 non-feature is better than a noisy one.
 

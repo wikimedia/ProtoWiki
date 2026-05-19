@@ -10,17 +10,17 @@ chrome-without-the-wrapper (e.g., a custom layout that doesn't use
 `ChromeHeader` renders **two different shells** based on effective skin
 (`data-skin` on the header root):
 
-| Skin      | Chrome feel           | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| --------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Skin | Chrome feel | Notes |
+| --- | --- | --- |
 | `desktop` | **Vector 2022–style** | Wordmark/tagline (**`wordmarkSrc`**, **`taglineSrc`**, **`#logo` override**), **`SearchBar`** + **Search** button, username link (**`username`** + **`#username`**), user-tool cluster ( **`navTools`** preset vs **`#nav`** override ). **Main-menu glyph is icon-only** (mock). Global skin stays **desktop** until the viewport is **≤640px**; **below 1120px**, inline search collapses to a search icon; **below 768px**, watchlist hides (`nav-button-desktop` parity). |
-| `mobile`  | **Minerva-style**     | Grey elevated bar: menu, Wikipedia wordmark (**`mobileWordmarkSrc`** / **`wordmarkSrc`**, **`#logo`**), search icon + notifications — **`navTools` is ignored**.                                                                                                                                                                                                                                                                                                              |
+| `mobile` | **Minerva-style** | Grey elevated bar: menu, Wikipedia wordmark (**`mobileWordmarkSrc`** / **`wordmarkSrc`**, **`#logo`**), search icon + notifications — **`navTools` is ignored**. |
 
 **`ChromeFooter`** matches the skin:
 
 - **`desktop`** — Vector-ish reader strip (muted top border on the inner block). When **`lastEditedNotice`**:
   1. Mock line: **“This page was last edited on …”**
   2. Mock **CC BY-SA** licence blurb + Terms / Privacy / Foundation sentence (article-style metadata)
-     Then the prototype note and bullet links.
+  Then the prototype note and bullet links.
 - **`mobile`** — Minerva-ish stack (see `ChromeFooter.vue`):
   1. Optional **mock “Last edited … by …”** row — driven by **`username`** (forwarded from **`ChromeWrapper`**) with **`lastEditedNotice`**; when hidden, the grey well gains a compensating **top border** so the footer still attaches cleanly.
   2. Grey **well**: wordmark, Wikimedia/MediaWiki badge buttons, divider, short licence line, middot-linked footer rows.
@@ -31,15 +31,15 @@ That notice is chrome **fiction** for prototypes — not wired to revisions. The
 
 ### Props
 
-| Prop                | Type                    | Default                              | Notes                                                                                                                    |
-| ------------------- | ----------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `skin`              | `'desktop' \| 'mobile'` | `undefined`                          | Local skin override; falls back to global `useSkin()`                                                                    |
-| `theme`             | `'light' \| 'dark'`     | `undefined`                          | Local theme override; falls back to global `useTheme()`                                                                  |
-| `username`          | `string`                | `'Username'`                         | Desktop chrome: **Meta link** mock before tool icons; trimmed; **`''`** hides that link unless **`#username`** overrides |
-| `wordmarkSrc`       | `string`                | EN CDN SVG                           | Desktop wordmark **`#logo`** (+ mobile fallback when **`mobileWordmarkSrc`** omitted)                                    |
-| `taglineSrc`        | `string`                | EN CDN SVG                           | Desktop tagline **`#logo`** stack                                                                                        |
-| `mobileWordmarkSrc` | `string`                | **`wordmarkSrc`** then EN CDN        | Mobile bar wordmark when **`#logo`** default                                                                             |
-| `navTools`          | `ChromeNavTool[]`       | full set (`src/lib/chromeHeader.ts`) | Which desktop tool icons render; **`#nav`** replaces cluster                                                             |
+| Prop | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `skin` | `'desktop' \| 'mobile'` | `undefined` | Local skin override; falls back to global `useSkin()` |
+| `theme` | `'light' \| 'dark'` | `undefined` | Local theme override; falls back to global `useTheme()` |
+| `username` | `string` | `'Username'` | Desktop chrome: **Meta link** mock before tool icons; trimmed; **`''`** hides that link unless **`#username`** overrides |
+| `wordmarkSrc` | `string` | EN CDN SVG | Desktop wordmark **`#logo`** (+ mobile fallback when **`mobileWordmarkSrc`** omitted) |
+| `taglineSrc` | `string` | EN CDN SVG | Desktop tagline **`#logo`** stack |
+| `mobileWordmarkSrc` | `string` | **`wordmarkSrc`** then EN CDN | Mobile bar wordmark when **`#logo`** default |
+| `navTools` | `ChromeNavTool[]` | full set (`src/lib/chromeHeader.ts`) | Which desktop tool icons render; **`#nav`** replaces cluster |
 
 `lang` / `dir` are deliberately not props on the primitives. Set them once
 on the surrounding wrapper (or on `<html>`) and the chrome inherits them
@@ -49,11 +49,11 @@ Desktop **inline search** is always **`<SearchBar />`** inside the header (not a
 
 ### Slots
 
-| Slot        | Default                                                   | Use for                                                        |
-| ----------- | --------------------------------------------------------- | -------------------------------------------------------------- |
-| `#logo`     | EN Wikipedia wordmark (+ tagline on desktop) via `<img>`  | Replace with another project's wordmark / lockup               |
-| `#username` | Anchor from **`username`** (hidden when empty after trim) | Replace with custom markup before tool icons (**desktop**)     |
-| `#nav`      | Vector-style tool icons on **desktop** only               | Replace the default user-tool cluster (**`navTools` ignored**) |
+| Slot | Default | Use for |
+| --- | --- | --- |
+| `#logo` | EN Wikipedia wordmark (+ tagline on desktop) via `<img>` | Replace with another project's wordmark / lockup |
+| `#username` | Anchor from **`username`** (hidden when empty after trim) | Replace with custom markup before tool icons (**desktop**) |
+| `#nav` | Vector-style tool icons on **desktop** only | Replace the default user-tool cluster (**`navTools` ignored**) |
 
 ### Example
 
@@ -65,17 +65,17 @@ Desktop **inline search** is always **`<SearchBar />`** inside the header (not a
 
 ### Props
 
-| Prop               | Type                    | Default      | Notes                                                                                                     |
-| ------------------ | ----------------------- | ------------ | --------------------------------------------------------------------------------------------------------- |
-| `skin`             | `'desktop' \| 'mobile'` | `undefined`  |                                                                                                           |
-| `theme`            | `'light' \| 'dark'`     | `undefined`  |                                                                                                           |
-| `lastEditedNotice` | `boolean`               | `true`       | Mock last-edited **notice** — **`false`** hides it on **both** skins (**`ChromeWrapper`** forwards this). |
-| `username`         | `string`                | `'Username'` | Mobile “last edited … by …” line — **`ChromeWrapper`** forwards it                                        |
+| Prop | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `skin` | `'desktop' \| 'mobile'` | `undefined` | |
+| `theme` | `'light' \| 'dark'` | `undefined` | |
+| `lastEditedNotice` | `boolean` | `true` | Mock last-edited **notice** — **`false`** hides it on **both** skins (**`ChromeWrapper`** forwards this). |
+| `username` | `string` | `'Username'` | Mobile “last edited … by …” line — **`ChromeWrapper`** forwards it |
 
 ### Slots
 
-| Slot    | Default                                                | Use for                   |
-| ------- | ------------------------------------------------------ | ------------------------- |
+| Slot | Default | Use for |
+| --- | --- | --- |
 | default | Desktop strip or Minerva well (see skin section above) | Replace the entire footer |
 
 ### Example

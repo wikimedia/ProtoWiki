@@ -81,11 +81,11 @@ trailing **Inside ProtoWiki** section.
 
 ### Real Wikimedia data (portable)
 
-| Skill                                                                        | What it covers                                                                                        |
-| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| [`wiki-apis`](.agents/skills/wiki-apis/SKILL.md)                             | REST API + Action API + etiquette                                                                     |
-| [`wiki-signals`](.agents/skills/wiki-signals/SKILL.md)                       | Catalog of signals (inference, analytics, links, curation, attribution, edit suggestions)             |
-| [`wiki-snapshot-data`](.agents/skills/wiki-snapshot-data/SKILL.md)           | Snapshotting article HTML and skin CSS — universal pattern                                            |
+| Skill                                                                        | What it covers                                                                                |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [`wiki-apis`](.agents/skills/wiki-apis/SKILL.md)                             | REST API + Action API + etiquette                                                             |
+| [`wiki-signals`](.agents/skills/wiki-signals/SKILL.md)                       | Catalog of signals (inference, analytics, links, curation, attribution, edit suggestions)     |
+| [`wiki-snapshot-data`](.agents/skills/wiki-snapshot-data/SKILL.md)           | Snapshotting article HTML and skin CSS — universal pattern                                    |
 | [`protowiki-snapshot-data`](.agents/skills/protowiki-snapshot-data/SKILL.md) | ProtoWiki integration: `public/snapshots/`, `src/styles/wiki-content/`, `ArticleSnapshot` consumption |
 
 Edit Check-style suggestion overlays are split between two skills: see
