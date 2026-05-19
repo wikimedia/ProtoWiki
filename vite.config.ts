@@ -1,5 +1,6 @@
-import { readFileSync } from 'node:fs'
+import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath, URL } from 'node:url'
+import { resolve } from 'node:path'
 
 import { defineConfig } from 'vite'
 import VueRouter from 'unplugin-vue-router/vite'
@@ -13,6 +14,10 @@ const buildBase = process.env.PROTOWIKI_BASE ?? '/protowiki/'
 
 const ghPagesRestoreScript = readFileSync(
   new URL('./public/gh-pages-restore.js', import.meta.url),
+  'utf8',
+)
+const ghPagesPreview404Script = readFileSync(
+  new URL('./public/gh-pages-preview-404.js', import.meta.url),
   'utf8',
 )
 
@@ -32,7 +37,6 @@ export default defineConfig(({ command }) => ({
       dts: 'src/typed-router.d.ts',
     }),
     vue(),
-    // Run before Vite hoists the module script into <head>.
     {
       name: 'protowiki-gh-pages-restore',
       apply: 'build',
@@ -49,8 +53,30 @@ export default defineConfig(({ command }) => ({
         },
       },
     },
-    // Root SPA fallback: public/404.html (redirect script) is copied to dist/.
-    // restoreGithubPagesSpaRedirect in main.ts is a backup after the bundle loads.
+    // GitHub Pages serves a static 404.html for unknown paths. Copy index.html,
+    // then prepend a script so pr-preview deep links redirect into the preview
+    // base (sessionStorage + restore in index). Production deep links unchanged.
+    {
+      name: 'protowiki-spa-404',
+      apply: 'build',
+      closeBundle() {
+        const dist = resolve(__dirname, 'dist')
+        const index = resolve(dist, 'index.html')
+        const fallback = resolve(dist, '404.html')
+        if (!existsSync(index)) {
+          return
+        }
+        copyFileSync(index, fallback)
+        const html = readFileSync(fallback, 'utf8')
+        const preamble = `<script>${ghPagesPreview404Script}</script>`
+        writeFileSync(
+          fallback,
+          html.includes('<head>')
+            ? html.replace('<head>', `<head>${preamble}`)
+            : preamble + html,
+        )
+      },
+    },
   ],
   resolve: {
     alias: {

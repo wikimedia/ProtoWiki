@@ -42,11 +42,12 @@ The build:
 3. Copies **`public/.nojekyll`** into `dist/` so GitHub Pages does not run
    Jekyll (Jekyll drops Vite chunks whose names start with `_`, e.g.
    `_plugin-vue_export-helper-….js`).
-4. Copies **`public/404.html`** (redirect script) to `dist/404.html`. GitHub
-   only reads **root** `404.html`; it redirects deep links (including
-   `/pr-preview/pr-N/…`) to `?/route` under the right base. **`public/gh-pages-restore.js`**
-   is injected at the top of `<head>` on build (before the Vite bundle); `main.ts`
-   restores again and calls `router.replace()` as a backup.
+4. **Copies `dist/index.html` to `dist/404.html`** and prepends
+   [`public/gh-pages-preview-404.js`](../../../public/gh-pages-preview-404.js)
+   so GitHub Pages can serve the SPA shell for production deep links and redirect
+   `…/pr-preview/pr-N/…` deep links into the preview base. **`public/gh-pages-restore.js`**
+   is injected at the top of `<head>` on every build so the preview index can
+   restore the stashed path before Vue Router starts.
 
 ## Base path
 
@@ -109,6 +110,14 @@ Preview URL:
 https://<owner>.github.io/<RepoName>/pr-preview/pr-<number>/
 ```
 
+**Preview deep links** (e.g. `…/pr-preview/pr-3/template-chrome`) work after a
+**main** deploy: GitHub only reads **root** `404.html`, which preview CI does not
+update. The root file redirects into the preview base via `sessionStorage`; the
+preview `index.html` restores the path before the router boots. Merging preview-only
+changes without deploying `main` leaves deep links broken until the next production
+deploy. Hard-refreshing a preview deep URL briefly hops through the gallery (no
+server-side SPA rewrite on GitHub Pages).
+
 ### Fork contributors
 
 Fork `wikimedia/ProtoWiki`, complete [GitHub Pages setup](#github-pages-setup-one-time-per-repo-or-fork)
@@ -148,17 +157,15 @@ into review tickets to pin a specific preview.
 
 ## Troubleshooting
 
-- **404 on a deep link (production).** Verify `dist/404.html` exists after
-  build (from `public/404.html`) and `main` has been deployed so root
-  `gh-pages` has the redirect script.
-- **404 on a route inside a PR preview** (gallery works, `/pr-preview/pr-N/foo`
-  does not). Same root `404.html` must be on `gh-pages` from a recent **main**
-  deploy; preview-only deploys do not update it. Push to `main`, then hard-refresh
-  the preview deep link (one redirect via `?/…` is expected).
-- **Preview deep link shows the gallery** (`?template-…` in the URL). The
-  restore script in `index.html` did not run or is outdated — redeploy `main`
-  (includes inline restore + `public/404.html`). After redirect, the URL should
-  be `…/pr-N/template-…`, not `…/pr-N?template-…`.
+- **404 on a deep link (production).** The `404.html` copy step in `vite.config.ts`
+  must run; verify `dist/404.html` exists after build (SPA shell + pr-preview
+  preamble script).
+- **404 or blank page on a route inside a PR preview.** Root `gh-pages/404.html`
+  must come from a recent **main** deploy (preview workflows do not update it).
+  Push or merge to `main`, wait for Pages, then hard-refresh the preview deep link.
+- **Preview deep link shows the gallery with `?template-…` in the URL.** That was
+  an older `?/` redirect experiment; current builds use `sessionStorage` and should
+  end on `…/pr-N/template-…` with no query hack.
 - **Asset URLs missing the base path.** Check `import.meta.env.BASE_URL`
   matches the deployed URL prefix; the router uses it.
 - **Blank app on Pages or preview.** Wrong `PROTOWIKI_BASE` (missing repo
