@@ -1,0 +1,114 @@
+import type { MostViewedArticle } from './ImpactModule.vue'
+
+/** App gallery home — placeholder target for other mobile link cards. */
+export const APP_HOME = '/'
+
+/** Dashpage prototype route. */
+export const HOMEPAGE = '/dashpage'
+
+/** Full-page mobile drill-down for the Your impact module. */
+export const IMPACT_PAGE = '/dashpage/impact'
+
+/** Full-page mobile drill-down for the Get help with editing module. */
+export const HELP_PAGE = '/dashpage/help'
+
+/** Full-page mobile drill-down for the Your mentor module. */
+export const MENTOR_PAGE = '/dashpage/mentor'
+
+/** Mobile link-card preview copy (title is also the full-page header). */
+export const HELP_MODULE = {
+  title: 'Get help with editing',
+  summary: 'Ask the help desk or read help pages.',
+} as const
+
+export const HELP_LINKS = [
+  { label: 'How to edit a page', href: '#' },
+  { label: 'How to add an image', href: '#' },
+  { label: 'How to edit a citation', href: '#' },
+  { label: 'Simplified Manual of Style', href: '#' },
+  { label: 'How to write a good article', href: '#' },
+  { label: 'How to create a new article', href: '#' },
+]
+
+export const MENTOR = {
+  name: 'Samwalton9',
+  editCount: 12596,
+  lastActiveDaysAgo: 451,
+  note: 'Welcome to Wikipedia! Let me know if you have any questions',
+  learnMoreHref: '#',
+  conversationsHref: '#',
+} as const
+
+export const IMPACT = {
+  viewCount: '10.8K',
+  sparklineData: [
+    420, 390, 410, 430, 400, 380, 415, 440, 425, 405, 390, 420, 435, 410, 395, 430, 450, 420, 400,
+    415, 440, 425, 410, 395, 380, 400, 420, 410, 390, 405, 430, 415, 395, 380, 400, 420, 440, 410,
+    390, 380, 350, 360,
+  ],
+  lastEdited: '5 months ago',
+  longestStreak: '1 day',
+} as const
+
+export const IMPACT_DESKTOP: {
+  totalEdits: number
+  thanksReceived: number
+  lastEdited: string
+  longestStreak: string
+  viewCount: string
+  sparklineData: number[]
+  recentActivityData: number[]
+  activityStartDate: string
+  activityEndDate: string
+  mostViewed: MostViewedArticle[]
+  viewAllEditsHref: string
+} = {
+  totalEdits: 52,
+  thanksReceived: 0,
+  lastEdited: '5 months ago',
+  longestStreak: '1 day',
+  viewCount: '10,754',
+  sparklineData: [
+    420, 390, 410, 430, 400, 380, 415, 440, 425, 405, 390, 420, 435, 410, 395, 430, 450, 420, 400,
+    415, 440, 425, 410, 395, 380, 400, 420, 410, 390, 405, 430, 415, 395, 380, 400, 420, 440, 410,
+    390, 380, 350, 360,
+  ],
+  recentActivityData: [
+    0, 0, 2, 0, 1, 0, 0, 3, 0, 0, 1, 0, 0, 0, 2, 0, 1, 0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0,
+    0, 2, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+  ],
+  activityStartDate: 'Mar 17',
+  activityEndDate: 'May 15',
+  mostViewed: [
+    {
+      title: 'Bora Bora',
+      views: 4821,
+      sparklineData: [300, 320, 280, 350, 310, 290, 340, 360, 330, 300],
+      href: '#',
+    },
+    {
+      title: 'Wikipedia',
+      views: 3104,
+      sparklineData: [200, 210, 195, 220, 205, 215, 200, 210, 205, 195],
+      href: '#',
+    },
+    {
+      title: 'Atlantic Ocean',
+      views: 2187,
+      sparklineData: [150, 160, 145, 170, 155, 140, 160, 155, 145, 150],
+      href: '#',
+    },
+  ],
+  viewAllEditsHref: '#',
+}
+
+export const STRUCTURED_TASKS = {
+  currentIndex: 1,
+  totalCount: 173745,
+  articleTitle: 'Full circle ringing',
+  articleDescription: 'Method of hanging (church) bells and …',
+  /** Action API `pageimages` + `pithumbsize=96` for [[Full circle ringing]] */
+  thumbnailSrc:
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/St_Botolph%27s_Bell_Ringing.webm/120px--St_Botolph%27s_Bell_Ringing.webm.jpg',
+  taskTypeLabel: 'Find references',
+} as const
