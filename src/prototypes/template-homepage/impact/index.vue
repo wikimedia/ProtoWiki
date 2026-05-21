@@ -16,7 +16,7 @@ const impactProps = computed(() =>
 
 definePage({
   meta: {
-    title: 'Template: Homepage — Impact',
+    title: 'Dashpage — Impact',
     description: 'Full-page mobile drill-down for the Your impact homepage module.',
   },
 })
@@ -25,7 +25,7 @@ definePage({
 <template>
   <ChromeWrapper :last-edited-notice="false">
     <SpecialPageWrapper :title="null" class="impact-page">
-      <MobileSubpageHeader title="Your impact" :back-to="HOMEPAGE" back-label="Back to homepage" />
+      <MobileSubpageHeader title="Your impact" :back-to="HOMEPAGE" back-label="Back to dashpage" />
       <ImpactModule standalone v-bind="impactProps" />
     </SpecialPageWrapper>
   </ChromeWrapper>

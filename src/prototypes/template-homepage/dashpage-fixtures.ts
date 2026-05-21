@@ -3,7 +3,7 @@ import type { MostViewedArticle } from './ImpactModule.vue'
 /** App gallery home — placeholder target for other mobile link cards. */
 export const APP_HOME = '/'
 
-/** Newcomer homepage prototype route. */
+/** Dashpage prototype route (template-homepage). */
 export const HOMEPAGE = '/template-homepage'
 
 /** Full-page mobile drill-down for the Your impact module. */

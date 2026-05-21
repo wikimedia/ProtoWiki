@@ -7,7 +7,7 @@ import { HELP_LINKS, HELP_MODULE, HOMEPAGE } from '../dashpage-fixtures'
 
 definePage({
   meta: {
-    title: 'Template: Homepage — Help',
+    title: 'Dashpage — Help',
     description: 'Full-page mobile drill-down for the Get help with editing homepage module.',
   },
 })
@@ -19,7 +19,7 @@ definePage({
       <MobileSubpageHeader
         :title="HELP_MODULE.title"
         :back-to="HOMEPAGE"
-        back-label="Back to homepage"
+        back-label="Back to dashpage"
       />
       <HelpModule standalone :help-links="HELP_LINKS" view-more-href="#" />
     </SpecialPageWrapper>

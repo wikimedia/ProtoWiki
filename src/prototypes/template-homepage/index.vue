@@ -41,8 +41,8 @@ const pageTitle = computed(() => configUserPageTitle(user.value))
 
 definePage({
   meta: {
-    title: 'Template: Homepage',
-    description: 'Template for prototyping the newcomer homepage.',
+    title: 'Dashpage',
+    description: 'Explorations for a homepage + dashboard hybrid.',
   },
 })
 </script>
