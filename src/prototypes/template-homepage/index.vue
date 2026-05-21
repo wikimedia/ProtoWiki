@@ -7,7 +7,6 @@ import Dashboard from '@/components/Dashboard.vue'
 import DashboardModule from '@/components/DashboardModule.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 import { useConfig } from '@/composables/useConfig'
-import { configUserPageTitle } from '@/lib/config'
 import HelpModule from './HelpModule.vue'
 import ImpactModule from './ImpactModule.vue'
 import MentorModule from './MentorModule.vue'
@@ -17,27 +16,16 @@ import {
   HELP_LINKS,
   HELP_MODULE,
   HELP_PAGE,
-  IMPACT,
-  IMPACT_DESKTOP,
-  IMPACT_PAGE,
   MENTOR,
   MENTOR_PAGE,
   STRUCTURED_TASKS,
 } from './dashpage-fixtures'
+import { useHomepageImpact } from './useHomepageImpact'
 
-const { user } = useConfig()
+const { user, pageTitle } = useConfig()
+const { impactMobileProps, impactDesktopProps, onImpactRefresh } = useHomepageImpact()
 
 const showLoggedInModules = computed(() => user.value !== 'logged-out')
-
-const impactMobileProps = computed(() =>
-  user.value === 'experienced' ? { to: IMPACT_PAGE, ...IMPACT } : { to: IMPACT_PAGE },
-)
-
-const impactDesktopProps = computed(() =>
-  user.value === 'experienced' ? IMPACT_DESKTOP : {},
-)
-
-const pageTitle = computed(() => configUserPageTitle(user.value))
 
 definePage({
   meta: {
@@ -65,7 +53,11 @@ definePage({
               v-bind="STRUCTURED_TASKS"
             />
 
-            <ImpactModule v-if="showLoggedInModules" v-bind="impactMobileProps" />
+            <ImpactModule
+              v-if="showLoggedInModules"
+              v-bind="impactMobileProps"
+              @refresh="onImpactRefresh"
+            />
 
             <MentorModule
               v-if="showLoggedInModules"
@@ -91,7 +83,11 @@ definePage({
           </template>
 
           <template #sidebar>
-            <ImpactModule v-if="showLoggedInModules" v-bind="impactDesktopProps" />
+            <ImpactModule
+              v-if="showLoggedInModules"
+              v-bind="impactDesktopProps"
+              @refresh="onImpactRefresh"
+            />
 
             <MentorModule
               v-if="showLoggedInModules"

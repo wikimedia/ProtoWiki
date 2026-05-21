@@ -48,13 +48,19 @@ const slots = useSlots()
   display: none;
 }
 
-/* Two columns when desktop grid is shown (>640px). */
+/* Two columns on desktop skin; stack below 862px (narrow desktop / tablet). */
 .dashboard-main {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 34%);
   gap: var(--spacing-200, 2rem);
   align-items: start;
   padding-bottom: var(--spacing-100, 1rem);
+}
+
+@media (max-width: 862px) {
+  .dashboard-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* Mobile layout — follow ancestor data-skin (viewport ≥640px + SpecialPageWrapper padding can be <640px wide). */

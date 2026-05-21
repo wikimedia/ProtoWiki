@@ -6,18 +6,16 @@ definePage({
   },
 })
 
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { CdxButton, CdxCard, CdxIcon, CdxPopover, CdxSelect } from '@wikimedia/codex'
+import { CdxButton, CdxCard, CdxIcon } from '@wikimedia/codex'
 import { cdxIconSettings } from '@wikimedia/codex-icons'
 
 import PlainWrapper from '@/components/PlainWrapper.vue'
-import { useConfig } from '@/composables/useConfig'
-import { CONFIG_USER_MENU_ITEMS } from '@/lib/config'
+import PrototypeUserSettingsPopover from '@/components/PrototypeUserSettingsPopover.vue'
 
 const router = useRouter()
-const { user } = useConfig()
 
 interface PrototypeMeta {
   title?: string
@@ -97,44 +95,23 @@ const showBucketDivider = computed(
   () => regularPrototypes.value.length > 0 && templateAndExamplePrototypes.value.length > 0,
 )
 
-const settingsOpen = ref(false)
-const settingsAnchor = ref<HTMLElement | null>(null)
-
 </script>
 
 <template>
   <!--  -->
   <PlainWrapper heading="ProtoWiki">
     <template #actions>
-      <span ref="settingsAnchor">
+      <PrototypeUserSettingsPopover v-slot="{ toggle, open }">
         <CdxButton
           weight="quiet"
           :icon-only="true"
           aria-label="Settings"
-          :aria-expanded="settingsOpen"
-          @click="settingsOpen = !settingsOpen"
+          :aria-expanded="open"
+          @click="toggle"
         >
           <CdxIcon :icon="cdxIconSettings" />
         </CdxButton>
-      </span>
-      <CdxPopover
-        v-model:open="settingsOpen"
-        :anchor="settingsAnchor"
-        placement="bottom-end"
-        render-in-place
-        class="prototype-index__settings-popover"
-      >
-        <div class="prototype-index__settings-panel" @click.stop>
-          <label class="prototype-index__settings-field">
-            <span class="prototype-index__settings-label">User</span>
-            <CdxSelect
-              v-model:selected="user"
-              :menu-items="CONFIG_USER_MENU_ITEMS"
-              default-label="New editor"
-            />
-          </label>
-        </div>
-      </CdxPopover>
+      </PrototypeUserSettingsPopover>
     </template>
     <div class="prototype-index">
       <div class="prototype-index__list">
@@ -177,31 +154,5 @@ const settingsAnchor = ref<HTMLElement | null>(null)
   margin: var(--spacing-50) 0;
   border: 0;
   border-top: 1px solid var(--border-color-subtle);
-}
-
-.prototype-index__settings-panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-100);
-  min-width: 12rem;
-}
-
-.prototype-index__settings-field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-25);
-}
-
-.prototype-index__settings-label {
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-subtle);
-}
-</style>
-
-<!-- Popover is teleported; allow the select menu to extend past the scrollable body. -->
-<style>
-.prototype-index__settings-popover .cdx-popover__body {
-  overflow: visible;
 }
 </style>

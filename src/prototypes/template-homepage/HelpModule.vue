@@ -59,7 +59,7 @@ withDefaults(defineProps<Props>(), {
   <DashboardModule v-else>
     <div class="help-module__full">
       <CdxIcon :icon="cdxIconHelp" size="medium" class="help-module__icon" />
-      <div class="sidebar-card__title">{{ title }}</div>
+      <h3 class="help-module__title">{{ title }}</h3>
       <template v-if="helpLinks.length > 0">
         <p class="help-module__section-label">Top help pages about editing</p>
         <ul class="help-module__list">
@@ -89,13 +89,30 @@ withDefaults(defineProps<Props>(), {
   color: var(--color-base--subtle, #54595d);
 }
 
+.help-module__full {
+  display: flex;
+  flex-direction: column;
+}
+
 .help-module__icon {
+  display: block;
+  flex-shrink: 0;
+  width: var(--size-150, 1.5rem);
+  height: var(--size-150, 1.5rem);
+  margin: 0 0 var(--spacing-50, 8px);
   color: var(--color-base, #202122);
-  width: var(--size-150);
+}
+
+.help-module__title {
+  margin: 0 0 var(--spacing-50, 8px);
+  font-size: var(--font-size-medium);
+  font-weight: var(--font-weight-bold, 700);
+  line-height: var(--line-height-medium);
+  color: var(--color-base, #202122);
 }
 
 .help-module__section-label {
-  margin: 0 0 var(--spacing-75, 12px);
+  margin: 0 0 var(--spacing-50, 8px);
   font-size: var(--font-size-small);
   font-weight: var(--font-weight-bold, 700);
   line-height: var(--line-height-small);
@@ -109,26 +126,27 @@ withDefaults(defineProps<Props>(), {
 }
 
 .help-module__list-item {
-  position: relative;
-  margin: 0 0 var(--spacing-75, 12px);
-  padding-left: var(--spacing-125, 20px);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-50, 8px);
+  margin: 0;
+  padding: 0;
   font-size: var(--font-size-medium);
-  line-height: var(--line-height-medium);
+  line-height: var(--line-height-small, 1.375);
+}
+
+.help-module__list-item + .help-module__list-item {
+  margin-top: var(--spacing-25, 4px);
 }
 
 .help-module__list-item::before {
-  position: absolute;
-  left: 0;
-  top: 0.55em;
+  flex-shrink: 0;
   width: 6px;
   height: 6px;
+  margin-top: 0.45em;
   border-radius: 50%;
   background-color: var(--color-progressive, #36c);
   content: '';
-}
-
-.help-module__list-item:last-child {
-  margin-bottom: 0;
 }
 
 .help-module__link {
@@ -142,6 +160,7 @@ withDefaults(defineProps<Props>(), {
 
 .help-module__view-more {
   display: inline-block;
+  margin: 0;
   font-size: var(--font-size-medium);
   line-height: var(--line-height-medium);
 }

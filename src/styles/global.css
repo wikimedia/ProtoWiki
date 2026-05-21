@@ -30,6 +30,8 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-rendering: optimizeLegibility;
+  /* Reserve scrollbar width so Codex overlays (dialogs, bottom sheets) don't shift layout. */
+  scrollbar-gutter: stable;
 }
 
 body {

@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { CdxIcon } from '@wikimedia/codex'
 import { cdxIconCheck, cdxIconUserTalk } from '@wikimedia/codex-icons'
 import { RouterLink } from 'vue-router'
 
 import ChromeWrapper from '@/components/ChromeWrapper.vue'
 import { useConfig } from '@/composables/useConfig'
-import { configUserPageTitle } from '@/lib/config'
 import Dashboard from '@/components/Dashboard.vue'
 import DashboardModule from '@/components/DashboardModule.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
@@ -18,9 +16,7 @@ definePage({
   },
 })
 
-const { user } = useConfig()
-
-const pageTitle = computed(() => configUserPageTitle(user.value))
+const { pageTitle } = useConfig()
 
 /** Gallery / app home (file-based route `/`). */
 const HOME = '/'

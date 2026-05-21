@@ -78,8 +78,11 @@ function trimmedTitle(): string {
     class="sidebar-card dashboard-module dashboard-slot"
     :class="{ 'dashboard-module--subtle': props.subtle }"
   >
-    <div v-if="trimmedTitle()" class="sidebar-card__title">
-      {{ trimmedTitle() }}
+    <div v-if="trimmedTitle()" class="sidebar-card__header">
+      <span class="sidebar-card__title">{{ trimmedTitle() }}</span>
+      <div v-if="$slots['header-actions']" class="sidebar-card__header-actions">
+        <slot name="header-actions" />
+      </div>
     </div>
     <div class="dashboard-module__body">
       <slot />
@@ -226,11 +229,47 @@ function trimmedTitle(): string {
   padding: 1rem;
 }
 
-.sidebar-card__title {
+.sidebar-card__header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: calc(var(--font-size-medium, 1rem) * var(--line-height-medium, 1.375));
   margin: 0 0 var(--spacing-75) 0;
+  overflow: visible;
+  font-size: var(--font-size-medium);
+  line-height: var(--line-height-medium, 1.375);
+}
+
+.sidebar-card__title {
+  margin: 0;
   padding: 0;
   font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-medium);
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.sidebar-card__header:has(.sidebar-card__header-actions) .sidebar-card__title {
+  padding-right: calc(var(--min-size-interactive-pointer, 32px) + var(--spacing-50, 8px));
+}
+
+.sidebar-card__header-actions {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  transform: translateY(-50%);
+}
+
+/* Full Codex touch target; header height is fixed so this overflows vertically, not layout. */
+.sidebar-card__header-actions .cdx-button.cdx-button--icon-only {
+  min-width: var(--min-size-interactive-pointer, 32px);
+  min-height: var(--min-size-interactive-pointer, 32px);
+  width: var(--min-size-interactive-pointer, 32px);
+  height: var(--min-size-interactive-pointer, 32px);
+  padding: 0;
 }
 
 .sidebar-card .cdx-label {

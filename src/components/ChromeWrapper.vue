@@ -3,7 +3,6 @@ import { computed, provide } from 'vue'
 
 import { useConfig } from '@/composables/useConfig'
 import type { ChromeNavTool } from '@/lib/chromeHeader'
-import { configUserDisplayName } from '@/lib/config'
 import {
   globalSkin,
   globalTheme,
@@ -63,13 +62,11 @@ const props = withDefaults(defineProps<Props>(), {
   navTools: undefined,
 })
 
-const { user } = useConfig()
+const { displayName } = useConfig()
 
 const effectiveSkin = computed<Skin>(() => props.skin ?? globalSkin.value)
 const effectiveTheme = computed<Theme>(() => props.theme ?? globalTheme.value)
-const effectiveUsername = computed(
-  () => props.username ?? configUserDisplayName(user.value),
-)
+const effectiveUsername = computed(() => props.username ?? displayName.value)
 
 provide(PROTOWIKI_CHROME_SKIN, effectiveSkin)
 provide(PROTOWIKI_CHROME_THEME, effectiveTheme)

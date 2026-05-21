@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
-import { CdxIcon } from '@wikimedia/codex'
+import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import {
   cdxIconChart,
   cdxIconClock,
   cdxIconEdit,
   cdxIconInfo,
+  cdxIconReload,
   cdxIconUserTalk,
 } from '@wikimedia/codex-icons'
 
 import DashboardModule from '@/components/DashboardModule.vue'
+
+const emit = defineEmits<{
+  refresh: []
+}>()
 
 export interface MostViewedArticle {
   title: string
@@ -32,7 +37,7 @@ interface Props {
   lastEdited?: string
   longestStreak?: string
   // Desktop (empty + filled)
-  thanksReceived?: number
+  thanksReceived?: number | string
   // Desktop filled only
   totalEdits?: number
   recentActivityData?: number[]
@@ -40,6 +45,12 @@ interface Props {
   activityEndDate?: string
   mostViewed?: MostViewedArticle[]
   viewAllEditsHref?: string
+  /** Show refresh control (real-user mode; not on mobile link-card preview). */
+  showRefresh?: boolean
+  refreshing?: boolean
+  refreshError?: string
+  /** Real-user mode before first fetch — prompt to load instead of empty state. */
+  loadPending?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -57,10 +68,33 @@ const props = withDefaults(defineProps<Props>(), {
   activityEndDate: undefined,
   mostViewed: () => [],
   viewAllEditsHref: undefined,
+  showRefresh: false,
+  refreshing: false,
+  refreshError: undefined,
+  loadPending: false,
 })
 
-const hasContent = computed(() => !!props.viewCount)
+const hasContent = computed(
+  () =>
+    !!props.viewCount ||
+    (props.totalEdits ?? 0) > 0 ||
+    props.recentActivityData.some((v) => v > 0),
+)
 const isMobilePreview = computed(() => !props.standalone && props.to != null)
+/** Desktop sidebar only — title row via DashboardModule `#header-actions`. */
+const showRefreshInTitle = computed(
+  () =>
+    props.showRefresh &&
+    !props.loadPending &&
+    !props.standalone &&
+    !isMobilePreview.value,
+)
+
+function onRefreshClick(event: Event): void {
+  event.preventDefault()
+  event.stopPropagation()
+  emit('refresh')
+}
 
 // ── Sparkline helpers ────────────────────────────────
 const W = 300
@@ -125,6 +159,20 @@ const recentEditCount = computed(() =>
         : { title: 'Your impact', to, cta: null }
     "
   >
+    <template v-if="showRefreshInTitle" #header-actions>
+      <CdxButton
+        weight="quiet"
+        :icon-only="true"
+        aria-label="Refresh impact data"
+        :disabled="refreshing"
+        @click="onRefreshClick"
+      >
+        <CdxIcon :icon="cdxIconReload" />
+      </CdxButton>
+    </template>
+    <p v-if="refreshError" class="impact-module__refresh-error" role="alert">
+      {{ refreshError }}
+    </p>
 
     <!-- ① Mobile filled ─────────────────────────────── -->
     <template v-if="hasContent && isMobilePreview">
@@ -275,7 +323,21 @@ const recentEditCount = computed(() =>
       </template>
     </template>
 
-    <!-- ③ Mobile empty ──────────────────────────────── -->
+    <!-- ③ Load pending (real user, no cache) ────────── -->
+    <template v-else-if="loadPending">
+      <div class="impact-module__load-prompt">
+        <CdxButton
+          action="progressive"
+          weight="primary"
+          :disabled="refreshing"
+          @click="onRefreshClick"
+        >
+          {{ refreshing ? 'Loading…' : 'Load impact' }}
+        </CdxButton>
+      </div>
+    </template>
+
+    <!-- ④ Mobile empty ──────────────────────────────── -->
     <template v-else-if="isMobilePreview">
       <div class="impact-module__empty-hero">
         <img
@@ -293,7 +355,7 @@ const recentEditCount = computed(() =>
       </p>
     </template>
 
-    <!-- ④ Desktop empty ─────────────────────────────── -->
+    <!-- ⑤ Desktop empty ─────────────────────────────── -->
     <template v-else>
       <div class="impact-module__desktop-stats">
         <div class="impact-module__desktop-stat">
@@ -340,6 +402,12 @@ const recentEditCount = computed(() =>
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
+}
+
+.impact-module__refresh-error {
+  margin: 0 0 var(--spacing-50, 8px);
+  font-size: var(--font-size-small);
+  color: var(--color-error, #bf3c2c);
 }
 
 /* ── Shared: sparkline ────────────────────────────── */
@@ -666,6 +734,20 @@ const recentEditCount = computed(() =>
   font-size: var(--font-size-small);
   line-height: var(--line-height-small);
   color: var(--color-base--subtle, #54595d);
+}
+
+/* ── Load pending ─────────────────────────────────── */
+.impact-module__load-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 8rem;
+  padding: var(--spacing-100, 16px) 0;
+}
+
+.impact-module--standalone .impact-module__load-prompt {
+  min-height: 40vh;
 }
 
 /* ── Desktop empty ────────────────────────────────── */
