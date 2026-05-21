@@ -15,6 +15,9 @@ export const HELP_PAGE = '/template-homepage/help'
 /** Full-page mobile drill-down for the Your mentor module. */
 export const MENTOR_PAGE = '/template-homepage/mentor'
 
+/** Full-page mobile drill-down for the Suggested edits module. */
+export const SUGGESTED_EDITS_PAGE = '/template-homepage/suggested-edits'
+
 /** Mobile link-card preview copy (title is also the full-page header). */
 export const HELP_MODULE = {
   title: 'Get help with editing',
@@ -102,6 +105,7 @@ export const IMPACT_DESKTOP: {
   viewAllEditsHref: '#',
 }
 
+/** Homepage link-card preview (compact). */
 export const STRUCTURED_TASKS = {
   currentIndex: 1,
   totalCount: 173745,
@@ -111,4 +115,23 @@ export const STRUCTURED_TASKS = {
   thumbnailSrc:
     'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/St_Botolph%27s_Bell_Ringing.webm/120px--St_Botolph%27s_Bell_Ringing.webm.jpg',
   taskTypeLabel: 'Find references',
+} as const
+
+/** Fullscreen suggested-edits subpage (static structured-tasks mock). */
+export const STRUCTURED_TASKS_FULL = {
+  currentIndex: 1,
+  totalCount: 173450,
+  topicFilter: 'Music',
+  difficultyFilter: 'Easy, Medium, …',
+  articleTitle: 'Okta Logue',
+  articleDescription:
+    'Okta Logue are a four-piece rock band based in Griesheim, Hessen Germany. The members consist o',
+  thumbnailSrc:
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Okta_Logue_Moltow_HH_2019.jpg/640px-Okta_Logue_Moltow_HH_2019.jpg',
+  pageviewsLabel: '258 visits (past 60 days)',
+  taskHeading: 'Add links between articles',
+  taskDifficulty: 'easy' as const,
+  taskTimeEstimate: '3–5 minutes',
+  taskDescription: 'Make words from one article link to another article.',
+  editHref: '#',
 } as const

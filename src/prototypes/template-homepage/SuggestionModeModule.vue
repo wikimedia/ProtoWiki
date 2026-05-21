@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
+import type { RouteLocationRaw } from 'vue-router'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconImage, cdxIconReload, cdxIconRobot } from '@wikimedia/codex-icons'
 
@@ -10,6 +12,7 @@ import difficultyMediumIcon from '@/lib/ve-suggestions/assets/difficulty-medium.
 import { CHANGE_SIZE_COLORS } from '@/lib/ve-suggestions'
 
 interface Props {
+  to?: RouteLocationRaw
   articleTitle?: string
   articleShortDescription?: string
   thumbnailSrc?: string
@@ -32,6 +35,7 @@ const difficultyIcons = {
 } as const
 
 const props = withDefaults(defineProps<Props>(), {
+  to: undefined,
   articleTitle: undefined,
   articleShortDescription: undefined,
   thumbnailSrc: undefined,
@@ -59,7 +63,14 @@ const hasPreview = computed(
     (!!props.taskTypeLabel || !!props.emptyMessage),
 )
 
-const showRefreshInTitle = computed(() => props.showRefresh && !props.loadPending)
+const isLinkCard = computed(() => props.to != null)
+
+/** Link card only when preview is shown — load/empty states need interactive controls. */
+const useLinkCard = computed(() => isLinkCard.value && hasPreview.value)
+
+const showRefreshInTitle = computed(
+  () => props.showRefresh && !props.loadPending && !useLinkCard.value,
+)
 
 const showSuggestionCounter = computed(
   () =>
@@ -88,7 +99,9 @@ function onLoadClick(): void {
     <DashboardModule
       class="suggestion-mode-module__variant suggestion-mode-module__variant--mobile"
       title="Suggested edits"
-      mobile-card
+      :to="useLinkCard ? to : undefined"
+      :cta="useLinkCard ? 'See all suggestions' : null"
+      :mobile-card="!useLinkCard"
       subtle
     >
       <template v-if="showRefreshInTitle" #header-actions>
@@ -112,10 +125,18 @@ function onLoadClick(): void {
           action="progressive"
           weight="primary"
           :disabled="refreshing"
-          @click="onLoadClick"
+          @click.stop="onLoadClick"
         >
           {{ refreshing ? 'Loading…' : 'Load' }}
         </CdxButton>
+        <RouterLink
+          v-if="isLinkCard"
+          :to="to!"
+          class="suggestion-mode-module__see-all"
+          @click.stop
+        >
+          See all suggestions
+        </RouterLink>
       </div>
 
       <template v-else-if="emptyMessage">
@@ -124,7 +145,7 @@ function onLoadClick(): void {
           v-if="showRefresh"
           weight="quiet"
           :disabled="refreshing"
-          @click="onRefreshClick"
+          @click.stop="onRefreshClick"
         >
           {{ refreshing ? 'Loading…' : 'Try another page' }}
         </CdxButton>
@@ -237,8 +258,20 @@ function onLoadClick(): void {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: var(--spacing-75, 12px);
   min-height: 8rem;
   padding: var(--spacing-100, 16px) 0;
+}
+
+.suggestion-mode-module__see-all {
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-progressive, #36c);
+  text-decoration: none;
+}
+
+.suggestion-mode-module__see-all:hover {
+  text-decoration: underline;
 }
 
 .suggestion-mode-module__counter {

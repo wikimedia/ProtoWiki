@@ -14,7 +14,6 @@ import MentorModule from './MentorModule.vue'
 import StructuredTasksModule from './StructuredTasksModule.vue'
 import SuggestionModeModule from './SuggestionModeModule.vue'
 import {
-  APP_HOME,
   HELP_LINKS,
   HELP_MODULE,
   HELP_PAGE,
@@ -25,10 +24,12 @@ import {
 import { useDashpageSettings } from './useDashpageSettings'
 import { useDashpageSuggestionModule } from './useDashpageSuggestionModule'
 import { useHomepageImpact } from './useHomepageImpact'
+import { useHomepageSuggestedEdits } from './useHomepageSuggestedEdits'
 
 const { user, pageTitle } = useConfig()
 const { editSuggestionSource } = useDashpageSettings()
 const { impactMobileProps, impactDesktopProps, onImpactRefresh } = useHomepageImpact()
+const { suggestedEditsLinkTo } = useHomepageSuggestedEdits()
 const {
   moduleProps: suggestionModuleProps,
   onSuggestionLoad,
@@ -64,12 +65,13 @@ definePage({
             <StructuredTasksModule
               v-if="showStructuredTasks"
               class="dashboard-slot--mobile-primary"
-              :to="APP_HOME"
+              :to="suggestedEditsLinkTo"
               v-bind="STRUCTURED_TASKS"
             />
             <SuggestionModeModule
               v-else-if="showSuggestionMode"
               class="dashboard-slot--mobile-primary"
+              :to="suggestedEditsLinkTo"
               v-bind="suggestionModuleProps"
               @load="onSuggestionLoad"
               @refresh="onSuggestionRefresh"
@@ -100,7 +102,6 @@ definePage({
             <StructuredTasksModule
               v-if="showStructuredTasks"
               class="dashboard-slot--desktop-primary"
-              :to="APP_HOME"
               v-bind="STRUCTURED_TASKS"
             />
             <SuggestionModeModule

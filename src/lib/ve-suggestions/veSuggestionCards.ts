@@ -218,14 +218,143 @@ function normalizeSnippetWikitext(snippet: string): string {
   return snippet.trim()
 }
 
+const CITATION_MARKER_PATTERN =
+  /\{\{\s*citation\s+needed(?:\s*\|[^}]*)?\s*\}\}|\[citation needed\]/gi
+
+function stripSnippetDecorators(snippet: string): string {
+  return snippet
+    .replace(/^…+/g, '')
+    .replace(/…+$/g, '')
+    .replace(/'''/g, '')
+    .trim()
+}
+
+/** True when the snippet includes readable prose, not only a citation-needed marker. */
+function hasSubstantiveSnippetContent(snippet: string): boolean {
+  const trimmed = stripSnippetDecorators(normalizeSnippetWikitext(snippet))
+  if (!trimmed.length) return false
+  const withoutMarkers = trimmed.replace(CITATION_MARKER_PATTERN, '').trim()
+  if (!withoutMarkers.length) return false
+  return /[A-Za-z]{4,}/.test(withoutMarkers)
+}
+
+function getRequiredTemplateParamSnippetWikitext(context: DescriptionContext): string {
+  const suggestionData = context.suggestion.data as Record<string, unknown> | undefined
+  const candidateData = context.selectedCandidate?.data as Record<string, unknown> | undefined
+  const invocation =
+    typeof candidateData?.invocation === 'string' ? candidateData.invocation.trim() : ''
+  const coreText = context.selectedCandidate?.text?.trim() || invocation
+  const contextBefore = readContextField(suggestionData, candidateData, 'context_before')
+  const contextAfter = readContextField(suggestionData, candidateData, 'context_after')
+
+  if (coreText && (contextBefore.trim() || contextAfter.trim())) {
+    const snippet = formatContextualSnippetWikitext(contextBefore, coreText, contextAfter)
+    if (hasSubstantiveSnippetContent(snippet)) return snippet
+  }
+
+  const candidateContext = context.selectedCandidate?.context?.trim()
+  if (candidateContext && hasSubstantiveSnippetContent(candidateContext)) {
+    const templateTitle = getTemplateTitleSnippet(context)
+    if (templateTitle && stripSnippetDecorators(candidateContext) === templateTitle) {
+      return ''
+    }
+    return normalizeSnippetWikitext(candidateContext)
+  }
+
+  return ''
+}
+
+function isRequiredTemplateParamTitleOnlySnippet(rawSnippetWikitext: string): boolean {
+  const trimmed = stripSnippetDecorators(normalizeSnippetWikitext(rawSnippetWikitext))
+  if (!trimmed.length) return true
+  if (trimmed.includes('{{') || trimmed.startsWith('…')) return false
+  return true
+}
+
+function getCitationNeededSnippetWikitext(context: DescriptionContext): string {
+  const suggestionData = context.suggestion.data as Record<string, unknown> | undefined
+  const candidateData = context.selectedCandidate?.data as Record<string, unknown> | undefined
+  const coreText =
+    context.selectedCandidate?.text?.trim() ||
+    (typeof suggestionData?.link_text === 'string' ? suggestionData.link_text.trim() : '') ||
+    ''
+  const contextBefore = readContextField(suggestionData, candidateData, 'context_before')
+  const contextAfter = readContextField(suggestionData, candidateData, 'context_after')
+
+  if (coreText && (contextBefore.trim() || contextAfter.trim())) {
+    const snippet = formatContextualSnippetWikitext(contextBefore, coreText, contextAfter)
+    if (hasSubstantiveSnippetContent(snippet)) return snippet
+  }
+
+  const candidateContext = context.selectedCandidate?.context?.trim()
+  if (candidateContext && hasSubstantiveSnippetContent(candidateContext)) {
+    return normalizeSnippetWikitext(candidateContext)
+  }
+
+  return ''
+}
+
+function boldWikitext(text: string): string {
+  const core = text.trim()
+  if (!core) return ''
+  return core.startsWith("'''") && core.endsWith("'''") ? core : `'''${core}'''`
+}
+
 function formatContextualSnippetWikitext(
   contextBefore: string,
   coreText: string,
   contextAfter: string,
 ): string {
-  const boldCore =
-    coreText.startsWith("'''") && coreText.endsWith("'''") ? coreText : `'''${coreText}'''`
-  return normalizeSnippetWikitext(`…${contextBefore}${boldCore}${contextAfter}…`)
+  return normalizeSnippetWikitext(`…${contextBefore}${boldWikitext(coreText)}${contextAfter}…`)
+}
+
+function extractWikilinkDisplayLabel(raw: string): string {
+  const trimmed = raw.trim()
+  const match = trimmed.match(/^\[\[(?:[^\]|]*\|)?([^\]]+)\]\]$/)
+  if (match?.[1]) return match[1].trim()
+  return trimmed
+}
+
+function resolveDuplicateLinkCandidate(
+  candidates: FWVeSuggestionResponse['candidates'],
+  suggestion: FWVeSuggestionItem,
+): DescriptionContext['selectedCandidate'] {
+  const parsed = suggestion.id.match(/^duplicate-(\d+)-(.+)-(\d+)$/)
+  if (!parsed) return null
+
+  const unitIndex = Number(parsed[1])
+  const key = parsed[2]
+  const duplicateIndex = Number(parsed[3])
+  if (!Number.isFinite(unitIndex) || !Number.isFinite(duplicateIndex) || duplicateIndex < 1) {
+    return null
+  }
+
+  const matching = candidates
+    .filter((candidate) => {
+      const data = candidate.data as Record<string, unknown> | undefined
+      return data?.unitIndex === unitIndex && data?.key === key
+    })
+    .sort((a, b) => {
+      const positionA = Number((a.data as Record<string, unknown> | undefined)?.position ?? 0)
+      const positionB = Number((b.data as Record<string, unknown> | undefined)?.position ?? 0)
+      return positionA - positionB
+    })
+
+  return matching[duplicateIndex] ?? null
+}
+
+function resolveSelectedCandidate(
+  response: FWVeSuggestionResponse,
+  suggestion: FWVeSuggestionItem,
+): DescriptionContext['selectedCandidate'] {
+  const directMatch = response.candidates.find((candidate) => candidate.id === suggestion.id)
+  if (directMatch) return directMatch
+
+  if (response.suggestionType === 'duplicateLink') {
+    return resolveDuplicateLinkCandidate(response.candidates, suggestion)
+  }
+
+  return response.candidates[0] ?? null
 }
 
 function getSnippetWikitext(context: DescriptionContext, suggestionType: string): string {
@@ -234,7 +363,11 @@ function getSnippetWikitext(context: DescriptionContext, suggestionType: string)
   }
 
   if (suggestionType === 'requiredTemplateParam') {
-    return normalizeSnippetWikitext(getTemplateTitleSnippet(context) ?? '')
+    return getRequiredTemplateParamSnippetWikitext(context)
+  }
+
+  if (suggestionType === 'citationNeeded') {
+    return getCitationNeededSnippetWikitext(context)
   }
 
   const suggestionData = context.suggestion.data as Record<string, unknown> | undefined
@@ -249,6 +382,13 @@ function getSnippetWikitext(context: DescriptionContext, suggestionType: string)
   if (coreText && (contextBefore || contextAfter)) {
     const snippet = formatContextualSnippetWikitext(contextBefore, coreText, contextAfter)
     if (snippet) return snippet
+  }
+
+  if (suggestionType === 'duplicateLink') {
+    const displayLabel =
+      (coreText ? extractWikilinkDisplayLabel(coreText) : '') ||
+      (typeof suggestionData?.target === 'string' ? suggestionData.target.trim() : '')
+    if (displayLabel) return normalizeSnippetWikitext(boldWikitext(displayLabel))
   }
 
   const candidateContext = context.selectedCandidate?.context?.trim()
@@ -383,6 +523,13 @@ export function isTransformedSnippetHtml(card: SuggestionCardData): boolean {
 
 export function shouldShowSnippet(card: SuggestionCardData): boolean {
   if (SNIPPETLESS_SUGGESTION_TYPES.has(card.suggestionType)) return false
+  if (
+    card.suggestionType === 'requiredTemplateParam' &&
+    isRequiredTemplateParamTitleOnlySnippet(card.rawSnippetWikitext)
+  ) {
+    return false
+  }
+  if (!hasSubstantiveSnippetContent(card.rawSnippetWikitext)) return false
   return isTransformedSnippetHtml(card)
 }
 
@@ -442,10 +589,7 @@ export async function buildSuggestionCard(
   pageSource: string,
   snippetHtmlCache: Record<string, string>,
 ): Promise<SuggestionCardData> {
-  const selectedCandidate =
-    response.candidates.find((candidate) => candidate.id === suggestion.id) ??
-    response.candidates[0] ??
-    null
+  const selectedCandidate = resolveSelectedCandidate(response, suggestion)
   const display = DISPLAY_BY_TYPE[response.suggestionType] ?? {
     heading: headingForSuggestionType(response.suggestionType),
     description: () => 'Help explain where this information is coming from.',
@@ -495,10 +639,7 @@ export function buildFallbackCard(
   index: number,
   snippetHtmlByKey: Record<string, string> = {},
 ): SuggestionCardData {
-  const selectedCandidate =
-    response.candidates.find((candidate) => candidate.id === suggestion.id) ??
-    response.candidates[0] ??
-    null
+  const selectedCandidate = resolveSelectedCandidate(response, suggestion)
   const display = DISPLAY_BY_TYPE[response.suggestionType] ?? {
     heading: formatSuggestionType(response.suggestionType),
     description: () => 'Help explain where this information is coming from.',

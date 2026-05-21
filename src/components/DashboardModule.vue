@@ -250,7 +250,7 @@ function trimmedTitle(): string {
   display: block;
   align-self: stretch;
   width: 100%;
-  margin-top: 0.25rem;
+  margin-top: var(--spacing-75, 12px);
   padding: 0.25rem 1rem;
   background-color: var(--background-color-progressive, #36c);
   color: var(--color-inverted, #fff);

@@ -2,15 +2,25 @@ import { computed, ref, watch, type ComputedRef } from 'vue'
 
 import { useConfig } from '@/composables/useConfig'
 import {
+  DASHPAGE_MORELIKE_SEED_COUNT,
+  DASHPAGE_SUGGESTION_FALLBACK_PAGE,
+  DASHPAGE_SUGGESTION_MORELIKE_MAX,
+  DASHPAGE_SUGGESTION_POOL_MAX,
   dashpageSuggestionUserKey,
   getDashpageSuggestionModuleCache,
-  resolvePortfolioPage,
+  getPortfolioPagesForUser,
+  pickUpToRandomPages,
   setDashpageSuggestionModuleCache,
+  type PagePreviewCache,
 } from '@/lib/dashpageSuggestionCache'
 import { getPortfolioCache, setPortfolioCache } from '@/lib/dashpagePortfolioCache'
 import {
+  FetchMorelikePageTitlesError,
+  fetchMorelikePageTitles,
+} from '@/lib/fetchMorelikePageTitles'
+import {
   FetchUserEditedPageTitlesError,
-  fetchPagePreviewMetadata,
+  fetchPagePreviewMetadataBatch,
   fetchUserEditedPageTitles,
 } from '@/lib/fetchUserEditedPageTitles'
 import {
@@ -29,8 +39,58 @@ const wiki = createVeSuggestionsWiki('dashpage-suggestion-mode')
 
 const DASHPAGE_EXCLUDED_SUGGESTION_TYPES = new Set(['redirect'])
 
+export interface SuggestionQueueItem {
+  pageTitle: string
+  card: SuggestionCardData
+  pagePreview: PagePreviewCache
+  editHref: string
+}
+
 function filterDashpageSuggestions(cards: SuggestionCardData[]): SuggestionCardData[] {
   return cards.filter((card) => !DASHPAGE_EXCLUDED_SUGGESTION_TYPES.has(card.suggestionType))
+}
+
+function pageNeedsVeRefresh(pageTitle: string, forceRefresh: boolean): boolean {
+  if (forceRefresh) return true
+
+  const cached = getCachedRun(pageTitle)
+  if (!cached) return false
+
+  return filterDashpageSuggestions(cardsFromCachedRun(wiki, cached)).length === 0
+}
+
+function timeEstimateForDifficulty(difficulty: 'easy' | 'medium' | 'hard'): string {
+  if (difficulty === 'easy') return '3–5 minutes'
+  if (difficulty === 'medium') return '10–15 minutes'
+  return '20+ minutes'
+}
+
+function shuffleQueue<T>(items: T[]): T[] {
+  const copy = [...items]
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copy[i], copy[j]] = [copy[j], copy[i]]
+  }
+  return copy
+}
+
+function queueItemToBind(item: SuggestionQueueItem): SuggestionModeModuleBind {
+  const taskDifficulty = changeSizeForSuggestionType(item.card.suggestionType)
+  const showSnippet = shouldShowSnippet(item.card)
+
+  return {
+    articleTitle: item.pageTitle,
+    articleShortDescription: item.pagePreview.shortDescription,
+    thumbnailSrc: item.pagePreview.thumbnailSrc,
+    taskTypeLabel: item.card.heading,
+    taskHeading: item.card.heading,
+    taskDifficulty,
+    taskTimeEstimate: timeEstimateForDifficulty(taskDifficulty),
+    showSnippet,
+    snippetHtml: showSnippet ? item.card.renderedSnippetHtml : undefined,
+    editHref: item.editHref,
+    showRefresh: true,
+  }
 }
 
 export interface SuggestionModeModuleBind {
@@ -38,6 +98,10 @@ export interface SuggestionModeModuleBind {
   articleShortDescription?: string
   thumbnailSrc?: string
   taskTypeLabel?: string
+  taskHeading?: string
+  taskTimeEstimate?: string
+  taskDescription?: string
+  showSnippet?: boolean
   snippetHtml?: string
   loadPending?: boolean
   showRefresh?: boolean
@@ -45,60 +109,111 @@ export interface SuggestionModeModuleBind {
   refreshError?: string | null
   emptyMessage?: string | null
   totalSuggestionCount?: number
+  currentIndex?: number
+  queueLength?: number
+  canGoPrev?: boolean
+  canGoNext?: boolean
   taskDifficulty?: 'easy' | 'medium' | 'hard'
   editHref?: string
 }
 
-function previewFromCards(
-  pageTitle: string,
-  cards: SuggestionCardData[],
-  pagePreview: { thumbnailSrc?: string; shortDescription?: string } = {},
-): SuggestionModeModuleBind {
-  const eligibleCards = filterDashpageSuggestions(cards)
-  const totalSuggestionCount = eligibleCards.length
-  const selectedCard = pickRandomSuggestion(eligibleCards)
+function buildQueueFromPages(
+  pageTitles: string[],
+  pagePreviews: Record<string, PagePreviewCache>,
+): SuggestionQueueItem[] {
+  const items: SuggestionQueueItem[] = []
 
-  if (!selectedCard) {
-    return {
-      articleTitle: pageTitle,
-      emptyMessage: `No suggestions for ${pageTitle}.`,
-      showRefresh: true,
-    }
+  for (const pageTitle of pageTitles) {
+    const veRun = getCachedRun(pageTitle)
+    if (!veRun) continue
+
+    const cards = filterDashpageSuggestions(cardsFromCachedRun(wiki, veRun))
+    const card = pickRandomSuggestion(cards)
+    if (!card) continue
+
+    const pagePreview = pagePreviews[pageTitle] ?? {}
+    items.push({
+      pageTitle,
+      card,
+      pagePreview,
+      editHref: editUrlForSuggestionCard(wiki, pageTitle, card),
+    })
   }
 
-  return {
-    articleTitle: pageTitle,
-    articleShortDescription: pagePreview.shortDescription,
-    thumbnailSrc: pagePreview.thumbnailSrc,
-    taskTypeLabel: selectedCard.heading,
-    taskDifficulty: changeSizeForSuggestionType(selectedCard.suggestionType),
-    snippetHtml: shouldShowSnippet(selectedCard) ? selectedCard.renderedSnippetHtml : undefined,
-    editHref: editUrlForSuggestionCard(wiki, pageTitle, selectedCard),
-    showRefresh: true,
-    totalSuggestionCount,
-  }
+  return shuffleQueue(items)
 }
 
-function previewForCachedPage(
-  pageTitle: string,
-  pagePreview: { thumbnailSrc?: string; shortDescription?: string } = {},
+async function collectSuggestionsForPages(
+  pageTitles: string[],
+  forceRefresh: boolean,
+  signal: AbortSignal,
+  recordPipelineError: (message: string) => void,
+): Promise<SuggestionQueueItem[]> {
+  const items: SuggestionQueueItem[] = []
+
+  for (const pageTitle of pageTitles) {
+    if (signal.aborted) return items
+
+    const pipelineResult = await runVeSuggestionsPipeline(wiki, pageTitle, {
+      forceRefresh: pageNeedsVeRefresh(pageTitle, forceRefresh),
+      maxSuggestions: 1,
+      excludeSuggestionTypes: [...DASHPAGE_EXCLUDED_SUGGESTION_TYPES],
+    })
+
+    if (pipelineResult.error && !pipelineResult.cards.length) {
+      recordPipelineError(pipelineResult.error)
+      continue
+    }
+
+    if (pipelineResult.error) {
+      recordPipelineError(pipelineResult.error)
+    }
+
+    const eligibleCards = filterDashpageSuggestions(pipelineResult.cards)
+    const card = eligibleCards[0] ?? null
+    if (!card) continue
+
+    items.push({
+      pageTitle,
+      card,
+      pagePreview: {},
+      editHref: editUrlForSuggestionCard(wiki, pageTitle, card),
+    })
+  }
+
+  return items
+}
+
+function previewFromQueue(
+  queue: SuggestionQueueItem[],
+  index: number,
 ): SuggestionModeModuleBind {
-  const veRun = getCachedRun(pageTitle)
-  if (!veRun) {
+  if (!queue.length) {
     return {
-      articleTitle: pageTitle,
-      emptyMessage: `No suggestions for ${pageTitle}.`,
+      emptyMessage: 'No suggestions found. Try refresh.',
       showRefresh: true,
     }
   }
 
-  return previewFromCards(pageTitle, cardsFromCachedRun(wiki, veRun), pagePreview)
+  const safeIndex = Math.max(0, Math.min(index, queue.length - 1))
+  const item = queue[safeIndex]
+
+  return {
+    ...queueItemToBind(item),
+    totalSuggestionCount: queue.length,
+    currentIndex: safeIndex,
+    queueLength: queue.length,
+    canGoPrev: safeIndex > 0,
+    canGoNext: safeIndex < queue.length - 1,
+  }
 }
 
 export function useDashpageSuggestionModule(): {
   moduleProps: ComputedRef<SuggestionModeModuleBind>
+  fullscreenProps: ComputedRef<SuggestionModeModuleBind>
   onSuggestionLoad: () => void
   onSuggestionRefresh: () => void
+  onSuggestionNavigate: (delta: number) => void
 } {
   const { user, realUsername, currentUserPageLists } = useConfig()
 
@@ -106,29 +221,45 @@ export function useDashpageSuggestionModule(): {
   const error = ref<string | null>(null)
   const hasCache = ref(false)
   const lastFetchedAt = ref<number | null>(null)
-  const selectedPageTitle = ref<string | null>(null)
-  const preview = ref<SuggestionModeModuleBind>({})
+  const selectedPageTitles = ref<string[]>([])
+  const pagePreviews = ref<Record<string, PagePreviewCache>>({})
+  const queue = ref<SuggestionQueueItem[]>([])
+  const currentIndex = ref(0)
   const cachedRealTitles = ref<string[]>([])
 
   let abortController: AbortController | null = null
+
+  function persistCache(userKey: string): void {
+    setDashpageSuggestionModuleCache(userKey, {
+      fetchedAt: Date.now(),
+      selectedPageTitles: selectedPageTitles.value,
+      pagePreviews: pagePreviews.value,
+      currentIndex: currentIndex.value,
+    })
+  }
+
+  function applyQueue(nextQueue: SuggestionQueueItem[], index = 0): void {
+    queue.value = nextQueue
+    currentIndex.value = nextQueue.length ? Math.max(0, Math.min(index, nextQueue.length - 1)) : 0
+  }
 
   function loadFromModuleCache(userKey: string): void {
     const cached = getDashpageSuggestionModuleCache(userKey)
     if (!cached) {
       hasCache.value = false
       lastFetchedAt.value = null
-      selectedPageTitle.value = null
-      preview.value = {}
+      selectedPageTitles.value = []
+      pagePreviews.value = {}
+      queue.value = []
+      currentIndex.value = 0
       return
     }
 
     hasCache.value = true
     lastFetchedAt.value = cached.fetchedAt
-    selectedPageTitle.value = cached.selectedPageTitle
-    preview.value = previewForCachedPage(cached.selectedPageTitle, {
-      thumbnailSrc: cached.thumbnailSrc,
-      shortDescription: cached.shortDescription,
-    })
+    selectedPageTitles.value = cached.selectedPageTitles
+    pagePreviews.value = cached.pagePreviews ?? {}
+    applyQueue(buildQueueFromPages(cached.selectedPageTitles, pagePreviews.value), cached.currentIndex)
     error.value = null
   }
 
@@ -172,51 +303,97 @@ export function useDashpageSuggestionModule(): {
         cachedRealTitles.value = portfolio.titles
       }
 
-      const exclude = forceRefresh ? selectedPageTitle.value ?? undefined : undefined
-      const pageTitle = resolvePortfolioPage(
+      const portfolio = getPortfolioPagesForUser(
         user.value,
         currentUserPageLists.value,
         cachedRealTitles.value,
-        exclude,
+      )
+      const portfolioPool =
+        portfolio.length ? portfolio : [DASHPAGE_SUGGESTION_FALLBACK_PAGE]
+
+      const excludeTitles = forceRefresh ? selectedPageTitles.value : []
+
+      const recordPipelineError = (message: string): void => {
+        if (!error.value) error.value = message
+      }
+
+      const poolPagePicks = pickUpToRandomPages(
+        portfolioPool,
+        DASHPAGE_SUGGESTION_POOL_MAX,
+        excludeTitles,
       )
 
-      const pipelineResult = await runVeSuggestionsPipeline(wiki, pageTitle, {
+      const poolItems = await collectSuggestionsForPages(
+        poolPagePicks,
         forceRefresh,
-      })
+        signal,
+        recordPipelineError,
+      )
 
-      if (pipelineResult.error && !pipelineResult.cards.length) {
-        error.value = pipelineResult.error
-        return
+      if (signal.aborted) return
+
+      const seedTitles = pickUpToRandomPages(
+        portfolioPool,
+        DASHPAGE_MORELIKE_SEED_COUNT,
+      )
+
+      let morelikePagePicks: string[] = []
+      try {
+        morelikePagePicks = await fetchMorelikePageTitles(seedTitles, {
+          limit: DASHPAGE_SUGGESTION_MORELIKE_MAX,
+          excludeTitles: [...excludeTitles, ...poolPagePicks, ...seedTitles],
+          signal,
+        })
+      } catch (caught) {
+        if (caught instanceof FetchMorelikePageTitlesError && caught.code === 'aborted') {
+          return
+        }
+        const message =
+          caught instanceof FetchMorelikePageTitlesError
+            ? caught.message
+            : caught instanceof Error
+              ? caught.message
+              : String(caught)
+        recordPipelineError(message)
       }
 
-      if (pipelineResult.error) {
-        error.value = pipelineResult.error
+      const morelikeItems = await collectSuggestionsForPages(
+        morelikePagePicks,
+        forceRefresh,
+        signal,
+        recordPipelineError,
+      )
+
+      if (signal.aborted) return
+
+      const nextQueue = shuffleQueue([...poolItems, ...morelikeItems])
+      const queuePageTitles = nextQueue.map((item) => item.pageTitle)
+
+      if (queuePageTitles.length) {
+        const previews = await fetchPagePreviewMetadataBatch(queuePageTitles, { signal })
+        for (const item of nextQueue) {
+          item.pagePreview = previews[item.pageTitle] ?? {}
+        }
+        pagePreviews.value = previews
+      } else {
+        pagePreviews.value = {}
       }
 
-      let pagePreview: { thumbnailSrc?: string; shortDescription?: string } = {}
-      if (filterDashpageSuggestions(pipelineResult.cards).length) {
-        pagePreview = await fetchPagePreviewMetadata(pageTitle, { signal })
-      }
-
-      const moduleCache = {
-        fetchedAt: Date.now(),
-        selectedPageTitle: pageTitle,
-        thumbnailSrc: pagePreview.thumbnailSrc,
-        shortDescription: pagePreview.shortDescription,
-      }
-
-      setDashpageSuggestionModuleCache(userKey, moduleCache)
-
+      selectedPageTitles.value = queuePageTitles
+      applyQueue(nextQueue, 0)
       hasCache.value = true
-      lastFetchedAt.value = moduleCache.fetchedAt
-      selectedPageTitle.value = pageTitle
-      preview.value = previewFromCards(pageTitle, pipelineResult.cards, pagePreview)
+      lastFetchedAt.value = Date.now()
+      persistCache(userKey)
     } catch (caught) {
-      if (caught instanceof FetchUserEditedPageTitlesError && caught.code === 'aborted') {
+      if (
+        (caught instanceof FetchUserEditedPageTitlesError && caught.code === 'aborted') ||
+        (caught instanceof FetchMorelikePageTitlesError && caught.code === 'aborted')
+      ) {
         return
       }
       const message =
-        caught instanceof FetchUserEditedPageTitlesError
+        caught instanceof FetchUserEditedPageTitlesError ||
+        caught instanceof FetchMorelikePageTitlesError
           ? caught.message
           : caught instanceof Error
             ? caught.message
@@ -227,7 +404,7 @@ export function useDashpageSuggestionModule(): {
     }
   }
 
-  const moduleProps = computed((): SuggestionModeModuleBind => {
+  function baseProps(): SuggestionModeModuleBind {
     if (!hasCache.value) {
       return {
         loadPending: true,
@@ -236,13 +413,35 @@ export function useDashpageSuggestionModule(): {
       }
     }
 
+    const preview = previewFromQueue(queue.value, currentIndex.value)
     return {
-      ...preview.value,
+      ...preview,
       showRefresh: true,
       refreshing: loading.value,
       refreshError: error.value,
     }
+  }
+
+  const moduleProps = computed((): SuggestionModeModuleBind => {
+    const props = baseProps()
+    if (props.loadPending || props.emptyMessage) {
+      return props
+    }
+
+    // Homepage card: show first item only, counter uses full queue length.
+    const first = queue.value[0]
+    if (!first) return props
+
+    return {
+      ...queueItemToBind(first),
+      showRefresh: true,
+      refreshing: loading.value,
+      refreshError: error.value,
+      totalSuggestionCount: queue.value.length > 1 ? queue.value.length : undefined,
+    }
   })
+
+  const fullscreenProps = computed((): SuggestionModeModuleBind => baseProps())
 
   function onSuggestionLoad(): void {
     void runPipeline(false)
@@ -252,9 +451,21 @@ export function useDashpageSuggestionModule(): {
     void runPipeline(true)
   }
 
+  function onSuggestionNavigate(delta: number): void {
+    if (!queue.value.length) return
+
+    const nextIndex = currentIndex.value + delta
+    if (nextIndex < 0 || nextIndex >= queue.value.length) return
+
+    currentIndex.value = nextIndex
+    persistCache(dashpageSuggestionUserKey(user.value, realUsername.value))
+  }
+
   return {
     moduleProps,
+    fullscreenProps,
     onSuggestionLoad,
     onSuggestionRefresh,
+    onSuggestionNavigate,
   }
 }

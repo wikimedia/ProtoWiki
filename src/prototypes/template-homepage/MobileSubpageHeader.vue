@@ -76,10 +76,10 @@ withDefaults(defineProps<Props>(), {
   flex: 1;
   min-width: 0;
   margin: 0;
+  margin-block: 0;
   padding: 0;
   overflow: hidden;
-  font-family:
-    var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
+  font-family: var(--font-family-system-sans, system-ui, sans-serif);
   font-size: var(--font-size-medium, 1rem);
   font-weight: var(--font-weight-bold, 700);
   line-height: var(--line-height-medium, 1.375);

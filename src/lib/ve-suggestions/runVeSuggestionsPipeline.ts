@@ -35,6 +35,10 @@ export interface VeSuggestionsPipelineResult {
 export interface RunVeSuggestionsPipelineOptions {
   forceRefresh?: boolean
   onProgress?: (progress: VeSuggestionsPipelineProgress) => void
+  /** Stop after collecting this many suggestions (skips remaining VE methods). */
+  maxSuggestions?: number
+  /** Suggestion types to ignore when counting toward `maxSuggestions`. */
+  excludeSuggestionTypes?: string[]
 }
 
 const DEFAULT_API_USER_AGENT =
@@ -186,18 +190,28 @@ export async function runVeSuggestionsPipeline(
     const sectionTitleMap = buildSectionTitleMap(run.pageSource)
     const sectionRanges = buildSectionRanges(run.pageSource)
     const snippetHtmlCache = run.snippetHtmlByKey ?? {}
+    const maxSuggestions = options.maxSuggestions
+    const excludedTypes = new Set(options.excludeSuggestionTypes ?? [])
+    const methods =
+      maxSuggestions != null && maxSuggestions > 0 ?
+        [...VE_METHODS].sort(() => Math.random() - 0.5)
+      : VE_METHODS
 
     let completed = 0
     let abortedForRateLimit = false
+    let eligibleSuggestionCount = 0
 
-    for (const method of VE_METHODS) {
+    for (const method of methods) {
       if (abortedForRateLimit) break
+      if (maxSuggestions != null && eligibleSuggestionCount >= maxSuggestions) break
 
       try {
         const response = await method.run(wiki, trimmed)
         run.methodResults[method.methodName] = { ok: true, response }
 
         for (let index = 0; index < response.suggestions.length; index++) {
+          if (maxSuggestions != null && eligibleSuggestionCount >= maxSuggestions) break
+
           const suggestion = response.suggestions[index]
           if (!suggestion) continue
           const card = await buildSuggestionCard(
@@ -212,7 +226,15 @@ export async function runVeSuggestionsPipeline(
             run.pageSource ?? '',
             snippetHtmlCache,
           )
+
+          if (excludedTypes.has(card.suggestionType)) continue
+
           run.cards = [...(run.cards ?? []), card]
+          eligibleSuggestionCount += 1
+
+          if (maxSuggestions != null && eligibleSuggestionCount >= maxSuggestions) {
+            break
+          }
         }
       } catch (caught) {
         const message = caught instanceof Error ? caught.message : String(caught)

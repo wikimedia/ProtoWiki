@@ -100,12 +100,38 @@ export interface PagePreviewMetadata {
   shortDescription?: string
 }
 
-export async function fetchPagePreviewMetadata(
+function normalizePreviewLookupTitle(title: string): string {
+  return title.trim().replace(/_/g, ' ')
+}
+
+function previewFromQueryPage(page: {
+  title?: string
+  missing?: string
+  description?: string
+  thumbnail?: { source?: string }
+}): PagePreviewMetadata | null {
+  if (page.missing) return null
+  const title = typeof page.title === 'string' ? page.title.trim() : ''
+  if (!title.length) return null
+  return {
+    thumbnailSrc: page.thumbnail?.source,
+    shortDescription:
+      typeof page.description === 'string' && page.description.trim().length
+        ? page.description.trim()
+        : undefined,
+  }
+}
+
+/**
+ * Lead-image thumbnail from REST summary. Used when Action API `pageimages` has none
+ * (e.g. Gorillaz — infobox image exists but no page-level image is set).
+ */
+async function fetchRestSummaryThumbnail(
   pageTitle: string,
   options: FetchUserEditedPageTitlesOptions = {},
-): Promise<PagePreviewMetadata> {
+): Promise<string | undefined> {
   const trimmed = pageTitle.trim()
-  if (!trimmed.length) return {}
+  if (!trimmed.length) return undefined
 
   const slug = encodeURIComponent(trimmed.replace(/ /g, '_'))
 
@@ -115,19 +141,92 @@ export async function fetchPagePreviewMetadata(
       signal: options.signal,
       headers: { 'Api-User-Agent': API_USER_AGENT },
     })
-    if (!response.ok) return {}
-    const json = (await response.json()) as {
-      description?: string
-      thumbnail?: { source?: string }
-    }
-    return {
-      thumbnailSrc: json.thumbnail?.source,
-      shortDescription:
-        typeof json.description === 'string' && json.description.trim().length
-          ? json.description.trim()
-          : undefined,
-    }
+    if (!response.ok) return undefined
+    const json = (await response.json()) as { thumbnail?: { source?: string } }
+    return json.thumbnail?.source
   } catch {
-    return {}
+    return undefined
   }
+}
+
+/** One Action API query for up to 50 titles (thumbnail + short description). */
+export async function fetchPagePreviewMetadataBatch(
+  pageTitles: string[],
+  options: FetchUserEditedPageTitlesOptions = {},
+): Promise<Record<string, PagePreviewMetadata>> {
+  const titles = [...new Set(pageTitles.map((title) => title.trim()).filter(Boolean))]
+  const out: Record<string, PagePreviewMetadata> = {}
+  if (!titles.length) return out
+
+  for (let offset = 0; offset < titles.length; offset += 50) {
+    const chunk = titles.slice(offset, offset + 50)
+    const requestedByNormalized = new Map(
+      chunk.map((title) => [normalizePreviewLookupTitle(title).toLowerCase(), title]),
+    )
+
+    try {
+      assertNotAborted(options.signal)
+      const data = (await fetchJson(
+        actionUrl({
+          action: 'query',
+          prop: 'pageimages|description',
+          piprop: 'thumbnail',
+          pithumbsize: '320',
+          titles: chunk.join('|'),
+        }),
+        options.signal,
+      )) as {
+        query?: {
+          pages?: Record<
+            string,
+            {
+              title?: string
+              missing?: string
+              description?: string
+              thumbnail?: { source?: string }
+            }
+          >
+        }
+      }
+
+      for (const page of Object.values(data.query?.pages ?? {})) {
+        const preview = previewFromQueryPage(page)
+        if (!preview || !page.title) continue
+
+        out[page.title] = preview
+
+        const requested =
+          requestedByNormalized.get(normalizePreviewLookupTitle(page.title).toLowerCase())
+        if (requested) {
+          out[requested] = preview
+        }
+      }
+    } catch {
+      // Best-effort batch; callers fall back to empty previews per title.
+    }
+  }
+
+  const needsThumbnail = titles.filter((title) => !(out[title]?.thumbnailSrc?.length))
+  if (needsThumbnail.length) {
+    await Promise.all(
+      needsThumbnail.map(async (title) => {
+        const thumbnailSrc = await fetchRestSummaryThumbnail(title, options)
+        if (!thumbnailSrc) return
+        out[title] = { ...out[title], thumbnailSrc }
+      }),
+    )
+  }
+
+  return out
+}
+
+export async function fetchPagePreviewMetadata(
+  pageTitle: string,
+  options: FetchUserEditedPageTitlesOptions = {},
+): Promise<PagePreviewMetadata> {
+  const trimmed = pageTitle.trim()
+  if (!trimmed.length) return {}
+
+  const batch = await fetchPagePreviewMetadataBatch([trimmed], options)
+  return batch[trimmed] ?? Object.values(batch)[0] ?? {}
 }

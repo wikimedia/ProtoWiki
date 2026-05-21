@@ -1,14 +1,25 @@
 import type { ConfigUser, UserPageLists } from '@/lib/config'
 import { normalizeWikiUsername } from '@/lib/config'
 
-const STORAGE_KEY = 'protowiki-dashpage-suggestion-module-v2'
+const STORAGE_KEY = 'protowiki-dashpage-suggestion-module-v4'
 export const DASHPAGE_SUGGESTION_FALLBACK_PAGE = 'Wet Leg'
+export const DASHPAGE_SUGGESTION_POOL_MAX = 6
+export const DASHPAGE_SUGGESTION_MORELIKE_MAX = 6
+/** Max combined suggestion queue length (pool + morelike successes). */
+export const DASHPAGE_SUGGESTION_MAX_PAGES =
+  DASHPAGE_SUGGESTION_POOL_MAX + DASHPAGE_SUGGESTION_MORELIKE_MAX
+export const DASHPAGE_MORELIKE_SEED_COUNT = 5
+
+export interface PagePreviewCache {
+  thumbnailSrc?: string
+  shortDescription?: string
+}
 
 export interface DashpageSuggestionModuleCache {
   fetchedAt: number
-  selectedPageTitle: string
-  thumbnailSrc?: string
-  shortDescription?: string
+  selectedPageTitles: string[]
+  pagePreviews: Record<string, PagePreviewCache>
+  currentIndex: number
 }
 
 type ModuleStore = Record<string, DashpageSuggestionModuleCache>
@@ -51,10 +62,20 @@ export function getDashpageSuggestionModuleCache(
   if (!userKey.length) return null
 
   const entry = readStore()[userKey]
-  if (!entry || typeof entry.fetchedAt !== 'number' || typeof entry.selectedPageTitle !== 'string') {
+  if (
+    !entry ||
+    typeof entry.fetchedAt !== 'number' ||
+    !Array.isArray(entry.selectedPageTitles) ||
+    typeof entry.currentIndex !== 'number'
+  ) {
     return null
   }
-  return entry
+  return {
+    fetchedAt: entry.fetchedAt,
+    selectedPageTitles: entry.selectedPageTitles,
+    pagePreviews: entry.pagePreviews ?? {},
+    currentIndex: entry.currentIndex,
+  }
 }
 
 export function setDashpageSuggestionModuleCache(
@@ -106,15 +127,48 @@ export function pickRandomPage(titles: string[], exclude?: string): string {
   return pool[index] ?? DASHPAGE_SUGGESTION_FALLBACK_PAGE
 }
 
+/** Sample up to `max` distinct titles without replacement. */
+export function pickUpToRandomPages(
+  titles: string[],
+  max = DASHPAGE_SUGGESTION_POOL_MAX,
+  excludeTitles: string[] = [],
+): string[] {
+  const exclude = new Set(excludeTitles.filter(Boolean))
+  let pool = titles.filter((title) => !exclude.has(title))
+
+  if (!pool.length) {
+    pool = titles.length ? [...titles] : [DASHPAGE_SUGGESTION_FALLBACK_PAGE]
+  }
+
+  const count = Math.min(max, pool.length)
+  const shuffled = [...pool]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+
+  return shuffled.slice(0, count)
+}
+
+export function resolvePortfolioPages(
+  user: ConfigUser,
+  pageLists: UserPageLists,
+  cachedRealTitles: string[],
+  excludeTitles: string[] = [],
+): string[] {
+  const portfolio = getPortfolioPagesForUser(user, pageLists, cachedRealTitles)
+  if (!portfolio.length) {
+    return [DASHPAGE_SUGGESTION_FALLBACK_PAGE]
+  }
+  return pickUpToRandomPages(portfolio, DASHPAGE_SUGGESTION_POOL_MAX, excludeTitles)
+}
+
 export function resolvePortfolioPage(
   user: ConfigUser,
   pageLists: UserPageLists,
   cachedRealTitles: string[],
   exclude?: string,
 ): string {
-  const portfolio = getPortfolioPagesForUser(user, pageLists, cachedRealTitles)
-  if (!portfolio.length) {
-    return DASHPAGE_SUGGESTION_FALLBACK_PAGE
-  }
-  return pickRandomPage(portfolio, exclude)
+  const pages = resolvePortfolioPages(user, pageLists, cachedRealTitles, exclude ? [exclude] : [])
+  return pages[0] ?? DASHPAGE_SUGGESTION_FALLBACK_PAGE
 }
