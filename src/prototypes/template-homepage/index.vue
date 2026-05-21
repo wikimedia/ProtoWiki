@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import ChromeWrapper from '@/components/ChromeWrapper.vue'
+import DashpageChromeWrapper from './DashpageChromeWrapper.vue'
 import Dashboard from '@/components/Dashboard.vue'
 import DashboardModule from '@/components/DashboardModule.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
@@ -36,7 +36,7 @@ definePage({
 </script>
 
 <template>
-  <ChromeWrapper :last-edited-notice="false">
+  <DashpageChromeWrapper :last-edited-notice="false">
     <SpecialPageWrapper :title="pageTitle" help>
       <div class="prototype-dashpage-shell">
         <Dashboard>
@@ -104,7 +104,7 @@ definePage({
         </Dashboard>
       </div>
     </SpecialPageWrapper>
-  </ChromeWrapper>
+  </DashpageChromeWrapper>
 </template>
 
 <style scoped>

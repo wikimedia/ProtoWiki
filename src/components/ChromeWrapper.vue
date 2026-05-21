@@ -89,7 +89,11 @@ provide(PROTOWIKI_CHROME_THEME, effectiveTheme)
         :tagline-src="props.taglineSrc"
         :mobile-wordmark-src="props.mobileWordmarkSrc"
         :nav-tools="props.navTools"
-      />
+      >
+        <template v-if="$slots.menu" #menu>
+          <slot name="menu" />
+        </template>
+      </ChromeHeader>
     </slot>
 
     <main class="chrome-wrapper__content">

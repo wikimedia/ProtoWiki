@@ -1,0 +1,51 @@
+import { ref, watch, type Ref } from 'vue'
+
+export type EditSuggestionSource = 'structured-tasks' | 'suggestion-mode'
+
+export const EDIT_SUGGESTION_SOURCE_MENU_ITEMS: {
+  value: EditSuggestionSource
+  label: string
+}[] = [
+  { value: 'structured-tasks', label: 'Structured tasks' },
+  { value: 'suggestion-mode', label: 'Suggestion mode' },
+]
+
+const STORAGE_KEY = 'protowiki-dashpage-edit-suggestion-source'
+const VALID_SOURCES: EditSuggestionSource[] = ['structured-tasks', 'suggestion-mode']
+
+function isEditSuggestionSource(value: unknown): value is EditSuggestionSource {
+  return typeof value === 'string' && VALID_SOURCES.includes(value as EditSuggestionSource)
+}
+
+function loadEditSuggestionSource(): EditSuggestionSource {
+  if (typeof window === 'undefined') return 'structured-tasks'
+
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY)
+    return isEditSuggestionSource(stored) ? stored : 'structured-tasks'
+  } catch {
+    return 'structured-tasks'
+  }
+}
+
+function saveEditSuggestionSource(source: EditSuggestionSource): void {
+  if (typeof window === 'undefined') return
+
+  try {
+    window.localStorage.setItem(STORAGE_KEY, source)
+  } catch {
+    // Quota or private-mode failures — ignore.
+  }
+}
+
+const editSuggestionSource = ref<EditSuggestionSource>(loadEditSuggestionSource())
+
+watch(editSuggestionSource, (value) => {
+  saveEditSuggestionSource(value)
+})
+
+export function useDashpageSettings(): {
+  editSuggestionSource: Ref<EditSuggestionSource>
+} {
+  return { editSuggestionSource }
+}

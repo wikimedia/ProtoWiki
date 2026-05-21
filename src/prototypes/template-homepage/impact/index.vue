@@ -3,7 +3,7 @@ import { computed, watch } from 'vue'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconReload } from '@wikimedia/codex-icons'
 
-import ChromeWrapper from '@/components/ChromeWrapper.vue'
+import DashpageChromeWrapper from '../DashpageChromeWrapper.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 import { useConfig } from '@/composables/useConfig'
 import { useRealUserImpact } from '@/composables/useRealUserImpact'
@@ -61,7 +61,7 @@ definePage({
 </script>
 
 <template>
-  <ChromeWrapper :last-edited-notice="false">
+  <DashpageChromeWrapper :last-edited-notice="false">
     <SpecialPageWrapper :title="null" class="impact-page">
       <MobileSubpageHeader title="Your impact" :back-to="HOMEPAGE" back-label="Back to homepage">
         <template v-if="showRealRefresh" #actions>
@@ -78,7 +78,7 @@ definePage({
       </MobileSubpageHeader>
       <ImpactModule standalone v-bind="impactProps" @refresh="onRefreshClick" />
     </SpecialPageWrapper>
-  </ChromeWrapper>
+  </DashpageChromeWrapper>
 </template>
 
 <style scoped>

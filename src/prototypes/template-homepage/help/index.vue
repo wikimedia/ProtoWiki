@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ChromeWrapper from '@/components/ChromeWrapper.vue'
+import DashpageChromeWrapper from '../DashpageChromeWrapper.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 import HelpModule from '../HelpModule.vue'
 import MobileSubpageHeader from '../MobileSubpageHeader.vue'
@@ -14,7 +14,7 @@ definePage({
 </script>
 
 <template>
-  <ChromeWrapper :last-edited-notice="false">
+  <DashpageChromeWrapper :last-edited-notice="false">
     <SpecialPageWrapper :title="null" class="help-page">
       <MobileSubpageHeader
         :title="HELP_MODULE.title"
@@ -23,7 +23,7 @@ definePage({
       />
       <HelpModule standalone :help-links="HELP_LINKS" view-more-href="#" />
     </SpecialPageWrapper>
-  </ChromeWrapper>
+  </DashpageChromeWrapper>
 </template>
 
 <style scoped>
