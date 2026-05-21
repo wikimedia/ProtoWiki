@@ -42,11 +42,7 @@ const editedPagesText = computed({
     </label>
     <label v-if="user === 'real'" class="prototype-user-settings-panel__field">
       <span class="prototype-user-settings-panel__label">Username</span>
-      <CdxTextInput
-        v-model="realUsername"
-        class="prototype-user-settings-panel__input"
-        placeholder="e.g. Jimbo Wales"
-      />
+      <CdxTextInput v-model="realUsername" class="prototype-user-settings-panel__input" />
     </label>
     <template v-if="user !== 'real'">
       <label class="prototype-user-settings-panel__field">
