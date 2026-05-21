@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 import { CdxAccordion } from '@wikimedia/codex'
 
-import { shouldShowSnippet, type SuggestionCardData } from './veSuggestionCards'
+import { shouldShowSnippet, type SuggestionCardData } from '@/lib/ve-suggestions'
 
 const props = defineProps<{
   card: SuggestionCardData

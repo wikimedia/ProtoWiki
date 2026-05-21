@@ -2,6 +2,7 @@ import type { FakeWiki } from 'fakewiki'
 import type { FWVeSuggestionItem, FWVeSuggestionResponse } from 'fakewiki/types'
 
 import { formatSuggestionType, headingForSuggestionType } from './veDisplayHeadings'
+import { stripLinksFromSnippetHtml, stripLinksFromWikitext } from './snippetLinkStrip'
 import { normalizePageTitle } from './veSuggestionsCache'
 
 export interface SuggestionCardData {
@@ -217,6 +218,16 @@ function normalizeSnippetWikitext(snippet: string): string {
   return snippet.trim()
 }
 
+function formatContextualSnippetWikitext(
+  contextBefore: string,
+  coreText: string,
+  contextAfter: string,
+): string {
+  const boldCore =
+    coreText.startsWith("'''") && coreText.endsWith("'''") ? coreText : `'''${coreText}'''`
+  return normalizeSnippetWikitext(`…${contextBefore}${boldCore}${contextAfter}…`)
+}
+
 function getSnippetWikitext(context: DescriptionContext, suggestionType: string): string {
   if (SNIPPETLESS_SUGGESTION_TYPES.has(suggestionType)) {
     return ''
@@ -236,7 +247,7 @@ function getSnippetWikitext(context: DescriptionContext, suggestionType: string)
   const contextAfter = readContextField(suggestionData, candidateData, 'context_after')
 
   if (coreText && (contextBefore || contextAfter)) {
-    const snippet = normalizeSnippetWikitext(`${contextBefore}${coreText}${contextAfter}`)
+    const snippet = formatContextualSnippetWikitext(contextBefore, coreText, contextAfter)
     if (snippet) return snippet
   }
 
@@ -345,6 +356,20 @@ function resolveBestEffortCardLink(
   return baseUrl
 }
 
+export function editUrlForSuggestionCard(
+  wiki: FakeWiki,
+  pageTitle: string,
+  card: SuggestionCardData,
+): string {
+  const hashIndex = card.cardLinkUrl.indexOf('#')
+  if (hashIndex >= 0) {
+    const fragment = decodeURIComponent(card.cardLinkUrl.slice(hashIndex + 1))
+    const sectionTitle = fragment.replace(/_/g, ' ')
+    return wiki.getEditUrl(pageTitle, sectionTitle)
+  }
+  return wiki.getEditUrl(pageTitle)
+}
+
 function snippetCacheKey(pageTitle: string, snippet: string): string {
   return `${normalizePageTitle(pageTitle)}\0${snippet}`
 }
@@ -369,7 +394,7 @@ export function applySnippetHtmlFromCache(
   if (!card.rawSnippetWikitext) return card
   const cachedHtml = snippetHtmlByKey[snippetCacheKey(pageTitle, card.rawSnippetWikitext)]
   if (cachedHtml && cachedHtml !== card.rawSnippetWikitext) {
-    return { ...card, renderedSnippetHtml: cachedHtml }
+    return { ...card, renderedSnippetHtml: stripLinksFromSnippetHtml(cachedHtml) }
   }
   if (isTransformedSnippetHtml(card)) return card
   return { ...card, renderedSnippetHtml: '' }
@@ -393,11 +418,13 @@ async function renderSnippetHtml(
   if (!normalizedSnippet) return ''
   const key = snippetCacheKey(pageTitle, normalizedSnippet)
   const cached = snippetHtmlCache[key]
-  if (cached !== undefined) return cached
+  if (cached !== undefined) return stripLinksFromSnippetHtml(cached)
   try {
-    const html = await wiki.transformWikitextToHtml(normalizedSnippet, pageTitle)
-    snippetHtmlCache[key] = html
-    return html
+    const strippedSnippet = stripLinksFromWikitext(normalizedSnippet)
+    const html = await wiki.transformWikitextToHtml(strippedSnippet, pageTitle)
+    const strippedHtml = stripLinksFromSnippetHtml(html)
+    snippetHtmlCache[key] = strippedHtml
+    return strippedHtml
   } catch {
     return normalizedSnippet
   }
@@ -482,7 +509,9 @@ export function buildFallbackCard(
     snippetHtmlByKey[snippetCacheKey(pageTitle, rawSnippet)]
   : undefined
   const renderedSnippetHtml =
-    cachedHtml && cachedHtml !== rawSnippet ? cachedHtml : ''
+    cachedHtml && cachedHtml !== rawSnippet ?
+      stripLinksFromSnippetHtml(cachedHtml)
+    : ''
 
   return {
     cardId: `${methodName}-${suggestion.id}-${index}`,
