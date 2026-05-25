@@ -7,36 +7,17 @@ import TaskFullscreenShell from '../TaskFullscreenShell.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 import MobileSubpageHeader from '../MobileSubpageHeader.vue'
 import SuggestedEditsView from '../SuggestedEditsView.vue'
-import { HOMEPAGE, STRUCTURED_TASKS_FULL } from '../dashpage-fixtures'
+import { HOMEPAGE } from '../dashpage-fixtures'
 import { useDashpageSettings } from '../useDashpageSettings'
+import { useDashpageStructuredTasksModule } from '../useDashpageStructuredTasksModule'
 import { useDashpageSuggestionModule } from '../useDashpageSuggestionModule'
 
 const { editSuggestionSource } = useDashpageSettings()
+const { fullscreenProps: structuredFullscreenProps } = useDashpageStructuredTasksModule()
 const { fullscreenProps, onSuggestionLoad, onSuggestionRefresh, onSuggestionNavigate } =
   useDashpageSuggestionModule()
 
 const showStructuredTasks = computed(() => editSuggestionSource.value === 'structured-tasks')
-
-const structuredProps = computed(() => ({
-  showFilterBar: true,
-  topicFilter: STRUCTURED_TASKS_FULL.topicFilter,
-  difficultyFilter: STRUCTURED_TASKS_FULL.difficultyFilter,
-  currentIndex: STRUCTURED_TASKS_FULL.currentIndex - 1,
-  totalCount: STRUCTURED_TASKS_FULL.totalCount,
-  articleTitle: STRUCTURED_TASKS_FULL.articleTitle,
-  articleShortDescription: STRUCTURED_TASKS_FULL.articleDescription,
-  thumbnailSrc: STRUCTURED_TASKS_FULL.thumbnailSrc,
-  pageviewsLabel: STRUCTURED_TASKS_FULL.pageviewsLabel,
-  taskHeading: STRUCTURED_TASKS_FULL.taskHeading,
-  taskDifficulty: STRUCTURED_TASKS_FULL.taskDifficulty,
-  taskTimeEstimate: STRUCTURED_TASKS_FULL.taskTimeEstimate,
-  taskDescription: STRUCTURED_TASKS_FULL.taskDescription,
-  taskDescriptionParts: [{ kind: 'text', text: STRUCTURED_TASKS_FULL.taskDescription }],
-  showSnippet: false,
-  editHref: STRUCTURED_TASKS_FULL.editHref,
-  canGoPrev: false,
-  canGoNext: false,
-}))
 
 const suggestionProps = computed(() => ({
   showFilterBar: false,
@@ -48,7 +29,7 @@ const suggestionProps = computed(() => ({
 }))
 
 const viewProps = computed(() =>
-  showStructuredTasks.value ? structuredProps.value : suggestionProps.value,
+  showStructuredTasks.value ? structuredFullscreenProps.value : suggestionProps.value,
 )
 
 const showHeaderRefresh = computed(
@@ -147,6 +128,7 @@ definePage({
   display: flex;
   flex: 1;
   flex-direction: column;
+  min-width: 0;
   min-height: 0;
 }
 </style>

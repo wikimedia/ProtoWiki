@@ -108,20 +108,8 @@ export const IMPACT_DESKTOP: {
   viewAllEditsHref: '#',
 }
 
-/** Homepage link-card preview (compact). */
+/** Static structured-tasks mock — shared by homepage module and fullscreen subpage. */
 export const STRUCTURED_TASKS = {
-  currentIndex: 1,
-  totalCount: 173745,
-  articleTitle: 'Full circle ringing',
-  articleDescription: 'Method of hanging (church) bells and …',
-  /** Action API `pageimages` + `pithumbsize=96` for [[Full circle ringing]] */
-  thumbnailSrc:
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/St_Botolph%27s_Bell_Ringing.webm/120px--St_Botolph%27s_Bell_Ringing.webm.jpg',
-  taskTypeLabel: 'Find references',
-} as const
-
-/** Fullscreen suggested-edits subpage (static structured-tasks mock). */
-export const STRUCTURED_TASKS_FULL = {
   currentIndex: 1,
   totalCount: 173450,
   topicFilter: 'Music',

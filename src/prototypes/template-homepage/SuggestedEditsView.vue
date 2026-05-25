@@ -309,6 +309,9 @@ function onNavigate(delta: number): void {
   display: flex;
   flex: 1;
   flex-direction: column;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
   min-height: 0;
 }
 
@@ -318,15 +321,21 @@ function onNavigate(delta: number): void {
   flex: 1;
   flex-direction: column;
   gap: var(--spacing-100, 16px);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 
 .suggested-edits-view__filters {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--spacing-50, 8px);
+  width: 100%;
+  min-width: 0;
   padding-bottom: var(--spacing-75, 12px);
 }
 
@@ -342,9 +351,17 @@ function onNavigate(delta: number): void {
   color: var(--color-base--subtle, #54595d);
 }
 
-.suggested-edits-view__filter :deep(.cdx-select) {
+.suggested-edits-view__filter :deep(.cdx-select-vue) {
   flex: 1;
+  width: 100%;
   min-width: 0;
+}
+
+.suggested-edits-view__filter :deep(.cdx-select-vue__handle) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .suggested-edits-view__load-prompt {

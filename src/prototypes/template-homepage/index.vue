@@ -22,9 +22,9 @@ import {
   MENTOR,
   MENTOR_PAGE,
   RECENT_CHANGES_PAGE,
-  STRUCTURED_TASKS,
 } from './dashpage-fixtures'
 import { useDashpageSettings } from './useDashpageSettings'
+import { useDashpageStructuredTasksModule } from './useDashpageStructuredTasksModule'
 import { useDashpageSuggestionModule } from './useDashpageSuggestionModule'
 import { useDashpageRecentChangesModule } from './useDashpageRecentChangesModule'
 import { useHomepageImpact } from './useHomepageImpact'
@@ -32,6 +32,7 @@ import { useHomepageSuggestedEdits } from './useHomepageSuggestedEdits'
 
 const { user, pageTitle, realUsername, currentUserPageLists } = useConfig()
 const { editSuggestionSource } = useDashpageSettings()
+const { moduleProps: structuredModuleProps } = useDashpageStructuredTasksModule()
 const { impactMobileProps, impactDesktopProps, onImpactRefresh } = useHomepageImpact()
 const { suggestedEditsLinkTo } = useHomepageSuggestedEdits()
 const {
@@ -89,7 +90,7 @@ definePage({
               v-if="showStructuredTasks"
               class="dashboard-slot--mobile-primary"
               :to="suggestedEditsLinkTo"
-              v-bind="STRUCTURED_TASKS"
+              v-bind="structuredModuleProps"
             />
             <SuggestionModeModule
               v-else-if="showSuggestionMode"
@@ -135,7 +136,7 @@ definePage({
             <StructuredTasksModule
               v-if="showStructuredTasks"
               class="dashboard-slot--desktop-primary"
-              v-bind="STRUCTURED_TASKS"
+              v-bind="structuredModuleProps"
             />
             <SuggestionModeModule
               v-else-if="showSuggestionMode"
