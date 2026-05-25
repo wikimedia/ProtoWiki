@@ -4,7 +4,10 @@ import { useConfig } from '@/composables/useConfig'
 import {
   DASHPAGE_MORELIKE_SEED_COUNT,
   DASHPAGE_SUGGESTION_FALLBACK_PAGE,
+  DASHPAGE_SUGGESTION_MAX_TRIED_PAGES,
+  DASHPAGE_SUGGESTION_MIN_QUEUE,
   DASHPAGE_SUGGESTION_MORELIKE_MAX,
+  DASHPAGE_SUGGESTION_MORELIKE_SUPPLEMENT_MAX,
   DASHPAGE_SUGGESTION_POOL_MAX,
   dashpageSuggestionUserKey,
   getDashpageSuggestionModuleCache,
@@ -29,10 +32,12 @@ import {
   changeSizeForSuggestionType,
   editUrlForSuggestionCard,
   getCachedRun,
+  isEligibleSuggestionCard,
   pickRandomSuggestion,
   runVeSuggestionsPipeline,
   shouldShowSnippet,
   type SuggestionCardData,
+  type SuggestionDescriptionPart,
 } from '@/lib/ve-suggestions'
 
 const wiki = createVeSuggestionsWiki('dashpage-suggestion-mode')
@@ -47,7 +52,11 @@ export interface SuggestionQueueItem {
 }
 
 function filterDashpageSuggestions(cards: SuggestionCardData[]): SuggestionCardData[] {
-  return cards.filter((card) => !DASHPAGE_EXCLUDED_SUGGESTION_TYPES.has(card.suggestionType))
+  return cards.filter(
+    (card) =>
+      !DASHPAGE_EXCLUDED_SUGGESTION_TYPES.has(card.suggestionType) &&
+      isEligibleSuggestionCard(card),
+  )
 }
 
 function pageNeedsVeRefresh(pageTitle: string, forceRefresh: boolean): boolean {
@@ -84,6 +93,7 @@ function queueItemToBind(item: SuggestionQueueItem): SuggestionModeModuleBind {
     thumbnailSrc: item.pagePreview.thumbnailSrc,
     taskTypeLabel: item.card.heading,
     taskHeading: item.card.heading,
+    taskDescriptionParts: item.card.descriptionParts,
     taskDifficulty,
     taskTimeEstimate: timeEstimateForDifficulty(taskDifficulty),
     showSnippet,
@@ -101,6 +111,7 @@ export interface SuggestionModeModuleBind {
   taskHeading?: string
   taskTimeEstimate?: string
   taskDescription?: string
+  taskDescriptionParts?: SuggestionDescriptionPart[]
   showSnippet?: boolean
   snippetHtml?: string
   loadPending?: boolean
@@ -182,6 +193,34 @@ async function collectSuggestionsForPages(
   }
 
   return items
+}
+
+async function fetchMorelikePicks(
+  seedTitles: string[],
+  excludeTitles: string[],
+  limit: number,
+  signal: AbortSignal,
+  recordPipelineError: (message: string) => void,
+): Promise<string[]> {
+  try {
+    return await fetchMorelikePageTitles(seedTitles, {
+      limit,
+      excludeTitles,
+      signal,
+    })
+  } catch (caught) {
+    if (caught instanceof FetchMorelikePageTitlesError && caught.code === 'aborted') {
+      throw caught
+    }
+    const message =
+      caught instanceof FetchMorelikePageTitlesError
+        ? caught.message
+        : caught instanceof Error
+          ? caught.message
+          : String(caught)
+    recordPipelineError(message)
+    return []
+  }
 }
 
 function previewFromQueue(
@@ -332,6 +371,8 @@ export function useDashpageSuggestionModule(): {
 
       if (signal.aborted) return
 
+      const triedPageTitles = [...poolPagePicks]
+
       const seedTitles = pickUpToRandomPages(
         portfolioPool,
         DASHPAGE_MORELIKE_SEED_COUNT,
@@ -339,30 +380,70 @@ export function useDashpageSuggestionModule(): {
 
       let morelikePagePicks: string[] = []
       try {
-        morelikePagePicks = await fetchMorelikePageTitles(seedTitles, {
-          limit: DASHPAGE_SUGGESTION_MORELIKE_MAX,
-          excludeTitles: [...excludeTitles, ...poolPagePicks, ...seedTitles],
+        morelikePagePicks = await fetchMorelikePicks(
+          seedTitles,
+          [...excludeTitles, ...triedPageTitles, ...seedTitles],
+          DASHPAGE_SUGGESTION_MORELIKE_MAX,
           signal,
-        })
+          recordPipelineError,
+        )
       } catch (caught) {
         if (caught instanceof FetchMorelikePageTitlesError && caught.code === 'aborted') {
           return
         }
-        const message =
-          caught instanceof FetchMorelikePageTitlesError
-            ? caught.message
-            : caught instanceof Error
-              ? caught.message
-              : String(caught)
-        recordPipelineError(message)
+        throw caught
       }
 
-      const morelikeItems = await collectSuggestionsForPages(
+      triedPageTitles.push(...morelikePagePicks)
+
+      let morelikeItems = await collectSuggestionsForPages(
         morelikePagePicks,
         forceRefresh,
         signal,
         recordPipelineError,
       )
+
+      if (signal.aborted) return
+
+      const queueCount = poolItems.length + morelikeItems.length
+      if (
+        queueCount < DASHPAGE_SUGGESTION_MIN_QUEUE &&
+        triedPageTitles.length < DASHPAGE_SUGGESTION_MAX_TRIED_PAGES
+      ) {
+        const supplementSeeds = pickUpToRandomPages(
+          portfolioPool,
+          DASHPAGE_MORELIKE_SEED_COUNT,
+          triedPageTitles,
+        )
+
+        let supplementPagePicks: string[] = []
+        try {
+          supplementPagePicks = await fetchMorelikePicks(
+            supplementSeeds,
+            [...excludeTitles, ...triedPageTitles, ...supplementSeeds],
+            DASHPAGE_SUGGESTION_MORELIKE_SUPPLEMENT_MAX,
+            signal,
+            recordPipelineError,
+          )
+        } catch (caught) {
+          if (caught instanceof FetchMorelikePageTitlesError && caught.code === 'aborted') {
+            return
+          }
+          throw caught
+        }
+
+        if (supplementPagePicks.length) {
+          morelikeItems = [
+            ...morelikeItems,
+            ...(await collectSuggestionsForPages(
+              supplementPagePicks,
+              forceRefresh,
+              signal,
+              recordPipelineError,
+            )),
+          ]
+        }
+      }
 
       if (signal.aborted) return
 

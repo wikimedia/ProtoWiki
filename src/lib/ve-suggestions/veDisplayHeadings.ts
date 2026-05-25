@@ -9,7 +9,7 @@ export const DISPLAY_HEADING_BY_TYPE: Record<string, string> = {
   fakeHeading: 'Convert fake heading',
   imageCaption: 'Improve image caption',
   redirect: 'Replace redirect link',
-  requiredTemplateParam: 'Add missing information',
+  requiredTemplateParam: 'Complete the citation',
   suggestedLink: 'Add link',
   textMatch: 'Rewrite flagged text',
   tone: 'Adjust tone',

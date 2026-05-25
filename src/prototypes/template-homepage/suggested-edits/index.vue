@@ -31,6 +31,7 @@ const structuredProps = computed(() => ({
   taskDifficulty: STRUCTURED_TASKS_FULL.taskDifficulty,
   taskTimeEstimate: STRUCTURED_TASKS_FULL.taskTimeEstimate,
   taskDescription: STRUCTURED_TASKS_FULL.taskDescription,
+  taskDescriptionParts: [{ kind: 'text', text: STRUCTURED_TASKS_FULL.taskDescription }],
   showSnippet: false,
   editHref: STRUCTURED_TASKS_FULL.editHref,
   canGoPrev: false,
@@ -137,20 +138,9 @@ definePage({
   width: 100%;
   min-height: 0;
   overflow: hidden;
-  background-color: var(--background-color-neutral-subtle, #f8f9fa);
-}
-
-.suggested-edits-page :deep(.special-page-wrapper) {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
   max-width: none;
   margin: 0;
-  background-color: transparent;
-}
-
-.suggested-edits-page :deep(.special-page-wrapper[data-skin='mobile']) {
-  padding: 0 var(--spacing-100, 16px);
+  background-color: var(--background-color-neutral-subtle, #f8f9fa);
 }
 
 .suggested-edits-page :deep(.special-page-wrapper__body) {

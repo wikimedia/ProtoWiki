@@ -357,6 +357,7 @@ function onLoadClick(): void {
   width: var(--suggestion-preview-thumb-size, 72px);
   height: var(--suggestion-preview-thumb-size, 72px);
   object-fit: cover;
+  object-position: top;
 }
 
 .suggestion-mode-module__preview-text {

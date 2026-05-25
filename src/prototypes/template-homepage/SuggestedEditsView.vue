@@ -14,7 +14,7 @@ import {
 import difficultyEasyIcon from '@/lib/ve-suggestions/assets/difficulty-easy.svg'
 import difficultyHardIcon from '@/lib/ve-suggestions/assets/difficulty-hard.svg'
 import difficultyMediumIcon from '@/lib/ve-suggestions/assets/difficulty-medium.svg'
-import { CHANGE_SIZE_COLORS } from '@/lib/ve-suggestions'
+import { CHANGE_SIZE_COLORS, type SuggestionDescriptionPart } from '@/lib/ve-suggestions'
 
 const difficultyIcons = {
   easy: difficultyEasyIcon,
@@ -36,6 +36,7 @@ interface Props {
   taskTypeLabel?: string
   taskTimeEstimate?: string
   taskDescription?: string
+  taskDescriptionParts?: SuggestionDescriptionPart[]
   showSnippet?: boolean
   snippetHtml?: string
   loadPending?: boolean
@@ -63,6 +64,7 @@ const props = withDefaults(defineProps<Props>(), {
   taskTypeLabel: undefined,
   taskTimeEstimate: undefined,
   taskDescription: undefined,
+  taskDescriptionParts: undefined,
   showSnippet: false,
   snippetHtml: undefined,
   loadPending: false,
@@ -100,6 +102,12 @@ const hasPreview = computed(
 
 const taskTypeColor = computed(() =>
   props.taskDifficulty ? CHANGE_SIZE_COLORS[props.taskDifficulty] : '#14866d',
+)
+
+const hasTaskDescription = computed(
+  () =>
+    (props.taskDescriptionParts?.length ?? 0) > 0 ||
+    !!props.taskDescription?.trim(),
 )
 
 function onLoadClick(): void {
@@ -217,8 +225,23 @@ function onNavigate(delta: number): void {
             </span>
           </div>
 
-          <p v-if="taskDescription" class="suggested-edits-view__task-description">
-            {{ taskDescription }}
+          <p
+            v-if="hasTaskDescription"
+            class="suggested-edits-view__task-description"
+          >
+            <template v-if="taskDescriptionParts?.length">
+              <template v-for="(part, index) in taskDescriptionParts" :key="index">
+                <a
+                  v-if="part.kind === 'link'"
+                  class="suggested-edits-view__task-description-link"
+                  :href="part.href"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >{{ part.label }}</a>
+                <template v-else>{{ part.text }}</template>
+              </template>
+            </template>
+            <template v-else>{{ taskDescription }}</template>
           </p>
 
           <div
@@ -282,7 +305,6 @@ function onNavigate(delta: number): void {
   flex: 1;
   flex-direction: column;
   min-height: 0;
-  overflow: hidden;
 }
 
 .suggested-edits-view__scroll {
@@ -380,6 +402,7 @@ function onNavigate(delta: number): void {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: top;
 }
 
 .suggested-edits-view__card-body {
@@ -474,6 +497,10 @@ function onNavigate(delta: number): void {
   color: var(--color-base, #202122);
 }
 
+.suggested-edits-view__task-description-link {
+  color: var(--color-progressive, #36c);
+}
+
 .suggested-edits-view__snippet {
   font-size: var(--font-size-small);
   line-height: var(--line-height-content);
@@ -484,12 +511,18 @@ function onNavigate(delta: number): void {
 }
 
 .suggested-edits-view__footer {
+  --suggested-edits-footer-bleed-inline: var(--spacing-100, 16px);
+  --suggested-edits-footer-bleed-bottom: var(--spacing-150, 24px);
   display: flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-100, 16px);
-  padding: var(--spacing-75, 12px) 0;
+  box-sizing: border-box;
+  width: calc(100% + 2 * var(--suggested-edits-footer-bleed-inline));
+  margin-inline: calc(-1 * var(--suggested-edits-footer-bleed-inline));
+  margin-bottom: calc(-1 * var(--suggested-edits-footer-bleed-bottom));
+  padding: var(--spacing-75, 12px) var(--suggested-edits-footer-bleed-inline);
   padding-bottom: max(var(--spacing-75, 12px), env(safe-area-inset-bottom, 0px));
   background-color: var(--background-color-base, #fff);
   border-top: 1px solid var(--border-color-base, #a2a9b1);

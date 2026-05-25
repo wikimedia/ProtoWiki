@@ -6,6 +6,9 @@ import {
   buildSectionTitleMap,
   buildSuggestionCard,
   hydrateCardsFromSnippetCache,
+  hydrateCardDescriptionParts,
+  isEligibleSuggestion,
+  isEligibleSuggestionCard,
   sortCards,
   type SuggestionCardData,
 } from './veSuggestionCards'
@@ -76,6 +79,7 @@ export function cardsFromMethodResults(
   pageTitle: string,
   methodResults: Record<string, CachedMethodResult>,
   snippetHtmlByKey: Record<string, string>,
+  pageSource?: string,
 ): SuggestionCardData[] {
   const cards: SuggestionCardData[] = []
 
@@ -86,8 +90,18 @@ export function cardsFromMethodResults(
     for (let index = 0; index < response.suggestions.length; index++) {
       const suggestion = response.suggestions[index]
       if (!suggestion) continue
+      if (!isEligibleSuggestion(response, suggestion)) continue
       cards.push(
-        buildFallbackCard(wiki, method.methodName, pageTitle, response, suggestion, index, snippetHtmlByKey),
+        buildFallbackCard(
+          wiki,
+          method.methodName,
+          pageTitle,
+          response,
+          suggestion,
+          index,
+          snippetHtmlByKey,
+          pageSource,
+        ),
       )
     }
   }
@@ -114,9 +128,13 @@ export function cardsFromCachedRun(
 ): SuggestionCardData[] {
   const snippetHtmlByKey = run.snippetHtmlByKey ?? {}
   if (run.cards?.length) {
-    return sortCards(hydrateCardsFromSnippetCache(run.cards, run.pageTitle, snippetHtmlByKey))
+    return sortCards(
+      hydrateCardsFromSnippetCache(run.cards, run.pageTitle, snippetHtmlByKey)
+        .map((card) => hydrateCardDescriptionParts(card, wiki))
+        .filter(isEligibleSuggestionCard),
+    )
   }
-  return cardsFromMethodResults(wiki, run.pageTitle, run.methodResults, snippetHtmlByKey)
+  return cardsFromMethodResults(wiki, run.pageTitle, run.methodResults, snippetHtmlByKey, run.pageSource)
 }
 
 export async function runVeSuggestionsPipeline(
@@ -214,6 +232,7 @@ export async function runVeSuggestionsPipeline(
 
           const suggestion = response.suggestions[index]
           if (!suggestion) continue
+          if (!isEligibleSuggestion(response, suggestion)) continue
           const card = await buildSuggestionCard(
             wiki,
             method.methodName,

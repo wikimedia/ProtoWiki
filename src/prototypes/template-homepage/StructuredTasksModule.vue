@@ -109,6 +109,7 @@ const props = withDefaults(defineProps<Props>(), {
   width: 48px;
   height: 48px;
   object-fit: cover;
+  object-position: top;
   border-radius: 2px;
 }
 

@@ -11,12 +11,16 @@ export {
   buildSectionTitleMap,
   buildSuggestionCard,
   hydrateCardsFromSnippetCache,
+  isEligibleSuggestion,
+  isEligibleSuggestionCard,
   isTransformedSnippetHtml,
   shouldShowSnippet,
   sortCards,
   editUrlForSuggestionCard,
+  hydrateCardDescriptionParts,
   type SectionRange,
   type SuggestionCardData,
+  type SuggestionDescriptionPart,
 } from './veSuggestionCards'
 export {
   clearCachedRun,

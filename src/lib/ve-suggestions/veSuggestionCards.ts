@@ -5,12 +5,17 @@ import { formatSuggestionType, headingForSuggestionType } from './veDisplayHeadi
 import { stripLinksFromSnippetHtml, stripLinksFromWikitext } from './snippetLinkStrip'
 import { normalizePageTitle } from './veSuggestionsCache'
 
+export type SuggestionDescriptionPart =
+  | { kind: 'text'; text: string }
+  | { kind: 'link'; label: string; href: string }
+
 export interface SuggestionCardData {
   cardId: string
   methodName: string
   suggestionType: string
   heading: string
   descriptionHtml: string
+  descriptionParts: SuggestionDescriptionPart[]
   rawSnippetWikitext: string
   renderedSnippetHtml: string
   cardLinkUrl: string
@@ -64,7 +69,7 @@ const DISPLAY_BY_TYPE: Record<string, SuggestionDisplayConfig> = {
   },
   duplicateLink: {
     heading: 'Remove duplicate link',
-    description: (context, wiki) => createTargetDescription('Link to', context, wiki),
+    description: (context, wiki) => createTargetDescription('Remove link to', context, wiki),
   },
   externalLink: {
     heading: 'Remove external link',
@@ -83,8 +88,8 @@ const DISPLAY_BY_TYPE: Record<string, SuggestionDisplayConfig> = {
     description: (context, wiki) => createRedirectDescription(context, wiki),
   },
   requiredTemplateParam: {
-    heading: 'Add missing information',
-    description: (context, wiki) => createRequiredTemplateParamDescription(context, wiki),
+    heading: 'Complete the citation',
+    description: (context) => createRequiredTemplateParamDescription(context),
   },
   suggestedLink: {
     heading: 'Add link',
@@ -92,7 +97,7 @@ const DISPLAY_BY_TYPE: Record<string, SuggestionDisplayConfig> = {
   },
   textMatch: {
     heading: 'Rewrite flagged text',
-    description: () => 'Replace language that may need improvement.',
+    description: () => 'Replace AI-generated text.',
   },
   tone: {
     heading: 'Adjust tone',
@@ -105,8 +110,96 @@ const DISPLAY_BY_TYPE: Record<string, SuggestionDisplayConfig> = {
 }
 
 const SNIPPETLESS_SUGGESTION_TYPES = new Set(['redirect'])
+/** Link suggestions where a lone bold label adds nothing beyond the description. */
+const LABEL_ONLY_SNIPPETLESS_LINK_TYPES = new Set([
+  'duplicateLink',
+  'disambiguation',
+  'suggestedLink',
+])
 const REDIRECT_GROUP_MAX_VISIBLE = 3
 const REDIRECT_GROUP_HEADING = 'Replace redirect links'
+
+type KnownRequiredTemplateConfig = {
+  /** Normalized template names (lowercase, no Template: prefix). */
+  names: ReadonlySet<string>
+  /** When set, only these empty params qualify; otherwise any empty param qualifies. */
+  allowedMissingFields?: ReadonlySet<string>
+  heading: string
+  description: (missingFields: string[]) => string
+}
+
+const CITE_WEB_FIELD_LABELS: Record<string, string> = {
+  website: 'website',
+  last: 'author last name',
+  first: 'author first name',
+  author: 'author',
+  date: 'date',
+  'access-date': 'access date',
+  url: 'URL',
+  title: 'title',
+  publisher: 'publisher',
+  work: 'work',
+}
+
+function humanizeMissingFieldName(field: string): string {
+  return CITE_WEB_FIELD_LABELS[field.toLowerCase()] ?? field.replace(/-/g, ' ')
+}
+
+/** Hardcoded display + eligibility rules for required-template-param suggestions. */
+const KNOWN_REQUIRED_TEMPLATE_CONFIGS: KnownRequiredTemplateConfig[] = [
+  {
+    names: new Set(['cite web']),
+    heading: 'Complete the citation',
+    description: (missingFields) => {
+      if (missingFields.length === 1) {
+        return `Add the missing ${humanizeMissingFieldName(missingFields[0] ?? '')}.`
+      }
+      return 'Add the missing information.'
+    },
+  },
+]
+
+function normalizeTemplateName(raw: string): string {
+  return raw
+    .replace(/^Template:/i, '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase()
+}
+
+function getKnownRequiredTemplateConfig(
+  context: DescriptionContext,
+): KnownRequiredTemplateConfig | null {
+  const suggestionData = context.suggestion.data as Record<string, unknown> | undefined
+  const templateRaw =
+    typeof suggestionData?.template === 'string' ? suggestionData.template.trim() : ''
+  if (!templateRaw) return null
+  const normalized = normalizeTemplateName(templateRaw)
+  return KNOWN_REQUIRED_TEMPLATE_CONFIGS.find((config) => config.names.has(normalized)) ?? null
+}
+
+function getAllowedMissingFields(
+  context: DescriptionContext,
+  config: KnownRequiredTemplateConfig,
+): string[] {
+  const suggestionData = context.suggestion.data as Record<string, unknown> | undefined
+  const emptyNamedParams = Array.isArray(suggestionData?.emptyNamedParams)
+    ? suggestionData.emptyNamedParams
+        .filter((value): value is string => typeof value === 'string')
+        .map((value) => value.trim())
+        .filter(Boolean)
+    : []
+  return emptyNamedParams.filter((field) => {
+    if (!config.allowedMissingFields) return true
+    return config.allowedMissingFields.has(field.toLowerCase())
+  })
+}
+
+export function isEligibleRequiredTemplateParam(context: DescriptionContext): boolean {
+  const config = getKnownRequiredTemplateConfig(context)
+  if (!config) return false
+  return getAllowedMissingFields(context, config).length > 0
+}
 
 function escapeHtml(value: string): string {
   return value
@@ -133,15 +226,40 @@ function getTargetLabel(context: DescriptionContext): string | null {
   return target?.trim() || null
 }
 
-function createTargetDescription(prefix: string, context: DescriptionContext, wiki: FakeWiki): string {
-  const targetLabel = getTargetLabel(context)
-  if (!targetLabel) return `${prefix} related article.`
-  const href = escapeHtml(wiki.getPageUrl(targetLabel))
-  const text = escapeHtml(targetLabel)
-  return `${prefix} <a href="${href}" target="_blank" rel="noreferrer noopener">${text}</a>.`
+function textDescriptionPart(text: string): SuggestionDescriptionPart {
+  return { kind: 'text', text }
 }
 
-function createRedirectDescription(context: DescriptionContext, wiki: FakeWiki): string {
+function linkDescriptionPart(label: string, href: string): SuggestionDescriptionPart {
+  return { kind: 'link', label, href }
+}
+
+function createTargetDescriptionParts(
+  prefix: string,
+  context: DescriptionContext,
+  wiki: FakeWiki,
+): SuggestionDescriptionPart[] {
+  const targetLabel = getTargetLabel(context)
+  if (!targetLabel) return [textDescriptionPart(`${prefix} related article.`)]
+  return [
+    textDescriptionPart(`${prefix} `),
+    linkDescriptionPart(targetLabel, wiki.getPageUrl(targetLabel)),
+    textDescriptionPart('.'),
+  ]
+}
+
+function createTargetDescription(
+  prefix: string,
+  context: DescriptionContext,
+  wiki: FakeWiki,
+): string {
+  return descriptionPartsToHtml(createTargetDescriptionParts(prefix, context, wiki))
+}
+
+function createRedirectDescriptionParts(
+  context: DescriptionContext,
+  wiki: FakeWiki,
+): SuggestionDescriptionPart[] {
   const suggestionData = context.suggestion.data as Record<string, unknown> | undefined
   const candidateData = context.selectedCandidate?.data as Record<string, unknown> | undefined
   const fromTarget =
@@ -150,56 +268,161 @@ function createRedirectDescription(context: DescriptionContext, wiki: FakeWiki):
     'this link'
   const toTarget =
     (typeof suggestionData?.finalTarget === 'string' && suggestionData.finalTarget.trim()) || ''
-  const fromHref = escapeHtml(wiki.getPageUrl(fromTarget))
-  const fromText = escapeHtml(fromTarget)
+
   if (!toTarget) {
-    return `Change link from <a href="${fromHref}" target="_blank" rel="noreferrer noopener">${fromText}</a>.`
+    return [
+      textDescriptionPart('Change link from '),
+      linkDescriptionPart(fromTarget, wiki.getPageUrl(fromTarget)),
+      textDescriptionPart('.'),
+    ]
   }
-  const toHref = escapeHtml(wiki.getPageUrl(toTarget))
-  const toText = escapeHtml(toTarget)
-  return `Change link from <a href="${fromHref}" target="_blank" rel="noreferrer noopener">${fromText}</a> to <a href="${toHref}" target="_blank" rel="noreferrer noopener">${toText}</a>.`
+
+  return [
+    textDescriptionPart('Change link from '),
+    linkDescriptionPart(fromTarget, wiki.getPageUrl(fromTarget)),
+    textDescriptionPart(' to '),
+    linkDescriptionPart(toTarget, wiki.getPageUrl(toTarget)),
+    textDescriptionPart('.'),
+  ]
 }
 
-function createRequiredTemplateParamDescription(
+function descriptionPartsToHtml(parts: SuggestionDescriptionPart[]): string {
+  return parts
+    .map((part) => {
+      if (part.kind === 'text') return escapeHtml(part.text)
+      const href = escapeHtml(part.href)
+      const label = escapeHtml(part.label)
+      return `<a href="${href}" target="_blank" rel="noreferrer noopener">${label}</a>`
+    })
+    .join('')
+}
+
+function createRedirectDescription(context: DescriptionContext, wiki: FakeWiki): string {
+  return descriptionPartsToHtml(createRedirectDescriptionParts(context, wiki))
+}
+
+function buildDescriptionParts(
   context: DescriptionContext,
+  suggestionType: string,
   wiki: FakeWiki,
-): string {
-  const suggestionData = context.suggestion.data as Record<string, unknown> | undefined
-  const templateRaw = typeof suggestionData?.template === 'string' ? suggestionData.template.trim() : ''
-  const templateCore = templateRaw.replace(/^Template:/i, '').trim()
-  const templatePageTitle = templateCore ? `Template:${templateCore}` : ''
-  const templateHref = templatePageTitle ? escapeHtml(wiki.getPageUrl(templatePageTitle)) : ''
-  const templateLabel = escapeHtml(templateCore || templateRaw || 'this template')
-  const emptyNamedParams =
-    Array.isArray(suggestionData?.emptyNamedParams) ?
-      suggestionData.emptyNamedParams
-        .filter((value): value is string => typeof value === 'string')
-        .map((value) => value.trim())
-        .filter(Boolean)
-    : []
-  const allowedFieldNames = new Set(['website'])
-  const allowedMissingFields = emptyNamedParams.filter((field) =>
-    allowedFieldNames.has(field.toLowerCase()),
-  )
-  const fieldSummary =
-    allowedMissingFields.length === 1 ?
-      `the missing ${escapeHtml(allowedMissingFields[0] ?? '')} field`
-    : emptyNamedParams.length === 0 ? 'a missing field'
-    : emptyNamedParams.length === 1 ? 'a missing field'
-    : 'missing fields'
-  if (!templateHref) {
-    return `Complete the ${templateLabel} template by adding ${fieldSummary}.`
+  plainDescription: string,
+): SuggestionDescriptionPart[] {
+  if (suggestionType === 'disambiguation') {
+    return createTargetDescriptionParts('Link to', context, wiki)
   }
-  return `Complete the <a href="${templateHref}" target="_blank" rel="noreferrer noopener">${templateLabel}</a> template by adding ${fieldSummary}.`
+  if (suggestionType === 'duplicateLink') {
+    return createTargetDescriptionParts('Remove link to', context, wiki)
+  }
+  if (suggestionType === 'suggestedLink') {
+    return createTargetDescriptionParts('Consider linking to', context, wiki)
+  }
+  if (suggestionType === 'redirect') {
+    return createRedirectDescriptionParts(context, wiki)
+  }
+  return plainDescription ? [textDescriptionPart(plainDescription)] : []
 }
 
-function getTemplateTitleSnippet(context: DescriptionContext): string | null {
+export function hydrateCardDescriptionParts(
+  card: SuggestionCardData,
+  wiki: FakeWiki,
+): SuggestionCardData {
+  if (card.descriptionParts?.length) return card
+
+  const context: DescriptionContext = {
+    suggestion: card.raw,
+    selectedCandidate:
+      card.responseMeta.candidates.find((candidate) => candidate.id === card.raw.id) ??
+      card.responseMeta.candidates[0] ??
+      null,
+  }
+  const display = DISPLAY_BY_TYPE[card.suggestionType]
+  const plainDescription =
+    display?.description(context, wiki) ?? card.descriptionHtml.replace(/<[^>]+>/g, '').trim()
+  const descriptionParts = buildDescriptionParts(
+    context,
+    card.suggestionType,
+    wiki,
+    plainDescription,
+  )
+
+  return {
+    ...card,
+    descriptionParts,
+    descriptionHtml: descriptionPartsToHtml(descriptionParts),
+  }
+}
+
+function createRequiredTemplateParamDescription(context: DescriptionContext): string {
+  const config = getKnownRequiredTemplateConfig(context)
+  if (!config) return ''
+  return config.description(getAllowedMissingFields(context, config))
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** Turn MediaWiki template escapes (e.g. {{!}}) into readable text for snippets. */
+function decodeTemplateParamValue(raw: string): string {
+  return raw
+    .trim()
+    .replace(/\{\{!\}\}/gi, '|')
+    .replace(/\{\{=\}\}/gi, '=')
+}
+
+const TEMPLATE_PARAM_MAGICS = ['{{!}}', '{{=}}'] as const
+
+function tryConsumeTemplateParamMagic(
+  invocation: string,
+  index: number,
+): { consumed: string; length: number } | null {
+  const tail = invocation.slice(index).toLowerCase()
+  for (const magic of TEMPLATE_PARAM_MAGICS) {
+    if (tail.startsWith(magic)) {
+      return { consumed: invocation.slice(index, index + magic.length), length: magic.length }
+    }
+  }
+  return null
+}
+
+/**
+ * Read a named parameter from template invocation wikitext.
+ * Pipes inside values are escaped as {{!}} — a naive [^|}]+ capture stops at the first `}`.
+ */
+function readTemplateParamRawValue(invocation: string, fieldName: string): string | null {
+  const fieldPattern = new RegExp(`\\|\\s*${escapeRegExp(fieldName)}\\s*=`, 'i')
+  const match = fieldPattern.exec(invocation)
+  if (!match) return null
+
+  let value = ''
+  for (let i = match.index + match[0].length; i < invocation.length; i += 1) {
+    const magic = tryConsumeTemplateParamMagic(invocation, i)
+    if (magic) {
+      value += magic.consumed
+      i += magic.length - 1
+      continue
+    }
+    const ch = invocation[i]
+    if (ch === '|') break
+    if (ch === '}' && invocation[i + 1] === '}') break
+    value += ch
+  }
+
+  const trimmed = value.trim()
+  return trimmed.length ? trimmed : null
+}
+
+function getTemplateInvocationField(context: DescriptionContext, fieldName: string): string | null {
   const candidateData = context.selectedCandidate?.data as Record<string, unknown> | undefined
   const invocation = typeof candidateData?.invocation === 'string' ? candidateData.invocation : ''
   if (!invocation) return null
-  const match = invocation.match(/\|\s*title\s*=\s*([^|}]+)/i)
-  const title = (match?.[1] ?? '').trim()
-  return title || null
+  const raw = readTemplateParamRawValue(invocation, fieldName)
+  if (!raw) return null
+  return decodeTemplateParamValue(raw) || null
+}
+
+function getTemplateTitleSnippet(context: DescriptionContext): string | null {
+  return getTemplateInvocationField(context, 'title')
 }
 
 function readContextField(
@@ -222,11 +445,7 @@ const CITATION_MARKER_PATTERN =
   /\{\{\s*citation\s+needed(?:\s*\|[^}]*)?\s*\}\}|\[citation needed\]/gi
 
 function stripSnippetDecorators(snippet: string): string {
-  return snippet
-    .replace(/^…+/g, '')
-    .replace(/…+$/g, '')
-    .replace(/'''/g, '')
-    .trim()
+  return snippet.replace(/^…+/g, '').replace(/…+$/g, '').replace(/'''/g, '').trim()
 }
 
 /** True when the snippet includes readable prose, not only a citation-needed marker. */
@@ -239,6 +458,21 @@ function hasSubstantiveSnippetContent(snippet: string): boolean {
 }
 
 function getRequiredTemplateParamSnippetWikitext(context: DescriptionContext): string {
+  const config = getKnownRequiredTemplateConfig(context)
+  if (!config) return ''
+
+  // For Cite web, show the source title so editors know which reference to fix.
+  if (config.names.has('cite web')) {
+    const title = getTemplateTitleSnippet(context)
+    if (title && hasSubstantiveSnippetContent(title)) {
+      return normalizeSnippetWikitext(boldWikitext(title))
+    }
+    const url = getTemplateInvocationField(context, 'url')
+    if (url && hasSubstantiveSnippetContent(url)) {
+      return normalizeSnippetWikitext(boldWikitext(url))
+    }
+  }
+
   const suggestionData = context.suggestion.data as Record<string, unknown> | undefined
   const candidateData = context.selectedCandidate?.data as Record<string, unknown> | undefined
   const invocation =
@@ -254,24 +488,88 @@ function getRequiredTemplateParamSnippetWikitext(context: DescriptionContext): s
 
   const candidateContext = context.selectedCandidate?.context?.trim()
   if (candidateContext && hasSubstantiveSnippetContent(candidateContext)) {
-    const templateTitle = getTemplateTitleSnippet(context)
-    if (templateTitle && stripSnippetDecorators(candidateContext) === templateTitle) {
-      return ''
-    }
     return normalizeSnippetWikitext(candidateContext)
   }
 
   return ''
 }
 
-function isRequiredTemplateParamTitleOnlySnippet(rawSnippetWikitext: string): boolean {
-  const trimmed = stripSnippetDecorators(normalizeSnippetWikitext(rawSnippetWikitext))
-  if (!trimmed.length) return true
-  if (trimmed.includes('{{') || trimmed.startsWith('…')) return false
-  return true
+function stripInlineWikiNoise(text: string): string {
+  return text
+    .replace(/<ref[^>]*(?:\/>|>[\s\S]*?<\/ref>)/gi, '')
+    .replace(/\{\{[^{}|]*\}\}/g, '')
+    .replace(/\[\[(?:[^\]|]*\|)?([^\]]+)\]\]/g, '$1')
+    .replace(/'{2,5}/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
-function getCitationNeededSnippetWikitext(context: DescriptionContext): string {
+const CITATION_NEEDED_INLINE_PATTERN = /\{\{\s*(?:citation needed|cn)\b[^}]*\}\}/i
+
+function readCitationNeededTemplateIndex(context: DescriptionContext): number | null {
+  const suggestionData = context.suggestion.data as Record<string, unknown> | undefined
+  const candidateData = context.selectedCandidate?.data as Record<string, unknown> | undefined
+  const index =
+    typeof candidateData?.index === 'number'
+      ? candidateData.index
+      : typeof suggestionData?.index === 'number'
+        ? suggestionData.index
+        : null
+  return index != null && Number.isFinite(index) && index >= 0 ? index : null
+}
+
+function extractClaimBeforeCitationNeeded(rawBefore: string): string {
+  const afterLastRef = rawBefore.split(/<\/ref>/i).pop() ?? rawBefore
+  const cleaned = stripInlineWikiNoise(afterLastRef)
+  if (!cleaned) return ''
+
+  const sentences = cleaned
+    .match(/[^.!?]+[.!?]?/g)
+    ?.map((part) => part.trim())
+    .filter(Boolean)
+  const lastSentence = sentences?.[sentences.length - 1]
+  if (lastSentence && hasSubstantiveSnippetContent(lastSentence)) return lastSentence
+
+  return cleaned.slice(-120).trim()
+}
+
+function extractCitationNeededSnippetFromSource(
+  pageSource: string,
+  templateIndex: number,
+  templateText?: string,
+): string {
+  const lineStart = pageSource.lastIndexOf('\n', templateIndex) + 1
+  const lineEndIdx = pageSource.indexOf('\n', templateIndex)
+  const line = pageSource.slice(lineStart, lineEndIdx === -1 ? undefined : lineEndIdx)
+  const relIndex = templateIndex - lineStart
+
+  let templateLength = templateText?.trim().length ?? 0
+  if (!templateLength) {
+    const match = line.slice(relIndex).match(CITATION_NEEDED_INLINE_PATTERN)
+    templateLength = match?.[0]?.length ?? 0
+  }
+  if (!templateLength) return ''
+
+  const rawBefore = line.slice(0, relIndex)
+  const rawAfter = line.slice(relIndex + templateLength)
+  const coreText = extractClaimBeforeCitationNeeded(rawBefore)
+  if (!coreText) return ''
+
+  const beforeClean = stripInlineWikiNoise(rawBefore.split(/<\/ref>/i).pop() ?? rawBefore)
+  const coreStart = beforeClean.lastIndexOf(coreText)
+  const contextBefore =
+    coreStart > 0 ? beforeClean.slice(Math.max(0, coreStart - 60), coreStart).trim() : ''
+  const contextAfterBody = stripInlineWikiNoise(rawAfter).slice(0, 60).trim()
+  const contextAfter = contextAfterBody ? ` ${contextAfterBody}` : ''
+
+  const snippet = formatContextualSnippetWikitext(contextBefore, coreText, contextAfter)
+  return hasSubstantiveSnippetContent(snippet) ? snippet : ''
+}
+
+function getCitationNeededSnippetWikitext(
+  context: DescriptionContext,
+  pageSource?: string,
+): string {
   const suggestionData = context.suggestion.data as Record<string, unknown> | undefined
   const candidateData = context.selectedCandidate?.data as Record<string, unknown> | undefined
   const coreText =
@@ -284,6 +582,13 @@ function getCitationNeededSnippetWikitext(context: DescriptionContext): string {
   if (coreText && (contextBefore.trim() || contextAfter.trim())) {
     const snippet = formatContextualSnippetWikitext(contextBefore, coreText, contextAfter)
     if (hasSubstantiveSnippetContent(snippet)) return snippet
+  }
+
+  const templateIndex = readCitationNeededTemplateIndex(context)
+  if (pageSource && templateIndex != null) {
+    const templateText = context.selectedCandidate?.text?.trim()
+    const snippet = extractCitationNeededSnippetFromSource(pageSource, templateIndex, templateText)
+    if (snippet) return snippet
   }
 
   const candidateContext = context.selectedCandidate?.context?.trim()
@@ -357,7 +662,51 @@ function resolveSelectedCandidate(
   return response.candidates[0] ?? null
 }
 
-function getSnippetWikitext(context: DescriptionContext, suggestionType: string): string {
+export function isEligibleSuggestion(
+  response: Pick<FWVeSuggestionResponse, 'suggestionType' | 'candidates'>,
+  suggestion: FWVeSuggestionItem,
+): boolean {
+  if (response.suggestionType !== 'requiredTemplateParam') return true
+  const context: DescriptionContext = {
+    suggestion,
+    selectedCandidate: resolveSelectedCandidate(response as FWVeSuggestionResponse, suggestion),
+  }
+  return isEligibleRequiredTemplateParam(context)
+}
+
+export function isEligibleSuggestionCard(card: SuggestionCardData): boolean {
+  if (card.suggestionType !== 'requiredTemplateParam') return true
+  const context: DescriptionContext = {
+    suggestion: card.raw,
+    selectedCandidate:
+      card.responseMeta.candidates.find((candidate) => candidate.id === card.raw.id) ??
+      card.responseMeta.candidates[0] ??
+      null,
+  }
+  return isEligibleRequiredTemplateParam(context)
+}
+
+function resolveSuggestionHeading(
+  response: FWVeSuggestionResponse,
+  context: DescriptionContext,
+): string {
+  if (response.suggestionType === 'requiredTemplateParam') {
+    return (
+      getKnownRequiredTemplateConfig(context)?.heading ??
+      headingForSuggestionType(response.suggestionType)
+    )
+  }
+  return (
+    DISPLAY_BY_TYPE[response.suggestionType]?.heading ??
+    headingForSuggestionType(response.suggestionType)
+  )
+}
+
+function getSnippetWikitext(
+  context: DescriptionContext,
+  suggestionType: string,
+  pageSource?: string,
+): string {
   if (SNIPPETLESS_SUGGESTION_TYPES.has(suggestionType)) {
     return ''
   }
@@ -367,7 +716,7 @@ function getSnippetWikitext(context: DescriptionContext, suggestionType: string)
   }
 
   if (suggestionType === 'citationNeeded') {
-    return getCitationNeededSnippetWikitext(context)
+    return getCitationNeededSnippetWikitext(context, pageSource)
   }
 
   const suggestionData = context.suggestion.data as Record<string, unknown> | undefined
@@ -521,15 +870,46 @@ export function isTransformedSnippetHtml(card: SuggestionCardData): boolean {
   return html.includes('<')
 }
 
+function normalizeComparableText(value: string): string {
+  return value.replace(/\s+/g, ' ').trim().toLowerCase()
+}
+
+function snippetPlainText(rawSnippetWikitext: string): string {
+  return normalizeComparableText(
+    stripSnippetDecorators(normalizeSnippetWikitext(rawSnippetWikitext)),
+  )
+}
+
+function isLabelOnlySnippet(rawSnippetWikitext: string): boolean {
+  const trimmed = normalizeSnippetWikitext(rawSnippetWikitext)
+  if (!trimmed.length) return true
+  if (trimmed.includes('{{')) return false
+  if (trimmed.startsWith('…') || trimmed.endsWith('…')) return false
+  return true
+}
+
+function snippetRepeatsDescription(card: SuggestionCardData): boolean {
+  const snippetText = snippetPlainText(card.rawSnippetWikitext)
+  if (!snippetText) return true
+
+  for (const part of card.descriptionParts ?? []) {
+    if (part.kind !== 'link') continue
+    if (normalizeComparableText(part.label) === snippetText) return true
+  }
+
+  return false
+}
+
 export function shouldShowSnippet(card: SuggestionCardData): boolean {
   if (SNIPPETLESS_SUGGESTION_TYPES.has(card.suggestionType)) return false
+  if (!hasSubstantiveSnippetContent(card.rawSnippetWikitext)) return false
+  if (snippetRepeatsDescription(card)) return false
   if (
-    card.suggestionType === 'requiredTemplateParam' &&
-    isRequiredTemplateParamTitleOnlySnippet(card.rawSnippetWikitext)
+    LABEL_ONLY_SNIPPETLESS_LINK_TYPES.has(card.suggestionType) &&
+    isLabelOnlySnippet(card.rawSnippetWikitext)
   ) {
     return false
   }
-  if (!hasSubstantiveSnippetContent(card.rawSnippetWikitext)) return false
   return isTransformedSnippetHtml(card)
 }
 
@@ -590,25 +970,27 @@ export async function buildSuggestionCard(
   snippetHtmlCache: Record<string, string>,
 ): Promise<SuggestionCardData> {
   const selectedCandidate = resolveSelectedCandidate(response, suggestion)
+  const context = { suggestion, selectedCandidate }
   const display = DISPLAY_BY_TYPE[response.suggestionType] ?? {
     heading: headingForSuggestionType(response.suggestionType),
     description: () => 'Help explain where this information is coming from.',
   }
-  const context = { suggestion, selectedCandidate }
-  const rawSnippet = getSnippetWikitext(context, response.suggestionType)
-  const renderedSnippetHtml = await renderSnippetHtml(
+  const rawSnippet = getSnippetWikitext(context, response.suggestionType, pageSource)
+  const descriptionParts = buildDescriptionParts(
+    context,
+    response.suggestionType,
     wiki,
-    pageTitle,
-    rawSnippet,
-    snippetHtmlCache,
+    display.description(context, wiki),
   )
+  const renderedSnippetHtml = await renderSnippetHtml(wiki, pageTitle, rawSnippet, snippetHtmlCache)
 
   return {
     cardId: `${methodName}-${suggestion.id}-${index}`,
     methodName,
     suggestionType: response.suggestionType,
-    heading: display.heading,
-    descriptionHtml: display.description(context, wiki),
+    heading: resolveSuggestionHeading(response, context),
+    descriptionHtml: descriptionPartsToHtml(descriptionParts),
+    descriptionParts,
     rawSnippetWikitext: rawSnippet,
     renderedSnippetHtml,
     cardLinkUrl: resolveBestEffortCardLink(
@@ -638,28 +1020,34 @@ export function buildFallbackCard(
   suggestion: FWVeSuggestionItem,
   index: number,
   snippetHtmlByKey: Record<string, string> = {},
+  pageSource?: string,
 ): SuggestionCardData {
   const selectedCandidate = resolveSelectedCandidate(response, suggestion)
+  const context = { suggestion, selectedCandidate }
   const display = DISPLAY_BY_TYPE[response.suggestionType] ?? {
     heading: formatSuggestionType(response.suggestionType),
     description: () => 'Help explain where this information is coming from.',
   }
-  const context = { suggestion, selectedCandidate }
-  const rawSnippet = getSnippetWikitext(context, response.suggestionType)
-  const cachedHtml = rawSnippet ?
-    snippetHtmlByKey[snippetCacheKey(pageTitle, rawSnippet)]
-  : undefined
+  const rawSnippet = getSnippetWikitext(context, response.suggestionType, pageSource)
+  const descriptionParts = buildDescriptionParts(
+    context,
+    response.suggestionType,
+    wiki,
+    display.description(context, wiki),
+  )
+  const cachedHtml = rawSnippet
+    ? snippetHtmlByKey[snippetCacheKey(pageTitle, rawSnippet)]
+    : undefined
   const renderedSnippetHtml =
-    cachedHtml && cachedHtml !== rawSnippet ?
-      stripLinksFromSnippetHtml(cachedHtml)
-    : ''
+    cachedHtml && cachedHtml !== rawSnippet ? stripLinksFromSnippetHtml(cachedHtml) : ''
 
   return {
     cardId: `${methodName}-${suggestion.id}-${index}`,
     methodName,
     suggestionType: response.suggestionType,
-    heading: display.heading,
-    descriptionHtml: display.description(context, wiki),
+    heading: resolveSuggestionHeading(response, context),
+    descriptionHtml: descriptionPartsToHtml(descriptionParts),
+    descriptionParts,
     rawSnippetWikitext: rawSnippet,
     renderedSnippetHtml,
     cardLinkUrl: wiki.getPageUrl(response.pageTitle),
@@ -730,6 +1118,7 @@ function buildGroupedRedirectCard(cards: SuggestionCardData[]): SuggestionCardDa
     suggestionType: first.suggestionType,
     heading: REDIRECT_GROUP_HEADING,
     descriptionHtml: buildGroupedRedirectDescriptionHtml(cards),
+    descriptionParts: [],
     rawSnippetWikitext: '',
     renderedSnippetHtml: '',
     cardLinkUrl: first.cardLinkUrl,

@@ -5,9 +5,15 @@ const STORAGE_KEY = 'protowiki-dashpage-suggestion-module-v4'
 export const DASHPAGE_SUGGESTION_FALLBACK_PAGE = 'Wet Leg'
 export const DASHPAGE_SUGGESTION_POOL_MAX = 6
 export const DASHPAGE_SUGGESTION_MORELIKE_MAX = 6
-/** Max combined suggestion queue length (pool + morelike successes). */
-export const DASHPAGE_SUGGESTION_MAX_PAGES =
-  DASHPAGE_SUGGESTION_POOL_MAX + DASHPAGE_SUGGESTION_MORELIKE_MAX
+/** Extra morelike batch when the first pass yields a very small queue. */
+export const DASHPAGE_SUGGESTION_MORELIKE_SUPPLEMENT_MAX = 6
+/** Max page titles to run through the VE pipeline in one refresh. */
+export const DASHPAGE_SUGGESTION_MAX_TRIED_PAGES =
+  DASHPAGE_SUGGESTION_POOL_MAX +
+  DASHPAGE_SUGGESTION_MORELIKE_MAX +
+  DASHPAGE_SUGGESTION_MORELIKE_SUPPLEMENT_MAX
+/** Target queue length before skipping the supplemental morelike pass. */
+export const DASHPAGE_SUGGESTION_MIN_QUEUE = 2
 export const DASHPAGE_MORELIKE_SEED_COUNT = 5
 
 export interface PagePreviewCache {
