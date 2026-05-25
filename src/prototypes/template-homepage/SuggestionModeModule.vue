@@ -54,13 +54,17 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   load: []
   refresh: []
+  'open-fullscreen': []
 }>()
 
 const hasPreview = computed(
   () =>
-    !props.loadPending &&
     !!props.articleTitle &&
     (!!props.taskTypeLabel || !!props.emptyMessage),
+)
+
+const showLoadPrompt = computed(
+  () => props.loadPending && !hasPreview.value,
 )
 
 const isLinkCard = computed(() => props.to != null)
@@ -69,7 +73,7 @@ const isLinkCard = computed(() => props.to != null)
 const useLinkCard = computed(() => isLinkCard.value && hasPreview.value)
 
 const showRefreshInTitle = computed(
-  () => props.showRefresh && !props.loadPending && !useLinkCard.value,
+  () => props.showRefresh && !showLoadPrompt.value && !useLinkCard.value,
 )
 
 const showSuggestionCounter = computed(
@@ -92,6 +96,11 @@ function onRefreshClick(event: Event): void {
 function onLoadClick(): void {
   emit('load')
 }
+
+function onOpenFullscreen(): void {
+  if (!useLinkCard.value) return
+  emit('open-fullscreen')
+}
 </script>
 
 <template>
@@ -103,6 +112,7 @@ function onLoadClick(): void {
       :cta="useLinkCard ? 'See all suggestions' : null"
       :mobile-card="!useLinkCard"
       subtle
+      @click="onOpenFullscreen"
     >
       <template v-if="showRefreshInTitle" #header-actions>
         <CdxButton
@@ -120,7 +130,7 @@ function onLoadClick(): void {
         {{ refreshError }}
       </p>
 
-      <div v-if="loadPending" class="suggestion-mode-module__load-prompt">
+      <div v-if="showLoadPrompt" class="suggestion-mode-module__load-prompt">
         <CdxButton
           action="progressive"
           weight="primary"
@@ -133,7 +143,7 @@ function onLoadClick(): void {
           v-if="isLinkCard"
           :to="to!"
           class="suggestion-mode-module__see-all"
-          @click.stop
+          @click.stop="onOpenFullscreen"
         >
           See all suggestions
         </RouterLink>

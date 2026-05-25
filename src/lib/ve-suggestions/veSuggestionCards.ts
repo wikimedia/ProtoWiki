@@ -99,7 +99,7 @@ const DISPLAY_BY_TYPE: Record<string, SuggestionDisplayConfig> = {
   },
   textMatch: {
     heading: 'Rewrite flagged text',
-    description: () => 'Replace AI-generated text.',
+    description: () => 'Replace or remove AI-generated text.',
   },
   tone: {
     heading: 'Adjust tone',
@@ -833,9 +833,7 @@ function resolveSuggestionSection(
       const editSectionIndex = sectionIndexForOffset(sectionRanges, exactOffset)
       if (editSectionIndex != null) {
         const sectionTitle = sectionRanges[editSectionIndex]?.title
-        return sectionTitle ?
-            { sectionTitle, editSectionIndex }
-          : { editSectionIndex }
+        return sectionTitle ? { sectionTitle, editSectionIndex } : { editSectionIndex }
       }
     }
   }
@@ -849,9 +847,7 @@ function resolveSuggestionSection(
         const editSectionIndex = sectionIndexForOffset(sectionRanges, approxOffset)
         if (editSectionIndex != null) {
           const sectionTitle = sectionRanges[editSectionIndex]?.title
-          return sectionTitle ?
-              { sectionTitle, editSectionIndex }
-            : { editSectionIndex }
+          return sectionTitle ? { sectionTitle, editSectionIndex } : { editSectionIndex }
         }
       }
     }
@@ -889,10 +885,7 @@ function resolveBestEffortCardLink(
   return { cardLinkUrl: baseUrl }
 }
 
-function sectionIndexFromCardLinkUrl(
-  cardLinkUrl: string,
-  pageSource: string,
-): number | undefined {
+function sectionIndexFromCardLinkUrl(cardLinkUrl: string, pageSource: string): number | undefined {
   const hashIndex = cardLinkUrl.indexOf('#')
   if (hashIndex < 0) return undefined
 
@@ -1109,9 +1102,8 @@ export function buildFallbackCard(
     cachedHtml && cachedHtml !== rawSnippet ? stripLinksFromSnippetHtml(cachedHtml) : ''
   const sectionTitleMap = pageSource ? buildSectionTitleMap(pageSource) : new Map<string, string>()
   const sectionRanges = pageSource ? buildSectionRanges(pageSource) : []
-  const { cardLinkUrl, editSectionIndex } =
-    pageSource ?
-      resolveBestEffortCardLink(
+  const { cardLinkUrl, editSectionIndex } = pageSource
+    ? resolveBestEffortCardLink(
         wiki,
         pageTitle,
         context,

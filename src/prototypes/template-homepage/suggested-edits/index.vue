@@ -52,7 +52,7 @@ const viewProps = computed(() =>
 )
 
 const showHeaderRefresh = computed(
-  () => !showStructuredTasks.value && viewProps.value.showRefresh && !viewProps.value.loadPending,
+  () => !showStructuredTasks.value && viewProps.value.showRefresh === true,
 )
 
 definePage({

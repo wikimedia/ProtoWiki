@@ -1,6 +1,7 @@
 import { computed, ref, watch, type ComputedRef } from 'vue'
 
 import { useConfig } from '@/composables/useConfig'
+import { shouldShowDashpageLoadPrompt } from '@/lib/dashpageLoadState'
 import {
   DASHPAGE_MORELIKE_SEED_COUNT,
   DASHPAGE_SUGGESTION_FALLBACK_PAGE,
@@ -164,6 +165,7 @@ async function collectSuggestionsForPages(
   forceRefresh: boolean,
   signal: AbortSignal,
   recordPipelineError: (message: string) => void,
+  onItem?: (item: SuggestionQueueItem) => void | Promise<void>,
 ): Promise<SuggestionQueueItem[]> {
   const items: SuggestionQueueItem[] = []
 
@@ -189,7 +191,7 @@ async function collectSuggestionsForPages(
     const card = eligibleCards[0] ?? null
     if (!card) continue
 
-    items.push({
+    const item: SuggestionQueueItem = {
       pageTitle,
       card,
       pagePreview: {},
@@ -199,7 +201,12 @@ async function collectSuggestionsForPages(
         card,
         getCachedRun(pageTitle)?.pageSource,
       ),
-    })
+    }
+
+    items.push(item)
+    if (onItem) {
+      await onItem(item)
+    }
   }
 
   return items
@@ -257,26 +264,56 @@ function previewFromQueue(
   }
 }
 
+const loading = ref(false)
+const error = ref<string | null>(null)
+const hasStarted = ref(false)
+const lastFetchedAt = ref<number | null>(null)
+const selectedPageTitles = ref<string[]>([])
+const pagePreviews = ref<Record<string, PagePreviewCache>>({})
+const queue = ref<SuggestionQueueItem[]>([])
+const currentIndex = ref(0)
+const cachedRealTitles = ref<string[]>([])
+
+let abortController: AbortController | null = null
+let loadedUserKey: string | null = null
+let watchRegistered = false
+
 export function useDashpageSuggestionModule(): {
   moduleProps: ComputedRef<SuggestionModeModuleBind>
   fullscreenProps: ComputedRef<SuggestionModeModuleBind>
   onSuggestionLoad: () => void
   onSuggestionRefresh: () => void
   onSuggestionNavigate: (delta: number) => void
+  onSuggestionOpenFullscreen: () => void
 } {
   const { user, realUsername, currentUserPageLists } = useConfig()
 
-  const loading = ref(false)
-  const error = ref<string | null>(null)
-  const hasCache = ref(false)
-  const lastFetchedAt = ref<number | null>(null)
-  const selectedPageTitles = ref<string[]>([])
-  const pagePreviews = ref<Record<string, PagePreviewCache>>({})
-  const queue = ref<SuggestionQueueItem[]>([])
-  const currentIndex = ref(0)
-  const cachedRealTitles = ref<string[]>([])
+  function hasRenderableData(): boolean {
+    return queue.value.length > 0
+  }
 
-  let abortController: AbortController | null = null
+  async function enrichQueueItemPreview(
+    item: SuggestionQueueItem,
+    signal: AbortSignal,
+  ): Promise<void> {
+    try {
+      const previews = await fetchPagePreviewMetadataBatch([item.pageTitle], { signal })
+      if (signal.aborted) return
+
+      const preview = previews[item.pageTitle] ?? {}
+      pagePreviews.value = { ...pagePreviews.value, [item.pageTitle]: preview }
+
+      const index = queue.value.findIndex((entry) => entry.pageTitle === item.pageTitle)
+      if (index >= 0) {
+        queue.value[index] = { ...queue.value[index], pagePreview: preview }
+        queue.value = [...queue.value]
+      }
+    } catch (caught) {
+      if (caught instanceof FetchUserEditedPageTitlesError && caught.code === 'aborted') {
+        return
+      }
+    }
+  }
 
   function persistCache(userKey: string): void {
     setDashpageSuggestionModuleCache(userKey, {
@@ -293,9 +330,14 @@ export function useDashpageSuggestionModule(): {
   }
 
   function loadFromModuleCache(userKey: string): void {
+    if (loadedUserKey === userKey && queue.value.length > 0) {
+      return
+    }
+
     const cached = getDashpageSuggestionModuleCache(userKey)
     if (!cached) {
-      hasCache.value = false
+      loadedUserKey = userKey
+      hasStarted.value = false
       lastFetchedAt.value = null
       selectedPageTitles.value = []
       pagePreviews.value = {}
@@ -304,7 +346,8 @@ export function useDashpageSuggestionModule(): {
       return
     }
 
-    hasCache.value = true
+    loadedUserKey = userKey
+    hasStarted.value = true
     lastFetchedAt.value = cached.fetchedAt
     selectedPageTitles.value = cached.selectedPageTitles
     pagePreviews.value = cached.pagePreviews ?? {}
@@ -322,25 +365,49 @@ export function useDashpageSuggestionModule(): {
     cachedRealTitles.value = portfolio?.titles ?? []
   }
 
-  watch(
-    [user, realUsername],
-    ([activeUser, username]) => {
-      error.value = null
-      loadRealPortfolioFromCache()
-      loadFromModuleCache(dashpageSuggestionUserKey(activeUser, username))
-    },
-    { immediate: true },
-  )
+  if (!watchRegistered) {
+    watchRegistered = true
+    watch(
+      [user, realUsername],
+      ([activeUser, username]) => {
+        error.value = null
+        loadRealPortfolioFromCache()
+        loadFromModuleCache(dashpageSuggestionUserKey(activeUser, username))
+      },
+      { immediate: true },
+    )
+  }
 
   async function runPipeline(forceRefresh: boolean): Promise<void> {
     abortController?.abort()
     abortController = new AbortController()
     const { signal } = abortController
 
+    hasStarted.value = true
     loading.value = true
     error.value = null
 
     const userKey = dashpageSuggestionUserKey(user.value, realUsername.value)
+    const accumulated: SuggestionQueueItem[] = []
+
+    if (forceRefresh) {
+      queue.value = []
+      currentIndex.value = 0
+      pagePreviews.value = {}
+      selectedPageTitles.value = []
+    }
+
+    const onItem = async (item: SuggestionQueueItem): Promise<void> => {
+      accumulated.push(item)
+      queue.value = [...accumulated]
+      selectedPageTitles.value = accumulated.map((entry) => entry.pageTitle)
+      lastFetchedAt.value = Date.now()
+      persistCache(userKey)
+      await enrichQueueItemPreview(item, signal)
+      if (!signal.aborted) {
+        persistCache(userKey)
+      }
+    }
 
     try {
       if (user.value === 'real') {
@@ -377,6 +444,7 @@ export function useDashpageSuggestionModule(): {
         forceRefresh,
         signal,
         recordPipelineError,
+        onItem,
       )
 
       if (signal.aborted) return
@@ -411,6 +479,7 @@ export function useDashpageSuggestionModule(): {
         forceRefresh,
         signal,
         recordPipelineError,
+        onItem,
       )
 
       if (signal.aborted) return
@@ -450,6 +519,7 @@ export function useDashpageSuggestionModule(): {
               forceRefresh,
               signal,
               recordPipelineError,
+              onItem,
             )),
           ]
         }
@@ -460,19 +530,12 @@ export function useDashpageSuggestionModule(): {
       const nextQueue = shuffleQueue([...poolItems, ...morelikeItems])
       const queuePageTitles = nextQueue.map((item) => item.pageTitle)
 
-      if (queuePageTitles.length) {
-        const previews = await fetchPagePreviewMetadataBatch(queuePageTitles, { signal })
-        for (const item of nextQueue) {
-          item.pagePreview = previews[item.pageTitle] ?? {}
-        }
-        pagePreviews.value = previews
-      } else {
-        pagePreviews.value = {}
+      for (const item of nextQueue) {
+        item.pagePreview = pagePreviews.value[item.pageTitle] ?? item.pagePreview
       }
 
       selectedPageTitles.value = queuePageTitles
-      applyQueue(nextQueue, 0)
-      hasCache.value = true
+      applyQueue(nextQueue, forceRefresh ? 0 : Math.min(currentIndex.value, nextQueue.length - 1))
       lastFetchedAt.value = Date.now()
       persistCache(userKey)
     } catch (caught) {
@@ -496,9 +559,26 @@ export function useDashpageSuggestionModule(): {
   }
 
   function baseProps(): SuggestionModeModuleBind {
-    if (!hasCache.value) {
+    if (shouldShowDashpageLoadPrompt(hasStarted.value, hasRenderableData())) {
       return {
         loadPending: true,
+        refreshing: loading.value,
+        refreshError: error.value,
+      }
+    }
+
+    if (!loading.value && hasStarted.value && !queue.value.length) {
+      return {
+        emptyMessage: 'No suggestions found. Try refresh.',
+        showRefresh: true,
+        refreshing: loading.value,
+        refreshError: error.value,
+      }
+    }
+
+    if (loading.value && !queue.value.length) {
+      return {
+        showRefresh: true,
         refreshing: loading.value,
         refreshError: error.value,
       }
@@ -552,11 +632,20 @@ export function useDashpageSuggestionModule(): {
     persistCache(dashpageSuggestionUserKey(user.value, realUsername.value))
   }
 
+  /** Homepage preview always shows queue[0]; align fullscreen before navigating. */
+  function onSuggestionOpenFullscreen(): void {
+    if (!queue.value.length || currentIndex.value === 0) return
+
+    currentIndex.value = 0
+    persistCache(dashpageSuggestionUserKey(user.value, realUsername.value))
+  }
+
   return {
     moduleProps,
     fullscreenProps,
     onSuggestionLoad,
     onSuggestionRefresh,
     onSuggestionNavigate,
+    onSuggestionOpenFullscreen,
   }
 }

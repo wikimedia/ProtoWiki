@@ -91,13 +91,18 @@ const displayIndex = computed(() => (props.currentIndex ?? 0) + 1)
 
 const counterLabel = computed(() => {
   const total = props.totalCount ?? 1
-  return `${displayIndex.value} of ${total.toLocaleString()} suggestions`
+  const suffix = props.refreshing ? '+' : ''
+  return `${displayIndex.value} of ${total.toLocaleString()}${suffix} suggestions`
 })
 
 const taskTitle = computed(() => props.taskHeading ?? props.taskTypeLabel)
 
 const hasPreview = computed(
-  () => !props.loadPending && !!props.articleTitle && (!!taskTitle.value || !!props.emptyMessage),
+  () => !!props.articleTitle && (!!taskTitle.value || !!props.emptyMessage),
+)
+
+const showLoadPrompt = computed(
+  () => props.loadPending && !hasPreview.value,
 )
 
 const taskTypeColor = computed(() =>
@@ -155,7 +160,7 @@ function onNavigate(delta: number): void {
         {{ refreshError }}
       </p>
 
-      <div v-if="loadPending" class="suggested-edits-view__load-prompt">
+      <div v-if="showLoadPrompt" class="suggested-edits-view__load-prompt">
         <CdxButton
           action="progressive"
           weight="primary"

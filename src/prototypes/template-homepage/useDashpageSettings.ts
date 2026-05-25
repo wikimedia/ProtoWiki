@@ -11,6 +11,7 @@ export const EDIT_SUGGESTION_SOURCE_MENU_ITEMS: {
 ]
 
 const STORAGE_KEY = 'protowiki-dashpage-edit-suggestion-source'
+const DEFAULT_EDIT_SUGGESTION_SOURCE: EditSuggestionSource = 'suggestion-mode'
 const VALID_SOURCES: EditSuggestionSource[] = ['structured-tasks', 'suggestion-mode']
 
 function isEditSuggestionSource(value: unknown): value is EditSuggestionSource {
@@ -18,13 +19,13 @@ function isEditSuggestionSource(value: unknown): value is EditSuggestionSource {
 }
 
 function loadEditSuggestionSource(): EditSuggestionSource {
-  if (typeof window === 'undefined') return 'structured-tasks'
+  if (typeof window === 'undefined') return DEFAULT_EDIT_SUGGESTION_SOURCE
 
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY)
-    return isEditSuggestionSource(stored) ? stored : 'structured-tasks'
+    return isEditSuggestionSource(stored) ? stored : DEFAULT_EDIT_SUGGESTION_SOURCE
   } catch {
-    return 'structured-tasks'
+    return DEFAULT_EDIT_SUGGESTION_SOURCE
   }
 }
 

@@ -13,20 +13,24 @@ import ImpactModule from './ImpactModule.vue'
 import MentorModule from './MentorModule.vue'
 import StructuredTasksModule from './StructuredTasksModule.vue'
 import SuggestionModeModule from './SuggestionModeModule.vue'
+import RecentChangesModule from './RecentChangesModule.vue'
 import {
+  APP_HOME,
   HELP_LINKS,
   HELP_MODULE,
   HELP_PAGE,
   MENTOR,
   MENTOR_PAGE,
+  RECENT_CHANGES_PAGE,
   STRUCTURED_TASKS,
 } from './dashpage-fixtures'
 import { useDashpageSettings } from './useDashpageSettings'
 import { useDashpageSuggestionModule } from './useDashpageSuggestionModule'
+import { useDashpageRecentChangesModule } from './useDashpageRecentChangesModule'
 import { useHomepageImpact } from './useHomepageImpact'
 import { useHomepageSuggestedEdits } from './useHomepageSuggestedEdits'
 
-const { user, pageTitle } = useConfig()
+const { user, pageTitle, realUsername, currentUserPageLists } = useConfig()
 const { editSuggestionSource } = useDashpageSettings()
 const { impactMobileProps, impactDesktopProps, onImpactRefresh } = useHomepageImpact()
 const { suggestedEditsLinkTo } = useHomepageSuggestedEdits()
@@ -34,12 +38,31 @@ const {
   moduleProps: suggestionModuleProps,
   onSuggestionLoad,
   onSuggestionRefresh,
+  onSuggestionOpenFullscreen,
 } = useDashpageSuggestionModule()
+const {
+  moduleProps: recentChangesModuleProps,
+  onRecentChangesLoad,
+  onRecentChangesRefresh,
+} = useDashpageRecentChangesModule()
 
 const showStructuredTasks = computed(() => editSuggestionSource.value === 'structured-tasks')
 const showSuggestionMode = computed(() => editSuggestionSource.value === 'suggestion-mode')
 
 const showLoggedInModules = computed(() => user.value !== 'logged-out')
+
+const showRecentChangesModule = computed(() => {
+  if (user.value === 'logged-out' || user.value === 'new') return false
+
+  if (user.value === 'real') {
+    if (!realUsername.value.trim()) return false
+    const { totalEdits } = impactMobileProps.value
+    if (totalEdits != null) return totalEdits > 0
+    return currentUserPageLists.value.editedPages.length > 0
+  }
+
+  return currentUserPageLists.value.editedPages.length > 0
+})
 
 definePage({
   meta: {
@@ -75,6 +98,16 @@ definePage({
               v-bind="suggestionModuleProps"
               @load="onSuggestionLoad"
               @refresh="onSuggestionRefresh"
+              @open-fullscreen="onSuggestionOpenFullscreen"
+            />
+
+            <RecentChangesModule
+              v-if="showRecentChangesModule"
+              class="dashboard-slot--mobile-primary"
+              :to="RECENT_CHANGES_PAGE"
+              v-bind="recentChangesModuleProps"
+              @load="onRecentChangesLoad"
+              @refresh="onRecentChangesRefresh"
             />
 
             <ImpactModule
@@ -110,6 +143,11 @@ definePage({
               v-bind="suggestionModuleProps"
               @load="onSuggestionLoad"
               @refresh="onSuggestionRefresh"
+            />
+
+            <RecentChangesModule
+              v-if="showRecentChangesModule"
+              class="dashboard-slot--desktop-primary"
             />
           </template>
 

@@ -34,7 +34,7 @@ export class FetchUserImpactError extends Error {
 
 export interface FetchUserImpactOptions {
   signal?: AbortSignal
-  onProgress?: (step: string) => void
+  onProgress?: (patch: Partial<ImpactData>) => void
 }
 
 interface UserContrib {
@@ -166,6 +166,43 @@ function buildActivityHistogram(contribs: UserContrib[]): {
   }
 }
 
+function buildViewProgressPatch(
+  totalEdits: number,
+  viewRows: { title: string; total: number; daily: number[] }[],
+  mostViewed?: ImpactMostViewedArticle[],
+): Partial<ImpactData> {
+  const sortedRows = [...viewRows].sort((a, b) => b.total - a.total)
+  const aggregateViews = sortedRows.reduce((sum, row) => sum + row.total, 0)
+  const topByViews = sortedRows.slice(0, TOP_MOST_VIEWED)
+
+  const viewCount =
+    aggregateViews > 0 ? formatViewCount(aggregateViews) : totalEdits > 0 ? '—' : undefined
+
+  const sparklineSource = topByViews[0]?.daily ?? []
+  const sparklineData =
+    sparklineSource.length >= 2
+      ? sparklineSource
+      : totalEdits > 0 && sortedRows.length > 0
+        ? new Array(40).fill(0)
+        : []
+
+  const nextMostViewed =
+    mostViewed ??
+    topByViews.map((row) => ({
+      title: row.title,
+      views: row.total,
+      sparklineData: row.daily.length >= 2 ? row.daily.slice(-10) : undefined,
+      href: `https://${WIKI_HOST}/wiki/${encodeURIComponent(row.title.replace(/ /g, '_'))}`,
+    }))
+
+  return {
+    viewCount,
+    viewLabel: "Views on articles you've edited",
+    sparklineData,
+    mostViewed: nextMostViewed,
+  }
+}
+
 function formatViewCount(total: number): string {
   if (total >= 1_000_000) return `${(total / 1_000_000).toFixed(1)}M`
   if (total >= 1000) return `${(total / 1000).toFixed(1)}K`
@@ -260,7 +297,6 @@ export async function fetchUserImpact(
   }
 
   assertNotAborted(signal)
-  onProgress?.('user')
 
   const usersJson = (await fetchJson(
     actionUrl({
@@ -280,9 +316,9 @@ export async function fetchUserImpact(
   }
 
   const totalEdits = userInfo.editcount ?? 0
+  onProgress?.({ totalEdits })
 
   assertNotAborted(signal)
-  onProgress?.('contributions')
 
   const allContribs: UserContrib[] = []
   let uccontinue: string | undefined
@@ -329,27 +365,34 @@ export async function fetchUserImpact(
 
   const editedPageTitles = [...titleToLatestEdit.keys()]
 
+  onProgress?.({
+    lastEdited,
+    longestStreak,
+    recentActivityData,
+    activityStartDate,
+    activityEndDate,
+    editedPageTitles,
+  })
+
   const titlesForPageviews = editedPageTitles.slice(0, MAX_PAGEVIEW_ARTICLES)
   const viewRows: { title: string; total: number; daily: number[] }[] = []
 
   for (const title of titlesForPageviews) {
     assertNotAborted(signal)
-    onProgress?.(`pageviews:${title}`)
 
     const since = titleToLatestEdit.get(title) ?? ''
     const { total, daily } = await fetchPageviewsSince(title, since, signal)
     viewRows.push({ title, total, daily })
+    onProgress?.(buildViewProgressPatch(totalEdits, viewRows))
   }
 
   viewRows.sort((a, b) => b.total - a.total)
 
-  const aggregateViews = viewRows.reduce((sum, row) => sum + row.total, 0)
   const topByViews = viewRows.slice(0, TOP_MOST_VIEWED)
   const mostViewed: ImpactMostViewedArticle[] = []
 
   for (const row of topByViews) {
     assertNotAborted(signal)
-    onProgress?.(`thumbnail:${row.title}`)
 
     const thumbnailSrc = await fetchThumbnail(row.title, signal)
 
@@ -360,18 +403,11 @@ export async function fetchUserImpact(
       thumbnailSrc,
       href: `https://${WIKI_HOST}/wiki/${encodeURIComponent(row.title.replace(/ /g, '_'))}`,
     })
+
+    onProgress?.(buildViewProgressPatch(totalEdits, viewRows, mostViewed))
   }
 
-  const viewCount =
-    aggregateViews > 0 ? formatViewCount(aggregateViews) : totalEdits > 0 ? '—' : undefined
-
-  const sparklineSource = topByViews[0]?.daily ?? []
-  const sparklineData =
-    sparklineSource.length >= 2
-      ? sparklineSource
-      : totalEdits > 0
-        ? new Array(40).fill(0)
-        : []
+  const viewPatch = buildViewProgressPatch(totalEdits, viewRows, mostViewed)
 
   return {
     totalEdits,
@@ -381,9 +417,9 @@ export async function fetchUserImpact(
     recentActivityData,
     activityStartDate,
     activityEndDate,
-    viewCount,
-    viewLabel: "Views on articles you've edited",
-    sparklineData,
+    viewCount: viewPatch.viewCount,
+    viewLabel: viewPatch.viewLabel,
+    sparklineData: viewPatch.sparklineData ?? [],
     mostViewed,
     viewAllEditsHref: `https://${WIKI_HOST}/wiki/Special:Contributions/${encodeURIComponent(username)}`,
     editedPageTitles,

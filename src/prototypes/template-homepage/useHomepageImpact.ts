@@ -2,6 +2,7 @@ import { computed, watch, type ComputedRef } from 'vue'
 
 import { useConfig } from '@/composables/useConfig'
 import { useRealUserImpact } from '@/composables/useRealUserImpact'
+import { shouldShowDashpageLoadPrompt } from '@/lib/dashpageLoadState'
 import type { ImpactData } from '@/lib/impactTypes'
 import { IMPACT, IMPACT_DESKTOP, IMPACT_PAGE } from './dashpage-fixtures'
 
@@ -11,14 +12,6 @@ type ImpactModuleBind = ImpactData & {
   refreshing?: boolean
   refreshError?: string | null
   loadPending?: boolean
-}
-
-function realImpactHasPreview(data: ImpactData): boolean {
-  return (
-    !!data.viewCount ||
-    (data.totalEdits ?? 0) > 0 ||
-    (data.recentActivityData ?? []).some((v) => v > 0)
-  )
 }
 
 export function useHomepageImpact(): {
@@ -39,24 +32,34 @@ export function useHomepageImpact(): {
     { immediate: true },
   )
 
+  function realUserBind(): ImpactModuleBind {
+    if (
+      shouldShowDashpageLoadPrompt(
+        realImpact.hasStarted.value,
+        realImpact.hasRenderableData.value,
+      )
+    ) {
+      return {
+        loadPending: true,
+        refreshing: realImpact.loading.value,
+        refreshError: realImpact.error.value,
+      }
+    }
+
+    return {
+      ...realImpact.impactProps.value,
+      showRefresh: true,
+      refreshing: realImpact.loading.value,
+      refreshError: realImpact.error.value,
+    }
+  }
+
   const impactMobileProps = computed((): ImpactModuleBind => {
     if (user.value === 'experienced') {
       return { to: IMPACT_PAGE, ...IMPACT }
     }
     if (user.value === 'real') {
-      if (!realImpact.hasCache.value) {
-        return {
-          to: IMPACT_PAGE,
-          loadPending: true,
-          refreshing: realImpact.loading.value,
-          refreshError: realImpact.error.value,
-        }
-      }
-      const data = realImpact.impactProps.value
-      if (realImpactHasPreview(data)) {
-        return { to: IMPACT_PAGE, ...data }
-      }
-      return { to: IMPACT_PAGE }
+      return { to: IMPACT_PAGE, ...realUserBind() }
     }
     return { to: IMPACT_PAGE }
   })
@@ -66,19 +69,7 @@ export function useHomepageImpact(): {
       return { ...IMPACT_DESKTOP }
     }
     if (user.value === 'real') {
-      if (!realImpact.hasCache.value) {
-        return {
-          loadPending: true,
-          refreshing: realImpact.loading.value,
-          refreshError: realImpact.error.value,
-        }
-      }
-      return {
-        ...realImpact.impactProps.value,
-        showRefresh: true,
-        refreshing: realImpact.loading.value,
-        refreshError: realImpact.error.value,
-      }
+      return realUserBind()
     }
     return {}
   })

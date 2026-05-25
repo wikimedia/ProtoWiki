@@ -7,6 +7,7 @@ import DashpageChromeWrapper from '../DashpageChromeWrapper.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 import { useConfig } from '@/composables/useConfig'
 import { useRealUserImpact } from '@/composables/useRealUserImpact'
+import { shouldShowDashpageLoadPrompt } from '@/lib/dashpageLoadState'
 import ImpactModule from '../ImpactModule.vue'
 import MobileSubpageHeader from '../MobileSubpageHeader.vue'
 import { HOMEPAGE, IMPACT_DESKTOP } from '../dashpage-fixtures'
@@ -29,7 +30,12 @@ const impactProps = computed(() => {
     return { ...IMPACT_DESKTOP }
   }
   if (user.value === 'real') {
-    if (!realImpact.hasCache.value) {
+    if (
+      shouldShowDashpageLoadPrompt(
+        realImpact.hasStarted.value,
+        realImpact.hasRenderableData.value,
+      )
+    ) {
       return {
         loadPending: true,
         refreshing: realImpact.loading.value,
@@ -46,7 +52,15 @@ const impactProps = computed(() => {
   return { thanksReceived: 0 }
 })
 
-const showRealRefresh = computed(() => user.value === 'real' && realImpact.hasCache.value)
+const showRealRefresh = computed(
+  () =>
+    user.value === 'real' &&
+    realImpact.hasRenderableData.value &&
+    !shouldShowDashpageLoadPrompt(
+      realImpact.hasStarted.value,
+      realImpact.hasRenderableData.value,
+    ),
+)
 
 function onRefreshClick(): void {
   void realImpact.refresh()

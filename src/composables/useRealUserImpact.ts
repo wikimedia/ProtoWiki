@@ -5,22 +5,44 @@ import { getCachedImpact, setCachedImpact } from '@/lib/impactCache'
 import { FetchUserImpactError, fetchUserImpact } from '@/lib/fetchUserImpact'
 import { EMPTY_IMPACT_DATA, type ImpactData } from '@/lib/impactTypes'
 
+function impactHasRenderableData(data: ImpactData): boolean {
+  return (
+    (data.totalEdits ?? 0) > 0 ||
+    !!data.lastEdited ||
+    !!data.viewCount ||
+    (data.recentActivityData ?? []).some((value) => value > 0)
+  )
+}
+
 export function useRealUserImpact(usernameSource: Ref<string> | ComputedRef<string>): {
   impactProps: ComputedRef<ImpactData>
   loading: Ref<boolean>
   error: Ref<string | null>
   refresh: () => Promise<void>
   hasCache: ComputedRef<boolean>
+  hasStarted: ComputedRef<boolean>
+  hasRenderableData: ComputedRef<boolean>
   lastFetchedAt: Ref<number | null>
   editedPageTitles: Ref<string[]>
 } {
   const impactData = ref<ImpactData>({ ...EMPTY_IMPACT_DATA })
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const hasStarted = ref(false)
   const lastFetchedAt = ref<number | null>(null)
   const editedPageTitles = ref<string[]>([])
 
   let abortController: AbortController | null = null
+
+  function mergeImpactPatch(patch: Partial<ImpactData>): void {
+    impactData.value = { ...impactData.value, ...patch }
+    if (patch.editedPageTitles) {
+      editedPageTitles.value = patch.editedPageTitles
+    }
+    if (!lastFetchedAt.value) {
+      lastFetchedAt.value = Date.now()
+    }
+  }
 
   function loadFromCache(raw: string): void {
     const cached = getCachedImpact(raw)
@@ -28,11 +50,13 @@ export function useRealUserImpact(usernameSource: Ref<string> | ComputedRef<stri
       impactData.value = { ...EMPTY_IMPACT_DATA, ...cached.data }
       lastFetchedAt.value = cached.fetchedAt
       editedPageTitles.value = cached.data.editedPageTitles ?? []
+      hasStarted.value = true
       return
     }
     impactData.value = { ...EMPTY_IMPACT_DATA }
     lastFetchedAt.value = null
     editedPageTitles.value = []
+    hasStarted.value = false
   }
 
   watch(
@@ -48,6 +72,8 @@ export function useRealUserImpact(usernameSource: Ref<string> | ComputedRef<stri
 
   const hasCache = computed(() => lastFetchedAt.value != null)
 
+  const hasRenderableData = computed(() => impactHasRenderableData(impactData.value))
+
   const impactProps = computed(() => impactData.value)
 
   async function refresh(): Promise<void> {
@@ -61,11 +87,17 @@ export function useRealUserImpact(usernameSource: Ref<string> | ComputedRef<stri
     abortController = new AbortController()
     const { signal } = abortController
 
+    hasStarted.value = true
     loading.value = true
     error.value = null
 
     try {
-      const data = await fetchUserImpact(name, { signal })
+      const data = await fetchUserImpact(name, {
+        signal,
+        onProgress: (patch) => {
+          mergeImpactPatch(patch)
+        },
+      })
       const entry = setCachedImpact(name, data)
       impactData.value = { ...EMPTY_IMPACT_DATA, ...data }
       lastFetchedAt.value = entry.fetchedAt
@@ -92,6 +124,8 @@ export function useRealUserImpact(usernameSource: Ref<string> | ComputedRef<stri
     error,
     refresh,
     hasCache,
+    hasStarted: computed(() => hasStarted.value),
+    hasRenderableData,
     lastFetchedAt,
     editedPageTitles,
   }
