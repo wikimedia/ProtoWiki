@@ -147,7 +147,12 @@ function buildQueueFromPages(
       pageTitle,
       card,
       pagePreview,
-      editHref: editUrlForSuggestionCard(wiki, pageTitle, card),
+      editHref: editUrlForSuggestionCard(
+        wiki,
+        pageTitle,
+        card,
+        veRun?.pageSource,
+      ),
     })
   }
 
@@ -188,7 +193,12 @@ async function collectSuggestionsForPages(
       pageTitle,
       card,
       pagePreview: {},
-      editHref: editUrlForSuggestionCard(wiki, pageTitle, card),
+      editHref: editUrlForSuggestionCard(
+        wiki,
+        pageTitle,
+        card,
+        getCachedRun(pageTitle)?.pageSource,
+      ),
     })
   }
 

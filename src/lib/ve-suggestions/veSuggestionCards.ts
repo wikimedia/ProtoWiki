@@ -19,6 +19,8 @@ export interface SuggestionCardData {
   rawSnippetWikitext: string
   renderedSnippetHtml: string
   cardLinkUrl: string
+  /** MediaWiki section index (0 = lead) for VisualEditor edit links. */
+  editSectionIndex?: number
   raw: FWVeSuggestionItem
   groupedSuggestions?: FWVeSuggestionItem[]
   diagnostics?: FWVeSuggestionResponse['diagnostics']
@@ -789,16 +791,20 @@ export function buildSectionRanges(source: string): SectionRange[] {
   return out
 }
 
-function resolveBestEffortCardLink(
-  wiki: FakeWiki,
-  pageTitle: string,
+function sectionIndexForOffset(sectionRanges: SectionRange[], offset: number): number | undefined {
+  const sectionIndex = sectionRanges.findIndex(
+    (range) => offset >= range.startOffset && offset < range.endOffset,
+  )
+  return sectionIndex >= 0 ? sectionIndex : undefined
+}
+
+function resolveSuggestionSection(
   context: DescriptionContext,
   sectionTitleMap: Map<string, string>,
   sectionRanges: SectionRange[],
   pageSource: string,
   rawSnippet: string,
-): string {
-  const baseUrl = wiki.getPageUrl(pageTitle)
+): { sectionTitle?: string; editSectionIndex?: number } {
   const suggestionData = context.suggestion.data as Record<string, unknown> | undefined
   const candidateData = context.selectedCandidate?.data as Record<string, unknown> | undefined
   const sectionHintRaw =
@@ -808,20 +814,28 @@ function resolveBestEffortCardLink(
     (typeof candidateData?.sectionTitle === 'string' && candidateData.sectionTitle) ||
     ''
   const sectionHint = sectionHintRaw.trim()
-  if (sectionHint && sectionHint.toLowerCase() !== 'lead') {
+  if (sectionHint) {
+    if (sectionHint.toLowerCase() === 'lead') {
+      return { editSectionIndex: 0 }
+    }
     const exactSectionTitle = sectionTitleMap.get(sectionHint.toLowerCase()) ?? sectionHint
-    const hash = toSectionHash(exactSectionTitle)
-    return hash ? `${baseUrl}#${hash}` : baseUrl
+    const sectionIndex = sectionRanges.findIndex(
+      (range) => range.title.toLowerCase() === exactSectionTitle.toLowerCase(),
+    )
+    if (sectionIndex >= 0) {
+      return { sectionTitle: exactSectionTitle, editSectionIndex: sectionIndex }
+    }
+    return { sectionTitle: exactSectionTitle }
   }
   if (rawSnippet && pageSource && sectionRanges.length > 0) {
     const exactOffset = pageSource.indexOf(rawSnippet)
     if (exactOffset >= 0) {
-      const section = sectionRanges.find(
-        (range) => exactOffset >= range.startOffset && exactOffset < range.endOffset,
-      )
-      if (section?.title) {
-        const hash = toSectionHash(section.title)
-        if (hash) return `${baseUrl}#${hash}`
+      const editSectionIndex = sectionIndexForOffset(sectionRanges, exactOffset)
+      if (editSectionIndex != null) {
+        const sectionTitle = sectionRanges[editSectionIndex]?.title
+        return sectionTitle ?
+            { sectionTitle, editSectionIndex }
+          : { editSectionIndex }
       }
     }
   }
@@ -832,31 +846,82 @@ function resolveBestEffortCardLink(
       const compactOffset = compactSource.indexOf(compactSnippet)
       if (compactOffset >= 0 && compactSource.length > 0) {
         const approxOffset = Math.floor((compactOffset / compactSource.length) * pageSource.length)
-        const section = sectionRanges.find(
-          (range) => approxOffset >= range.startOffset && approxOffset < range.endOffset,
-        )
-        if (section?.title) {
-          const hash = toSectionHash(section.title)
-          if (hash) return `${baseUrl}#${hash}`
+        const editSectionIndex = sectionIndexForOffset(sectionRanges, approxOffset)
+        if (editSectionIndex != null) {
+          const sectionTitle = sectionRanges[editSectionIndex]?.title
+          return sectionTitle ?
+              { sectionTitle, editSectionIndex }
+            : { editSectionIndex }
         }
       }
     }
   }
-  return baseUrl
+  return {}
+}
+
+function resolveBestEffortCardLink(
+  wiki: FakeWiki,
+  pageTitle: string,
+  context: DescriptionContext,
+  sectionTitleMap: Map<string, string>,
+  sectionRanges: SectionRange[],
+  pageSource: string,
+  rawSnippet: string,
+): { cardLinkUrl: string; editSectionIndex?: number } {
+  const baseUrl = wiki.getPageUrl(pageTitle)
+  const resolved = resolveSuggestionSection(
+    context,
+    sectionTitleMap,
+    sectionRanges,
+    pageSource,
+    rawSnippet,
+  )
+  if (resolved.sectionTitle) {
+    const hash = toSectionHash(resolved.sectionTitle)
+    return {
+      cardLinkUrl: hash ? `${baseUrl}#${hash}` : baseUrl,
+      editSectionIndex: resolved.editSectionIndex,
+    }
+  }
+  if (resolved.editSectionIndex != null) {
+    return { cardLinkUrl: baseUrl, editSectionIndex: resolved.editSectionIndex }
+  }
+  return { cardLinkUrl: baseUrl }
+}
+
+function sectionIndexFromCardLinkUrl(
+  cardLinkUrl: string,
+  pageSource: string,
+): number | undefined {
+  const hashIndex = cardLinkUrl.indexOf('#')
+  if (hashIndex < 0) return undefined
+
+  const fragment = decodeURIComponent(cardLinkUrl.slice(hashIndex + 1)).replace(/_/g, ' ')
+  if (!fragment.trim()) return undefined
+
+  const sectionRanges = buildSectionRanges(pageSource)
+  const sectionIndex = sectionRanges.findIndex(
+    (range) => range.title.toLowerCase() === fragment.trim().toLowerCase(),
+  )
+  return sectionIndex >= 0 ? sectionIndex : undefined
 }
 
 export function editUrlForSuggestionCard(
   wiki: FakeWiki,
   pageTitle: string,
   card: SuggestionCardData,
+  pageSource?: string,
 ): string {
-  const hashIndex = card.cardLinkUrl.indexOf('#')
-  if (hashIndex >= 0) {
-    const fragment = decodeURIComponent(card.cardLinkUrl.slice(hashIndex + 1))
-    const sectionTitle = fragment.replace(/_/g, ' ')
-    return wiki.getEditUrl(pageTitle, sectionTitle)
+  let sectionIndex = card.editSectionIndex
+  if (sectionIndex == null && pageSource) {
+    sectionIndex = sectionIndexFromCardLinkUrl(card.cardLinkUrl, pageSource)
   }
-  return wiki.getEditUrl(pageTitle)
+
+  const params = `title=${wiki.encodeForUrl(pageTitle)}&action=edit&veaction=edit`
+  if (sectionIndex != null && sectionIndex >= 0) {
+    return `${wiki.base}w/index.php?${params}&section=${sectionIndex}`
+  }
+  return `${wiki.base}w/index.php?${params}`
 }
 
 function snippetCacheKey(pageTitle: string, snippet: string): string {
@@ -983,6 +1048,15 @@ export async function buildSuggestionCard(
     display.description(context, wiki),
   )
   const renderedSnippetHtml = await renderSnippetHtml(wiki, pageTitle, rawSnippet, snippetHtmlCache)
+  const { cardLinkUrl, editSectionIndex } = resolveBestEffortCardLink(
+    wiki,
+    pageTitle,
+    context,
+    sectionTitleMap,
+    sectionRanges,
+    pageSource,
+    rawSnippet,
+  )
 
   return {
     cardId: `${methodName}-${suggestion.id}-${index}`,
@@ -993,15 +1067,8 @@ export async function buildSuggestionCard(
     descriptionParts,
     rawSnippetWikitext: rawSnippet,
     renderedSnippetHtml,
-    cardLinkUrl: resolveBestEffortCardLink(
-      wiki,
-      pageTitle,
-      context,
-      sectionTitleMap,
-      sectionRanges,
-      pageSource,
-      rawSnippet,
-    ),
+    cardLinkUrl,
+    editSectionIndex,
     raw: suggestion,
     diagnostics: response.diagnostics,
     responseMeta: {
@@ -1040,6 +1107,20 @@ export function buildFallbackCard(
     : undefined
   const renderedSnippetHtml =
     cachedHtml && cachedHtml !== rawSnippet ? stripLinksFromSnippetHtml(cachedHtml) : ''
+  const sectionTitleMap = pageSource ? buildSectionTitleMap(pageSource) : new Map<string, string>()
+  const sectionRanges = pageSource ? buildSectionRanges(pageSource) : []
+  const { cardLinkUrl, editSectionIndex } =
+    pageSource ?
+      resolveBestEffortCardLink(
+        wiki,
+        pageTitle,
+        context,
+        sectionTitleMap,
+        sectionRanges,
+        pageSource,
+        rawSnippet,
+      )
+    : { cardLinkUrl: wiki.getPageUrl(response.pageTitle) }
 
   return {
     cardId: `${methodName}-${suggestion.id}-${index}`,
@@ -1050,7 +1131,8 @@ export function buildFallbackCard(
     descriptionParts,
     rawSnippetWikitext: rawSnippet,
     renderedSnippetHtml,
-    cardLinkUrl: wiki.getPageUrl(response.pageTitle),
+    cardLinkUrl,
+    editSectionIndex,
     raw: suggestion,
     diagnostics: response.diagnostics,
     responseMeta: {
