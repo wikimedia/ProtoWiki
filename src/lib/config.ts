@@ -57,7 +57,7 @@ export const DEFAULT_USER_PAGE_LISTS: Record<ConfigUser, UserPageLists> = {
 }
 
 export const DEFAULT_CONFIG: Config = {
-  theme: 'system',
+  theme: 'light',
   user: 'new',
   realUsername: '',
   userPageLists: cloneUserPageListsMap(DEFAULT_USER_PAGE_LISTS),
@@ -74,6 +74,12 @@ export const CONFIG_USER_MENU_ITEMS: { value: ConfigUser; label: string }[] = [
   { value: 'new', label: 'New editor' },
   { value: 'experienced', label: 'Experienced editor' },
   { value: 'real', label: 'Real user' },
+]
+
+export const CONFIG_THEME_MENU_ITEMS: { value: ConfigTheme; label: string }[] = [
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+  { value: 'system', label: 'System' },
 ]
 
 /** Normalize a Wikipedia username for API calls and cache keys. */

@@ -12,6 +12,7 @@ import {
   type PageListKey,
   type UserPageLists,
 } from '@/lib/config'
+import { applyThemePreference } from '@/lib/theming'
 
 const config = ref<Config>(loadConfig())
 
@@ -21,6 +22,13 @@ watch(
     saveConfig(value)
   },
   { deep: true },
+)
+
+watch(
+  () => config.value.theme,
+  (preference) => {
+    applyThemePreference(preference)
+  },
 )
 
 export function useConfig(): {
