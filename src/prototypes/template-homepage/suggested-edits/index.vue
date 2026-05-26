@@ -5,8 +5,10 @@ import { cdxIconReload } from '@wikimedia/codex-icons'
 
 import TaskFullscreenShell from '../TaskFullscreenShell.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
+import MobileWrapper from '@/components/MobileWrapper.vue'
 import MobileSubpageHeader from '../MobileSubpageHeader.vue'
 import SuggestedEditsView from '../SuggestedEditsView.vue'
+import SuggestionFeedView from '../SuggestionFeedView.vue'
 import { HOMEPAGE } from '../dashpage-fixtures'
 import { useDashpageSettings } from '../useDashpageSettings'
 import { useDashpageStructuredTasksModule } from '../useDashpageStructuredTasksModule'
@@ -14,10 +16,16 @@ import { useDashpageSuggestionModule } from '../useDashpageSuggestionModule'
 
 const { editSuggestionSource } = useDashpageSettings()
 const { fullscreenProps: structuredFullscreenProps } = useDashpageStructuredTasksModule()
-const { fullscreenProps, onSuggestionLoad, onSuggestionRefresh, onSuggestionNavigate } =
-  useDashpageSuggestionModule()
+const {
+  fullscreenProps,
+  feedFullscreenProps,
+  onSuggestionLoad,
+  onSuggestionRefresh,
+  onSuggestionNavigate,
+} = useDashpageSuggestionModule()
 
 const showStructuredTasks = computed(() => editSuggestionSource.value === 'structured-tasks')
+const showSuggestionFeed = computed(() => editSuggestionSource.value === 'suggestion-feed')
 
 const suggestionProps = computed(() => ({
   showFilterBar: false,
@@ -28,13 +36,20 @@ const suggestionProps = computed(() => ({
   showSnippet: fullscreenProps.value.showSnippet,
 }))
 
-const viewProps = computed(() =>
+const carouselViewProps = computed(() =>
   showStructuredTasks.value ? structuredFullscreenProps.value : suggestionProps.value,
 )
 
-const showHeaderRefresh = computed(
-  () => !showStructuredTasks.value && viewProps.value.showRefresh === true,
-)
+const showHeaderRefresh = computed(() => {
+  if (showStructuredTasks.value) return false
+  if (showSuggestionFeed.value) return feedFullscreenProps.value.showRefresh === true
+  return suggestionProps.value.showRefresh === true
+})
+
+const headerRefreshDisabled = computed(() => {
+  if (showSuggestionFeed.value) return feedFullscreenProps.value.refreshing === true
+  return suggestionProps.value.refreshing === true
+})
 
 definePage({
   meta: {
@@ -45,8 +60,12 @@ definePage({
 </script>
 
 <template>
-  <TaskFullscreenShell skin="mobile">
-    <div class="suggested-edits-layout">
+  <MobileWrapper>
+    <TaskFullscreenShell skin="mobile">
+    <div
+      class="suggested-edits-layout"
+      :class="{ 'suggested-edits-layout--feed': showSuggestionFeed }"
+    >
       <div class="suggested-edits-layout__header">
         <MobileSubpageHeader
           title="Suggested edits"
@@ -59,7 +78,7 @@ definePage({
               weight="quiet"
               :icon-only="true"
               aria-label="Refresh suggestions"
-              :disabled="viewProps.refreshing"
+              :disabled="headerRefreshDisabled"
               @click="onSuggestionRefresh"
             >
               <CdxIcon :icon="cdxIconReload" />
@@ -68,16 +87,29 @@ definePage({
         </MobileSubpageHeader>
       </div>
 
-      <SpecialPageWrapper :title="null" class="suggested-edits-page">
+      <SpecialPageWrapper
+        :title="null"
+        :skin="showSuggestionFeed ? 'mobile' : undefined"
+        class="suggested-edits-page"
+        :class="{ 'suggested-edits-page--feed': showSuggestionFeed }"
+      >
+        <SuggestionFeedView
+          v-if="showSuggestionFeed"
+          v-bind="feedFullscreenProps"
+          @load="onSuggestionLoad"
+          @refresh="onSuggestionRefresh"
+        />
         <SuggestedEditsView
-          v-bind="viewProps"
+          v-else
+          v-bind="carouselViewProps"
           @load="onSuggestionLoad"
           @refresh="onSuggestionRefresh"
           @navigate="onSuggestionNavigate"
         />
       </SpecialPageWrapper>
     </div>
-  </TaskFullscreenShell>
+    </TaskFullscreenShell>
+  </MobileWrapper>
 </template>
 
 <style scoped>
@@ -95,7 +127,6 @@ definePage({
   box-sizing: border-box;
   width: 100%;
   padding: 0 4px;
-  /* padding: var(--spacing-100, 16px) var(--spacing-100, 16px) var(--spacing-50, 8px); */
   background-color: var(--background-color-base, #fff);
   border-bottom: 1px solid var(--border-color-base, #a2a9b1);
 }
@@ -121,7 +152,19 @@ definePage({
   overflow: hidden;
   max-width: none;
   margin: 0;
+  padding-block: 0;
+  padding-inline: var(--spacing-25, 4px);
   background-color: var(--background-color-neutral-subtle, #f8f9fa);
+}
+
+.suggested-edits-page--feed {
+  background-color: var(--background-color-neutral, #eaecf0);
+}
+
+.suggested-edits-page[data-skin='mobile'],
+.suggested-edits-page--feed[data-skin='mobile'] {
+  padding-block: 0;
+  padding-inline: var(--spacing-25, 4px);
 }
 
 .suggested-edits-page :deep(.special-page-wrapper__body) {

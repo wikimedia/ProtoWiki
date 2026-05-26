@@ -3,7 +3,7 @@
 .review-changes__feed {
   list-style: none;
   margin: 0;
-  --review-changes-gap: 2px;
+  --review-changes-gap: 4px;
   --review-changes-card-gap: 0;
   padding: 0 var(--review-changes-gap) var(--review-changes-gap);
   flex: 1;
@@ -399,16 +399,20 @@
   width: 100%;
   background-color: var(--background-color-neutral);
   /*
-   * Cancel SpecialPageWrapper mobile inline padding so feed edge inset
-   * matches the gap between cards (FMW: .special-view--review-changes).
+   * Cancel page inline padding so the grey feed background bleeds out; the
+   * visible card inset is --review-changes-gap on .review-changes__feed below.
    */
-  --review-changes-bleed-inline: var(--spacing-100, 16px);
+  --review-changes-bleed-inline: var(--spacing-25, 4px);
   width: calc(100% + 2 * var(--review-changes-bleed-inline));
   margin-inline: calc(-1 * var(--review-changes-bleed-inline));
 }
 
+.review-changes-view .review-changes__feed {
+  --review-changes-gap: var(--spacing-25, 4px);
+}
+
 .review-changes-view__error {
-  margin: var(--spacing-100, 16px);
+  margin: var(--spacing-100, 16px) var(--spacing-25, 4px);
   font-size: var(--font-size-small);
   color: var(--color-error, #bf3c2c);
 }
@@ -422,11 +426,11 @@
 }
 
 .review-changes-view__empty {
-  margin: var(--spacing-100, 16px);
+  margin: var(--spacing-100, 16px) var(--spacing-25, 4px);
   font-size: var(--font-size-small);
   color: var(--color-base--subtle, #54595d);
 }
 
 .review-changes-view__empty-actions {
-  margin: 0 var(--spacing-100, 16px);
+  margin: 0 var(--spacing-25, 4px);
 }

@@ -2,6 +2,7 @@ import { computed, ref, watch, type ComputedRef } from 'vue'
 
 import { useConfig } from '@/composables/useConfig'
 import { shouldShowDashpageLoadPrompt } from '@/lib/dashpageLoadState'
+import { DASHPAGE_SUGGESTION_FEED_PREVIEW_MAX } from '@/lib/dashpageSuggestionFeedConstants'
 import {
   DASHPAGE_MORELIKE_SEED_COUNT,
   DASHPAGE_SUGGESTION_FALLBACK_PAGE,
@@ -129,6 +130,54 @@ export interface SuggestionModeModuleBind {
   editHref?: string
 }
 
+export interface SuggestionFeedItem {
+  id: string
+  pageTitle: string
+  articleShortDescription?: string
+  thumbnailSrc?: string
+  taskHeading: string
+  taskDifficulty: 'easy' | 'medium' | 'hard'
+  taskTimeEstimate: string
+  taskDescription?: string
+  taskDescriptionParts?: SuggestionDescriptionPart[]
+  showSnippet: boolean
+  snippetHtml?: string
+  editHref: string
+}
+
+export interface SuggestionFeedModuleBind {
+  items?: SuggestionFeedItem[]
+  loadPending?: boolean
+  showRefresh?: boolean
+  refreshing?: boolean
+  refreshError?: string | null
+  emptyMessage?: string | null
+}
+
+function queueItemToFeedItem(item: SuggestionQueueItem): SuggestionFeedItem {
+  const bind = queueItemToBind(item)
+  const taskDifficulty = bind.taskDifficulty ?? 'easy'
+
+  return {
+    id: `${item.pageTitle}:${item.card.cardId}`,
+    pageTitle: item.pageTitle,
+    articleShortDescription: bind.articleShortDescription,
+    thumbnailSrc: bind.thumbnailSrc,
+    taskHeading: bind.taskHeading ?? bind.taskTypeLabel ?? '',
+    taskDifficulty,
+    taskTimeEstimate: bind.taskTimeEstimate ?? timeEstimateForDifficulty(taskDifficulty),
+    taskDescription: bind.taskDescription,
+    taskDescriptionParts: bind.taskDescriptionParts,
+    showSnippet: bind.showSnippet ?? false,
+    snippetHtml: bind.snippetHtml,
+    editHref: bind.editHref ?? item.editHref,
+  }
+}
+
+function queueToFeedItems(queue: SuggestionQueueItem[]): SuggestionFeedItem[] {
+  return queue.map(queueItemToFeedItem)
+}
+
 function buildQueueFromPages(
   pageTitles: string[],
   pagePreviews: Record<string, PagePreviewCache>,
@@ -166,6 +215,7 @@ async function collectSuggestionsForPages(
   signal: AbortSignal,
   recordPipelineError: (message: string) => void,
   onItem?: (item: SuggestionQueueItem) => void | Promise<void>,
+  getPagePreview?: (pageTitle: string) => PagePreviewCache,
 ): Promise<SuggestionQueueItem[]> {
   const items: SuggestionQueueItem[] = []
 
@@ -194,7 +244,7 @@ async function collectSuggestionsForPages(
     const item: SuggestionQueueItem = {
       pageTitle,
       card,
-      pagePreview: {},
+      pagePreview: getPagePreview?.(pageTitle) ?? {},
       editHref: editUrlForSuggestionCard(
         wiki,
         pageTitle,
@@ -281,6 +331,8 @@ let watchRegistered = false
 export function useDashpageSuggestionModule(): {
   moduleProps: ComputedRef<SuggestionModeModuleBind>
   fullscreenProps: ComputedRef<SuggestionModeModuleBind>
+  feedModuleProps: ComputedRef<SuggestionFeedModuleBind>
+  feedFullscreenProps: ComputedRef<SuggestionFeedModuleBind>
   onSuggestionLoad: () => void
   onSuggestionRefresh: () => void
   onSuggestionNavigate: (delta: number) => void
@@ -292,26 +344,45 @@ export function useDashpageSuggestionModule(): {
     return queue.value.length > 0
   }
 
-  async function enrichQueueItemPreview(
-    item: SuggestionQueueItem,
+  async function enrichQueuePreviewsBatch(
+    pageTitles: string[],
     signal: AbortSignal,
   ): Promise<void> {
+    const titlesToFetch = [...new Set(pageTitles)].filter((title) => {
+      const preview = pagePreviews.value[title]
+      return !preview?.shortDescription?.trim() || !preview?.thumbnailSrc?.trim()
+    })
+    if (!titlesToFetch.length) return
+
     try {
-      const previews = await fetchPagePreviewMetadataBatch([item.pageTitle], { signal })
+      const previews = await fetchPagePreviewMetadataBatch(titlesToFetch, { signal })
       if (signal.aborted) return
 
-      const preview = previews[item.pageTitle] ?? {}
-      pagePreviews.value = { ...pagePreviews.value, [item.pageTitle]: preview }
+      pagePreviews.value = { ...pagePreviews.value, ...previews }
 
-      const index = queue.value.findIndex((entry) => entry.pageTitle === item.pageTitle)
-      if (index >= 0) {
-        queue.value[index] = { ...queue.value[index], pagePreview: preview }
-        queue.value = [...queue.value]
-      }
+      queue.value = queue.value.map((entry) => {
+        const preview = previews[entry.pageTitle] ?? pagePreviews.value[entry.pageTitle]
+        if (!preview) return entry
+        return {
+          ...entry,
+          pagePreview: { ...entry.pagePreview, ...preview },
+        }
+      })
     } catch (caught) {
       if (caught instanceof FetchUserEditedPageTitlesError && caught.code === 'aborted') {
         return
       }
+    }
+  }
+
+  function getPagePreview(pageTitle: string): PagePreviewCache {
+    return pagePreviews.value[pageTitle] ?? {}
+  }
+
+  function mergeQueueItemPreview(item: SuggestionQueueItem): SuggestionQueueItem {
+    return {
+      ...item,
+      pagePreview: { ...getPagePreview(item.pageTitle), ...item.pagePreview },
     }
   }
 
@@ -398,12 +469,16 @@ export function useDashpageSuggestionModule(): {
     }
 
     const onItem = async (item: SuggestionQueueItem): Promise<void> => {
-      accumulated.push(item)
+      const itemWithPreview = mergeQueueItemPreview(item)
+      accumulated.push(itemWithPreview)
       queue.value = [...accumulated]
       selectedPageTitles.value = accumulated.map((entry) => entry.pageTitle)
       lastFetchedAt.value = Date.now()
       persistCache(userKey)
-      await enrichQueueItemPreview(item, signal)
+      await enrichQueuePreviewsBatch(
+        accumulated.map((entry) => entry.pageTitle),
+        signal,
+      )
       if (!signal.aborted) {
         persistCache(userKey)
       }
@@ -445,6 +520,7 @@ export function useDashpageSuggestionModule(): {
         signal,
         recordPipelineError,
         onItem,
+        getPagePreview,
       )
 
       if (signal.aborted) return
@@ -480,6 +556,7 @@ export function useDashpageSuggestionModule(): {
         signal,
         recordPipelineError,
         onItem,
+        getPagePreview,
       )
 
       if (signal.aborted) return
@@ -520,6 +597,7 @@ export function useDashpageSuggestionModule(): {
               signal,
               recordPipelineError,
               onItem,
+              getPagePreview,
             )),
           ]
         }
@@ -614,6 +692,54 @@ export function useDashpageSuggestionModule(): {
 
   const fullscreenProps = computed((): SuggestionModeModuleBind => baseProps())
 
+  function feedBaseProps(): SuggestionFeedModuleBind {
+    if (shouldShowDashpageLoadPrompt(hasStarted.value, hasRenderableData())) {
+      return {
+        loadPending: true,
+        refreshing: loading.value,
+        refreshError: error.value,
+      }
+    }
+
+    if (!loading.value && hasStarted.value && !queue.value.length) {
+      return {
+        emptyMessage: 'No suggestions found. Try refresh.',
+        showRefresh: true,
+        refreshing: loading.value,
+        refreshError: error.value,
+      }
+    }
+
+    if (loading.value && !queue.value.length) {
+      return {
+        showRefresh: true,
+        refreshing: loading.value,
+        refreshError: error.value,
+      }
+    }
+
+    return {
+      items: queueToFeedItems(queue.value),
+      showRefresh: true,
+      refreshing: loading.value,
+      refreshError: error.value,
+    }
+  }
+
+  const feedModuleProps = computed((): SuggestionFeedModuleBind => {
+    const props = feedBaseProps()
+    if (props.loadPending || props.emptyMessage || !props.items?.length) {
+      return props
+    }
+
+    return {
+      ...props,
+      items: props.items.slice(0, DASHPAGE_SUGGESTION_FEED_PREVIEW_MAX),
+    }
+  })
+
+  const feedFullscreenProps = computed((): SuggestionFeedModuleBind => feedBaseProps())
+
   function onSuggestionLoad(): void {
     void runPipeline(false)
   }
@@ -643,6 +769,8 @@ export function useDashpageSuggestionModule(): {
   return {
     moduleProps,
     fullscreenProps,
+    feedModuleProps,
+    feedFullscreenProps,
     onSuggestionLoad,
     onSuggestionRefresh,
     onSuggestionNavigate,

@@ -96,13 +96,13 @@ definePage({
   max-width: none;
   margin: 0;
   padding-block: 0;
-  padding-inline: var(--spacing-100, 16px);
+  padding-inline: var(--spacing-25, 4px);
   background-color: var(--background-color-neutral, #eaecf0);
 }
 
 .recent-changes-page[data-skin='mobile'] {
   padding-block: 0;
-  padding-inline: var(--spacing-100, 16px);
+  padding-inline: var(--spacing-25, 4px);
 }
 
 .recent-changes-page :deep(.special-page-wrapper__body) {

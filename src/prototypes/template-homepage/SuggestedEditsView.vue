@@ -206,7 +206,7 @@ function onNavigate(delta: number): void {
         </article>
 
         <section v-if="taskTitle" class="suggested-edits-view__task">
-          <p class="suggested-edits-view__task-heading">
+          <p class="suggested-edits-view__task-heading" :style="{ color: taskTypeColor }">
             {{ taskTitle }}
             <CdxIcon :icon="cdxIconInfo" size="small" class="suggested-edits-view__task-info" />
           </p>
@@ -483,7 +483,6 @@ function onNavigate(delta: number): void {
   font-size: var(--font-size-medium);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-medium);
-  color: var(--color-base, #202122);
 }
 
 .suggested-edits-view__task-info {

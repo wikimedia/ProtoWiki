@@ -333,12 +333,19 @@ function onOpenFullscreen(): void {
   text-decoration: none;
   color: inherit;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .suggestion-mode-module__preview--link:hover,
-.suggestion-mode-module__preview--link:focus {
-  background-color: var(--background-color-interactive, #eaecf0);
+.suggestion-mode-module__preview--link:focus,
+.suggestion-mode-module__preview--link:active {
   outline: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .suggestion-mode-module__preview--link:hover {
+    background-color: var(--background-color-interactive, #eaecf0);
+  }
 }
 
 .suggestion-mode-module__preview--link:focus-visible {

@@ -1,6 +1,6 @@
 import { ref, watch, type Ref } from 'vue'
 
-export type EditSuggestionSource = 'structured-tasks' | 'suggestion-mode'
+export type EditSuggestionSource = 'structured-tasks' | 'suggestion-mode' | 'suggestion-feed'
 
 export const EDIT_SUGGESTION_SOURCE_MENU_ITEMS: {
   value: EditSuggestionSource
@@ -8,11 +8,16 @@ export const EDIT_SUGGESTION_SOURCE_MENU_ITEMS: {
 }[] = [
   { value: 'structured-tasks', label: 'Structured tasks' },
   { value: 'suggestion-mode', label: 'Suggestion mode' },
+  { value: 'suggestion-feed', label: 'Suggestion feed' },
 ]
 
 const STORAGE_KEY = 'protowiki-dashpage-edit-suggestion-source'
 const DEFAULT_EDIT_SUGGESTION_SOURCE: EditSuggestionSource = 'suggestion-mode'
-const VALID_SOURCES: EditSuggestionSource[] = ['structured-tasks', 'suggestion-mode']
+const VALID_SOURCES: EditSuggestionSource[] = [
+  'structured-tasks',
+  'suggestion-mode',
+  'suggestion-feed',
+]
 
 function isEditSuggestionSource(value: unknown): value is EditSuggestionSource {
   return typeof value === 'string' && VALID_SOURCES.includes(value as EditSuggestionSource)

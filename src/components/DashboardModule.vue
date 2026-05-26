@@ -130,6 +130,7 @@ function trimmedTitle(): string {
 .mobile-card--link {
   text-decoration: none;
   color: inherit;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mobile-card--link:visited,
@@ -139,11 +140,16 @@ function trimmedTitle(): string {
 }
 
 .mobile-card--link:hover,
-.mobile-card--link:focus {
+.mobile-card--link:focus,
+.mobile-card--link:active {
   outline: none;
-  background-color: var(--background-color-interactive, #eaecf0);
   text-decoration: none;
   color: inherit;
+}
+
+.mobile-card--link:focus-visible {
+  outline: 2px solid var(--color-progressive, #36c);
+  outline-offset: 2px;
 }
 
 .dashboard-module--subtle.mobile-card,
@@ -151,9 +157,14 @@ function trimmedTitle(): string {
   background-color: var(--background-color-progressive-subtle, #e8eeff);
 }
 
-.dashboard-module--subtle.mobile-card--link:hover,
-.dashboard-module--subtle.mobile-card--link:focus {
-  background-color: var(--background-color-progressive-subtle--hover, #d9e2ff);
+@media (hover: hover) and (pointer: fine) {
+  .mobile-card--link:hover {
+    background-color: var(--background-color-interactive, #eaecf0);
+  }
+
+  .dashboard-module--subtle.mobile-card--link:hover {
+    background-color: var(--background-color-progressive-subtle--hover, #d9e2ff);
+  }
 }
 
 .mobile-card__header {

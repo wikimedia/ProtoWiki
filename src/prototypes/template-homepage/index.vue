@@ -13,6 +13,7 @@ import ImpactModule from './ImpactModule.vue'
 import MentorModule from './MentorModule.vue'
 import StructuredTasksModule from './StructuredTasksModule.vue'
 import SuggestionModeModule from './SuggestionModeModule.vue'
+import SuggestionFeedModule from './SuggestionFeedModule.vue'
 import RecentChangesModule from './RecentChangesModule.vue'
 import {
   APP_HOME,
@@ -37,6 +38,7 @@ const { impactMobileProps, impactDesktopProps, onImpactRefresh } = useHomepageIm
 const { suggestedEditsLinkTo } = useHomepageSuggestedEdits()
 const {
   moduleProps: suggestionModuleProps,
+  feedModuleProps,
   onSuggestionLoad,
   onSuggestionRefresh,
   onSuggestionOpenFullscreen,
@@ -49,6 +51,7 @@ const {
 
 const showStructuredTasks = computed(() => editSuggestionSource.value === 'structured-tasks')
 const showSuggestionMode = computed(() => editSuggestionSource.value === 'suggestion-mode')
+const showSuggestionFeed = computed(() => editSuggestionSource.value === 'suggestion-feed')
 
 const showLoggedInModules = computed(() => user.value !== 'logged-out')
 
@@ -101,6 +104,14 @@ definePage({
               @refresh="onSuggestionRefresh"
               @open-fullscreen="onSuggestionOpenFullscreen"
             />
+            <SuggestionFeedModule
+              v-else-if="showSuggestionFeed"
+              class="dashboard-slot--mobile-primary"
+              :to="suggestedEditsLinkTo"
+              v-bind="feedModuleProps"
+              @load="onSuggestionLoad"
+              @refresh="onSuggestionRefresh"
+            />
 
             <RecentChangesModule
               v-if="showRecentChangesModule"
@@ -142,6 +153,13 @@ definePage({
               v-else-if="showSuggestionMode"
               class="dashboard-slot--desktop-primary"
               v-bind="suggestionModuleProps"
+              @load="onSuggestionLoad"
+              @refresh="onSuggestionRefresh"
+            />
+            <SuggestionFeedModule
+              v-else-if="showSuggestionFeed"
+              class="dashboard-slot--desktop-primary"
+              v-bind="feedModuleProps"
               @load="onSuggestionLoad"
               @refresh="onSuggestionRefresh"
             />

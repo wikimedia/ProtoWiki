@@ -12,7 +12,7 @@ export const CHANGE_SIZE_BY_SUGGESTION_TYPE: Record<string, SuggestionChangeSize
   fakeHeading: 'easy',
   imageCaption: 'medium',
   redirect: 'easy',
-  requiredTemplateParam: 'medium',
+  requiredTemplateParam: 'easy',
   suggestedLink: 'easy',
   textMatch: 'hard',
   tone: 'hard',
