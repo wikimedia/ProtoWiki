@@ -425,12 +425,23 @@
   padding: var(--spacing-200, 32px);
 }
 
+.review-changes-view__empty-state {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-50, 8px);
+  padding: var(--spacing-200, 32px);
+  text-align: center;
+}
+
 .review-changes-view__empty {
-  margin: var(--spacing-100, 16px) var(--spacing-25, 4px);
+  margin: 0;
   font-size: var(--font-size-small);
   color: var(--color-base--subtle, #54595d);
 }
 
 .review-changes-view__empty-actions {
-  margin: 0 var(--spacing-25, 4px);
+  margin: 0;
 }

@@ -7,7 +7,6 @@ import { shouldShowDashpageLoadPrompt } from '@/lib/dashpageLoadState'
 import { DASHPAGE_SUGGESTION_FEED_PREVIEW_MAX } from '@/lib/dashpageSuggestionFeedConstants'
 import {
   DASHPAGE_MORELIKE_SEED_COUNT,
-  DASHPAGE_SUGGESTION_FALLBACK_PAGE,
   DASHPAGE_SUGGESTION_MAX_TRIED_PAGES,
   DASHPAGE_SUGGESTION_MIN_QUEUE,
   DASHPAGE_SUGGESTION_MORELIKE_MAX,
@@ -17,6 +16,7 @@ import {
   getDashpageSuggestionModuleCache,
   getPortfolioPagesForUser,
   pickUpToRandomPages,
+  portfolioPoolForDashpage,
   setDashpageSuggestionModuleCache,
   type PagePreviewCache,
 } from '@/lib/dashpageSuggestionCache'
@@ -532,8 +532,16 @@ export function useDashpageSuggestionModule(): {
         currentUserPageLists.value,
         cachedRealTitles.value,
       )
-      const portfolioPool =
-        portfolio.length ? portfolio : [DASHPAGE_SUGGESTION_FALLBACK_PAGE]
+      const portfolioPool = portfolioPoolForDashpage(user.value, portfolio)
+
+      if (user.value === 'real' && !portfolioPool.length) {
+        applyQueue([], 0)
+        selectedPageTitles.value = []
+        pagePreviews.value = {}
+        lastFetchedAt.value = Date.now()
+        persistCache(userKey)
+        return
+      }
 
       const excludeTitles = forceRefresh ? selectedPageTitles.value : []
 

@@ -21,9 +21,9 @@ import {
   type RevisionCandidate,
 } from '@/lib/dashpageRecentChangesSignals'
 import {
-  DASHPAGE_SUGGESTION_FALLBACK_PAGE,
   getPortfolioPagesForUser,
   pickUpToRandomPages,
+  portfolioPoolForDashpage,
 } from '@/lib/dashpageSuggestionCache'
 import {
   FetchMorelikePageTitlesError,
@@ -286,8 +286,7 @@ async function streamPortfolioRevisions(
   lang = 'en',
 ): Promise<PortfolioStreamResult> {
   const portfolio = getPortfolioPagesForUser(user, pageLists, cachedRealTitles)
-  const portfolioPool =
-    portfolio.length ? portfolio : [DASHPAGE_SUGGESTION_FALLBACK_PAGE]
+  const portfolioPool = portfolioPoolForDashpage(user, portfolio)
 
   const portfolioPicks = pickUpToRandomPages(portfolioPool, DASHPAGE_RC_KNOWN_PAGES_MAX)
 

@@ -58,14 +58,10 @@ const emit = defineEmits<{
 }>()
 
 const hasPreview = computed(
-  () =>
-    !!props.articleTitle &&
-    (!!props.taskTypeLabel || !!props.emptyMessage),
+  () => !!props.articleTitle && (!!props.taskTypeLabel || !!props.emptyMessage),
 )
 
-const showLoadPrompt = computed(
-  () => props.loadPending && !hasPreview.value,
-)
+const showLoadPrompt = computed(() => props.loadPending && !hasPreview.value)
 
 const isLinkCard = computed(() => props.to != null)
 
@@ -77,10 +73,7 @@ const showRefreshInTitle = computed(
 )
 
 const showSuggestionCounter = computed(
-  () =>
-    hasPreview.value &&
-    props.totalSuggestionCount != null &&
-    props.totalSuggestionCount > 1,
+  () => hasPreview.value && props.totalSuggestionCount != null && props.totalSuggestionCount > 1,
 )
 
 const taskTypeColor = computed(() =>
@@ -157,7 +150,7 @@ function onOpenFullscreen(): void {
           :disabled="refreshing"
           @click.stop="onRefreshClick"
         >
-          {{ refreshing ? 'Loading…' : 'Try another page' }}
+          {{ refreshing ? 'Loading…' : '' }}
         </CdxButton>
       </template>
 
@@ -176,10 +169,7 @@ function onOpenFullscreen(): void {
           :aria-label="props.editHref ? `Edit ${props.articleTitle}` : undefined"
         >
           <div class="suggestion-mode-module__preview-body">
-            <div
-              v-if="props.thumbnailSrc"
-              class="suggestion-mode-module__thumb-wrap"
-            >
+            <div v-if="props.thumbnailSrc" class="suggestion-mode-module__thumb-wrap">
               <img
                 class="suggestion-mode-module__thumb"
                 :src="props.thumbnailSrc"

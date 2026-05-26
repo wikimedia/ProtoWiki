@@ -101,18 +101,14 @@ const hasPreview = computed(
   () => !!props.articleTitle && (!!taskTitle.value || !!props.emptyMessage),
 )
 
-const showLoadPrompt = computed(
-  () => props.loadPending && !hasPreview.value,
-)
+const showLoadPrompt = computed(() => props.loadPending && !hasPreview.value)
 
 const taskTypeColor = computed(() =>
   props.taskDifficulty ? CHANGE_SIZE_COLORS[props.taskDifficulty] : '#14866d',
 )
 
 const hasTaskDescription = computed(
-  () =>
-    (props.taskDescriptionParts?.length ?? 0) > 0 ||
-    !!props.taskDescription?.trim(),
+  () => (props.taskDescriptionParts?.length ?? 0) > 0 || !!props.taskDescription?.trim(),
 )
 
 function onLoadClick(): void {
@@ -230,10 +226,7 @@ function onNavigate(delta: number): void {
             </span>
           </div>
 
-          <p
-            v-if="hasTaskDescription"
-            class="suggested-edits-view__task-description"
-          >
+          <p v-if="hasTaskDescription" class="suggested-edits-view__task-description">
             <template v-if="taskDescriptionParts?.length">
               <template v-for="(part, index) in taskDescriptionParts" :key="index">
                 <a
@@ -242,7 +235,8 @@ function onNavigate(delta: number): void {
                   :href="part.href"
                   target="_blank"
                   rel="noreferrer noopener"
-                >{{ part.label }}</a>
+                  >{{ part.label }}</a
+                >
                 <template v-else>{{ part.text }}</template>
               </template>
             </template>

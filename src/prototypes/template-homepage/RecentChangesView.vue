@@ -68,14 +68,14 @@ function onRefreshClick(): void {
       />
     </ul>
 
-    <template v-else-if="emptyMessage && !showLoadPrompt">
+    <div v-else-if="emptyMessage && !showLoadPrompt" class="review-changes-view__empty-state">
       <p class="review-changes-view__empty">{{ emptyMessage }}</p>
       <div v-if="showRefresh" class="review-changes-view__empty-actions">
         <CdxButton weight="quiet" :disabled="refreshing" @click="onRefreshClick">
           {{ refreshing ? 'Loading…' : 'Try again' }}
         </CdxButton>
       </div>
-    </template>
+    </div>
   </div>
 </template>
 

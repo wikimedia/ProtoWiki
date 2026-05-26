@@ -97,11 +97,7 @@ function onLoadClick(): void {
         >
           {{ refreshing ? 'Loading…' : 'Load' }}
         </CdxButton>
-        <RouterLink
-          v-if="isLinkCard"
-          :to="to!"
-          class="suggestion-feed-module__see-all"
-        >
+        <RouterLink v-if="isLinkCard" :to="to!" class="suggestion-feed-module__see-all">
           See all suggestions
         </RouterLink>
       </div>
@@ -114,18 +110,13 @@ function onLoadClick(): void {
           :disabled="refreshing"
           @click.stop="onRefreshClick"
         >
-          {{ refreshing ? 'Loading…' : 'Try another page' }}
+          {{ refreshing ? 'Loading…' : '' }}
         </CdxButton>
       </template>
 
       <template v-else-if="hasPreview">
         <ul class="suggestion-feed-module__feed">
-          <SuggestionFeedItem
-            v-for="item in previewItems"
-            :key="item.id"
-            :item="item"
-            preview
-          />
+          <SuggestionFeedItem v-for="item in previewItems" :key="item.id" :item="item" preview />
         </ul>
       </template>
     </DashboardModule>

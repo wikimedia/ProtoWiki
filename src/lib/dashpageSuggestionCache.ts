@@ -126,6 +126,13 @@ export function getPortfolioPagesForUser(
   return titles
 }
 
+/** Pages to seed suggestion / recent-changes pipelines. Real users with no edits get none. */
+export function portfolioPoolForDashpage(user: ConfigUser, portfolio: string[]): string[] {
+  if (portfolio.length) return portfolio
+  if (user === 'real') return []
+  return [DASHPAGE_SUGGESTION_FALLBACK_PAGE]
+}
+
 export function pickRandomPage(titles: string[], exclude?: string): string {
   const pool =
     exclude && titles.length > 1 ?
@@ -150,7 +157,7 @@ export function pickUpToRandomPages(
   let pool = titles.filter((title) => !exclude.has(title))
 
   if (!pool.length) {
-    pool = titles.length ? [...titles] : [DASHPAGE_SUGGESTION_FALLBACK_PAGE]
+    pool = titles.length ? [...titles] : []
   }
 
   const count = Math.min(max, pool.length)
@@ -171,7 +178,7 @@ export function resolvePortfolioPages(
 ): string[] {
   const portfolio = getPortfolioPagesForUser(user, pageLists, cachedRealTitles)
   if (!portfolio.length) {
-    return [DASHPAGE_SUGGESTION_FALLBACK_PAGE]
+    return user === 'real' ? [] : pickUpToRandomPages([DASHPAGE_SUGGESTION_FALLBACK_PAGE], DASHPAGE_SUGGESTION_POOL_MAX, excludeTitles)
   }
   return pickUpToRandomPages(portfolio, DASHPAGE_SUGGESTION_POOL_MAX, excludeTitles)
 }
@@ -183,5 +190,5 @@ export function resolvePortfolioPage(
   exclude?: string,
 ): string {
   const pages = resolvePortfolioPages(user, pageLists, cachedRealTitles, exclude ? [exclude] : [])
-  return pages[0] ?? DASHPAGE_SUGGESTION_FALLBACK_PAGE
+  return pages[0] ?? (user === 'real' ? '' : DASHPAGE_SUGGESTION_FALLBACK_PAGE)
 }
