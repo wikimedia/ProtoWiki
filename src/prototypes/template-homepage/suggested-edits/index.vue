@@ -129,7 +129,7 @@ definePage({
   flex-shrink: 0;
   box-sizing: border-box;
   width: 100%;
-  padding: 0 4px;
+  padding: env(safe-area-inset-top, 0px) 4px 0;
   background-color: var(--background-color-base, #fff);
   border-bottom: 1px solid var(--border-color-base, #a2a9b1);
 }

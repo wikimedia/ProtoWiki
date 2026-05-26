@@ -409,6 +409,7 @@
 
 .review-changes-view .review-changes__feed {
   --review-changes-gap: var(--spacing-25, 4px);
+  padding-top: var(--review-changes-gap);
 }
 
 .review-changes-view__error {

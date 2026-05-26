@@ -325,6 +325,7 @@ function onNavigate(delta: number): void {
   width: 100%;
   min-width: 0;
   min-height: 0;
+  padding: var(--spacing-100, 16px) 0;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -533,7 +534,6 @@ function onNavigate(delta: number): void {
 
 .suggested-edits-view__footer {
   --suggested-edits-footer-bleed-inline: var(--spacing-100, 16px);
-  --suggested-edits-footer-bleed-bottom: var(--spacing-150, 24px);
   display: flex;
   flex-shrink: 0;
   align-items: center;
@@ -542,9 +542,8 @@ function onNavigate(delta: number): void {
   box-sizing: border-box;
   width: calc(100% + 2 * var(--suggested-edits-footer-bleed-inline));
   margin-inline: calc(-1 * var(--suggested-edits-footer-bleed-inline));
-  margin-bottom: calc(-1 * var(--suggested-edits-footer-bleed-bottom));
   padding: var(--spacing-75, 12px) var(--suggested-edits-footer-bleed-inline);
-  padding-bottom: max(var(--spacing-75, 12px), env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(var(--spacing-75, 12px) + env(safe-area-inset-bottom, 0px));
   background-color: var(--background-color-base, #fff);
   border-top: 1px solid var(--border-color-base, #a2a9b1);
 }
