@@ -83,6 +83,11 @@ export function normalizeWikiUsername(raw: string): string {
   return trimmed.charAt(0).toUpperCase() + trimmed.slice(1)
 }
 
+/** Hostname for a Wikipedia language edition (default English). */
+export function wikiHostFromLang(lang = 'en'): string {
+  return `${lang}.wikipedia.org`
+}
+
 export function configUserDisplayName(user: ConfigUser, realUsername = ''): string {
   if (user === 'real') {
     const name = normalizeWikiUsername(realUsername)
