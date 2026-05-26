@@ -3,16 +3,17 @@ import { computed, watch } from 'vue'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconReload } from '@wikimedia/codex-icons'
 
-import ChromeWrapper from '@/components/ChromeWrapper.vue'
+import DashpageChromeWrapper from '../DashpageChromeWrapper.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 import { useConfig } from '@/composables/useConfig'
 import { useRealUserImpact } from '@/composables/useRealUserImpact'
+import { shouldShowDashpageLoadPrompt } from '@/lib/dashpageLoadState'
 import ImpactModule from '../ImpactModule.vue'
 import MobileSubpageHeader from '../MobileSubpageHeader.vue'
 import { HOMEPAGE, IMPACT_DESKTOP } from '../dashpage-fixtures'
 
-const { user, realUsername, setCurrentUserPageList } = useConfig()
-const realImpact = useRealUserImpact(realUsername)
+const { user, realUsername, realLang, setCurrentUserPageList } = useConfig()
+const realImpact = useRealUserImpact(realUsername, realLang)
 
 watch(
   [() => user.value, realImpact.editedPageTitles],
@@ -29,7 +30,12 @@ const impactProps = computed(() => {
     return { ...IMPACT_DESKTOP }
   }
   if (user.value === 'real') {
-    if (!realImpact.hasCache.value) {
+    if (
+      shouldShowDashpageLoadPrompt(
+        realImpact.hasStarted.value,
+        realImpact.hasRenderableData.value,
+      )
+    ) {
       return {
         loadPending: true,
         refreshing: realImpact.loading.value,
@@ -47,7 +53,13 @@ const impactProps = computed(() => {
 })
 
 const showRealRefresh = computed(
-  () => user.value === 'real' && realImpact.hasCache.value,
+  () =>
+    user.value === 'real' &&
+    realImpact.hasRenderableData.value &&
+    !shouldShowDashpageLoadPrompt(
+      realImpact.hasStarted.value,
+      realImpact.hasRenderableData.value,
+    ),
 )
 
 function onRefreshClick(): void {
@@ -56,14 +68,14 @@ function onRefreshClick(): void {
 
 definePage({
   meta: {
-    title: 'Template: Homepage — Impact',
+    title: 'Dashpage — Impact',
     description: 'Full-page mobile drill-down for the Your impact homepage module.',
   },
 })
 </script>
 
 <template>
-  <ChromeWrapper :last-edited-notice="false">
+  <DashpageChromeWrapper :last-edited-notice="false">
     <SpecialPageWrapper :title="null" class="impact-page">
       <MobileSubpageHeader title="Your impact" :back-to="HOMEPAGE" back-label="Back to homepage">
         <template v-if="showRealRefresh" #actions>
@@ -78,13 +90,9 @@ definePage({
           </CdxButton>
         </template>
       </MobileSubpageHeader>
-      <ImpactModule
-        standalone
-        v-bind="impactProps"
-        @refresh="onRefreshClick"
-      />
+      <ImpactModule standalone v-bind="impactProps" @refresh="onRefreshClick" />
     </SpecialPageWrapper>
-  </ChromeWrapper>
+  </DashpageChromeWrapper>
 </template>
 
 <style scoped>

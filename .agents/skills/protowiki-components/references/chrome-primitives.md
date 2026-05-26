@@ -12,7 +12,7 @@ chrome-without-the-wrapper (e.g., a custom layout that doesn't use
 
 | Skin | Chrome feel | Notes |
 | --- | --- | --- |
-| `desktop` | **Vector 2022–style** | Wordmark/tagline (**`wordmarkSrc`**, **`taglineSrc`**, **`#logo` override**), **`SearchBar`** + **Search** button, username link (**`username`** + **`#username`**), user-tool cluster ( **`navTools`** preset vs **`#nav`** override ). **Main-menu glyph is icon-only** (mock). Global skin stays **desktop** until the viewport is **≤640px**; **below 1120px**, inline search collapses to a search icon; **below 768px**, watchlist hides (`nav-button-desktop` parity). |
+| `desktop` | **Vector 2022–style** | Wordmark/tagline (**`wordmarkSrc`**, **`taglineSrc`**, **`#logo` override**), **`SearchBar`** + **Search** button, username link (**`username`** + **`#username`**), user-tool cluster ( **`navTools`** preset vs **`#nav`** override ). **Main-menu glyph is icon-only mock by default** — override via **`#menu`**. Global skin stays **desktop** until the viewport is **≤640px**; **below 1120px**, inline search collapses to a search icon; **below 768px**, watchlist hides (`nav-button-desktop` parity). |
 | `mobile` | **Minerva-style** | Grey elevated bar: menu, Wikipedia wordmark (**`mobileWordmarkSrc`** / **`wordmarkSrc`**, **`#logo`**), search icon + notifications — **`navTools` is ignored**. |
 
 **`ChromeFooter`** matches the skin:
@@ -52,6 +52,7 @@ Desktop **inline search** is always **`<SearchBar />`** inside the header (not a
 | Slot | Default | Use for |
 | --- | --- | --- |
 | `#logo` | EN Wikipedia wordmark (+ tagline on desktop) via `<img>` | Replace with another project's wordmark / lockup |
+| `#menu` | Mock burger icon (**desktop**: non-interactive glyph; **mobile**: quiet button) | Replace with an interactive main-menu trigger + popover (**`ChromeWrapper`** forwards **`#menu`**) |
 | `#username` | Anchor from **`username`** (hidden when empty after trim) | Replace with custom markup before tool icons (**desktop**) |
 | `#nav` | Vector-style tool icons on **desktop** only | Replace the default user-tool cluster (**`navTools` ignored**) |
 

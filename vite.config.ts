@@ -83,6 +83,9 @@ export default defineConfig(({ command }) => ({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  optimizeDeps: {
+    exclude: ['fakewiki'],
+  },
   server: {
     port: 5173,
     strictPort: false,

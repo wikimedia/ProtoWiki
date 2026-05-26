@@ -51,7 +51,7 @@ protowiki/
 │   │   ├── index.vue       ← home / gallery (auto-lists prototypes)
 │   │   ├── template-chrome/index.vue
 │   │   ├── template-dashboard/index.vue
-│   │   └── dashpage/index.vue
+│   │   └── template-homepage/index.vue
 │   ├── components/         ← shipped components (wrappers, primitives, article, dashboard)
 │   ├── composables/        ← useSkin / useTheme (read-only hooks)
 │   ├── lib/                ← theming logic, helpers

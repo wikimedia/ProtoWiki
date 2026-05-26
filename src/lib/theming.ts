@@ -3,6 +3,8 @@ import { ref, type ComputedRef, type InjectionKey, type Ref } from 'vue'
 import lightTokensRaw from '@wikimedia/codex-design-tokens/theme-wikimedia-ui.css?raw'
 import darkTokensRaw from '@wikimedia/codex-design-tokens/theme-wikimedia-ui-mode-dark.css?raw'
 
+import { loadConfig, type ConfigTheme } from '@/lib/config'
+
 export type Skin = 'desktop' | 'mobile'
 export type Theme = 'light' | 'dark'
 
@@ -68,6 +70,11 @@ function injectThemedTokens(): void {
 export const globalSkin: Ref<Skin> = ref<Skin>('desktop')
 export const globalTheme: Ref<Theme> = ref<Theme>('light')
 
+let themeUrlPinned = false
+let themePreference: ConfigTheme = 'light'
+let colorSchemeMql: MediaQueryList | null = null
+let onColorSchemeChange: ((event: MediaQueryListEvent) => void) | null = null
+
 function readUrlParam(name: string): string | null {
   if (typeof window === 'undefined') return null
   const params = new URLSearchParams(window.location.search)
@@ -114,6 +121,59 @@ function syncWikiSkinNightClass(theme: Theme): void {
   document.documentElement.classList.toggle(WIKI_SKIN_NIGHT_CLASS, theme === 'dark')
 }
 
+function resolveEffectiveTheme(preference: ConfigTheme): Theme {
+  const themeParam = readUrlParam('theme')
+  if (isTheme(themeParam)) return themeParam
+  if (preference === 'light') return 'light'
+  if (preference === 'dark') return 'dark'
+  return resolveThemeFromMedia()
+}
+
+function applyGlobalTheme(theme: Theme): void {
+  globalTheme.value = theme
+  setHtmlAttribute('data-theme', theme)
+  syncWikiSkinNightClass(theme)
+}
+
+function teardownColorSchemeListener(): void {
+  if (colorSchemeMql && onColorSchemeChange) {
+    colorSchemeMql.removeEventListener('change', onColorSchemeChange)
+  }
+  colorSchemeMql = null
+  onColorSchemeChange = null
+}
+
+function setupColorSchemeListener(): void {
+  if (typeof window === 'undefined' || !window.matchMedia) return
+
+  teardownColorSchemeListener()
+
+  colorSchemeMql = window.matchMedia('(prefers-color-scheme: dark)')
+  onColorSchemeChange = (event: MediaQueryListEvent) => {
+    if (themeUrlPinned || themePreference !== 'system') return
+    const next: Theme = event.matches ? 'dark' : 'light'
+    if (next !== globalTheme.value) {
+      applyGlobalTheme(next)
+    }
+  }
+  colorSchemeMql.addEventListener('change', onColorSchemeChange)
+}
+
+/**
+ * Apply a stored theme preference (light / dark / system) to the global
+ * document theme. URL `?theme=` still wins when present.
+ */
+export function applyThemePreference(preference: ConfigTheme): void {
+  themePreference = preference
+  applyGlobalTheme(resolveEffectiveTheme(preference))
+
+  if (!themeUrlPinned && preference === 'system') {
+    setupColorSchemeListener()
+  } else {
+    teardownColorSchemeListener()
+  }
+}
+
 /**
  * Resolve and apply the initial skin / theme on <html>, then subscribe to
  * viewport and prefers-color-scheme changes so the global state stays
@@ -121,7 +181,7 @@ function syncWikiSkinNightClass(theme: Theme): void {
  *
  * Order of precedence:
  *   skin  : ?skin=  URL param  >  viewport (>= 640px desktop, else mobile)
- *   theme : ?theme= URL param  >  prefers-color-scheme
+ *   theme : ?theme= URL param  >  config preference  >  prefers-color-scheme
  *
  * Call this once, before mounting the app.
  */
@@ -134,14 +194,12 @@ export function initTheming(): void {
   const themeParam = readUrlParam('theme')
 
   const skinPinned = isSkin(skinParam)
-  const themePinned = isTheme(themeParam)
+  themeUrlPinned = isTheme(themeParam)
 
   globalSkin.value = skinPinned ? (skinParam as Skin) : resolveSkinFromViewport()
-  globalTheme.value = themePinned ? (themeParam as Theme) : resolveThemeFromMedia()
-
   setHtmlAttribute('data-skin', globalSkin.value)
-  setHtmlAttribute('data-theme', globalTheme.value)
-  syncWikiSkinNightClass(globalTheme.value)
+
+  applyThemePreference(loadConfig().theme)
 
   if (!skinPinned) {
     const breakpoint = window.matchMedia(`(min-width: ${DESKTOP_MIN_WIDTH}px)`)
@@ -153,18 +211,5 @@ export function initTheming(): void {
       }
     }
     breakpoint.addEventListener('change', onBreakpointChange)
-  }
-
-  if (!themePinned) {
-    const colorScheme = window.matchMedia('(prefers-color-scheme: dark)')
-    const onColorSchemeChange = (event: MediaQueryListEvent | MediaQueryList) => {
-      const next: Theme = event.matches ? 'dark' : 'light'
-      if (next !== globalTheme.value) {
-        globalTheme.value = next
-        setHtmlAttribute('data-theme', next)
-        syncWikiSkinNightClass(next)
-      }
-    }
-    colorScheme.addEventListener('change', onColorSchemeChange)
   }
 }
