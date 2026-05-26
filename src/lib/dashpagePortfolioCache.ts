@@ -1,4 +1,4 @@
-import { normalizeRealWiki, normalizeWikiUsername } from '@/lib/config'
+import { normalizeLang, normalizeWikiUsername } from '@/lib/config'
 import { wipeLocalStorage } from '@/lib/wipeLocalStorage'
 
 const STORAGE_KEY = 'protowiki-dashpage-portfolio-v1'
@@ -13,7 +13,7 @@ type PortfolioStore = Record<string, DashpagePortfolioCacheEntry>
 function realUserPortfolioCacheKey(username: string, wiki: string): string {
   const normalizedUsername = normalizeWikiUsername(username)
   if (!normalizedUsername.length) return ''
-  return `${normalizeRealWiki(wiki)}:${normalizedUsername}`
+  return `${normalizeLang(wiki)}:${normalizedUsername}`
 }
 
 function readStore(): PortfolioStore {

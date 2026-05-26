@@ -1,6 +1,6 @@
 import { computed, ref, watch, type ComputedRef, type Ref } from 'vue'
 
-import { normalizeRealWiki, normalizeWikiUsername } from '@/lib/config'
+import { normalizeLang, normalizeWikiUsername } from '@/lib/config'
 import { getCachedImpact, setCachedImpact } from '@/lib/impactCache'
 import { FetchUserImpactError, fetchUserImpact } from '@/lib/fetchUserImpact'
 import { EMPTY_IMPACT_DATA, type ImpactData } from '@/lib/impactTypes'
@@ -66,13 +66,13 @@ export function useRealUserImpact(
     [usernameSource, wikiSource],
     ([name, wiki]) => {
       error.value = null
-      loadFromCache(name, normalizeRealWiki(wiki))
+      loadFromCache(name, normalizeLang(wiki))
     },
     { immediate: true },
   )
 
   const normalizedUsername = computed(() => normalizeWikiUsername(usernameSource.value))
-  const normalizedWiki = computed(() => normalizeRealWiki(wikiSource.value))
+  const normalizedWiki = computed(() => normalizeLang(wikiSource.value))
 
   const hasCache = computed(() => lastFetchedAt.value != null)
 

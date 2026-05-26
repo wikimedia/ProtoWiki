@@ -19,8 +19,8 @@ export function useHomepageImpact(): {
   impactDesktopProps: ComputedRef<ImpactModuleBind>
   onImpactRefresh: () => void
 } {
-  const { user, realUsername, realWiki, setCurrentUserPageList } = useConfig()
-  const realImpact = useRealUserImpact(realUsername, realWiki)
+  const { user, realUsername, realLang, setCurrentUserPageList } = useConfig()
+  const realImpact = useRealUserImpact(realUsername, realLang)
 
   watch(
     [() => user.value, realImpact.editedPageTitles],

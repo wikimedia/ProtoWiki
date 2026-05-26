@@ -3,6 +3,7 @@ import { computed, readonly, ref, watch, type ComputedRef, type DeepReadonly, ty
 import {
   configUserDisplayName,
   configUserPageTitle,
+  langForUser,
   loadConfig,
   resetUserPageListField,
   saveConfig,
@@ -36,7 +37,8 @@ export function useConfig(): {
   theme: Ref<ConfigTheme>
   user: Ref<ConfigUser>
   realUsername: Ref<string>
-  realWiki: Ref<string>
+  lang: Ref<string>
+  realLang: ComputedRef<string>
   displayName: ComputedRef<string>
   pageTitle: ComputedRef<string>
   currentUserPageLists: ComputedRef<UserPageLists>
@@ -64,12 +66,24 @@ export function useConfig(): {
     },
   })
 
-  const realWiki = computed({
-    get: () => config.value.realWiki,
+  const lang = computed({
+    get: () => config.value.userPageLists[user.value].lang,
     set: (value: string) => {
-      config.value = { ...config.value, realWiki: value }
+      const activeUser = user.value
+      config.value = {
+        ...config.value,
+        userPageLists: {
+          ...config.value.userPageLists,
+          [activeUser]: {
+            ...config.value.userPageLists[activeUser],
+            lang: value,
+          },
+        },
+      }
     },
   })
+
+  const realLang = computed(() => langForUser('real', config.value.userPageLists))
 
   const displayName = computed(() =>
     configUserDisplayName(config.value.user, config.value.realUsername),
@@ -115,7 +129,8 @@ export function useConfig(): {
     theme,
     user,
     realUsername,
-    realWiki,
+    lang,
+    realLang,
     displayName,
     pageTitle,
     currentUserPageLists,

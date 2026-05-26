@@ -12,8 +12,8 @@ import ImpactModule from '../ImpactModule.vue'
 import MobileSubpageHeader from '../MobileSubpageHeader.vue'
 import { HOMEPAGE, IMPACT_DESKTOP } from '../dashpage-fixtures'
 
-const { user, realUsername, realWiki, setCurrentUserPageList } = useConfig()
-const realImpact = useRealUserImpact(realUsername, realWiki)
+const { user, realUsername, realLang, setCurrentUserPageList } = useConfig()
+const realImpact = useRealUserImpact(realUsername, realLang)
 
 watch(
   [() => user.value, realImpact.editedPageTitles],

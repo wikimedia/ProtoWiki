@@ -1,7 +1,7 @@
 import { computed, ref, watch } from 'vue'
 
 import { useConfig } from '@/composables/useConfig'
-import { normalizeRealWiki, wikiLangForConfigUser } from '@/lib/config'
+import { normalizeLang } from '@/lib/config'
 import {
   dashpageRecentChangesUserKey,
   getDashpageRecentChangesCache,
@@ -105,24 +105,19 @@ function loadRealPortfolioFromCache(username: string, wiki: string): void {
 }
 
 export function useDashpageRecentChangesModule() {
-  const { user, realUsername, realWiki, currentUserPageLists } = useConfig()
+  const { user, realUsername, lang, currentUserPageLists } = useConfig()
 
   watch(
-    [user, realUsername, realWiki],
-    ([activeUser, username, wiki]) => {
+    [user, realUsername, lang],
+    ([activeUser, username, activeLang]) => {
       error.value = null
+      const wikiLang = normalizeLang(activeLang)
       if (activeUser === 'real') {
-        loadRealPortfolioFromCache(username, normalizeRealWiki(wiki))
+        loadRealPortfolioFromCache(username, wikiLang)
       } else {
         cachedRealTitles.value = []
       }
-      loadFromModuleCache(
-        dashpageRecentChangesUserKey(
-          activeUser,
-          username,
-          wikiLangForConfigUser(activeUser, wiki),
-        ),
-      )
+      loadFromModuleCache(dashpageRecentChangesUserKey(activeUser, username, wikiLang))
     },
     { immediate: true },
   )
@@ -136,7 +131,7 @@ export function useDashpageRecentChangesModule() {
     loading.value = true
     error.value = null
 
-    const wikiLang = wikiLangForConfigUser(user.value, realWiki.value)
+    const wikiLang = normalizeLang(lang.value)
     const userKey = dashpageRecentChangesUserKey(user.value, realUsername.value, wikiLang)
     const excludeRevIds = items.value.map((item) => item.revId)
     let replaceOnFirstSkeleton = items.value.length > 0

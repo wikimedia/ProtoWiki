@@ -2,7 +2,7 @@ import { FakeWiki } from 'fakewiki'
 import type { FWCachedRevision } from 'fakewiki/types'
 
 import type { ConfigUser, UserPageLists } from '@/lib/config'
-import { normalizeRealWiki, wikiBaseUrlFromLang } from '@/lib/config'
+import { normalizeLang, wikiBaseUrlFromLang } from '@/lib/config'
 import {
   DASHPAGE_RC_API_USER_AGENT,
   DASHPAGE_RC_FALLBACK_PAGE,
@@ -451,7 +451,7 @@ async function fetchStructuredDeltaSegments(
   lang: string,
 ): Promise<RecentChangeStructuredDeltaSegment[] | null> {
   try {
-    const result = await wiki.getStructuredDeltasFromRevision(revId, { lang: normalizeRealWiki(lang) })
+    const result = await wiki.getStructuredDeltasFromRevision(revId, { lang: normalizeLang(lang) })
     if (!result?.segments?.length) return null
     return result.segments.map((segment) => ({
       text: segment.text,

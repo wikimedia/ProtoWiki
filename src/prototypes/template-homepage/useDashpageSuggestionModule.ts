@@ -2,7 +2,7 @@ import { computed, ref, watch, type ComputedRef } from 'vue'
 import type { FakeWiki } from 'fakewiki'
 
 import { useConfig } from '@/composables/useConfig'
-import { normalizeRealWiki, wikiLangForConfigUser } from '@/lib/config'
+import { normalizeLang } from '@/lib/config'
 import { shouldShowDashpageLoadPrompt } from '@/lib/dashpageLoadState'
 import { DASHPAGE_SUGGESTION_FEED_PREVIEW_MAX } from '@/lib/dashpageSuggestionFeedConstants'
 import {
@@ -47,7 +47,7 @@ import {
 const DASHPAGE_EXCLUDED_SUGGESTION_TYPES = new Set(['redirect'])
 
 function createSuggestionWiki(lang: string): FakeWiki {
-  return createVeSuggestionsWiki(normalizeRealWiki(lang), 'dashpage-suggestion-mode')
+  return createVeSuggestionsWiki(normalizeLang(lang), 'dashpage-suggestion-mode')
 }
 
 export interface SuggestionQueueItem {
@@ -350,10 +350,10 @@ export function useDashpageSuggestionModule(): {
   onSuggestionNavigate: (delta: number) => void
   onSuggestionOpenFullscreen: () => void
 } {
-  const { user, realUsername, realWiki, currentUserPageLists } = useConfig()
+  const { user, realUsername, lang, currentUserPageLists } = useConfig()
 
   function activeWikiLang(): string {
-    return wikiLangForConfigUser(user.value, realWiki.value)
+    return normalizeLang(lang.value)
   }
 
   function hasRenderableData(): boolean {
@@ -465,12 +465,12 @@ export function useDashpageSuggestionModule(): {
   if (!watchRegistered) {
     watchRegistered = true
     watch(
-      [user, realUsername, realWiki],
-      ([activeUser, username, wiki]) => {
+      [user, realUsername, lang],
+      ([activeUser, username, activeLang]) => {
         error.value = null
         loadRealPortfolioFromCache()
         loadFromModuleCache(
-          dashpageSuggestionUserKey(activeUser, username, wikiLangForConfigUser(activeUser, wiki)),
+          dashpageSuggestionUserKey(activeUser, username, normalizeLang(activeLang)),
         )
       },
       { immediate: true },

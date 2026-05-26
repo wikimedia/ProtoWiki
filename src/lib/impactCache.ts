@@ -1,4 +1,4 @@
-import { normalizeRealWiki, normalizeWikiUsername } from '@/lib/config'
+import { normalizeLang, normalizeWikiUsername } from '@/lib/config'
 import type { ImpactData } from '@/lib/impactTypes'
 import { wipeLocalStorage } from '@/lib/wipeLocalStorage'
 
@@ -14,7 +14,7 @@ type ImpactCacheStore = Record<string, CachedImpactEntry>
 function realUserImpactCacheKey(username: string, wiki: string): string {
   const normalizedUsername = normalizeWikiUsername(username)
   if (!normalizedUsername.length) return ''
-  return `${normalizeRealWiki(wiki)}:${normalizedUsername}`
+  return `${normalizeLang(wiki)}:${normalizedUsername}`
 }
 
 function readStore(): ImpactCacheStore {

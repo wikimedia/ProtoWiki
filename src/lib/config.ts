@@ -6,6 +6,8 @@ export type ConfigUser = 'logged-out' | 'new' | 'experienced' | 'real'
 export type PageListKey = 'watchlist' | 'readingList' | 'editedPages'
 
 export interface UserPageLists {
+  /** Wikipedia language code (e.g. `en`, `fr`). */
+  lang: string
   watchlist: string[]
   readingList: string[]
   editedPages: string[]
@@ -16,23 +18,24 @@ export interface Config {
   user: ConfigUser
   /** Wikipedia username when `user` is `'real'`. */
   realUsername: string
-  /** Wikipedia language code when `user` is `'real'` (e.g. `en`, `fr`). */
-  realWiki: string
   userPageLists: Record<ConfigUser, UserPageLists>
 }
 
 export const DEFAULT_USER_PAGE_LISTS: Record<ConfigUser, UserPageLists> = {
   'logged-out': {
+    lang: 'en',
     watchlist: [],
     readingList: [],
     editedPages: [],
   },
   new: {
+    lang: 'en',
     watchlist: [],
     readingList: ['Wet Leg', 'Jade Thirlwall'],
     editedPages: [],
   },
   experienced: {
+    lang: 'en',
     watchlist: [
       'Wet Leg',
       'Jade Thirlwall',
@@ -54,6 +57,7 @@ export const DEFAULT_USER_PAGE_LISTS: Record<ConfigUser, UserPageLists> = {
     editedPages: ['Wet Leg', 'Jade Thirlwall', 'Confidence Man (band)', 'Gorillaz'],
   },
   real: {
+    lang: 'en',
     watchlist: [],
     readingList: [],
     editedPages: [],
@@ -64,7 +68,6 @@ export const DEFAULT_CONFIG: Config = {
   theme: 'light',
   user: 'new',
   realUsername: '',
-  realWiki: 'en',
   userPageLists: cloneUserPageListsMap(DEFAULT_USER_PAGE_LISTS),
 }
 
@@ -95,14 +98,14 @@ export function normalizeWikiUsername(raw: string): string {
 }
 
 /** Normalize a Wikipedia language code for API calls and cache keys. */
-export function normalizeRealWiki(raw: string): string {
+export function normalizeLang(raw: string): string {
   const trimmed = raw.trim().toLowerCase()
   return trimmed.length ? trimmed : 'en'
 }
 
 /** Wiki hostname from a language code (e.g. `fr` → `fr.wikipedia.org`). */
 export function wikiHostFromLang(lang: string): string {
-  return `${normalizeRealWiki(lang)}.wikipedia.org`
+  return `${normalizeLang(lang)}.wikipedia.org`
 }
 
 /** FakeWiki / REST client base URL (trailing slash). */
@@ -110,9 +113,11 @@ export function wikiBaseUrlFromLang(lang: string): string {
   return `https://${wikiHostFromLang(lang)}/`
 }
 
-/** Wiki lang for live API calls: real-user setting, otherwise English fixtures. */
-export function wikiLangForConfigUser(user: ConfigUser, realWiki: string): string {
-  return user === 'real' ? normalizeRealWiki(realWiki) : 'en'
+export function langForUser(
+  user: ConfigUser,
+  userPageLists: Record<ConfigUser, UserPageLists>,
+): string {
+  return normalizeLang(userPageLists[user]?.lang)
 }
 
 export function configUserDisplayName(user: ConfigUser, realUsername = ''): string {
@@ -167,6 +172,7 @@ function isConfigUser(value: unknown): value is ConfigUser {
 
 function cloneUserPageLists(lists: UserPageLists): UserPageLists {
   return {
+    lang: lists.lang,
     watchlist: [...lists.watchlist],
     readingList: [...lists.readingList],
     editedPages: [...lists.editedPages],
@@ -197,6 +203,10 @@ function mergeUserPageLists(user: ConfigUser, stored: unknown): UserPageLists {
 
   const record = stored as Record<string, unknown>
   const merged = { ...cloneUserPageLists(defaults) }
+
+  if (typeof record.lang === 'string') {
+    merged.lang = normalizeLang(record.lang)
+  }
 
   for (const key of PAGE_LIST_KEYS) {
     const parsed = parseStringArray(record[key])
@@ -239,17 +249,20 @@ export function loadConfig(): Config {
     const record = parsed as Record<string, unknown>
     const realUsername =
       typeof record.realUsername === 'string' ? record.realUsername : DEFAULT_CONFIG.realUsername
-    const realWiki =
-      typeof record.realWiki === 'string'
-        ? normalizeRealWiki(record.realWiki)
-        : DEFAULT_CONFIG.realWiki
+    const userPageLists = mergeUserPageListsMap(record.userPageLists)
+
+    if (typeof record.realWiki === 'string') {
+      userPageLists.real = {
+        ...userPageLists.real,
+        lang: normalizeLang(record.realWiki),
+      }
+    }
 
     return {
       theme: isConfigTheme(record.theme) ? record.theme : DEFAULT_CONFIG.theme,
       user: isConfigUser(record.user) ? record.user : DEFAULT_CONFIG.user,
       realUsername,
-      realWiki,
-      userPageLists: mergeUserPageListsMap(record.userPageLists),
+      userPageLists,
     }
   } catch {
     wipeLocalStorage()
@@ -262,7 +275,6 @@ function cloneConfig(config: Config): Config {
     theme: config.theme,
     user: config.user,
     realUsername: config.realUsername,
-    realWiki: config.realWiki,
     userPageLists: cloneUserPageListsMap(config.userPageLists),
   }
 }
