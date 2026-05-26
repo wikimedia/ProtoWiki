@@ -72,6 +72,7 @@ definePage({
   meta: {
     title: 'Dashpage',
     description: 'Explorations for a homepage + dashboard hybrid.',
+    hideFromGallery: true,
   },
 })
 </script>

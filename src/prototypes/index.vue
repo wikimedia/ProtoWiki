@@ -20,6 +20,7 @@ const router = useRouter()
 interface PrototypeMeta {
   title?: string
   description?: string
+  hideFromGallery?: boolean
 }
 
 interface PrototypeEntry {
@@ -62,6 +63,7 @@ const prototypes = computed<PrototypeEntry[]>(() => {
     .getRoutes()
     .filter((route) => route.path !== '/' && route.path !== '/:catchAll(.*)')
     .filter((route) => isTopLevelPrototypePath(route.path))
+    .filter((route) => !(route.meta as PrototypeMeta).hideFromGallery)
     .map((route) => {
       const meta = (route.meta ?? {}) as PrototypeMeta
       const description =

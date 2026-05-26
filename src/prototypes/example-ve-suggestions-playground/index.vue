@@ -16,6 +16,7 @@ definePage({
   meta: {
     title: 'Edit suggestions',
     description: 'Get edit suggestions for any page',
+    hideFromGallery: true,
   },
 })
 
