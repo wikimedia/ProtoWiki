@@ -134,9 +134,6 @@ function onPreviewActivate(event: Event): void {
   </li>
 </template>
 
-<style src="./recent-changes-feed.css"></style>
-<style src="./suggestion-feed.css"></style>
-
 <style scoped>
 .suggestion-feed__snippet {
   box-sizing: border-box;

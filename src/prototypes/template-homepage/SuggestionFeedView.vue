@@ -5,6 +5,9 @@ import { CdxButton } from '@wikimedia/codex'
 import SuggestionFeedItem from './SuggestionFeedItem.vue'
 import type { SuggestionFeedItem as SuggestionFeedItemType } from './useDashpageSuggestionModule'
 
+import './recent-changes-feed.css'
+import './suggestion-feed.css'
+
 interface Props {
   items?: SuggestionFeedItemType[]
   loadPending?: boolean
@@ -76,5 +79,3 @@ function onRefreshClick(): void {
     </template>
   </div>
 </template>
-
-<style src="./recent-changes-feed.css"></style>

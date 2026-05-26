@@ -10,6 +10,9 @@ import DashboardModule from '@/components/DashboardModule.vue'
 import SuggestionFeedItem from './SuggestionFeedItem.vue'
 import type { SuggestionFeedItem as SuggestionFeedItemType } from './useDashpageSuggestionModule'
 
+import './recent-changes-feed.css'
+import './suggestion-feed.css'
+
 interface Props {
   to?: RouteLocationRaw
   items?: SuggestionFeedItemType[]
@@ -194,5 +197,3 @@ function onLoadClick(): void {
   color: var(--color-base--subtle, #54595d);
 }
 </style>
-
-<style src="./suggestion-feed.css"></style>

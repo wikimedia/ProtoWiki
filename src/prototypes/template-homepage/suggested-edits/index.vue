@@ -14,6 +14,9 @@ import { useDashpageSettings } from '../useDashpageSettings'
 import { useDashpageStructuredTasksModule } from '../useDashpageStructuredTasksModule'
 import { useDashpageSuggestionModule } from '../useDashpageSuggestionModule'
 
+import '../recent-changes-feed.css'
+import '../suggestion-feed.css'
+
 const { editSuggestionSource } = useDashpageSettings()
 const { fullscreenProps: structuredFullscreenProps } = useDashpageStructuredTasksModule()
 const {
