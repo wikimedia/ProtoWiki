@@ -86,7 +86,7 @@ definePage({
   border-bottom: none;
 }
 
-.recent-changes-page {
+.recent-changes-layout :deep(.recent-changes-page) {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -95,17 +95,11 @@ definePage({
   overflow: hidden;
   max-width: none;
   margin: 0;
-  padding-block: 0;
-  padding-inline: var(--spacing-25, 4px);
+  padding: 0 var(--spacing-25, 4px);
   background-color: var(--background-color-neutral, #eaecf0);
 }
 
-.recent-changes-page[data-skin='mobile'] {
-  padding-block: 0;
-  padding-inline: var(--spacing-25, 4px);
-}
-
-.recent-changes-page :deep(.special-page-wrapper__body) {
+.recent-changes-layout :deep(.recent-changes-page .special-page-wrapper__body) {
   display: flex;
   flex: 1;
   flex-direction: column;

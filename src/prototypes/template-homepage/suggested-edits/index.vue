@@ -146,7 +146,7 @@ definePage({
   border: none !important;
 }
 
-.suggested-edits-page {
+.suggested-edits-layout :deep(.suggested-edits-page) {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -155,22 +155,15 @@ definePage({
   overflow: hidden;
   max-width: none;
   margin: 0;
-  padding-block: 0;
-  padding-inline: var(--spacing-25, 4px);
+  padding: 0 var(--spacing-25, 4px);
   background-color: var(--background-color-neutral-subtle, #f8f9fa);
 }
 
-.suggested-edits-page--feed {
+.suggested-edits-layout :deep(.suggested-edits-page--feed) {
   background-color: var(--background-color-neutral, #eaecf0);
 }
 
-.suggested-edits-page[data-skin='mobile'],
-.suggested-edits-page--feed[data-skin='mobile'] {
-  padding-block: 0;
-  padding-inline: var(--spacing-25, 4px);
-}
-
-.suggested-edits-page :deep(.special-page-wrapper__body) {
+.suggested-edits-layout :deep(.suggested-edits-page .special-page-wrapper__body) {
   display: flex;
   flex: 1;
   flex-direction: column;
