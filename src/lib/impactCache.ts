@@ -1,4 +1,4 @@
-import { normalizeWikiUsername } from '@/lib/config'
+import { normalizeRealWiki, normalizeWikiUsername } from '@/lib/config'
 import type { ImpactData } from '@/lib/impactTypes'
 import { wipeLocalStorage } from '@/lib/wipeLocalStorage'
 
@@ -10,6 +10,12 @@ export interface CachedImpactEntry {
 }
 
 type ImpactCacheStore = Record<string, CachedImpactEntry>
+
+function realUserImpactCacheKey(username: string, wiki: string): string {
+  const normalizedUsername = normalizeWikiUsername(username)
+  if (!normalizedUsername.length) return ''
+  return `${normalizeRealWiki(wiki)}:${normalizedUsername}`
+}
 
 function readStore(): ImpactCacheStore {
   if (typeof window === 'undefined') return {}
@@ -36,8 +42,8 @@ function writeStore(store: ImpactCacheStore): void {
   }
 }
 
-export function getCachedImpact(username: string): CachedImpactEntry | null {
-  const key = normalizeWikiUsername(username)
+export function getCachedImpact(username: string, wiki = 'en'): CachedImpactEntry | null {
+  const key = realUserImpactCacheKey(username, wiki)
   if (!key.length) return null
   const entry = readStore()[key]
   if (!entry || typeof entry.fetchedAt !== 'number' || typeof entry.data !== 'object') {
@@ -46,8 +52,12 @@ export function getCachedImpact(username: string): CachedImpactEntry | null {
   return entry
 }
 
-export function setCachedImpact(username: string, data: ImpactData): CachedImpactEntry {
-  const key = normalizeWikiUsername(username)
+export function setCachedImpact(
+  username: string,
+  data: ImpactData,
+  wiki = 'en',
+): CachedImpactEntry {
+  const key = realUserImpactCacheKey(username, wiki)
   const entry: CachedImpactEntry = { fetchedAt: Date.now(), data }
   if (!key.length) return entry
 
@@ -57,8 +67,8 @@ export function setCachedImpact(username: string, data: ImpactData): CachedImpac
   return entry
 }
 
-export function clearCachedImpact(username: string): void {
-  const key = normalizeWikiUsername(username)
+export function clearCachedImpact(username: string, wiki = 'en'): void {
+  const key = realUserImpactCacheKey(username, wiki)
   if (!key.length) return
 
   const store = readStore()

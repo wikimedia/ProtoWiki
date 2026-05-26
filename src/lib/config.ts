@@ -16,6 +16,8 @@ export interface Config {
   user: ConfigUser
   /** Wikipedia username when `user` is `'real'`. */
   realUsername: string
+  /** Wikipedia language code when `user` is `'real'` (e.g. `en`, `fr`). */
+  realWiki: string
   userPageLists: Record<ConfigUser, UserPageLists>
 }
 
@@ -62,6 +64,7 @@ export const DEFAULT_CONFIG: Config = {
   theme: 'light',
   user: 'new',
   realUsername: '',
+  realWiki: 'en',
   userPageLists: cloneUserPageListsMap(DEFAULT_USER_PAGE_LISTS),
 }
 
@@ -89,6 +92,27 @@ export function normalizeWikiUsername(raw: string): string {
   const trimmed = raw.trim()
   if (!trimmed.length) return ''
   return trimmed.charAt(0).toUpperCase() + trimmed.slice(1)
+}
+
+/** Normalize a Wikipedia language code for API calls and cache keys. */
+export function normalizeRealWiki(raw: string): string {
+  const trimmed = raw.trim().toLowerCase()
+  return trimmed.length ? trimmed : 'en'
+}
+
+/** Wiki hostname from a language code (e.g. `fr` → `fr.wikipedia.org`). */
+export function wikiHostFromLang(lang: string): string {
+  return `${normalizeRealWiki(lang)}.wikipedia.org`
+}
+
+/** FakeWiki / REST client base URL (trailing slash). */
+export function wikiBaseUrlFromLang(lang: string): string {
+  return `https://${wikiHostFromLang(lang)}/`
+}
+
+/** Wiki lang for live API calls: real-user setting, otherwise English fixtures. */
+export function wikiLangForConfigUser(user: ConfigUser, realWiki: string): string {
+  return user === 'real' ? normalizeRealWiki(realWiki) : 'en'
 }
 
 export function configUserDisplayName(user: ConfigUser, realUsername = ''): string {
@@ -215,11 +239,16 @@ export function loadConfig(): Config {
     const record = parsed as Record<string, unknown>
     const realUsername =
       typeof record.realUsername === 'string' ? record.realUsername : DEFAULT_CONFIG.realUsername
+    const realWiki =
+      typeof record.realWiki === 'string'
+        ? normalizeRealWiki(record.realWiki)
+        : DEFAULT_CONFIG.realWiki
 
     return {
       theme: isConfigTheme(record.theme) ? record.theme : DEFAULT_CONFIG.theme,
       user: isConfigUser(record.user) ? record.user : DEFAULT_CONFIG.user,
       realUsername,
+      realWiki,
       userPageLists: mergeUserPageListsMap(record.userPageLists),
     }
   } catch {
@@ -233,6 +262,7 @@ function cloneConfig(config: Config): Config {
     theme: config.theme,
     user: config.user,
     realUsername: config.realUsername,
+    realWiki: config.realWiki,
     userPageLists: cloneUserPageListsMap(config.userPageLists),
   }
 }

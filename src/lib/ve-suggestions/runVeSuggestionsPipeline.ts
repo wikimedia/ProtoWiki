@@ -44,12 +44,14 @@ export interface RunVeSuggestionsPipelineOptions {
   excludeSuggestionTypes?: string[]
 }
 
+import { wikiBaseUrlFromLang } from '@/lib/config'
+
 const DEFAULT_API_USER_AGENT =
   'ProtoWiki/0.1 (https://github.com/wikimedia-research/protowiki) ve-suggestions'
 
-export function createVeSuggestionsWiki(apiUserAgentSuffix?: string): FakeWiki {
+export function createVeSuggestionsWiki(lang = 'en', apiUserAgentSuffix?: string): FakeWiki {
   const suffix = apiUserAgentSuffix?.trim()
-  return new FakeWiki(undefined, {
+  return new FakeWiki(wikiBaseUrlFromLang(lang), {
     apiUserAgent: suffix ? `${DEFAULT_API_USER_AGENT} ${suffix}` : DEFAULT_API_USER_AGENT,
   })
 }

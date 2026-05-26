@@ -2,6 +2,7 @@ import { FakeWiki } from 'fakewiki'
 import type { FWCachedRevision } from 'fakewiki/types'
 
 import type { ConfigUser, UserPageLists } from '@/lib/config'
+import { normalizeRealWiki, wikiBaseUrlFromLang } from '@/lib/config'
 import {
   DASHPAGE_RC_API_USER_AGENT,
   DASHPAGE_RC_FALLBACK_PAGE,
@@ -31,8 +32,8 @@ import {
 import { fetchPagePreviewMetadataBatch } from '@/lib/fetchUserEditedPageTitles'
 import { formatDashpageEditSummaryHtml } from '@/lib/formatDashpageEditSummaryHtml'
 
-export function createDashpageRecentChangesWiki(): FakeWiki {
-  return new FakeWiki(undefined, {
+export function createDashpageRecentChangesWiki(lang = 'en'): FakeWiki {
+  return new FakeWiki(wikiBaseUrlFromLang(lang), {
     apiUserAgent: DASHPAGE_RC_API_USER_AGENT,
     historyFetchConcurrency: 1,
     liftWingRevisionConcurrency: 1,
@@ -282,6 +283,7 @@ async function streamPortfolioRevisions(
   excludeRevIds: Set<number>,
   signal: AbortSignal,
   onCandidate: (candidate: RevisionCandidate) => Promise<boolean>,
+  lang = 'en',
 ): Promise<PortfolioStreamResult> {
   const portfolio = getPortfolioPagesForUser(user, pageLists, cachedRealTitles)
   const portfolioPool =
@@ -343,6 +345,7 @@ async function streamPortfolioRevisions(
         limit: DASHPAGE_RC_MORELIKE_PAGES_MAX,
         excludeTitles: portfolioPicks,
         signal,
+        lang,
       })
     } catch (caught) {
       if (caught instanceof FetchMorelikePageTitlesError && caught.code === 'aborted') {
@@ -446,9 +449,10 @@ async function isBotUser(wiki: FakeWiki, userName: string): Promise<boolean> {
 async function fetchStructuredDeltaSegments(
   wiki: FakeWiki,
   revId: number,
+  lang: string,
 ): Promise<RecentChangeStructuredDeltaSegment[] | null> {
   try {
-    const result = await wiki.getStructuredDeltasFromRevision(revId, { lang: 'en' })
+    const result = await wiki.getStructuredDeltasFromRevision(revId, { lang: normalizeRealWiki(lang) })
     if (!result?.segments?.length) return null
     return result.segments.map((segment) => ({
       text: segment.text,
@@ -463,6 +467,7 @@ async function enrichCandidateItem(
   wiki: FakeWiki,
   candidate: RevisionCandidate,
   handlers: DashpageRecentChangesHandlers,
+  lang: string,
   signal?: AbortSignal,
 ): Promise<boolean> {
   if (isCandidateHeuristicBot(candidate)) return false
@@ -478,10 +483,10 @@ async function enrichCandidateItem(
 
   await enrichRevisionIncremental(wiki, candidate, (patch) => {
     handlers.onPatch(candidate.revId, patch)
-  })
+  }, lang)
 
   assertNotAborted(signal)
-  const structuredDeltaSegments = await fetchStructuredDeltaSegments(wiki, candidate.revId)
+  const structuredDeltaSegments = await fetchStructuredDeltaSegments(wiki, candidate.revId, lang)
   handlers.onPatch(candidate.revId, { structuredDeltaSegments })
 
   if (candidate.comment.trim()) {
@@ -496,7 +501,7 @@ async function enrichCandidateItem(
   }
 
   assertNotAborted(signal)
-  const previews = await fetchPagePreviewMetadataBatch([candidate.pageTitle], { signal })
+  const previews = await fetchPagePreviewMetadataBatch([candidate.pageTitle], { signal, lang })
   const shortDescription = previews[candidate.pageTitle]?.shortDescription
   if (shortDescription) {
     handlers.onPatch(candidate.revId, { shortDescription })
@@ -520,13 +525,16 @@ export interface FetchDashpageRecentChangesOptions {
   targetCount?: number
   signal?: AbortSignal
   wiki?: FakeWiki
+  /** Wikipedia language code (default `en`). */
+  lang?: string
   handlers?: DashpageRecentChangesHandlers
 }
 
 export async function runDashpageRecentChangesPipeline(
   options: FetchDashpageRecentChangesOptions,
 ): Promise<void> {
-  const wiki = options.wiki ?? createDashpageRecentChangesWiki()
+  const lang = options.lang ?? 'en'
+  const wiki = options.wiki ?? createDashpageRecentChangesWiki(lang)
   const signal = options.signal
   const handlers = options.handlers
   if (!handlers) return
@@ -537,7 +545,7 @@ export async function runDashpageRecentChangesPipeline(
 
   const enrichCandidate = async (candidate: RevisionCandidate): Promise<boolean> => {
     if (excludeRevIds.has(candidate.revId)) return false
-    return enrichCandidateItem(wiki, candidate, handlers, activeSignal)
+    return enrichCandidateItem(wiki, candidate, handlers, lang, activeSignal)
   }
 
   const portfolioResult = await streamPortfolioRevisions(
@@ -548,6 +556,7 @@ export async function runDashpageRecentChangesPipeline(
     excludeRevIds,
     activeSignal,
     enrichCandidate,
+    lang,
   )
 
   await streamWildcardRevisions(

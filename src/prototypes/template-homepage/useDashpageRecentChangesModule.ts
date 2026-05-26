@@ -1,6 +1,7 @@
 import { computed, ref, watch } from 'vue'
 
 import { useConfig } from '@/composables/useConfig'
+import { normalizeRealWiki, wikiLangForConfigUser } from '@/lib/config'
 import {
   dashpageRecentChangesUserKey,
   getDashpageRecentChangesCache,
@@ -9,7 +10,7 @@ import {
 import { shouldShowDashpageLoadPrompt } from '@/lib/dashpageLoadState'
 import type { RecentChangeFeedItem } from '@/lib/dashpageRecentChangesTypes'
 import { sortRecentChangeFeedItems } from '@/lib/dashpageRecentChangesTypes'
-import { runDashpageRecentChangesPipeline } from '@/lib/fetchDashpageRecentChanges'
+import { runDashpageRecentChangesPipeline, createDashpageRecentChangesWiki } from '@/lib/fetchDashpageRecentChanges'
 import { DASHPAGE_RC_FULLSCREEN_MAX } from '@/lib/dashpageRecentChangesConstants'
 import { getPortfolioCache, setPortfolioCache } from '@/lib/dashpagePortfolioCache'
 import { fetchUserEditedPageTitles, FetchUserEditedPageTitlesError } from '@/lib/fetchUserEditedPageTitles'
@@ -98,24 +99,30 @@ function loadFromModuleCache(userKey: string): void {
   error.value = null
 }
 
-function loadRealPortfolioFromCache(username: string): void {
-  const portfolio = getPortfolioCache(username)
+function loadRealPortfolioFromCache(username: string, wiki: string): void {
+  const portfolio = getPortfolioCache(username, wiki)
   cachedRealTitles.value = portfolio?.titles ?? []
 }
 
 export function useDashpageRecentChangesModule() {
-  const { user, realUsername, currentUserPageLists } = useConfig()
+  const { user, realUsername, realWiki, currentUserPageLists } = useConfig()
 
   watch(
-    [user, realUsername],
-    ([activeUser, username]) => {
+    [user, realUsername, realWiki],
+    ([activeUser, username, wiki]) => {
       error.value = null
       if (activeUser === 'real') {
-        loadRealPortfolioFromCache(username)
+        loadRealPortfolioFromCache(username, normalizeRealWiki(wiki))
       } else {
         cachedRealTitles.value = []
       }
-      loadFromModuleCache(dashpageRecentChangesUserKey(activeUser, username))
+      loadFromModuleCache(
+        dashpageRecentChangesUserKey(
+          activeUser,
+          username,
+          wikiLangForConfigUser(activeUser, wiki),
+        ),
+      )
     },
     { immediate: true },
   )
@@ -129,16 +136,20 @@ export function useDashpageRecentChangesModule() {
     loading.value = true
     error.value = null
 
-    const userKey = dashpageRecentChangesUserKey(user.value, realUsername.value)
+    const wikiLang = wikiLangForConfigUser(user.value, realWiki.value)
+    const userKey = dashpageRecentChangesUserKey(user.value, realUsername.value, wikiLang)
     const excludeRevIds = items.value.map((item) => item.revId)
     let replaceOnFirstSkeleton = items.value.length > 0
 
     try {
       if (user.value === 'real') {
-        let portfolio = getPortfolioCache(realUsername.value)
+        let portfolio = getPortfolioCache(realUsername.value, wikiLang)
         if (!portfolio) {
-          const titles = await fetchUserEditedPageTitles(realUsername.value, { signal })
-          portfolio = setPortfolioCache(realUsername.value, titles)
+          const titles = await fetchUserEditedPageTitles(realUsername.value, {
+            signal,
+            lang: wikiLang,
+          })
+          portfolio = setPortfolioCache(realUsername.value, titles, wikiLang)
         }
         cachedRealTitles.value = portfolio.titles
       }
@@ -149,6 +160,8 @@ export function useDashpageRecentChangesModule() {
         cachedRealTitles: cachedRealTitles.value,
         excludeRevIds,
         signal,
+        lang: wikiLang,
+        wiki: createDashpageRecentChangesWiki(wikiLang),
         handlers: {
           onSkeleton: (item) => {
             if (replaceOnFirstSkeleton) {

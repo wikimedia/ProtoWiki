@@ -1,6 +1,5 @@
-import { normalizeWikiUsername } from '@/lib/config'
+import { normalizeWikiUsername, wikiHostFromLang } from '@/lib/config'
 
-const WIKI_HOST = 'en.wikipedia.org'
 const API_USER_AGENT =
   'ProtoWiki/0.1 (https://github.com/wikimedia-research/protowiki) dashpage-suggestion-mode'
 
@@ -16,6 +15,8 @@ export class FetchUserEditedPageTitlesError extends Error {
 
 export interface FetchUserEditedPageTitlesOptions {
   signal?: AbortSignal
+  /** Wikipedia language code (default `en`). */
+  lang?: string
 }
 
 function assertNotAborted(signal?: AbortSignal): void {
@@ -24,13 +25,17 @@ function assertNotAborted(signal?: AbortSignal): void {
   }
 }
 
-function actionUrl(params: Record<string, string>): string {
+function actionUrl(wikiHost: string, params: Record<string, string>): string {
   const search = new URLSearchParams({
     ...params,
     format: 'json',
     origin: '*',
   })
-  return `https://${WIKI_HOST}/w/api.php?${search.toString()}`
+  return `https://${wikiHost}/w/api.php?${search.toString()}`
+}
+
+function wikiHostFromOptions(options: FetchUserEditedPageTitlesOptions): string {
+  return wikiHostFromLang(options.lang ?? 'en')
 }
 
 async function fetchJson(url: string, signal?: AbortSignal): Promise<unknown> {
@@ -55,7 +60,7 @@ export async function fetchUserEditedPageTitles(
   }
 
   const data = (await fetchJson(
-    actionUrl({
+    actionUrl(wikiHostFromOptions(options), {
       action: 'query',
       list: 'usercontribs',
       ucuser: normalized,
@@ -134,10 +139,11 @@ async function fetchRestSummaryThumbnail(
   if (!trimmed.length) return undefined
 
   const slug = encodeURIComponent(trimmed.replace(/ /g, '_'))
+  const wikiHost = wikiHostFromOptions(options)
 
   try {
     assertNotAborted(options.signal)
-    const response = await fetch(`https://${WIKI_HOST}/api/rest_v1/page/summary/${slug}`, {
+    const response = await fetch(`https://${wikiHost}/api/rest_v1/page/summary/${slug}`, {
       signal: options.signal,
       headers: { 'Api-User-Agent': API_USER_AGENT },
     })
@@ -158,6 +164,8 @@ export async function fetchPagePreviewMetadataBatch(
   const out: Record<string, PagePreviewMetadata> = {}
   if (!titles.length) return out
 
+  const wikiHost = wikiHostFromOptions(options)
+
   for (let offset = 0; offset < titles.length; offset += 50) {
     const chunk = titles.slice(offset, offset + 50)
     const requestedByNormalized = new Map(
@@ -167,7 +175,7 @@ export async function fetchPagePreviewMetadataBatch(
     try {
       assertNotAborted(options.signal)
       const data = (await fetchJson(
-        actionUrl({
+        actionUrl(wikiHost, {
           action: 'query',
           prop: 'pageimages|description',
           piprop: 'thumbnail',

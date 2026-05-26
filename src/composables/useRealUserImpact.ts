@@ -1,6 +1,6 @@
 import { computed, ref, watch, type ComputedRef, type Ref } from 'vue'
 
-import { normalizeWikiUsername } from '@/lib/config'
+import { normalizeRealWiki, normalizeWikiUsername } from '@/lib/config'
 import { getCachedImpact, setCachedImpact } from '@/lib/impactCache'
 import { FetchUserImpactError, fetchUserImpact } from '@/lib/fetchUserImpact'
 import { EMPTY_IMPACT_DATA, type ImpactData } from '@/lib/impactTypes'
@@ -14,7 +14,10 @@ function impactHasRenderableData(data: ImpactData): boolean {
   )
 }
 
-export function useRealUserImpact(usernameSource: Ref<string> | ComputedRef<string>): {
+export function useRealUserImpact(
+  usernameSource: Ref<string> | ComputedRef<string>,
+  wikiSource: Ref<string> | ComputedRef<string>,
+): {
   impactProps: ComputedRef<ImpactData>
   loading: Ref<boolean>
   error: Ref<string | null>
@@ -44,8 +47,8 @@ export function useRealUserImpact(usernameSource: Ref<string> | ComputedRef<stri
     }
   }
 
-  function loadFromCache(raw: string): void {
-    const cached = getCachedImpact(raw)
+  function loadFromCache(raw: string, wiki: string): void {
+    const cached = getCachedImpact(raw, wiki)
     if (cached) {
       impactData.value = { ...EMPTY_IMPACT_DATA, ...cached.data }
       lastFetchedAt.value = cached.fetchedAt
@@ -60,15 +63,16 @@ export function useRealUserImpact(usernameSource: Ref<string> | ComputedRef<stri
   }
 
   watch(
-    usernameSource,
-    (name) => {
+    [usernameSource, wikiSource],
+    ([name, wiki]) => {
       error.value = null
-      loadFromCache(name)
+      loadFromCache(name, normalizeRealWiki(wiki))
     },
     { immediate: true },
   )
 
   const normalizedUsername = computed(() => normalizeWikiUsername(usernameSource.value))
+  const normalizedWiki = computed(() => normalizeRealWiki(wikiSource.value))
 
   const hasCache = computed(() => lastFetchedAt.value != null)
 
@@ -78,6 +82,7 @@ export function useRealUserImpact(usernameSource: Ref<string> | ComputedRef<stri
 
   async function refresh(): Promise<void> {
     const name = normalizedUsername.value
+    const wiki = normalizedWiki.value
     if (!name.length) {
       error.value = 'Enter a Wikipedia username in the user menu'
       return
@@ -94,11 +99,12 @@ export function useRealUserImpact(usernameSource: Ref<string> | ComputedRef<stri
     try {
       const data = await fetchUserImpact(name, {
         signal,
+        lang: wiki,
         onProgress: (patch) => {
           mergeImpactPatch(patch)
         },
       })
-      const entry = setCachedImpact(name, data)
+      const entry = setCachedImpact(name, data, wiki)
       impactData.value = { ...EMPTY_IMPACT_DATA, ...data }
       lastFetchedAt.value = entry.fetchedAt
       editedPageTitles.value = data.editedPageTitles ?? []

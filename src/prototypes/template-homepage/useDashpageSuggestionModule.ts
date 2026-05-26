@@ -1,6 +1,8 @@
 import { computed, ref, watch, type ComputedRef } from 'vue'
+import type { FakeWiki } from 'fakewiki'
 
 import { useConfig } from '@/composables/useConfig'
+import { normalizeRealWiki, wikiLangForConfigUser } from '@/lib/config'
 import { shouldShowDashpageLoadPrompt } from '@/lib/dashpageLoadState'
 import { DASHPAGE_SUGGESTION_FEED_PREVIEW_MAX } from '@/lib/dashpageSuggestionFeedConstants'
 import {
@@ -42,9 +44,11 @@ import {
   type SuggestionDescriptionPart,
 } from '@/lib/ve-suggestions'
 
-const wiki = createVeSuggestionsWiki('dashpage-suggestion-mode')
-
 const DASHPAGE_EXCLUDED_SUGGESTION_TYPES = new Set(['redirect'])
+
+function createSuggestionWiki(lang: string): FakeWiki {
+  return createVeSuggestionsWiki(normalizeRealWiki(lang), 'dashpage-suggestion-mode')
+}
 
 export interface SuggestionQueueItem {
   pageTitle: string
@@ -61,7 +65,11 @@ function filterDashpageSuggestions(cards: SuggestionCardData[]): SuggestionCardD
   )
 }
 
-function pageNeedsVeRefresh(pageTitle: string, forceRefresh: boolean): boolean {
+function pageNeedsVeRefresh(
+  wiki: FakeWiki,
+  pageTitle: string,
+  forceRefresh: boolean,
+): boolean {
   if (forceRefresh) return true
 
   const cached = getCachedRun(pageTitle)
@@ -179,6 +187,7 @@ function queueToFeedItems(queue: SuggestionQueueItem[]): SuggestionFeedItem[] {
 }
 
 function buildQueueFromPages(
+  wiki: FakeWiki,
   pageTitles: string[],
   pagePreviews: Record<string, PagePreviewCache>,
 ): SuggestionQueueItem[] {
@@ -210,6 +219,7 @@ function buildQueueFromPages(
 }
 
 async function collectSuggestionsForPages(
+  wiki: FakeWiki,
   pageTitles: string[],
   forceRefresh: boolean,
   signal: AbortSignal,
@@ -223,7 +233,7 @@ async function collectSuggestionsForPages(
     if (signal.aborted) return items
 
     const pipelineResult = await runVeSuggestionsPipeline(wiki, pageTitle, {
-      forceRefresh: pageNeedsVeRefresh(pageTitle, forceRefresh),
+      forceRefresh: pageNeedsVeRefresh(wiki, pageTitle, forceRefresh),
       maxSuggestions: 1,
       excludeSuggestionTypes: [...DASHPAGE_EXCLUDED_SUGGESTION_TYPES],
     })
@@ -268,12 +278,14 @@ async function fetchMorelikePicks(
   limit: number,
   signal: AbortSignal,
   recordPipelineError: (message: string) => void,
+  lang: string,
 ): Promise<string[]> {
   try {
     return await fetchMorelikePageTitles(seedTitles, {
       limit,
       excludeTitles,
       signal,
+      lang,
     })
   } catch (caught) {
     if (caught instanceof FetchMorelikePageTitlesError && caught.code === 'aborted') {
@@ -338,7 +350,11 @@ export function useDashpageSuggestionModule(): {
   onSuggestionNavigate: (delta: number) => void
   onSuggestionOpenFullscreen: () => void
 } {
-  const { user, realUsername, currentUserPageLists } = useConfig()
+  const { user, realUsername, realWiki, currentUserPageLists } = useConfig()
+
+  function activeWikiLang(): string {
+    return wikiLangForConfigUser(user.value, realWiki.value)
+  }
 
   function hasRenderableData(): boolean {
     return queue.value.length > 0
@@ -355,7 +371,10 @@ export function useDashpageSuggestionModule(): {
     if (!titlesToFetch.length) return
 
     try {
-      const previews = await fetchPagePreviewMetadataBatch(titlesToFetch, { signal })
+      const previews = await fetchPagePreviewMetadataBatch(titlesToFetch, {
+        signal,
+        lang: activeWikiLang(),
+      })
       if (signal.aborted) return
 
       pagePreviews.value = { ...pagePreviews.value, ...previews }
@@ -422,7 +441,14 @@ export function useDashpageSuggestionModule(): {
     lastFetchedAt.value = cached.fetchedAt
     selectedPageTitles.value = cached.selectedPageTitles
     pagePreviews.value = cached.pagePreviews ?? {}
-    applyQueue(buildQueueFromPages(cached.selectedPageTitles, pagePreviews.value), cached.currentIndex)
+    applyQueue(
+      buildQueueFromPages(
+        createSuggestionWiki(activeWikiLang()),
+        cached.selectedPageTitles,
+        pagePreviews.value,
+      ),
+      cached.currentIndex,
+    )
     error.value = null
   }
 
@@ -432,18 +458,20 @@ export function useDashpageSuggestionModule(): {
       return
     }
 
-    const portfolio = getPortfolioCache(realUsername.value)
+    const portfolio = getPortfolioCache(realUsername.value, activeWikiLang())
     cachedRealTitles.value = portfolio?.titles ?? []
   }
 
   if (!watchRegistered) {
     watchRegistered = true
     watch(
-      [user, realUsername],
-      ([activeUser, username]) => {
+      [user, realUsername, realWiki],
+      ([activeUser, username, wiki]) => {
         error.value = null
         loadRealPortfolioFromCache()
-        loadFromModuleCache(dashpageSuggestionUserKey(activeUser, username))
+        loadFromModuleCache(
+          dashpageSuggestionUserKey(activeUser, username, wikiLangForConfigUser(activeUser, wiki)),
+        )
       },
       { immediate: true },
     )
@@ -458,7 +486,9 @@ export function useDashpageSuggestionModule(): {
     loading.value = true
     error.value = null
 
-    const userKey = dashpageSuggestionUserKey(user.value, realUsername.value)
+    const wikiLang = activeWikiLang()
+    const wiki = createSuggestionWiki(wikiLang)
+    const userKey = dashpageSuggestionUserKey(user.value, realUsername.value, wikiLang)
     const accumulated: SuggestionQueueItem[] = []
 
     if (forceRefresh) {
@@ -486,10 +516,13 @@ export function useDashpageSuggestionModule(): {
 
     try {
       if (user.value === 'real') {
-        let portfolio = getPortfolioCache(realUsername.value)
+        let portfolio = getPortfolioCache(realUsername.value, wikiLang)
         if (!portfolio) {
-          const titles = await fetchUserEditedPageTitles(realUsername.value, { signal })
-          portfolio = setPortfolioCache(realUsername.value, titles)
+          const titles = await fetchUserEditedPageTitles(realUsername.value, {
+            signal,
+            lang: wikiLang,
+          })
+          portfolio = setPortfolioCache(realUsername.value, titles, wikiLang)
         }
         cachedRealTitles.value = portfolio.titles
       }
@@ -515,6 +548,7 @@ export function useDashpageSuggestionModule(): {
       )
 
       const poolItems = await collectSuggestionsForPages(
+        wiki,
         poolPagePicks,
         forceRefresh,
         signal,
@@ -540,6 +574,7 @@ export function useDashpageSuggestionModule(): {
           DASHPAGE_SUGGESTION_MORELIKE_MAX,
           signal,
           recordPipelineError,
+          wikiLang,
         )
       } catch (caught) {
         if (caught instanceof FetchMorelikePageTitlesError && caught.code === 'aborted') {
@@ -551,6 +586,7 @@ export function useDashpageSuggestionModule(): {
       triedPageTitles.push(...morelikePagePicks)
 
       let morelikeItems = await collectSuggestionsForPages(
+        wiki,
         morelikePagePicks,
         forceRefresh,
         signal,
@@ -580,6 +616,7 @@ export function useDashpageSuggestionModule(): {
             DASHPAGE_SUGGESTION_MORELIKE_SUPPLEMENT_MAX,
             signal,
             recordPipelineError,
+            wikiLang,
           )
         } catch (caught) {
           if (caught instanceof FetchMorelikePageTitlesError && caught.code === 'aborted') {
@@ -592,6 +629,7 @@ export function useDashpageSuggestionModule(): {
           morelikeItems = [
             ...morelikeItems,
             ...(await collectSuggestionsForPages(
+              wiki,
               supplementPagePicks,
               forceRefresh,
               signal,
@@ -755,7 +793,7 @@ export function useDashpageSuggestionModule(): {
     if (nextIndex < 0 || nextIndex >= queue.value.length) return
 
     currentIndex.value = nextIndex
-    persistCache(dashpageSuggestionUserKey(user.value, realUsername.value))
+    persistCache(dashpageSuggestionUserKey(user.value, realUsername.value, activeWikiLang()))
   }
 
   /** Homepage preview always shows queue[0]; align fullscreen before navigating. */
@@ -763,7 +801,7 @@ export function useDashpageSuggestionModule(): {
     if (!queue.value.length || currentIndex.value === 0) return
 
     currentIndex.value = 0
-    persistCache(dashpageSuggestionUserKey(user.value, realUsername.value))
+    persistCache(dashpageSuggestionUserKey(user.value, realUsername.value, activeWikiLang()))
   }
 
   return {

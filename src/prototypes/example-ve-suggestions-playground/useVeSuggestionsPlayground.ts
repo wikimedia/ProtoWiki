@@ -21,7 +21,7 @@ export interface VeSuggestionsCacheMeta {
   fetchedAt?: number
 }
 
-const wiki = createVeSuggestionsWiki('ve-suggestions-playground')
+const wiki = createVeSuggestionsWiki('en', 've-suggestions-playground')
 
 export function useVeSuggestionsPlayground(): {
   pageTitle: ReturnType<typeof ref<string>>

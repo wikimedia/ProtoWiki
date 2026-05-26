@@ -334,6 +334,7 @@ export async function enrichRevisionIncremental(
   wiki: FakeWiki,
   candidate: RevisionCandidate,
   onPatch: (patch: Partial<RecentChangeFeedItem>) => void,
+  lang = 'en',
 ): Promise<void> {
   const base: AnalyzedRevisionSignals = {
     revertRisk: null,
@@ -405,12 +406,12 @@ export async function enrichRevisionIncremental(
   if (parentId != null && parentId > 0) {
     const beforeQuality = await fetchArticleQualityScore(
       parentId,
-      'en',
+      lang,
       DASHPAGE_RC_API_USER_AGENT,
     )
     const afterQuality = await fetchArticleQualityScore(
       candidate.revId,
-      'en',
+      lang,
       DASHPAGE_RC_API_USER_AGENT,
     )
     base.articleQualityBefore = beforeQuality?.score ?? null
@@ -431,6 +432,7 @@ export async function enrichRevisionIncremental(
 export async function analyzeRevisionSerial(
   wiki: FakeWiki,
   candidate: RevisionCandidate,
+  lang = 'en',
 ): Promise<AnalyzedRevisionSignals> {
   const base: AnalyzedRevisionSignals = {
     revertRisk: null,
@@ -487,12 +489,12 @@ export async function analyzeRevisionSerial(
   if (parentId != null && parentId > 0) {
     const beforeQuality = await fetchArticleQualityScore(
       parentId,
-      'en',
+      lang,
       DASHPAGE_RC_API_USER_AGENT,
     )
     const afterQuality = await fetchArticleQualityScore(
       candidate.revId,
-      'en',
+      lang,
       DASHPAGE_RC_API_USER_AGENT,
     )
     base.articleQualityBefore = beforeQuality?.score ?? null

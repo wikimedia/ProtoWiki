@@ -1,4 +1,4 @@
-import { normalizeWikiUsername } from '@/lib/config'
+import { normalizeRealWiki, normalizeWikiUsername } from '@/lib/config'
 import { wipeLocalStorage } from '@/lib/wipeLocalStorage'
 
 const STORAGE_KEY = 'protowiki-dashpage-portfolio-v1'
@@ -9,6 +9,12 @@ export interface DashpagePortfolioCacheEntry {
 }
 
 type PortfolioStore = Record<string, DashpagePortfolioCacheEntry>
+
+function realUserPortfolioCacheKey(username: string, wiki: string): string {
+  const normalizedUsername = normalizeWikiUsername(username)
+  if (!normalizedUsername.length) return ''
+  return `${normalizeRealWiki(wiki)}:${normalizedUsername}`
+}
 
 function readStore(): PortfolioStore {
   if (typeof window === 'undefined') return {}
@@ -35,8 +41,11 @@ function writeStore(store: PortfolioStore): void {
   }
 }
 
-export function getPortfolioCache(username: string): DashpagePortfolioCacheEntry | null {
-  const key = normalizeWikiUsername(username)
+export function getPortfolioCache(
+  username: string,
+  wiki = 'en',
+): DashpagePortfolioCacheEntry | null {
+  const key = realUserPortfolioCacheKey(username, wiki)
   if (!key.length) return null
 
   const entry = readStore()[key]
@@ -46,8 +55,12 @@ export function getPortfolioCache(username: string): DashpagePortfolioCacheEntry
   return entry
 }
 
-export function setPortfolioCache(username: string, titles: string[]): DashpagePortfolioCacheEntry {
-  const key = normalizeWikiUsername(username)
+export function setPortfolioCache(
+  username: string,
+  titles: string[],
+  wiki = 'en',
+): DashpagePortfolioCacheEntry {
+  const key = realUserPortfolioCacheKey(username, wiki)
   const entry: DashpagePortfolioCacheEntry = {
     fetchedAt: Date.now(),
     titles: [...titles],

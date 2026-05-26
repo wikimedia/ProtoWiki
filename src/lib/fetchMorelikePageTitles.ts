@@ -1,4 +1,5 @@
-const WIKI_HOST = 'en.wikipedia.org'
+import { wikiHostFromLang } from '@/lib/config'
+
 const API_USER_AGENT =
   'ProtoWiki/0.1 (https://github.com/wikimedia-research/protowiki) dashpage-suggestion-mode'
 
@@ -19,6 +20,8 @@ export interface FetchMorelikePageTitlesOptions {
   limit?: number
   excludeTitles?: string[]
   signal?: AbortSignal
+  /** Wikipedia language code (default `en`). */
+  lang?: string
 }
 
 type SearchResponse = {
@@ -39,13 +42,13 @@ function assertNotAborted(signal?: AbortSignal): void {
   }
 }
 
-function actionUrl(params: Record<string, string>): string {
+function actionUrl(wikiHost: string, params: Record<string, string>): string {
   const search = new URLSearchParams({
     ...params,
     format: 'json',
     origin: '*',
   })
-  return `https://${WIKI_HOST}/w/api.php?${search.toString()}`
+  return `https://${wikiHost}/w/api.php?${search.toString()}`
 }
 
 async function fetchJson(url: string, signal?: AbortSignal): Promise<unknown> {
@@ -84,6 +87,7 @@ function appendSearchHits(
  * are exhausted. Excluded titles are skipped rather than returned.
  */
 async function collectMorelikeTitles(
+  wikiHost: string,
   srsearch: string,
   limit: number,
   exclude: Set<string>,
@@ -99,7 +103,7 @@ async function collectMorelikeTitles(
 
     const batchSize = Math.min(50, Math.max(limit * 2, limit))
     const data = (await fetchJson(
-      actionUrl({
+      actionUrl(wikiHost, {
         action: 'query',
         list: 'search',
         srsearch,
@@ -146,8 +150,10 @@ export async function fetchMorelikePageTitles(
     exclude.add(normalizeTitleKey(seed))
   }
 
+  const wikiHost = wikiHostFromLang(options.lang ?? 'en')
   const seen = new Set<string>()
   let titles = await collectMorelikeTitles(
+    wikiHost,
     `morelike:${seeds.join('|')}`,
     limit,
     exclude,
@@ -163,6 +169,7 @@ export async function fetchMorelikePageTitles(
     if (titles.length >= limit) break
 
     const seedTitlesFromSearch = await collectMorelikeTitles(
+      wikiHost,
       `morelike:${seed}`,
       limit,
       exclude,

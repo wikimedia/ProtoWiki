@@ -1,7 +1,7 @@
 /**
  * Live Impact stats for the "Real user" prototype mode.
  *
- * Data sources (all en.wikipedia.org unless noted):
+ * Data sources (project wiki unless noted):
  * - Total edits: Action API `list=users` → `editcount` (all namespaces, lifetime).
  * - Last edited / activity chart / longest streak: Action API `list=usercontribs` (article ns 0 only).
  * - Thanks received: not fetched (no simple public count); UI shows "?".
@@ -10,10 +10,9 @@
  * - Thumbnails: Action API `pageimages`, then REST `/page/summary/{title}` as fallback.
  * - "Most viewed" rows: top 3 articles by those view counts (not merely the 3 most recent edits).
  */
-import { normalizeWikiUsername } from '@/lib/config'
+import { normalizeWikiUsername, wikiHostFromLang } from '@/lib/config'
 import type { ImpactData, ImpactMostViewedArticle } from '@/lib/impactTypes'
 
-const WIKI_HOST = 'en.wikipedia.org'
 const METRICS_HOST = 'wikimedia.org'
 const TOP_MOST_VIEWED = 3
 /** Max unique edited articles to query for pageviews (serial); then keep top 3 by views. */
@@ -35,6 +34,8 @@ export class FetchUserImpactError extends Error {
 export interface FetchUserImpactOptions {
   signal?: AbortSignal
   onProgress?: (patch: Partial<ImpactData>) => void
+  /** Wikipedia language code (default `en`). */
+  lang?: string
 }
 
 interface UserContrib {
@@ -57,13 +58,13 @@ async function fetchJson(url: string, signal?: AbortSignal): Promise<unknown> {
   return response.json()
 }
 
-function actionUrl(params: Record<string, string>): string {
+function actionUrl(wikiHost: string, params: Record<string, string>): string {
   const search = new URLSearchParams({
     ...params,
     format: 'json',
     origin: '*',
   })
-  return `https://${WIKI_HOST}/w/api.php?${search.toString()}`
+  return `https://${wikiHost}/w/api.php?${search.toString()}`
 }
 
 /** Parse Action API timestamps (`2026-02-23T09:12:59Z` or `2013-07-31 11:54:03`). */
@@ -167,6 +168,7 @@ function buildActivityHistogram(contribs: UserContrib[]): {
 }
 
 function buildViewProgressPatch(
+  wikiHost: string,
   totalEdits: number,
   viewRows: { title: string; total: number; daily: number[] }[],
   mostViewed?: ImpactMostViewedArticle[],
@@ -192,7 +194,7 @@ function buildViewProgressPatch(
       title: row.title,
       views: row.total,
       sparklineData: row.daily.length >= 2 ? row.daily.slice(-10) : undefined,
-      href: `https://${WIKI_HOST}/wiki/${encodeURIComponent(row.title.replace(/ /g, '_'))}`,
+      href: `https://${wikiHost}/wiki/${encodeURIComponent(row.title.replace(/ /g, '_'))}`,
     }))
 
   return {
@@ -210,6 +212,7 @@ function formatViewCount(total: number): string {
 }
 
 async function fetchPageviewsSince(
+  wikiHost: string,
   title: string,
   sinceIso: string,
   signal?: AbortSignal,
@@ -232,7 +235,7 @@ async function fetchPageviewsSince(
   }
 
   const url =
-    `https://${METRICS_HOST}/api/rest_v1/metrics/pageviews/per-article/en.wikipedia.org/all-access/all-agents/${article}/daily/${start}/${end}`
+    `https://${METRICS_HOST}/api/rest_v1/metrics/pageviews/per-article/${wikiHost}/all-access/all-agents/${article}/daily/${start}/${end}`
 
   try {
     assertNotAborted(signal)
@@ -252,8 +255,12 @@ async function fetchPageviewsSince(
   }
 }
 
-async function fetchThumbnail(title: string, signal?: AbortSignal): Promise<string | undefined> {
-  const url = actionUrl({
+async function fetchThumbnail(
+  wikiHost: string,
+  title: string,
+  signal?: AbortSignal,
+): Promise<string | undefined> {
+  const url = actionUrl(wikiHost, {
     action: 'query',
     titles: title,
     prop: 'pageimages',
@@ -275,7 +282,7 @@ async function fetchThumbnail(title: string, signal?: AbortSignal): Promise<stri
   try {
     assertNotAborted(signal)
     const slug = encodeURIComponent(title.replace(/ /g, '_'))
-    const response = await fetch(`https://${WIKI_HOST}/api/rest_v1/page/summary/${slug}`, {
+    const response = await fetch(`https://${wikiHost}/api/rest_v1/page/summary/${slug}`, {
       signal,
     })
     if (!response.ok) return undefined
@@ -290,7 +297,8 @@ export async function fetchUserImpact(
   rawUsername: string,
   options: FetchUserImpactOptions = {},
 ): Promise<ImpactData> {
-  const { signal, onProgress } = options
+  const { signal, onProgress, lang = 'en' } = options
+  const wikiHost = wikiHostFromLang(lang)
   const username = normalizeWikiUsername(rawUsername)
   if (!username.length) {
     throw new FetchUserImpactError('Enter a Wikipedia username', 'missing_username')
@@ -299,7 +307,7 @@ export async function fetchUserImpact(
   assertNotAborted(signal)
 
   const usersJson = (await fetchJson(
-    actionUrl({
+    actionUrl(wikiHost, {
       action: 'query',
       list: 'users',
       ususers: username,
@@ -334,7 +342,7 @@ export async function fetchUserImpact(
     }
     if (uccontinue) params.uccontinue = uccontinue
 
-    const json = (await fetchJson(actionUrl(params), signal)) as {
+    const json = (await fetchJson(actionUrl(wikiHost, params), signal)) as {
       query?: { usercontribs?: UserContrib[] }
       continue?: { uccontinue?: string }
     }
@@ -381,9 +389,9 @@ export async function fetchUserImpact(
     assertNotAborted(signal)
 
     const since = titleToLatestEdit.get(title) ?? ''
-    const { total, daily } = await fetchPageviewsSince(title, since, signal)
+    const { total, daily } = await fetchPageviewsSince(wikiHost, title, since, signal)
     viewRows.push({ title, total, daily })
-    onProgress?.(buildViewProgressPatch(totalEdits, viewRows))
+    onProgress?.(buildViewProgressPatch(wikiHost, totalEdits, viewRows))
   }
 
   viewRows.sort((a, b) => b.total - a.total)
@@ -394,20 +402,20 @@ export async function fetchUserImpact(
   for (const row of topByViews) {
     assertNotAborted(signal)
 
-    const thumbnailSrc = await fetchThumbnail(row.title, signal)
+    const thumbnailSrc = await fetchThumbnail(wikiHost, row.title, signal)
 
     mostViewed.push({
       title: row.title,
       views: row.total,
       sparklineData: row.daily.length >= 2 ? row.daily.slice(-10) : undefined,
       thumbnailSrc,
-      href: `https://${WIKI_HOST}/wiki/${encodeURIComponent(row.title.replace(/ /g, '_'))}`,
+      href: `https://${wikiHost}/wiki/${encodeURIComponent(row.title.replace(/ /g, '_'))}`,
     })
 
-    onProgress?.(buildViewProgressPatch(totalEdits, viewRows, mostViewed))
+    onProgress?.(buildViewProgressPatch(wikiHost, totalEdits, viewRows, mostViewed))
   }
 
-  const viewPatch = buildViewProgressPatch(totalEdits, viewRows, mostViewed)
+  const viewPatch = buildViewProgressPatch(wikiHost, totalEdits, viewRows, mostViewed)
 
   return {
     totalEdits,
@@ -421,7 +429,7 @@ export async function fetchUserImpact(
     viewLabel: viewPatch.viewLabel,
     sparklineData: viewPatch.sparklineData ?? [],
     mostViewed,
-    viewAllEditsHref: `https://${WIKI_HOST}/wiki/Special:Contributions/${encodeURIComponent(username)}`,
+    viewAllEditsHref: `https://${wikiHost}/wiki/Special:Contributions/${encodeURIComponent(username)}`,
     editedPageTitles,
   }
 }

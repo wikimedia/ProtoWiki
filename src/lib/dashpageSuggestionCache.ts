@@ -1,6 +1,6 @@
 import { wipeLocalStorage } from '@/lib/wipeLocalStorage'
 import type { ConfigUser, UserPageLists } from '@/lib/config'
-import { normalizeWikiUsername } from '@/lib/config'
+import { normalizeRealWiki, normalizeWikiUsername } from '@/lib/config'
 
 const STORAGE_KEY = 'protowiki-dashpage-suggestion-module-v4'
 export const DASHPAGE_SUGGESTION_FALLBACK_PAGE = 'Wet Leg'
@@ -31,10 +31,15 @@ export interface DashpageSuggestionModuleCache {
 
 type ModuleStore = Record<string, DashpageSuggestionModuleCache>
 
-export function dashpageSuggestionUserKey(user: ConfigUser, realUsername: string): string {
+export function dashpageSuggestionUserKey(
+  user: ConfigUser,
+  realUsername: string,
+  realWiki = 'en',
+): string {
   if (user === 'real') {
     const normalized = normalizeWikiUsername(realUsername)
-    return normalized.length ? `real:${normalized}` : 'real'
+    const wiki = normalizeRealWiki(realWiki)
+    return normalized.length ? `real:${wiki}:${normalized}` : 'real'
   }
   return user
 }

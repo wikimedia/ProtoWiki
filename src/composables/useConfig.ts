@@ -36,6 +36,7 @@ export function useConfig(): {
   theme: Ref<ConfigTheme>
   user: Ref<ConfigUser>
   realUsername: Ref<string>
+  realWiki: Ref<string>
   displayName: ComputedRef<string>
   pageTitle: ComputedRef<string>
   currentUserPageLists: ComputedRef<UserPageLists>
@@ -60,6 +61,13 @@ export function useConfig(): {
     get: () => config.value.realUsername,
     set: (value: string) => {
       config.value = { ...config.value, realUsername: value }
+    },
+  })
+
+  const realWiki = computed({
+    get: () => config.value.realWiki,
+    set: (value: string) => {
+      config.value = { ...config.value, realWiki: value }
     },
   })
 
@@ -107,6 +115,7 @@ export function useConfig(): {
     theme,
     user,
     realUsername,
+    realWiki,
     displayName,
     pageTitle,
     currentUserPageLists,
