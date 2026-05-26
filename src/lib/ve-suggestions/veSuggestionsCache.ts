@@ -1,5 +1,7 @@
 import type { FWVeSuggestionResponse } from 'fakewiki/types'
 
+import { wipeLocalStorage } from '@/lib/wipeLocalStorage'
+
 import type { SuggestionCardData } from './veSuggestionCards'
 
 const CACHE_STORAGE_KEY = 'protowiki-ve-suggestions-cache-v1'
@@ -35,6 +37,7 @@ function readCacheStore(): CacheStore {
     if (typeof parsed !== 'object' || parsed === null) return {}
     return parsed as CacheStore
   } catch {
+    wipeLocalStorage()
     return {}
   }
 }
@@ -107,6 +110,7 @@ export function loadUiState(): VeSuggestionsUiState {
         typeof record.lastViewedAt === 'number' ? record.lastViewedAt : undefined,
     }
   } catch {
+    wipeLocalStorage()
     return { pageTitle: 'Wet Leg' }
   }
 }

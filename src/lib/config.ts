@@ -1,3 +1,5 @@
+import { wipeLocalStorage } from './wipeLocalStorage'
+
 export type ConfigTheme = 'light' | 'dark' | 'system'
 export type ConfigUser = 'logged-out' | 'new' | 'experienced' | 'real'
 
@@ -221,6 +223,7 @@ export function loadConfig(): Config {
       userPageLists: mergeUserPageListsMap(record.userPageLists),
     }
   } catch {
+    wipeLocalStorage()
     return cloneConfig(DEFAULT_CONFIG)
   }
 }

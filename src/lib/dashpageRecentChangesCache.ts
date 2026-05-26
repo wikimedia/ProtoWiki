@@ -1,3 +1,4 @@
+import { wipeLocalStorage } from '@/lib/wipeLocalStorage'
 import { dashpageSuggestionUserKey } from '@/lib/dashpageSuggestionCache'
 import { DASHPAGE_RC_STORAGE_KEY } from '@/lib/dashpageRecentChangesConstants'
 import type { RecentChangeFeedItem } from '@/lib/dashpageRecentChangesTypes'
@@ -21,6 +22,7 @@ function readStore(): ModuleStore {
     if (typeof parsed !== 'object' || parsed === null) return {}
     return parsed as ModuleStore
   } catch {
+    wipeLocalStorage()
     return {}
   }
 }

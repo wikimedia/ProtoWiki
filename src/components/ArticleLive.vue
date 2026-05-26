@@ -5,6 +5,7 @@ import { CdxMessage, CdxProgressBar } from '@wikimedia/codex'
 import ArticleRenderer from '@/components/ArticleRenderer.vue'
 import ArticleWrapper from '@/components/ArticleWrapper.vue'
 import type { Skin, Theme } from '@/lib/theming'
+import { wipeLocalStorage } from '@/lib/wipeLocalStorage'
 
 /** Cache of successfully fetched live article HTML (key: host + title). */
 type CachedArticleBody = { html: string; liveTitle: string }
@@ -29,6 +30,7 @@ function loadFromStorage(key: string): CachedArticleBody | null {
     if (!raw) return null
     return JSON.parse(raw) as CachedArticleBody
   } catch {
+    wipeLocalStorage()
     return null
   }
 }

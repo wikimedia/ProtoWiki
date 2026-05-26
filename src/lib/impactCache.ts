@@ -1,5 +1,6 @@
 import { normalizeWikiUsername } from '@/lib/config'
 import type { ImpactData } from '@/lib/impactTypes'
+import { wipeLocalStorage } from '@/lib/wipeLocalStorage'
 
 const STORAGE_KEY = 'protowiki-impact-cache-v1'
 
@@ -20,6 +21,7 @@ function readStore(): ImpactCacheStore {
     if (typeof parsed !== 'object' || parsed === null) return {}
     return parsed as ImpactCacheStore
   } catch {
+    wipeLocalStorage()
     return {}
   }
 }

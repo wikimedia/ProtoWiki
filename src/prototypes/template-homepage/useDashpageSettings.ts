@@ -1,5 +1,7 @@
 import { ref, watch, type Ref } from 'vue'
 
+import { wipeLocalStorage } from '@/lib/wipeLocalStorage'
+
 export type EditSuggestionSource = 'structured-tasks' | 'suggestion-mode' | 'suggestion-feed'
 
 export const EDIT_SUGGESTION_SOURCE_MENU_ITEMS: {
@@ -30,6 +32,7 @@ function loadEditSuggestionSource(): EditSuggestionSource {
     const stored = window.localStorage.getItem(STORAGE_KEY)
     return isEditSuggestionSource(stored) ? stored : DEFAULT_EDIT_SUGGESTION_SOURCE
   } catch {
+    wipeLocalStorage()
     return DEFAULT_EDIT_SUGGESTION_SOURCE
   }
 }

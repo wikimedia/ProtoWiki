@@ -1,3 +1,4 @@
+import { wipeLocalStorage } from '@/lib/wipeLocalStorage'
 import type { ConfigUser, UserPageLists } from '@/lib/config'
 import { normalizeWikiUsername } from '@/lib/config'
 
@@ -48,6 +49,7 @@ function readStore(): ModuleStore {
     if (typeof parsed !== 'object' || parsed === null) return {}
     return parsed as ModuleStore
   } catch {
+    wipeLocalStorage()
     return {}
   }
 }

@@ -1,4 +1,5 @@
 import { normalizeWikiUsername } from '@/lib/config'
+import { wipeLocalStorage } from '@/lib/wipeLocalStorage'
 
 const STORAGE_KEY = 'protowiki-dashpage-portfolio-v1'
 
@@ -19,6 +20,7 @@ function readStore(): PortfolioStore {
     if (typeof parsed !== 'object' || parsed === null) return {}
     return parsed as PortfolioStore
   } catch {
+    wipeLocalStorage()
     return {}
   }
 }
