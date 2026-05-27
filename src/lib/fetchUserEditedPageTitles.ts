@@ -3,10 +3,19 @@ import { normalizeWikiUsername, wikiHostFromLang } from '@/lib/config'
 const API_USER_AGENT =
   'ProtoWiki/0.1 (https://github.com/wikimedia-research/protowiki) dashpage-suggestion-mode'
 
+const CONTRIBS_PER_PAGE = 500
+const MAX_CONTRIB_PAGES = 5
+export const MAX_SEED_PAGES = 20
+
 export class FetchUserEditedPageTitlesError extends Error {
   constructor(
     message: string,
-    public readonly code: 'missing_username' | 'user_not_found' | 'aborted' | 'http',
+    public readonly code:
+      | 'missing_username'
+      | 'user_not_found'
+      | 'no_edits'
+      | 'aborted'
+      | 'http',
   ) {
     super(message)
     this.name = 'FetchUserEditedPageTitlesError'
@@ -17,6 +26,8 @@ export interface FetchUserEditedPageTitlesOptions {
   signal?: AbortSignal
   /** Wikipedia language code (default `en`). */
   lang?: string
+  /** Max unique article titles to return (caps at {@link MAX_SEED_PAGES}). */
+  limit?: number
 }
 
 function assertNotAborted(signal?: AbortSignal): void {
@@ -50,6 +61,13 @@ async function fetchJson(url: string, signal?: AbortSignal): Promise<unknown> {
   return response.json()
 }
 
+function normalizeTitleKey(title: string): string {
+  return title.trim().replace(/_/g, ' ').toLowerCase()
+}
+
+/**
+ * Unique article titles from a user's namespace-0 edit history (most recent first).
+ */
 export async function fetchUserEditedPageTitles(
   username: string,
   options: FetchUserEditedPageTitlesOptions = {},
@@ -59,34 +77,72 @@ export async function fetchUserEditedPageTitles(
     throw new FetchUserEditedPageTitlesError('Enter a Wikipedia username in the user menu', 'missing_username')
   }
 
-  const data = (await fetchJson(
-    actionUrl(wikiHostFromOptions(options), {
+  const wikiHost = wikiHostFromOptions(options)
+  const limit =
+    options.limit !== undefined
+      ? Math.max(1, Math.min(options.limit, MAX_SEED_PAGES))
+      : undefined
+
+  assertNotAborted(options.signal)
+
+  const userData = (await fetchJson(
+    actionUrl(wikiHost, {
       action: 'query',
-      list: 'usercontribs',
-      ucuser: normalized,
-      ucnamespace: '0',
-      uclimit: '500',
+      list: 'users',
+      ususers: normalized,
     }),
     options.signal,
   )) as {
-    query?: {
-      usercontribs?: Array<{ title?: string }>
-    }
-    error?: { code?: string; info?: string }
+    query?: { users?: Array<{ name?: string; missing?: boolean }> }
   }
 
-  if (data.error?.code === 'missingtitle' || data.error?.code === 'nosuchuser') {
-    throw new FetchUserEditedPageTitlesError('User not found', 'user_not_found')
+  const userInfo = userData.query?.users?.[0]
+  if (!userInfo || userInfo.missing) {
+    throw new FetchUserEditedPageTitlesError(`User "${normalized}" not found`, 'user_not_found')
   }
 
   const seen = new Set<string>()
   const titles: string[] = []
+  let uccontinue: string | undefined
 
-  for (const contrib of data.query?.usercontribs ?? []) {
-    const title = typeof contrib.title === 'string' ? contrib.title.trim() : ''
-    if (!title.length || seen.has(title)) continue
-    seen.add(title)
-    titles.push(title)
+  for (let page = 0; page < MAX_CONTRIB_PAGES; page++) {
+    assertNotAborted(options.signal)
+
+    const params: Record<string, string> = {
+      action: 'query',
+      list: 'usercontribs',
+      ucuser: normalized,
+      ucnamespace: '0',
+      uclimit: String(CONTRIBS_PER_PAGE),
+    }
+    if (uccontinue) params.uccontinue = uccontinue
+
+    const data = (await fetchJson(actionUrl(wikiHost, params), options.signal)) as {
+      query?: { usercontribs?: Array<{ title?: string }> }
+      continue?: { uccontinue?: string }
+    }
+
+    for (const contrib of data.query?.usercontribs ?? []) {
+      const title = typeof contrib.title === 'string' ? contrib.title.trim() : ''
+      if (!title.length) continue
+
+      const key = normalizeTitleKey(title)
+      if (seen.has(key)) continue
+
+      seen.add(key)
+      titles.push(title)
+
+      if (limit !== undefined && titles.length >= limit) {
+        return titles
+      }
+    }
+
+    uccontinue = data.continue?.uccontinue
+    if (!uccontinue) break
+  }
+
+  if (!titles.length) {
+    throw new FetchUserEditedPageTitlesError('No article edits found', 'no_edits')
   }
 
   return titles
