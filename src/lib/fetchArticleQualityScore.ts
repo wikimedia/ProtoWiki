@@ -2,7 +2,7 @@ const LIFT_WING_ARTICLE_QUALITY_URL =
   'https://api.wikimedia.org/service/lw/inference/v1/models/articlequality:predict'
 
 const DEFAULT_API_USER_AGENT =
-  'ProtoWiki/0.1 (https://github.com/wikimedia-research/protowiki) dashpage-recent-changes'
+  'ProtoWiki/0.1 (https://github.com/wikimedia/protowiki) dashpage-recent-changes'
 
 export interface ArticleQualityScoreResult {
   score: number

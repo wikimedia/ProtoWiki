@@ -133,8 +133,7 @@ async function fetchArticle(title: string) {
       })
       const headers: Record<string, string> = {
         Accept: 'text/html; charset=utf-8',
-        'Api-User-Agent':
-          'ProtoWiki/0.1 (https://github.com/wikimedia-research/protowiki) prototype',
+        'Api-User-Agent': 'ProtoWiki/0.1 (https://github.com/wikimedia/protowiki) prototype',
       }
       const response = await fetch(url, { headers })
       if (!response.ok) {

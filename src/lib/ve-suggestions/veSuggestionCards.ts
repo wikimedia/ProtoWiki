@@ -2,7 +2,7 @@ import type { FakeWiki } from 'fakewiki'
 import type { FWVeSuggestionItem, FWVeSuggestionResponse } from 'fakewiki/types'
 
 import { formatSuggestionType, headingForSuggestionType } from './veDisplayHeadings'
-import { stripLinksFromSnippetHtml, stripLinksFromWikitext } from './snippetLinkStrip'
+import { stripLinksFromSnippetHtml, stripLinksFromWikitext, wrapSnippetHtmlInQuotes } from './snippetLinkStrip'
 import { normalizePageTitle } from './veSuggestionsCache'
 
 export type SuggestionDescriptionPart =
@@ -111,13 +111,13 @@ const DISPLAY_BY_TYPE: Record<string, SuggestionDisplayConfig> = {
   },
 }
 
-const SNIPPETLESS_SUGGESTION_TYPES = new Set(['redirect'])
-/** Link suggestions where a lone bold label adds nothing beyond the description. */
-const LABEL_ONLY_SNIPPETLESS_LINK_TYPES = new Set([
-  'duplicateLink',
-  'disambiguation',
+const SNIPPETLESS_SUGGESTION_TYPES = new Set([
+  'redirect',
+  'requiredTemplateParam',
   'suggestedLink',
 ])
+/** Link suggestions where a lone bold label adds nothing beyond the description. */
+const LABEL_ONLY_SNIPPETLESS_LINK_TYPES = new Set(['duplicateLink', 'disambiguation'])
 const REDIRECT_GROUP_MAX_VISIBLE = 3
 const REDIRECT_GROUP_HEADING = 'Replace redirect links'
 
@@ -440,14 +440,38 @@ function readContextField(
 }
 
 function normalizeSnippetWikitext(snippet: string): string {
-  return snippet.trim()
+  let text = snippet.trim()
+  if (text.length >= 2 && text.startsWith('"') && text.endsWith('"')) {
+    text = text.slice(1, -1).trim()
+  }
+  return text
+}
+
+function startsWithWikitextHeading(text: string): boolean {
+  return /^=+\s+\S/.test(text.trimStart())
+}
+
+function appendSnippetContextBefore(snippet: string, contextBefore: string): string {
+  const before = contextBefore.trim()
+  if (!before) return snippet
+
+  if (startsWithWikitextHeading(before)) {
+    const separator = snippet.length && !snippet.endsWith('\n') ? '\n' : ''
+    return snippet + separator + before + '\n'
+  }
+
+  return snippet + `…${contextBefore}`
 }
 
 const CITATION_MARKER_PATTERN =
   /\{\{\s*citation\s+needed(?:\s*\|[^}]*)?\s*\}\}|\[citation needed\]/gi
 
 function stripSnippetDecorators(snippet: string): string {
-  return snippet.replace(/^…+/g, '').replace(/…+$/g, '').replace(/'''/g, '').trim()
+  let text = snippet.trim()
+  if (text.startsWith('"') && text.endsWith('"')) {
+    text = text.slice(1, -1).trim()
+  }
+  return text.replace(/^…+/g, '').replace(/…+$/g, '').replace(/'''/g, '').trim()
 }
 
 /** True when the snippet includes readable prose, not only a citation-needed marker. */
@@ -612,7 +636,139 @@ function formatContextualSnippetWikitext(
   coreText: string,
   contextAfter: string,
 ): string {
-  return normalizeSnippetWikitext(`…${contextBefore}${boldWikitext(coreText)}${contextAfter}…`)
+  const hasBefore = contextBefore.trim().length > 0
+  const hasAfter = contextAfter.trim().length > 0
+
+  let snippet = ''
+  if (hasBefore) snippet = appendSnippetContextBefore(snippet, contextBefore)
+  snippet += boldWikitext(coreText)
+  if (hasAfter) {
+    snippet += contextAfter.startsWith(' ') ? contextAfter : ` ${contextAfter}`
+    snippet += '…'
+  }
+
+  return normalizeSnippetWikitext(snippet)
+}
+
+const ADD_REFERENCE_CONTEXT_CHARS = 60
+
+function extractLeadingSentenceWikitext(wikitext: string): string {
+  const trimmed = wikitext.trim()
+  if (!trimmed) return ''
+
+  const plain = stripInlineWikiNoise(trimmed)
+  if (!plain) return trimmed.length > 200 ? trimmed.slice(0, 200) : trimmed
+
+  const sentenceMatch = plain.match(/^[^.!?]+[.!?]/)
+  const targetPlainLen = sentenceMatch ? sentenceMatch[0].length : Math.min(plain.length, 200)
+
+  if (plain.length <= targetPlainLen) return trimmed
+
+  for (let i = 1; i <= trimmed.length; i++) {
+    const plainSeen = stripInlineWikiNoise(trimmed.slice(0, i)).length
+    if (plainSeen >= targetPlainLen) return trimmed.slice(0, i).trim()
+  }
+
+  return trimmed
+}
+
+function findParagraphContainingExcerpt(pageSource: string, excerpt: string): string | null {
+  const trimmedExcerpt = excerpt.trim()
+  if (!trimmedExcerpt) return null
+
+  const needles = [
+    trimmedExcerpt,
+    trimmedExcerpt.slice(0, 120),
+    trimmedExcerpt.slice(0, 80),
+    trimmedExcerpt.slice(0, 40),
+  ].filter((value, index, array) => value.length >= 20 && array.indexOf(value) === index)
+
+  for (const needle of needles) {
+    const idx = pageSource.indexOf(needle)
+    if (idx === -1) continue
+
+    const paragraphStart = pageSource.lastIndexOf('\n\n', idx)
+    const start = paragraphStart === -1 ? 0 : paragraphStart + 2
+    const paragraphEnd = pageSource.indexOf('\n\n', idx)
+    const end = paragraphEnd === -1 ? pageSource.length : paragraphEnd
+
+    const paragraph = pageSource.slice(start, end).trim()
+    if (paragraph) return paragraph
+  }
+
+  return trimmedExcerpt
+}
+
+function extractAddReferenceSnippetParts(paragraph: string): {
+  contextBefore: string
+  coreText: string
+  contextAfter: string
+} | null {
+  const trimmed = paragraph.trim()
+  if (!trimmed || !hasSubstantiveSnippetContent(trimmed)) return null
+
+  const coreText = extractLeadingSentenceWikitext(trimmed)
+  if (!coreText || !hasSubstantiveSnippetContent(coreText)) return null
+
+  const coreStart = trimmed.indexOf(coreText)
+  if (coreStart < 0) return null
+
+  const rawBefore = trimmed.slice(0, coreStart)
+  const rawAfter = trimmed.slice(coreStart + coreText.length)
+  const beforePlain = stripInlineWikiNoise(rawBefore)
+  const afterPlain = stripInlineWikiNoise(rawAfter)
+
+  const contextBefore = beforePlain.slice(-ADD_REFERENCE_CONTEXT_CHARS).trim()
+  const contextAfterBody = afterPlain.slice(0, ADD_REFERENCE_CONTEXT_CHARS).trim()
+  const contextAfter = contextAfterBody ? ` ${contextAfterBody}` : ''
+
+  return { contextBefore, coreText, contextAfter }
+}
+
+function getAddReferenceSnippetWikitext(context: DescriptionContext, pageSource?: string): string {
+  const suggestionData = context.suggestion.data as Record<string, unknown> | undefined
+  const candidateData = context.selectedCandidate?.data as Record<string, unknown> | undefined
+  const coreText =
+    context.selectedCandidate?.text?.trim() ||
+    (typeof suggestionData?.link_text === 'string' ? suggestionData.link_text.trim() : '') ||
+    ''
+  const contextBefore = readContextField(suggestionData, candidateData, 'context_before')
+  const contextAfter = readContextField(suggestionData, candidateData, 'context_after')
+
+  if (coreText && (contextBefore.trim() || contextAfter.trim())) {
+    const snippet = formatContextualSnippetWikitext(contextBefore, coreText, contextAfter)
+    if (hasSubstantiveSnippetContent(snippet)) return snippet
+  }
+
+  if (coreText) {
+    const paragraph =
+      pageSource ? findParagraphContainingExcerpt(pageSource, coreText) : coreText
+    const parts = extractAddReferenceSnippetParts(paragraph)
+    if (parts) {
+      const snippet = formatContextualSnippetWikitext(
+        parts.contextBefore,
+        parts.coreText,
+        parts.contextAfter,
+      )
+      if (hasSubstantiveSnippetContent(snippet)) return snippet
+    }
+  }
+
+  const candidateContext = context.selectedCandidate?.context?.trim()
+  if (candidateContext && hasSubstantiveSnippetContent(candidateContext)) {
+    const parts = extractAddReferenceSnippetParts(candidateContext)
+    if (parts) {
+      const snippet = formatContextualSnippetWikitext(
+        parts.contextBefore,
+        parts.coreText,
+        parts.contextAfter,
+      )
+      if (hasSubstantiveSnippetContent(snippet)) return snippet
+    }
+    return formatContextualSnippetWikitext('', candidateContext, '')
+  }
+
+  return ''
 }
 
 function extractWikilinkDisplayLabel(raw: string): string {
@@ -713,40 +869,48 @@ function getSnippetWikitext(
     return ''
   }
 
+  let snippet = ''
+
   if (suggestionType === 'requiredTemplateParam') {
-    return getRequiredTemplateParamSnippetWikitext(context)
+    snippet = getRequiredTemplateParamSnippetWikitext(context)
+  } else if (suggestionType === 'addReference') {
+    snippet = getAddReferenceSnippetWikitext(context, pageSource)
+  } else if (suggestionType === 'citationNeeded') {
+    snippet = getCitationNeededSnippetWikitext(context, pageSource)
+  } else {
+    const suggestionData = context.suggestion.data as Record<string, unknown> | undefined
+    const candidateData = context.selectedCandidate?.data as Record<string, unknown> | undefined
+    const coreText =
+      context.selectedCandidate?.text?.trim() ||
+      (typeof suggestionData?.link_text === 'string' ? suggestionData.link_text.trim() : '') ||
+      ''
+    const contextBefore = readContextField(suggestionData, candidateData, 'context_before')
+    const contextAfter = readContextField(suggestionData, candidateData, 'context_after')
+
+    if (coreText && (contextBefore || contextAfter)) {
+      const contextual = formatContextualSnippetWikitext(contextBefore, coreText, contextAfter)
+      if (contextual) snippet = contextual
+    }
+
+    if (!snippet && suggestionType === 'duplicateLink') {
+      const displayLabel =
+        (coreText ? extractWikilinkDisplayLabel(coreText) : '') ||
+        (typeof suggestionData?.target === 'string' ? suggestionData.target.trim() : '')
+      if (displayLabel) snippet = normalizeSnippetWikitext(boldWikitext(displayLabel))
+    }
+
+    if (!snippet) {
+      const candidateContext = context.selectedCandidate?.context?.trim()
+      if (candidateContext) snippet = normalizeSnippetWikitext(candidateContext)
+    }
+
+    if (!snippet) {
+      const fallback = coreText || context.suggestion.message?.trim() || 'Snippet unavailable.'
+      snippet = normalizeSnippetWikitext(fallback)
+    }
   }
 
-  if (suggestionType === 'citationNeeded') {
-    return getCitationNeededSnippetWikitext(context, pageSource)
-  }
-
-  const suggestionData = context.suggestion.data as Record<string, unknown> | undefined
-  const candidateData = context.selectedCandidate?.data as Record<string, unknown> | undefined
-  const coreText =
-    context.selectedCandidate?.text?.trim() ||
-    (typeof suggestionData?.link_text === 'string' ? suggestionData.link_text.trim() : '') ||
-    ''
-  const contextBefore = readContextField(suggestionData, candidateData, 'context_before')
-  const contextAfter = readContextField(suggestionData, candidateData, 'context_after')
-
-  if (coreText && (contextBefore || contextAfter)) {
-    const snippet = formatContextualSnippetWikitext(contextBefore, coreText, contextAfter)
-    if (snippet) return snippet
-  }
-
-  if (suggestionType === 'duplicateLink') {
-    const displayLabel =
-      (coreText ? extractWikilinkDisplayLabel(coreText) : '') ||
-      (typeof suggestionData?.target === 'string' ? suggestionData.target.trim() : '')
-    if (displayLabel) return normalizeSnippetWikitext(boldWikitext(displayLabel))
-  }
-
-  const candidateContext = context.selectedCandidate?.context?.trim()
-  if (candidateContext) return normalizeSnippetWikitext(candidateContext)
-
-  const fallback = coreText || context.suggestion.message?.trim() || 'Snippet unavailable.'
-  return normalizeSnippetWikitext(fallback)
+  return snippet
 }
 
 export function buildSectionTitleMap(source: string): Map<string, string> {
@@ -918,7 +1082,7 @@ export function editUrlForSuggestionCard(
 }
 
 function snippetCacheKey(pageTitle: string, snippet: string): string {
-  return `${normalizePageTitle(pageTitle)}\0${snippet}`
+  return `${normalizePageTitle(pageTitle)}\0snippet-html-v2\0${normalizeSnippetWikitext(snippet)}`
 }
 
 export function isTransformedSnippetHtml(card: SuggestionCardData): boolean {
@@ -939,7 +1103,7 @@ function snippetPlainText(rawSnippetWikitext: string): string {
 }
 
 function isLabelOnlySnippet(rawSnippetWikitext: string): boolean {
-  const trimmed = normalizeSnippetWikitext(rawSnippetWikitext)
+  const trimmed = stripSnippetDecorators(normalizeSnippetWikitext(rawSnippetWikitext))
   if (!trimmed.length) return true
   if (trimmed.includes('{{')) return false
   if (trimmed.startsWith('…') || trimmed.endsWith('…')) return false
@@ -1008,8 +1172,9 @@ async function renderSnippetHtml(
     const strippedSnippet = stripLinksFromWikitext(normalizedSnippet)
     const html = await wiki.transformWikitextToHtml(strippedSnippet, pageTitle)
     const strippedHtml = stripLinksFromSnippetHtml(html)
-    snippetHtmlCache[key] = strippedHtml
-    return strippedHtml
+    const quotedHtml = wrapSnippetHtmlInQuotes(strippedHtml)
+    snippetHtmlCache[key] = quotedHtml
+    return quotedHtml
   } catch {
     return normalizedSnippet
   }

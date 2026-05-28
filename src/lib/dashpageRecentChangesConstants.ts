@@ -27,4 +27,4 @@ export const DASHPAGE_RC_WILDCARD_MIN_WINDOW_MS = 60 * 60 * 1000
 export const DASHPAGE_RC_FALLBACK_PAGE = 'Wet Leg'
 
 export const DASHPAGE_RC_API_USER_AGENT =
-  'ProtoWiki/0.1 (https://github.com/wikimedia-research/protowiki) dashpage-recent-changes'
+  'ProtoWiki/0.1 (https://github.com/wikimedia/protowiki) dashpage-recent-changes'

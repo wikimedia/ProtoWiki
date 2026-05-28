@@ -151,6 +151,8 @@ export interface SuggestionFeedItem {
   showSnippet: boolean
   snippetHtml?: string
   editHref: string
+  /** When "read", links open the article for reading rather than editing. */
+  mode?: 'edit' | 'read'
 }
 
 export interface SuggestionFeedModuleBind {

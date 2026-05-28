@@ -1,7 +1,6 @@
 import { wikiHostFromLang } from '@/lib/config'
 
-const API_USER_AGENT =
-  'ProtoWiki/0.1 (https://github.com/wikimedia-research/protowiki) morelike-search'
+const API_USER_AGENT = 'ProtoWiki/0.1 (https://github.com/wikimedia/protowiki) morelike-search'
 
 const THUMB_SIZE = 96
 const MAX_TITLES_PER_REQUEST = 50

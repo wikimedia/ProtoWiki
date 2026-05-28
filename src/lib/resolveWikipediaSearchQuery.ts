@@ -2,11 +2,10 @@ import { FUZZY_SEED_SEARCH, buildMorelikeQuery } from '@/lib/cirrusSearchTuning'
 import { wikiHostFromLang } from '@/lib/config'
 import { stripSearchSnippetHtml } from '@/lib/fetchMorelikeSearch'
 
-const API_USER_AGENT =
-  'ProtoWiki/0.1 (https://github.com/wikimedia-research/protowiki) morelike-search'
+const API_USER_AGENT = 'ProtoWiki/0.1 (https://github.com/wikimedia/protowiki) morelike-search'
 
 /** Pool size for picking topical seeds from a free-text query. */
-const SEARCH_FETCH_LIMIT = 10
+const SEARCH_FETCH_LIMIT = 7
 const MAX_SEEDS = 1
 
 const STOPWORDS = new Set(['a', 'an', 'and', 'for', 'in', 'of', 'on', 'or', 'the', 'to'])
@@ -54,6 +53,8 @@ export interface ResolveWikipediaSearchQueryOptions {
   signal?: AbortSignal
   /** Wikipedia language code (default `en`). */
   lang?: string
+  /** How many article titles to return from full-text search (default `1`). */
+  maxSeeds?: number
 }
 
 function assertNotAborted(signal?: AbortSignal): void {
@@ -208,7 +209,11 @@ function shouldRetryWithSuggestion(
   return seedRelevanceScore(seeds, words) < SUGGESTION_RELEVANCE_THRESHOLD
 }
 
-function pickSearchSeeds(hits: ResolvedSeedPage[], query: string): ResolvedSeedPage[] {
+function pickSearchSeeds(
+  hits: ResolvedSeedPage[],
+  query: string,
+  maxSeeds = MAX_SEEDS,
+): ResolvedSeedPage[] {
   if (!hits.length) return []
 
   const words = contentWords(query)
@@ -216,17 +221,14 @@ function pickSearchSeeds(hits: ResolvedSeedPage[], query: string): ResolvedSeedP
     words.length >= 2 ? hits.filter((hit) => !isLiteralPhraseTitle(hit.title, words)) : hits
 
   const pool = topical.length ? topical : hits
-  return pool.slice(0, MAX_SEEDS)
+  return pool.slice(0, Math.max(1, maxSeeds))
 }
 
 function buildSeedSearchQuery(query: string, usePhrase = true): string {
   const unquoted = unwrapQuotes(query)
   const alreadyQuoted = /^["']/.test(query.trim())
   const wantsPhrase =
-    usePhrase &&
-    !alreadyQuoted &&
-    unquoted.includes(' ') &&
-    /^(the|a|an)\s+/i.test(unquoted)
+    usePhrase && !alreadyQuoted && unquoted.includes(' ') && /^(the|a|an)\s+/i.test(unquoted)
   const body = wantsPhrase ? `"${unquoted.replace(/"/g, '\\"')}"` : unquoted
   return FUZZY_SEED_SEARCH.prefixQuery ? `~${body}` : body
 }
@@ -260,6 +262,7 @@ async function fetchSeedSearchHits(
   seedPickQuery: string,
   wikiHost: string,
   signal?: AbortSignal,
+  maxSeeds = MAX_SEEDS,
 ): Promise<SeedSearchResponse> {
   assertNotAborted(signal)
 
@@ -270,7 +273,7 @@ async function fetchSeedSearchHits(
       srsearch,
       srwhat: FUZZY_SEED_SEARCH.srwhat,
       srnamespace: FUZZY_SEED_SEARCH.srnamespace,
-      srlimit: String(SEARCH_FETCH_LIMIT),
+      srlimit: String(Math.max(SEARCH_FETCH_LIMIT, maxSeeds)),
       srprop: FUZZY_SEED_SEARCH.srprop,
       srinfo: 'suggestion|totalhits',
       srqiprofile: FUZZY_SEED_SEARCH.srqiprofile,
@@ -330,7 +333,7 @@ async function fetchSeedSearchHits(
       : undefined
 
   return {
-    hits: pickSearchSeeds(rawHits, seedPickQuery),
+    hits: pickSearchSeeds(rawHits, seedPickQuery, maxSeeds),
     rawHits,
     suggestion: suggestion?.length ? suggestion : undefined,
     rawHitCount: apiHits.length,
@@ -404,6 +407,7 @@ async function resolveWithSuggestion(
   wikiHost: string,
   steps: ResolveStep[],
   signal?: AbortSignal,
+  maxSeeds = MAX_SEEDS,
 ): Promise<{ pages: ResolvedSeedPage[]; correctedQuery: string }> {
   const correctedQuery = displayCorrectedQuery(suggestion)
 
@@ -433,7 +437,7 @@ async function resolveWithSuggestion(
   })
 
   const retrySearch = normalizeSearchSuggestion(suggestion)
-  const retry = await fetchSeedSearchHits(retrySearch, correctedQuery, wikiHost, signal)
+  const retry = await fetchSeedSearchHits(retrySearch, correctedQuery, wikiHost, signal, maxSeeds)
 
   const seedTitles = retry.hits.map((hit) => hit.title).join(', ') || 'none'
   steps.push({
@@ -453,9 +457,10 @@ async function resolveByFullTextSearch(
   wikiHost: string,
   steps: ResolveStep[],
   signal?: AbortSignal,
+  maxSeeds = MAX_SEEDS,
 ): Promise<{ pages: ResolvedSeedPage[]; correctedQuery?: string }> {
   let srsearch = buildSeedSearchQuery(query)
-  let searchResult = await fetchSeedSearchHits(srsearch, query, wikiHost, signal)
+  let searchResult = await fetchSeedSearchHits(srsearch, query, wikiHost, signal, maxSeeds)
 
   let usedPhraseFallback = false
   const fallbackSrsearch = buildFallbackSeedSearchQuery(query, srsearch)
@@ -469,7 +474,7 @@ async function resolveByFullTextSearch(
 
     usedPhraseFallback = true
     srsearch = fallbackSrsearch
-    searchResult = await fetchSeedSearchHits(srsearch, query, wikiHost, signal)
+    searchResult = await fetchSeedSearchHits(srsearch, query, wikiHost, signal, maxSeeds)
   }
 
   let { hits, suggestion, rawHitCount, totalHits, rawHits } = searchResult
@@ -492,11 +497,8 @@ async function resolveByFullTextSearch(
 
   let correctedQuery: string | undefined
 
-  if (
-    suggestion &&
-    shouldRetryWithSuggestion(hits, query, suggestion, { totalHits, rawHits })
-  ) {
-    const resolved = await resolveWithSuggestion(suggestion, wikiHost, steps, signal)
+  if (suggestion && shouldRetryWithSuggestion(hits, query, suggestion, { totalHits, rawHits })) {
+    const resolved = await resolveWithSuggestion(suggestion, wikiHost, steps, signal, maxSeeds)
     if (resolved.pages.length) {
       hits = resolved.pages
       correctedQuery = resolved.correctedQuery
@@ -517,6 +519,25 @@ async function resolveByFullTextSearch(
 }
 
 /**
+ * Return a canonical article title when the query matches a real page (including
+ * redirects and title variants). Returns **`null`** when there is no title hit —
+ * unlike {@link resolveWikipediaSearchQuery}, this does not fall back to search.
+ */
+export async function resolveWikipediaPageTitleIfExact(
+  rawQuery: string,
+  options: ResolveWikipediaSearchQueryOptions = {},
+): Promise<string | null> {
+  const query = rawQuery.trim()
+  if (!query.length) return null
+
+  const wikiHost = wikiHostFromLang(options.lang ?? 'en')
+  assertNotAborted(options.signal)
+
+  const titleLookup = await resolveByExactTitle(query, wikiHost, options.signal)
+  return titleLookup.page?.title ?? null
+}
+
+/**
  * Map free text to 1–3 article titles for `morelike:`.
  *
  * Cirrus only accepts real page names in `morelike:` — not arbitrary phrases — so
@@ -533,6 +554,8 @@ export async function resolveWikipediaSearchQuery(
 
   const wikiHost = wikiHostFromLang(options.lang ?? 'en')
   assertNotAborted(options.signal)
+
+  const maxSeeds = options.maxSeeds ?? MAX_SEEDS
 
   const steps: ResolveStep[] = []
   const titleLookup = await resolveByExactTitle(query, wikiHost, options.signal)
@@ -559,6 +582,7 @@ export async function resolveWikipediaSearchQuery(
     wikiHost,
     steps,
     options.signal,
+    maxSeeds,
   )
   if (!searchHits.length) {
     throw new ResolveWikipediaSearchQueryError(

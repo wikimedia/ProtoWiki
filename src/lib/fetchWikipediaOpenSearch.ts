@@ -1,7 +1,6 @@
 import { wikiHostFromLang } from '@/lib/config'
 
-const API_USER_AGENT =
-  'ProtoWiki/0.1 (https://github.com/wikimedia-research/protowiki) opensearch'
+const API_USER_AGENT = 'ProtoWiki/0.1 (https://github.com/wikimedia/protowiki) opensearch'
 
 export interface WikipediaOpenSearchItem {
   value: string

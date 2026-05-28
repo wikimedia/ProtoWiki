@@ -40,7 +40,7 @@ export {
   changeSizeForSuggestionType,
   type SuggestionChangeSize,
 } from './veSuggestionDifficulty'
-export { stripLinksFromSnippetHtml, stripLinksFromWikitext } from './snippetLinkStrip'
+export { stripLinksFromSnippetHtml, stripLinksFromWikitext, wrapSnippetHtmlInQuotes } from './snippetLinkStrip'
 export {
   cardsFromCachedRun,
   cardsFromMethodResults,

@@ -2,7 +2,7 @@ import { wikiHostFromLang } from '@/lib/config'
 import { stripSearchSnippetHtml } from '@/lib/fetchMorelikeSearch'
 
 const API_USER_AGENT =
-  'ProtoWiki/0.1 (https://github.com/wikimedia-research/protowiki) cirrus-search-playground'
+  'ProtoWiki/0.1 (https://github.com/wikimedia/protowiki) cirrus-search-playground'
 
 export class FetchCirrusSearchError extends Error {
   constructor(
@@ -57,10 +57,7 @@ function assertNotAborted(signal?: AbortSignal): void {
   }
 }
 
-export function buildCirrusSearchApiUrl(
-  lang: string,
-  params: FetchCirrusSearchParams,
-): string {
+export function buildCirrusSearchApiUrl(lang: string, params: FetchCirrusSearchParams): string {
   const wikiHost = wikiHostFromLang(lang)
   const searchParams: Record<string, string> = {
     action: 'query',
@@ -139,10 +136,7 @@ export async function fetchCirrusSearch(
   }
 
   if (data.error) {
-    throw new FetchCirrusSearchError(
-      data.error.info ?? data.error.code ?? 'API error',
-      'api',
-    )
+    throw new FetchCirrusSearchError(data.error.info ?? data.error.code ?? 'API error', 'api')
   }
 
   const results: CirrusSearchHit[] = []

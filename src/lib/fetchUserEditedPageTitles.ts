@@ -1,7 +1,7 @@
 import { normalizeWikiUsername, wikiHostFromLang } from '@/lib/config'
 
 const API_USER_AGENT =
-  'ProtoWiki/0.1 (https://github.com/wikimedia-research/protowiki) dashpage-suggestion-mode'
+  'ProtoWiki/0.1 (https://github.com/wikimedia/protowiki) dashpage-suggestion-mode'
 
 const CONTRIBS_PER_PAGE = 500
 const MAX_CONTRIB_PAGES = 5
@@ -10,12 +10,7 @@ export const MAX_SEED_PAGES = 20
 export class FetchUserEditedPageTitlesError extends Error {
   constructor(
     message: string,
-    public readonly code:
-      | 'missing_username'
-      | 'user_not_found'
-      | 'no_edits'
-      | 'aborted'
-      | 'http',
+    public readonly code: 'missing_username' | 'user_not_found' | 'no_edits' | 'aborted' | 'http',
   ) {
     super(message)
     this.name = 'FetchUserEditedPageTitlesError'
@@ -74,14 +69,15 @@ export async function fetchUserEditedPageTitles(
 ): Promise<string[]> {
   const normalized = normalizeWikiUsername(username)
   if (!normalized.length) {
-    throw new FetchUserEditedPageTitlesError('Enter a Wikipedia username in the user menu', 'missing_username')
+    throw new FetchUserEditedPageTitlesError(
+      'Enter a Wikipedia username in the user menu',
+      'missing_username',
+    )
   }
 
   const wikiHost = wikiHostFromOptions(options)
   const limit =
-    options.limit !== undefined
-      ? Math.max(1, Math.min(options.limit, MAX_SEED_PAGES))
-      : undefined
+    options.limit !== undefined ? Math.max(1, Math.min(options.limit, MAX_SEED_PAGES)) : undefined
 
   assertNotAborted(options.signal)
 
@@ -259,8 +255,9 @@ export async function fetchPagePreviewMetadataBatch(
 
         out[page.title] = preview
 
-        const requested =
-          requestedByNormalized.get(normalizePreviewLookupTitle(page.title).toLowerCase())
+        const requested = requestedByNormalized.get(
+          normalizePreviewLookupTitle(page.title).toLowerCase(),
+        )
         if (requested) {
           out[requested] = preview
         }
@@ -270,7 +267,7 @@ export async function fetchPagePreviewMetadataBatch(
     }
   }
 
-  const needsThumbnail = titles.filter((title) => !(out[title]?.thumbnailSrc?.length))
+  const needsThumbnail = titles.filter((title) => !out[title]?.thumbnailSrc?.length)
   if (needsThumbnail.length) {
     await Promise.all(
       needsThumbnail.map(async (title) => {

@@ -47,7 +47,7 @@ export interface RunVeSuggestionsPipelineOptions {
 import { wikiBaseUrlFromLang } from '@/lib/config'
 
 const DEFAULT_API_USER_AGENT =
-  'ProtoWiki/0.1 (https://github.com/wikimedia-research/protowiki) ve-suggestions'
+  'ProtoWiki/0.1 (https://github.com/wikimedia/protowiki) ve-suggestions'
 
 export function createVeSuggestionsWiki(lang = 'en', apiUserAgentSuffix?: string): FakeWiki {
   const suffix = apiUserAgentSuffix?.trim()
@@ -56,10 +56,7 @@ export function createVeSuggestionsWiki(lang = 'en', apiUserAgentSuffix?: string
   })
 }
 
-function wrapGetPageSource(
-  wiki: FakeWiki,
-  prefetchedByTitle: Map<string, string>,
-): () => void {
+function wrapGetPageSource(wiki: FakeWiki, prefetchedByTitle: Map<string, string>): () => void {
   const original = wiki.getPageSource.bind(wiki)
 
   wiki.getPageSource = async (pageName: string): Promise<string> => {
@@ -136,7 +133,13 @@ export function cardsFromCachedRun(
         .filter(isEligibleSuggestionCard),
     )
   }
-  return cardsFromMethodResults(wiki, run.pageTitle, run.methodResults, snippetHtmlByKey, run.pageSource)
+  return cardsFromMethodResults(
+    wiki,
+    run.pageTitle,
+    run.methodResults,
+    snippetHtmlByKey,
+    run.pageSource,
+  )
 }
 
 export async function runVeSuggestionsPipeline(
@@ -213,9 +216,9 @@ export async function runVeSuggestionsPipeline(
     const maxSuggestions = options.maxSuggestions
     const excludedTypes = new Set(options.excludeSuggestionTypes ?? [])
     const methods =
-      maxSuggestions != null && maxSuggestions > 0 ?
-        [...VE_METHODS].sort(() => Math.random() - 0.5)
-      : VE_METHODS
+      maxSuggestions != null && maxSuggestions > 0
+        ? [...VE_METHODS].sort(() => Math.random() - 0.5)
+        : VE_METHODS
 
     let completed = 0
     let abortedForRateLimit = false
@@ -281,7 +284,9 @@ export async function runVeSuggestionsPipeline(
       })
     }
 
-    const cards = sortCards(hydrateCardsFromSnippetCache(run.cards ?? [], trimmed, snippetHtmlCache))
+    const cards = sortCards(
+      hydrateCardsFromSnippetCache(run.cards ?? [], trimmed, snippetHtmlCache),
+    )
 
     return {
       pageTitle: trimmed,

@@ -4,14 +4,15 @@
   list-style: none;
   margin: 0;
   --review-changes-gap: 4px;
-  --review-changes-card-gap: 0;
-  padding: 0 var(--review-changes-gap) var(--review-changes-gap);
+  --review-changes-card-gap: var(--spacing-25, 4px);
+  padding: var(--review-changes-gap);
   flex: 1;
   min-height: 0;
   background-color: var(--background-color-neutral);
   gap: var(--review-changes-card-gap);
   display: flex;
   flex-direction: column;
+  align-content: flex-start;
   border-top: none;
 }
 

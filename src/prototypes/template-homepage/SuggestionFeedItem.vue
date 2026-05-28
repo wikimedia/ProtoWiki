@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { CdxIcon } from '@wikimedia/codex'
+import { cdxIconImage } from '@wikimedia/codex-icons'
 
 import { CHANGE_SIZE_COLORS } from '@/lib/ve-suggestions'
 
@@ -44,15 +46,15 @@ function onPreviewActivate(event: Event): void {
       :rel="preview ? undefined : 'noopener noreferrer'"
       :role="preview ? 'link' : undefined"
       :tabindex="preview ? 0 : undefined"
-      :aria-label="`Edit ${item.pageTitle}: ${item.taskHeading}`"
+      :aria-label="`${item.mode === 'read' ? 'Read' : 'Edit'} ${item.pageTitle}: ${item.taskHeading}`"
       @click="onPreviewActivate"
       @keydown.enter="onPreviewActivate"
       @keydown.space.prevent="onPreviewActivate"
     >
       <div class="review-changes__item-header">
         <span class="review-changes__page-cell">
-          <div v-if="item.thumbnailSrc" class="suggestion-feed__thumb-row">
-            <div class="suggestion-feed__page-thumb">
+          <div class="suggestion-feed__thumb-row">
+            <div v-if="item.thumbnailSrc" class="suggestion-feed__page-thumb">
               <img
                 class="suggestion-feed__page-thumb-image"
                 :src="item.thumbnailSrc"
@@ -61,6 +63,13 @@ function onPreviewActivate(event: Event): void {
                 height="70"
                 loading="lazy"
               />
+            </div>
+            <div
+              v-else
+              class="suggestion-feed__page-thumb suggestion-feed__page-thumb--placeholder"
+              aria-hidden="true"
+            >
+              <CdxIcon :icon="cdxIconImage" size="medium" />
             </div>
             <div class="suggestion-feed__thumb-row-content">
               <p
@@ -94,38 +103,6 @@ function onPreviewActivate(event: Event): void {
               </p>
             </div>
           </div>
-
-          <template v-else>
-            <p
-              v-if="item.taskHeading"
-              class="suggestion-feed__task-heading"
-              :style="{ color: taskTypeColor }"
-            >
-              {{ item.taskHeading }}
-            </p>
-
-            <span
-              class="review-changes__page-cell-heading review-changes__page-cell-heading--separate suggestion-feed__page-heading"
-            >
-              <span class="review-changes__page suggestion-feed__page">{{ item.pageTitle }}</span>
-              <span
-                v-if="item.articleShortDescription"
-                class="review-changes__short-desc review-changes__short-desc--no-separator"
-              >
-                {{ item.articleShortDescription }}
-              </span>
-            </span>
-
-            <p v-if="showInstruction" class="suggestion-feed__instruction">
-              <template v-if="item.taskDescriptionParts?.length">
-                <template v-for="(part, index) in item.taskDescriptionParts" :key="index">
-                  <strong v-if="part.kind === 'link'">{{ part.label }}</strong>
-                  <template v-else>{{ part.text }}</template>
-                </template>
-              </template>
-              <template v-else>{{ item.taskDescription }}</template>
-            </p>
-          </template>
 
           <div v-if="showSnippet" class="suggestion-feed__snippet" v-html="item.snippetHtml" />
         </span>

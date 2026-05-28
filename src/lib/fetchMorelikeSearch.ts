@@ -1,8 +1,7 @@
 import { FUZZY_MORELIKE_CIRRUS_MLT, buildMorelikeQuery } from '@/lib/cirrusSearchTuning'
 import { wikiHostFromLang } from '@/lib/config'
 
-const API_USER_AGENT =
-  'ProtoWiki/0.1 (https://github.com/wikimedia-research/protowiki) morelike-search'
+const API_USER_AGENT = 'ProtoWiki/0.1 (https://github.com/wikimedia/protowiki) morelike-search'
 
 const DEFAULT_LIMIT = 20
 

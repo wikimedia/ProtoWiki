@@ -1,7 +1,7 @@
 import { wikiHostFromLang } from '@/lib/config'
 
 const API_USER_AGENT =
-  'ProtoWiki/0.1 (https://github.com/wikimedia-research/protowiki) dashpage-suggestion-mode'
+  'ProtoWiki/0.1 (https://github.com/wikimedia/protowiki) dashpage-suggestion-mode'
 
 /** Max Action API search pages to walk when filling a morelike batch. */
 const MAX_SEARCH_PAGES = 5

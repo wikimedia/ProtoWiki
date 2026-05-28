@@ -72,6 +72,14 @@
   object-position: top;
 }
 
+.suggestion-feed__page-thumb--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--background-color-neutral, #eaecf0);
+  color: var(--color-inverted, #fff);
+}
+
 .suggestion-feed-module__feed {
   list-style: none;
   margin: var(--spacing-100, 16px) -1rem 0;
