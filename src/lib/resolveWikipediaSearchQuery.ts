@@ -6,7 +6,7 @@ const API_USER_AGENT =
 
 const SEARCH_FETCH_LIMIT = 5
 const MAX_SEEDS = 3
-const BROAD_QUERY_MIN_WORDS = 3
+const BROAD_QUERY_MIN_WORDS = Infinity
 
 export type ResolveStrategy = 'title' | 'search'
 
@@ -65,10 +65,7 @@ function isBroadQuery(query: string): boolean {
   return wordCount(query) >= BROAD_QUERY_MIN_WORDS
 }
 
-function pickSearchSeeds(
-  hits: ResolvedSeedPage[],
-  query: string,
-): ResolvedSeedPage[] {
+function pickSearchSeeds(hits: ResolvedSeedPage[], query: string): ResolvedSeedPage[] {
   if (!hits.length) return []
 
   const picked: ResolvedSeedPage[] = [hits[0]]

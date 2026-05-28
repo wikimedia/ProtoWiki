@@ -40,7 +40,9 @@ const {
   onShowMore,
 } = useMorelikeSearch()
 
-function resultThumbnail(title: string): { url: string; width: number; height: number } | undefined {
+function resultThumbnail(
+  title: string,
+): { url: string; width: number; height: number } | undefined {
   const url = thumbnailsByTitle.value[title]
   return url ? { url, width: 70, height: 70 } : undefined
 }
@@ -61,18 +63,8 @@ function resultThumbnail(title: string): { url: string; width: number; height: n
           />
         </CdxField>
 
-        <CdxButton
-          type="submit"
-          action="progressive"
-          :disabled="!canSubmit"
-        >
-          {{
-            loadingResolve
-              ? 'Finding pages…'
-              : loading
-                ? 'Finding similar pages…'
-                : 'Search'
-          }}
+        <CdxButton type="submit" action="progressive" :disabled="!canSubmit">
+          {{ loadingResolve ? 'Finding pages…' : loading ? 'Finding similar pages…' : 'Search' }}
         </CdxButton>
 
         <CdxProgressIndicator
@@ -115,9 +107,7 @@ function resultThumbnail(title: string): { url: string; width: number; height: n
     >
       <h2 id="morelike-search-similar-heading">Similar pages</h2>
 
-      <CdxMessage v-if="resultsEmpty" type="notice">
-        No similar pages were found.
-      </CdxMessage>
+      <CdxMessage v-if="resultsEmpty" type="notice"> No similar pages were found. </CdxMessage>
 
       <div v-else class="morelike-search__feed">
         <CdxCard
