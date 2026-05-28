@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import { CdxPopover } from '@wikimedia/codex'
+
+import { notifyPrototypeUserSettingsPopoverClosed } from '@/composables/usePrototypeUserSettingsPopoverClose'
 
 import PrototypeUserSettingsPanel from './PrototypeUserSettingsPanel.vue'
 
@@ -11,6 +13,12 @@ const anchor = ref<HTMLElement | null>(null)
 function toggle(): void {
   open.value = !open.value
 }
+
+watch(open, (isOpen, wasOpen) => {
+  if (wasOpen && !isOpen) {
+    notifyPrototypeUserSettingsPopoverClosed()
+  }
+})
 </script>
 
 <template>

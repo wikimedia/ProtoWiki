@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { CdxTypeaheadSearch, SearchResult } from '@wikimedia/codex'
+import { CdxTypeaheadSearch, type SearchResult } from '@wikimedia/codex'
 
+import {
+  FetchWikipediaOpenSearchError,
+  fetchWikipediaOpenSearch,
+} from '@/lib/fetchWikipediaOpenSearch'
 import type { Skin, Theme } from '@/lib/theming'
 
 interface Props {
@@ -43,6 +47,8 @@ const lastQuery = ref('')
 
 const formAction = computed(() => `https://${props.host}/w/index.php`)
 
+const lang = computed(() => props.host.split('.')[0] ?? 'en')
+
 let abortController: AbortController | null = null
 
 async function onInput(value: string) {
@@ -59,29 +65,20 @@ async function onInput(value: string) {
 
   isSearching.value = true
   try {
-    const params = new URLSearchParams({
-      action: 'opensearch',
-      search: trimmed,
-      limit: String(props.limit),
-      namespace: '0',
-      format: 'json',
-      origin: '*',
+    const items = await fetchWikipediaOpenSearch(trimmed, {
+      lang: lang.value,
+      limit: props.limit,
+      signal: abortController.signal,
     })
-    const url = `https://${props.host}/w/api.php?${params.toString()}`
-    const response = await fetch(url, { signal: abortController.signal })
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    // opensearch returns: [query, titles[], descriptions[], urls[]]
-    const data = (await response.json()) as [string, string[], string[], string[]]
     if (lastQuery.value !== trimmed) return
-    const [, titles, descriptions, urls] = data
-    suggestions.value = titles.map((title, i) => ({
-      value: title,
-      label: title,
-      description: descriptions[i] || undefined,
-      url: urls[i],
-    }))
+    suggestions.value = items
   } catch (err) {
-    if ((err as Error).name === 'AbortError') return
+    if (
+      (err as Error).name === 'AbortError' ||
+      (err instanceof FetchWikipediaOpenSearchError && err.code === 'aborted')
+    ) {
+      return
+    }
     suggestions.value = []
   } finally {
     isSearching.value = false

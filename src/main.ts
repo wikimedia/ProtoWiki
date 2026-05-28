@@ -14,6 +14,8 @@ import './styles/dark.css'
 import { syncGithubPagesPreviewRoute } from './lib/githubPagesPreviewRoute'
 import { initTheming } from './lib/theming'
 
+import '@/composables/useConfig'
+
 initTheming()
 
 const router = createRouter({

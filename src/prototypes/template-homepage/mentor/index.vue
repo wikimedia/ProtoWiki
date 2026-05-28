@@ -2,7 +2,7 @@
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconEllipsis } from '@wikimedia/codex-icons'
 
-import ChromeWrapper from '@/components/ChromeWrapper.vue'
+import DashpageChromeWrapper from '../DashpageChromeWrapper.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 import MentorModule from '../MentorModule.vue'
 import MobileSubpageHeader from '../MobileSubpageHeader.vue'
@@ -10,16 +10,16 @@ import { HOMEPAGE, MENTOR } from '../dashpage-fixtures'
 
 definePage({
   meta: {
-    title: 'Template: Homepage — Mentor',
+    title: 'Dashpage — Mentor',
     description: 'Full-page mobile drill-down for the Your mentor homepage module.',
   },
 })
 </script>
 
 <template>
-  <ChromeWrapper :last-edited-notice="false">
+  <DashpageChromeWrapper :last-edited-notice="false">
     <SpecialPageWrapper :title="null" class="mentor-page">
-      <MobileSubpageHeader title="Your mentor" :back-to="HOMEPAGE" back-label="Back to homepage">
+      <MobileSubpageHeader title="Your mentor" :back-to="HOMEPAGE" back-label="Back to dashpage">
         <template #actions>
           <CdxButton weight="quiet" :icon-only="true" aria-label="More options">
             <CdxIcon :icon="cdxIconEllipsis" />
@@ -37,7 +37,7 @@ definePage({
         :conversations-href="MENTOR.conversationsHref"
       />
     </SpecialPageWrapper>
-  </ChromeWrapper>
+  </DashpageChromeWrapper>
 </template>
 
 <style scoped>

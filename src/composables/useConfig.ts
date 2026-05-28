@@ -3,6 +3,7 @@ import { computed, readonly, ref, watch, type ComputedRef, type DeepReadonly, ty
 import {
   configUserDisplayName,
   configUserPageTitle,
+  langForUser,
   loadConfig,
   resetUserPageListField,
   saveConfig,
@@ -12,6 +13,7 @@ import {
   type PageListKey,
   type UserPageLists,
 } from '@/lib/config'
+import { applyThemePreference } from '@/lib/theming'
 
 const config = ref<Config>(loadConfig())
 
@@ -23,11 +25,20 @@ watch(
   { deep: true },
 )
 
+watch(
+  () => config.value.theme,
+  (preference) => {
+    applyThemePreference(preference)
+  },
+)
+
 export function useConfig(): {
   config: DeepReadonly<Ref<Config>>
   theme: Ref<ConfigTheme>
   user: Ref<ConfigUser>
   realUsername: Ref<string>
+  lang: Ref<string>
+  realLang: ComputedRef<string>
   displayName: ComputedRef<string>
   pageTitle: ComputedRef<string>
   currentUserPageLists: ComputedRef<UserPageLists>
@@ -54,6 +65,25 @@ export function useConfig(): {
       config.value = { ...config.value, realUsername: value }
     },
   })
+
+  const lang = computed({
+    get: () => config.value.userPageLists[user.value].lang,
+    set: (value: string) => {
+      const activeUser = user.value
+      config.value = {
+        ...config.value,
+        userPageLists: {
+          ...config.value.userPageLists,
+          [activeUser]: {
+            ...config.value.userPageLists[activeUser],
+            lang: value,
+          },
+        },
+      }
+    },
+  })
+
+  const realLang = computed(() => langForUser('real', config.value.userPageLists))
 
   const displayName = computed(() =>
     configUserDisplayName(config.value.user, config.value.realUsername),
@@ -99,6 +129,8 @@ export function useConfig(): {
     theme,
     user,
     realUsername,
+    lang,
+    realLang,
     displayName,
     pageTitle,
     currentUserPageLists,

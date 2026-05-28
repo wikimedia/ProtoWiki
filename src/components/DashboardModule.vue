@@ -21,6 +21,11 @@ interface Props {
   cta?: string | null
   /** Light blue informational tint (**`--background-color-progressive-subtle`**). */
   subtle?: boolean
+  /**
+   * Static mobile card (no **`RouterLink`**) — stacked title + body like a link card,
+   * but tappable controls in the body/header stay interactive.
+   */
+  mobileCard?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -28,6 +33,7 @@ const props = withDefaults(defineProps<Props>(), {
   to: undefined,
   cta: '',
   subtle: false,
+  mobileCard: false,
 })
 
 /** Resolves **`to`** for **`RouterLink`**; plain **string** targets are trimmed (whitespace-only → no link card). */
@@ -74,6 +80,22 @@ function trimmedTitle(): string {
   </RouterLink>
 
   <section
+    v-else-if="props.mobileCard"
+    class="mobile-card dashboard-module dashboard-slot"
+    :class="{ 'dashboard-module--subtle': props.subtle }"
+  >
+    <div v-if="trimmedTitle()" class="mobile-card__header">
+      <span class="mobile-card__title">{{ trimmedTitle() }}</span>
+      <div v-if="$slots['header-actions']" class="mobile-card__header-actions">
+        <slot name="header-actions" />
+      </div>
+    </div>
+    <div class="mobile-card__content mobile-card__content--preview dashboard-module__body">
+      <slot />
+    </div>
+  </section>
+
+  <section
     v-else
     class="sidebar-card dashboard-module dashboard-slot"
     :class="{ 'dashboard-module--subtle': props.subtle }"
@@ -98,12 +120,17 @@ function trimmedTitle(): string {
   padding: 1rem;
 }
 
-.mobile-card--link {
+.mobile-card--link,
+.mobile-card:not(.mobile-card--link) {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.mobile-card--link {
   text-decoration: none;
   color: inherit;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mobile-card--link:visited,
@@ -113,11 +140,16 @@ function trimmedTitle(): string {
 }
 
 .mobile-card--link:hover,
-.mobile-card--link:focus {
+.mobile-card--link:focus,
+.mobile-card--link:active {
   outline: none;
-  background-color: var(--background-color-interactive, #eaecf0);
   text-decoration: none;
   color: inherit;
+}
+
+.mobile-card--link:focus-visible {
+  outline: 2px solid var(--color-progressive, #36c);
+  outline-offset: 2px;
 }
 
 .dashboard-module--subtle.mobile-card,
@@ -125,9 +157,14 @@ function trimmedTitle(): string {
   background-color: var(--background-color-progressive-subtle, #e8eeff);
 }
 
-.dashboard-module--subtle.mobile-card--link:hover,
-.dashboard-module--subtle.mobile-card--link:focus {
-  background-color: var(--background-color-progressive-subtle--hover, #d9e2ff);
+@media (hover: hover) and (pointer: fine) {
+  .mobile-card--link:hover {
+    background-color: var(--background-color-interactive, #eaecf0);
+  }
+
+  .dashboard-module--subtle.mobile-card--link:hover {
+    background-color: var(--background-color-progressive-subtle--hover, #d9e2ff);
+  }
 }
 
 .mobile-card__header {
@@ -135,6 +172,20 @@ function trimmedTitle(): string {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+}
+
+.mobile-card__header-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.mobile-card__header-actions .cdx-button.cdx-button--icon-only {
+  min-width: var(--min-size-interactive-pointer, 32px);
+  min-height: var(--min-size-interactive-pointer, 32px);
+  width: var(--min-size-interactive-pointer, 32px);
+  height: var(--min-size-interactive-pointer, 32px);
+  padding: 0;
 }
 
 .mobile-card__title {
@@ -210,7 +261,7 @@ function trimmedTitle(): string {
   display: block;
   align-self: stretch;
   width: 100%;
-  margin-top: 0.25rem;
+  margin-top: var(--spacing-75, 12px);
   padding: 0.25rem 1rem;
   background-color: var(--background-color-progressive, #36c);
   color: var(--color-inverted, #fff);

@@ -78,14 +78,17 @@ const hasContent = computed(
   () =>
     !!props.viewCount ||
     (props.totalEdits ?? 0) > 0 ||
-    props.recentActivityData.some((v) => v > 0),
+    props.recentActivityData.some((v) => v > 0) ||
+    !!props.lastEdited ||
+    !!props.longestStreak,
 )
+const showLoadPrompt = computed(() => props.loadPending && !hasContent.value)
 const isMobilePreview = computed(() => !props.standalone && props.to != null)
 /** Desktop sidebar only — title row via DashboardModule `#header-actions`. */
 const showRefreshInTitle = computed(
   () =>
     props.showRefresh &&
-    !props.loadPending &&
+    !showLoadPrompt.value &&
     !props.standalone &&
     !isMobilePreview.value,
 )
@@ -176,7 +179,7 @@ const recentEditCount = computed(() =>
 
     <!-- ① Mobile filled ─────────────────────────────── -->
     <template v-if="hasContent && isMobilePreview">
-      <div class="impact-module__stat-row">
+      <div v-if="viewCount" class="impact-module__stat-row">
         <span class="impact-module__count">{{ viewCount }}</span>
         <span class="impact-module__count-label">{{ viewLabel }}</span>
       </div>
@@ -243,7 +246,7 @@ const recentEditCount = computed(() =>
       </div>
 
       <!-- Recent activity bar chart -->
-      <div class="impact-module__activity">
+      <div v-if="recentActivityData.length" class="impact-module__activity">
         <p class="impact-module__activity-title">Your recent activity (last 60 days)</p>
         <div class="impact-module__activity-body">
           <div class="impact-module__activity-left">
@@ -277,7 +280,7 @@ const recentEditCount = computed(() =>
       </div>
 
       <!-- Views sparkline -->
-      <div class="impact-module__stat-row">
+      <div v-if="viewCount" class="impact-module__stat-row">
         <span class="impact-module__count">{{ viewCount }}</span>
         <span class="impact-module__count-label">{{ viewLabel }}</span>
       </div>
@@ -324,7 +327,7 @@ const recentEditCount = computed(() =>
     </template>
 
     <!-- ③ Load pending (real user, no cache) ────────── -->
-    <template v-else-if="loadPending">
+    <template v-else-if="showLoadPrompt">
       <div class="impact-module__load-prompt">
         <CdxButton
           action="progressive"
@@ -646,6 +649,7 @@ const recentEditCount = computed(() =>
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: top;
 }
 
 .impact-module__most-viewed-title-link {
