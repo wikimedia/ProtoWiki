@@ -10,6 +10,7 @@ import { FetchPageThumbnailsBatchError, fetchPageThumbnailsBatch } from '@/lib/f
 import {
   ResolveWikipediaSearchQueryError,
   resolveWikipediaSearchQuery,
+  type ResolveStep,
   type ResolveStrategy,
   type ResolvedSeedPage,
 } from '@/lib/resolveWikipediaSearchQuery'
@@ -49,6 +50,8 @@ export function useMorelikeSearch(): {
   matchedPages: Ref<ResolvedSeedPage[]>
   resolveStrategy: Ref<ResolveStrategy | null>
   resolvedSeeds: Ref<string[]>
+  morelikeQuery: Ref<string>
+  resolveSteps: Ref<ResolveStep[]>
   results: Ref<MorelikeSearchResult[]>
   thumbnailsByTitle: Ref<Record<string, string | undefined>>
   loadingResolve: Ref<boolean>
@@ -60,7 +63,6 @@ export function useMorelikeSearch(): {
   canSubmit: ComputedRef<boolean>
   canShowMore: ComputedRef<boolean>
   loadingLabel: ComputedRef<string>
-  matchedPagesNotice: ComputedRef<string>
   wikiArticleUrl: (title: string) => string
   onSubmit: () => Promise<void>
   onShowMore: () => Promise<void>
@@ -71,6 +73,9 @@ export function useMorelikeSearch(): {
   const matchedPages = ref<ResolvedSeedPage[]>([])
   const resolveStrategy = ref<ResolveStrategy | null>(null)
   const resolvedSeeds = ref<string[]>([])
+  const morelikeQuery = ref('')
+  const correctedQuery = ref('')
+  const resolveSteps = ref<ResolveStep[]>([])
   const results = ref<MorelikeSearchResult[]>([])
   const thumbnailsByTitle = ref<Record<string, string | undefined>>({})
   const nextOffset = ref<number | undefined>(undefined)
@@ -111,21 +116,6 @@ export function useMorelikeSearch(): {
     if (loading.value) return 'Finding similar pages…'
     if (loadingMore.value) return 'Loading more…'
     return ''
-  })
-
-  const matchedPagesNotice = computed(() => {
-    if (!matchedPages.value.length || resolveStrategy.value == null) return ''
-
-    if (resolveStrategy.value === 'title') {
-      return 'Resolved as a Wikipedia article title (single best match).'
-    }
-
-    const count = matchedPages.value.length
-    if (count === 1) {
-      return `Top search result for “${searchQuery.value.trim()}”.`
-    }
-
-    return `Top ${count} search results for “${searchQuery.value.trim()}”.`
   })
 
   async function enrichThumbnails(
@@ -200,6 +190,9 @@ export function useMorelikeSearch(): {
     matchedPages.value = []
     resolveStrategy.value = null
     resolvedSeeds.value = []
+    morelikeQuery.value = ''
+    correctedQuery.value = ''
+    resolveSteps.value = []
     results.value = []
     thumbnailsByTitle.value = {}
     nextOffset.value = undefined
@@ -216,6 +209,9 @@ export function useMorelikeSearch(): {
       matchedPages.value = resolved.pages
       resolveStrategy.value = resolved.strategy
       resolvedSeeds.value = resolved.pages.map((page) => page.title)
+      morelikeQuery.value = resolved.morelikeQuery
+      correctedQuery.value = resolved.correctedQuery ?? ''
+      resolveSteps.value = resolved.steps
 
       loadingResolve.value = false
       loading.value = true
@@ -227,6 +223,9 @@ export function useMorelikeSearch(): {
       matchedPages.value = []
       resolveStrategy.value = null
       resolvedSeeds.value = []
+      morelikeQuery.value = ''
+      correctedQuery.value = ''
+      resolveSteps.value = []
       hasSearched.value = false
     } finally {
       if (abortController === controller) {
@@ -263,6 +262,8 @@ export function useMorelikeSearch(): {
     matchedPages,
     resolveStrategy,
     resolvedSeeds,
+    morelikeQuery,
+    resolveSteps,
     results,
     thumbnailsByTitle,
     loadingResolve,
@@ -274,7 +275,6 @@ export function useMorelikeSearch(): {
     canSubmit,
     canShowMore,
     loadingLabel,
-    matchedPagesNotice,
     wikiArticleUrl,
     onSubmit,
     onShowMore,

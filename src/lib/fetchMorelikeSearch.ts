@@ -1,3 +1,4 @@
+import { FUZZY_MORELIKE_CIRRUS_MLT, buildMorelikeQuery } from '@/lib/cirrusSearchTuning'
 import { wikiHostFromLang } from '@/lib/config'
 
 const API_USER_AGENT =
@@ -68,10 +69,6 @@ export function stripSearchSnippetHtml(html: string): string {
     .trim()
 }
 
-function buildMorelikeQuery(seedTitles: string[]): string {
-  return `morelike:${seedTitles.join('|')}`
-}
-
 /**
  * Cirrus Search "more like this" via Action API `list=search`.
  */
@@ -99,6 +96,8 @@ export async function fetchMorelikeSearch(
     srnamespace: '0',
     srlimit: String(limit),
     sroffset: String(offset),
+    srprop: 'snippet',
+    ...FUZZY_MORELIKE_CIRRUS_MLT,
   }
 
   const response = await fetch(actionUrl(wikiHost, params), {

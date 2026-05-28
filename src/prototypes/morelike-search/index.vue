@@ -10,20 +10,20 @@ import {
 import { cdxIconArticle } from '@wikimedia/codex-icons'
 
 import PlainWrapper from '@/components/PlainWrapper.vue'
+import ResolveStepsTimeline from './ResolveStepsTimeline.vue'
 import { useMorelikeSearch } from './useMorelikeSearch'
 
 definePage({
   meta: {
-    title: 'Morelike search',
-    description:
-      'Type anything; Wikipedia search picks seed articles, then browse Cirrus “more like this” results.',
+    title: 'Extremely fuzzy search',
+    description: "Type anything and we'll try very hard to find a page and related pages.",
   },
 })
 
 const {
   searchQuery,
   matchedPages,
-  matchedPagesNotice,
+  resolveSteps,
   results,
   thumbnailsByTitle,
   loadingResolve,
@@ -49,13 +49,11 @@ function resultThumbnail(
 </script>
 
 <template>
-  <PlainWrapper heading="Morelike search">
+  <PlainWrapper heading="Extremely fuzzy search">
     <section aria-label="Search input">
       <form class="morelike-search__form" @submit.prevent="onSubmit">
         <CdxField label="Search for anything">
-          <template #description>
-            Wikipedia full-text search picks seed article(s), then finds similar pages.
-          </template>
+          <template #description></template>
           <CdxTextInput
             v-model="searchQuery"
             autocomplete="off"
@@ -79,14 +77,20 @@ function resultThumbnail(
     </section>
 
     <section
+      v-if="resolveSteps.length"
+      aria-labelledby="morelike-search-resolve-heading"
+      class="morelike-search__resolve"
+    >
+      <h2 id="morelike-search-resolve-heading">How your query was resolved</h2>
+      <ResolveStepsTimeline :steps="resolveSteps" />
+    </section>
+
+    <section
       v-if="matchedPages.length"
       aria-labelledby="morelike-search-matched-heading"
       class="morelike-search__matched"
     >
-      <h2 id="morelike-search-matched-heading">Matched pages</h2>
-      <p v-if="matchedPagesNotice" class="morelike-search__matched-notice">
-        {{ matchedPagesNotice }}
-      </p>
+      <h2 id="morelike-search-matched-heading">Seed pages</h2>
       <div class="morelike-search__matched-feed">
         <CdxCard
           v-for="page in matchedPages"
@@ -141,15 +145,10 @@ function resultThumbnail(
   margin-bottom: var(--spacing-100);
 }
 
+.morelike-search__resolve,
 .morelike-search__matched,
 .morelike-search__similar {
   margin-bottom: var(--spacing-150);
-}
-
-.morelike-search__matched-notice {
-  margin: 0 0 var(--spacing-75);
-  color: var(--color-subtle, #54595d);
-  font-size: var(--font-size-small, 0.875rem);
 }
 
 .morelike-search__matched-feed,
