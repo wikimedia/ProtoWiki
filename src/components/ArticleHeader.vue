@@ -459,6 +459,10 @@ function onLanguagePick(row: ArticleLanguageLink) {
   transform: rotate(90deg);
 }
 
+.article-header[data-skin='mobile'] {
+  padding-inline: var(--spacing-100, 16px);
+}
+
 .article-header[data-skin='mobile'] .article-header__title {
   font-size: 1.625rem;
 }
