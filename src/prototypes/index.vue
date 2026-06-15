@@ -10,7 +10,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { CdxButton, CdxCard, CdxIcon } from '@wikimedia/codex'
-import { cdxIconSettings } from '@wikimedia/codex-icons'
+import { cdxIconConfigure } from '@wikimedia/codex-icons'
 
 import PlainWrapper from '@/components/PlainWrapper.vue'
 import PrototypeUserSettingsPopover from '@/components/PrototypeUserSettingsPopover.vue'
@@ -109,7 +109,7 @@ const showBucketDivider = computed(
           :aria-expanded="open"
           @click="toggle"
         >
-          <CdxIcon :icon="cdxIconSettings" />
+          <CdxIcon :icon="cdxIconConfigure" />
         </CdxButton>
       </PrototypeUserSettingsPopover>
     </template>

@@ -1,79 +1,105 @@
-# Typography tokens
+# Typography
 
-Codex defines a small set of font tokens. Use them — don't pick fonts or
-sizes directly.
+Codex defines **9 canonical text styles**. Every piece of text must use one
+of them. **Do not invent other combinations** of font family, size, weight,
+or line height — pick a whole style, never mix tokens across styles (e.g.
+body size with a heading weight). Agents tend to drift here; don't.
 
-## Font family
+In ProtoWiki the matching **semantic HTML element already applies the right
+style**, so the simplest way to stay compliant is to write plain semantic
+markup (`h1`–`h4`, `p`, `small`, `blockquote`, `cite`, `figcaption`) and add
+no font CSS.
 
-| Token | Use |
-| --- | --- |
-| `--font-family-system-sans` | UI text (default) |
-| `--font-family-sans` | UI text (alias) |
-| `--font-family-serif` | Wikipedia-like article title + article body (used by `ArticleHeader` + **`ArticleRenderer`** parser column) |
-| `--font-family-monospace` | code, source mode editor |
+## The 9 text styles
 
-## Font size
+Each style is the combination of exactly these four tokens. Source:
+[Codex typography → Use of styles](https://doc.wikimedia.org/codex/latest/style-guide/typography.html#use-of-styles).
 
-| Token | Approx. px | Use |
+| Style | HTML | Tokens (family · size · weight · line-height) |
 | --- | --- | --- |
-| `--font-size-x-small` | 12 | captions, footnotes |
-| `--font-size-small` | 14 | helper text, secondary labels |
-| `--font-size-medium` | 16 | body text |
-| `--font-size-large` | 18 | h3 / subheadings |
+| Heading 1 | `h1` | `--font-family-serif` · `--font-size-xxx-large` · `--font-weight-normal` · `--line-height-xxx-large` |
+| Heading 2 | `h2` | `--font-family-serif` · `--font-size-xx-large` · `--font-weight-normal` · `--line-height-xx-large` |
+| Heading 3 | `h3` | `--font-family-base` · `--font-size-x-large` · `--font-weight-bold` · `--line-height-x-large` |
+| Heading 4 | `h4` | `--font-family-base` · `--font-size-large` · `--font-weight-bold` · `--line-height-large` |
+| Body | `p` | `--font-family-base` · `--font-size-medium` · `--font-weight-normal` · `--line-height-medium` |
+| Small | `small` | `--font-family-base` · `--font-size-small` · `--font-weight-normal` · `--line-height-small` |
+| Figure caption | `figcaption` | `--font-family-base` · `--font-size-small` · `--font-weight-normal` · `--line-height-small` |
+| Block quote | `blockquote` | `--font-family-serif` · `--font-size-medium` · `--font-weight-normal` · `--line-height-medium` |
+| Cite | `cite` | `--font-family-base` · `--font-size-small` · `--font-weight-normal` · `--line-height-small` |
+
+Notes:
+
+- The scale stops at **Heading 4**. There is no official Heading 5/6 style —
+  restructure the content rather than nesting deeper.
+- **Small**, **Figure caption**, and **Cite** share the same four tokens;
+  they're distinct styles semantically (use the matching element), not
+  visually.
+- **Code** is separate from these prose styles: use `--font-family-monospace`
+  (the `code` / `kbd` / `samp` / `pre` elements already do).
+
+## ProtoWiki: semantic HTML applies the styles
+
+`src/styles/global.css` maps **`h1`–`h6`**, **`p`**, **`small`**,
+**`blockquote`**, **`cite`**, **`figcaption`**, **`code`/`kbd`/`samp`**,
+**`pre`**, and related elements to the styles above. Prefer plain semantic
+markup in prototypes — that's how you get the canonical typography for free.
+
+Reader-style **underlines** on primary titles use **`mw-first-heading`**
+(PlainWrapper, **`ArticleRenderer`**'s **`.article-content`**,
+`.mw-parser-output`); that class only adds the separator — the size comes
+from **`h1`** + the Heading 1 style.
+
+## If you can't use the semantic element
+
+When you genuinely need a class (e.g. a non-heading element that should read
+as a heading), copy a **whole** style row — all four tokens — rather than
+picking sizes ad hoc:
+
+```css
+.section-title {
+  font-family: var(--font-family-serif);
+  font-size: var(--font-size-xx-large);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-xx-large);
+}
+```
+
+## The tokens behind the styles
+
+You should rarely reach for these directly — use a style row above. They're
+listed so you can recognise them and verify a style.
+
+### Font family
+
+| Token | Used by |
+| --- | --- |
+| `--font-family-base` | Body, Small, Figure caption, Cite, Heading 3–4 |
+| `--font-family-serif` | Heading 1–2, Block quote (Wikipedia-like article title + body) |
+| `--font-family-monospace` | code, source-mode editor |
+
+### Font size
+
+| Token | Approx. px | Style |
+| --- | --- | --- |
+| `--font-size-x-small` | 12 | (below the prose scale — avoid for body text) |
+| `--font-size-small` | 14 | Small / Figure caption / Cite |
+| `--font-size-medium` | 16 | Body / Block quote |
+| `--font-size-large` | 18 | Heading 4 |
 | `--font-size-x-large` | 20 | Heading 3 |
 | `--font-size-xx-large` | ~24–28 | Heading 2 |
-| `--font-size-xxx-large` | ~28–36 | Heading 1 (`h1`) — see [Codex typography](https://doc.wikimedia.org/codex/latest/style-guide/typography.html) |
+| `--font-size-xxx-large` | ~28–36 | Heading 1 |
 
-## Font weight
+### Font weight
 
-| Token | Use |
+| Token | Style |
 | --- | --- |
-| `--font-weight-normal` | body |
-| `--font-weight-bold` | strong emphasis |
+| `--font-weight-normal` | Headings 1–2, Body, Small, Figure caption, Block quote, Cite |
+| `--font-weight-bold` | Headings 3–4, strong emphasis |
 
 (The design system intentionally has only two weights.)
 
-## Line height
+### Line height
 
-| Token | Use |
-| --- | --- |
-| `--line-height-x-small` | dense UI labels |
-| `--line-height-small` | body / form labels |
-| `--line-height-medium` | long-form article text |
-| `--line-height-large` | Heading 4 |
-| `--line-height-x-large` | Heading 3 / responsive `h1` |
-| `--line-height-xx-large` | Heading 2 |
-| `--line-height-xxx-large` | Heading 1 |
-
-## ProtoWiki: semantic HTML
-
-`src/styles/global.css` maps **`h1`–`h6`**, **`p`**, **`small`**, **`blockquote`**,
-**`cite`**, **`figcaption`**, **`code`/`kbd`/`samp`**, **`pre`**, and related
-elements to the Codex scale above (aligned with the official typography style
-guide). Prefer plain semantic markup in prototypes — avoid one-off font CSS
-unless you are demonstrating something outside the scale.
-
-Reader-style **underlines** on primary titles still use **`mw-first-heading`**
-(PlainWrapper, **`ArticleRenderer`**'s **`.article-content`**, `.mw-parser-output`); that class only adds the separator —
-sizes come from **`h1`** + tokens.
-
-## Tip — heading hierarchy (manual overrides)
-
-If you need a one-off class instead of `h1`–`h6`:
-
-```css
-.first-heading {
-  font-size: var(--font-size-xxx-large);
-  line-height: var(--line-height-xxx-large);
-  font-family: var(--font-family-serif);
-}
-
-.section-heading {
-  font-size: var(--font-size-xx-large);
-  font-family: var(--font-family-serif);
-}
-
-.sub-heading {
-  font-size: var(--font-size-large);
-}
-```
+Each style pairs its font size with the matching `--line-height-*` token
+(e.g. `--font-size-xx-large` with `--line-height-xx-large`). Don't mismatch
+them.

@@ -1,6 +1,6 @@
 ---
 name: codex-icons
-description: How to use the Codex icon library (@wikimedia/codex-icons) — import a `cdxIcon…` constant, render it through CdxIcon, and look up the right name from the upstream catalogue. Covers bidi-aware icons, the langCodeMap variants (e.g., bold-x), accessibility, and common UI-action icons. Use when adding a glyph anywhere — toolbar buttons, actions, menus, pills.
+description: How to use the Codex icon library (@wikimedia/codex-icons) — import a `cdxIcon…` constant, render it through CdxIcon, and look up the right name in the full icon list (references/icons.md) or the upstream catalogue. Covers bidi-aware icons, the langCodeMap variants (e.g., bold-x), and accessibility. Use when adding a glyph anywhere — toolbar buttons, actions, menus, pills.
 license: MIT
 ---
 
@@ -23,17 +23,31 @@ Then render through `CdxIcon`:
 <CdxIcon :icon="cdxIconBold" size="small" />
 ```
 
-## Where to look up icon names
+Valid `size` values are `x-small`, `small`, and `medium` (the default).
+There is no `large` icon size — for a bigger glyph, size the container
+(e.g. a `CdxButton` or a wrapper) rather than the icon.
 
-The canonical catalogue is at
-<https://doc.wikimedia.org/codex/latest/icons/all-icons.html>. Every icon
-has its name (`edit` → `cdxIconEdit`) and a visual.
+## Finding an icon
 
-To search local node_modules:
+There are hundreds of icons — **look one up, don't guess the name.** Two
+sources:
+
+- [`references/icons.md`](references/icons.md) — the full list of
+  every importable constant, generated from the installed package. Grep it
+  offline instead of opening `node_modules`. It also flags which icons flip
+  in RTL, have distinct LTR/RTL glyphs, or vary by `langCode`.
+- <https://doc.wikimedia.org/codex/latest/icons/all-icons.html> — the
+  canonical catalogue with visual previews, best for finding an icon by
+  what it depicts.
+
+To search the installed package directly:
 
 ```bash
 node -e "const i = require('@wikimedia/codex-icons'); console.log(Object.keys(i).filter(n => /search/i.test(n)))"
 ```
+
+Always confirm a constant exists in the full list (or the package) before
+importing it.
 
 ## Naming convention
 
@@ -47,36 +61,6 @@ node -e "const i = require('@wikimedia/codex-icons'); console.log(Object.keys(i)
 | `bold-x` | `cdxIconBoldX` (langCodeMap-aware) |
 | `arrow-next` | `cdxIconArrowNext` (bidi-aware) |
 | `reference` | `cdxIconReference` |
-
-## Action icons commonly needed in Wikimedia UI
-
-| Action | Icon |
-| --- | --- |
-| Edit | `cdxIconEdit` |
-| Save / Publish | `cdxIconCheck` |
-| Cancel / Close | `cdxIconClose` |
-| Search | `cdxIconSearch` |
-| Bold | `cdxIconBold` |
-| Italic | `cdxIconItalic` |
-| Underline | `cdxIconUnderline` |
-| Bulleted list | `cdxIconListBullet` |
-| Numbered list | `cdxIconListNumbered` |
-| Quote / blockquote | `cdxIconQuotes` |
-| Cite / reference | `cdxIconReference` |
-| Link | `cdxIconLink` |
-| Trash / delete | `cdxIconTrash` |
-| Add | `cdxIconAdd` |
-| Settings | `cdxIconSettings` |
-| Menu | `cdxIconMenu` |
-| Ellipsis | `cdxIconEllipsis` |
-| Translate / language | `cdxIconLanguage` |
-| User | `cdxIconUserAvatar` |
-| Star (watchlist) | `cdxIconStar` |
-| Eye (view / watch) | `cdxIconEye` |
-| Download | `cdxIconDownload` |
-| Upload | `cdxIconUpload` |
-| Image | `cdxIconImage` |
-| Article | `cdxIconArticle` |
 
 ## Accessibility
 

@@ -1,30 +1,24 @@
 # Token inventory
 
-This file points to the canonical complete reference rather than
-duplicating it (it changes per Codex release).
+The fastest complete reference is **right here in this skill**:
 
-- **Codex design tokens overview:**
-  <https://doc.wikimedia.org/codex/latest/design-tokens/overview.html>
-- **All component CSS variables (per-component):** every Codex component
-  page on doc.wikimedia.org has a "CSS custom properties" section.
-- **Source files in this repo:**
-  - `node_modules/@wikimedia/codex-design-tokens/theme-wikimedia-ui.css`
-  - `node_modules/@wikimedia/codex-design-tokens/theme-wikimedia-ui-mode-dark.css`
-  - `node_modules/@wikimedia/codex-design-tokens/dist/types.d.ts`
+- [`../assets/tokens.css`](../assets/tokens.css) — a vendored snapshot of
+  the Codex token CSS (light theme + the `skin-theme-clientpref-night` dark
+  block), kept up to date when we bump `@wikimedia/codex-design-tokens`.
+  Grep it for any token name **and its actual value** without opening
+  `node_modules`:
 
-To dump the complete current token list locally:
+  ```bash
+  rg -o '^\s*(--[a-z0-9-]+):' .agents/skills/codex-tokens/assets/tokens.css | sort -u
+  ```
 
-```bash
-node -e "import('@wikimedia/codex-design-tokens').then(t => console.log(Object.keys(t)))"
-```
-
-Or grep the CSS:
-
-```bash
-rg -o '^\s*(--[a-z0-9-]+)' \
-  node_modules/@wikimedia/codex-design-tokens/theme-wikimedia-ui.css \
-  | sort -u
-```
+It's local, complete, and shows both light and dark values in one place.
+The only reason to look elsewhere is if you suspect the snapshot is stale —
+then the canonical source of truth is the
+[Codex design tokens docs](https://doc.wikimedia.org/codex/latest/design-tokens/overview.html)
+(and the update process in
+[`protowiki-update-codex`](../../protowiki-update-codex/SKILL.md) refreshes
+the snapshot).
 
 ## Common categories you'll see
 
@@ -42,5 +36,5 @@ rg -o '^\s*(--[a-z0-9-]+)' \
 - Opacity: `--opacity-…`.
 - Outline: `--outline-color-progressive--focus`.
 
-When in doubt, find the closest match upstream and use that name. The
-runtime injection takes care of theming for free.
+When in doubt, find the closest match in `tokens.css` (or upstream) and use
+that name. The runtime injection takes care of theming for free.

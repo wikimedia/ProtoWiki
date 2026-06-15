@@ -94,8 +94,11 @@ Even then:
   enough. Doing it again per route bloats every bundle.
 - **Hand-picking hex colours.** Use `var(--color-…)`. Otherwise dark
   mode won't follow.
-- **Setting fonts manually.** Use the Codex font stack
-  (`var(--font-family-system-sans, …)`).
+- **Hand-assembling type** (picking your own font size / weight / family).
+  Use one of the 9 canonical text styles — see
+  [`codex-tokens` → `typography.md`](../codex-tokens/references/typography.md).
+  In a semantic-HTML environment, the matching element already applies the
+  right style.
 - **Adding ad-hoc CSS for what's already a Codex component.** If a
   toolbar exists, use Codex buttons inside a `role="toolbar"` div
   instead of restyling raw `<button>`s.

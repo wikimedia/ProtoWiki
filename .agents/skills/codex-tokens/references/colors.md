@@ -52,6 +52,32 @@
 | `--border-color-notice` | notice inputs / messages |
 | `--border-color-inverted-fixed` | borders that stay visible regardless of theme |
 
+## Colour options (presentational)
+
+Codex also ships a set of **"colour option"** tokens for purely
+presentational use — labelling, charts, categories — rather than semantic
+meaning. They come in nine hues, each as a text, background, and border
+token, and are designed to be combined hue-for-hue:
+
+| Family | Tokens |
+| --- | --- |
+| Red | `--color-option-red` / `--background-color-option-red` / `--border-color-option-red` |
+| Orange | `--color-option-orange` / `--background-color-option-orange` / `--border-color-option-orange` |
+| Yellow | `--color-option-yellow` / `--background-color-option-yellow` / `--border-color-option-yellow` |
+| Lime | `--color-option-lime` / `--background-color-option-lime` / `--border-color-option-lime` |
+| Green | `--color-option-green` / `--background-color-option-green` / `--border-color-option-green` |
+| Blue | `--color-option-blue` / `--background-color-option-blue` / `--border-color-option-blue` |
+| Purple | `--color-option-purple` / `--background-color-option-purple` / `--border-color-option-purple` |
+| Pink | `--color-option-pink` / `--background-color-option-pink` / `--border-color-option-pink` |
+| Maroon | `--color-option-maroon` / `--background-color-option-maroon` / `--border-color-option-maroon` |
+
+Pair the matching hue (e.g. `--color-option-pink` text on
+`--background-color-option-pink`) rather than mixing families. Link text
+stays WCAG AA-legible on any of these backgrounds. These are for
+decoration only — keep using the semantic families above for status,
+actions, and links. See
+[Codex/Design/Color](https://www.mediawiki.org/wiki/Codex/Design/Color).
+
 ## Tips
 
 - `*-subtle` always means "low-contrast variant of the same family". Pair

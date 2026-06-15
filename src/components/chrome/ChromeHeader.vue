@@ -267,7 +267,7 @@ function navHas(tool: ChromeNavTool): boolean {
             :aria-expanded="open"
             @click="toggle"
           >
-            <CdxIcon :icon="cdxIconUserAvatar" size="large" />
+            <CdxIcon :icon="cdxIconUserAvatar" size="medium" />
           </CdxButton>
         </PrototypeUserSettingsPopover>
       </div>

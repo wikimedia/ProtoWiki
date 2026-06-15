@@ -111,6 +111,9 @@ from an API.
 Use this for "pick a Wikipedia article", "pick a category", "pick a
 user". Pair it with the [`wiki-apis`](../../wiki-apis/SKILL.md) skill.
 
+`CdxLookup` exposes a `focus()` method via a template ref, so you can
+programmatically focus the input (e.g. after clearing a selection).
+
 ## CdxSearchInput
 
 A text input with a leading magnifying-glass icon. For full typeahead

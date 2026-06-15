@@ -69,6 +69,7 @@ trailing **Inside ProtoWiki** section.
 | [`protowiki-skins`](.agents/skills/protowiki-skins/SKILL.md)                       | Vector 2022 (desktop) vs Minerva (mobile); per-component skin overrides |
 | [`protowiki-theme`](.agents/skills/protowiki-theme/SKILL.md)                       | Light / dark theming; per-component theme overrides                     |
 | [`protowiki-deploy`](.agents/skills/protowiki-deploy/SKILL.md)                     | GitHub Pages deploy, PR previews, base path, fork setup, SPA 404        |
+| [`protowiki-update-codex`](.agents/skills/protowiki-update-codex/SKILL.md)         | Upgrading Codex: bump packages, diff upstream docs, sync skills + tokens |
 
 ### Codex (design system)
 

@@ -36,12 +36,13 @@ The Codex token set is split across families. Reference each in detail:
 - [`references/colors.md`](references/colors.md)
 - [`references/spacing.md`](references/spacing.md)
 - [`references/typography.md`](references/typography.md)
-- [`references/tokens-complete.md`](references/tokens-complete.md) — the
-  full inventory, with values for both themes.
-- [`assets/tokens.css`](assets/tokens.css) — a vendored snapshot of
-  `theme-wikimedia-ui.css` (+ the `skin-theme-clientpref-night` block) for
-  quick grepping without opening `node_modules`. Refresh when bumping the
-  `@wikimedia/codex-design-tokens` version (see header comment in the file).
+- [`assets/tokens.css`](assets/tokens.css) — a vendored snapshot of the
+  Codex token CSS (light + the `skin-theme-clientpref-night` dark block) for
+  quick grepping of any token **and its value** without opening
+  `node_modules`. Refresh when bumping the `@wikimedia/codex-design-tokens`
+  version (see header comment in the file).
+- [`references/tokens.md`](references/tokens.md) — how to find the full
+  inventory (points at `tokens.css` first, then upstream).
 
 ## Quick cheat-sheet
 
@@ -58,13 +59,8 @@ The Codex token set is split across families. Reference each in detail:
 | Form border                       | `var(--border-color-base)`                                               |
 | Tiny / small / medium / large gap | `var(--spacing-25)` / `--spacing-50` / `--spacing-100` / `--spacing-150` |
 | Section / page padding            | `var(--spacing-200)` / `var(--spacing-300)`                              |
-| Body font                         | `var(--font-family-system-sans)`                                         |
-| Body size                         | `var(--font-size-medium)`                                                |
-| Headline size (h1-ish)            | `var(--font-size-xx-large)`                                              |
-| Caption                           | `var(--font-size-x-small)`                                               |
-| Bold weight                       | `var(--font-weight-bold)`                                                |
 | Small radius                      | `var(--border-radius-base)`                                              |
-| Long-form line height             | `var(--line-height-medium)`                                              |
+| Any text (size/weight/family/leading) | Use a whole style from [`references/typography.md`](references/typography.md) — never assemble font tokens ad hoc |
 
 ## Authoritative source
 
