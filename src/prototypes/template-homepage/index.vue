@@ -19,14 +19,60 @@ import {
   MENTOR,
   MENTOR_PAGE,
   SUGGESTED_EDITS_PAGE,
-  STRUCTURED_TASKS,
 } from './dashpage-fixtures'
 import { useHomepageImpact } from './useHomepageImpact'
+import { useSuggestedEdits } from './suggested-edits/data/useSuggestedEdits'
 
 const { user, pageTitle } = useConfig()
 const { impactMobileProps, impactDesktopProps, onImpactRefresh } = useHomepageImpact()
 
+const {
+  currentIndex,
+  totalCount,
+  currentSuggestion,
+  loadPending,
+  loading,
+  hasStarted,
+} = useSuggestedEdits()
+
 const showLoggedInModules = computed(() => user.value !== 'logged-out')
+
+const structuredTasksProps = computed(() => {
+  const suggestion = currentSuggestion.value
+  const index = hasStarted.value && suggestion ? currentIndex.value + 1 : 1
+  const count = hasStarted.value && totalCount.value > 0 ? totalCount.value : 0
+
+  if (loadPending.value || loading.value) {
+    return {
+      currentIndex: index,
+      totalCount: count || 1,
+      articleTitle: loading.value ? 'Loading suggestions…' : 'Suggested edits',
+      articleDescription: 'Tap to load article suggestions based on your interests.',
+      thumbnailSrc: undefined,
+      taskTypeLabel: loading.value ? 'Loading…' : 'Get started',
+    }
+  }
+
+  if (!suggestion) {
+    return {
+      currentIndex: 1,
+      totalCount: 1,
+      articleTitle: 'Suggested edits',
+      articleDescription: 'Add interests or enable editing history to see suggestions.',
+      thumbnailSrc: undefined,
+      taskTypeLabel: 'Get started',
+    }
+  }
+
+  return {
+    currentIndex: index,
+    totalCount: count,
+    articleTitle: suggestion.articleTitle,
+    articleDescription: suggestion.articleShortDescription,
+    thumbnailSrc: suggestion.thumbnailSrc,
+    taskTypeLabel: suggestion.taskHeading,
+  }
+})
 
 definePage({
   meta: {
@@ -51,7 +97,7 @@ definePage({
             <StructuredTasksModule
               class="dashboard-slot--mobile-primary"
               :to="SUGGESTED_EDITS_PAGE"
-              v-bind="STRUCTURED_TASKS"
+              v-bind="structuredTasksProps"
             />
 
             <ImpactModule
@@ -79,7 +125,7 @@ definePage({
             <StructuredTasksModule
               class="dashboard-slot--desktop-primary"
               :to="APP_HOME"
-              v-bind="STRUCTURED_TASKS"
+              v-bind="structuredTasksProps"
             />
           </template>
 

@@ -17,6 +17,7 @@ import { DEFAULT_CHROME_NAV_TOOLS, type ChromeNavTool } from './headerNavTools'
 import { globalSkin, globalTheme } from '@/theme'
 import type { Skin, Theme } from '@/theme'
 import PrototypeUserSettingsPopover from '../PrototypeUserSettingsPopover.vue'
+import PrototypeChromeMenuPopover from '../PrototypeChromeMenuPopover.vue'
 import SearchBar from '../SearchBar/SearchBar.vue'
 
 const { user } = useConfig()
@@ -97,10 +98,17 @@ function navHas(tool: ChromeNavTool): boolean {
     <nav v-if="isDesktop" class="chrome-header__nav-desktop" aria-label="Site">
       <div class="chrome-header__desktop-start">
         <slot name="menu">
-          <!-- Mock only — not interactive (FakeMediaWiki uses bare chrome / icon affordances). -->
-          <span class="chrome-header__menu-icon" aria-hidden="true">
-            <CdxIcon :icon="cdxIconMenu" />
-          </span>
+          <PrototypeChromeMenuPopover v-slot="{ toggle, open }">
+            <CdxButton
+              class="chrome-header__menu-btn"
+              weight="quiet"
+              aria-label="Main menu"
+              :aria-expanded="open"
+              @click="toggle"
+            >
+              <CdxIcon :icon="cdxIconMenu" />
+            </CdxButton>
+          </PrototypeChromeMenuPopover>
         </slot>
 
         <RouterLink class="chrome-header__brand-link" to="/" aria-label="Visit the main page">
@@ -226,9 +234,17 @@ function navHas(tool: ChromeNavTool): boolean {
     <!-- Minerva-style chrome (mobile skin) -->
     <nav v-else class="chrome-header__nav-mobile" aria-label="Site">
       <slot name="menu">
-        <CdxButton weight="quiet" size="large" aria-label="Main menu">
-          <CdxIcon :icon="cdxIconMenu" />
-        </CdxButton>
+        <PrototypeChromeMenuPopover v-slot="{ toggle, open }">
+          <CdxButton
+            weight="quiet"
+            size="large"
+            aria-label="Main menu"
+            :aria-expanded="open"
+            @click="toggle"
+          >
+            <CdxIcon :icon="cdxIconMenu" />
+          </CdxButton>
+        </PrototypeChromeMenuPopover>
       </slot>
 
       <RouterLink class="chrome-header__mobile-brand" to="/" aria-label="Visit the main page">

@@ -52,7 +52,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   showFilterBar: false,
-  topicFilter: 'Music',
+  topicFilter: 'Interests',
   difficultyFilter: 'Easy, Medium',
   currentIndex: 0,
   totalCount: 1,
@@ -82,9 +82,9 @@ const emit = defineEmits<{
   load: []
   refresh: []
   navigate: [delta: number]
+  'open-interests': []
 }>()
 
-const topicMenuItems = computed(() => [{ value: 'music', label: props.topicFilter }])
 const difficultyMenuItems = computed(() => [{ value: 'mixed', label: props.difficultyFilter }])
 
 const displayIndex = computed(() => (props.currentIndex ?? 0) + 1)
@@ -122,6 +122,10 @@ function onRefreshClick(): void {
 function onNavigate(delta: number): void {
   emit('navigate', delta)
 }
+
+function onOpenInterests(): void {
+  emit('open-interests')
+}
 </script>
 
 <template>
@@ -134,12 +138,15 @@ function onNavigate(delta: number): void {
       >
         <div class="suggested-edits-view__filter">
           <CdxIcon :icon="cdxIconFunnel" size="small" class="suggested-edits-view__filter-icon" />
-          <CdxSelect
-            :selected="'music'"
-            :menu-items="topicMenuItems"
-            :default-label="topicFilter"
-            disabled
-          />
+          <button
+            type="button"
+            class="suggested-edits-view__filter-trigger"
+            :aria-label="`Topic filter: ${topicFilter}. Open interests settings.`"
+            @click="onOpenInterests"
+          >
+            <span class="suggested-edits-view__filter-trigger-label">{{ topicFilter }}</span>
+            <span class="suggested-edits-view__filter-trigger-indicator" aria-hidden="true" />
+          </button>
         </div>
         <div class="suggested-edits-view__filter">
           <CdxIcon :icon="cdxIconChart" size="small" class="suggested-edits-view__filter-icon" />
@@ -167,12 +174,12 @@ function onNavigate(delta: number): void {
         </CdxButton>
       </div>
 
-      <template v-else-if="emptyMessage">
+      <div v-else-if="emptyMessage" class="suggested-edits-view__empty-state">
         <p class="suggested-edits-view__empty">{{ emptyMessage }}</p>
         <CdxButton v-if="showRefresh" weight="quiet" :disabled="refreshing" @click="onRefreshClick">
-          {{ refreshing ? 'Loading…' : 'Try another page' }}
+          {{ refreshing ? 'Loading…' : 'Refresh' }}
         </CdxButton>
-      </template>
+      </div>
 
       <template v-else-if="hasPreview">
         <p class="suggested-edits-view__counter">
@@ -182,7 +189,24 @@ function onNavigate(delta: number): void {
           suggestions
         </p>
 
-        <article class="suggested-edits-view__card">
+        <component
+          :is="editHref ? 'a' : 'article'"
+          class="suggested-edits-view__card"
+          :class="{ 'suggested-edits-view__card--link': !!editHref }"
+          v-bind="
+            editHref
+              ? {
+                  href: editHref,
+                  target: '_blank',
+                  rel: 'noreferrer noopener',
+                  'aria-label': `Edit ${articleTitle}`,
+                  'aria-disabled': refreshing ? 'true' : undefined,
+                  tabindex: refreshing ? -1 : undefined,
+                }
+              : {}
+          "
+          @click="editHref && refreshing ? $event.preventDefault() : undefined"
+        >
           <div v-if="thumbnailSrc" class="suggested-edits-view__card-image-wrap">
             <img class="suggested-edits-view__card-image" :src="thumbnailSrc" alt="" />
           </div>
@@ -204,7 +228,7 @@ function onNavigate(delta: number): void {
               {{ pageviewsLabel }}
             </p>
           </div>
-        </article>
+        </component>
 
         <section v-if="taskTitle" class="suggested-edits-view__task">
           <p class="suggested-edits-view__task-heading">
@@ -359,6 +383,45 @@ function onNavigate(delta: number): void {
   color: var(--color-subtle, #72777d);
 }
 
+.suggested-edits-view__filter-trigger {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  height: 3rem;
+  padding: 0 var(--spacing-150, 24px) 0 0;
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  box-shadow: none;
+  color: var(--color-base--subtle, #54595d);
+  font-family: inherit;
+  font-size: var(--font-size-medium, 1rem);
+  font-weight: var(--font-weight-normal, 400);
+  text-align: start;
+  cursor: pointer;
+}
+
+.suggested-edits-view__filter-trigger-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggested-edits-view__filter-trigger-indicator {
+  position: absolute;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-top: 5px solid var(--color-subtle, #72777d);
+  border-right: 5px solid transparent;
+  border-left: 5px solid transparent;
+}
+
 .suggested-edits-view__filter :deep(.cdx-select-vue) {
   flex: 1;
   width: 100%;
@@ -412,6 +475,19 @@ function onNavigate(delta: number): void {
   min-height: 40vh;
 }
 
+.suggested-edits-view__empty-state {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-100, 16px);
+  min-height: 40vh;
+  padding: var(--spacing-200, 32px) var(--spacing-150, 24px);
+  box-sizing: border-box;
+  text-align: center;
+}
+
 .suggested-edits-view__error {
   margin: 0;
   font-size: var(--font-size-small);
@@ -420,8 +496,9 @@ function onNavigate(delta: number): void {
 
 .suggested-edits-view__empty {
   margin: 0;
-  font-size: var(--font-size-small);
-  line-height: var(--line-height-small);
+  max-width: 20rem;
+  font-size: var(--font-size-medium, 1rem);
+  line-height: var(--line-height-medium, 1.375);
   color: var(--color-base--subtle, #54595d);
 }
 
@@ -440,6 +517,7 @@ function onNavigate(delta: number): void {
 
 .suggested-edits-view__card {
   box-sizing: border-box;
+  display: block;
   width: 100%;
   max-width: var(--suggested-edits-card-width, 17.5rem);
   margin-inline: auto;
@@ -448,6 +526,16 @@ function onNavigate(delta: number): void {
   border-radius: var(--border-radius-base, 2px);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   overflow: hidden;
+}
+
+.suggested-edits-view__card--link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.suggested-edits-view__card--link:focus-visible {
+  outline: 2px solid var(--border-color-progressive--focus, #36c);
+  outline-offset: 2px;
 }
 
 .suggested-edits-view__card-image-wrap {
