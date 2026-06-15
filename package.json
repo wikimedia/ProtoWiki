@@ -14,9 +14,9 @@
     "snapshot:wiki-skins": "bash scripts/snapshot-wiki-skins.sh"
   },
   "dependencies": {
-    "@wikimedia/codex": "^2.5.1",
-    "@wikimedia/codex-design-tokens": "^2.5.1",
-    "@wikimedia/codex-icons": "^2.5.1",
+    "@wikimedia/codex": "^2.6.0",
+    "@wikimedia/codex-design-tokens": "^2.6.0",
+    "@wikimedia/codex-icons": "^2.6.0",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"
   },
