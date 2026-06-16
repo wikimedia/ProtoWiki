@@ -15,7 +15,7 @@ import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 
 import {
   buildMorelikeApiRequestUrl,
-  buildSrsearch,
+  buildSrsearchPreview,
   fetchMorelikeResults,
   MorelikeFetchError,
   parseSeedTitles,
@@ -54,6 +54,7 @@ const mltCustom = ref<MorelikeMltCustomSettings>({
   ...DEFAULT_MORELIKE_PLAYGROUND_STATE.mltCustom,
 })
 const classicNoboostlinks = ref(DEFAULT_MORELIKE_PLAYGROUND_STATE.classicNoboostlinks)
+const interleave = ref(DEFAULT_MORELIKE_PLAYGROUND_STATE.interleave)
 
 const results = ref<MorelikeSearchHit[]>([])
 const sortedResults = computed(() => sortMorelikeHits(results.value, sortOrder.value))
@@ -88,7 +89,11 @@ const mltFieldsMenuItems = [
   { value: 'opening_text', label: 'opening_text' },
 ]
 
-const gsrsearch = computed(() => buildSrsearch(seedText.value) ?? '')
+const gsrsearch = computed(() => buildSrsearchPreview(seedText.value, interleave.value) ?? '')
+
+const showMultipleRequestUrls = computed(
+  () => interleave.value && seedTitles.value.length > 1,
+)
 
 const requestUrl = computed(
   () =>
@@ -98,6 +103,7 @@ const requestUrl = computed(
       mltPreset.value,
       mltCustom.value,
       classicNoboostlinks.value,
+      interleave.value,
     ) ?? '',
 )
 
@@ -122,6 +128,7 @@ function schedulePersist(immediate = false): void {
       mltPreset: mltPreset.value,
       mltCustom: mltCustom.value,
       classicNoboostlinks: classicNoboostlinks.value,
+      interleave: interleave.value,
     })
   }
 
@@ -149,6 +156,7 @@ async function onSearch(): Promise<void> {
       mltPreset: mltPreset.value,
       mltCustom: mltCustom.value,
       classicNoboostlinks: classicNoboostlinks.value,
+      interleave: interleave.value,
       signal: abortController.signal,
     })
 
@@ -187,12 +195,15 @@ onMounted(() => {
   mltPreset.value = stored.mltPreset
   mltCustom.value = { ...stored.mltCustom }
   classicNoboostlinks.value = stored.classicNoboostlinks
+  interleave.value = stored.interleave
 })
 
 watch(seedText, () => schedulePersist(false))
-watch([resultLimit, sortOrder, mltPreset, mltCustom, classicNoboostlinks], () => schedulePersist(true), {
-  deep: true,
-})
+watch(
+  [resultLimit, sortOrder, mltPreset, mltCustom, classicNoboostlinks, interleave],
+  () => schedulePersist(true),
+  { deep: true },
+)
 </script>
 
 <template>
@@ -220,6 +231,15 @@ watch([resultLimit, sortOrder, mltPreset, mltCustom, classicNoboostlinks], () =>
             max="100"
             step="1"
           />
+        </CdxField>
+
+        <CdxField>
+          <template #label>Multiple requests</template>
+          <template #description>
+            One morelike query per seed, then round-robin merge (~N total, same as the limit
+            slider). Off uses a single combined `morelike:A|B|…` query.
+          </template>
+          <CdxToggleSwitch v-model="interleave" />
         </CdxField>
 
         <CdxField>
@@ -342,28 +362,30 @@ watch([resultLimit, sortOrder, mltPreset, mltCustom, classicNoboostlinks], () =>
         </div>
 
         <CdxField>
-          <template #label>Disable link boosting (`classic_noboostlinks`)</template>
+          <template #label>Disable link boosting</template>
           <template #description>
             When on, adds `gsrqiprofile=classic_noboostlinks` — ranks by text similarity without
             incoming-link rescore. When off, wiki default applies.
           </template>
-          <CdxToggleSwitch v-model="classicNoboostlinks">
-            gsrqiprofile
-          </CdxToggleSwitch>
+          <CdxToggleSwitch v-model="classicNoboostlinks" />
         </CdxField>
 
         <CdxField>
-          <template #label>gsrsearch</template>
+          <template #label>Search query</template>
+          <template #description>
+            How seed pages are encoded for morelike — one combined query, or one per seed when
+            multiple requests is on.
+          </template>
           <CdxTextArea
             class="morelike-playground__wire-value"
             :model-value="gsrsearch"
             disabled
-            :rows="1"
+            :rows="interleave && seedTitles.length > 1 ? Math.min(seedTitles.length, 6) : 1"
           />
         </CdxField>
 
         <CdxField>
-          <template #label>Request URL</template>
+          <template #label>{{ showMultipleRequestUrls ? 'Request URLs' : 'Request URL' }}</template>
           <template #description>
             Exact GET on Search. Sort order is applied after the response, not in this URL.
           </template>
@@ -371,7 +393,7 @@ watch([resultLimit, sortOrder, mltPreset, mltCustom, classicNoboostlinks], () =>
             class="morelike-playground__wire-value"
             :model-value="requestUrl"
             disabled
-            :rows="4"
+            :rows="showMultipleRequestUrls ? Math.min(seedTitles.length * 2, 12) : 4"
           />
         </CdxField>
 

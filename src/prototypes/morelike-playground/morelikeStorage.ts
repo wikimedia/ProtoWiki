@@ -13,6 +13,7 @@ export interface MorelikePlaygroundState {
   mltPreset: MorelikeMltPreset
   mltCustom: MorelikeMltCustomSettings
   classicNoboostlinks: boolean
+  interleave: boolean
 }
 
 const STORAGE_KEY = 'protowiki-morelike-playground-v1'
@@ -24,6 +25,7 @@ export const DEFAULT_MORELIKE_PLAYGROUND_STATE: MorelikePlaygroundState = {
   mltPreset: 'default',
   mltCustom: { ...DEFAULT_MLT_CUSTOM },
   classicNoboostlinks: true,
+  interleave: false,
 }
 
 function clampResultLimit(value: number): number {
@@ -67,6 +69,10 @@ function normalizeState(input: unknown): MorelikePlaygroundState {
       typeof record.classicNoboostlinks === 'boolean'
         ? record.classicNoboostlinks
         : DEFAULT_MORELIKE_PLAYGROUND_STATE.classicNoboostlinks,
+    interleave:
+      typeof record.interleave === 'boolean'
+        ? record.interleave
+        : DEFAULT_MORELIKE_PLAYGROUND_STATE.interleave,
   }
 }
 

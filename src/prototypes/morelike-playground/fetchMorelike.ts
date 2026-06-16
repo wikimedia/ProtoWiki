@@ -90,6 +90,58 @@ export function buildSrsearch(seedText: string): string | null {
   return `morelike:${seeds.join('|')}`
 }
 
+export function buildSrsearchForSeed(title: string): string {
+  return `morelike:${title}`
+}
+
+/** Wire preview: combined query when off, one line per seed when interleaving. */
+export function buildSrsearchPreview(seedText: string, interleave: boolean): string | null {
+  const seeds = parseSeedTitles(seedText)
+  if (!seeds.length) return null
+
+  if (!interleave) {
+    return buildSrsearch(seedText)
+  }
+
+  return seeds.map(buildSrsearchForSeed).join('\n')
+}
+
+/** Split total result limit across seeds (e.g. 20 / 3 → [7, 7, 6]). */
+export function perSeedLimits(totalLimit: number, seedCount: number): number[] {
+  if (seedCount <= 0) return []
+
+  const base = Math.floor(totalLimit / seedCount)
+  const extra = totalLimit % seedCount
+
+  return Array.from({ length: seedCount }, (_, i) => base + (i < extra ? 1 : 0))
+}
+
+/** Round-robin merge with dedupe; caps at totalLimit. */
+export function interleaveMorelikeHits(
+  lists: MorelikeSearchHit[][],
+  totalLimit: number,
+): MorelikeSearchHit[] {
+  if (!lists.length) return []
+
+  const seen = new Set<string>()
+  const result: MorelikeSearchHit[] = []
+  const maxLen = Math.max(...lists.map((list) => list.length))
+
+  for (let i = 0; i < maxLen && result.length < totalLimit; i++) {
+    for (const list of lists) {
+      if (result.length >= totalLimit) break
+
+      const hit = list[i]
+      if (!hit || seen.has(hit.title)) continue
+
+      seen.add(hit.title)
+      result.push(hit)
+    }
+  }
+
+  return result
+}
+
 function articleUrl(title: string): string {
   return `https://${WIKI_HOST}/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`
 }
@@ -127,17 +179,13 @@ function buildMorelikeSearchParams(
   return params
 }
 
-/** Exact URL sent to the Action API (shared by fetch + UI). */
-export function buildMorelikeApiRequestUrl(
-  seedText: string,
+function buildMorelikeApiRequestUrlFromGsrsearch(
+  gsrsearch: string,
   limit: number,
   mltPreset: MorelikeMltPreset,
   mltCustom: MorelikeMltCustomSettings,
-  classicNoboostlinks = true,
-): string | null {
-  const gsrsearch = buildSrsearch(seedText)
-  if (!gsrsearch) return null
-
+  classicNoboostlinks: boolean,
+): string {
   const params = buildMorelikeSearchParams(
     gsrsearch,
     limit,
@@ -145,6 +193,76 @@ export function buildMorelikeApiRequestUrl(
     classicNoboostlinks,
   )
   return `${API_URL}?${params.toString()}`
+}
+
+/** Exact URL(s) sent to the Action API (shared by fetch + UI). */
+export function buildMorelikeApiRequestUrls(
+  seedText: string,
+  totalLimit: number,
+  mltPreset: MorelikeMltPreset,
+  mltCustom: MorelikeMltCustomSettings,
+  classicNoboostlinks = true,
+  interleave = false,
+): string[] {
+  const seeds = parseSeedTitles(seedText)
+  if (!seeds.length) return []
+
+  if (!interleave) {
+    const gsrsearch = buildSrsearch(seedText)
+    if (!gsrsearch) return []
+
+    return [
+      buildMorelikeApiRequestUrlFromGsrsearch(
+        gsrsearch,
+        totalLimit,
+        mltPreset,
+        mltCustom,
+        classicNoboostlinks,
+      ),
+    ]
+  }
+
+  const limits = perSeedLimits(totalLimit, seeds.length)
+  const urls: string[] = []
+
+  for (let i = 0; i < seeds.length; i++) {
+    if (limits[i] <= 0) continue
+
+    urls.push(
+      buildMorelikeApiRequestUrlFromGsrsearch(
+        buildSrsearchForSeed(seeds[i]),
+        limits[i],
+        mltPreset,
+        mltCustom,
+        classicNoboostlinks,
+      ),
+    )
+  }
+
+  return urls
+}
+
+/** Exact URL sent to the Action API (shared by fetch + UI). */
+export function buildMorelikeApiRequestUrl(
+  seedText: string,
+  limit: number,
+  mltPreset: MorelikeMltPreset,
+  mltCustom: MorelikeMltCustomSettings,
+  classicNoboostlinks = true,
+  interleave = false,
+): string | null {
+  const urls = buildMorelikeApiRequestUrls(
+    seedText,
+    limit,
+    mltPreset,
+    mltCustom,
+    classicNoboostlinks,
+    interleave,
+  )
+
+  if (!urls.length) return null
+
+  return urls.join('\n')
 }
 
 async function fetchMorelikeHits(
@@ -231,26 +349,23 @@ export function sortMorelikeHits(
   return hits
 }
 
-export async function fetchMorelikeResults(
+async function fetchMorelikeResultsCombined(
   seedText: string,
   options: {
     limit: number
     mltPreset: MorelikeMltPreset
     mltCustom: MorelikeMltCustomSettings
-    classicNoboostlinks?: boolean
+    classicNoboostlinks: boolean
     signal?: AbortSignal
   },
 ): Promise<MorelikeSearchHit[]> {
-  if (options.signal?.aborted) {
-    throw new MorelikeFetchError('Request aborted', 'aborted')
-  }
-
   const requestUrl = buildMorelikeApiRequestUrl(
     seedText,
     options.limit,
     options.mltPreset,
     options.mltCustom,
-    options.classicNoboostlinks ?? true,
+    options.classicNoboostlinks,
+    false,
   )
 
   if (!requestUrl) {
@@ -258,10 +373,86 @@ export async function fetchMorelikeResults(
   }
 
   const seedTitles = new Set(parseSeedTitles(seedText))
-
   const pages = await fetchMorelikeHits(requestUrl, options.signal)
 
   return pages
     .filter((page) => !seedTitles.has(page.title))
     .map(mapPageToHit)
+}
+
+async function fetchMorelikeResultsInterleaved(
+  seedText: string,
+  options: {
+    limit: number
+    mltPreset: MorelikeMltPreset
+    mltCustom: MorelikeMltCustomSettings
+    classicNoboostlinks: boolean
+    signal?: AbortSignal
+  },
+): Promise<MorelikeSearchHit[]> {
+  const seeds = parseSeedTitles(seedText)
+  if (!seeds.length) {
+    throw new MorelikeFetchError('Add at least one seed page title', 'empty')
+  }
+
+  const seedTitles = new Set(seeds)
+  const limits = perSeedLimits(options.limit, seeds.length)
+  const lists: MorelikeSearchHit[][] = []
+
+  for (let i = 0; i < seeds.length; i++) {
+    if (options.signal?.aborted) {
+      throw new MorelikeFetchError('Request aborted', 'aborted')
+    }
+
+    const limit = limits[i]
+    if (limit <= 0) continue
+
+    const requestUrl = buildMorelikeApiRequestUrlFromGsrsearch(
+      buildSrsearchForSeed(seeds[i]),
+      limit,
+      options.mltPreset,
+      options.mltCustom,
+      options.classicNoboostlinks,
+    )
+
+    const pages = await fetchMorelikeHits(requestUrl, options.signal)
+
+    lists.push(
+      pages
+        .filter((page) => !seedTitles.has(page.title))
+        .map(mapPageToHit),
+    )
+  }
+
+  return interleaveMorelikeHits(lists, options.limit)
+}
+
+export async function fetchMorelikeResults(
+  seedText: string,
+  options: {
+    limit: number
+    mltPreset: MorelikeMltPreset
+    mltCustom: MorelikeMltCustomSettings
+    classicNoboostlinks?: boolean
+    interleave?: boolean
+    signal?: AbortSignal
+  },
+): Promise<MorelikeSearchHit[]> {
+  if (options.signal?.aborted) {
+    throw new MorelikeFetchError('Request aborted', 'aborted')
+  }
+
+  const fetchOptions = {
+    limit: options.limit,
+    mltPreset: options.mltPreset,
+    mltCustom: options.mltCustom,
+    classicNoboostlinks: options.classicNoboostlinks ?? true,
+    signal: options.signal,
+  }
+
+  if (options.interleave) {
+    return fetchMorelikeResultsInterleaved(seedText, fetchOptions)
+  }
+
+  return fetchMorelikeResultsCombined(seedText, fetchOptions)
 }
