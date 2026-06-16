@@ -11,7 +11,9 @@
     "type-check": "vue-tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,vue,css}\"",
     "lint": "eslint . --ext .ts,.vue",
-    "snapshot:wiki-skins": "bash scripts/snapshot-wiki-skins.sh"
+    "snapshot:wiki-skins": "bash scripts/snapshot-wiki-skins.sh",
+    "patch-codex": "node scripts/patch-codex.mjs",
+    "patch-codex:reset": "node scripts/patch-codex.mjs --reset"
   },
   "dependencies": {
     "@wikimedia/codex": "^2.6.0",
