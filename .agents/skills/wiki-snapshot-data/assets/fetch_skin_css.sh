@@ -7,14 +7,14 @@
 # scoping (`scripts/scope-wiki-skin-css.mjs`).
 #
 # Usage (standalone copy):
-#   bash fetch_skin_css.sh                  # writes to ./src/styles/wiki-content/
+#   bash fetch_skin_css.sh                  # writes to ./src/styles/wiki-skins/
 #   bash fetch_skin_css.sh path/to/dir/
 #
 # Re-run every few months; Wikipedia skin CSS evolves.
 
 set -euo pipefail
 
-OUT_DIR="${1:-src/styles/wiki-content}"
+OUT_DIR="${1:-src/styles/wiki-skins}"
 mkdir -p "$OUT_DIR"
 
 UA='ProtoWiki-snapshot/0.1 (https://github.com/<org>/protowiki; <contact>)'

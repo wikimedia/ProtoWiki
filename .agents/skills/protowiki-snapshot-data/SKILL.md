@@ -1,6 +1,6 @@
 ---
 name: protowiki-snapshot-data
-description: ProtoWiki-specific integration of the snapshotting pattern — the npm scripts that wrap the agnostic fetchers, where snapshots land in this repo (public/snapshots/, src/styles/wiki-content/), how `ArticleSnapshot` consumes a pre-baked HTML body, and how the skin CSS gets scoped to [data-skin]. Use when adding a new article snapshot to ProtoWiki, refreshing the Wikipedia skin CSS, or wiring `ArticleSnapshot` up to a static fixture.
+description: ProtoWiki-specific integration of the snapshotting pattern — the npm scripts that wrap the agnostic fetchers, where snapshots land in this repo (public/snapshots/, src/styles/wiki-skins/), how `ArticleSnapshot` consumes a pre-baked HTML body, and how the skin CSS gets scoped to [data-skin]. Use when adding a new article snapshot to ProtoWiki, refreshing the Wikipedia skin CSS, or wiring `ArticleSnapshot` up to a static fixture.
 license: MIT
 ---
 
@@ -25,14 +25,14 @@ public/
     └── <slug>.html              ← committed article fixtures, served verbatim
 src/
 └── styles/
-    └── wiki-content/
+    └── wiki-skins/
         ├── <skin>.rl.css        ← raw RL fetch (committed for diffability)
         └── <skin>.css           ← scoped output, imported by main.ts
 ```
 
 Current state on disk:
 
-- `src/styles/wiki-content/{vector-2022,minerva}.{css,rl.css}` — already
+- `src/styles/wiki-skins/{vector-2022,minerva}.{css,rl.css}` — already
   committed and imported globally in `src/main.ts`.
 - `public/snapshots/` — HTML fixtures referenced by **`article`** on **`ArticleSnapshot`**
   (filename stem must match **`articleSnapshotSlug()`** in `src/components/article/shared/articleSnapshotSlug.ts`):
@@ -50,7 +50,7 @@ The script (`scripts/snapshot-wiki-skins.sh`) does two passes:
 
 1. **Fetch raw RL bundles** for Vector 2022 and Minerva from the
    ResourceLoader endpoint, and write them to
-   `src/styles/wiki-content/{vector-2022,minerva}.rl.css`.
+   `src/styles/wiki-skins/{vector-2022,minerva}.rl.css`.
 2. **Scope every selector** through `scripts/scope-wiki-skin-css.mjs`
    (PostCSS + `postcss-prefix-selector`):
    - Vector → prefixed under `[data-skin="desktop"] .mw-parser-output`.
@@ -59,7 +59,7 @@ The script (`scripts/snapshot-wiki-skins.sh`) does two passes:
      `.mw-parser-output`.
 
 The scoped output lands at
-`src/styles/wiki-content/{vector-2022,minerva}.css`, both imported
+`src/styles/wiki-skins/{vector-2022,minerva}.css`, both imported
 globally in `src/main.ts`. Because the rules are scoped, nested
 `skin="desktop"` / `skin="mobile"` previews coexist cleanly inside one
 page; chrome and Codex components are unaffected.

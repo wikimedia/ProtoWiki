@@ -6,9 +6,9 @@ import App from './App.vue'
 
 import '@wikimedia/codex/dist/codex.style.css'
 import './styles/global.css'
-import './styles/wiki-content/vector-2022.css'
-import './styles/wiki-content/minerva.css'
-import './styles/wiki-content/mobile-wiki-overrides.css'
+import './styles/wiki-skins/vector-2022.css'
+import './styles/wiki-skins/minerva.css'
+import './styles/wiki-skins/mobile-wiki-overrides.css'
 import './styles/dark.css'
 
 import { initTheming } from './theme'

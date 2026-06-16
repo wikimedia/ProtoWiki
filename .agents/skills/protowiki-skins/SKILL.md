@@ -97,7 +97,7 @@ that displays the current global skin.
 ## ResourceLoader styles for `.mw-parser-output`
 
 ProtoWiki ships Wikipedia **Vector 2022** and **Minerva** ResourceLoader bundles
-under `src/styles/wiki-content/`, **scoped** so each rule applies only inside an
+under `src/styles/wiki-skins/`, **scoped** so each rule applies only inside an
 `.mw-parser-output` subtree under the matching `[data-skin]` attribute (desktop /
 mobile). Both bundles load together from `main.ts` after Codex / global CSS, and
 subtree `skin` previews pick up the right parser styling.

@@ -22,7 +22,7 @@ import prefixSelector from 'postcss-prefix-selector'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
-const WIKI_CONTENT = path.join(ROOT, 'src/styles/wiki-content')
+const WIKI_SKINS = path.join(ROOT, 'src/styles/wiki-skins')
 
 const jobs = [
   {
@@ -124,8 +124,8 @@ function scope(css, skinPrefix) {
 }
 
 for (const { input, output, skinPrefix } of jobs) {
-  const inPath = path.join(WIKI_CONTENT, input)
-  const outPath = path.join(WIKI_CONTENT, output)
+  const inPath = path.join(WIKI_SKINS, input)
+  const outPath = path.join(WIKI_SKINS, output)
   if (!fs.existsSync(inPath)) {
     console.error(`Missing ${inPath} — run npm run snapshot:wiki-skins`)
     process.exit(1)

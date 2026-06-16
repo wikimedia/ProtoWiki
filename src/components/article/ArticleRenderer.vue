@@ -167,7 +167,7 @@ onUpdated(() => {
       Caller supplies default slot — Parsoid / snapshot markup via Vue v-html
       wrappers is fine (see ArticleLive). Inner :key resets DOM on skin toggle
       so desktop gets a fresh tree without mobile accordion mutations.
-      Parser RL (.mw-parser-output) ships from src/styles/wiki-content/.
+      Parser RL (.mw-parser-output) ships from src/styles/wiki-skins/.
     -->
     <div ref="mwParserOutputRef" class="mw-parser-output">
       <div :key="effectiveSkin" class="protowiki-parser-slot-root">

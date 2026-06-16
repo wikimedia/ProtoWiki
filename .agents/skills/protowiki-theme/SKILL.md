@@ -47,7 +47,7 @@ file beyond what ships in-repo.
 ## Wikipedia HTML: RL night class + `dark.css`
 
 Article bodies mix three sources: Codex tokens (via `[data-theme]`), vendored
-ResourceLoader CSS (`src/styles/wiki-content/`), and **TemplateStyles** embedded
+ResourceLoader CSS (`src/styles/wiki-skins/`), and **TemplateStyles** embedded
 in Parsoid HTML (`Module:Navbox/styles.css`, Module:Infobox, …). The latter often
 use raw hex (`#ccf` navbox titles) plus `color: inherit`, so foreground can track
 dark tokens while backgrounds stay pastel unless we intervene.

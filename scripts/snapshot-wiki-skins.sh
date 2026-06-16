@@ -4,7 +4,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-OUT_DIR="${1:-$ROOT/src/styles/wiki-content}"
+OUT_DIR="${1:-$ROOT/src/styles/wiki-skins}"
 mkdir -p "$OUT_DIR"
 
 # shellcheck source=api-user-agent.sh

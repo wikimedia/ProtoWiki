@@ -55,7 +55,7 @@ protowiki/
 │   ├── components/         ← shipped components (wrappers, primitives, article, dashboard)
 │   ├── composables/        ← useSkin / useTheme (read-only hooks)
 │   ├── lib/                ← theming logic, helpers
-│   └── styles/             ← global.css, wiki-content/, dark.css
+│   └── styles/             ← global.css, wiki-skins/, dark.css
 ├── .agents/skills/         ← skills for both humans and agents (see below)
 ├── AGENTS.md               ← thin index pointing at the skills
 └── README.md               ← human-friendly intro pointing at the same skills

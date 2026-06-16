@@ -52,7 +52,7 @@ When you want full control over article HTML (fixture-free demos, selectively co
 2. Put all reader body markup in **`ArticleRenderer`’s default slot** — it lands inside **`.mw-parser-output`**, so vendored wiki skin CSS applies.
 3. **Lead + infobox on mobile:** wrap the lead block (infobox table + hatnote + first paragraphs) in **`<section class="hand-authored-lead">`**. That opts into the same flex **`order`** rules as **`section[data-mw-section-id=&quot;0&quot;]`** so the lead prose stacks above the infobox in the Minerva column (see **`ArticleRenderer.vue`**).
 4. **Infoboxes:** match English Wikipedia’s **Infobox musical artist**-shaped table for familiar chrome: **`table.infobox.vcard.plainlist`**, **`th.infobox-above`** (title), **`td.infobox-image`** + **`div.infobox-caption`**, **`th.infobox-header`** (e.g. “Background information” and empty separator rows), **`th.infobox-label`** / **`td.infobox-data`** for fields. **Pale blue header bands** on enwiki come from **inline `style` on those cells** (`background-color: #b0c4de`, etc.) emitted by the infobox **template** — ProtoWiki’s ResourceLoader skin CSS does **not** ship **`Module:Infobox`** / per-template colours, so copy that markup from **Parsoid HTML** or a committed snapshot (e.g. **`public/snapshots/wet-leg.html`**) if you want parity. **`Module:Infobox/styles.css`** in live pages is mostly layout; do not expect class-only headers to pick up the blue without those template inlines.
-5. **Lists inside infoboxes:** enwiki often uses **`plainlist`** + **`<ul>`**; Plainlist **TemplateStyles** are not bundled in **`src/styles/wiki-content/`**, so unordered lists can show default bullets — use comma-separated links, **`<br>`**-separated lines, or co-locate minimal list reset CSS only if the prototype demands it.
+5. **Lists inside infoboxes:** enwiki often uses **`plainlist`** + **`<ul>`**; Plainlist **TemplateStyles** are not bundled in **`src/styles/wiki-skins/`**, so unordered lists can show default bullets — use comma-separated links, **`<br>`**-separated lines, or co-locate minimal list reset CSS only if the prototype demands it.
 
 **Canonical example:** **`src/prototypes/template-article-custom/`** (`Template: Article (custom)` in the gallery) — Wet Leg lead + History authored in Vue, local infobox image via **`import.meta.env.BASE_URL`**.
 
@@ -139,7 +139,7 @@ Fixed copy: desktop tagline **“From Wikipedia, the free encyclopedia”**; Art
 
 - **`ArticleHeader`** title uses **`--font-family-serif`**; tabs/actions use base UI tokens — **`mw-first-heading`** targets **`PlainWrapper`** (and hand-authored **`h1`** in demos / editors), not **`ArticleHeader`**’s **`article-header__title`** row.
 
-- **`.mw-parser-output`** vendored CSS: **`src/styles/wiki-content/`** — see **`wiki-snapshot-data`** / **`protowiki-snapshot-data`**.
+- **`.mw-parser-output`** vendored CSS: **`src/styles/wiki-skins/`** — see **`wiki-snapshot-data`** / **`protowiki-snapshot-data`**.
 
 ## Tips
 
