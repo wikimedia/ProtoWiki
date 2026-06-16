@@ -60,7 +60,7 @@ no other file needs to change.
   `src/prototypes/`). Anything reusable belongs in `src/components/` and gets a skill.
 - **Wrap with `ChromeWrapper`** unless the prototype is intentionally a bare
   fragment. Most Wikipedia prototypes start with chrome → article columns.
-  `ChromeWrapper` already includes the default **`ChromeHeader`** (with inline **`SearchBar`** on desktop). Set **`username`** for the Meta user link; replace **`#header`** only for fully custom chrome.
+  `ChromeWrapper` already includes the default **`ChromeHeader`** (with inline **`Search`** on desktop). Set **`username`** for the Meta user link; replace **`#header`** only for fully custom chrome.
 - **Don't write per-prototype CSS for what Codex tokens already cover** —
   that's the [`codex-usage`](../codex-usage/SKILL.md) discipline that keeps
   prototypes looking like production.

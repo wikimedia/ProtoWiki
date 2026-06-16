@@ -5,8 +5,8 @@ import { RouterLink } from 'vue-router'
 
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 import { useConfig } from '@/composables/useConfig'
-import Dashboard from '@/components/Dashboard.vue'
-import DashboardModule from '@/components/DashboardModule.vue'
+import Dashboard from '@/components/dashboard/Dashboard.vue'
+import DashboardModule from '@/components/dashboard/DashboardModule.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 
 definePage({

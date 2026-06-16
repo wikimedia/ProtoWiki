@@ -196,7 +196,7 @@ format of each file, and how to navigate them.
 
 ## Inside ProtoWiki
 
-`ArticleLive` calls REST **`page/html/{title}`**; **`SearchBar`** wraps Action **`opensearch`**
+`ArticleLive` calls REST **`page/html/{title}`**; **`Search`** wraps Action **`opensearch`**
 (with debouncing and **`AbortController`** cancellation). **`ArticleSnapshot`** loads **`public/snapshots/`**
 HTML only (no **`page/html`** hit). Typical usage already covers UA etiquette and sane defaults.
 

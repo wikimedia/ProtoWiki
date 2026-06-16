@@ -3,7 +3,7 @@ import type { RouteLocationRaw } from 'vue-router'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconUserAvatar } from '@wikimedia/codex-icons'
 
-import DashboardModule from '@/components/DashboardModule.vue'
+import DashboardModule from '@/components/dashboard/DashboardModule.vue'
 
 interface Props {
   /** Full-page drill-down — body only, no `DashboardModule` card chrome. */

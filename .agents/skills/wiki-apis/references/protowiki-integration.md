@@ -11,7 +11,7 @@ endpoints, and how to refresh the committed schema snapshots.
 | `ArticleLive` | REST `/page/html/{title}` | **`ArticleWrapper`** + **`ArticleRenderer`**; **`ArticleRenderer`** mounts when fetch supplies HTML or **`#default`** is passed (**`null`** fetch state omits **`ArticleRenderer`**). **`lang`** / **`dir`** passthrough unchanged. Defaults **`en.wikipedia.org`**; **`host`** switches wiki. |
 | `ArticleSnapshot` | (none — static **`public/snapshots/&lt;slug&gt;.html`**) | No REST body fetch; slug from **`articleSnapshotSlug(article)`**. |
 | `ArticleCustom` | (none) | Thin **`ArticleWrapper` → `ArticleRenderer`**; **`#default`** is hand-authored markup. |
-| `SearchBar` | Action `?action=opensearch` | Debounced + `AbortController`-cancelled. Defaults to `en.wikipedia.org`; takes a `host` prop. |
+| `Search` | Action `?action=opensearch` | Debounced + `AbortController`-cancelled. Defaults to `en.wikipedia.org`; takes a `host` prop. |
 
 **No API:** **`ArticleCustom`** (or **`ArticleWrapper`** + **`ArticleRenderer`**) with a hand-filled **`#default`** slot (static or computed markup) does not call REST or Action APIs. Use that when fetch and committed snapshots are both wrong — see **`src/prototypes/template-article-custom/`** and [`protowiki-components` → `article.md`](../../protowiki-components/references/article.md#hand-authored-article-markup-no-fetch-no-snapshot).
 
@@ -63,6 +63,6 @@ too; only the snapshot paths change.
 
 - [`wiki-apis`](../SKILL.md) — the agnostic API guidance.
 - [`protowiki-components`](../../protowiki-components/SKILL.md) — for
-  what `ArticleWrapper`, `ArticleRenderer`, `ArticleLive`, `ArticleSnapshot`, `ArticleCustom`, and `SearchBar` expose.
+  what `ArticleWrapper`, `ArticleRenderer`, `ArticleLive`, `ArticleSnapshot`, `ArticleCustom`, and `Search` expose.
 - [`wiki-snapshot-data`](../../wiki-snapshot-data/SKILL.md) — when not
   to fetch live at all.

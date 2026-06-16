@@ -1,6 +1,6 @@
 ---
 name: protowiki-components
-description: Catalog of every shipped component in src/components/ — the three single-concern layout wrappers (ChromeWrapper, SpecialPageWrapper, PlainWrapper), the chrome primitives (ChromeHeader, ChromeFooter), Article surfaces (`ArticleWrapper` + `ArticleRenderer`, ArticleLive, ArticleSnapshot, ArticleCustom, ArticleHeader), dashboard layout (`Dashboard`, `DashboardModule`), and SearchBar — including hand-authored article HTML in `ArticleRenderer`'s default slot (see `src/prototypes/template-article-custom/`) and newcomer homepage templates (`template-dashboard`, `template-homepage`). Use when picking a wrapper, composing a page, looking up props/slots/events for any ProtoWiki component, or asking "what components does ProtoWiki ship?".
+description: Catalog of every shipped component in src/components/ — the three single-concern layout wrappers (ChromeWrapper, SpecialPageWrapper, PlainWrapper), the chrome primitives (ChromeHeader, ChromeFooter), Article surfaces (`ArticleWrapper` + `ArticleRenderer`, ArticleLive, ArticleSnapshot, ArticleCustom, ArticleHeader), dashboard layout (`Dashboard`, `DashboardModule`), and Search — including hand-authored article HTML in `ArticleRenderer`'s default slot (see `src/prototypes/template-article-custom/`) and newcomer homepage templates (`template-dashboard`, `template-homepage`). Use when picking a wrapper, composing a page, looking up props/slots/events for any ProtoWiki component, or asking "what components does ProtoWiki ship?".
 license: MIT
 ---
 
@@ -19,7 +19,7 @@ This skill is the cross-cutting guide. Per-component depth lives in
   `ChromeHeader`, `ChromeFooter`
 - [`references/article.md`](references/article.md) — `ArticleWrapper`, `ArticleRenderer`,
   `ArticleLive`, `ArticleSnapshot`, `ArticleCustom`, `ArticleHeader`
-- [`references/search-bar.md`](references/search-bar.md)
+- [`references/search.md`](references/search.md)
 - [`references/editors.md`](references/editors.md) —
   Visual editor prototyping **outside** ProtoWiki (fork Bárbara Martínez Calvo’s article template + suggestion-mode repos)
 - [`references/edit-suggestions.md`](references/edit-suggestions.md) —
@@ -44,7 +44,7 @@ This skill is the cross-cutting guide. Per-component depth lives in
 | `ArticleSnapshot` | **`ArticleWrapper`** + **`ArticleRenderer`** (omitted until snapshot load succeeds or **`#default`**) + **`public/snapshots/`** | No | No |
 | `ArticleCustom` | **`ArticleWrapper`** + **`ArticleRenderer`**: **`#default`** is the parser body — no **`page/html`**, no snapshot file | No | No |
 | `ArticleHeader` | Title row, tabs, read/edit/history, tools (**used inside **`ArticleWrapper`**) | No | No |
-| `SearchBar` | `CdxTypeaheadSearch` wired to opensearch (default in ChromeHeader) | n/a | n/a |
+| `Search` | `CdxTypeaheadSearch` wired to opensearch (default in ChromeHeader) | n/a | n/a |
 | `Dashboard` | Newcomer homepage grid — `#banner`, `#mobile`, `#primary`, `#sidebar` slots | No | Yes (desktop) |
 | `DashboardModule` | Single module box — link card when `to` is set, static sidebar card otherwise | No | No |
 
@@ -77,7 +77,7 @@ Two lines, top-down: chrome → article surface. **`ArticleLive`** and **`Articl
 
 Every component in this list (`ChromeWrapper`,
 `SpecialPageWrapper`, `PlainWrapper`, `ArticleWrapper`, `ArticleRenderer`,
-`ArticleLive`, `ArticleSnapshot`, `ArticleCustom`, `SearchBar`) accepts the same two theming props:
+`ArticleLive`, `ArticleSnapshot`, `ArticleCustom`, `Search`) accepts the same two theming props:
 
 | Prop | Type | Effect |
 | --- | --- | --- |
@@ -121,9 +121,9 @@ import ArticleLive from '@/components/article/ArticleLive.vue'
 import ArticleSnapshot from '@/components/article/ArticleSnapshot.vue'
 import ArticleCustom from '@/components/article/ArticleCustom.vue'
 import ArticleHeader from '@/components/article/ArticleHeader.vue'
-import SearchBar from '@/components/SearchBar/SearchBar.vue'
-import Dashboard from '@/components/Dashboard.vue'
-import DashboardModule from '@/components/DashboardModule.vue'
+import Search from '@/components/Search.vue'
+import Dashboard from '@/components/dashboard/Dashboard.vue'
+import DashboardModule from '@/components/dashboard/DashboardModule.vue'
 ```
 
 The `@/` prefix resolves to `src/`.
@@ -144,7 +144,7 @@ The `@/` prefix resolves to `src/`.
 | `ArticleSnapshot` | **`article`** (snapshot key **`+`** **`ArticleWrapper`** **`title`**) **`+`** chrome passthroughs (**no **`host`** / **`header`**) | **default** → **`ArticleRenderer`** (**`ArticleSnapshot`** injects **`Cdx`** UI before **`ArticleRenderer`**) |
 | `ArticleCustom` | Same **`ArticleWrapper`** chrome keys as manual composition (**`title`**, **`header`**, …) — **no `article` / `host`** | **default** → **`ArticleRenderer`** (your **`#default`** is the parser subtree) |
 | `ArticleHeader` | **`title`** (required), **`languagesCount?`** (default 18), **`skin?`** | **`#title`**, emits (`languageSelect`, `languageSettingsClick`, tab/action clicks) |
-| `SearchBar` | `host?`, `placeholder?`, `limit?`, `skin?`, `theme?` | none |
+| `Search` | `host?`, `placeholder?`, `limit?`, `skin?`, `theme?` | none |
 | `Dashboard` | (none) | `#banner`, `#mobile`, `#primary`, `#sidebar` |
 | `DashboardModule` | `title?`, `to?`, `cta?`, `subtle?` | default, `#cta` |
 

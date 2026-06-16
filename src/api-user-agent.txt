@@ -1,1 +1,1 @@
-ProtoWiki/0.1 (https://github.com/wikimedia/ProtoWiki; lwilson-ctr@wikimedia.org)
+ProtoWiki/0.2 (https://github.com/wikimedia/ProtoWiki; lwilson-ctr@wikimedia.org)

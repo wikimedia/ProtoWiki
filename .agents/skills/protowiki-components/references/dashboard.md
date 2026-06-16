@@ -89,8 +89,8 @@ co-located `*Module.vue` files in the prototype folder that wrap
 ```vue
 <script setup lang="ts">
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
-import Dashboard from '@/components/Dashboard.vue'
-import DashboardModule from '@/components/DashboardModule.vue'
+import Dashboard from '@/components/dashboard/Dashboard.vue'
+import DashboardModule from '@/components/dashboard/DashboardModule.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 </script>
 

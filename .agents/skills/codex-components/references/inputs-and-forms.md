@@ -125,7 +125,7 @@ Search bar with typeahead suggestion list and submit handling. The
 typical wiring is to debounce keystrokes (150–250ms), call the
 Wikipedia `?action=opensearch` endpoint with an `AbortController`, and
 feed the returned titles into the suggestion slot. ProtoWiki ships a
-`SearchBar` component that already does all of this — see
+`Search` component that already does all of this — see
 [`protowiki-components`](../../protowiki-components/SKILL.md).
 
 ## CdxAccordion

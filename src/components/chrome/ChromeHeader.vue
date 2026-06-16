@@ -16,8 +16,8 @@ import { useConfig } from '@/composables/useConfig'
 import { DEFAULT_CHROME_NAV_TOOLS, type ChromeNavTool } from './headerNavTools'
 import { globalSkin, globalTheme } from '@/theme'
 import type { Skin, Theme } from '@/theme'
-import PrototypeUserSettingsPopover from '../PrototypeUserSettingsPopover.vue'
-import SearchBar from '../SearchBar/SearchBar.vue'
+import UserSettingsPopover from '../settings/UserSettingsPopover.vue'
+import Search from '../Search.vue'
 
 const { user } = useConfig()
 
@@ -127,7 +127,7 @@ function navHas(tool: ChromeNavTool): boolean {
 
       <div class="chrome-header__inline-search">
         <div class="chrome-header__search">
-          <SearchBar />
+          <Search />
         </div>
         <CdxButton
           class="chrome-header__search-submit"
@@ -157,7 +157,7 @@ function navHas(tool: ChromeNavTool): boolean {
             >
               Donate
             </a>
-            <PrototypeUserSettingsPopover v-slot="{ toggle, open }">
+            <UserSettingsPopover v-slot="{ toggle, open }">
               <button
                 type="button"
                 class="chrome-header__text-link chrome-header__text-link--button"
@@ -167,7 +167,7 @@ function navHas(tool: ChromeNavTool): boolean {
               >
                 Create account
               </button>
-            </PrototypeUserSettingsPopover>
+            </UserSettingsPopover>
             <a
               class="chrome-header__text-link"
               href="https://en.wikipedia.org/w/index.php?title=Special:UserLogin"
@@ -207,7 +207,7 @@ function navHas(tool: ChromeNavTool): boolean {
           >
             <CdxIcon :icon="cdxIconWatchlist" />
           </CdxButton>
-          <PrototypeUserSettingsPopover v-if="navHas('user')" v-slot="{ toggle, open }">
+          <UserSettingsPopover v-if="navHas('user')" v-slot="{ toggle, open }">
             <CdxButton
               class="chrome-header__user-btn"
               weight="quiet"
@@ -218,7 +218,7 @@ function navHas(tool: ChromeNavTool): boolean {
               <CdxIcon :icon="cdxIconUserAvatar" />
               <span class="chrome-header__dropdown-chevron" aria-hidden="true" />
             </CdxButton>
-          </PrototypeUserSettingsPopover>
+          </UserSettingsPopover>
         </slot>
       </div>
     </nav>
@@ -258,7 +258,7 @@ function navHas(tool: ChromeNavTool): boolean {
         >
           <CdxIcon :icon="cdxIconBell" />
         </CdxButton>
-        <PrototypeUserSettingsPopover v-slot="{ toggle, open }">
+        <UserSettingsPopover v-slot="{ toggle, open }">
           <CdxButton
             class="chrome-header__mobile-user-btn"
             weight="quiet"
@@ -269,7 +269,7 @@ function navHas(tool: ChromeNavTool): boolean {
           >
             <CdxIcon :icon="cdxIconUserAvatar" size="medium" />
           </CdxButton>
-        </PrototypeUserSettingsPopover>
+        </UserSettingsPopover>
       </div>
     </nav>
   </header>

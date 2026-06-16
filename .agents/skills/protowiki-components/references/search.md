@@ -1,4 +1,4 @@
-# `SearchBar`
+# `Search`
 
 Wikipedia typeahead search — `CdxTypeaheadSearch` wired to the MediaWiki
 **opensearch** Action API. Default search component used by `ChromeHeader`.
@@ -6,7 +6,7 @@ Wikipedia typeahead search — `CdxTypeaheadSearch` wired to the MediaWiki
 ## Usage
 
 ```vue
-<SearchBar @select="onSelect" @submit="onSubmit" />
+<Search @select="onSelect" @submit="onSubmit" />
 ```
 
 ```ts
@@ -51,7 +51,7 @@ function onSubmit(query: string) {
 
 ## Inside `ChromeHeader`
 
-Desktop Vector chrome always mounts **`<SearchBar />`** in the inline search cluster (no `#search` slot). Most prototypes never import **`SearchBar`** — they use **`ChromeWrapper`**, which renders the default **`ChromeHeader`**.
+Desktop Vector chrome always mounts **`<Search />`** in the inline search cluster (no `#search` slot). Most prototypes never import **`Search`** — they use **`ChromeWrapper`**, which renders the default **`ChromeHeader`**.
 
 The chrome user link (**`chrome-header__username-link` → Meta**) is **`ChromeHeader`’s **`username`** prop (**`ChromeWrapper`** forwards the same prop when you use the default header). **`username=""`** hides that link.
 

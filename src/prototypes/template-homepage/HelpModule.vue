@@ -3,7 +3,7 @@ import type { RouteLocationRaw } from 'vue-router'
 import { CdxIcon } from '@wikimedia/codex'
 import { cdxIconHelp } from '@wikimedia/codex-icons'
 
-import DashboardModule from '@/components/DashboardModule.vue'
+import DashboardModule from '@/components/dashboard/DashboardModule.vue'
 
 export interface HelpLink {
   label: string

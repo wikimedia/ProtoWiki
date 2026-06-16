@@ -191,9 +191,9 @@ npm run lint
 Then `npm run dev` and smoke-test the surfaces most exposed to Codex
 changes:
 
-- Popovers: settings gear (`PrototypeUserSettingsPopover`) and the article
+- Popovers: settings gear (`UserSettingsPopover`) and the article
   language menu (`ArticleHeader`).
-- Search: `SearchBar` (`CdxTypeaheadSearch`).
+- Search: `Search` (`CdxTypeaheadSearch`).
 - Loading: `ArticleLive` / `ArticleSnapshot` (`CdxProgressBar`).
 - Icons across chrome header/footer and homepage modules.
 - Toggle light/dark theme to confirm token injection in

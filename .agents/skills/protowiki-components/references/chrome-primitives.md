@@ -12,7 +12,7 @@ chrome-without-the-wrapper (e.g., a custom layout that doesn't use
 
 | Skin | Chrome feel | Notes |
 | --- | --- | --- |
-| `desktop` | **Vector 2022–style** | Wordmark/tagline (**`wordmarkSrc`**, **`taglineSrc`**, **`#logo` override**), **`SearchBar`** + **Search** button, username link (**`username`** + **`#username`**), user-tool cluster ( **`navTools`** preset vs **`#nav`** override ). **Main-menu glyph is icon-only** (mock). Global skin stays **desktop** until the viewport is **≤640px**; **below 1120px**, inline search collapses to a search icon; **below 768px**, watchlist hides (`nav-button-desktop` parity). |
+| `desktop` | **Vector 2022–style** | Wordmark/tagline (**`wordmarkSrc`**, **`taglineSrc`**, **`#logo` override**), **`Search`** + **Search** button, username link (**`username`** + **`#username`**), user-tool cluster ( **`navTools`** preset vs **`#nav`** override ). **Main-menu glyph is icon-only** (mock). Global skin stays **desktop** until the viewport is **≤640px**; **below 1120px**, inline search collapses to a search icon; **below 768px**, watchlist hides (`nav-button-desktop` parity). |
 | `mobile` | **Minerva-style** | Grey elevated bar: menu, Wikipedia wordmark (**`mobileWordmarkSrc`** / **`wordmarkSrc`**, **`#logo`**), search icon + notifications — **`navTools` is ignored**. |
 
 **`ChromeFooter`** matches the skin:
@@ -45,7 +45,7 @@ That notice is chrome **fiction** for prototypes — not wired to revisions. The
 on the surrounding wrapper (or on `<html>`) and the chrome inherits them
 through the DOM.
 
-Desktop **inline search** is always **`<SearchBar />`** inside the header (not a slot).
+Desktop **inline search** is always **`<Search />`** inside the header (not a slot).
 
 ### Slots
 

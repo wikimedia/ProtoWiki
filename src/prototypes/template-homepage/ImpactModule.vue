@@ -11,7 +11,7 @@ import {
   cdxIconUserTalk,
 } from '@wikimedia/codex-icons'
 
-import DashboardModule from '@/components/DashboardModule.vue'
+import DashboardModule from '@/components/dashboard/DashboardModule.vue'
 
 const emit = defineEmits<{
   refresh: []
