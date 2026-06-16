@@ -24,6 +24,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
 const WIKI_SKINS = path.join(ROOT, 'src/styles/wiki-skins')
 
+// RL bundles reference skin assets (the external-link arrow, magnify-clip icons,
+// project logos, …) with host-relative (`/w/…`, `/static/…`) or protocol-relative
+// (`//upload.wikimedia.org/…`) URLs. Those resolve against *Wikipedia's* host;
+// served from ProtoWiki they 404 and the asset silently disappears (e.g. the
+// external-link icon next to `a.external`). Rewrite them to absolute Wikipedia
+// URLs so the assets load. `data:` and already-absolute `http(s):` URLs are left
+// untouched.
+const WIKI_ORIGIN = 'https://en.wikipedia.org'
+
 const jobs = [
   {
     input: 'vector-2022.rl.css',
@@ -85,6 +94,41 @@ function dropCollapsedRootRules(skinPrefix) {
 }
 dropCollapsedRootRules.postcss = true
 
+/**
+ * Rewrite `url(...)` values that point at Wikipedia-host paths so the referenced
+ * assets resolve when this CSS is served from ProtoWiki:
+ *   - `url(/w/…)` / `url(/static/…)` (host-relative) → `https://en.wikipedia.org/…`
+ *   - `url(//upload.wikimedia.org/…)` (protocol-relative) → `https://…`
+ * Leaves `data:` URIs and already-absolute `http(s):` URLs alone.
+ */
+function absolutizeUrl(value) {
+  return value.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, (match, quote, raw) => {
+    const url = raw.trim()
+    if (/^(?:https?:|data:)/i.test(url)) return match
+    let abs
+    if (url.startsWith('//')) {
+      abs = `https:${url}`
+    } else if (url.startsWith('/')) {
+      abs = `${WIKI_ORIGIN}${url}`
+    } else {
+      return match
+    }
+    return `url(${quote}${abs}${quote})`
+  })
+}
+
+function absolutizeUrls() {
+  return {
+    postcssPlugin: 'absolutize-wiki-urls',
+    Declaration(decl) {
+      if (decl.value.includes('url(')) {
+        decl.value = absolutizeUrl(decl.value)
+      }
+    },
+  }
+}
+absolutizeUrls.postcss = true
+
 function scope(css, skinPrefix) {
   // Pass 1: scope every selector under [data-skin="…"] / .mw-parser-output.
   // Pass 2: strip RL's collapsed-root rules (page-level body styles + token
@@ -118,7 +162,7 @@ function scope(css, skinPrefix) {
     }),
   ]).process(css, { from: undefined }).css
 
-  return postcss([dropCollapsedRootRules(skinPrefix)]).process(prefixed, {
+  return postcss([dropCollapsedRootRules(skinPrefix), absolutizeUrls()]).process(prefixed, {
     from: undefined,
   }).css
 }
