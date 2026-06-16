@@ -145,3 +145,10 @@ Collapsible section — title + body.
 Codex uses `v-model:open` (dialogs), `v-model:selected` (selects /
 combobox / lookup), `v-model:input-value` (free-text portion of
 lookup). Pay attention to which target you bind.
+
+## Designing the form (style guide)
+
+For *how to construct a form well* — usability rules, layout & width,
+fieldsets/modules, validation timing, readonly vs disabled, spacing
+tokens, and which field type to pick — see
+[`codex-style-guide` → constructing forms](../../codex-style-guide/references/constructing-forms.md).

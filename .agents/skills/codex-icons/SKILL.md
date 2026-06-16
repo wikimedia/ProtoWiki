@@ -102,6 +102,14 @@ language. Pass `langCode`:
 <CdxIcon :icon="cdxIconBoldX" langCode="ar" />
 ```
 
+## Choosing or designing an icon
+
+This skill is the lookup (which constant, how to render). For the *design
+principles* — reduce to the essential form, universal not
+culturally-specific, neutral, geometric, the 20 dp canvas, RTL
+mirroring — see
+[`codex-style-guide` → icon design](../codex-style-guide/references/icons.md).
+
 ## Custom icons
 
 For an icon that's not in the catalogue, define your own descriptor:

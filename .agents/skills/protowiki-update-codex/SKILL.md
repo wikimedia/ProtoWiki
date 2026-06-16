@@ -102,8 +102,10 @@ the existing wording, add the new token/icon/prop, remove what's gone. Do
 | --- | --- |
 | Component props / slots / events / guidance | [`codex-components`](../codex-components/SKILL.md) + `references/*.md` |
 | New / changed / deprecated tokens | [`codex-tokens`](../codex-tokens/SKILL.md) + `references/colors.md` etc. |
+| Text style scale / the 9-styles rule | [`codex-typography`](../codex-typography/SKILL.md) (and the copy kept in `codex-tokens/references/typography.md`) |
 | Added / renamed / removed icons | [`codex-icons`](../codex-icons/SKILL.md) |
-| Cross-cutting usage or principles | [`codex-usage`](../codex-usage/SKILL.md) / [`codex-design-principles`](../codex-design-principles/SKILL.md) |
+| Cross-cutting usage | [`codex-usage`](../codex-usage/SKILL.md) |
+| Design principles, visual style, layout, content guidelines | [`codex-style-guide`](../codex-style-guide/SKILL.md) + `references/*.md` |
 
 Verify any new icon name against the installed package before documenting it:
 

@@ -127,3 +127,7 @@ Circular / square image with placeholder fallback.
   difference.
 - For an "in-text link", just use a regular `<a>`. The base CSS already
   styles links with `--color-progressive`.
+
+For the *design* rules — links vs buttons, button hierarchy/order/
+spacing, when to use a disabled button — see
+[`codex-style-guide` → links and buttons](../../codex-style-guide/references/links-and-buttons.md).

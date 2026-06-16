@@ -61,33 +61,34 @@ trailing **Inside ProtoWiki** section.
 
 ### ProtoWiki workflow
 
-| Skill                                                                              | What it covers                                                          |
-| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| [`protowiki-getting-started`](.agents/skills/protowiki-getting-started/SKILL.md)   | Orientation: what ProtoWiki is, the stack, where everything lives       |
-| [`protowiki-create-prototype`](.agents/skills/protowiki-create-prototype/SKILL.md) | Adding a new prototype via file-based routing — zero registration       |
-| [`protowiki-components`](.agents/skills/protowiki-components/SKILL.md)             | Shipped Vue components: wrappers, chrome, article surfaces, search      |
-| [`protowiki-skins`](.agents/skills/protowiki-skins/SKILL.md)                       | Vector 2022 (desktop) vs Minerva (mobile); per-component skin overrides |
-| [`protowiki-theme`](.agents/skills/protowiki-theme/SKILL.md)                       | Light / dark theming; per-component theme overrides                     |
-| [`protowiki-deploy`](.agents/skills/protowiki-deploy/SKILL.md)                     | GitHub Pages deploy, PR previews, base path, fork setup, SPA 404        |
+| Skill                                                                              | What it covers                                                           |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [`protowiki-getting-started`](.agents/skills/protowiki-getting-started/SKILL.md)   | Orientation: what ProtoWiki is, the stack, where everything lives        |
+| [`protowiki-create-prototype`](.agents/skills/protowiki-create-prototype/SKILL.md) | Adding a new prototype via file-based routing — zero registration        |
+| [`protowiki-components`](.agents/skills/protowiki-components/SKILL.md)             | Shipped Vue components: wrappers, chrome, article surfaces, search       |
+| [`protowiki-skins`](.agents/skills/protowiki-skins/SKILL.md)                       | Vector 2022 (desktop) vs Minerva (mobile); per-component skin overrides  |
+| [`protowiki-theme`](.agents/skills/protowiki-theme/SKILL.md)                       | Light / dark theming; per-component theme overrides                      |
+| [`protowiki-deploy`](.agents/skills/protowiki-deploy/SKILL.md)                     | GitHub Pages deploy, PR previews, base path, fork setup, SPA 404         |
 | [`protowiki-update-codex`](.agents/skills/protowiki-update-codex/SKILL.md)         | Upgrading Codex: bump packages, diff upstream docs, sync skills + tokens |
 
 ### Codex (design system)
 
-| Skill                                                                        | What it covers                                                                                                                              |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`codex-usage`](.agents/skills/codex-usage/SKILL.md)                         | Umbrella: how to use Codex anywhere — components first, then tokens, then icons; when (rarely) to write custom CSS; matching Figma fidelity |
-| [`codex-tokens`](.agents/skills/codex-tokens/SKILL.md)                       | Codex CSS custom properties (color, spacing, type, dark mode)                                                                               |
-| [`codex-components`](.agents/skills/codex-components/SKILL.md)               | Every Codex Vue component shipped via `@wikimedia/codex`                                                                                    |
-| [`codex-icons`](.agents/skills/codex-icons/SKILL.md)                         | The `@wikimedia/codex-icons` catalogue and usage                                                                                            |
-| [`codex-design-principles`](.agents/skills/codex-design-principles/SKILL.md) | Familiar / useful / accessible / easy / joyful + minimise chrome                                                                            |
+| Skill                                                                        | What it covers                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`codex-usage`](.agents/skills/codex-usage/SKILL.md)                         | Umbrella: how to use Codex anywhere — components first, then tokens, then icons; when (rarely) to write custom CSS; matching Figma fidelity                                                                                                                                                                                                                                                                                                           |
+| [`codex-tokens`](.agents/skills/codex-tokens/SKILL.md)                       | Codex CSS custom properties (color, spacing, type, dark mode)                                                                                                                                                                                                                                                                                                                                                                                         |
+| [`codex-typography`](.agents/skills/codex-typography/SKILL.md)               | The 9 canonical text styles rule — every piece of text uses exactly one; never mix tokens across styles                                                                                                                                                                                                                                                                                                                                                |
+| [`codex-components`](.agents/skills/codex-components/SKILL.md)               | Every Codex Vue component shipped via `@wikimedia/codex`                                                                                                                                                                                                                                                                                                                                                                                              |
+| [`codex-icons`](.agents/skills/codex-icons/SKILL.md)                         | The `@wikimedia/codex-icons` catalogue and usage                                                                                                                                                                                                                                                                                                                                                                                                      |
+| [`codex-style-guide`](.agents/skills/codex-style-guide/SKILL.md)             | The whole Codex Style Guide: design principles, accessibility, bidirectionality, visual styles (colour, type, icons, images, illustrations, data viz), layout guidelines (links/buttons, forms, overflow), content guidelines (voice, copy, machine assistance) |
 
 ### Real Wikimedia data (portable)
 
-| Skill                                                                        | What it covers                                                                                |
-| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| [`wiki-apis`](.agents/skills/wiki-apis/SKILL.md)                             | REST API + Action API + etiquette                                                             |
-| [`wiki-signals`](.agents/skills/wiki-signals/SKILL.md)                       | Catalog of signals (inference, analytics, links, curation, attribution, edit suggestions)     |
-| [`wiki-snapshot-data`](.agents/skills/wiki-snapshot-data/SKILL.md)           | Snapshotting article HTML and skin CSS — universal pattern                                    |
+| Skill                                                                        | What it covers                                                                                      |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| [`wiki-apis`](.agents/skills/wiki-apis/SKILL.md)                             | REST API + Action API + etiquette                                                                   |
+| [`wiki-signals`](.agents/skills/wiki-signals/SKILL.md)                       | Catalog of signals (inference, analytics, links, curation, attribution, edit suggestions)           |
+| [`wiki-snapshot-data`](.agents/skills/wiki-snapshot-data/SKILL.md)           | Snapshotting article HTML and skin CSS — universal pattern                                          |
 | [`protowiki-snapshot-data`](.agents/skills/protowiki-snapshot-data/SKILL.md) | ProtoWiki integration: `public/snapshots/`, `src/styles/wiki-skins/`, `ArticleSnapshot` consumption |
 
 Edit Check-style suggestion overlays are split between two skills: see

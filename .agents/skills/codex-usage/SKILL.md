@@ -17,9 +17,11 @@ For any UI surface, in this order:
 
 1. **A Codex component if one exists.** See
    [`codex-components`](../codex-components/SKILL.md). 50+ components ship.
-2. **Codex tokens.** Spacing, colour, type, radii: `var(--cdx-…)` /
+2. **Codex tokens.** Spacing, colour, radii: `var(--cdx-…)` /
    `var(--color-…)` / `var(--spacing-…)` etc. See
-   [`codex-tokens`](../codex-tokens/SKILL.md).
+   [`codex-tokens`](../codex-tokens/SKILL.md). For **text**, don't pick
+   type tokens individually — use one of the **9 canonical text styles**:
+   [`codex-typography`](../codex-typography/SKILL.md).
 3. **A Codex icon** for any glyph. See
    [`codex-icons`](../codex-icons/SKILL.md).
 4. **Custom CSS** only when you're genuinely demonstrating a new style.
@@ -27,6 +29,11 @@ For any UI surface, in this order:
 When you reach step 4, scope it via a class on your app's root and
 prefer `:where(.my-app)` so specificity stays low and Codex tokens keep
 cascading.
+
+This rule is about *which primitive* to use. For *what to design and
+why* — the design principles, accessibility, bidirectionality, visual
+styles, layout patterns, and UI copy — see
+[`codex-style-guide`](../codex-style-guide/SKILL.md).
 
 ## What ships
 

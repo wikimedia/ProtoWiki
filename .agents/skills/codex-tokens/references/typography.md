@@ -1,5 +1,9 @@
 # Typography
 
+> The canonical home for the 9-styles **rule** is
+> [`codex-typography`](../../codex-typography/SKILL.md). This page repeats
+> the rule and adds the **full token tables** behind the styles.
+
 Codex defines **9 canonical text styles**. Every piece of text must use one
 of them. **Do not invent other combinations** of font family, size, weight,
 or line height — pick a whole style, never mix tokens across styles (e.g.
@@ -103,3 +107,8 @@ listed so you can recognise them and verify a style.
 Each style pairs its font size with the matching `--line-height-*` token
 (e.g. `--font-size-xx-large` with `--line-height-xx-large`). Don't mismatch
 them.
+
+The 9-styles rule and the easiest way to follow it live in
+[`codex-typography`](../../codex-typography/SKILL.md). For the residual
+*design* concerns the styles don't decide — line length and dynamic text —
+see [`codex-style-guide` → typography](../../codex-style-guide/references/typography.md).

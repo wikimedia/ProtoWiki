@@ -92,3 +92,9 @@ plain HTML + Codex tokens (spacing, colour) is usually shorter than
 forcing a Codex container. Use the layout components when you need
 genuine table semantics, tab semantics, or breadcrumb semantics — i.e.,
 when assistive tech relies on the role.
+
+## Content overflow (style guide)
+
+For *how to handle overflow* — wrapping vs ellipsis (+tooltip) vs a
+scroll fade — see
+[`codex-style-guide` → content overflow](../../codex-style-guide/references/content-overflow.md).

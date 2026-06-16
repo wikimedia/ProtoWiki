@@ -1,5 +1,9 @@
 # Colour tokens
 
+Which token to reach for. For *what colour means* and the
+never-colour-alone / contrast rules, see
+[`codex-style-guide` → colour usage](../../codex-style-guide/references/colors.md).
+
 ## Text
 
 | Token | Use |
