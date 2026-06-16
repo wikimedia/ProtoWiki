@@ -53,6 +53,7 @@ const mltPreset = ref<MorelikeMltPreset>('default')
 const mltCustom = ref<MorelikeMltCustomSettings>({
   ...DEFAULT_MORELIKE_PLAYGROUND_STATE.mltCustom,
 })
+const classicNoboostlinks = ref(DEFAULT_MORELIKE_PLAYGROUND_STATE.classicNoboostlinks)
 
 const results = ref<MorelikeSearchHit[]>([])
 const sortedResults = computed(() => sortMorelikeHits(results.value, sortOrder.value))
@@ -96,6 +97,7 @@ const requestUrl = computed(
       resultLimit.value,
       mltPreset.value,
       mltCustom.value,
+      classicNoboostlinks.value,
     ) ?? '',
 )
 
@@ -119,6 +121,7 @@ function schedulePersist(immediate = false): void {
       sortOrder: sortOrder.value,
       mltPreset: mltPreset.value,
       mltCustom: mltCustom.value,
+      classicNoboostlinks: classicNoboostlinks.value,
     })
   }
 
@@ -145,6 +148,7 @@ async function onSearch(): Promise<void> {
       limit: resultLimit.value,
       mltPreset: mltPreset.value,
       mltCustom: mltCustom.value,
+      classicNoboostlinks: classicNoboostlinks.value,
       signal: abortController.signal,
     })
 
@@ -182,10 +186,13 @@ onMounted(() => {
   sortOrder.value = stored.sortOrder
   mltPreset.value = stored.mltPreset
   mltCustom.value = { ...stored.mltCustom }
+  classicNoboostlinks.value = stored.classicNoboostlinks
 })
 
 watch(seedText, () => schedulePersist(false))
-watch([resultLimit, sortOrder, mltPreset, mltCustom], () => schedulePersist(true), { deep: true })
+watch([resultLimit, sortOrder, mltPreset, mltCustom, classicNoboostlinks], () => schedulePersist(true), {
+  deep: true,
+})
 </script>
 
 <template>
@@ -333,6 +340,17 @@ watch([resultLimit, sortOrder, mltPreset, mltCustom], () => schedulePersist(true
             </CdxToggleSwitch>
           </CdxField>
         </div>
+
+        <CdxField>
+          <template #label>Disable link boosting (`classic_noboostlinks`)</template>
+          <template #description>
+            When on, adds `gsrqiprofile=classic_noboostlinks` — ranks by text similarity without
+            incoming-link rescore. When off, wiki default applies.
+          </template>
+          <CdxToggleSwitch v-model="classicNoboostlinks">
+            gsrqiprofile
+          </CdxToggleSwitch>
+        </CdxField>
 
         <CdxField>
           <template #label>gsrsearch</template>

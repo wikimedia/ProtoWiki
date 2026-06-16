@@ -98,6 +98,7 @@ function buildMorelikeSearchParams(
   gsrsearch: string,
   limit: number,
   mltParams: Record<string, string>,
+  classicNoboostlinks: boolean,
 ): URLSearchParams {
   const params = new URLSearchParams({
     action: 'query',
@@ -115,6 +116,10 @@ function buildMorelikeSearchParams(
     origin: '*',
   })
 
+  if (classicNoboostlinks) {
+    params.set('gsrqiprofile', 'classic_noboostlinks')
+  }
+
   for (const [key, value] of Object.entries(mltParams)) {
     params.set(key, value)
   }
@@ -128,11 +133,17 @@ export function buildMorelikeApiRequestUrl(
   limit: number,
   mltPreset: MorelikeMltPreset,
   mltCustom: MorelikeMltCustomSettings,
+  classicNoboostlinks = true,
 ): string | null {
   const gsrsearch = buildSrsearch(seedText)
   if (!gsrsearch) return null
 
-  const params = buildMorelikeSearchParams(gsrsearch, limit, resolveMltParams(mltPreset, mltCustom))
+  const params = buildMorelikeSearchParams(
+    gsrsearch,
+    limit,
+    resolveMltParams(mltPreset, mltCustom),
+    classicNoboostlinks,
+  )
   return `${API_URL}?${params.toString()}`
 }
 
@@ -226,6 +237,7 @@ export async function fetchMorelikeResults(
     limit: number
     mltPreset: MorelikeMltPreset
     mltCustom: MorelikeMltCustomSettings
+    classicNoboostlinks?: boolean
     signal?: AbortSignal
   },
 ): Promise<MorelikeSearchHit[]> {
@@ -238,6 +250,7 @@ export async function fetchMorelikeResults(
     options.limit,
     options.mltPreset,
     options.mltCustom,
+    options.classicNoboostlinks ?? true,
   )
 
   if (!requestUrl) {
