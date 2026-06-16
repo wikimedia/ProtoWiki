@@ -2,6 +2,7 @@
 import { computed, inject, ref, watch } from 'vue'
 import { CdxButton, CdxIcon, CdxPopover, CdxTextInput } from '@wikimedia/codex'
 import {
+  cdxIconBookmarkOutline,
   cdxIconDownTriangle,
   cdxIconDownload,
   cdxIconEdit,
@@ -38,17 +39,33 @@ interface Props {
    * Drives the structural mobile vs desktop layout (icon toolbar vs text actions).
    */
   skin?: Skin
+  /**
+   * Mobile icon toolbar: watchlist star (default) vs reader bookmark (Minerva
+   * “save for later” affordance in flows like no-distractions).
+   */
+  bookmarkAffordance?: 'watch' | 'bookmark'
 }
 
 const props = withDefaults(defineProps<Props>(), {
   languagesCount: 18,
   skin: undefined,
+  bookmarkAffordance: 'watch',
 })
 
 const inheritedSkin = inject(PROTOWIKI_CHROME_SKIN)
 const effectiveSkin = computed<Skin>(() => props.skin ?? inheritedSkin?.value ?? globalSkin.value)
 const { user } = useConfig()
 const isLoggedOut = computed(() => user.value === 'logged-out')
+
+const bookmarkLabel = computed(() =>
+  props.bookmarkAffordance === 'bookmark' ? 'Bookmark' : 'Watch',
+)
+const bookmarkIcon = computed(() =>
+  props.bookmarkAffordance === 'bookmark' ? cdxIconBookmarkOutline : cdxIconUnStar,
+)
+const bookmarkIconLoggedOut = computed(() =>
+  props.bookmarkAffordance === 'bookmark' ? cdxIconBookmarkOutline : cdxIconStar,
+)
 
 const languagesButtonLabel = computed(() => {
   const n = props.languagesCount ?? 18
@@ -148,10 +165,10 @@ function onLanguagePick(row: ArticleLanguageLink) {
         <CdxButton
           class="article-header__icon-btn"
           weight="quiet"
-          aria-label="Watch"
+          :aria-label="bookmarkLabel"
           @click="$emit('bookmarkClick')"
         >
-          <CdxIcon :icon="cdxIconUnStar" />
+          <CdxIcon :icon="bookmarkIcon" />
         </CdxButton>
       </nav>
     </div>
@@ -186,10 +203,10 @@ function onLanguagePick(row: ArticleLanguageLink) {
         <button
           type="button"
           class="article-header__icon-tool"
-          aria-label="Watch"
+          :aria-label="bookmarkLabel"
           @click="$emit('bookmarkClick')"
         >
-          <CdxIcon :icon="cdxIconStar" />
+          <CdxIcon :icon="bookmarkIconLoggedOut" />
         </button>
         <button
           type="button"
@@ -204,10 +221,10 @@ function onLanguagePick(row: ArticleLanguageLink) {
         <button
           type="button"
           class="article-header__icon-tool"
-          aria-label="Watch"
+          :aria-label="bookmarkLabel"
           @click="$emit('bookmarkClick')"
         >
-          <CdxIcon :icon="cdxIconUnStar" />
+          <CdxIcon :icon="bookmarkIcon" />
         </button>
         <button
           type="button"

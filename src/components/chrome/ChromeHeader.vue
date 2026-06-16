@@ -17,6 +17,7 @@ import { DEFAULT_CHROME_NAV_TOOLS, type ChromeNavTool } from './headerNavTools'
 import { globalSkin, globalTheme } from '@/theme'
 import type { Skin, Theme } from '@/theme'
 import UserSettingsPopover from '../settings/UserSettingsPopover.vue'
+import PrototypeChromeMenuPopover from '../PrototypeChromeMenuPopover.vue'
 import Search from '../Search.vue'
 
 const { user } = useConfig()
@@ -97,10 +98,17 @@ function navHas(tool: ChromeNavTool): boolean {
     <nav v-if="isDesktop" class="chrome-header__nav-desktop" aria-label="Site">
       <div class="chrome-header__desktop-start">
         <slot name="menu">
-          <!-- Mock only — not interactive (FakeMediaWiki uses bare chrome / icon affordances). -->
-          <span class="chrome-header__menu-icon" aria-hidden="true">
-            <CdxIcon :icon="cdxIconMenu" />
-          </span>
+          <PrototypeChromeMenuPopover v-slot="{ toggle, open }">
+            <CdxButton
+              class="chrome-header__menu-btn"
+              weight="quiet"
+              aria-label="Main menu"
+              :aria-expanded="open"
+              @click="toggle"
+            >
+              <CdxIcon :icon="cdxIconMenu" />
+            </CdxButton>
+          </PrototypeChromeMenuPopover>
         </slot>
 
         <RouterLink class="chrome-header__brand-link" to="/" aria-label="Visit the main page">
@@ -189,11 +197,7 @@ function navHas(tool: ChromeNavTool): boolean {
           <CdxButton v-if="navHas('appearance')" weight="quiet" aria-label="Appearance">
             <CdxIcon :icon="cdxIconAppearance" />
           </CdxButton>
-          <CdxButton
-            v-if="navHas('notifications')"
-            weight="quiet"
-            aria-label="Notifications"
-          >
+          <CdxButton v-if="navHas('notifications')" weight="quiet" aria-label="Notifications">
             <CdxIcon :icon="cdxIconBell" />
           </CdxButton>
           <CdxButton v-if="navHas('notices')" weight="quiet" aria-label="Notices">
@@ -226,9 +230,17 @@ function navHas(tool: ChromeNavTool): boolean {
     <!-- Minerva-style chrome (mobile skin) -->
     <nav v-else class="chrome-header__nav-mobile" aria-label="Site">
       <slot name="menu">
-        <CdxButton weight="quiet" size="large" aria-label="Main menu">
-          <CdxIcon :icon="cdxIconMenu" />
-        </CdxButton>
+        <PrototypeChromeMenuPopover v-slot="{ toggle, open }">
+          <CdxButton
+            weight="quiet"
+            size="large"
+            aria-label="Main menu"
+            :aria-expanded="open"
+            @click="toggle"
+          >
+            <CdxIcon :icon="cdxIconMenu" />
+          </CdxButton>
+        </PrototypeChromeMenuPopover>
       </slot>
 
       <RouterLink class="chrome-header__mobile-brand" to="/" aria-label="Visit the main page">
@@ -251,11 +263,7 @@ function navHas(tool: ChromeNavTool): boolean {
         >
           <CdxIcon :icon="cdxIconSearch" />
         </CdxButton>
-        <CdxButton
-          weight="quiet"
-          size="large"
-          aria-label="Notifications"
-        >
+        <CdxButton weight="quiet" size="large" aria-label="Notifications">
           <CdxIcon :icon="cdxIconBell" />
         </CdxButton>
         <UserSettingsPopover v-slot="{ toggle, open }">
@@ -489,7 +497,6 @@ function navHas(tool: ChromeNavTool): boolean {
     height: var(--size-icon-large, 40px);
     padding: 0.45rem 0.5rem;
   }
-
 }
 
 @media (max-width: 768px) {

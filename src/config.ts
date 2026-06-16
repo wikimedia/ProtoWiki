@@ -118,6 +118,13 @@ export function wikiBaseUrlFromLang(lang: string): string {
   return `https://${wikiHostFromLang(lang)}/`
 }
 
+/** VisualEditor / wikitext edit URL for an article title. */
+export function wikiEditUrlFromLang(lang: string, title: string): string {
+  const trimmed = title.trim()
+  const pageTitle = trimmed.replace(/ /g, '_')
+  return `https://${wikiHostFromLang(lang)}/w/index.php?title=${encodeURIComponent(pageTitle)}&action=edit`
+}
+
 export function langForUser(
   user: ConfigUser,
   userPageLists: Record<ConfigUser, UserPageLists>,

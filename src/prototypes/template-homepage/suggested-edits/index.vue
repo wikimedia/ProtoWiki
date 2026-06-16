@@ -1,93 +1,82 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { CdxButton, CdxIcon } from '@wikimedia/codex'
+import { cdxIconReload } from '@wikimedia/codex-icons'
 
+import InterestsSettingsPage from '../InterestsSettingsPage.vue'
 import TaskFullscreenShell from '../TaskFullscreenShell.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 import MobileWrapper from '@/components/MobileWrapper.vue'
 import MobileSubpageHeader from '../MobileSubpageHeader.vue'
 import SuggestedEditsView from '../SuggestedEditsView.vue'
-import type { SuggestionDescriptionPart } from './data/veSuggestions'
+import { useConfig } from '@/composables/useConfig'
+import { wikiEditUrlFromLang } from '@/config'
+import { useSuggestedEdits } from './data/useSuggestedEdits'
 import { HOMEPAGE } from '../dashpage-fixtures'
 
-interface StructuredTaskPlaceholder {
-  articleTitle: string
-  articleShortDescription: string
-  thumbnailSrc?: string
-  pageviewsLabel: string
-  taskHeading: string
-  taskDifficulty: 'easy' | 'medium' | 'hard'
-  taskTimeEstimate: string
-  taskDescriptionParts: SuggestionDescriptionPart[]
+const showInterests = ref(false)
+const { lang } = useConfig()
+
+const {
+  currentIndex,
+  totalCount,
+  topicFilter,
+  currentSuggestion,
+  loadPending,
+  showRefresh,
+  loading,
+  error,
+  emptyMessage,
+  onLoad,
+  onRefresh,
+  onNavigate,
+} = useSuggestedEdits()
+
+const viewProps = computed(() => {
+  const suggestion = currentSuggestion.value
+
+  return {
+    showFilterBar: true,
+    topicFilter: topicFilter.value,
+    difficultyFilter: 'Easy, Medium',
+    currentIndex: currentIndex.value,
+    totalCount: totalCount.value || 1,
+    articleTitle: suggestion?.articleTitle,
+    articleShortDescription: suggestion?.articleShortDescription,
+    thumbnailSrc: suggestion?.thumbnailSrc,
+    pageviewsLabel: suggestion?.pageviewsLabel,
+    taskHeading: suggestion?.taskHeading,
+    taskDifficulty: suggestion?.taskDifficulty,
+    taskTimeEstimate: suggestion?.taskTimeEstimate,
+    taskDescriptionParts: suggestion?.taskDescriptionParts,
+    showSnippet: false,
+    editHref: suggestion?.articleTitle
+      ? wikiEditUrlFromLang(lang.value, suggestion.articleTitle)
+      : undefined,
+    loadPending: loadPending.value,
+    showRefresh: showRefresh.value,
+    refreshing: loading.value,
+    refreshError: error.value,
+    emptyMessage: emptyMessage.value,
+    canGoPrev: currentIndex.value > 0,
+    canGoNext: currentIndex.value < totalCount.value - 1,
+  }
+})
+
+function onOpenInterests(): void {
+  showInterests.value = true
 }
 
-const placeholders: StructuredTaskPlaceholder[] = [
-  {
-    articleTitle: 'Full circle ringing',
-    articleShortDescription: 'Method of hanging (church) bells and ringing them in circles.',
-    thumbnailSrc:
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/St_Botolph%27s_Bell_Ringing.webm/120px--St_Botolph%27s_Bell_Ringing.webm.jpg',
-    pageviewsLabel: '258 visits (past 60 days)',
-    taskHeading: 'Find references',
-    taskDifficulty: 'easy',
-    taskTimeEstimate: '3-5 minutes',
-    taskDescriptionParts: [
-      { kind: 'text', text: 'Add a reliable source to support an unsourced claim.' },
-    ],
-  },
-  {
-    articleTitle: 'Tomislav Labudović',
-    articleShortDescription: 'Tomislav Labudović is a Croatian footballer who plays as a central defender.',
-    thumbnailSrc:
-      'https://upload.wikimedia.org/wikipedia/commons/d/d2/Tomislav_Labudovi%C4%87_Persiba_Balikpapan_26.jpg',
-    pageviewsLabel: '88 visits (past 60 days)',
-    taskHeading: 'Revise tone',
-    taskDifficulty: 'easy',
-    taskTimeEstimate: '5-10 minutes',
-    taskDescriptionParts: [
-      { kind: 'text', text: 'Make articles more factual by removing promotional words' },
-    ],
-  },
-  {
-    articleTitle: 'Seguida',
-    articleShortDescription:
-      'Seguida is a Latin Rock Group from New York., who were winners of the 1976 Latin NY Magazine "Best La',
-    pageviewsLabel: '72 visits (past 60 days)',
-    taskHeading: 'Revise tone',
-    taskDifficulty: 'easy',
-    taskTimeEstimate: '5-10 minutes',
-    taskDescriptionParts: [
-      { kind: 'text', text: 'Make articles more factual by removing promotional words' },
-    ],
-  },
-]
+function onCloseInterests(): void {
+  showInterests.value = false
+}
 
-const currentIndex = ref(0)
-const current = computed(() => placeholders[currentIndex.value] ?? placeholders[0])
-
-const viewProps = computed(() => ({
-  showFilterBar: true,
-  topicFilter: 'Music',
-  difficultyFilter: 'Easy, Medium',
-  currentIndex: currentIndex.value,
-  totalCount: 401983,
-  articleTitle: current.value.articleTitle,
-  articleShortDescription: current.value.articleShortDescription,
-  thumbnailSrc: current.value.thumbnailSrc,
-  pageviewsLabel: current.value.pageviewsLabel,
-  taskHeading: current.value.taskHeading,
-  taskDifficulty: current.value.taskDifficulty,
-  taskTimeEstimate: current.value.taskTimeEstimate,
-  taskDescriptionParts: current.value.taskDescriptionParts,
-  showSnippet: false,
-  editHref: '#',
-  canGoPrev: currentIndex.value > 0,
-  canGoNext: currentIndex.value < placeholders.length - 1,
-}))
-
-function onSuggestionNavigate(delta: number): void {
-  const next = currentIndex.value + delta
-  if (next < 0 || next >= placeholders.length) return
-  currentIndex.value = next
+function onRefreshClick(): void {
+  if (loadPending.value) {
+    onLoad()
+  } else {
+    onRefresh()
+  }
 }
 
 definePage({
@@ -108,12 +97,32 @@ definePage({
             :back-to="HOMEPAGE"
             back-label="Back to homepage"
             :bleed="false"
-          />
+          >
+            <template #actions>
+              <CdxButton
+                weight="quiet"
+                :icon-only="true"
+                aria-label="Refresh suggestions"
+                :disabled="loading"
+                @click="onRefreshClick"
+              >
+                <CdxIcon :icon="cdxIconReload" />
+              </CdxButton>
+            </template>
+          </MobileSubpageHeader>
         </div>
 
         <SpecialPageWrapper :title="null" class="suggested-edits-page">
-          <SuggestedEditsView v-bind="viewProps" @navigate="onSuggestionNavigate" />
+          <SuggestedEditsView
+            v-bind="viewProps"
+            @load="onLoad"
+            @refresh="onRefresh"
+            @navigate="onNavigate"
+            @open-interests="onOpenInterests"
+          />
         </SpecialPageWrapper>
+
+        <InterestsSettingsPage v-if="showInterests" @close="onCloseInterests" />
       </div>
     </TaskFullscreenShell>
   </MobileWrapper>
@@ -121,6 +130,7 @@ definePage({
 
 <style scoped>
 .suggested-edits-layout {
+  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;

@@ -1,0 +1,87 @@
+/**
+ * Shared layout tokens for dashpage onboarding frames (Figma 1742:219xx).
+ * Imported by OnboardingShell; screens compose with these class names.
+ */
+
+.ob-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 100%;
+}
+
+.ob-title {
+  margin: 0;
+  padding: var(--spacing-400, 64px) var(--spacing-100, 16px) 0;
+  font-family:
+    var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
+  font-size: var(--font-size-x-large, 1.25rem);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-x-large, 1.5);
+  color: var(--color-base);
+}
+
+.ob-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  gap: var(--spacing-75, 12px);
+  min-height: 0;
+  padding: var(--spacing-100, 16px);
+}
+
+.ob-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-75, 12px);
+  width: 100%;
+  margin-top: auto;
+  padding-top: var(--spacing-75, 12px);
+}
+
+.ob-actions .cdx-button {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 3rem;
+  padding-block: var(--spacing-100, 16px);
+  font-size: var(--font-size-medium, 1rem);
+  font-weight: var(--font-weight-bold);
+}
+
+.ob-actions .cdx-button--weight-quiet {
+  min-height: 2.75rem;
+  padding-block: var(--spacing-75, 12px);
+}
+
+/* Welcome footer “Not now” on #101418 — Codex quiet hover breaks on dark surfaces. */
+.ob-skip {
+  align-self: center;
+  min-height: 2.75rem;
+  padding: var(--spacing-75, 12px) var(--spacing-100, 16px);
+  border: none;
+  background: transparent;
+  font-family: var(--font-family-base, sans-serif);
+  font-size: var(--font-size-medium, 1rem);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-small, 1.375);
+  color: #404244;
+  cursor: pointer;
+}
+
+/* Light label on dark surfaces (welcome footer). Plain .ob-skip stays for light pages. */
+.ob-skip--inverse {
+  color: #c8ccd1;
+}
+
+.ob-skip--inverse:hover {
+  color: #eaecf0;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.ob-skip--inverse:active {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.ob-field .cdx-text-input__input {
+  min-height: 2rem;
+}
