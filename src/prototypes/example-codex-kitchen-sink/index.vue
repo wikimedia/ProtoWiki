@@ -1,177 +1,75 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import {
-  CdxButton,
-  CdxButtonGroup,
-  CdxDialog,
-  CdxField,
-  CdxSelect,
-  CdxTextInput,
-} from '@wikimedia/codex'
-import { cdxIconAdd, cdxIconSearch } from '@wikimedia/codex-icons'
+import { ref, type Component } from 'vue'
+import { CdxTab, CdxTabs, CdxToastContainer } from '@wikimedia/codex'
 
-import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
-import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
+import ButtonsSection from './sections/ButtonsSection.vue'
+import FeedbackSection from './sections/FeedbackSection.vue'
+import IconsSection from './sections/IconsSection.vue'
+import InputsSection from './sections/InputsSection.vue'
+import LayoutSection from './sections/LayoutSection.vue'
+import OverlaysSection from './sections/OverlaysSection.vue'
+import TokensSection from './sections/TokensSection.vue'
+import TypographySection from './sections/TypographySection.vue'
 
 definePage({
   meta: {
     title: 'Codex playground',
-    description: 'An assortment of Codex components.',
+    description: 'Full Codex component, token, typography, and icon catalogue.',
   },
 })
 
-const searchQuery = ref('')
-const chosenProject = ref('wikipedia')
-const isDialogOpen = ref(false)
-const denseMode = ref(false)
+const navItems = [
+  { id: 'typography', label: 'Typography' },
+  { id: 'tokens', label: 'Tokens' },
+  { id: 'icons', label: 'Icons' },
+  { id: 'components-buttons', label: 'Buttons' },
+  { id: 'components-inputs', label: 'Inputs' },
+  { id: 'components-feedback', label: 'Feedback' },
+  { id: 'components-overlays', label: 'Overlays' },
+  { id: 'components-layout', label: 'Layout' },
+] as const
 
-const projectOptions = [
-  { label: 'Wikipedia', value: 'wikipedia' },
-  { label: 'Wikidata', value: 'wikidata' },
-  { label: 'Commons', value: 'commons' },
-]
+const sectionByTab: Record<(typeof navItems)[number]['id'], Component> = {
+  typography: TypographySection,
+  tokens: TokensSection,
+  icons: IconsSection,
+  'components-buttons': ButtonsSection,
+  'components-inputs': InputsSection,
+  'components-feedback': FeedbackSection,
+  'components-overlays': OverlaysSection,
+  'components-layout': LayoutSection,
+}
 
-const actionButtons = computed(() => [
-  { value: 'edit', label: 'Edit' },
-  { value: 'history', label: 'History' },
-  { value: 'watch', label: 'Watch', disabled: denseMode.value },
-])
-
-const filterButtons = computed(() => [
-  { value: 'all', label: 'All' },
-  { value: 'newcomers', label: 'Newcomers' },
-  { value: 'mobile', label: 'Mobile edits' },
-  { value: 'needs-review', label: 'Needs review' },
-])
-
-const selectedAction = ref<string | number>('edit')
-const selectedFilter = ref<string | number>('all')
-
-const primaryAction = computed(() => ({
-  label: 'Apply changes',
-  actionType: 'progressive' as const,
-}))
+const activeTab = ref<(typeof navItems)[number]['id']>('typography')
 </script>
 
 <template>
-  <ChromeWrapper>
-    <SpecialPageWrapper title="Codex playground">
-      <section class="kitchen-sink__grid" aria-label="Codex radius checks">
-        <article class="kitchen-sink__card">
-          <h2 class="kitchen-sink__title">Inputs and compact controls</h2>
+  <main>
+    <!-- <h1>Codex playground</h1> -->
 
-          <CdxField>
-            <template #label>Search article</template>
-            <CdxTextInput
-              v-model="searchQuery"
-              :start-icon="cdxIconSearch"
-              placeholder="Try 'Button group'"
-            />
-          </CdxField>
-
-          <CdxField>
-            <template #label>Project</template>
-            <CdxSelect v-model:selected="chosenProject" :menu-items="projectOptions" />
-          </CdxField>
-
-          <CdxButtonGroup
-            class="kitchen-sink__button-group"
-            :buttons="actionButtons"
-            @click="selectedAction = $event"
-          />
-          <p class="kitchen-sink__selection">Selected action: {{ selectedAction }}</p>
+    <CdxTabs v-model:active="activeTab" class="playground-tabs" aria-label="Sections">
+      <CdxTab v-for="item in navItems" :key="item.id" :name="item.id" :label="item.label">
+        <article>
+          <component :is="sectionByTab[item.id]" />
         </article>
+      </CdxTab>
+    </CdxTabs>
 
-        <article class="kitchen-sink__card">
-          <h2 class="kitchen-sink__title">Long one-line button-group labels</h2>
-          <p class="kitchen-sink__description">
-            This row intentionally stresses first/last button edge rounding.
-          </p>
-
-          <CdxButtonGroup
-            class="kitchen-sink__button-group"
-            :buttons="filterButtons"
-            @click="selectedFilter = $event"
-          />
-
-          <div class="kitchen-sink__actions">
-            <CdxButton weight="quiet" @click="denseMode = !denseMode">
-              Toggle disabled third button
-            </CdxButton>
-            <CdxButton action="progressive" @click="isDialogOpen = true"> Open Dialog </CdxButton>
-          </div>
-          <p class="kitchen-sink__selection">Selected filter: {{ selectedFilter }}</p>
-        </article>
-      </section>
-
-      <CdxDialog
-        v-model:open="isDialogOpen"
-        title="Rounded corners in dialog actions"
-        close-button-label="Close"
-        :dismissable="true"
-        :primary-action="primaryAction"
-        @primary="isDialogOpen = false"
-      >
-        <p class="kitchen-sink__dialog-copy">
-          Compare button radius in default, quiet, and progressive states while this dialog is open.
-        </p>
-
-        <template #footer-text>
-          <CdxButton weight="quiet" @click="isDialogOpen = false"> Cancel </CdxButton>
-          <CdxButton action="progressive" :icon="cdxIconAdd" @click="isDialogOpen = false">
-            Add item
-          </CdxButton>
-        </template>
-      </CdxDialog>
-    </SpecialPageWrapper>
-  </ChromeWrapper>
+    <CdxToastContainer />
+  </main>
 </template>
 
 <style scoped>
-.kitchen-sink__grid {
-  display: grid;
-  gap: var(--spacing-100);
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  align-items: start;
+main {
+  padding: 6px 0px;
 }
 
-.kitchen-sink__card {
-  padding: var(--spacing-100);
-  border: var(--border-base);
-  border-radius: var(--border-radius-base);
-  background: var(--background-color-base);
+.playground-tabs {
+  /* padding: 0px var(--spacing-100); */
+  margin-left: -4px;
 }
 
-.kitchen-sink__title {
-  margin: 0;
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-large);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-large);
-}
-
-.kitchen-sink__description {
-  margin: var(--spacing-50) 0 var(--spacing-100);
-  color: var(--color-subtle);
-}
-
-.kitchen-sink__button-group {
-  margin-top: var(--spacing-75);
-}
-
-.kitchen-sink__actions {
-  margin-top: var(--spacing-100);
-  display: flex;
-  gap: var(--spacing-50);
-  flex-wrap: wrap;
-}
-
-.kitchen-sink__selection {
-  margin: var(--spacing-75) 0 0;
-  color: var(--color-subtle);
-}
-
-.kitchen-sink__dialog-copy {
-  margin: 0;
+article {
+  padding: 0px var(--spacing-100);
 }
 </style>
