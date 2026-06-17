@@ -1,0 +1,30 @@
+Index: dist/modules/CdxPopover-bidi.css
+===================================================================
+--- dist/modules/CdxPopover-bidi.css
++++ dist/modules/CdxPopover-bidi.css
+@@ -39,9 +39,9 @@
+ }
+ [dir] .cdx-popover {
+   background-color: var(--background-color-base, #fff);
+   border: 1px solid var(--border-color-base, #a2a9b1);
+-  border-radius: 2px;
++  border-radius: 4px;
+   padding: 16px;
+   box-shadow:
+     0 4px 4px 0 var(--box-shadow-color-alpha-base, rgba(0, 0, 0, 0.06)),
+     0 0 8px 0 var(--box-shadow-color-alpha-base, rgba(0, 0, 0, 0.06));
+@@ -156,12 +156,12 @@
+     0 4px 4px 0 var(--box-shadow-color-alpha-base, rgba(0, 0, 0, 0.06)),
+     0 0 8px 0 var(--box-shadow-color-alpha-base, rgba(0, 0, 0, 0.06));
+ }
+ [dir='ltr'] .cdx-popover__arrow {
+-  border-top-left-radius: 2px;
++  border-top-left-radius: 4px;
+ }
+ [dir='rtl'] .cdx-popover__arrow {
+-  border-top-right-radius: 2px;
++  border-top-right-radius: 4px;
+ }
+ .cdx-popover--bottom-sheet {
+   position: static;
+   max-height: calc(100% - 8rem);

@@ -1,0 +1,15 @@
+Index: dist/modules/CdxTable-bidi.css
+===================================================================
+--- dist/modules/CdxTable-bidi.css
++++ dist/modules/CdxTable-bidi.css
+@@ -234,9 +234,9 @@
+   word-wrap: break-word;
+ }
+ [dir] .cdx-table {
+   border: 1px solid var(--border-color-base, #a2a9b1);
+-  border-radius: 2px;
++  border-radius: 4px;
+ }
+ @supports (word-break: break-word) {
+   .cdx-table {
+     word-wrap: unset;

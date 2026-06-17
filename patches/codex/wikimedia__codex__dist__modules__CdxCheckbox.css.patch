@@ -1,0 +1,15 @@
+Index: dist/modules/CdxCheckbox.css
+===================================================================
+--- dist/modules/CdxCheckbox.css
++++ dist/modules/CdxCheckbox.css
+@@ -75,9 +75,9 @@
+   padding-top: 6px;
+   padding-left: calc(var(--font-size-medium, 1rem) + 10px);
+ }
+ .cdx-checkbox__icon {
+-  border-radius: 2px;
++  border-radius: 4px;
+ }
+ .cdx-checkbox__input:indeterminate + .cdx-checkbox__icon:before {
+   content: ' ';
+   background-color: var(--background-color-base-fixed, #fff);

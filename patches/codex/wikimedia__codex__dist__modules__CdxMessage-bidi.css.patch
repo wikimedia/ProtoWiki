@@ -1,0 +1,15 @@
+Index: dist/modules/CdxMessage-bidi.css
+===================================================================
+--- dist/modules/CdxMessage-bidi.css
++++ dist/modules/CdxMessage-bidi.css
+@@ -6,9 +6,9 @@
+ }
+ [dir] .cdx-message {
+   background-color: var(--background-color-notice-subtle, #eaecf0);
+   border: 1px solid var(--border-color-notice, #72777d);
+-  border-radius: 2px;
++  border-radius: 4px;
+   padding: 12px;
+ }
+ .cdx-message__icon,
+ .cdx-message__icon--vue {

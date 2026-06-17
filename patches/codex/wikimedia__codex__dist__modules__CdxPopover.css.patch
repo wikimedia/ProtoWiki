@@ -1,0 +1,26 @@
+Index: dist/modules/CdxPopover.css
+===================================================================
+--- dist/modules/CdxPopover.css
++++ dist/modules/CdxPopover.css
+@@ -30,9 +30,9 @@
+   z-index: 700;
+   box-sizing: border-box;
+   min-width: 12rem;
+   border: 1px solid var(--border-color-base, #a2a9b1);
+-  border-radius: 2px;
++  border-radius: 4px;
+   padding: 16px;
+   box-shadow:
+     0 4px 4px 0 var(--box-shadow-color-alpha-base, rgba(0, 0, 0, 0.06)),
+     0 0 8px 0 var(--box-shadow-color-alpha-base, rgba(0, 0, 0, 0.06));
+@@ -115,9 +115,9 @@
+   position: absolute;
+   width: 1rem;
+   height: 1rem;
+   border: 1px solid var(--border-color-base, #a2a9b1);
+-  border-top-left-radius: 2px;
++  border-top-left-radius: 4px;
+   box-shadow:
+     0 4px 4px 0 var(--box-shadow-color-alpha-base, rgba(0, 0, 0, 0.06)),
+     0 0 8px 0 var(--box-shadow-color-alpha-base, rgba(0, 0, 0, 0.06));
+   -webkit-clip-path: polygon(0 0, 100% 0, 0 100%);

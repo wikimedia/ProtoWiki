@@ -1,0 +1,15 @@
+Index: dist/theme-wikimedia-ui.js
+===================================================================
+--- dist/theme-wikimedia-ui.js
++++ dist/theme-wikimedia-ui.js
+@@ -398,9 +398,9 @@
+ export const cdxBorderSubtle = '1px solid #c8ccd1'
+ export const cdxBorderProgressive = '1px solid #36c'
+ export const cdxBorderDestructive = '1px solid #f54739'
+ export const cdxBorderTransparent = '1px solid transparent'
+-export const cdxBorderRadiusBase = '2px'
++export const cdxBorderRadiusBase = '4px'
+ export const cdxBorderRadiusSharp = '0'
+ export const cdxBorderRadiusPill = '9999px'
+ export const cdxBorderRadiusCircle = '50%' // Use `50%` for circle or ellipsis. See https://stackoverflow.com/a/29966500
+ export const cdxOutlineBaseFocus = '1px solid transparent' // Enable Windows high contrast mode on certain widgets, that have default outlines overridden.

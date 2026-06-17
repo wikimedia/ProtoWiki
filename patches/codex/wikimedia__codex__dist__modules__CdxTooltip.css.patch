@@ -1,0 +1,15 @@
+Index: dist/modules/CdxTooltip.css
+===================================================================
+--- dist/modules/CdxTooltip.css
++++ dist/modules/CdxTooltip.css
+@@ -6,9 +6,9 @@
+   z-index: 800;
+   width: -webkit-max-content;
+   width: max-content;
+   max-width: 16rem;
+-  border-radius: 2px;
++  border-radius: 4px;
+   padding: 2px 6px;
+   font-family:
+     -apple-system,
+     BlinkMacSystemFont,

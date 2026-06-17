@@ -1,0 +1,15 @@
+Index: dist/modules/CdxThumbnail-bidi.css
+===================================================================
+--- dist/modules/CdxThumbnail-bidi.css
++++ dist/modules/CdxThumbnail-bidi.css
+@@ -15,9 +15,9 @@
+   background-position: center;
+   background-repeat: no-repeat;
+   background-size: cover;
+   border: 1px solid var(--border-color-subtle, #c8ccd1);
+-  border-radius: 2px;
++  border-radius: 4px;
+ }
+ .cdx-thumbnail__image {
+   display: inline-block;
+ }

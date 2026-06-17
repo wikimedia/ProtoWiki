@@ -1,0 +1,15 @@
+Index: dist/modules/CdxTable-rtl.css
+===================================================================
+--- dist/modules/CdxTable-rtl.css
++++ dist/modules/CdxTable-rtl.css
+@@ -211,9 +211,9 @@
+ }
+ .cdx-table {
+   color: var(--color-base, #202122);
+   border: 1px solid var(--border-color-base, #a2a9b1);
+-  border-radius: 2px;
++  border-radius: 4px;
+   word-wrap: break-word;
+ }
+ @supports (word-break: break-word) {
+   .cdx-table {

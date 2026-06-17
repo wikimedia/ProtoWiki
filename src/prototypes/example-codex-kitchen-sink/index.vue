@@ -15,8 +15,8 @@ import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 
 definePage({
   meta: {
-    title: 'Example: Codex kitchen sink',
-    description: 'Quick visual regression surface for border radius and grouped controls.',
+    title: 'Codex playground',
+    description: 'An assortment of Codex components.',
   },
 })
 
@@ -55,7 +55,7 @@ const primaryAction = computed(() => ({
 
 <template>
   <ChromeWrapper>
-    <SpecialPageWrapper title="Codex UI regression kitchen sink">
+    <SpecialPageWrapper title="Codex playground">
       <section class="kitchen-sink__grid" aria-label="Codex radius checks">
         <article class="kitchen-sink__card">
           <h2 class="kitchen-sink__title">Inputs and compact controls</h2>
@@ -101,9 +101,7 @@ const primaryAction = computed(() => ({
             <CdxButton weight="quiet" @click="denseMode = !denseMode">
               Toggle disabled third button
             </CdxButton>
-            <CdxButton action="progressive" @click="isDialogOpen = true">
-              Open Dialog
-            </CdxButton>
+            <CdxButton action="progressive" @click="isDialogOpen = true"> Open Dialog </CdxButton>
           </div>
           <p class="kitchen-sink__selection">Selected filter: {{ selectedFilter }}</p>
         </article>
@@ -122,9 +120,7 @@ const primaryAction = computed(() => ({
         </p>
 
         <template #footer-text>
-          <CdxButton weight="quiet" @click="isDialogOpen = false">
-            Cancel
-          </CdxButton>
+          <CdxButton weight="quiet" @click="isDialogOpen = false"> Cancel </CdxButton>
           <CdxButton action="progressive" :icon="cdxIconAdd" @click="isDialogOpen = false">
             Add item
           </CdxButton>
@@ -151,7 +147,10 @@ const primaryAction = computed(() => ({
 
 .kitchen-sink__title {
   margin: 0;
+  font-family: var(--font-family-base);
   font-size: var(--font-size-large);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-large);
 }
 
 .kitchen-sink__description {

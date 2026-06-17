@@ -1,0 +1,15 @@
+Index: dist/modules/CdxButton.css
+===================================================================
+--- dist/modules/CdxButton.css
++++ dist/modules/CdxButton.css
+@@ -8,9 +8,9 @@
+   max-width: 28rem;
+   margin: 0;
+   border-width: 1px;
+   border-style: solid;
+-  border-radius: 2px;
++  border-radius: 4px;
+   padding-right: 11px;
+   padding-left: 11px;
+   font-family: inherit;
+   font-size: var(--font-size-medium, 1rem);

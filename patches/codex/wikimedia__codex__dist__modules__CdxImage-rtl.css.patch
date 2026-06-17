@@ -1,0 +1,26 @@
+Index: dist/modules/CdxImage-rtl.css
+===================================================================
+--- dist/modules/CdxImage-rtl.css
++++ dist/modules/CdxImage-rtl.css
+@@ -19,9 +19,9 @@
+   min-width: 24px;
+   min-height: 24px;
+   margin: 0;
+   border: 1px solid var(--border-color-subtle, #c8ccd1);
+-  border-radius: 2px;
++  border-radius: 4px;
+   font-size: var(--font-size-x-small, 0.75rem);
+ }
+ .cdx-image__image--object-fit-fill {
+   object-fit: fill;
+@@ -65,9 +65,9 @@
+   align-items: center;
+   justify-content: center;
+   width: 100%;
+   border: 1px solid var(--border-color-subtle, #c8ccd1);
+-  border-radius: 2px;
++  border-radius: 4px;
+ }
+ .cdx-image__placeholder__icon--size-smallest {
+   width: 0.75rem;
+   height: 0.75rem;

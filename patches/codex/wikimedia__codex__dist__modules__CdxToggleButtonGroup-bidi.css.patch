@@ -1,0 +1,15 @@
+Index: dist/modules/CdxToggleButtonGroup-bidi.css
+===================================================================
+--- dist/modules/CdxToggleButtonGroup-bidi.css
++++ dist/modules/CdxToggleButtonGroup-bidi.css
+@@ -5,9 +5,9 @@
+   width: fit-content;
+   overflow: hidden;
+ }
+ [dir] .cdx-toggle-button-group {
+-  border-radius: 2px;
++  border-radius: 4px;
+   padding-top: 1px;
+ }
+ [dir='ltr'] .cdx-toggle-button-group {
+   padding-left: 1px;

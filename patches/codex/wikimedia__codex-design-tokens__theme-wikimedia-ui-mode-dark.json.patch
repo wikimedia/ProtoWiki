@@ -1,0 +1,48 @@
+Index: theme-wikimedia-ui-mode-dark.json
+===================================================================
+--- theme-wikimedia-ui-mode-dark.json
++++ theme-wikimedia-ui-mode-dark.json
+@@ -3991,8 +3991,22 @@
+           "type": "theme"
+         },
+         "path": ["dimension", "absolute", "2"]
+       },
++      "4": {
++        "value": "4px",
++        "filePath": "src/themes/wikimedia-ui.json",
++        "isSource": false,
++        "original": {
++          "value": "4px"
++        },
++        "name": "dimension-absolute-4",
++        "attributes": {
++          "tokens": [],
++          "type": "theme"
++        },
++        "path": ["dimension", "absolute", "4"]
++      },
+       "6": {
+         "value": "6px",
+         "filePath": "src/themes/wikimedia-ui.json",
+         "isSource": false,
+@@ -10699,17 +10713,17 @@
+     }
+   },
+   "border-radius": {
+     "base": {
+-      "value": "2px",
++      "value": "4px",
+       "filePath": "src/application.json",
+       "isSource": false,
+       "original": {
+-        "value": "{ dimension.absolute.2 }"
++        "value": "{ dimension.absolute.4 }"
+       },
+       "name": "border-radius-base",
+       "attributes": {
+-        "tokens": ["dimension.absolute.2"],
++        "tokens": ["dimension.absolute.4"],
+         "type": "base"
+       },
+       "path": ["border-radius", "base"]
+     },

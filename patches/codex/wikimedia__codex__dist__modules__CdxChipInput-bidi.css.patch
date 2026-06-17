@@ -1,0 +1,15 @@
+Index: dist/modules/CdxChipInput-bidi.css
+===================================================================
+--- dist/modules/CdxChipInput-bidi.css
++++ dist/modules/CdxChipInput-bidi.css
+@@ -84,9 +84,9 @@
+   min-height: 32px;
+   overflow: hidden;
+ }
+ [dir] .cdx-chip-input {
+-  border-radius: 2px;
++  border-radius: 4px;
+ }
+ .cdx-chip-input__chips,
+ .cdx-chip-input__separate-input {
+   align-items: center;
