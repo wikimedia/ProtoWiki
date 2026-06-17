@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head><script>// Prepended to dist/404.html on build (see vite.config.ts). GitHub Pages only
+// serves 404.html at the site root; deep links under pr-preview/pr-N/... hit
+// that file with the production base. Redirect into the preview base and stash
+// the path for gh-pages-restore.js on the preview index.
+;(function (l, doc) {
+  var m = l.pathname.match(/^(.+\/pr-preview\/pr-\d+)\/?(.*)$/)
+  if (!m) return
+  var base = m[1] + '/'
+  var rest = m[2] || ''
+  var path = rest ? '/' + rest : '/'
+  sessionStorage.setItem(
+    'protowiki-gh-pages-path',
+    path + (l.search || '') + (l.hash || ''),
+  )
+  // Do not let the production SPA in this file boot (wrong PROTOWIKI_BASE).
+  doc.documentElement.innerHTML =
+    '<head><meta charset="utf-8"><title>ProtoWiki</title></head><body></body>'
+  l.replace(base)
+})(location, document)
+</script>
+    <script>// Injected at the top of <head> on build (see vite.config.ts). Runs before the
+// Vite bundle so Vue Router sees the deep path. Pairs with gh-pages-preview-404.js.
+;(function (l, h) {
+  var key = 'protowiki-gh-pages-path'
+  var stored = sessionStorage.getItem(key)
+  if (!stored) return
+  // dist/404.html includes this script after the preview redirect preamble. On a
+  // pr-preview deep link, do not consume storage here — wait for the redirect to
+  // the preview index, which runs this script again on …/pr-N/.
+  if (/^(.+\/pr-preview\/pr-\d+)\/.+/.test(l.pathname)) return
+  sessionStorage.removeItem(key)
+  var base = l.pathname.replace(/\/$/, '') || l.pathname
+  h.replaceState(null, '', base + stored)
+})(location, history)
+</script>
+
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/ProtoWiki/pr-preview/pr-32/images/ProtoWiki.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ProtoWiki</title>
+    <script type="module" crossorigin src="/ProtoWiki/pr-preview/pr-32/assets/index-BH4j69Gf.js"></script>
+    <link rel="stylesheet" crossorigin href="/ProtoWiki/pr-preview/pr-32/assets/index-BuHOwV9K.css">
+  </head>
+  <body>
+    <div id="app"></div>
+  </body>
+</html>
