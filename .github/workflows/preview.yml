@@ -1,22 +1,51 @@
 name: Deploy PR previews
 
+# We use `pull_request_target` instead of `pull_request` so previews are still
+# generated when a PR has merge conflicts with the base branch.
+#
+# `pull_request` runs are built against the PR's merge-with-base ref
+# (`refs/pull/N/merge`). When the branch conflicts with the base, GitHub cannot
+# create that merge ref, so the run is never scheduled and the preview silently
+# stops updating. `pull_request_target` runs in the context of the base branch
+# (no merge ref required), so it always runs; we then check out the PR head
+# explicitly to preview the branch exactly as-is.
+#
+# SECURITY: `pull_request_target` runs with a read/write token and repository
+# secrets. Because the steps below build and run the PR's code, the job is
+# restricted to branches pushed to THIS repository (trusted collaborators) and
+# never runs for forks — otherwise a fork could execute arbitrary code with
+# write access. (Forks couldn't deploy under the old `pull_request` setup either,
+# since their token is read-only.)
+#
+# NOTE: With `pull_request_target`, GitHub always uses the copy of this workflow
+# on the base branch. This change therefore only takes effect once it is on
+# `main`.
+
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, reopened, synchronize, closed]
 
 concurrency:
-  group: preview-${{ github.ref }}
+  # Keyed by PR number — github.ref is the base branch under pull_request_target,
+  # so keying by ref would make every PR share (and cancel) one another's runs.
+  group: preview-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   deploy-preview:
+    # Only previews for branches in this repo; never build untrusted fork code
+    # with the elevated pull_request_target token.
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
     steps:
-      - name: Checkout
+      - name: Checkout PR head
         uses: actions/checkout@v5
+        with:
+          # The branch as-is (not the conflicted merge result).
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v5
