@@ -59,9 +59,6 @@ const primaryAction = computed(() => ({
       <section class="kitchen-sink__grid" aria-label="Codex radius checks">
         <article class="kitchen-sink__card">
           <h2 class="kitchen-sink__title">Inputs and compact controls</h2>
-          <p class="kitchen-sink__description">
-            Use this block to compare rounded corners across input fields and buttons.
-          </p>
 
           <CdxField>
             <template #label>Search article</template>
