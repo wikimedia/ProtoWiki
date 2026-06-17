@@ -5,10 +5,12 @@ import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import {
   cdxIconAppearance,
   cdxIconBell,
+  cdxIconBellOutline,
   cdxIconMenu,
   cdxIconSearch,
   cdxIconTray,
   cdxIconUserAvatar,
+  cdxIconUserAvatarOutline,
   cdxIconWatchlist,
 } from '@wikimedia/codex-icons'
 
@@ -256,7 +258,7 @@ function navHas(tool: ChromeNavTool): boolean {
           size="large"
           aria-label="Notifications"
         >
-          <CdxIcon :icon="cdxIconBell" />
+          <CdxIcon :icon="cdxIconBellOutline" />
         </CdxButton>
         <UserSettingsPopover v-slot="{ toggle, open }">
           <CdxButton
@@ -267,7 +269,7 @@ function navHas(tool: ChromeNavTool): boolean {
             :aria-expanded="open"
             @click="toggle"
           >
-            <CdxIcon :icon="cdxIconUserAvatar" size="medium" />
+            <CdxIcon :icon="cdxIconUserAvatarOutline" size="medium" />
           </CdxButton>
         </UserSettingsPopover>
       </div>
