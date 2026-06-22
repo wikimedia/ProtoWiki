@@ -1,0 +1,547 @@
+import{d as B,o as u,b as h,n as Le,t as j,i as qe,k as J,l as I,a as w,F as C,e,w as o,r as S,c as A,f as t,h as f,j as me,m as y,p as Xe,q as xe,s as pe,v as ve,u as Oe,x as Fe,y as Ye}from"./index-BqihgrEn.js";import{H as q,W as eo,n as ge,a as U,b as P,G as Q,B as Y,d as ee,T as ke,e as oe,I as ye,v as oo,f as we,O as to,g as te,u as no,h as ne,i as M,P as le,j as lo,F as ao,k as D,l as _e,m as ae,o as ze,p as O,R as re,q as Ce,r as Te,L as Se,M as We,s as R,A as Ve,C as E,t as ro,w as ie,x as Z,y as L,z as Ue,D as Ae,E as N,J as io,K as se,N as Be,Q as so,S as uo,U as co,V as bo}from"./codex-icons-D5tF9IWm.js";import{_ as $}from"./_plugin-vue_export-helper-DlAUqK2U.js";const Ie=[{label:"Edit",value:"edit",icon:q},{label:"Delete",value:"delete",icon:eo},{label:"Add",value:"add",icon:ge}],H=[{label:"Option A",value:"a"},{label:"Option B",value:"b"},{label:"Option C",value:"c"}],G=[{label:"Albert Einstein",value:"Albert Einstein"},{label:"Albert Camus",value:"Albert Camus"},{label:"Alberta",value:"Alberta"}],de=[{value:"alpha"},{value:"beta"}],ue=[{id:"title",label:"Title",sortable:!0},{id:"status",label:"Status",sortable:!0},{id:"views",label:"Views",sortable:!0}],ce=[{id:"1",title:"Mont Blanc",status:"Published",views:1200},{id:"2",title:"Lake Geneva",status:"Draft",views:340},{id:"3",title:"Rhine",status:"Published",views:890}],Pe=[{label:"Albert Einstein",title:"Albert Einstein",description:"German-born theoretical physicist"},{label:"Albert Camus",title:"Albert Camus",description:"French philosopher and author"}],Me="/ProtoWiki/pr-preview/pr-31/images/wet-leg-o2-infobox.jpg",Re=Me,be=Me,po=[{value:"edit",label:"Edit"},{value:"history",label:"History"},{value:"watch",label:"Watch"}],fo=[{value:"all",label:"All"},{value:"newcomers",label:"Newcomers"},{value:"mobile",label:"Mobile edits"},{value:"needs-review",label:"Needs review"}],$e=[{value:"left",label:"Left"},{value:"center",label:"Center"},{value:"right",label:"Right"}],mo=["id"],vo={key:0,class:"playground-section__title"},go=B({__name:"PlaygroundSection",props:{id:{default:void 0},title:{}},setup(n){return(c,d)=>(u(),h("section",{id:n.id,class:Le([{"playground-section--untitled":!n.title},"playground-section"])},[n.title?(u(),h("h4",vo,j(n.title),1)):qe("",!0),J(c.$slots,"default",{},void 0,!0)],10,mo))}}),x=$(go,[["__scopeId","data-v-b2936a15"]]),ho=B({__name:"PlaygroundGrid",props:{min:{default:"160px"},dense:{type:Boolean,default:!1}},setup(n){return(c,d)=>(u(),h("div",{class:Le(["playground-grid",{"playground-grid--dense":n.dense}]),style:I({"--playground-grid-min":n.min})},[J(c.$slots,"default",{},void 0,!0)],6))}}),k=$(ho,[["__scopeId","data-v-816208da"]]),xo={class:"playground-cell"},ko={class:"playground-cell__content"},yo={key:0,class:"playground-cell__label"},wo=B({__name:"PlaygroundCell",props:{label:{}},setup(n){return(c,d)=>(u(),h("div",xo,[w("div",ko,[J(c.$slots,"default",{},void 0,!0)]),n.label?(u(),h("code",yo,j(n.label),1)):qe("",!0)]))}}),l=$(wo,[["__scopeId","data-v-e4c48518"]]),_o=B({__name:"ButtonsSection",setup(n){const c=["default","progressive","destructive"],d=["normal","primary","quiet"],m=["small","medium","large"],v=["notice","warning","error","success"],i=["16:9","3:2","4:3","1:1","3:4","2:3"],p=me(()=>{const r=[];for(const s of c)for(const g of d)for(const F of m)r.push({action:s,weight:g,size:F,label:`${s} / ${g} / ${F}`});return r}),_=y(!1),z=y(!0),T=y("center"),V=y(!0),W=y(!1);return(r,s)=>(u(),h(C,null,[e(x,{title:"CdxButton"},{default:o(()=>[e(k,{min:"180px"},{default:o(()=>[(u(!0),h(C,null,S(p.value,g=>(u(),A(l,{key:g.label,label:g.label},{default:o(()=>[e(t(U),{action:g.action,weight:g.weight,size:g.size},{default:o(()=>[...s[5]||(s[5]=[f(" Label ",-1)])]),_:1},8,["action","weight","size"])]),_:2},1032,["label"]))),128)),(u(!0),h(C,null,S(p.value.filter(g=>g.size==="medium"&&g.weight!=="quiet"),g=>(u(),A(l,{key:`disabled-${g.label}`,label:`${g.label} / disabled`},{default:o(()=>[e(t(U),{action:g.action,weight:g.weight,size:g.size,disabled:""},{default:o(()=>[...s[6]||(s[6]=[f(" Label ",-1)])]),_:1},8,["action","weight","size"])]),_:2},1032,["label"]))),128)),e(l,{label:"icon + label"},{default:o(()=>[e(t(U),{action:"progressive"},{default:o(()=>[e(t(P),{icon:t(ge)},null,8,["icon"]),s[7]||(s[7]=f(" Add ",-1))]),_:1})]),_:1}),e(l,{label:"icon-only / quiet"},{default:o(()=>[e(t(U),{weight:"quiet","aria-label":"Search"},{default:o(()=>[e(t(P),{icon:t(Q)},null,8,["icon"])]),_:1})]),_:1}),e(l,{label:"icon-only / large"},{default:o(()=>[e(t(U),{weight:"quiet",size:"large","aria-label":"Edit"},{default:o(()=>[e(t(P),{icon:t(q)},null,8,["icon"])]),_:1})]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxButtonGroup"},{default:o(()=>[e(k,{min:"280px"},{default:o(()=>[e(l,{label:"default"},{default:o(()=>[e(t(Y),{buttons:t(po)},null,8,["buttons"])]),_:1}),e(l,{label:"long labels"},{default:o(()=>[e(t(Y),{buttons:t(fo)},null,8,["buttons"])]),_:1}),e(l,{label:"disabled item"},{default:o(()=>[e(t(Y),{buttons:[{value:"a",label:"A"},{value:"b",label:"B"},{value:"c",label:"C",disabled:!0}]})]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxToggleButton"},{default:o(()=>[e(k,{min:"120px"},{default:o(()=>[e(l,{label:"off"},{default:o(()=>[e(t(ee),{modelValue:z.value,"onUpdate:modelValue":s[0]||(s[0]=g=>z.value=g)},{default:o(()=>[e(t(P),{icon:t(q)},null,8,["icon"])]),_:1},8,["modelValue"])]),_:1}),e(l,{label:"on"},{default:o(()=>[e(t(ee),{modelValue:_.value,"onUpdate:modelValue":s[1]||(s[1]=g=>_.value=g)},{default:o(()=>[e(t(P),{icon:t(q)},null,8,["icon"])]),_:1},8,["modelValue"])]),_:1}),e(l,{label:"disabled"},{default:o(()=>[e(t(ee),{"model-value":!1,disabled:""},{default:o(()=>[e(t(P),{icon:t(q)},null,8,["icon"])]),_:1})]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxToggleButtonGroup"},{default:o(()=>[e(k,{min:"280px"},{default:o(()=>[e(l,{label:"default"},{default:o(()=>[e(t(ke),{modelValue:T.value,"onUpdate:modelValue":s[2]||(s[2]=g=>T.value=g),buttons:t($e)},null,8,["modelValue","buttons"])]),_:1}),e(l,{label:"disabled"},{default:o(()=>[e(t(ke),{"model-value":"center",buttons:t($e).map(g=>({...g,disabled:!0}))},null,8,["buttons"])]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxToggleSwitch"},{default:o(()=>[e(k,{min:"180px"},{default:o(()=>[e(l,{label:"off"},{default:o(()=>[e(t(oe),{modelValue:W.value,"onUpdate:modelValue":s[3]||(s[3]=g=>W.value=g)},{default:o(()=>[...s[8]||(s[8]=[f("Off",-1)])]),_:1},8,["modelValue"])]),_:1}),e(l,{label:"on"},{default:o(()=>[e(t(oe),{modelValue:V.value,"onUpdate:modelValue":s[4]||(s[4]=g=>V.value=g)},{default:o(()=>[...s[9]||(s[9]=[f("On",-1)])]),_:1},8,["modelValue"])]),_:1}),e(l,{label:"disabled"},{default:o(()=>[e(t(oe),{"model-value":!0,disabled:""},{default:o(()=>[...s[10]||(s[10]=[f("Disabled",-1)])]),_:1})]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxIcon"},{default:o(()=>[e(k,{min:"100px"},{default:o(()=>[(u(),h(C,null,S(["xx-small","x-small","small","medium"],g=>e(l,{key:g,label:g},{default:o(()=>[e(t(P),{icon:t(Q),size:g},null,8,["icon","size"])]),_:2},1032,["label"])),64))]),_:1})]),_:1}),e(x,{title:"CdxInfoChip"},{default:o(()=>[e(k,{min:"140px"},{default:o(()=>[(u(),h(C,null,S(v,g=>e(l,{key:g,label:g},{default:o(()=>[e(t(ye),{status:g,icon:t(oo)},{default:o(()=>[...s[11]||(s[11]=[f("Status",-1)])]),_:1},8,["status","icon"])]),_:2},1032,["label"])),64)),e(l,{label:"no icon"},{default:o(()=>[e(t(ye),{status:"notice"},{default:o(()=>[...s[12]||(s[12]=[f("Status",-1)])]),_:1})]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxThumbnail"},{default:o(()=>[e(k,{min:"120px"},{default:o(()=>[e(l,{label:"image"},{default:o(()=>[e(t(we),{thumbnail:{url:t(Re),width:80,height:80}},null,8,["thumbnail"])]),_:1}),e(l,{label:"placeholder"},{default:o(()=>[e(t(we),{"placeholder-icon":t(to)},null,8,["placeholder-icon"])]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxImage"},{default:o(()=>[e(k,{min:"200px"},{default:o(()=>[(u(),h(C,null,S(i,g=>e(l,{key:g,label:g},{default:o(()=>[e(t(te),{src:t(be),alt:"Sample","aspect-ratio":g},null,8,["src","aspect-ratio"])]),_:2},1032,["label"])),64)),e(l,{label:"object-fit cover"},{default:o(()=>[e(t(te),{src:t(be),alt:"Sample","aspect-ratio":"1:1","object-fit":"cover"},null,8,["src"])]),_:1}),e(l,{label:"object-fit contain"},{default:o(()=>[e(t(te),{src:t(be),alt:"Sample","aspect-ratio":"1:1","object-fit":"contain"},null,8,["src"])]),_:1})]),_:1})]),_:1})],64))}}),zo=B({__name:"FeedbackSection",setup(n){const c=no(),d=["notice","warning","error","success"];function m(v){c.show({type:v,message:"Toast message",autoDismiss:3e3})}return(v,i)=>(u(),h(C,null,[e(x,{title:"CdxMessage"},{default:o(()=>[e(k,{min:"280px"},{default:o(()=>[(u(),h(C,null,S(d,p=>e(l,{key:`${p}-block`,label:`${p} / block`},{default:o(()=>[e(t(ne),{type:p},{default:o(()=>[...i[0]||(i[0]=[f("Message text",-1)])]),_:1},8,["type"])]),_:2},1032,["label"])),64)),(u(),h(C,null,S(d,p=>e(l,{key:`${p}-inline`,label:`${p} / inline`},{default:o(()=>[e(t(ne),{type:p,inline:""},{default:o(()=>[...i[1]||(i[1]=[f("Message text",-1)])]),_:1},8,["type"])]),_:2},1032,["label"])),64)),e(l,{label:"dismissable"},{default:o(()=>[e(t(ne),{type:"notice","allow-user-dismiss":"","dismiss-button-label":"Close"},{default:o(()=>[...i[2]||(i[2]=[f(" Message text ",-1)])]),_:1})]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxProgressBar"},{default:o(()=>[e(k,{min:"220px"},{default:o(()=>[e(l,{label:"default / indeterminate"},{default:o(()=>[e(t(M),{"aria-label":"Loading"})]),_:1}),e(l,{label:"inline / indeterminate"},{default:o(()=>[e(t(M),{inline:"","aria-label":"Loading"})]),_:1}),e(l,{label:"determinate / 42"},{default:o(()=>[e(t(M),{progress:42,"aria-label":"Progress"})]),_:1}),e(l,{label:"disabled"},{default:o(()=>[e(t(M),{disabled:"","aria-label":"Loading"})]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxProgressIndicator"},{default:o(()=>[e(k,{min:"180px"},{default:o(()=>[e(l,{label:"default"},{default:o(()=>[e(t(le))]),_:1}),e(l,{label:"inline"},{default:o(()=>[e(t(le),{inline:""})]),_:1}),e(l,{label:"in button"},{default:o(()=>[e(t(U),{action:"progressive",disabled:""},{default:o(()=>[e(t(le),{inline:""}),i[3]||(i[3]=f(" Loading ",-1))]),_:1})]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxToast"},{default:o(()=>[e(k,{min:"180px"},{default:o(()=>[(u(),h(C,null,S(d,p=>e(l,{key:p,label:p},{default:o(()=>[e(t(U),{onClick:_=>m(p)},{default:o(()=>[...i[4]||(i[4]=[f("Show",-1)])]),_:1},8,["onClick"])]),_:2},1032,["label"])),64))]),_:1})]),_:1})],64))}}),Co=B({__name:"IconsSection",setup(n){const c=me(()=>Object.entries(lo).filter(([m])=>m.startsWith("cdxIcon")).sort(([m],[v])=>m.localeCompare(v))),d=["xx-small","x-small","small","medium"];return(m,v)=>(u(),h(C,null,[e(x,{title:"Sizes"},{default:o(()=>[e(k,{min:"100px"},{default:o(()=>[(u(),h(C,null,S(d,i=>e(l,{key:i,label:i},{default:o(()=>[e(t(P),{icon:t(Q),size:i},null,8,["icon","size"])]),_:2},1032,["label"])),64))]),_:1})]),_:1}),e(x,{title:"Catalogue"},{default:o(()=>[e(k,{min:"100px",dense:""},{default:o(()=>[(u(!0),h(C,null,S(c.value,([i,p])=>(u(),A(l,{key:i,label:i},{default:o(()=>[e(t(P),{icon:p},null,8,["icon"])]),_:2},1032,["label"]))),128))]),_:1})]),_:1})],64))}}),To=B({__name:"InputsSection",setup(n){const c=y("Sample text"),d=y(`Multiline
+sample text`),m=y(""),v=y("a"),i=y("a"),p=y(null),_=y("Albert"),z=y([]),T=y([...de]),V=y([...de]),W=y(""),r=y(!1),s=y(["b"]),g=y("draft"),F=y(!0),Qe=["default","warning","error","success"],Ze=["text","search","number","email","password","tel","url","date","time","color"],Ke=["none","minimal","divider","outline"];function Je(he){return String(he).length>=2}return(he,a)=>(u(),h(C,null,[e(x,{title:"CdxField"},{default:o(()=>[e(k,{min:"240px"},{default:o(()=>[(u(),h(C,null,S(Qe,b=>e(l,{key:b,label:b},{default:o(()=>[e(t(ao),{status:b,messages:{[b]:"Message"}},{label:o(()=>[...a[23]||(a[23]=[f("Label",-1)])]),description:o(()=>[...a[24]||(a[24]=[f("Description",-1)])]),"help-text":o(()=>[...a[25]||(a[25]=[f("Help text",-1)])]),default:o(()=>[e(t(D),{modelValue:c.value,"onUpdate:modelValue":a[0]||(a[0]=X=>c.value=X)},null,8,["modelValue"])]),_:1},8,["status","messages"])]),_:2},1032,["label"])),64))]),_:1})]),_:1}),e(x,{title:"CdxLabel"},{default:o(()=>[e(k,{min:"180px"},{default:o(()=>[e(l,{label:"default"},{default:o(()=>[e(t(_e),null,{default:o(()=>[...a[26]||(a[26]=[f("Label text",-1)])]),_:1})]),_:1}),e(l,{label:"optional"},{default:o(()=>[e(t(_e),{optional:""},{default:o(()=>[...a[27]||(a[27]=[f("Optional label",-1)])]),_:1})]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxTextInput"},{default:o(()=>[e(k,{min:"220px"},{default:o(()=>[e(l,{label:"default"},{default:o(()=>[e(t(D),{modelValue:c.value,"onUpdate:modelValue":a[1]||(a[1]=b=>c.value=b),placeholder:"Placeholder"},null,8,["modelValue"])]),_:1}),e(l,{label:"start-icon"},{default:o(()=>[e(t(D),{modelValue:c.value,"onUpdate:modelValue":a[2]||(a[2]=b=>c.value=b),"start-icon":t(Q)},null,8,["modelValue","start-icon"])]),_:1}),e(l,{label:"clearable"},{default:o(()=>[e(t(D),{modelValue:c.value,"onUpdate:modelValue":a[3]||(a[3]=b=>c.value=b),clearable:""},null,8,["modelValue"])]),_:1}),e(l,{label:"disabled"},{default:o(()=>[e(t(D),{"model-value":"Disabled",disabled:""})]),_:1}),e(l,{label:"readonly"},{default:o(()=>[e(t(D),{"model-value":"Readonly",readonly:""})]),_:1}),(u(),h(C,null,S(Ze,b=>e(l,{key:b,label:b},{default:o(()=>[e(t(D),{"input-type":b,"model-value":b==="number"?42:"Sample"},null,8,["input-type","model-value"])]),_:2},1032,["label"])),64))]),_:1})]),_:1}),e(x,{title:"CdxTextArea"},{default:o(()=>[e(k,{min:"240px"},{default:o(()=>[e(l,{label:"default"},{default:o(()=>[e(t(ae),{modelValue:d.value,"onUpdate:modelValue":a[4]||(a[4]=b=>d.value=b),rows:3},null,8,["modelValue"])]),_:1}),e(l,{label:"disabled"},{default:o(()=>[e(t(ae),{"model-value":"Disabled",rows:3,disabled:""})]),_:1}),e(l,{label:"readonly"},{default:o(()=>[e(t(ae),{"model-value":"Readonly",rows:3,readonly:""})]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxSearchInput"},{default:o(()=>[e(k,{min:"240px"},{default:o(()=>[e(l,{label:"default"},{default:o(()=>[e(t(ze),{modelValue:m.value,"onUpdate:modelValue":a[5]||(a[5]=b=>m.value=b),placeholder:"Search"},null,8,["modelValue"])]),_:1}),e(l,{label:"disabled"},{default:o(()=>[e(t(ze),{"model-value":"Disabled",disabled:""})]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxCheckbox"},{default:o(()=>[e(k,{min:"180px"},{default:o(()=>[e(l,{label:"unchecked"},{default:o(()=>[e(t(O),{modelValue:r.value,"onUpdate:modelValue":a[6]||(a[6]=b=>r.value=b)},{default:o(()=>[...a[28]||(a[28]=[f("Checkbox",-1)])]),_:1},8,["modelValue"])]),_:1}),e(l,{label:"checked"},{default:o(()=>[e(t(O),{"model-value":!0},{default:o(()=>[...a[29]||(a[29]=[f("Checked",-1)])]),_:1})]),_:1}),e(l,{label:"disabled"},{default:o(()=>[e(t(O),{"model-value":!0,disabled:""},{default:o(()=>[...a[30]||(a[30]=[f("Disabled",-1)])]),_:1})]),_:1}),e(l,{label:"group"},{default:o(()=>[e(t(O),{modelValue:s.value,"onUpdate:modelValue":a[7]||(a[7]=b=>s.value=b),"input-value":"a"},{default:o(()=>[...a[31]||(a[31]=[f("A",-1)])]),_:1},8,["modelValue"]),e(t(O),{modelValue:s.value,"onUpdate:modelValue":a[8]||(a[8]=b=>s.value=b),"input-value":"b"},{default:o(()=>[...a[32]||(a[32]=[f("B",-1)])]),_:1},8,["modelValue"]),e(t(O),{modelValue:s.value,"onUpdate:modelValue":a[9]||(a[9]=b=>s.value=b),"input-value":"c"},{default:o(()=>[...a[33]||(a[33]=[f("C",-1)])]),_:1},8,["modelValue"])]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxRadio"},{default:o(()=>[e(k,{min:"180px"},{default:o(()=>[e(l,{label:"group"},{default:o(()=>[e(t(re),{modelValue:g.value,"onUpdate:modelValue":a[10]||(a[10]=b=>g.value=b),"input-value":"published"},{default:o(()=>[...a[34]||(a[34]=[f("Published",-1)])]),_:1},8,["modelValue"]),e(t(re),{modelValue:g.value,"onUpdate:modelValue":a[11]||(a[11]=b=>g.value=b),"input-value":"draft"},{default:o(()=>[...a[35]||(a[35]=[f("Draft",-1)])]),_:1},8,["modelValue"])]),_:1}),e(l,{label:"disabled"},{default:o(()=>[e(t(re),{"model-value":"draft","input-value":"draft",disabled:""},{default:o(()=>[...a[36]||(a[36]=[f("Draft",-1)])]),_:1})]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxSelect"},{default:o(()=>[e(k,{min:"220px"},{default:o(()=>[e(l,{label:"default"},{default:o(()=>[e(t(Ce),{selected:v.value,"onUpdate:selected":a[12]||(a[12]=b=>v.value=b),"menu-items":t(H),"default-label":"Choose"},null,8,["selected","menu-items"])]),_:1}),e(l,{label:"disabled"},{default:o(()=>[e(t(Ce),{selected:"a","menu-items":t(H),"default-label":"Choose",disabled:""},null,8,["menu-items"])]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxCombobox"},{default:o(()=>[e(k,{min:"220px"},{default:o(()=>[e(l,{label:"default"},{default:o(()=>[e(t(Te),{selected:i.value,"onUpdate:selected":a[13]||(a[13]=b=>i.value=b),"menu-items":t(H)},null,8,["selected","menu-items"])]),_:1}),e(l,{label:"disabled"},{default:o(()=>[e(t(Te),{selected:"a","menu-items":t(H),disabled:""},null,8,["menu-items"])]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxLookup"},{default:o(()=>[e(k,{min:"240px"},{default:o(()=>[e(l,{label:"default"},{default:o(()=>[e(t(Se),{selected:p.value,"onUpdate:selected":a[14]||(a[14]=b=>p.value=b),"input-value":_.value,"onUpdate:inputValue":a[15]||(a[15]=b=>_.value=b),"menu-items":t(G)},null,8,["selected","input-value","menu-items"])]),_:1}),e(l,{label:"disabled"},{default:o(()=>[e(t(Se),{selected:"Albert Einstein","input-value":"Albert Einstein","menu-items":t(G),disabled:""},null,8,["menu-items"])]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxMultiselectLookup"},{default:o(()=>[e(k,{min:"280px"},{default:o(()=>[e(l,{label:"default"},{default:o(()=>[e(t(We),{selected:z.value,"onUpdate:selected":a[16]||(a[16]=b=>z.value=b),"input-chips":T.value,"onUpdate:inputChips":a[17]||(a[17]=b=>T.value=b),"menu-items":t(G)},null,8,["selected","input-chips","menu-items"])]),_:1}),e(l,{label:"disabled"},{default:o(()=>[e(t(We),{selected:["Albert Einstein"],"input-chips":[{value:"Albert Einstein"}],"menu-items":t(G),disabled:""},null,8,["menu-items"])]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxChipInput"},{default:o(()=>[e(k,{min:"280px"},{default:o(()=>[e(l,{label:"default"},{default:o(()=>[e(t(R),{"input-chips":V.value,"onUpdate:inputChips":a[18]||(a[18]=b=>V.value=b),"input-value":W.value,"onUpdate:inputValue":a[19]||(a[19]=b=>W.value=b)},null,8,["input-chips","input-value"])]),_:1}),e(l,{label:"separate-input"},{default:o(()=>[e(t(R),{"input-chips":V.value,"onUpdate:inputChips":a[20]||(a[20]=b=>V.value=b),"separate-input":""},null,8,["input-chips"])]),_:1}),e(l,{label:"validator"},{default:o(()=>[e(t(R),{"input-chips":V.value,"onUpdate:inputChips":a[21]||(a[21]=b=>V.value=b),"chip-validator":Je},null,8,["input-chips"])]),_:1}),e(l,{label:"disabled"},{default:o(()=>[e(t(R),{"input-chips":t(de),disabled:""},null,8,["input-chips"])]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxAccordion"},{default:o(()=>[e(k,{min:"280px"},{default:o(()=>[(u(),h(C,null,S(Ke,b=>e(l,{key:b,label:b},{default:o(()=>[e(t(Ve),{modelValue:F.value,"onUpdate:modelValue":a[22]||(a[22]=X=>F.value=X),separation:b},{title:o(()=>[...a[37]||(a[37]=[f("Title",-1)])]),description:o(()=>[...a[38]||(a[38]=[f("Description",-1)])]),default:o(()=>[a[39]||(a[39]=w("p",null,"Body content",-1))]),_:1},8,["modelValue","separation"])]),_:2},1032,["label"])),64)),e(l,{label:"open"},{default:o(()=>[e(t(Ve),{open:"",separation:"outline"},{title:o(()=>[...a[40]||(a[40]=[f("Title",-1)])]),default:o(()=>[a[41]||(a[41]=w("p",null,"Body content",-1))]),_:1})]),_:1})]),_:1})]),_:1})],64))}}),So=$(To,[["__scopeId","data-v-2065824a"]]),Wo=B({__name:"LayoutSection",setup(n){const c=y("article"),d=y("article"),m=y({column:"title",direction:"asc"});return(v,i)=>(u(),h(C,null,[e(x,{title:"CdxCard"},{default:o(()=>[e(k,{min:"240px"},{default:o(()=>[e(l,{label:"default"},{default:o(()=>[e(t(E),null,{title:o(()=>[...i[3]||(i[3]=[f("Title",-1)])]),description:o(()=>[...i[4]||(i[4]=[f("Description",-1)])]),_:1})]),_:1}),e(l,{label:"url"},{default:o(()=>[e(t(E),{url:"#"},{title:o(()=>[...i[5]||(i[5]=[f("Title",-1)])]),description:o(()=>[...i[6]||(i[6]=[f("Description",-1)])]),_:1})]),_:1}),e(l,{label:"icon"},{default:o(()=>[e(t(E),{icon:t(ro)},{title:o(()=>[...i[7]||(i[7]=[f("Title",-1)])]),_:1},8,["icon"])]),_:1}),e(l,{label:"thumbnail"},{default:o(()=>[e(t(E),{thumbnail:{url:t(Re),width:40,height:40}},{title:o(()=>[...i[8]||(i[8]=[f("Title",-1)])]),_:1},8,["thumbnail"])]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxTable"},{default:o(()=>[e(k,{min:"100%"},{default:o(()=>[e(l,{label:"default"},{default:o(()=>[e(t(ie),{caption:"Table",columns:t(ue),data:t(ce),sort:m.value,"onUpdate:sort":i[0]||(i[0]=p=>m.value=p)},null,8,["columns","data","sort"])]),_:1}),e(l,{label:"paginate"},{default:o(()=>[e(t(ie),{caption:"Table",columns:t(ue),data:t(ce),paginate:"","pagination-size-default":2},null,8,["columns","data"])]),_:1}),e(l,{label:"vertical-borders"},{default:o(()=>[e(t(ie),{caption:"Table",columns:t(ue),data:t(ce),"show-vertical-borders":""},null,8,["columns","data"])]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxTabs / CdxTab"},{default:o(()=>[e(k,{min:"280px"},{default:o(()=>[e(l,{label:"default"},{default:o(()=>[e(t(Z),{active:c.value,"onUpdate:active":i[1]||(i[1]=p=>c.value=p)},{default:o(()=>[e(t(L),{name:"article",label:"Article"},{default:o(()=>[...i[9]||(i[9]=[w("p",null,"Article",-1)])]),_:1}),e(t(L),{name:"talk",label:"Talk"},{default:o(()=>[...i[10]||(i[10]=[w("p",null,"Talk",-1)])]),_:1}),e(t(L),{name:"history",label:"History",disabled:""},{default:o(()=>[...i[11]||(i[11]=[w("p",null,"History",-1)])]),_:1})]),_:1},8,["active"])]),_:1}),e(l,{label:"framed"},{default:o(()=>[e(t(Z),{active:d.value,"onUpdate:active":i[2]||(i[2]=p=>d.value=p),framed:""},{default:o(()=>[e(t(L),{name:"article",label:"Article"},{default:o(()=>[...i[12]||(i[12]=[w("p",null,"Article",-1)])]),_:1}),e(t(L),{name:"talk",label:"Talk"},{default:o(()=>[...i[13]||(i[13]=[w("p",null,"Talk",-1)])]),_:1})]),_:1},8,["active"])]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxSearchResultTitle"},{default:o(()=>[e(k,{min:"240px"},{default:o(()=>[e(l,{label:"with query"},{default:o(()=>[e(t(Ue),{title:"Albert Einstein","search-query":"Albert"})]),_:1}),e(l,{label:"no query"},{default:o(()=>[e(t(Ue),{title:"Albert Einstein"})]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxTypeaheadSearch"},{default:o(()=>[e(k,{min:"320px"},{default:o(()=>[e(l,{label:"default"},{default:o(()=>[e(t(Ae),{id:"playground-search","form-action":"/","search-results":t(Pe)},null,8,["search-results"])]),_:1}),e(l,{label:"use-button"},{default:o(()=>[e(t(Ae),{id:"playground-search-button","form-action":"/","search-results":t(Pe),"use-button":""},null,8,["search-results"])]),_:1})]),_:1})]),_:1})],64))}}),Vo=B({__name:"OverlaysSection",setup(n){const c=io,d=y(!1),m=y(!1),v=y(!1),i=y(!1),p=y(!1),_=y("edit"),z=y(null),T=y(!1),V=Xe("popoverAnchor");return(W,r)=>(u(),h(C,null,[e(x,{title:"CdxDialog"},{default:o(()=>[e(k,{min:"180px"},{default:o(()=>[e(l,{label:"progressive primary"},{default:o(()=>[e(t(U),{onClick:r[0]||(r[0]=s=>d.value=!0)},{default:o(()=>[...r[22]||(r[22]=[f("Open",-1)])]),_:1})]),_:1}),e(l,{label:"destructive primary"},{default:o(()=>[e(t(U),{action:"destructive",onClick:r[1]||(r[1]=s=>m.value=!0)},{default:o(()=>[...r[23]||(r[23]=[f("Open",-1)])]),_:1})]),_:1}),e(l,{label:"custom footer"},{default:o(()=>[e(t(U),{onClick:r[2]||(r[2]=s=>v.value=!0)},{default:o(()=>[...r[24]||(r[24]=[f("Open",-1)])]),_:1})]),_:1}),e(l,{label:"subtitle"},{default:o(()=>[e(t(U),{onClick:r[3]||(r[3]=s=>i.value=!0)},{default:o(()=>[...r[25]||(r[25]=[f("Open",-1)])]),_:1})]),_:1})]),_:1}),e(t(N),{open:d.value,"onUpdate:open":r[4]||(r[4]=s=>d.value=s),title:"Title","close-button-label":"Close","primary-action":{label:"Primary",actionType:"progressive"},"default-action":{label:"Default"},dismissable:"",onPrimary:r[5]||(r[5]=s=>d.value=!1),onDefault:r[6]||(r[6]=s=>d.value=!1)},{default:o(()=>[...r[26]||(r[26]=[f(" Body ",-1)])]),_:1},8,["open"]),e(t(N),{open:m.value,"onUpdate:open":r[7]||(r[7]=s=>m.value=s),title:"Title","close-button-label":"Close","primary-action":{label:"Delete",actionType:"destructive"},"default-action":{label:"Cancel"},dismissable:"",onPrimary:r[8]||(r[8]=s=>m.value=!1),onDefault:r[9]||(r[9]=s=>m.value=!1)},{default:o(()=>[...r[27]||(r[27]=[f(" Body ",-1)])]),_:1},8,["open"]),e(t(N),{open:v.value,"onUpdate:open":r[12]||(r[12]=s=>v.value=s),title:"Title","close-button-label":"Close",dismissable:""},{footer:o(()=>[e(t(U),{weight:"quiet",onClick:r[10]||(r[10]=s=>v.value=!1)},{default:o(()=>[...r[28]||(r[28]=[f("Cancel",-1)])]),_:1}),e(t(U),{action:"progressive",icon:t(ge),onClick:r[11]||(r[11]=s=>v.value=!1)},{default:o(()=>[...r[29]||(r[29]=[f(" Add ",-1)])]),_:1},8,["icon"])]),default:o(()=>[r[30]||(r[30]=f(" Body ",-1))]),_:1},8,["open"]),e(t(N),{open:i.value,"onUpdate:open":r[13]||(r[13]=s=>i.value=s),title:"Title",subtitle:"Subtitle","close-button-label":"Close","primary-action":{label:"Primary",actionType:"progressive"},dismissable:"",onPrimary:r[14]||(r[14]=s=>i.value=!1)},{default:o(()=>[...r[31]||(r[31]=[f(" Body ",-1)])]),_:1},8,["open"])]),_:1}),e(x,{title:"CdxTooltip"},{default:o(()=>[e(k,{min:"160px"},{default:o(()=>[e(l,{label:"directive"},{default:o(()=>[xe((u(),A(t(U),null,{default:o(()=>[...r[32]||(r[32]=[f("Hover",-1)])]),_:1})),[[t(c),"Tooltip text"]])]),_:1}),e(l,{label:"icon"},{default:o(()=>[xe((u(),A(t(U),{weight:"quiet","aria-label":"Edit"},{default:o(()=>[e(t(P),{icon:t(q)},null,8,["icon"])]),_:1})),[[t(c),"Edit"]])]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxMenuItem"},{default:o(()=>[e(k,{min:"200px"},{default:o(()=>[e(l,{label:"default"},{default:o(()=>[e(t(se),{label:"Menu item",value:"item"})]),_:1}),e(l,{label:"with icon"},{default:o(()=>[e(t(se),{label:"Edit",value:"edit",icon:t(q)},null,8,["icon"])]),_:1}),e(l,{label:"disabled"},{default:o(()=>[e(t(se),{label:"Disabled",value:"disabled",disabled:""})]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxMenu"},{default:o(()=>[e(k,{min:"220px"},{default:o(()=>[e(l,{label:"expanded"},{default:o(()=>[e(t(Be),{expanded:p.value,"onUpdate:expanded":r[15]||(r[15]=s=>p.value=s),selected:_.value,"onUpdate:selected":r[16]||(r[16]=s=>_.value=s),"menu-items":t(Ie)},null,8,["expanded","selected","menu-items"])]),_:1}),e(l,{label:"show-pending"},{default:o(()=>[e(t(Be),{expanded:p.value,"onUpdate:expanded":r[17]||(r[17]=s=>p.value=s),selected:_.value,"onUpdate:selected":r[18]||(r[18]=s=>_.value=s),"menu-items":[],"show-pending":""},{pending:o(()=>[...r[33]||(r[33]=[f("Pending",-1)])]),_:1},8,["expanded","selected"])]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxMenuButton"},{default:o(()=>[e(k,{min:"160px"},{default:o(()=>[e(l,{label:"default"},{default:o(()=>[e(t(so),{selected:z.value,"onUpdate:selected":r[19]||(r[19]=s=>z.value=s),"menu-items":t(Ie)},{default:o(()=>[e(t(P),{icon:t(uo)},null,8,["icon"])]),_:1},8,["selected","menu-items"])]),_:1})]),_:1})]),_:1}),e(x,{title:"CdxPopover"},{default:o(()=>[e(k,{min:"240px"},{default:o(()=>[e(l,{label:"open"},{default:o(()=>[e(t(U),{ref_key:"popoverAnchor",ref:V,onClick:r[20]||(r[20]=s=>T.value=!T.value)},{default:o(()=>[...r[34]||(r[34]=[f("Toggle",-1)])]),_:1},512),e(t(co),{open:T.value,"onUpdate:open":r[21]||(r[21]=s=>T.value=s),anchor:V.value,title:"Title","use-close-button":"","primary-action":{label:"Primary",actionType:"progressive"},"default-action":{label:"Default"}},{default:o(()=>[...r[35]||(r[35]=[f(" Body ",-1)])]),_:1},8,["open","anchor"])]),_:1})]),_:1})]),_:1})],64))}}),Ee=`/* Copied from @wikimedia/codex-design-tokens/theme-wikimedia-ui.css on 15th Jun 2026 */
+/* Night block re-scoped from theme-wikimedia-ui-mode-dark.css (:root -> html.skin-theme-clientpref-night). */
+
+/**
+ * Codex Design Tokens v2.6.0
+ * Design System for Wikimedia
+ * See https://doc.wikimedia.org/codex/latest/design-tokens/overview.html
+ */
+
+:root {
+  --color-base: #202122;
+  --color-base-fixed: #202122;
+  --color-base--hover: #404244;
+  --color-emphasized: #101418;
+  --color-neutral: #404244;
+  --color-subtle: #54595d;
+  --color-placeholder: #72777d;
+  --color-disabled: #a2a9b1;
+  --color-disabled-emphasized: #a2a9b1;
+  --color-inverted: #fff;
+  --color-inverted-fixed: #fff; /* The same as color-inverted in light mode, but does not change in dark mode. Use this for things that should be white in both modes. */
+  --color-progressive: #36c; /* 'Progressive' Color and states */
+  --color-progressive--hover: #3056a9;
+  --color-progressive--active: #233566;
+  --color-progressive--focus: #36c;
+  --color-destructive: #bf3c2c; /* 'Destructive' Color and states */
+  --color-destructive--hover: #9f3526;
+  --color-destructive--active: #612419;
+  --color-destructive--focus: #36c;
+  --color-visited: #6a60b0; /* 'Visited' color. In combination with progressive. Used for default links. */
+  --color-visited--hover: #534fa3;
+  --color-visited--active: #353262;
+  --color-destructive--visited: #9f5555; /* Red link 'Visited' color. Used for visited red links. */
+  --color-destructive--visited--hover: #854848;
+  --color-destructive--visited--active: #512e2e;
+  --color-error: #bf3c2c;
+  --color-error--hover: #9f3526;
+  --color-error--active: #612419;
+  --color-warning: #886425;
+  --color-success: #177860;
+  --color-notice: #404244;
+  --color-icon-error: #f54739;
+  --color-icon-warning: #ab7f2a;
+  --color-icon-success: #099979;
+  --color-icon-notice: #72777d;
+  --color-icon-progressive: #36c;
+  --color-content-added: #006400;
+  --color-content-removed: #8b0000;
+  --color-option-red: #bf3c2c;
+  --color-option-orange: #a95226;
+  --color-option-yellow: #886425;
+  --color-option-lime: #1f7a39;
+  --color-option-green: #177860;
+  --color-option-blue: #36c;
+  --color-option-purple: #6a60b0;
+  --color-option-pink: #9b527f;
+  --color-option-maroon: #9f5555;
+  --opacity-base: 1;
+  --opacity-medium: 0.65;
+  --opacity-low: 0.3;
+  --opacity-transparent: 0;
+  --filter-invert-icon: 0;
+  --filter-invert-primary-button-icon: 1;
+  --background-position-base: center;
+  --background-size-search-figure: cover; /* Use in TypeaheadSearch and Thumbnail components for the thumb container. */
+  --z-index-bottom: -100; /* Use descriptive \`z-index\` tokens for layout purposes. */
+  --z-index-base: 0;
+  --z-index-above-content: 1;
+  --z-index-toolbar: 2;
+  --z-index-dropdown: 50;
+  --z-index-sticky: 100;
+  --z-index-fixed: 200;
+  --z-index-off-canvas-backdrop: 300;
+  --z-index-off-canvas: 350;
+  --z-index-overlay-backdrop: 400;
+  --z-index-overlay: 450;
+  --z-index-popover: 700;
+  --z-index-tooltip: 800;
+  --z-index-toast-notification: 900;
+  --z-index-top: 9999;
+  --z-index-stacking-0: 0; /* Use stacking-specific z-index tokens inside components to layer individual elements. */
+  --z-index-stacking-1: 1;
+  --z-index-stacking-2: 2;
+  --z-index-stacking-3: 3;
+  --box-sizing-base: border-box;
+  --size-0: 0;
+  --size-6: 0.0625rem;
+  --size-12: 0.125rem;
+  --size-25: 0.25rem;
+  --size-50: 0.5rem;
+  --size-75: 0.75rem;
+  --size-100: 1rem;
+  --size-125: 1.25rem;
+  --size-150: 1.5rem;
+  --size-200: 2rem;
+  --size-250: 2.5rem;
+  --size-275: 2.75rem;
+  --size-300: 3rem;
+  --size-400: 4rem;
+  --size-800: 8rem;
+  --size-1200: 12rem;
+  --size-1600: 16rem;
+  --size-2400: 24rem;
+  --size-2800: 28rem;
+  --size-3200: 32rem;
+  --size-4000: 40rem;
+  --size-5600: 56rem;
+  --size-viewport-width-full: 100vw;
+  --size-viewport-height-full: 100vh;
+  --size-absolute-1: 1px;
+  --size-absolute-9999: 9999px;
+  --size-content-min: min-content;
+  --size-content-fit: fit-content;
+  --size-content-max: max-content;
+  --size-third: 33.33%;
+  --size-half: 50%;
+  --size-full: 100%;
+  --size-double: 200%;
+  --size-search-figure: 2.5rem; /* Alias for use in TypeaheadSearch and Thumbnail components for the same purpose and for better code readability. */
+  --max-width-base: none;
+  --max-width-breakpoint-mobile: calc( 640px - var( --size-absolute-1 ) ); /* A mobile device's maximum available screen width. Many older feature phones have screens smaller than this value. */
+  --max-width-breakpoint-tablet: calc( 1120px - var( --size-absolute-1 ) ); /* A tablet device's maximum available screen width. Note, the size chosen is eager to be re-evaluated with Web team and Product Analytics. */
+  --max-width-breakpoint-desktop: calc( 1680px - var( --size-absolute-1 ) ); /* A desktop device's maximum available screen width. */
+  --max-width-button: 28rem; /* Note, that this is a slight amendment from WikimediaUI Base from \`28.75em\` = \`460px\` to \`448px\` – \`dimension.2800\` */
+  --border-style-base: solid;
+  --border-style-dashed: dashed;
+  --box-shadow-inset-small: inset 0 0 0 1px;
+  --box-shadow-inset-medium: inset 0 0 0 2px;
+  --box-shadow-inset-medium-vertical: inset 0 -2px 0 0;
+  --box-shadow-outset-small: 0 0 0 1px;
+  --box-shadow-outset-small-top: 0 -1px 0 0;
+  --box-shadow-outset-small-bottom: 0 1px 0 0;
+  --box-shadow-outset-small-start: -1px 0 0 0;
+  --box-shadow-outset-medium-below: 0 4px 4px 0;
+  --box-shadow-outset-medium-around: 0 0 8px 0;
+  --box-shadow-outset-large-below: 0 4px 8px 0;
+  --box-shadow-outset-large-around: 0 0 16px 0;
+  --box-shadow-color-base: #a2a9b1;
+  --box-shadow-color-progressive--active: #233566;
+  --box-shadow-color-progressive--focus: #36c;
+  --box-shadow-color-progressive-selected: #36c;
+  --box-shadow-color-progressive-selected--hover: #3056a9;
+  --box-shadow-color-progressive-selected--active: #233566;
+  --box-shadow-color-destructive--focus: #36c;
+  --box-shadow-color-inverted: #fff;
+  --box-shadow-color-alpha-base: rgba( 0, 0, 0, 0.06 );
+  --box-shadow-color-transparent: transparent;
+  --font-family-base: sans-serif; /* Reference Vector's default fallback sans instead of the deprecated value \`font-family-sans\` in WikimediaUI Base. */
+  --font-family-system-sans: -apple-system, 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Inter', 'Helvetica', 'Arial', sans-serif;
+  --font-family-sans--fallback: sans-serif;
+  --font-family-serif: 'Linux Libertine', 'Georgia', 'Times', 'Source Serif 4', serif;
+  --font-family-serif--fallback: serif;
+  --font-family-monospace: 'Menlo', 'Consolas', 'Liberation Mono', 'Fira Code', 'Courier New', monospace;
+  --font-family-monospace--fallback: monospace, monospace;
+  --font-family-heading-main: 'Linux Libertine', 'Georgia', 'Times', 'Source Serif 4', serif; /* Legacy value from WikimediaUI Base. Use for first heading special treatment. */
+  --font-size-x-small: 0.75rem; /* \`x\` stands for extra. In this case extra small. */
+  --font-size-small: 0.875rem;
+  --font-size-medium: 1rem;
+  --font-size-large: 1.125rem;
+  --font-size-x-large: 1.25rem;
+  --font-size-xx-large: 1.5rem;
+  --font-size-xxx-large: 1.75rem;
+  --font-weight-hairline: 100;
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-semi-bold: 600;
+  --font-weight-bold: 700;
+  --line-height-x-small: 1.25rem; /* \`x\` stands for extra. In this case extra small. */
+  --line-height-small: 1.375rem;
+  --line-height-medium: 1.625rem;
+  --line-height-large: 1.75rem;
+  --line-height-x-large: 1.875rem;
+  --line-height-xx-large: 2.125rem;
+  --line-height-xxx-large: 2.375rem;
+  --line-height-content: 1.625; /* Intended for user-generated content that comes from outside of the design system. Components and features should use the standard font-size and line-height tokens instead. */
+  --text-decoration-none: none;
+  --text-decoration-line-through: line-through;
+  --text-decoration-underline: underline;
+  --text-overflow-clip: clip;
+  --text-overflow-ellipsis: ellipsis;
+  --tab-size-base: 4;
+  --transform-checkbox-tick--checked: rotate( 45deg );
+  --transform-progress-indicator-spinner-start: rotate( -45deg );
+  --transform-progress-indicator-spinner-end: rotate( 315deg );
+  --transition-duration-base: 100ms;
+  --transition-duration-medium: 250ms;
+  --transition-property-base: background-color, color, border-color, box-shadow;
+  --transition-property-fade: opacity;
+  --transition-property-icon: color;
+  --transition-property-icon-css-only: background-color;
+  --transition-property-toast: opacity, transform;
+  --transition-property-toggle-switch-grip: background-color, border-color, transform;
+  --transition-timing-function-system: ease;
+  --transition-timing-function-user: ease-out;
+  --animation-delay-none: 0ms;
+  --animation-delay-medium: -160ms;
+  --animation-delay-slow: -320ms;
+  --animation-duration-fast: 1000ms;
+  --animation-duration-medium: 1600ms;
+  --animation-duration-slow: 2000ms;
+  --animation-timing-function-base: linear;
+  --animation-timing-function-bouncing: ease-in-out;
+  --animation-iteration-count-base: infinite;
+  --cursor-base: default;
+  --cursor-base--disabled: default;
+  --cursor-base--hover: pointer;
+  --cursor-grab: grab;
+  --cursor-grabbing: grabbing;
+  --cursor-help: help;
+  --cursor-move: move;
+  --cursor-not-allowed: not-allowed;
+  --cursor-resize-nesw: nesw-resize;
+  --cursor-resize-nwse: nwse-resize;
+  --cursor-text: text;
+  --cursor-zoom-in: zoom-in;
+  --cursor-zoom-out: zoom-out;
+  --mix-blend-mode-base: normal;
+  --mix-blend-mode-blend: multiply;
+  --background-color-base: #fff; /* Background Colors for static elements (for page layout, sections, etc.) from here on. */
+  --background-color-base-fixed: #fff; /* The same as background-color-base in light mode, but does not change in dark mode. Use this for things that should be white in both modes. */
+  --background-color-neutral: #eaecf0;
+  --background-color-neutral-subtle: #f8f9fa;
+  --background-color-interactive: #eaecf0;
+  --background-color-interactive--hover: #dadde3;
+  --background-color-interactive--active: #c8ccd1;
+  --background-color-interactive-subtle: #f8f9fa;
+  --background-color-interactive-subtle--hover: #eaecf0;
+  --background-color-interactive-subtle--active: #dadde3;
+  --background-color-disabled: #dadde3; /* Components like Buttons, Checkboxes, Radios, ProgressBars…. */
+  --background-color-disabled-subtle: #eaecf0; /* Components like TextInputs, Selects…. */
+  --background-color-inverted: #101418;
+  --background-color-progressive: #36c;
+  --background-color-progressive--hover: #3056a9;
+  --background-color-progressive--active: #233566;
+  --background-color-progressive--focus: #36c;
+  --background-color-progressive-subtle: #e8eeff;
+  --background-color-progressive-subtle--hover: #d9e2ff;
+  --background-color-progressive-subtle--active: #b6d4fb;
+  --background-color-destructive: #bf3c2c;
+  --background-color-destructive--hover: #9f3526;
+  --background-color-destructive--active: #612419;
+  --background-color-destructive--focus: #36c;
+  --background-color-destructive-subtle: #ffe9e5;
+  --background-color-destructive-subtle--hover: #ffdad3;
+  --background-color-destructive-subtle--active: #ffc8bd;
+  --background-color-error: #f54739;
+  --background-color-error--hover: #d74032;
+  --background-color-error--active: #bf3c2c;
+  --background-color-error-subtle: #ffe9e5;
+  --background-color-error-subtle--hover: #ffdad3;
+  --background-color-error-subtle--active: #ffc8bd;
+  --background-color-warning-subtle: #fdf2d5;
+  --background-color-success-subtle: #dff2eb;
+  --background-color-notice-subtle: #eaecf0;
+  --background-color-content-added: #a3d3ff;
+  --background-color-content-removed: #ffe49c;
+  --background-color-target-text: #ffead4;
+  --background-color-option-red: #ffe9e5;
+  --background-color-option-orange: #ffead4;
+  --background-color-option-yellow: #fdf2d5;
+  --background-color-option-lime: #e3f2e4;
+  --background-color-option-green: #dff2eb;
+  --background-color-option-blue: #e8eeff;
+  --background-color-option-purple: #f0ecf6;
+  --background-color-option-pink: #f5ebf2;
+  --background-color-option-maroon: #f6ebeb;
+  --background-color-transparent: transparent;
+  --background-color-backdrop-light: rgba( 255, 255, 255, 0.65 ); /* Backdrop is the term used by CSS Fullscreen API and is used to dim the background when a modal Dialog is open. Also known as overlay mask. */
+  --background-color-backdrop-dark: rgba( 0, 0, 0, 0.65 );
+  --background-color-button-quiet--hover: rgba( 0, 24, 73, 0.027 );
+  --background-color-button-quiet--active: rgba( 0, 24, 73, 0.082 );
+  --background-color-input-binary--checked: #36c;
+  --background-color-tab-list-item-framed--hover: rgba( 255, 255, 255, 0.3 );
+  --background-color-tab-list-item-framed--active: rgba( 255, 255, 255, 0.65 );
+  --opacity-icon-base: 0.87;
+  --opacity-icon-base--hover: 0.74;
+  --opacity-icon-base--selected: 1;
+  --opacity-icon-base--disabled: 0.51;
+  --opacity-icon-placeholder: 0.51;
+  --opacity-icon-subtle: 0.67;
+  --min-size-interactive-pointer: 32px;
+  --min-size-interactive-touch: 44px;
+  --min-size-search-figure: 40px; /* Alias for use in TypeaheadSearch and Thumbnail components for the same purpose and for better code readability. */
+  --min-size-icon-x-small: 10px;
+  --min-size-icon-small: 14px;
+  --min-size-icon-medium: 18px;
+  --min-size-input-binary: 20px;
+  --min-size-input-chip-clear-button: 20px;
+  --min-size-toggle-switch-grip: 18px;
+  --min-width-medium: 256px;
+  --min-width-breakpoint-mobile: 320px; /* A mobile device's minimum available screen width. Many older feature phones have screens smaller than this value. */
+  --min-width-breakpoint-tablet: 640px; /* A tablet device's minimum available screen width. Note: the size chosen is eager to be re-evaluated with Web team and Product Analytics. */
+  --min-width-breakpoint-desktop: 1120px; /* A desktop device's minimum available screen width. */
+  --min-width-breakpoint-desktop-wide: 1680px; /* A wider desktop's minimum available screen width. */
+  --min-width-toggle-switch: 42px;
+  --spacing-0: 0;
+  --spacing-6: 1px;
+  --spacing-12: 2px;
+  --spacing-25: 4px;
+  --spacing-30: 5px; /* This token is an exception to the scale.  Used as vertical \`padding\` in inputs and controls to achieve the default 32px component height. */
+  --spacing-35: 6px; /* This token is an exception to the scale.  Used as \`padding\` of the ToggleSwitch component. */
+  --spacing-50: 8px;
+  --spacing-65: 10px;
+  --spacing-75: 12px;
+  --spacing-100: 16px;
+  --spacing-125: 20px;
+  --spacing-150: 24px;
+  --spacing-200: 32px;
+  --spacing-250: 40px;
+  --spacing-300: 48px;
+  --spacing-400: 64px;
+  --spacing-half: 50%; /* From here on, spacing tokens which are used for positioning values. */
+  --spacing-full: 100%;
+  --border-width-base: 1px;
+  --border-width-thick: 2px;
+  --border-width-input-radio--checked: 6px;
+  --border-color-base: #a2a9b1;
+  --border-color-emphasized: #202122;
+  --border-color-subtle: #c8ccd1;
+  --border-color-muted: #dadde3;
+  --border-color-interactive: #72777d;
+  --border-color-interactive--hover: #27292d;
+  --border-color-interactive--active: #202122;
+  --border-color-disabled: #c8ccd1;
+  --border-color-inverted: #fff;
+  --border-color-inverted-fixed: #fff; /* The same as color-inverted in light mode, but does not change in dark mode. Use this for things that should be white in both modes. */
+  --border-color-progressive: #36c;
+  --border-color-progressive--hover: #3056a9;
+  --border-color-progressive--active: #233566;
+  --border-color-progressive--focus: #36c;
+  --border-color-destructive: #f54739;
+  --border-color-destructive--hover: #9f3526;
+  --border-color-destructive--active: #612419;
+  --border-color-destructive--focus: #36c;
+  --border-color-error: #f54739;
+  --border-color-error--hover: #9f3526;
+  --border-color-error--active: #612419;
+  --border-color-warning: #ab7f2a;
+  --border-color-warning--hover: #735421;
+  --border-color-warning--active: #453217;
+  --border-color-success: #099979;
+  --border-color-notice: #72777d;
+  --border-color-content-added: #a3d3ff;
+  --border-color-content-removed: #ffe49c;
+  --border-color-option-red: #f54739;
+  --border-color-option-orange: #d46926;
+  --border-color-option-yellow: #ab7f2a;
+  --border-color-option-lime: #259948;
+  --border-color-option-green: #099979;
+  --border-color-option-blue: #6485d1;
+  --border-color-option-purple: #8d7ebd;
+  --border-color-option-pink: #b5739e;
+  --border-color-option-maroon: #b57775;
+  --border-color-transparent: transparent;
+  --border-color-divider: #a2a9b1;
+  --border-radius-base: 2px;
+  --border-radius-sharp: 0;
+  --border-radius-pill: 9999px;
+  --border-radius-circle: 50%; /* Use \`50%\` for circle or ellipsis. See https://stackoverflow.com/a/29966500 */
+  --outline-color-progressive--focus: #36c; /* Use in places where no more customized focus styles are provided, for example on generic \`:focus\`. */
+  --min-height-text-area: 64px;
+  --min-height-table-header: 40px;
+  --min-height-table-footer: 40px;
+  --min-height-toggle-switch: 28px;
+  --max-height-chip: 1.375rem;
+  --color-link: var( --color-progressive ); /* Default Link color and states */
+  --color-link--hover: var( --color-progressive--hover );
+  --color-link--active: var( --color-progressive--active );
+  --color-link--focus: var( --color-progressive--focus );
+  --color-link--visited: var( --color-visited );
+  --color-link--visited--hover: var( --color-visited--hover );
+  --color-link--visited--active: var( --color-visited--active );
+  --color-link-red: var( --color-destructive ); /* Red ('new') Link color and states */
+  --color-link-red--hover: var( --color-destructive--hover );
+  --color-link-red--active: var( --color-destructive--active );
+  --color-link-red--focus: var( --color-destructive--focus );
+  --color-link-red--visited: var( --color-destructive--visited );
+  --color-link-red--visited--hover: var( --color-destructive--visited--hover );
+  --color-link-red--visited--active: var( --color-destructive--visited--active );
+  --size-icon-x-small: calc( var( --font-size-medium ) - 4px );
+  --size-icon-small: var( --font-size-medium );
+  --size-icon-medium: calc( var( --font-size-medium ) + 4px );
+  --size-toggle-switch-grip: calc( var( --font-size-medium ) * 1.25 );
+  --box-shadow-small: var( --box-shadow-outset-small ) var( --box-shadow-color-base );
+  --box-shadow-small-top: var( --box-shadow-outset-small-top ) var( --box-shadow-color-base );
+  --box-shadow-small-bottom: var( --box-shadow-outset-small-bottom ) var( --box-shadow-color-base );
+  --box-shadow-medium: var( --box-shadow-outset-medium-below ) var( --box-shadow-color-alpha-base ), var( --box-shadow-outset-medium-around ) var( --box-shadow-color-alpha-base );
+  --box-shadow-large: var( --box-shadow-outset-large-below ) var( --box-shadow-color-alpha-base ), var( --box-shadow-outset-large-around ) var( --box-shadow-color-alpha-base );
+  --accent-color-base: #36c;
+  --position-offset-border-width-base: -var( --border-width-base );
+  --spacing-horizontal-button: var( --spacing-75 ) - var( --border-width-base ); /* Padding should equal 12px of spacing minus the width of the border */
+  --spacing-horizontal-button-icon-only: var( --spacing-35 ) - var( --border-width-base ); /* Padding should equal 6px of spacing minus the width of the border */
+  --spacing-horizontal-button-small-icon-only: var( --spacing-12 ) - var( --border-width-base ); /* Padding should equal 2px of spacing minus the width of the border */
+  --spacing-horizontal-button-small: var( --spacing-35 ) - var( --border-width-base ); /* Padding should equal 6px of spacing minus the width of the border */
+  --spacing-horizontal-button-large: var( --spacing-100 ) - var( --border-width-base ); /* Padding should equal 16px of spacing minus the width of the border */
+  --spacing-horizontal-input-text-two-end-icons: calc( var( --spacing-50 ) * 2 + var( --size-icon-small ) ); /* Rely on \`calc()\` to make token output usable in all formats. When there are two end icons, (i.e. a clear icon and an end icon), we need to double the horizontal padding and account for the size of the extra icon. This token can be used to calculate the horizontal position of the clear icon and the padding-end of the text input. */
+  --spacing-start-typeahead-search-figure: var( --spacing-75 ); /* The amount of space between the TypeaheadSearch figure's parent component and the TypeaheadSearch figure (input icon container, search result thumbnail, and footer icon container). We want this space to be uniform so that the figures vertically line up nicely. We use the same horizontal padding as the MenuItem. */
+  --spacing-toggle-switch-grip-start: calc( var( --font-size-medium ) * 0.375 );
+  --spacing-toggle-switch-grip-end: calc( var( --font-size-medium ) * 1.25 );
+  --border-color-input--hover: var( --border-color-interactive );
+  --border-color-input-binary: var( --border-color-interactive );
+  --border-color-input-binary--hover: var( --border-color-progressive--hover );
+  --border-color-input-binary--active: var( --border-color-progressive--active );
+  --border-color-input-binary--focus: var( --border-color-progressive--focus );
+  --border-color-input-binary--checked: var( --border-color-progressive );
+  --border-base: var( --border-width-base ) var( --border-style-base ) var( --border-color-base );
+  --border-subtle: var( --border-width-base ) var( --border-style-base ) var( --border-color-subtle );
+  --border-progressive: var( --border-width-base ) var( --border-style-base ) var( --border-color-progressive );
+  --border-destructive: var( --border-width-base ) var( --border-style-base ) var( --border-color-destructive );
+  --border-transparent: var( --border-width-base ) var( --border-style-base ) var( --border-color-transparent );
+  --outline-base--focus: var( --border-width-base ) solid transparent; /* Enable Windows high contrast mode on certain widgets, that have default outlines overridden. */
+  --width-toggle-switch: calc( var( --font-size-medium ) * 3 );
+  --height-toggle-switch: calc( var( --font-size-medium ) * 2 );
+  --spacing-start-typeahead-search-icon: calc( var( --spacing-start-typeahead-search-figure ) + ( var( --min-size-search-figure ) - var( --min-size-icon-medium ) ) / 2 ); /* The padding required for the icon to center align with the menu item thumbnail. We calculate the difference in size and add it to the expected spacing. */
+  --spacing-typeahead-search-focus-addition: calc( ( var( --spacing-start-typeahead-search-figure ) + var( --min-size-search-figure ) ) - ( var( --min-size-icon-medium ) + var( --spacing-50 ) ) ); /* The amount the width of the input increases when it is focused to allow for the extra spacing around the search figures. The caret position should remain static. This calculates the padding-left of the input when expanded minus the padding-left of the input when not expanded. (Note that both padding values actually include \`@spacing-50\` as well, but it was left out of the calculation for simplicity's sake.) */
+
+/* DEPRECATED TOKENS */
+/* Warning: the following token name is deprecated (Use \`color-subtle\` instead. Note, that \`color-subtle\` is using \`color.gray600\` instead of \`color.gray500\` now.) */
+  --color-base--subtle: #54595d;
+/* Warning: the following token name is deprecated (For elements which previously used \`xx-large\`, consider using \`large\` instead, or referring to the guidance above to best choose the appropriate shadow.) */
+  --box-shadow-drop-xx-large: 0 20px 48px 0 rgba( 0, 0, 0, 0.2 );
+/* Warning: the following token name is deprecated (Use \`font-family-sans--fallback\` instead. See T247166.) */
+  --font-family-sans: 'Helvetica Neue', 'Helvetica', 'Liberation Sans', 'Arial', sans-serif;
+/* Warning: the following token name is deprecated (Use \`line-height-x-small\` instead. Deprecated, part of old font-size/line-height system) */
+  --line-height-xxx-small: 1.4285714rem;
+/* Warning: the following token name is deprecated (Use \`line-height-small\` instead. Deprecated, part of old font-size/line-height system) */
+  --line-height-xx-small: 1.5714285rem;
+/* Warning: the following token name is deprecated (Shadow shorthands should be used in place of \`drop\` shadows.) */
+  --box-shadow-drop-small: var( --box-shadow-outset-small ) var( --box-shadow-color-base );
+/* Warning: the following token name is deprecated (Shadow shorthands should be used in place of \`drop\` shadows.) */
+  --box-shadow-drop-medium: var( --box-shadow-outset-medium-below ) var( --box-shadow-color-alpha-base ), var( --box-shadow-outset-medium-around ) var( --box-shadow-color-alpha-base );
+}
+
+html.skin-theme-clientpref-night {
+  color-scheme: dark;
+  --color-base: #eaecf0;
+  --color-base--hover: #f8f9fa;
+  --color-emphasized: #f8f9fa;
+  --color-neutral: #c8ccd1;
+  --color-subtle: #a2a9b1;
+  --color-disabled: #54595d;
+  --color-disabled-emphasized: #72777d;
+  --color-inverted: #101418;
+  --color-progressive: #88a3e8; /* 'Progressive' Color and states */
+  --color-progressive--hover: #a6bbf5;
+  --color-progressive--active: #b6d4fb;
+  --color-destructive: #fd7865; /* 'Destructive' Color and states */
+  --color-destructive--hover: #fea898;
+  --color-destructive--active: #ffc8bd;
+  --color-visited: #a799cd; /* 'Visited' color. In combination with progressive. Used for default links. */
+  --color-visited--hover: #c5b9dd;
+  --color-visited--active: #d9d0e9;
+  --color-destructive--visited: #c99391; /* Red link 'Visited' color. Used for visited red links. */
+  --color-destructive--visited--hover: #dcb5b3;
+  --color-destructive--visited--active: #e8cecd;
+  --color-error: #fd7865;
+  --color-error--hover: #fea898;
+  --color-error--active: #ffc8bd;
+  --color-warning: #ca982e;
+  --color-success: #2cb491;
+  --color-notice: #a2a9b1;
+  --color-icon-progressive: #6485d1;
+  --color-content-added: #80cdb3;
+  --color-content-removed: #fd7865;
+  --color-option-red: #fd7865;
+  --color-option-orange: #f97f26;
+  --color-option-yellow: #ca982e;
+  --color-option-lime: #5db26c;
+  --color-option-green: #2cb491;
+  --color-option-blue: #88a3e8;
+  --color-option-purple: #a799cd;
+  --color-option-pink: #c690b4;
+  --color-option-maroon: #c99391;
+  --color-base--subtle: #a2a9b1;
+  --box-shadow-color-base: #72777d;
+  --box-shadow-color-progressive--focus: #6485d1;
+  --box-shadow-color-progressive-selected: #88a3e8;
+  --box-shadow-color-progressive-selected--hover: #a6bbf5;
+  --box-shadow-color-progressive-selected--active: #b6d4fb;
+  --box-shadow-color-destructive--focus: #6485d1;
+  --box-shadow-color-inverted: #000;
+  --box-shadow-color-alpha-base: rgba( 0, 0, 0, 0.87 );
+  --mix-blend-mode-blend: screen;
+  --background-color-base: #101418; /* Background Colors for static elements (for page layout, sections, etc.) from here on. */
+  --background-color-neutral: #27292d;
+  --background-color-neutral-subtle: #202122;
+  --background-color-interactive: #27292d;
+  --background-color-interactive--hover: #404244;
+  --background-color-interactive--active: #54595d;
+  --background-color-interactive-subtle: #202122;
+  --background-color-interactive-subtle--hover: #27292d;
+  --background-color-interactive-subtle--active: #404244;
+  --background-color-disabled: #404244; /* Components like Buttons, Checkboxes, Radios, ProgressBars…. */
+  --background-color-disabled-subtle: #27292d; /* Components like TextInputs, Selects…. */
+  --background-color-inverted: #f8f9fa;
+  --background-color-progressive--focus: #6485d1;
+  --background-color-progressive-subtle: #1b223d;
+  --background-color-progressive-subtle--hover: #233566;
+  --background-color-progressive-subtle--active: #3056a9;
+  --background-color-destructive--focus: #6485d1;
+  --background-color-destructive-subtle: #3c1a13;
+  --background-color-destructive-subtle--hover: #612419;
+  --background-color-destructive-subtle--active: #9f3526;
+  --background-color-error-subtle: #3c1a13;
+  --background-color-error-subtle--hover: #612419;
+  --background-color-error-subtle--active: #9f3526;
+  --background-color-warning-subtle: #2d2212;
+  --background-color-success-subtle: #132821;
+  --background-color-notice-subtle: #27292d;
+  --background-color-content-added: #233566;
+  --background-color-content-removed: #453217;
+  --background-color-target-text: #572c19;
+  --background-color-option-red: #612419;
+  --background-color-option-orange: #572c19;
+  --background-color-option-yellow: #453217;
+  --background-color-option-lime: #183f20;
+  --background-color-option-green: #153d31;
+  --background-color-option-blue: #233566;
+  --background-color-option-purple: #353262;
+  --background-color-option-pink: #4e2c40;
+  --background-color-option-maroon: #512e2e;
+  --background-color-backdrop-light: rgba( 0, 0, 0, 0.65 ); /* Backdrop is the term used by CSS Fullscreen API and is used to dim the background when a modal Dialog is open. Also known as overlay mask. */
+  --background-color-backdrop-dark: rgba( 255, 255, 255, 0.65 );
+  --border-color-base: #72777d;
+  --border-color-emphasized: #eaecf0;
+  --border-color-subtle: #54595d;
+  --border-color-muted: #404244;
+  --border-color-interactive--hover: #a2a9b1;
+  --border-color-interactive--active: #c8ccd1;
+  --border-color-disabled: #54595d;
+  --border-color-inverted: #101418;
+  --border-color-progressive: #6485d1;
+  --border-color-progressive--hover: #88a3e8;
+  --border-color-progressive--active: #a6bbf5;
+  --border-color-progressive--focus: #6485d1;
+  --border-color-destructive--hover: #fd7865;
+  --border-color-destructive--active: #fea898;
+  --border-color-destructive--focus: #6485d1;
+  --border-color-error--hover: #fd7865;
+  --border-color-error--active: #fea898;
+  --border-color-warning--hover: #ca982e;
+  --border-color-warning--active: #edb537;
+  --border-color-content-added: #233566;
+  --border-color-content-removed: #987027;
+}
+`;function Uo(n){return n.startsWith("--background-color-")?"color-bg":n.startsWith("--border-color-")?"color-border":n.startsWith("--color-")?"color-text":n.startsWith("--spacing-")?"spacing":n.startsWith("--border-radius-")?"radius":n.startsWith("--font-size-")?"font-size":n.startsWith("--font-weight-")?"font-weight":n.startsWith("--font-family-")?"font-family":n.startsWith("--line-height-")?"line-height":n.startsWith("--box-shadow-")?"shadow":n.startsWith("--opacity-")?"opacity":n.startsWith("--size-")||n.startsWith("--min-size-")||n.startsWith("--max-size-")||n.startsWith("--min-width-")||n.startsWith("--max-width-")||n.startsWith("--width-")||n.startsWith("--height-")?"size":"generic"}function Ao(n){return n.startsWith("--color-")||n.startsWith("--background-color-")||n.startsWith("--border-color-")||n.startsWith("--accent-color-")?"Color":n.startsWith("--spacing-")?"Spacing":n.startsWith("--font-")||n.startsWith("--line-height-")||n.startsWith("--letter-spacing-")?"Typography":n.startsWith("--border-radius-")||n.startsWith("--border-width-")||n.startsWith("--border-style-")?"Border":n.startsWith("--box-shadow-")?"Shadow":n.startsWith("--opacity-")?"Opacity":n.startsWith("--transition-")||n.startsWith("--animation-")?"Transition":n.startsWith("--z-index-")?"Z-index":n.startsWith("--size-")||n.startsWith("--min-")||n.startsWith("--max-")||n.startsWith("--width-")||n.startsWith("--height-")?"Sizing":"Other"}function Bo(n){return n.startsWith("--background-color-")?"Background colors":n.startsWith("--border-color-")?"Border colors":n.startsWith("--color-")?"Text colors":n.startsWith("--spacing-")?"Spacing":n.startsWith("--border-radius-")||n.startsWith("--border-width-")||n.startsWith("--border-style-")?"Border":n.startsWith("--font-")||n.startsWith("--line-height-")||n.startsWith("--letter-spacing-")?"Typography":n.startsWith("--box-shadow-")?"Shadow":n.startsWith("--opacity-")?"Opacity":n.startsWith("--size-")||n.startsWith("--min-")||n.startsWith("--max-")||n.startsWith("--width-")||n.startsWith("--height-")?"Sizing":n.startsWith("--transition-")?"Transition":n.startsWith("--animation-")?"Animation":n.startsWith("--z-index-")?"Z-index":n.startsWith("--cursor-")?"Cursor":n.startsWith("--filter-")?"Filter":n.startsWith("--outline-")?"Outline":n.startsWith("--mix-blend-mode-")?"Blend mode":n.startsWith("--text-decoration-")?"Text decoration":n.startsWith("--transform-")?"Transform":n.startsWith("--accent-color-")?"Accent":n.startsWith("--position-")?"Position":n.startsWith("--tab-size-")?"Tab size":"Other"}function Ne(n){const c=n.match(/:root\s*\{([\s\S]*?)\n\}/);if(!c)return[];const d=new Set,m=[],v=/^\s*(--[a-z0-9-]+):\s*([^;]+);/gm;let i;for(;(i=v.exec(c[1]))!==null;){const p=i[1];d.has(p)||(d.add(p),m.push({name:p,value:i[2].trim(),category:Bo(p),kind:Uo(p),family:Ao(p)}))}return m.sort((p,_)=>p.name.localeCompare(_.name))}const Io=["Text colors","Background colors","Border colors","Spacing","Border","Typography","Shadow","Opacity","Sizing","Transition","Animation","Z-index","Cursor","Filter","Outline","Blend mode","Text decoration","Transform","Accent","Position","Tab size","Other"],He=["Color","Spacing","Typography","Border","Shadow","Sizing","Opacity","Transition","Z-index","Other"];function Po(n){const c=new Map;for(const d of n){const m=c.get(d.category)??[];m.push(d),c.set(d.category,m)}return Io.filter(d=>c.has(d)).map(d=>({category:d,tokens:c.get(d)}))}function $o(n,c={}){const d=new Set(c.exclude??[]),m=new Map;for(const v of n){if(d.has(v.family))continue;const i=m.get(v.family)??[];i.push(v),m.set(v.family,i)}return He.filter(v=>!d.has(v)&&m.has(v)).map(v=>({family:v,categories:Po(m.get(v))}))}function Do(n,c){return n.filter(d=>d.family===c)}function Ge(n){return He.includes(n)}function K(n){if(typeof n=="string")return n;if(Array.isArray(n)&&typeof n[0]=="string")return n[0]}function je(n,c,d){const m=ve(),v=Oe();function i(){const z=K(m.query[n]);return z&&d(z)?z:c}const p=y(i());let _=!1;return pe(()=>m.query[n],()=>{const z=i();z!==p.value&&(_=!0,p.value=z,_=!1)}),pe(p,z=>{if(_)return;const T=z===c?void 0:z;if(K(m.query[n])===T)return;const W={...m.query};T===void 0?delete W[n]:W[n]=T,v.replace({query:W})}),p}function De(n){const c=ve(),d=Oe();if(!(n in c.query))return;const m={...c.query};delete m[n],d.replace({query:m})}const Lo={class:"token-swatch"},qo=["data-kind"],Oo={key:3,class:"token-swatch__bar-track"},Fo={key:10,class:"token-swatch__opacity"},Mo={key:11,class:"token-swatch__generic"},Ro={class:"token-swatch__name"},Eo=B({__name:"TokenSwatch",props:{token:{}},setup(n){const c=n,d=me(()=>`var(${c.token.name})`);return(m,v)=>(u(),h("div",Lo,[w("div",{class:"token-swatch__preview","data-kind":n.token.kind},[n.token.kind==="color-text"?(u(),h("div",{key:0,class:"token-swatch__fill",style:I({backgroundColor:d.value})},null,4)):n.token.kind==="color-bg"?(u(),h("div",{key:1,class:"token-swatch__fill",style:I({backgroundColor:d.value})},null,4)):n.token.kind==="color-border"?(u(),h("div",{key:2,class:"token-swatch__border-box",style:I({borderColor:d.value})},null,4)):n.token.kind==="spacing"||n.token.kind==="size"?(u(),h("div",Oo,[w("div",{class:"token-swatch__bar",style:I({width:d.value})},null,4)])):n.token.kind==="radius"?(u(),h("div",{key:4,class:"token-swatch__radius-box",style:I({borderRadius:d.value})},null,4)):n.token.kind==="font-size"?(u(),h("div",{key:5,class:"token-swatch__type-sample",style:I({fontSize:d.value})}," Aa ",4)):n.token.kind==="font-weight"?(u(),h("div",{key:6,class:"token-swatch__type-sample",style:I({fontWeight:d.value})}," Sample ",4)):n.token.kind==="font-family"?(u(),h("div",{key:7,class:"token-swatch__type-sample token-swatch__type-sample--clamp",style:I({fontFamily:d.value})}," Aa ",4)):n.token.kind==="line-height"?(u(),h("div",{key:8,class:"token-swatch__line-height",style:I({lineHeight:d.value})},[...v[0]||(v[0]=[f(" Line one",-1),w("br",null,null,-1),f("Line two ",-1)])],4)):n.token.kind==="shadow"?(u(),h("div",{key:9,class:"token-swatch__shadow-box",style:I({boxShadow:d.value})},null,4)):n.token.kind==="opacity"?(u(),h("div",Fo,[v[1]||(v[1]=w("div",{class:"token-swatch__opacity-base"},null,-1)),w("div",{class:"token-swatch__opacity-overlay",style:I({opacity:d.value})},null,4)])):(u(),h("div",Mo,j(n.token.value),1))],8,qo),w("code",Ro,j(n.token.name),1)]))}}),fe=$(Eo,[["__scopeId","data-v-b751e332"]]),No={class:"tokens-family"},Ho=B({__name:"TokensSection",setup(n){var v;const c=$o(Ne(Ee),{exclude:["Typography"]}),d=((v=c[0])==null?void 0:v.family)??"Color",m=je("sub",d,Ge);return(i,p)=>(u(),A(t(Z),{active:t(m),"onUpdate:active":p[0]||(p[0]=_=>Fe(m)?m.value=_:null),class:"tokens-tabs","aria-label":"Token types",framed:""},{default:o(()=>[(u(!0),h(C,null,S(t(c),_=>(u(),A(t(L),{key:_.family,name:_.family,label:_.family},{default:o(()=>[w("div",No,[_.categories.length===1?(u(),A(k,{key:0,min:"140px",dense:""},{default:o(()=>[(u(!0),h(C,null,S(_.categories[0].tokens,z=>(u(),A(fe,{key:z.name,token:z},null,8,["token"]))),128))]),_:2},1024)):(u(!0),h(C,{key:1},S(_.categories,z=>(u(),A(x,{key:z.category,title:z.category},{default:o(()=>[e(k,{min:"140px",dense:""},{default:o(()=>[(u(!0),h(C,null,S(z.tokens,T=>(u(),A(fe,{key:T.name,token:T},null,8,["token"]))),128))]),_:2},1024)]),_:2},1032,["title"]))),128))])]),_:2},1032,["name","label"]))),128))]),_:1},8,["active"]))}}),Go=$(Ho,[["__scopeId","data-v-c31d3d9a"]]),jo=B({__name:"PlaygroundTab",setup(n){return(c,d)=>(u(),h("div",null,[J(c.$slots,"default",{},void 0,!0)]))}}),Qo=$(jo,[["__scopeId","data-v-57f4bc4c"]]),Zo=B({__name:"TypographySection",setup(n){const c=Do(Ne(Ee),"Typography");return(d,m)=>(u(),A(Qo,null,{default:o(()=>[e(x,null,{default:o(()=>[...m[0]||(m[0]=[w("h1",null,"Heading 1",-1),w("h2",null,"Heading 2",-1),w("h3",null,"Heading 3",-1),w("h4",null,"Heading 4",-1),w("p",null,"Body",-1),w("p",null,[w("small",null,"Small")],-1),w("p",null,[w("cite",null,"Cite")],-1),w("p",null,[w("figcaption",null,"Figure caption")],-1),w("p",null,[w("code",null,"Code")],-1),w("blockquote",null,"Block quote",-1),w("pre",null,"Pre",-1)])]),_:1}),e(x,{title:"Tokens"},{default:o(()=>[e(k,{min:"140px",dense:""},{default:o(()=>[(u(!0),h(C,null,S(t(c),v=>(u(),A(fe,{key:v.name,token:v},null,8,["token"]))),128))]),_:1})]),_:1})]),_:1}))}}),Ko=$(Zo,[["__scopeId","data-v-61a49416"]]),Jo=B({__name:"index",setup(n){const c=[{id:"typography",label:"Typography"},{id:"tokens",label:"Tokens"},{id:"icons",label:"Icons"},{id:"components-buttons",label:"Buttons"},{id:"components-inputs",label:"Inputs"},{id:"components-feedback",label:"Feedback"},{id:"components-overlays",label:"Overlays"},{id:"components-layout",label:"Layout"}],d={typography:Ko,tokens:Go,icons:Co,"components-buttons":_o,"components-inputs":So,"components-feedback":zo,"components-overlays":Vo,"components-layout":Wo},m=c.map(T=>T.id);function v(T){return m.includes(T)}const i=ve(),p=je("tab","typography",v),_=K(i.query.sub),z=K(i.query.tab);return _&&Ge(_)&&(!z||!v(z))?p.value="tokens":p.value!=="tokens"&&_&&De("sub"),pe(p,T=>{T!=="tokens"&&De("sub")}),(T,V)=>(u(),h("main",null,[e(t(Z),{active:t(p),"onUpdate:active":V[0]||(V[0]=W=>Fe(p)?p.value=W:null),class:"playground-tabs","aria-label":"Sections"},{default:o(()=>[(u(),h(C,null,S(c,W=>e(t(L),{key:W.id,name:W.id,label:W.label},{default:o(()=>[w("article",null,[(u(),A(Ye(d[W.id])))])]),_:2},1032,["name","label"])),64))]),_:1},8,["active"]),e(t(bo))]))}}),ot=$(Jo,[["__scopeId","data-v-c459cffc"]]);export{ot as default};
