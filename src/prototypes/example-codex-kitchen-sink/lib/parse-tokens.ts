@@ -2,12 +2,15 @@ export type TokenKind =
   | 'color-text'
   | 'color-bg'
   | 'color-border'
+  | 'color-accent'
   | 'spacing'
   | 'radius'
   | 'font-size'
   | 'font-weight'
   | 'font-family'
   | 'line-height'
+  | 'text-decoration'
+  | 'text-overflow'
   | 'shadow'
   | 'opacity'
   | 'size'
@@ -41,6 +44,7 @@ export interface TokenFamilyGroup {
 export function inferTokenKind(name: string): TokenKind {
   if (name.startsWith('--background-color-')) return 'color-bg'
   if (name.startsWith('--border-color-')) return 'color-border'
+  if (name.startsWith('--accent-color-')) return 'color-accent'
   if (name.startsWith('--color-')) return 'color-text'
   if (name.startsWith('--spacing-')) return 'spacing'
   if (name.startsWith('--border-radius-')) return 'radius'
@@ -48,6 +52,8 @@ export function inferTokenKind(name: string): TokenKind {
   if (name.startsWith('--font-weight-')) return 'font-weight'
   if (name.startsWith('--font-family-')) return 'font-family'
   if (name.startsWith('--line-height-')) return 'line-height'
+  if (name.startsWith('--text-decoration-')) return 'text-decoration'
+  if (name.startsWith('--text-overflow-')) return 'text-overflow'
   if (name.startsWith('--box-shadow-')) return 'shadow'
   if (name.startsWith('--opacity-')) return 'opacity'
   if (
@@ -74,7 +80,13 @@ export function inferTokenFamily(name: string): TokenFamily {
     return 'Color'
   }
   if (name.startsWith('--spacing-')) return 'Spacing'
-  if (name.startsWith('--font-') || name.startsWith('--line-height-') || name.startsWith('--letter-spacing-')) {
+  if (
+    name.startsWith('--font-') ||
+    name.startsWith('--line-height-') ||
+    name.startsWith('--letter-spacing-') ||
+    name.startsWith('--text-decoration-') ||
+    name.startsWith('--text-overflow-')
+  ) {
     return 'Typography'
   }
   if (name.startsWith('--border-radius-') || name.startsWith('--border-width-') || name.startsWith('--border-style-')) {
@@ -120,6 +132,7 @@ export function inferTokenCategory(name: string): string {
   if (name.startsWith('--outline-')) return 'Outline'
   if (name.startsWith('--mix-blend-mode-')) return 'Blend mode'
   if (name.startsWith('--text-decoration-')) return 'Text decoration'
+  if (name.startsWith('--text-overflow-')) return 'Text overflow'
   if (name.startsWith('--transform-')) return 'Transform'
   if (name.startsWith('--accent-color-')) return 'Accent'
   if (name.startsWith('--position-')) return 'Position'
@@ -233,6 +246,79 @@ export function getTokensForFamily(tokens: TokenEntry[], family: TokenFamily): T
   return tokens.filter((token) => token.family === family)
 }
 
-export function isTokenFamily(value: string): value is TokenFamily {
-  return familyOrder.includes(value as TokenFamily)
+export type TypographySubTab =
+  | 'style'
+  | 'font'
+  | 'size'
+  | 'weight'
+  | 'line-height'
+  | 'decoration'
+  | 'overflow'
+
+const typographySubTabOrder: TypographySubTab[] = [
+  'style',
+  'font',
+  'size',
+  'weight',
+  'line-height',
+  'decoration',
+  'overflow',
+]
+
+const typographySubTabLabels: Record<TypographySubTab, string> = {
+  style: 'Style',
+  font: 'Font',
+  size: 'Size',
+  weight: 'Weight',
+  'line-height': 'Line height',
+  decoration: 'Decoration',
+  overflow: 'Overflow',
+}
+
+export const typographySubTabs = typographySubTabOrder.map((id) => ({
+  id,
+  label: typographySubTabLabels[id],
+}))
+
+export function getTypographyTokensForSubTab(
+  tokens: TokenEntry[],
+  subTab: Exclude<TypographySubTab, 'style'>,
+): TokenEntry[] {
+  const kindBySubTab: Record<Exclude<TypographySubTab, 'style'>, TokenKind> = {
+    font: 'font-family',
+    size: 'font-size',
+    weight: 'font-weight',
+    'line-height': 'line-height',
+    decoration: 'text-decoration',
+    overflow: 'text-overflow',
+  }
+
+  return getTokensForFamily(tokens, 'Typography').filter((token) => token.kind === kindBySubTab[subTab])
+}
+
+export type ColorSubTab = 'text' | 'background' | 'border' | 'accent'
+
+const colorSubTabOrder: ColorSubTab[] = ['text', 'background', 'border', 'accent']
+
+const colorSubTabLabels: Record<ColorSubTab, string> = {
+  text: 'Text',
+  background: 'Background',
+  border: 'Border',
+  accent: 'Accent',
+}
+
+export const colorSubTabs = colorSubTabOrder.map((id) => ({
+  id,
+  label: colorSubTabLabels[id],
+}))
+
+export function getColorTokensForSubTab(tokens: TokenEntry[], subTab: ColorSubTab): TokenEntry[] {
+  const kindBySubTab: Record<ColorSubTab, TokenKind> = {
+    text: 'color-text',
+    background: 'color-bg',
+    border: 'color-border',
+    accent: 'color-accent',
+  }
+
+  return getTokensForFamily(tokens, 'Color').filter((token) => token.kind === kindBySubTab[subTab])
 }

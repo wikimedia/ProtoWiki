@@ -28,6 +28,11 @@ const cssVar = computed(() => `var(${props.token.name})`)
         :style="{ borderColor: cssVar }"
       />
       <div
+        v-else-if="token.kind === 'color-accent'"
+        class="token-swatch__fill"
+        :style="{ backgroundColor: cssVar }"
+      />
+      <div
         v-else-if="token.kind === 'spacing' || token.kind === 'size'"
         class="token-swatch__bar-track"
       >
@@ -65,6 +70,20 @@ const cssVar = computed(() => `var(${props.token.name})`)
         :style="{ lineHeight: cssVar }"
       >
         Line one<br />Line two
+      </div>
+      <div
+        v-else-if="token.kind === 'text-decoration'"
+        class="token-swatch__type-sample"
+        :style="{ textDecoration: cssVar }"
+      >
+        {{ token.value }}
+      </div>
+      <div
+        v-else-if="token.kind === 'text-overflow'"
+        class="token-swatch__type-sample token-swatch__text-overflow"
+        :style="{ textOverflow: cssVar }"
+      >
+        Long text that overflows
       </div>
       <div
         v-else-if="token.kind === 'shadow'"
@@ -145,6 +164,12 @@ const cssVar = computed(() => `var(${props.token.name})`)
 .token-swatch__type-sample--clamp {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.token-swatch__text-overflow {
+  overflow: hidden;
   white-space: nowrap;
   max-width: 100%;
 }

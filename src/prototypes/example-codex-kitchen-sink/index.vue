@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { watch, type Component } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, type Component } from 'vue'
 import { CdxTab, CdxTabs, CdxToastContainer } from '@wikimedia/codex'
 
 import ButtonsSection from './sections/ButtonsSection.vue'
@@ -9,10 +8,9 @@ import IconsSection from './sections/IconsSection.vue'
 import InputsSection from './sections/InputsSection.vue'
 import LayoutSection from './sections/LayoutSection.vue'
 import OverlaysSection from './sections/OverlaysSection.vue'
+import ColorSection from './sections/ColorSection.vue'
 import TokensSection from './sections/TokensSection.vue'
 import TypographySection from './sections/TypographySection.vue'
-import { isTokenFamily } from './lib/parse-tokens'
-import { readQueryValue, removeUrlQueryParam, useUrlQueryParam } from './lib/use-url-query-param'
 
 definePage({
   meta: {
@@ -23,6 +21,7 @@ definePage({
 
 const navItems = [
   { id: 'typography', label: 'Typography' },
+  { id: 'color', label: 'Color' },
   { id: 'tokens', label: 'Tokens' },
   { id: 'icons', label: 'Icons' },
   { id: 'components-buttons', label: 'Buttons' },
@@ -34,6 +33,7 @@ const navItems = [
 
 const sectionByTab: Record<(typeof navItems)[number]['id'], Component> = {
   typography: TypographySection,
+  color: ColorSection,
   tokens: TokensSection,
   icons: IconsSection,
   'components-buttons': ButtonsSection,
@@ -44,29 +44,8 @@ const sectionByTab: Record<(typeof navItems)[number]['id'], Component> = {
 }
 
 type TabId = (typeof navItems)[number]['id']
-const tabIds = navItems.map((item) => item.id)
 
-function isTabId(value: string): value is TabId {
-  return tabIds.includes(value as TabId)
-}
-
-const route = useRoute()
-const activeTab = useUrlQueryParam<TabId>('tab', 'typography', isTabId)
-
-const subParam = readQueryValue(route.query.sub)
-const tabParam = readQueryValue(route.query.tab)
-
-if (subParam && isTokenFamily(subParam) && (!tabParam || !isTabId(tabParam))) {
-  activeTab.value = 'tokens'
-} else if (activeTab.value !== 'tokens' && subParam) {
-  removeUrlQueryParam('sub')
-}
-
-watch(activeTab, (tab) => {
-  if (tab !== 'tokens') {
-    removeUrlQueryParam('sub')
-  }
-})
+const activeTab = ref<TabId>('typography')
 </script>
 
 <template>
@@ -95,12 +74,19 @@ main {
   /* padding: 0px var(--spacing-100); */
   /* margin: 0px 0px; */
   /* padding: 0px 4px; */
+  /* padding-top: 4px; */
+  /* background-color: var(--background-color-base); */
 }
 
 .playground-tabs :deep(> .cdx-tabs__header) {
   position: sticky;
   top: 0px;
   z-index: 2;
+  background-color: var(--background-color-base);
+  padding-top: 4px;
+  margin: 0px 0px;
+  padding-left: 4px;
+  padding-right: 4px;
 }
 
 article {
