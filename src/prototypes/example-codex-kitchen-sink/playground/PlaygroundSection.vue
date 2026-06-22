@@ -1,7 +1,7 @@
 <script setup lang="ts">
 interface Props {
   id?: string
-  title: string
+  title?: string
 }
 
 withDefaults(defineProps<Props>(), {
@@ -10,8 +10,8 @@ withDefaults(defineProps<Props>(), {
 </script>
 
 <template>
-  <section :id="id" class="playground-section">
-    <h4 class="playground-section__title">
+  <section :id="id" :class="{ 'playground-section--untitled': !title }" class="playground-section">
+    <h4 v-if="title" class="playground-section__title">
       {{ title }}
     </h4>
     <slot />
@@ -23,6 +23,10 @@ withDefaults(defineProps<Props>(), {
   /* display: flex; */
   /* flex-direction: column; */
   /* gap: var(--spacing-75); */
+}
+
+.playground-section--untitled {
+  padding-top: var(--spacing-100);
 }
 
 /* .playground-section__title {

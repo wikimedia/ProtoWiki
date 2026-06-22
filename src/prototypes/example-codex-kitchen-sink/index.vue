@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, type Component } from 'vue'
+import { watch, type Component } from 'vue'
+import { useRoute } from 'vue-router'
 import { CdxTab, CdxTabs, CdxToastContainer } from '@wikimedia/codex'
 
 import ButtonsSection from './sections/ButtonsSection.vue'
@@ -10,6 +11,8 @@ import LayoutSection from './sections/LayoutSection.vue'
 import OverlaysSection from './sections/OverlaysSection.vue'
 import TokensSection from './sections/TokensSection.vue'
 import TypographySection from './sections/TypographySection.vue'
+import { isTokenFamily } from './lib/parse-tokens'
+import { readQueryValue, removeUrlQueryParam, useUrlQueryParam } from './lib/use-url-query-param'
 
 definePage({
   meta: {
@@ -40,7 +43,30 @@ const sectionByTab: Record<(typeof navItems)[number]['id'], Component> = {
   'components-layout': LayoutSection,
 }
 
-const activeTab = ref<(typeof navItems)[number]['id']>('typography')
+type TabId = (typeof navItems)[number]['id']
+const tabIds = navItems.map((item) => item.id)
+
+function isTabId(value: string): value is TabId {
+  return tabIds.includes(value as TabId)
+}
+
+const route = useRoute()
+const activeTab = useUrlQueryParam<TabId>('tab', 'typography', isTabId)
+
+const subParam = readQueryValue(route.query.sub)
+const tabParam = readQueryValue(route.query.tab)
+
+if (subParam && isTokenFamily(subParam) && (!tabParam || !isTabId(tabParam))) {
+  activeTab.value = 'tokens'
+} else if (activeTab.value !== 'tokens' && subParam) {
+  removeUrlQueryParam('sub')
+}
+
+watch(activeTab, (tab) => {
+  if (tab !== 'tokens') {
+    removeUrlQueryParam('sub')
+  }
+})
 </script>
 
 <template>
@@ -61,15 +87,23 @@ const activeTab = ref<(typeof navItems)[number]['id']>('typography')
 
 <style scoped>
 main {
-  padding: 6px 0px;
+  /* padding: 6px 0px; */
+  background-color: var(--background-color-base);
 }
 
 .playground-tabs {
   /* padding: 0px var(--spacing-100); */
-  margin-left: -4px;
+  /* margin: 0px 0px; */
+  /* padding: 0px 4px; */
+}
+
+.playground-tabs :deep(> .cdx-tabs__header) {
+  position: sticky;
+  top: 0px;
+  z-index: 2;
 }
 
 article {
-  padding: 0px var(--spacing-100);
+  /* padding: 0px 16px; */
 }
 </style>

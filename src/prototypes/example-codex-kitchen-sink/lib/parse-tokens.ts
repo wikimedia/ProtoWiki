@@ -232,3 +232,7 @@ export function groupTokensByFamily(
 export function getTokensForFamily(tokens: TokenEntry[], family: TokenFamily): TokenEntry[] {
   return tokens.filter((token) => token.family === family)
 }
+
+export function isTokenFamily(value: string): value is TokenFamily {
+  return familyOrder.includes(value as TokenFamily)
+}
