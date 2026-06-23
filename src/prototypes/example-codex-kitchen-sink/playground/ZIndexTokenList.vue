@@ -3,14 +3,13 @@ import { computed } from 'vue'
 import type { TokenEntry } from '../lib/parse-tokens'
 import { getZIndexTokenGroup, parseZIndexValue } from '../lib/parse-tokens'
 import TokenDeprecatedLabel from './TokenDeprecatedLabel.vue'
+import TokenListGroupHeading from './TokenListGroupHeading.vue'
 
 const props = defineProps<{
   tokens: TokenEntry[]
 }>()
 
-type ListEntry =
-  | { type: 'group'; label: string }
-  | { type: 'token'; token: TokenEntry }
+type ListEntry = { type: 'group'; label: string } | { type: 'token'; token: TokenEntry }
 
 const entries = computed(() => {
   const items: ListEntry[] = []
@@ -36,9 +35,7 @@ function tokenLayerStyle(token: TokenEntry): Record<string, string> {
 <template>
   <ul class="z-index-token-list">
     <template v-for="(entry, index) in entries" :key="index">
-      <li v-if="entry.type === 'group'" class="z-index-token-list__group">
-        {{ entry.label }}
-      </li>
+      <TokenListGroupHeading v-if="entry.type === 'group'" :label="entry.label" />
       <li
         v-else
         class="z-index-token-list__item"
@@ -72,20 +69,6 @@ function tokenLayerStyle(token: TokenEntry): Record<string, string> {
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.z-index-token-list__group {
-  padding: var(--spacing-100) 0 var(--spacing-50);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-small);
-  color: var(--color-subtle);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.z-index-token-list__group:first-child {
-  padding-top: 0;
 }
 
 .z-index-token-list__item {

@@ -5,6 +5,7 @@ import { getBoxShadowTokenGroup } from '../lib/parse-tokens'
 import { getSwatchTextToneForBackground } from '../lib/color-contrast'
 import type { SwatchTextTone } from '../lib/color-contrast'
 import TokenDeprecatedLabel from './TokenDeprecatedLabel.vue'
+import TokenListGroupHeading from './TokenListGroupHeading.vue'
 
 const props = defineProps<{
   tokens: TokenEntry[]
@@ -22,12 +23,16 @@ const sampleRefs = new Map<string, HTMLElement>()
 const entries = computed(() => {
   const items: ListEntry[] = []
   let currentGroup: string | null = null
+  let skipNextGroupHeading = true
 
   for (const token of props.tokens) {
     const group = getBoxShadowTokenGroup(token.name)
     if (group !== currentGroup) {
-      items.push({ type: 'group', label: group })
+      if (!skipNextGroupHeading) {
+        items.push({ type: 'group', label: group })
+      }
       currentGroup = group
+      skipNextGroupHeading = false
     }
     items.push({ type: 'token', token })
   }
@@ -108,9 +113,7 @@ watch(() => props.tokens, updateContrast, { deep: true })
 <template>
   <ul class="box-shadow-token-list">
     <template v-for="(entry, index) in entries" :key="index">
-      <li v-if="entry.type === 'group'" class="box-shadow-token-list__group">
-        {{ entry.label }}
-      </li>
+      <TokenListGroupHeading v-if="entry.type === 'group'" :label="entry.label" />
       <li
         v-else
         class="box-shadow-token-list__item"
@@ -153,20 +156,6 @@ watch(() => props.tokens, updateContrast, { deep: true })
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.box-shadow-token-list__group {
-  padding: var(--spacing-100) 0 var(--spacing-50);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-small);
-  color: var(--color-subtle);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.box-shadow-token-list__group:first-child {
-  padding-top: 0;
 }
 
 .box-shadow-token-list__item {

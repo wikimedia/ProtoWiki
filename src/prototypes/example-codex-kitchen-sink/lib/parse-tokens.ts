@@ -90,7 +90,12 @@ export function inferTokenFamily(name: string): TokenFamily {
   ) {
     return 'Typography'
   }
-  if (name.startsWith('--border-radius-') || name.startsWith('--border-width-') || name.startsWith('--border-style-')) {
+  if (
+    name.startsWith('--border-radius-') ||
+    name.startsWith('--border-width-') ||
+    name.startsWith('--border-style-') ||
+    name.startsWith('--position-offset-')
+  ) {
     return 'Border'
   }
   if (name.startsWith('--box-shadow-')) return 'Shadow'
@@ -114,7 +119,12 @@ export function inferTokenCategory(name: string): string {
   if (name.startsWith('--border-color-')) return 'Border colors'
   if (name.startsWith('--color-')) return 'Text colors'
   if (name.startsWith('--spacing-')) return 'Spacing'
-  if (name.startsWith('--border-radius-') || name.startsWith('--border-width-') || name.startsWith('--border-style-')) {
+  if (
+    name.startsWith('--border-radius-') ||
+    name.startsWith('--border-width-') ||
+    name.startsWith('--border-style-') ||
+    name.startsWith('--position-offset-')
+  ) {
     return 'Border'
   }
   if (name.startsWith('--font-') || name.startsWith('--line-height-') || name.startsWith('--letter-spacing-')) {
@@ -429,7 +439,6 @@ export type TokenSection = 'layout' | 'appearance' | 'animation'
 export type LayoutSubTab =
   | 'spacing'
   | 'size'
-  | 'position'
   | 'breakpoint'
   | 'z-index'
   | 'box-sizing'
@@ -443,7 +452,6 @@ export type TokenSubTab = LayoutSubTab | AppearanceSubTab | AnimationSubTab
 const layoutSubTabOrder: LayoutSubTab[] = [
   'spacing',
   'size',
-  'position',
   'breakpoint',
   'z-index',
   'box-sizing',
@@ -462,7 +470,6 @@ const animationSubTabOrder: AnimationSubTab[] = ['animation', 'transition']
 const layoutSubTabLabels: Record<LayoutSubTab, string> = {
   spacing: 'Spacing',
   size: 'Size',
-  position: 'Position',
   breakpoint: 'Breakpoint',
   'z-index': 'Z-index',
   'box-sizing': 'Box-sizing',
@@ -507,7 +514,11 @@ const borderShorthandNames = new Set([
   '--border-transparent',
 ])
 
-export type BorderTokenGroup = 'Shorthand' | 'Radius' | 'Style' | 'Width'
+export type BorderTokenGroup = 'Shorthand' | 'Radius' | 'Style' | 'Width' | 'Offset'
+
+export function isPositionOffsetToken(name: string): boolean {
+  return name.startsWith('--position-offset-')
+}
 
 export type TransitionTokenGroup = 'Property' | 'Timing' | 'Duration'
 
@@ -517,6 +528,7 @@ export function getBorderTokenGroup(name: string): BorderTokenGroup {
   if (borderShorthandNames.has(name)) return 'Shorthand'
   if (name.startsWith('--border-radius-')) return 'Radius'
   if (name.startsWith('--border-style-')) return 'Style'
+  if (isPositionOffsetToken(name)) return 'Offset'
   return 'Width'
 }
 
@@ -549,28 +561,31 @@ const borderTokenOrder = [
   '--border-width-base',
   '--border-width-thick',
   '--border-width-input-radio--checked',
+  '--position-offset-border-width-base',
 ] as const
 
-export type BoxShadowTokenGroup = 'Color' | 'Inset' | 'Outset' | 'Presets'
+export type BoxShadowTokenGroup = 'Shorthand' | 'Color' | 'Inset' | 'Outset' | 'Deprecated'
+
+const deprecatedBoxShadowTokens = new Set([
+  '--box-shadow-drop-small',
+  '--box-shadow-drop-medium',
+  '--box-shadow-drop-xx-large',
+])
 
 export function getBoxShadowTokenGroup(name: string): BoxShadowTokenGroup {
   if (name.startsWith('--box-shadow-color-')) return 'Color'
   if (name.startsWith('--box-shadow-inset-')) return 'Inset'
   if (name.startsWith('--box-shadow-outset-')) return 'Outset'
-  return 'Presets'
+  if (deprecatedBoxShadowTokens.has(name)) return 'Deprecated'
+  return 'Shorthand'
 }
 
 const boxShadowTokenOrder = [
-  '--box-shadow-color-alpha-base',
-  '--box-shadow-color-base',
-  '--box-shadow-color-destructive--focus',
-  '--box-shadow-color-inverted',
-  '--box-shadow-color-progressive--active',
-  '--box-shadow-color-progressive--focus',
-  '--box-shadow-color-progressive-selected',
-  '--box-shadow-color-progressive-selected--active',
-  '--box-shadow-color-progressive-selected--hover',
-  '--box-shadow-color-transparent',
+  '--box-shadow-small',
+  '--box-shadow-small-top',
+  '--box-shadow-small-bottom',
+  '--box-shadow-medium',
+  '--box-shadow-large',
   '--box-shadow-inset-small',
   '--box-shadow-inset-medium',
   '--box-shadow-inset-medium-vertical',
@@ -582,11 +597,16 @@ const boxShadowTokenOrder = [
   '--box-shadow-outset-medium-around',
   '--box-shadow-outset-large-below',
   '--box-shadow-outset-large-around',
-  '--box-shadow-small',
-  '--box-shadow-small-top',
-  '--box-shadow-small-bottom',
-  '--box-shadow-medium',
-  '--box-shadow-large',
+  '--box-shadow-color-alpha-base',
+  '--box-shadow-color-base',
+  '--box-shadow-color-destructive--focus',
+  '--box-shadow-color-inverted',
+  '--box-shadow-color-progressive--active',
+  '--box-shadow-color-progressive--focus',
+  '--box-shadow-color-progressive-selected',
+  '--box-shadow-color-progressive-selected--active',
+  '--box-shadow-color-progressive-selected--hover',
+  '--box-shadow-color-transparent',
   '--box-shadow-drop-small',
   '--box-shadow-drop-medium',
   '--box-shadow-drop-xx-large',
@@ -654,10 +674,6 @@ const animationTokenOrder = [
   '--transform-progress-indicator-spinner-end',
 ] as const
 
-const positionTokenOrder = [
-  '--position-offset-border-width-base',
-] as const
-
 const breakpointTokenOrder = [
   '--min-width-breakpoint-mobile',
   '--min-width-breakpoint-tablet',
@@ -674,7 +690,7 @@ export function inferTokenSubTab(name: string): TokenSubTab | null {
   if (name.startsWith('--z-index-')) return 'z-index'
   if (name.includes('breakpoint')) return 'breakpoint'
   if (name.startsWith('--background-position-') || name.startsWith('--background-size-')) return 'size'
-  if (name.startsWith('--position-')) return 'position'
+  if (name.startsWith('--position-offset-')) return 'border'
 
   if (
     name.startsWith('--size-') ||
@@ -946,12 +962,6 @@ export function getTokensForTokenSubTab(
   if (subTab === 'size') {
     return sortTokensWithDeprecatedLast(filtered, (a, b) =>
       manualTokenSortIndex(a.name, sizeTokenOrder) - manualTokenSortIndex(b.name, sizeTokenOrder),
-    )
-  }
-
-  if (subTab === 'position') {
-    return sortTokensWithDeprecatedLast(filtered, (a, b) =>
-      manualTokenSortIndex(a.name, positionTokenOrder) - manualTokenSortIndex(b.name, positionTokenOrder),
     )
   }
 

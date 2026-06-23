@@ -14,7 +14,6 @@ import CursorTokenList from '../playground/CursorTokenList.vue'
 import DimensionTokenList from '../playground/DimensionTokenList.vue'
 import OpacityTokenList from '../playground/OpacityTokenList.vue'
 import OutlineTokenList from '../playground/OutlineTokenList.vue'
-import PositionTokenList from '../playground/PositionTokenList.vue'
 import ZIndexTokenList from '../playground/ZIndexTokenList.vue'
 import PlaygroundGrid from '../playground/PlaygroundGrid.vue'
 import PlaygroundSection from '../playground/PlaygroundSection.vue'
@@ -45,10 +44,6 @@ const sectionConfig = tokenSectionTabs.find((entry) => entry.id === props.sectio
           :tokens="
             getTokensForTokenSubTab(allTokens, section, subTabId as TokenSubTab)
           "
-        />
-        <PositionTokenList
-          v-else-if="subTabId === 'position'"
-          :tokens="getTokensForTokenSubTab(allTokens, section, subTabId as TokenSubTab)"
         />
         <ZIndexTokenList
           v-else-if="subTabId === 'z-index'"

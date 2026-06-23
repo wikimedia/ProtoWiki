@@ -6,6 +6,7 @@ import {
   getTransitionTokenGroup,
 } from '../lib/parse-tokens'
 import TokenDeprecatedLabel from './TokenDeprecatedLabel.vue'
+import TokenListGroupHeading from './TokenListGroupHeading.vue'
 
 const props = defineProps<{
   kind: 'animation' | 'transition'
@@ -29,6 +30,7 @@ type PreviewKind =
 const entries = computed(() => {
   const items: ListEntry[] = []
   let currentGroup: string | null = null
+  let skipNextGroupHeading = props.kind === 'transition'
 
   for (const token of props.tokens) {
     const group =
@@ -37,8 +39,11 @@ const entries = computed(() => {
         : getAnimationTokenGroup(token.name)
 
     if (group !== currentGroup) {
-      items.push({ type: 'group', label: group })
+      if (!skipNextGroupHeading) {
+        items.push({ type: 'group', label: group })
+      }
       currentGroup = group
+      skipNextGroupHeading = false
     }
 
     items.push({ type: 'token', token })
@@ -46,6 +51,10 @@ const entries = computed(() => {
 
   return items
 })
+
+function isTransitionPropertyToken(token: TokenEntry): boolean {
+  return props.kind === 'transition' && token.name.startsWith('--transition-property-')
+}
 
 function previewKind(token: TokenEntry): PreviewKind {
   if (props.kind === 'transition') {
@@ -62,7 +71,7 @@ function previewKind(token: TokenEntry): PreviewKind {
 }
 
 function previewHint(kind: PreviewKind): string | null {
-  if (kind === 'transition-property' || kind === 'transition-timing-function' || kind === 'transition-duration') {
+  if (kind === 'transition-timing-function' || kind === 'transition-duration') {
     return 'Hover to preview'
   }
   return null
@@ -72,28 +81,38 @@ function previewHint(kind: PreviewKind): string | null {
 <template>
   <ul class="animation-token-list">
     <template v-for="(entry, index) in entries" :key="index">
-      <li v-if="entry.type === 'group'" class="animation-token-list__group">
-        {{ entry.label }}
-      </li>
+      <TokenListGroupHeading v-if="entry.type === 'group'" :label="entry.label" />
       <li
         v-else
         class="animation-token-list__item"
-        :class="{ 'animation-token-list__item--deprecated': entry.token.deprecated }"
+        :class="{
+          'animation-token-list__item--deprecated': entry.token.deprecated,
+          'animation-token-list__item--property': isTransitionPropertyToken(entry.token),
+        }"
       >
-        <div class="animation-token-list__preview">
+        <div
+          v-if="isTransitionPropertyToken(entry.token)"
+          class="animation-token-list__property-wrap"
+        >
           <span
-            v-if="previewKind(entry.token) === 'transition-property'"
             class="animation-token-list__sample animation-token-list__sample--property"
             :style="{
               transitionProperty: `var(${entry.token.name})`,
               transitionDuration: '600ms',
               transitionTimingFunction: 'ease',
             }"
-            aria-hidden="true"
-          />
+          >
+            {{ entry.token.name }}
+            <span class="animation-token-list__value">{{ entry.token.value }}</span>
+            <span class="animation-token-list__hint">Hover to preview</span>
+          </span>
+          <TokenDeprecatedLabel v-if="entry.token.deprecated" />
+        </div>
 
+        <template v-else>
+        <div class="animation-token-list__preview">
           <div
-            v-else-if="previewKind(entry.token) === 'transition-timing-function'"
+            v-if="previewKind(entry.token) === 'transition-timing-function'"
             class="animation-token-list__track"
           >
             <span
@@ -183,6 +202,7 @@ function previewHint(kind: PreviewKind): string | null {
           </span>
           <TokenDeprecatedLabel v-if="entry.token.deprecated" />
         </div>
+        </template>
       </li>
     </template>
   </ul>
@@ -197,20 +217,6 @@ function previewHint(kind: PreviewKind): string | null {
   list-style: none;
 }
 
-.animation-token-list__group {
-  padding: var(--spacing-100) 0 var(--spacing-50);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-small);
-  color: var(--color-subtle);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.animation-token-list__group:first-child {
-  padding-top: 0;
-}
-
 .animation-token-list__item {
   display: grid;
   grid-template-columns: 12rem 1fr;
@@ -220,18 +226,47 @@ function previewHint(kind: PreviewKind): string | null {
   border-bottom: var(--border-subtle);
 }
 
+.animation-token-list__item--property {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-25);
+  padding-block: 0;
+  border-bottom: none;
+  margin-top: var(--spacing-75);
+}
+
+.animation-token-list__item--property:first-child {
+  margin-top: 0;
+}
+
+.animation-token-list__property-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-25);
+}
+
 .animation-token-list__preview {
   display: flex;
   align-items: center;
   min-height: 2.75rem;
 }
 
-.animation-token-list__sample {
-  display: block;
-  width: 100%;
-  min-height: 2.75rem;
+.animation-token-list__sample--property {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-25);
+  width: auto;
+  min-height: 0;
+  padding: var(--spacing-35) var(--spacing-50);
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-medium);
+  line-height: var(--line-height-medium);
+  color: var(--color-base);
   background: var(--background-color-neutral-subtle);
-  border: var(--border-base);
+  border: var(--border-subtle);
   border-radius: var(--border-radius-base);
   box-shadow: none;
   opacity: 1;
@@ -245,6 +280,19 @@ function previewHint(kind: PreviewKind): string | null {
   box-shadow: var(--box-shadow-medium);
   opacity: 0.85;
   transform: scale(1.02);
+}
+
+.animation-token-list__sample--property .animation-token-list__value,
+.animation-token-list__sample--property .animation-token-list__hint {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+  color: var(--color-subtle);
+}
+
+.animation-token-list__item:hover .animation-token-list__sample--property .animation-token-list__value,
+.animation-token-list__item:hover .animation-token-list__sample--property .animation-token-list__hint {
+  color: inherit;
+  opacity: 0.85;
 }
 
 .animation-token-list__track {

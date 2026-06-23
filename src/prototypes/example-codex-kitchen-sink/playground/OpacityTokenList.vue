@@ -4,6 +4,7 @@ import { CdxIcon } from '@wikimedia/codex'
 import { cdxIconSearch } from '@wikimedia/codex-icons'
 import type { TokenEntry } from '../lib/parse-tokens'
 import TokenDeprecatedLabel from './TokenDeprecatedLabel.vue'
+import TokenListGroupHeading from './TokenListGroupHeading.vue'
 
 const props = defineProps<{
   tokens: TokenEntry[]
@@ -20,12 +21,16 @@ function isIconOpacityToken(name: string): boolean {
 const entries = computed(() => {
   const items: ListEntry[] = []
   let currentGroup: string | null = null
+  let skipNextGroupHeading = true
 
   for (const token of props.tokens) {
     const group = isIconOpacityToken(token.name) ? 'Icon' : 'General'
     if (group !== currentGroup) {
-      items.push({ type: 'group', label: group })
+      if (!skipNextGroupHeading) {
+        items.push({ type: 'group', label: group })
+      }
       currentGroup = group
+      skipNextGroupHeading = false
     }
     items.push({ type: 'token', token })
   }
@@ -37,9 +42,7 @@ const entries = computed(() => {
 <template>
   <ul class="opacity-token-list">
     <template v-for="entry in entries" :key="entry.type === 'token' ? entry.token.name : entry.label">
-      <li v-if="entry.type === 'group'" class="opacity-token-list__group">
-        {{ entry.label }}
-      </li>
+      <TokenListGroupHeading v-if="entry.type === 'group'" :label="entry.label" />
       <li
         v-else
         class="opacity-token-list__item"
@@ -83,20 +86,6 @@ const entries = computed(() => {
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.opacity-token-list__group {
-  padding: var(--spacing-100) 0 var(--spacing-50);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-small);
-  color: var(--color-subtle);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.opacity-token-list__group:first-child {
-  padding-top: 0;
 }
 
 .opacity-token-list__item {

@@ -12,6 +12,7 @@ import {
   usesDimensionBarDemo,
 } from '../lib/parse-tokens'
 import TokenDeprecatedLabel from './TokenDeprecatedLabel.vue'
+import TokenListGroupHeading from './TokenListGroupHeading.vue'
 
 const props = defineProps<{
   kind: 'spacing' | 'size' | 'breakpoint'
@@ -147,9 +148,7 @@ watch(entries, scheduleOverflowUpdate)
 <template>
   <ul class="dimension-token-list">
     <template v-for="(entry, index) in entries" :key="index">
-      <li v-if="entry.type === 'group'" class="dimension-token-list__group">
-        {{ entry.label }}
-      </li>
+      <TokenListGroupHeading v-if="entry.type === 'group'" :label="entry.label" />
       <li
         v-else
         class="dimension-token-list__item"
@@ -228,20 +227,6 @@ watch(entries, scheduleOverflowUpdate)
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.dimension-token-list__group {
-  padding: var(--spacing-100) 0 var(--spacing-50);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-small);
-  color: var(--color-subtle);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.dimension-token-list__group:first-child {
-  padding-top: 0;
 }
 
 .dimension-token-list__item {

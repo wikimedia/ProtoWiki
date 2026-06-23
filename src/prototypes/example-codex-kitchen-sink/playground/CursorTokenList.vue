@@ -18,13 +18,11 @@ defineProps<{
       <span
         class="cursor-token-list__preview"
         :style="{ '--cursor-value': `var(${token.name})` }"
-        aria-hidden="true"
-      />
-      <div class="cursor-token-list__meta">
-        <code class="cursor-token-list__name">{{ token.name }}</code>
+      >
+        {{ token.name }}
         <span class="cursor-token-list__value">{{ token.value }}</span>
-        <TokenDeprecatedLabel v-if="token.deprecated" />
-      </div>
+      </span>
+      <TokenDeprecatedLabel v-if="token.deprecated" />
     </li>
   </ul>
 </template>
@@ -33,24 +31,29 @@ defineProps<{
 .cursor-token-list {
   display: flex;
   flex-direction: column;
+  gap: var(--spacing-75);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .cursor-token-list__item {
-  display: grid;
-  grid-template-columns: 3.5rem 1fr;
-  align-items: center;
-  gap: var(--spacing-100);
-  padding-block: var(--spacing-75);
-  border-bottom: var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-25);
 }
 
 .cursor-token-list__preview {
-  display: block;
-  width: 3.5rem;
-  height: 2.5rem;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-25);
+  padding: var(--spacing-35) var(--spacing-50);
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-medium);
+  line-height: var(--line-height-medium);
+  color: var(--color-base);
   background: var(--background-color-neutral-subtle);
   border: var(--border-subtle);
   border-radius: var(--border-radius-base);
@@ -62,25 +65,7 @@ defineProps<{
   background: var(--background-color-base);
 }
 
-.cursor-token-list__meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--spacing-25);
-  min-width: 0;
-}
-
-.cursor-token-list__name {
-  font-family: var(--font-family-monospace);
-  font-size: var(--font-size-small);
-  line-height: var(--line-height-small);
-  color: var(--color-base);
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
 .cursor-token-list__value {
-  font-family: var(--font-family-monospace);
   font-size: var(--font-size-small);
   line-height: var(--line-height-small);
   color: var(--color-subtle);

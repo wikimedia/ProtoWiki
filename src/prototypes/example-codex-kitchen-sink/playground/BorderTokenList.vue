@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { TokenEntry } from '../lib/parse-tokens'
-import { getBorderTokenGroup } from '../lib/parse-tokens'
+import { getBorderTokenGroup, isPositionOffsetToken } from '../lib/parse-tokens'
 import TokenDeprecatedLabel from './TokenDeprecatedLabel.vue'
+import TokenListGroupHeading from './TokenListGroupHeading.vue'
 
 const props = defineProps<{
   tokens: TokenEntry[]
@@ -15,12 +16,16 @@ type ListEntry =
 const entries = computed(() => {
   const items: ListEntry[] = []
   let currentGroup: string | null = null
+  let skipNextGroupHeading = true
 
   for (const token of props.tokens) {
     const group = getBorderTokenGroup(token.name)
     if (group !== currentGroup) {
-      items.push({ type: 'group', label: group })
+      if (!skipNextGroupHeading) {
+        items.push({ type: 'group', label: group })
+      }
       currentGroup = group
+      skipNextGroupHeading = false
     }
     items.push({ type: 'token', token })
   }
@@ -63,15 +68,34 @@ function previewClass(name: string): Record<string, boolean> {
 <template>
   <ul class="border-token-list">
     <template v-for="(entry, index) in entries" :key="index">
-      <li v-if="entry.type === 'group'" class="border-token-list__group">
-        {{ entry.label }}
-      </li>
+      <TokenListGroupHeading v-if="entry.type === 'group'" :label="entry.label" />
       <li
         v-else
         class="border-token-list__item"
         :class="{ 'border-token-list__item--deprecated': entry.token.deprecated }"
       >
         <div
+          v-if="isPositionOffsetToken(entry.token.name)"
+          class="border-token-list__offset-demo"
+          aria-hidden="true"
+        >
+          <div class="border-token-list__offset-example">
+            <span class="border-token-list__offset-caption">inset: 0</span>
+            <div class="border-token-list__offset-box">
+              <span class="border-token-list__overlay border-token-list__overlay--inset-zero" />
+            </div>
+          </div>
+          <div class="border-token-list__offset-example">
+            <span class="border-token-list__offset-caption">with token</span>
+            <div class="border-token-list__offset-box">
+              <span
+                class="border-token-list__overlay border-token-list__overlay--with-offset"
+              />
+            </div>
+          </div>
+        </div>
+        <div
+          v-else
           class="border-token-list__preview"
           :class="previewClass(entry.token.name)"
           :style="previewStyle(entry.token)"
@@ -80,6 +104,13 @@ function previewClass(name: string): Record<string, boolean> {
         <div class="border-token-list__meta">
           <code class="border-token-list__name">{{ entry.token.name }}</code>
           <span class="border-token-list__value">{{ entry.token.value }}</span>
+          <p
+            v-if="isPositionOffsetToken(entry.token.name)"
+            class="border-token-list__hint"
+          >
+            Negative inset equal to <code>--border-width-base</code> pulls an overlay outward so
+            its edges align with the component’s outer border.
+          </p>
           <TokenDeprecatedLabel v-if="entry.token.deprecated" />
         </div>
       </li>
@@ -94,20 +125,6 @@ function previewClass(name: string): Record<string, boolean> {
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.border-token-list__group {
-  padding: var(--spacing-100) 0 var(--spacing-50);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-small);
-  color: var(--color-subtle);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.border-token-list__group:first-child {
-  padding-top: 0;
 }
 
 .border-token-list__item {
@@ -144,9 +161,65 @@ function previewClass(name: string): Record<string, boolean> {
 
 .border-token-list__preview--shorthand {
   box-sizing: border-box;
-  background:
-    repeating-conic-gradient(var(--border-color-subtle) 0% 25%, transparent 0% 50%) 50% / 10px 10px,
-    var(--background-color-base);
+}
+
+.border-token-list__offset-demo {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--spacing-100);
+}
+
+.border-token-list__offset-example {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-25);
+}
+
+.border-token-list__offset-caption {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+  color: var(--color-subtle);
+  white-space: nowrap;
+}
+
+.border-token-list__offset-box {
+  position: relative;
+  box-sizing: border-box;
+  width: 3.5rem;
+  height: 2.5rem;
+  border: var(--border-width-base) solid var(--border-color-progressive);
+  border-radius: var(--border-radius-base);
+  background: var(--background-color-base);
+}
+
+.border-token-list__overlay {
+  position: absolute;
+  box-sizing: border-box;
+  border: var(--border-width-base) solid var(--color-progressive);
+  border-radius: var(--border-radius-base);
+  background: var(--background-color-progressive-subtle);
+  pointer-events: none;
+}
+
+.border-token-list__overlay--inset-zero {
+  inset: 0;
+}
+
+.border-token-list__overlay--with-offset {
+  inset: calc(-1 * var(--border-width-base));
+}
+
+.border-token-list__hint code {
+  font-family: var(--font-family-monospace);
+  font-size: inherit;
+}
+
+.border-token-list__hint {
+  margin: 0;
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+  color: var(--color-subtle);
 }
 
 .border-token-list__name {
