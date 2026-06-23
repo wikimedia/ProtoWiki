@@ -2,14 +2,23 @@
 import { ref, type Component } from 'vue'
 import { CdxTab, CdxTabs, CdxToastContainer } from '@wikimedia/codex'
 
+import { parseLeafTab, type MainTabId } from './lib/playground-tabs'
+import {
+  providePlaygroundLeafTab,
+  syncMainTabWithLeafTab,
+  usePlaygroundLeafTab,
+} from './lib/use-playground-leaf-tab'
+
 import ButtonsSection from './sections/ButtonsSection.vue'
 import FeedbackSection from './sections/FeedbackSection.vue'
 import IconsSection from './sections/IconsSection.vue'
-import InputsSection from './sections/InputsSection.vue'
-import LayoutSection from './sections/LayoutSection.vue'
-import OverlaysSection from './sections/OverlaysSection.vue'
+import FormElementsSection from './sections/FormElementsSection.vue'
+import MediaSection from './sections/MediaSection.vue'
+import NavigationSection from './sections/NavigationSection.vue'
+import SearchSection from './sections/SearchSection.vue'
+import ContentDataSection from './sections/ContentDataSection.vue'
 import ColorSection from './sections/ColorSection.vue'
-import TokensSection from './sections/TokensSection.vue'
+import TokenSection from './sections/TokenSection.vue'
 import TypographySection from './sections/TypographySection.vue'
 
 definePage({
@@ -22,30 +31,48 @@ definePage({
 const navItems = [
   { id: 'typography', label: 'Typography' },
   { id: 'color', label: 'Color' },
-  { id: 'tokens', label: 'Tokens' },
+  { id: 'tokens-layout', label: 'Layout' },
+  { id: 'tokens-appearance', label: 'Appearance' },
+  { id: 'tokens-animation', label: 'Animation' },
   { id: 'icons', label: 'Icons' },
   { id: 'components-buttons', label: 'Buttons' },
-  { id: 'components-inputs', label: 'Inputs' },
+  { id: 'components-form-elements', label: 'Form elements' },
   { id: 'components-feedback', label: 'Feedback' },
-  { id: 'components-overlays', label: 'Overlays' },
-  { id: 'components-layout', label: 'Layout' },
+  { id: 'components-content-data', label: 'Content & data' },
+  { id: 'components-media', label: 'Media' },
+  { id: 'components-navigation', label: 'Navigation' },
+  { id: 'components-search', label: 'Search' },
 ] as const
 
 const sectionByTab: Record<(typeof navItems)[number]['id'], Component> = {
   typography: TypographySection,
   color: ColorSection,
-  tokens: TokensSection,
+  'tokens-layout': TokenSection,
+  'tokens-appearance': TokenSection,
+  'tokens-animation': TokenSection,
   icons: IconsSection,
   'components-buttons': ButtonsSection,
-  'components-inputs': InputsSection,
+  'components-form-elements': FormElementsSection,
   'components-feedback': FeedbackSection,
-  'components-overlays': OverlaysSection,
-  'components-layout': LayoutSection,
+  'components-content-data': ContentDataSection,
+  'components-media': MediaSection,
+  'components-navigation': NavigationSection,
+  'components-search': SearchSection,
 }
 
-type TabId = (typeof navItems)[number]['id']
+const tokenSectionByTab: Partial<Record<(typeof navItems)[number]['id'], 'layout' | 'appearance' | 'animation'>> = {
+  'tokens-layout': 'layout',
+  'tokens-appearance': 'appearance',
+  'tokens-animation': 'animation',
+}
 
-const activeTab = ref<TabId>('typography')
+type TabId = MainTabId
+
+const leafTab = usePlaygroundLeafTab()
+const { subTabMemory } = providePlaygroundLeafTab(leafTab)
+
+const activeTab = ref<TabId>(parseLeafTab(leafTab.value)?.main ?? 'typography')
+syncMainTabWithLeafTab(activeTab, leafTab, subTabMemory)
 </script>
 
 <template>
@@ -55,7 +82,11 @@ const activeTab = ref<TabId>('typography')
     <CdxTabs v-model:active="activeTab" class="playground-tabs" aria-label="Sections">
       <CdxTab v-for="item in navItems" :key="item.id" :name="item.id" :label="item.label">
         <article>
-          <component :is="sectionByTab[item.id]" />
+          <TokenSection
+            v-if="tokenSectionByTab[item.id]"
+            :section="tokenSectionByTab[item.id]!"
+          />
+          <component v-else :is="sectionByTab[item.id]" />
         </article>
       </CdxTab>
     </CdxTabs>

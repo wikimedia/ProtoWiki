@@ -33,13 +33,13 @@ A progress bar.
 
 ```vue
 <CdxProgressBar inline aria-label="Loading" />            <!-- indeterminate, thin -->
-<CdxProgressBar :progress="42" aria-label="Importing" />  <!-- determinate -->
+<CdxProgressBar :value="42" aria-label="Importing" />  <!-- determinate -->
 ```
 
 | Prop | Values | Default |
 | --- | --- | --- |
 | `inline` | true for thin inline bar | `false` |
-| `progress` | `0`–`100` for determinate, omit for indeterminate | indeterminate |
+| `value` | `0`–`100` for determinate, omit for indeterminate | indeterminate |
 | `disabled` | boolean | `false` |
 
 ## CdxProgressIndicator

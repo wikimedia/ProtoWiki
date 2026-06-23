@@ -36,16 +36,62 @@ export const tableRows: TableRow[] = [
   { id: '3', title: 'Rhine', status: 'Published', views: 890 },
 ]
 
-export const searchResults: SearchResult[] = [
-  { label: 'Albert Einstein', title: 'Albert Einstein', description: 'German-born theoretical physicist' },
-  { label: 'Albert Camus', title: 'Albert Camus', description: 'French philosopher and author' },
-]
-
 const wetLegImageUrl = `${import.meta.env.BASE_URL}images/wet-leg-o2-infobox.jpg`
 
 export const thumbnailUrl = wetLegImageUrl
 
 export const imageUrl = wetLegImageUrl
+
+export const typeaheadSearchCatalog: SearchResult[] = [
+  {
+    value: 'Albert Einstein',
+    label: 'Albert Einstein',
+    description: 'German-born theoretical physicist',
+    url: 'https://en.wikipedia.org/wiki/Albert_Einstein',
+    thumbnail: { url: thumbnailUrl, width: 40, height: 40 },
+  },
+  {
+    value: 'Albert Camus',
+    label: 'Albert Camus',
+    description: 'French philosopher and author',
+    url: 'https://en.wikipedia.org/wiki/Albert_Camus',
+  },
+  {
+    value: 'Alberta',
+    label: 'Alberta',
+    description: 'Province of Canada',
+    url: 'https://en.wikipedia.org/wiki/Alberta',
+  },
+  {
+    value: 'Albert, Prince Consort',
+    label: 'Albert, Prince Consort',
+    description: 'Consort of Queen Victoria',
+    url: 'https://en.wikipedia.org/wiki/Albert,_Prince_Consort',
+  },
+  {
+    value: 'Albrecht Dürer',
+    label: 'Albrecht Dürer',
+    description: 'German painter and printmaker',
+    url: 'https://en.wikipedia.org/wiki/Albrecht_D%C3%BCrer',
+  },
+  {
+    value: 'Alberta (disambiguation)',
+    label: 'Alberta (disambiguation)',
+    description: 'Topics referred to by the same term',
+    url: 'https://en.wikipedia.org/wiki/Alberta_(disambiguation)',
+  },
+]
+
+export function filterTypeaheadSearchResults(query: string): SearchResult[] {
+  const trimmed = query.trim().toLowerCase()
+  if (!trimmed.length) return []
+
+  return typeaheadSearchCatalog.filter((result) => {
+    const label = String(result.label ?? result.value).toLowerCase()
+    const description = result.description?.toLowerCase() ?? ''
+    return label.includes(trimmed) || description.includes(trimmed)
+  })
+}
 
 export const buttonGroupItems = [
   { value: 'edit', label: 'Edit' },

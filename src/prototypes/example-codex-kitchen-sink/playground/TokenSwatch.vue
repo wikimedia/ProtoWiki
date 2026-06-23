@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { TokenEntry } from '../lib/parse-tokens'
+import TokenDeprecatedLabel from './TokenDeprecatedLabel.vue'
 
 const props = defineProps<{
   token: TokenEntry
@@ -98,7 +99,10 @@ const cssVar = computed(() => `var(${props.token.name})`)
         {{ token.value }}
       </div>
     </div>
-    <code class="token-swatch__name">{{ token.name }}</code>
+    <code class="token-swatch__name" :class="{ 'token-swatch__name--deprecated': token.deprecated }">
+      {{ token.name }}
+      <TokenDeprecatedLabel v-if="token.deprecated" />
+    </code>
   </div>
 </template>
 
@@ -219,10 +223,18 @@ const cssVar = computed(() => `var(${props.token.name})`)
 }
 
 .token-swatch__name {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-25);
   font-family: var(--font-family-monospace);
   font-size: var(--font-size-small);
   line-height: var(--line-height-small);
   color: var(--color-subtle);
   word-break: break-all;
+}
+
+.token-swatch__name--deprecated {
+  color: var(--color-subtle);
 }
 </style>

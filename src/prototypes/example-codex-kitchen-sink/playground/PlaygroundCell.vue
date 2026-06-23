@@ -1,13 +1,14 @@
 <script setup lang="ts">
 interface Props {
   label?: string
+  row?: boolean
 }
 
 defineProps<Props>()
 </script>
 
 <template>
-  <div class="playground-cell">
+  <div class="playground-cell" :class="{ 'playground-cell--row': row }">
     <div class="playground-cell__content">
       <slot />
     </div>
@@ -21,6 +22,29 @@ defineProps<Props>()
   flex-direction: column;
   gap: var(--spacing-35);
   min-width: 0;
+}
+
+.playground-cell--row {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--spacing-100);
+  padding-block: var(--spacing-35);
+  border-bottom: var(--border-subtle);
+}
+
+.playground-cell--row:last-child {
+  border-bottom: none;
+}
+
+.playground-cell--row .playground-cell__label {
+  flex-shrink: 0;
+  min-width: 5rem;
+  padding-top: var(--spacing-35);
+}
+
+.playground-cell--row .playground-cell__content {
+  flex: 1;
+  max-width: 20rem;
 }
 
 .playground-cell__content {

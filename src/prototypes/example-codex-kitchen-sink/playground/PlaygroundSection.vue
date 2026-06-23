@@ -26,7 +26,7 @@ withDefaults(defineProps<Props>(), {
 }
 
 .playground-section--untitled {
-  padding-top: var(--spacing-100);
+  padding: var(--spacing-100) 0;
 }
 
 /* .playground-section__title {

@@ -94,7 +94,7 @@ descriptor).
 | Prop | Values |
 | --- | --- |
 | `icon` | required: an icon import or icon descriptor |
-| `size` | `xx-small` / `x-small` / `small` / `medium` (default) |
+| `size` | `x-small` / `small` / `medium` (default) |
 | `iconLabel` | accessible label when used standalone |
 | `dir` | `ltr` / `rtl` (auto-flips bidi-aware icons) |
 | `langCode` | for langCodeMap-aware icons (e.g., bold-x icons) |

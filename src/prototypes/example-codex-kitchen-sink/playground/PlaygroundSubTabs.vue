@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
 import { CdxTab, CdxTabs } from '@wikimedia/codex'
+
+import type { MainTabId } from '../lib/playground-tabs'
+import { usePlaygroundLeafTabContext } from '../lib/use-playground-leaf-tab'
 
 export interface PlaygroundSubTabItem {
   id: string
@@ -9,11 +12,17 @@ export interface PlaygroundSubTabItem {
 
 const props = defineProps<{
   items: PlaygroundSubTabItem[]
+  mainTabId: MainTabId
   defaultActive: string
   ariaLabel: string
 }>()
 
-const active = ref(props.defaultActive)
+const playgroundTab = usePlaygroundLeafTabContext()
+
+const active = computed({
+  get: () => playgroundTab?.subTabFor(props.mainTabId) ?? props.defaultActive,
+  set: (value: string) => playgroundTab?.setSubTab(props.mainTabId, value),
+})
 </script>
 
 <template>
@@ -30,7 +39,7 @@ const active = ref(props.defaultActive)
 .playground-sub-tabs :deep(> .cdx-tabs__header) {
   position: sticky;
   top: 35px;
-  z-index: 1;
+  z-index: 2;
 }
 
 .playground-sub-tabs__panel {
