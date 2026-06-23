@@ -157,27 +157,31 @@ watch(entries, scheduleOverflowUpdate)
       >
         <div v-if="usesDimensionBarDemo(entry.token)" class="dimension-token-list__demo">
           <div
-            :ref="(el) => setDemoRef(entry.token.name, el)"
-            class="dimension-token-list__scroll"
-            :class="{ 'dimension-token-list__scroll--overflow-end': overflowEnd.has(entry.token.name) }"
+            class="dimension-token-list__scroll-wrap"
+            :class="{ 'dimension-token-list__scroll-wrap--overflow-end': overflowEnd.has(entry.token.name) }"
           >
-            <span
-              class="dimension-token-list__track"
-              :class="{ 'dimension-token-list__track--zero': isZeroDimensionToken(entry.token) }"
-              :style="trackStyle(entry.token)"
+            <div
+              :ref="(el) => setDemoRef(entry.token.name, el)"
+              class="dimension-token-list__scroll"
             >
               <span
-                v-if="!isZeroDimensionToken(entry.token)"
-                class="dimension-token-list__box"
-                :style="barWidthStyle(entry.token)"
-                aria-hidden="true"
-              />
-              <span class="dimension-token-list__label">
-                <span class="dimension-token-list__name">{{ entry.token.name }}</span>
-                <span class="dimension-token-list__value">{{ entry.token.value }}</span>
-                <TokenDeprecatedLabel v-if="entry.token.deprecated" />
+                class="dimension-token-list__track"
+                :class="{ 'dimension-token-list__track--zero': isZeroDimensionToken(entry.token) }"
+                :style="trackStyle(entry.token)"
+              >
+                <span
+                  v-if="!isZeroDimensionToken(entry.token)"
+                  class="dimension-token-list__box"
+                  :style="barWidthStyle(entry.token)"
+                  aria-hidden="true"
+                />
+                <span class="dimension-token-list__label">
+                  <span class="dimension-token-list__name">{{ entry.token.name }}</span>
+                  <span class="dimension-token-list__value">{{ entry.token.value }}</span>
+                  <TokenDeprecatedLabel v-if="entry.token.deprecated" />
+                </span>
               </span>
-            </span>
+            </div>
           </div>
         </div>
         <div
@@ -249,19 +253,12 @@ watch(entries, scheduleOverflowUpdate)
   min-width: 0;
 }
 
-.dimension-token-list__scroll {
+.dimension-token-list__scroll-wrap {
   position: relative;
   min-width: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
 }
 
-.dimension-token-list__scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.dimension-token-list__scroll--overflow-end::after {
+.dimension-token-list__scroll-wrap--overflow-end::after {
   content: '';
   position: absolute;
   inset-block: 0;
@@ -274,6 +271,12 @@ watch(entries, scheduleOverflowUpdate)
     var(--background-color-base) 0,
     var(--background-color-transparent) 100%
   );
+}
+
+.dimension-token-list__scroll {
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .dimension-token-list__track {
