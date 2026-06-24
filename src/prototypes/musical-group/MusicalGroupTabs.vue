@@ -68,13 +68,15 @@ const activeTab = ref<TabId>('overview')
   height: 38px;
   padding: 1px var(--spacing-100);
   border: 1px solid var(--color-base);
+  border-bottom-width: 2px;
+  border-right-width: 2px;
   border-radius: 6px;
   background-color: var(--background-color-base);
   color: var(--color-base);
   font-family: var(--font-family-base);
-  font-size: var(--font-size-small);
+  font-size: var(--font-size-medium);
   font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-small);
+  line-height: var(--line-height-medium);
   white-space: nowrap;
   cursor: pointer;
 }
