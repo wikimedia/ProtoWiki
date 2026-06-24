@@ -3,6 +3,7 @@ import type { TabId } from './data/types'
 
 const tabs: { id: TabId; label: string; dot?: 'blue' }[] = [
   { id: 'overview', label: 'Overview' },
+  { id: 'info', label: 'Info' },
   { id: 'article', label: 'Article' },
   { id: 'photos', label: 'Photos', dot: 'blue' },
   { id: 'links', label: 'Links' },
@@ -85,6 +86,7 @@ const activeTab = defineModel<TabId>('activeTab', { default: 'overview' })
   padding-inline: var(--spacing-50);
   overflow-x: auto;
   overscroll-behavior-x: none;
+  touch-action: pan-x;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }

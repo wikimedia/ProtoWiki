@@ -1,19 +1,46 @@
 <script setup lang="ts">
-import { CdxIcon } from '@wikimedia/codex'
+import { ref, watch } from 'vue'
+
+import { CdxIcon, CdxMenuButton } from '@wikimedia/codex'
+import type { MenuItemValue } from '@wikimedia/codex'
 import {
   cdxIconBellOutline,
   cdxIconMenu,
   cdxIconSearch,
   cdxIconUserAvatar,
 } from '@wikimedia/codex-icons'
+
+const emit = defineEmits<{
+  'toggle-search': []
+  'reset-stored-data': []
+}>()
+
+const menuSelected = ref<MenuItemValue | null>(null)
+
+const menuItems = [{ value: 'reset', label: 'Reset stored data' }]
+
+function onResetMenuItem(): void {
+  emit('reset-stored-data')
+  menuSelected.value = null
+}
+
+watch(menuSelected, (value) => {
+  if (value === 'reset') onResetMenuItem()
+})
 </script>
 
 <template>
   <header class="musical-group-chrome-header" aria-label="Site">
     <div class="musical-group-chrome-header__start">
-      <button type="button" class="musical-group-chrome-header__icon-btn" aria-label="Menu">
+      <CdxMenuButton
+        v-model:selected="menuSelected"
+        class="musical-group-chrome-header__menu-btn"
+        :menu-items="menuItems"
+        weight="quiet"
+        aria-label="Menu"
+      >
         <CdxIcon :icon="cdxIconMenu" />
-      </button>
+      </CdxMenuButton>
       <span class="musical-group-chrome-header__wordmark" aria-hidden="true">
         <svg
           class="musical-group-chrome-header__wordmark-svg"
@@ -32,7 +59,12 @@ import {
     </div>
 
     <div class="musical-group-chrome-header__actions">
-      <button type="button" class="musical-group-chrome-header__icon-btn" aria-label="Search">
+      <button
+        type="button"
+        class="musical-group-chrome-header__icon-btn"
+        aria-label="Search"
+        @click="$emit('toggle-search')"
+      >
         <CdxIcon :icon="cdxIconSearch" />
       </button>
       <button type="button" class="musical-group-chrome-header__icon-btn" aria-label="Notifications">
@@ -63,6 +95,14 @@ import {
   gap: var(--spacing-50);
 }
 
+.musical-group-chrome-header__menu-btn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: 20px;
+  line-height: 0;
+}
+
 .musical-group-chrome-header__wordmark {
   display: flex;
   align-items: center;
@@ -88,19 +128,96 @@ import {
   justify-content: center;
   width: 20px;
   height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  max-height: 20px;
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--color-inverted);
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
+</style>
 
-.musical-group-chrome-header__icon-btn :deep(.cdx-icon) {
+<!-- Unscoped: beat Codex [dir] + interaction selectors on the inverted chrome bar. -->
+<style>
+.musical-group-chrome-header .cdx-icon {
   color: var(--color-inverted);
 }
 
-.musical-group-chrome-header__icon-btn :deep(.cdx-icon svg),
-.musical-group-chrome-header__icon-btn :deep(.cdx-icon svg path) {
+.musical-group-chrome-header .cdx-icon svg,
+.musical-group-chrome-header .cdx-icon svg path {
   fill: currentColor;
+}
+
+.musical-group-chrome-header .musical-group-chrome-header__icon-btn:hover,
+.musical-group-chrome-header .musical-group-chrome-header__icon-btn:active,
+.musical-group-chrome-header .musical-group-chrome-header__icon-btn:focus,
+.musical-group-chrome-header .musical-group-chrome-header__icon-btn:focus-visible {
+  background: transparent;
+  color: var(--color-inverted);
+}
+
+.musical-group-chrome-header .musical-group-chrome-header__menu-btn.cdx-menu-button .cdx-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  max-height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-inverted);
+  mix-blend-mode: normal;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.musical-group-chrome-header .musical-group-chrome-header__menu-btn.cdx-menu-button .cdx-button:hover,
+.musical-group-chrome-header
+  .musical-group-chrome-header__menu-btn.cdx-menu-button
+  .cdx-button:active,
+.musical-group-chrome-header
+  .musical-group-chrome-header__menu-btn.cdx-menu-button
+  .cdx-button:focus,
+.musical-group-chrome-header
+  .musical-group-chrome-header__menu-btn.cdx-menu-button
+  .cdx-button:focus-visible,
+.musical-group-chrome-header
+  .musical-group-chrome-header__menu-btn.cdx-menu-button
+  .cdx-button.cdx-button--is-active,
+[dir]
+  .musical-group-chrome-header
+  .musical-group-chrome-header__menu-btn.cdx-menu-button
+  .cdx-button.cdx-button--weight-quiet:enabled:hover,
+[dir]
+  .musical-group-chrome-header
+  .musical-group-chrome-header__menu-btn.cdx-menu-button
+  .cdx-button.cdx-button--weight-quiet:enabled:active,
+[dir]
+  .musical-group-chrome-header
+  .musical-group-chrome-header__menu-btn.cdx-menu-button
+  .cdx-button.cdx-button--weight-quiet.cdx-button--is-active,
+[dir]
+  .musical-group-chrome-header
+  .musical-group-chrome-header__menu-btn.cdx-menu-button
+  .cdx-button.cdx-button--weight-quiet:enabled:focus:not(:active):not(.cdx-button--is-active) {
+  background: transparent;
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--color-inverted);
+  box-shadow: none;
+  mix-blend-mode: normal;
+}
+
+.musical-group-chrome-header
+  .musical-group-chrome-header__menu-btn.cdx-menu-button
+  .cdx-button
+  .cdx-icon {
+  color: var(--color-inverted);
 }
 </style>

@@ -13,16 +13,14 @@ defineProps<Props>()
 </script>
 
 <template>
-  <div class="musical-group-overview">
+  <div v-if="!overviewLoading" class="musical-group-overview">
     <MusicalGroupOverviewArticleCard
       :article="overview?.article"
-      :loading="overviewLoading"
       :no-article="overview?.noEnglishArticle"
     />
     <MusicalGroupOverviewPhotosCard
       :photos="overview?.photos"
       :carousel-images="carouselImages"
-      :loading="overviewLoading"
     />
   </div>
 </template>

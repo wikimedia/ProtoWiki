@@ -4,6 +4,7 @@ import { ref } from 'vue'
 import ImageCarousel from './ImageCarousel.vue'
 import MusicalGroupFacts from './MusicalGroupFacts.vue'
 import MusicalGroupHeader from './MusicalGroupHeader.vue'
+import MusicalGroupInfo from './MusicalGroupInfo.vue'
 import MusicalGroupOverview from './MusicalGroupOverview.vue'
 import MusicalGroupTabs from './MusicalGroupTabs.vue'
 import type { MusicalGroupData, MusicalGroupOverviewData, TabId } from './data/types'
@@ -39,6 +40,11 @@ useMusicalGroupScrollStates()
             :overview="overview"
             :overview-loading="overviewLoading"
             :carousel-images="data.images"
+          />
+          <MusicalGroupInfo
+            v-else-if="activeTab === 'info' && !overviewLoading"
+            :infobox="overview?.infobox"
+            :last-edited-label="overview?.article?.lastEditedLabel"
           />
           <div v-else class="musical-group-screen__placeholder"></div>
         </div>

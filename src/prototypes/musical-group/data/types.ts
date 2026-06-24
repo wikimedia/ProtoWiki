@@ -1,6 +1,6 @@
 export const MUSICAL_GROUP_QID = 'Q215380'
 
-export type TabId = 'overview' | 'article' | 'photos' | 'links' | 'members' | 'awards'
+export type TabId = 'overview' | 'info' | 'article' | 'photos' | 'links' | 'members' | 'awards'
 
 export type EditIndicator = 'history' | 'talk'
 
@@ -8,13 +8,13 @@ export interface MusicalGroupSearchResult {
   id: string
   label: string
   description?: string
+  thumbnailUrl?: string
 }
-
-export type CarouselImageOrientation = 'landscape' | 'square' | 'portrait' | 'tall'
 
 export interface CarouselImage {
   url: string
-  orientation: CarouselImageOrientation
+  width: number
+  height: number
 }
 
 export interface MusicalGroupOverviewArticle {
@@ -35,9 +35,24 @@ export interface MusicalGroupOverviewPhotos {
   itemCountLabel: string
 }
 
+export interface MusicalGroupInfoboxValue {
+  text: string
+  href?: string
+}
+
+export interface MusicalGroupInfoboxRow {
+  label: string
+  values: MusicalGroupInfoboxValue[]
+}
+
+export interface MusicalGroupInfobox {
+  rows: MusicalGroupInfoboxRow[]
+}
+
 export interface MusicalGroupOverviewData {
   article?: MusicalGroupOverviewArticle
   photos?: MusicalGroupOverviewPhotos
+  infobox?: MusicalGroupInfobox
   noEnglishArticle?: boolean
   fetchedAt: number
 }

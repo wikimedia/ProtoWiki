@@ -1,19 +1,14 @@
-import type { CarouselImage, CarouselImageOrientation } from './types'
+import type { CarouselImage } from './types'
 
 /** Mirrors ImageCarousel.vue layout — not live DOM measurement. */
 export const CAROUSEL_VIEWPORT_WIDTH = 412
 export const CAROUSEL_GAP = 10
 export const CAROUSEL_LEADING_INSET = 8
+export const CAROUSEL_SLIDE_HEIGHT = 154
 
-const SLIDE_WIDTH: Record<CarouselImageOrientation, number> = {
-  landscape: 231,
-  square: 154,
-  portrait: 103,
-  tall: 77,
-}
-
-export function slideWidth(orientation: CarouselImageOrientation): number {
-  return SLIDE_WIDTH[orientation]
+export function carouselSlideWidth(image: CarouselImage): number {
+  if (image.width <= 0 || image.height <= 0) return CAROUSEL_SLIDE_HEIGHT
+  return Math.round((CAROUSEL_SLIDE_HEIGHT * image.width) / image.height)
 }
 
 /** First slide whose start x is fully off-screen (start >= viewport width). */
@@ -25,7 +20,7 @@ export function firstOffScreenCarouselIndex(images: CarouselImage[]): number | n
   for (let i = 0; i < images.length; i++) {
     if (i > 0) x += CAROUSEL_GAP
     if (x >= CAROUSEL_VIEWPORT_WIDTH) return i
-    x += slideWidth(images[i].orientation)
+    x += carouselSlideWidth(images[i])
   }
 
   return null

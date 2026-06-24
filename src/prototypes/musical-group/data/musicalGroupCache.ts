@@ -3,12 +3,13 @@ import type {
   CarouselImage,
   EditIndicator,
   MusicalGroupData,
+  MusicalGroupInfobox,
   MusicalGroupOverviewArticle,
   MusicalGroupOverviewData,
   MusicalGroupOverviewPhotos,
 } from './types'
 
-export const MUSICAL_GROUP_CACHE_VERSION = 8
+export const MUSICAL_GROUP_CACHE_VERSION = 14
 
 const STORAGE_KEY = 'musical-group-page-cache'
 
@@ -37,10 +38,10 @@ function isCarouselImage(value: unknown): value is CarouselImage {
   const record = value as Record<string, unknown>
   return (
     typeof record.url === 'string' &&
-    (record.orientation === 'landscape' ||
-      record.orientation === 'square' ||
-      record.orientation === 'portrait' ||
-      record.orientation === 'tall')
+    typeof record.width === 'number' &&
+    record.width > 0 &&
+    typeof record.height === 'number' &&
+    record.height > 0
   )
 }
 
@@ -67,6 +68,28 @@ function isOverviewPhotos(value: unknown): value is MusicalGroupOverviewPhotos {
   return typeof record.itemCount === 'number' && typeof record.itemCountLabel === 'string'
 }
 
+function isInfoboxValue(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null) return false
+  const v = value as Record<string, unknown>
+  if (typeof v.text !== 'string') return false
+  return v.href === undefined || typeof v.href === 'string'
+}
+
+function isInfobox(value: unknown): value is MusicalGroupInfobox {
+  if (typeof value !== 'object' || value === null) return false
+  const record = value as Record<string, unknown>
+  if (!Array.isArray(record.rows)) return false
+  return record.rows.every((row) => {
+    if (typeof row !== 'object' || row === null) return false
+    const r = row as Record<string, unknown>
+    return (
+      typeof r.label === 'string' &&
+      Array.isArray(r.values) &&
+      r.values.every(isInfoboxValue)
+    )
+  })
+}
+
 function isOverviewData(value: unknown): value is MusicalGroupOverviewData {
   if (typeof value !== 'object' || value === null) return false
   const record = value as Record<string, unknown>
@@ -76,6 +99,7 @@ function isOverviewData(value: unknown): value is MusicalGroupOverviewData {
   }
   if (record.article !== undefined && !isOverviewArticle(record.article)) return false
   if (record.photos !== undefined && !isOverviewPhotos(record.photos)) return false
+  if (record.infobox !== undefined && !isInfobox(record.infobox)) return false
   return true
 }
 
@@ -149,6 +173,16 @@ function clearStoredCache(): void {
 
   try {
     window.localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // Private mode or blocked storage — ignore.
+  }
+}
+
+export function clearMusicalGroupCache(): void {
+  if (typeof window === 'undefined') return
+
+  try {
+    window.localStorage.clear()
   } catch {
     // Private mode or blocked storage — ignore.
   }

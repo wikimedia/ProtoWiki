@@ -72,6 +72,8 @@ const genreLine = computed(() =>
 }
 
 .musical-group-facts__genres {
+  font-size: var(--font-size-medium);
+  line-height: var(--line-height-medium);
   color: var(--color-subtle);
 }
 

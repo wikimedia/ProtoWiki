@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { CarouselImage, CarouselImageOrientation } from './data/types'
+import { carouselSlideWidth, CAROUSEL_SLIDE_HEIGHT } from './data/carouselLayout'
+import type { CarouselImage } from './data/types'
 
 interface Props {
   images: CarouselImage[]
@@ -7,25 +8,21 @@ interface Props {
 }
 
 defineProps<Props>()
+
+function slideStyle(image: CarouselImage) {
+  return { width: `${carouselSlideWidth(image)}px` }
+}
 </script>
 
 <template>
   <div class="image-carousel">
-    <div class="image-carousel__track">
-      <template v-if="loading">
-        <div
-          v-for="n in 2"
-          :key="n"
-          class="image-carousel__slide image-carousel__slide--landscape image-carousel__slide--placeholder"
-        />
-      </template>
-
-      <template v-else-if="images.length">
+    <div v-if="!loading" class="image-carousel__track">
+      <template v-if="images.length">
         <div
           v-for="(image, index) in images"
           :key="`${image.url}-${index}`"
           class="image-carousel__slide"
-          :class="`image-carousel__slide--${image.orientation}`"
+          :style="slideStyle(image)"
         >
           <img :src="image.url" :alt="''" loading="lazy" draggable="false" />
         </div>
@@ -44,11 +41,9 @@ defineProps<Props>()
 .image-carousel__track {
   display: flex;
   gap: 10px;
-  height: 154px;
+  height: v-bind('`${CAROUSEL_SLIDE_HEIGHT}px`');
   overflow-x: auto;
   overscroll-behavior-x: none;
-  scroll-snap-type: x mandatory;
-  scroll-padding-inline-start: var(--spacing-50);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
@@ -59,27 +54,10 @@ defineProps<Props>()
 
 .image-carousel__slide {
   flex: 0 0 auto;
-  height: 154px;
-  scroll-snap-align: start;
+  height: v-bind('`${CAROUSEL_SLIDE_HEIGHT}px`');
   border-radius: 6px;
   overflow: hidden;
   background-color: var(--background-color-interactive-subtle);
-}
-
-.image-carousel__slide--landscape {
-  width: 231px;
-}
-
-.image-carousel__slide--square {
-  width: 154px;
-}
-
-.image-carousel__slide--portrait {
-  width: 103px;
-}
-
-.image-carousel__slide--tall {
-  width: 77px;
 }
 
 .image-carousel__slide:first-child {
@@ -97,15 +75,6 @@ defineProps<Props>()
   object-fit: cover;
   pointer-events: none;
   user-select: none;
-}
-
-.image-carousel__slide--placeholder {
-  background: linear-gradient(
-    90deg,
-    var(--background-color-interactive-subtle),
-    var(--background-color-base),
-    var(--background-color-interactive-subtle)
-  );
 }
 
 .image-carousel__empty {

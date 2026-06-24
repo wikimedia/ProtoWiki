@@ -60,18 +60,20 @@ defineSlots<{
   display: flex;
   flex-direction: column;
   gap: 0;
+  font-size: var(--font-size-medium);
+  line-height: var(--line-height-medium);
   color: var(--color-base);
 }
 
 .overview-summary-card__thumb-wrap {
   flex-shrink: 0;
   /* Title row + 6px gap + two meta lines */
-  height: calc(var(--line-height-small) * 3 + 6px);
+  height: calc(var(--line-height-medium) * 3 + 6px);
 }
 
 .overview-summary-card__thumb-wrap :deep(.overview-summary-card__thumb) {
   display: block;
-  width: calc(var(--line-height-small) * 3 + 6px);
+  width: calc(var(--line-height-medium) * 3 + 6px);
   height: 100%;
   object-fit: cover;
   border: 1px solid var(--color-base);
@@ -86,6 +88,7 @@ defineSlots<{
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-50);
+  line-height: var(--line-height-x-small);
   color: var(--color-base);
 }
 </style>

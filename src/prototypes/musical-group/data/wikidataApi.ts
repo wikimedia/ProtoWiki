@@ -1,5 +1,6 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 
+import { fetchWithTimeout } from './fetchWithTimeout'
 import { MUSICAL_GROUP_QID, type EditIndicator, type MusicalGroupSearchResult } from './types'
 
 const WIKIDATA_API = 'https://www.wikidata.org/w/api.php'
@@ -17,7 +18,7 @@ function actionUrl(params: Record<string, string>): string {
 
 async function sparqlQuery<T>(query: string, signal?: AbortSignal): Promise<T> {
   const url = `${WIKIDATA_SPARQL}?query=${encodeURIComponent(query)}`
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     signal,
     headers: {
       Accept: 'application/sparql-results+json',
@@ -65,7 +66,7 @@ export async function searchMusicalGroups(
 
   const escaped = query.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
   const sparql = `
-SELECT ?item ?itemLabel ?itemDescription WHERE {
+SELECT ?item ?itemLabel ?itemDescription ?image WHERE {
   SERVICE wikibase:mwapi {
     bd:serviceParam wikibase:endpoint "www.wikidata.org";
                      wikibase:api "EntitySearch";
@@ -74,6 +75,7 @@ SELECT ?item ?itemLabel ?itemDescription WHERE {
     ?item wikibase:apiOutputItem "@id".
   }
   ?item wdt:P31/wdt:P279* wd:${MUSICAL_GROUP_QID} .
+  OPTIONAL { ?item wdt:P18 ?image }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
 }
 LIMIT 8`
@@ -82,17 +84,28 @@ LIMIT 8`
     item: { value: string }
     itemLabel: { value: string }
     itemDescription?: { value: string }
+    image?: { value: string }
   }
 
   const data = await sparqlQuery<{ results: { bindings: SparqlRow[] } }>(sparql, signal)
-  return data.results.bindings.map((row) => {
+  const seen = new Set<string>()
+  const results: MusicalGroupSearchResult[] = []
+
+  for (const row of data.results.bindings) {
     const id = row.item.value.replace(/^.*\//, '')
-    return {
+    if (seen.has(id)) continue
+    seen.add(id)
+
+    const rawImage = row.image?.value
+    results.push({
       id,
       label: row.itemLabel.value,
       description: row.itemDescription?.value,
-    }
-  })
+      thumbnailUrl: rawImage ? `${rawImage}?width=256` : undefined,
+    })
+  }
+
+  return results
 }
 
 interface WbEntityClaim {
@@ -184,7 +197,7 @@ export async function fetchEntityClaims(
     languagefallback: '1',
   })
 
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-wbgetentities'),
   })
@@ -237,7 +250,7 @@ export async function resolveEntityLabels(
     languagefallback: '1',
   })
 
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-wbgetentities-labels'),
   })
@@ -300,7 +313,7 @@ export async function fetchEditIndicator(
     titles: `${id}|Talk:${id}`,
   })
 
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-revisions'),
   })

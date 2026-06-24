@@ -1,28 +1,29 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
+import { clearCommonsImageCache } from './data/commonsImages'
 import { loadMusicalGroup } from './data/loadMusicalGroup'
 import { loadMusicalGroupOverview, isCachedOverviewUsable } from './data/loadMusicalGroupOverview'
-import { getCachedMusicalGroup } from './data/musicalGroupCache'
+import { clearMusicalGroupCache, getCachedMusicalGroup } from './data/musicalGroupCache'
 import type { MusicalGroupData, MusicalGroupOverviewData } from './data/types'
 import { normalizeQid } from './data/wikidataApi'
 import MusicalGroupChromeHeader from './MusicalGroupChromeHeader.vue'
 import MusicalGroupScreen from './MusicalGroupScreen.vue'
-import MusicalGroupSplash from './MusicalGroupSplash.vue'
+import MusicalGroupSearch from './MusicalGroupSearch.vue'
 import MusicalGroupTitleRow from './MusicalGroupTitleRow.vue'
 
-import { CdxToastContainer } from '@wikimedia/codex'
+import { CdxProgressBar, CdxToastContainer } from '@wikimedia/codex'
 
 definePage({
   meta: {
-    title: 'Musical group overview',
-    description:
-      'Mobile overview screen for Wikidata musical groups, powered by live entity + Commons data.',
+    title: 'Wikita',
+    description: 'Browse music groups within Wikita.',
   },
 })
 
 const route = useRoute()
+const router = useRouter()
 
 const itemId = computed(() => normalizeQid(route.query.item))
 const data = ref<MusicalGroupData | null>(null)
@@ -31,6 +32,7 @@ const loading = ref(false)
 const overviewLoading = ref(false)
 const fetchError = ref<string | null>(null)
 const validationFailed = ref(false)
+const searchOpen = ref(false)
 
 let fetchAbort: AbortController | null = null
 let overviewAbort: AbortController | null = null
@@ -127,27 +129,65 @@ watch(
   { immediate: true },
 )
 
-const showSplash = computed(() => !itemId.value || validationFailed.value)
+const showSearch = computed(() => !itemId.value || validationFailed.value || searchOpen.value)
 const showEntityChrome = computed(() => Boolean(itemId.value) && !validationFailed.value)
+
+function onToggleSearch() {
+  if (!itemId.value) return
+  searchOpen.value = !searchOpen.value
+}
+
+async function onNavigate(id: string) {
+  searchOpen.value = false
+  await router.replace({ query: { ...route.query, item: id } })
+}
+
+async function onResetStoredData() {
+  clearMusicalGroupCache()
+  clearCommonsImageCache()
+
+  fetchAbort?.abort()
+  overviewAbort?.abort()
+  data.value = null
+  overview.value = undefined
+  loading.value = false
+  overviewLoading.value = false
+  fetchError.value = null
+  validationFailed.value = false
+  searchOpen.value = false
+
+  const query = { ...route.query, item: undefined }
+  await router.replace({ query })
+}
 </script>
 
 <template>
   <div class="musical-group-shell">
     <CdxToastContainer />
     <div class="musical-group-page">
-      <MusicalGroupSplash v-if="showSplash" :error="fetchError" />
+      <MusicalGroupSearch
+        v-if="showSearch"
+        :error="fetchError"
+        @navigate="onNavigate"
+        @toggle-search="onToggleSearch"
+        @reset-stored-data="onResetStoredData"
+      />
 
       <template v-else>
         <div v-if="showEntityChrome" class="musical-group-chrome-stack">
-          <MusicalGroupChromeHeader />
+          <MusicalGroupChromeHeader
+            @toggle-search="onToggleSearch"
+            @reset-stored-data="onResetStoredData"
+          />
           <MusicalGroupTitleRow v-if="data" :data="data" />
         </div>
 
-        <div v-if="loading && !data" class="musical-group-page__loading">Loading…</div>
+        <div v-if="loading && !data" class="musical-group-page__loading">
+          <CdxProgressBar inline aria-label="Loading" />
+        </div>
 
         <div v-else-if="fetchError" class="musical-group-page__error">
           <p>{{ fetchError }}</p>
-          <MusicalGroupSplash />
         </div>
 
         <MusicalGroupScreen
@@ -203,7 +243,6 @@ const showEntityChrome = computed(() => Boolean(itemId.value) && !validationFail
 .musical-group-page__loading,
 .musical-group-page__error {
   padding: var(--spacing-250) var(--spacing-150);
-  color: var(--color-subtle);
 }
 
 .musical-group-page__error p {

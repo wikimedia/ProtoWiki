@@ -7,7 +7,6 @@ import type { MusicalGroupOverviewArticle } from './data/types'
 
 interface Props {
   article?: MusicalGroupOverviewArticle
-  loading?: boolean
   noArticle?: boolean
 }
 
@@ -23,11 +22,7 @@ defineProps<Props>()
       </div>
     </template>
 
-    <template v-if="loading" #meta>
-      <span class="overview-article-card__skeleton overview-article-card__skeleton--line" />
-      <span class="overview-article-card__skeleton overview-article-card__skeleton--line" />
-    </template>
-    <template v-else-if="article && !noArticle" #meta>
+    <template v-if="article && !noArticle" #meta>
       <span>English Wikipedia</span>
       <span v-if="article.wordCountLabel">{{ article.wordCountLabel }}</span>
     </template>
@@ -35,14 +30,11 @@ defineProps<Props>()
       <span>No English Wikipedia article</span>
     </template>
 
-    <template v-if="loading" #body>
-      <span class="overview-article-card__skeleton overview-article-card__skeleton--extract" />
-    </template>
-    <template v-else-if="article?.extractHtml && !noArticle" #body>
+    <template v-if="article?.extractHtml && !noArticle" #body>
       <div class="overview-article-card__extract" v-html="article.extractHtml" />
     </template>
 
-    <template v-if="article?.thumbnailUrl && !loading && !noArticle" #thumbnail>
+    <template v-if="article?.thumbnailUrl && !noArticle" #thumbnail>
       <img
         class="overview-summary-card__thumb"
         :src="article.thumbnailUrl"
@@ -52,11 +44,7 @@ defineProps<Props>()
       />
     </template>
 
-    <template v-if="loading" #footer>
-      <span class="overview-article-card__skeleton overview-article-card__skeleton--footer" />
-      <span class="overview-article-card__skeleton overview-article-card__skeleton--footer" />
-    </template>
-    <template v-else-if="article && !noArticle" #footer>
+    <template v-if="article && !noArticle" #footer>
       <span>{{ article.lastEditedLabel }}</span>
       <span v-if="article.viewsLabel !== '—'">{{ article.viewsLabel }}</span>
     </template>
@@ -77,18 +65,18 @@ defineProps<Props>()
 .overview-article-card__title {
   font-size: var(--font-size-medium);
   font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-small);
+  line-height: var(--line-height-medium);
 }
 
 .overview-article-card__extract {
   display: -webkit-box;
-  max-height: calc(var(--line-height-small) * 3);
+  max-height: calc(var(--line-height-medium) * 3);
   overflow: hidden;
   font-family:
     var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
-  font-size: var(--font-size-small);
+  font-size: var(--font-size-medium);
   font-weight: var(--font-weight-normal);
-  line-height: var(--line-height-small);
+  line-height: var(--line-height-medium);
   color: var(--color-base);
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
@@ -108,35 +96,5 @@ defineProps<Props>()
   color: var(--color-base);
   text-decoration: underline;
   cursor: default;
-}
-
-.overview-article-card__skeleton {
-  display: block;
-  border-radius: 4px;
-  background: linear-gradient(
-    90deg,
-    var(--background-color-interactive-subtle),
-    var(--background-color-base),
-    var(--background-color-interactive-subtle)
-  );
-}
-
-.overview-article-card__skeleton--line {
-  width: 140px;
-  height: 22px;
-}
-
-.overview-article-card__skeleton--line + .overview-article-card__skeleton--line {
-  width: 100px;
-}
-
-.overview-article-card__skeleton--extract {
-  width: 100%;
-  height: calc(var(--line-height-small) * 3);
-}
-
-.overview-article-card__skeleton--footer {
-  width: 120px;
-  height: 22px;
 }
 </style>

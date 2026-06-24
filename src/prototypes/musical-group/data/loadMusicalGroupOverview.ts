@@ -1,4 +1,4 @@
-import { getCommonsCategoryFiles } from './commonsImages'
+import { formatCommonsItemCountLabel, getCommonsCategoryCount } from './commonsImages'
 import { fetchMusicalGroupOverview } from './fetchMusicalGroupOverview'
 import {
   getCachedMusicalGroup,
@@ -23,8 +23,20 @@ async function resolveCommonsImageCount(
 
   if (!data.commonsCategory) return {}
 
-  const membership = await getCommonsCategoryFiles(data.commonsCategory, signal)
-  return { count: membership.totalCount, capped: membership.capped }
+  const { count, hasSubcats } = await getCommonsCategoryCount(data.commonsCategory, signal)
+  return { count, capped: hasSubcats }
+}
+
+function buildPhotosOverview(
+  data: MusicalGroupData,
+  count?: number,
+  capped?: boolean,
+): MusicalGroupOverviewData['photos'] | undefined {
+  if (count === undefined || !data.commonsCategory) return undefined
+  return {
+    itemCount: count,
+    itemCountLabel: formatCommonsItemCountLabel(count, capped),
+  }
 }
 
 export function isCachedOverviewUsable(overview: MusicalGroupOverviewData): boolean {
@@ -46,18 +58,20 @@ export async function loadMusicalGroupOverview(
   }
 
   const { signal } = options
-  const { count, capped } = await resolveCommonsImageCount(
-    data,
-    cached?.commonsImageCount,
-    cached?.commonsImageCountCapped,
-    signal,
-  )
 
-  const overview = await fetchMusicalGroupOverview(data, {
-    signal,
-    commonsImageCount: count,
-    commonsImageCountCapped: capped,
-  })
+  // The article content and the photo count are independent — run them in
+  // parallel and never let the (best-effort) count block or break the article.
+  const [overview, countResult] = await Promise.all([
+    fetchMusicalGroupOverview(data, { signal }),
+    resolveCommonsImageCount(
+      data,
+      cached?.commonsImageCount,
+      cached?.commonsImageCountCapped,
+      signal,
+    ).catch(() => ({}) as { count?: number; capped?: boolean }),
+  ])
+
+  overview.photos = buildPhotosOverview(data, countResult.count, countResult.capped)
 
   setCachedMusicalGroupOverview(id, overview)
   return { overview, fromCache: false }

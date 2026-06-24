@@ -4,7 +4,6 @@ import type { FetchMusicalGroupOptions, FetchMusicalGroupResult } from './types'
 import {
   fetchEditIndicator,
   fetchEntityClaims,
-  isMusicalGroup,
   resolveEntityLabels,
   resolveMusicalTypeLabel,
   websiteHost,
@@ -16,24 +15,27 @@ export async function fetchMusicalGroup(
 ): Promise<FetchMusicalGroupResult> {
   const { signal } = options
 
-  const valid = await isMusicalGroup(id, signal)
-  if (!valid) {
-    throw new Error('Not a musical group')
-  }
-
   const claims = await fetchEntityClaims(id, signal)
 
+  // `resolveMusicalTypeLabel` doubles as validation: a successful query with no
+  // musical-group subclass means this entity is not a musical group. A network
+  // failure throws instead, so it surfaces as a load error rather than a
+  // "not a musical group" rejection.
   const [typeLabel, labelMap, editIndicator, carouselResult] = await Promise.all([
     resolveMusicalTypeLabel(id, claims.typeIds, signal),
-    resolveEntityLabels(claims.genreIds, signal),
+    resolveEntityLabels(claims.genreIds, signal).catch(() => new Map<string, string>()),
     fetchEditIndicator(id, signal).catch(() => undefined),
     fetchCarouselImages({
       label: claims.label,
       imageFilename: claims.imageFilename,
       commonsCategory: claims.commonsCategory,
       signal,
-    }).catch(() => ({ images: [], totalCount: undefined, itemCountCapped: false })),
+    }).catch(() => ({ images: [] })),
   ])
+
+  if (!typeLabel) {
+    throw new Error('Not a musical group')
+  }
 
   const genres = claims.genreIds
     .map((genreId) => labelMap.get(genreId))
@@ -44,7 +46,7 @@ export async function fetchMusicalGroup(
       id,
       label: claims.label,
       description: claims.description,
-      typeLabel: typeLabel ? sentenceCase(typeLabel) : undefined,
+      typeLabel: sentenceCase(typeLabel),
       inceptionYear: claims.inceptionYear,
       genres,
       websiteUrl: claims.websiteUrl,
@@ -54,7 +56,5 @@ export async function fetchMusicalGroup(
       enwikiTitle: claims.enwikiTitle,
       commonsCategory: claims.commonsCategory,
     },
-    commonsImageCount: carouselResult.totalCount,
-    commonsImageCountCapped: carouselResult.itemCountCapped,
   }
 }

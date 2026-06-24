@@ -1,14 +1,17 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 
-import { formatCommonsItemCountLabel } from './commonsImages'
-import type { MusicalGroupData, MusicalGroupOverviewData } from './types'
+import { fetchWithTimeout } from './fetchWithTimeout'
+import type {
+  MusicalGroupData,
+  MusicalGroupInfobox,
+  MusicalGroupInfoboxValue,
+  MusicalGroupOverviewData,
+} from './types'
 
 const EN_WIKI_HOST = 'en.wikipedia.org'
 
 export interface FetchMusicalGroupOverviewOptions {
   signal?: AbortSignal
-  commonsImageCount?: number
-  commonsImageCountCapped?: boolean
 }
 
 interface PageSummaryResponse {
@@ -102,12 +105,93 @@ function wikiActionUrl(params: Record<string, string>): string {
 
 async function fetchPageSummary(title: string, signal?: AbortSignal): Promise<PageSummaryResponse | null> {
   const slug = encodeURIComponent(title.replace(/ /g, '_'))
-  const response = await fetch(`https://${EN_WIKI_HOST}/api/rest_v1/page/summary/${slug}`, {
+  const response = await fetchWithTimeout(`https://${EN_WIKI_HOST}/api/rest_v1/page/summary/${slug}`, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-page-summary'),
   })
   if (!response.ok) return null
   return (await response.json()) as PageSummaryResponse
+}
+
+function collapseWhitespace(text: string): string {
+  return text.replace(/\s+/g, ' ').trim()
+}
+
+function externalHref(scope: Element): string | undefined {
+  const anchors = Array.from(scope.querySelectorAll('a'))
+  for (const anchor of anchors) {
+    const href = anchor.getAttribute('href') ?? ''
+    if (!href) continue
+    if (anchor.classList.contains('external') || /^https?:\/\//i.test(href)) {
+      return href.startsWith('//') ? `https:${href}` : href
+    }
+  }
+  return undefined
+}
+
+function toValue(scope: Element): MusicalGroupInfoboxValue | null {
+  const text = collapseWhitespace(scope.textContent ?? '')
+  if (!text) return null
+  const href = externalHref(scope)
+  return href ? { text, href } : { text }
+}
+
+function cellValues(cell: Element): MusicalGroupInfoboxValue[] {
+  const clone = cell.cloneNode(true) as Element
+  clone.querySelectorAll('style, sup.reference, .mw-editsection').forEach((node) => node.remove())
+
+  const listItems = Array.from(clone.querySelectorAll('li'))
+  if (listItems.length) {
+    return listItems
+      .map((item) => toValue(item))
+      .filter((value): value is MusicalGroupInfoboxValue => value !== null)
+  }
+
+  const single = toValue(clone)
+  return single ? [single] : []
+}
+
+async function fetchInfobox(title: string, signal?: AbortSignal): Promise<MusicalGroupInfobox | undefined> {
+  const url = wikiActionUrl({
+    action: 'parse',
+    page: title,
+    prop: 'text',
+    section: '0',
+    disablelimitreport: '1',
+    disableeditsection: '1',
+  })
+
+  const response = await fetchWithTimeout(url, {
+    signal,
+    headers: wikimediaApiFetchHeaders('musical-group-infobox'),
+  })
+  if (!response.ok) return undefined
+
+  const json = (await response.json()) as { parse?: { text?: { '*'?: string } } }
+  const html = json.parse?.text?.['*']
+  if (!html) return undefined
+
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+  const infobox = doc.querySelector('table.infobox')
+  if (!infobox) return undefined
+
+  const rows: MusicalGroupInfobox['rows'] = []
+  for (const row of Array.from(infobox.querySelectorAll('tr'))) {
+    const labelCell = row.querySelector('.infobox-label')
+    const dataCell = row.querySelector('.infobox-data')
+    if (!labelCell || !dataCell) continue
+
+    const label = collapseWhitespace(labelCell.textContent ?? '')
+    if (!label) continue
+
+    const values = cellValues(dataCell)
+    if (!values.length) continue
+
+    rows.push({ label, values })
+  }
+
+  if (!rows.length) return undefined
+  return { rows }
 }
 
 async function fetchArticleWordCount(title: string, signal?: AbortSignal): Promise<number | undefined> {
@@ -119,7 +203,7 @@ async function fetchArticleWordCount(title: string, signal?: AbortSignal): Promi
     srlimit: '5',
   })
 
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-wordcount'),
   })
@@ -161,7 +245,7 @@ async function fetchArticlePageviews(
   })
 
   try {
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       signal,
       headers: wikimediaApiFetchHeaders('musical-group-pageviews'),
     })
@@ -232,41 +316,28 @@ async function resolvePageviewsLabel(
   return { total: 0, label: '—' }
 }
 
-function buildPhotosOverview(
-  data: MusicalGroupData,
-  commonsImageCount?: number,
-  commonsImageCountCapped?: boolean,
-): MusicalGroupOverviewData['photos'] | undefined {
-  if (commonsImageCount === undefined || !data.commonsCategory) return undefined
-  return {
-    itemCount: commonsImageCount,
-    itemCountLabel: formatCommonsItemCountLabel(commonsImageCount, commonsImageCountCapped),
-  }
-}
-
 export async function fetchMusicalGroupOverview(
   data: MusicalGroupData,
   options: FetchMusicalGroupOverviewOptions = {},
 ): Promise<MusicalGroupOverviewData> {
-  const { signal, commonsImageCount, commonsImageCountCapped } = options
+  const { signal } = options
   const fetchedAt = Date.now()
 
-  const photos = buildPhotosOverview(data, commonsImageCount, commonsImageCountCapped)
-
   if (!data.enwikiTitle) {
-    return { noEnglishArticle: true, photos, fetchedAt }
+    return { noEnglishArticle: true, fetchedAt }
   }
 
   const title = data.enwikiTitle
 
-  const [summary, wordCount, views] = await Promise.all([
+  const [summary, wordCount, views, infobox] = await Promise.all([
     fetchPageSummary(title, signal),
     fetchArticleWordCount(title, signal),
     resolvePageviewsLabel(title, signal),
+    fetchInfobox(title, signal).catch(() => undefined),
   ])
 
   if (!summary) {
-    return { noEnglishArticle: true, photos, fetchedAt }
+    return { noEnglishArticle: true, infobox, fetchedAt }
   }
 
   const extractHtml = deadLinkExtractHtml(summary.extract_html ?? '')
@@ -274,7 +345,7 @@ export async function fetchMusicalGroupOverview(
   const relative = timestamp ? formatRelativeTime(timestamp) : '—'
 
   return {
-    photos,
+    infobox,
     article: {
       title: summary.title ?? title,
       extractHtml,

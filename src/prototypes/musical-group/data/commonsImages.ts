@@ -1,67 +1,49 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 
-import type { CarouselImage, CarouselImageOrientation } from './types'
+import { fetchWithTimeout } from './fetchWithTimeout'
+import type { CarouselImage } from './types'
 
 const COMMONS_API = 'https://commons.wikimedia.org/w/api.php'
 const THUMB_WIDTH = 800
-const DEEPCAT_PAGE_SIZE = 500
-const CATEGORY_PAGE_SIZE = 500
-const MAX_CATEGORY_FILES = 10_000
+const MAX_CAROUSEL_IMAGES = 5
+const SEARCH_LIMIT = 20
+/** How many candidate titles to resolve image details for in one request. */
+const CANDIDATE_LIMIT = 30
 
-export interface CommonsCategoryFiles {
-  ordered: string[]
-  totalCount: number
-  capped: boolean
+export interface CommonsCategoryCount {
+  /** Number of files directly in the category. */
+  count: number
+  /** Category has subcategories, so the direct count is a lower bound. */
+  hasSubcats: boolean
 }
 
-interface ImageDetails {
+interface CommonsImage {
+  title: string
   url: string
   width: number
   height: number
 }
 
-interface CategoryBfsOptions {
-  maxDepth?: number
-  maxCategories?: number
-  signal?: AbortSignal
-}
+const countInFlight = new Map<string, Promise<CommonsCategoryCount>>()
+const countResolved = new Map<string, CommonsCategoryCount>()
 
-const categoryInFlight = new Map<string, Promise<CommonsCategoryFiles>>()
-const categoryResolved = new Map<string, CommonsCategoryFiles>()
+export function clearCommonsImageCache(): void {
+  countInFlight.clear()
+  countResolved.clear()
+}
 
 function normalizeCategoryKey(name: string): string {
   return name.replace(/^Category:/i, '').trim().toLowerCase()
 }
 
+/**
+ * Canonical `File:` title. MediaWiki treats spaces and underscores as
+ * equivalent, so normalise underscores to spaces for reliable dedup + lookup
+ * (e.g. matching a Wikidata P18 value against an API response title).
+ */
 function normalizeFileTitle(title: string): string {
-  const trimmed = title.trim()
-  if (trimmed.startsWith('File:')) return trimmed
-  return `File:${trimmed.replace(/^File:/i, '')}`
-}
-
-function stripFilePrefix(title: string): string {
-  return title.replace(/^File:/i, '')
-}
-
-function classifyOrientation(width: number, height: number): CarouselImageOrientation {
-  if (width <= 0 || height <= 0) return 'landscape'
-  const ratio = width / height
-  if (ratio >= 1.25) return 'landscape'
-  if (ratio >= 0.95 && ratio <= 1.05) return 'square'
-  if (ratio >= 0.55) return 'portrait'
-  return 'tall'
-}
-
-function mergeContinueParams(
-  base: Record<string, string>,
-  continueBlock: Record<string, unknown> | undefined,
-): Record<string, string> {
-  if (!continueBlock) return base
-  const merged = { ...base }
-  for (const [key, value] of Object.entries(continueBlock)) {
-    if (typeof value === 'string') merged[key] = value
-  }
-  return merged
+  const withoutPrefix = title.trim().replace(/^File:/i, '').replace(/_/g, ' ').trim()
+  return `File:${withoutPrefix}`
 }
 
 async function commonsGet(params: Record<string, string>, signal?: AbortSignal): Promise<unknown> {
@@ -72,7 +54,7 @@ async function commonsGet(params: Record<string, string>, signal?: AbortSignal):
     url.searchParams.set(key, value)
   }
 
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-commons'),
   })
@@ -82,9 +64,26 @@ async function commonsGet(params: Record<string, string>, signal?: AbortSignal):
   return response.json()
 }
 
-async function fetchImageDetails(titles: string[], signal?: AbortSignal): Promise<Map<string, ImageDetails>> {
-  const map = new Map<string, ImageDetails>()
-  if (titles.length === 0) return map
+interface ImageInfoPage {
+  title?: string
+  imageinfo?: Array<{ thumburl?: string; url?: string; thumbwidth?: number; thumbheight?: number }>
+}
+
+function imageFromPage(page: ImageInfoPage): CommonsImage | null {
+  const info = page.imageinfo?.[0]
+  const url = info?.thumburl ?? info?.url
+  if (!page.title || !url) return null
+  return {
+    title: normalizeFileTitle(page.title),
+    url,
+    width: info?.thumbwidth ?? 0,
+    height: info?.thumbheight ?? 0,
+  }
+}
+
+/** Resolve url + size for a list of file titles, preserving the requested order. */
+async function fetchImageDetails(titles: string[], signal?: AbortSignal): Promise<CommonsImage[]> {
+  if (titles.length === 0) return []
 
   const data = (await commonsGet(
     {
@@ -95,281 +94,109 @@ async function fetchImageDetails(titles: string[], signal?: AbortSignal): Promis
       iiurlwidth: String(THUMB_WIDTH),
     },
     signal,
-  )) as {
-    query?: {
-      pages?: Record<
-        string,
-        {
-          title?: string
-          imageinfo?: Array<{ thumburl?: string; url?: string; thumbwidth?: number; thumbheight?: number }>
-        }
-      >
-    }
-  }
+  )) as { query?: { pages?: Record<string, ImageInfoPage> } }
 
+  const byTitle = new Map<string, CommonsImage>()
   for (const page of Object.values(data.query?.pages ?? {})) {
-    const info = page.imageinfo?.[0]
-    const url = info?.thumburl ?? info?.url
-    if (!page.title || !url) continue
-    map.set(normalizeFileTitle(page.title), {
-      url,
-      width: info?.thumbwidth ?? 0,
-      height: info?.thumbheight ?? 0,
-    })
+    const image = imageFromPage(page)
+    if (image) byTitle.set(image.title, image)
   }
 
-  return map
+  return titles
+    .map((title) => byTitle.get(normalizeFileTitle(title)))
+    .filter((image): image is CommonsImage => Boolean(image))
 }
 
+/** Relevance-ordered file-title search across Commons. */
 async function searchCommonsFiles(query: string, signal?: AbortSignal): Promise<string[]> {
+  if (!query.trim()) return []
+
   const data = (await commonsGet(
     {
       action: 'query',
       generator: 'search',
       gsrnamespace: '6',
       gsrsearch: query,
-      gsrlimit: '50',
+      gsrlimit: String(SEARCH_LIMIT),
+      gsrsort: 'relevance',
       prop: 'info',
     },
     signal,
-  )) as {
-    query?: {
-      pages?: Record<string, { title?: string }>
-    }
-  }
+  )) as { query?: { pages?: Record<string, { title?: string; index?: number }> } }
 
+  // The search generator returns pages keyed arbitrarily; `index` preserves the
+  // relevance ranking.
   return Object.values(data.query?.pages ?? {})
+    .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
     .map((page) => page.title)
     .filter((title): title is string => Boolean(title))
     .map(normalizeFileTitle)
 }
 
-function addFileTitle(
-  ordered: string[],
-  seen: Set<string>,
-  title: string,
-): boolean {
-  const norm = normalizeFileTitle(title)
-  if (seen.has(norm)) return false
-  seen.add(norm)
-  ordered.push(norm)
-  return true
-}
-
-/** Paginated deepcat file search — recursive category membership. */
-async function enumerateDeepcatFiles(
+/** Direct file members of a category (alphabetical) — a last-resort backfill. */
+async function fetchCategoryMemberTitles(
   categoryName: string,
-  ordered: string[],
-  seen: Set<string>,
   signal?: AbortSignal,
-): Promise<{ capped: boolean }> {
-  const escaped = categoryName.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
-  let continueBlock: Record<string, unknown> | undefined
-  let capped = false
+): Promise<string[]> {
+  const data = (await commonsGet(
+    {
+      action: 'query',
+      list: 'categorymembers',
+      cmtitle: `Category:${categoryName}`,
+      cmtype: 'file',
+      cmlimit: String(CANDIDATE_LIMIT),
+    },
+    signal,
+  )) as { query?: { categorymembers?: Array<{ title?: string }> } }
 
-  do {
-    const params = mergeContinueParams(
-      {
-        action: 'query',
-        generator: 'search',
-        gsrnamespace: '6',
-        gsrsearch: `deepcat:"${escaped}"`,
-        gsrlimit: String(DEEPCAT_PAGE_SIZE),
-        prop: 'info',
-      },
-      continueBlock,
-    )
-
-    const data = (await commonsGet(params, signal)) as {
-      query?: { pages?: Record<string, { title?: string }> }
-      continue?: Record<string, unknown>
-    }
-
-    for (const page of Object.values(data.query?.pages ?? {})) {
-      if (!page.title) continue
-      addFileTitle(ordered, seen, page.title)
-      if (seen.size >= MAX_CATEGORY_FILES) {
-        capped = true
-        return { capped }
-      }
-    }
-
-    continueBlock = data.continue
-  } while (continueBlock)
-
-  return { capped }
-}
-
-async function fetchDirectCategoryFilesPage(
-  categoryName: string,
-  continueToken: string | undefined,
-  signal?: AbortSignal,
-): Promise<{ titles: string[]; nextContinue?: string }> {
-  const params: Record<string, string> = {
-    action: 'query',
-    list: 'categorymembers',
-    cmtitle: `Category:${categoryName}`,
-    cmtype: 'file',
-    cmlimit: String(CATEGORY_PAGE_SIZE),
-  }
-  if (continueToken) params.cmcontinue = continueToken
-
-  const data = (await commonsGet(params, signal)) as {
-    query?: { categorymembers?: Array<{ title?: string }> }
-    continue?: { cmcontinue?: string }
-  }
-
-  const titles = (data.query?.categorymembers ?? [])
+  return (data.query?.categorymembers ?? [])
     .map((member) => member.title)
     .filter((title): title is string => Boolean(title))
     .map(normalizeFileTitle)
-
-  return { titles, nextContinue: data.continue?.cmcontinue }
 }
 
-async function fetchSubcategoryTitlesPage(
-  categoryName: string,
-  continueToken: string | undefined,
-  signal?: AbortSignal,
-): Promise<{ titles: string[]; nextContinue?: string }> {
-  const params: Record<string, string> = {
-    action: 'query',
-    list: 'categorymembers',
-    cmtitle: `Category:${categoryName}`,
-    cmtype: 'subcat',
-    cmlimit: String(CATEGORY_PAGE_SIZE),
-  }
-  if (continueToken) params.cmcontinue = continueToken
-
-  const data = (await commonsGet(params, signal)) as {
-    query?: { categorymembers?: Array<{ title?: string }> }
-    continue?: { cmcontinue?: string }
-  }
-
-  const titles = (data.query?.categorymembers ?? [])
-    .map((member) => member.title?.replace(/^Category:/i, '') ?? '')
-    .filter(Boolean)
-
-  return { titles, nextContinue: data.continue?.cmcontinue }
-}
-
-async function enumerateCategoryFilesPaginated(
-  categoryName: string,
-  ordered: string[],
-  seen: Set<string>,
-  signal?: AbortSignal,
-): Promise<{ capped: boolean }> {
-  let cmcontinue: string | undefined
-  let capped = false
-
-  do {
-    const page = await fetchDirectCategoryFilesPage(categoryName, cmcontinue, signal)
-    for (const title of page.titles) {
-      addFileTitle(ordered, seen, title)
-      if (seen.size >= MAX_CATEGORY_FILES) {
-        capped = true
-        return { capped }
-      }
-    }
-    cmcontinue = page.nextContinue
-  } while (cmcontinue)
-
-  return { capped }
-}
-
-/** Walk nested subcategories and collect file titles (deduped, breadth-first). */
-async function fetchCategoryFilesBfs(
-  rootCategoryName: string,
-  ordered: string[],
-  seen: Set<string>,
-  options: CategoryBfsOptions = {},
-): Promise<{ capped: boolean }> {
-  const { maxDepth = 5, maxCategories = 200, signal } = options
-  const seenCategories = new Set<string>()
-  let capped = false
-
-  type QueueItem = { name: string; depth: number }
-  const queue: QueueItem[] = [{ name: rootCategoryName, depth: 0 }]
-
-  while (queue.length > 0 && seenCategories.size < maxCategories) {
-    const item = queue.shift()
-    if (!item) break
-
-    const key = item.name.toLowerCase()
-    if (seenCategories.has(key)) continue
-    seenCategories.add(key)
-
-    const direct = await enumerateCategoryFilesPaginated(item.name, ordered, seen, signal)
-    if (direct.capped) return { capped: true }
-
-    if (seen.size >= MAX_CATEGORY_FILES) {
-      capped = true
-      return { capped }
-    }
-
-    if (item.depth < maxDepth) {
-      let subContinue: string | undefined
-      do {
-        const subPage = await fetchSubcategoryTitlesPage(item.name, subContinue, signal)
-        for (const sub of subPage.titles) {
-          queue.push({ name: sub, depth: item.depth + 1 })
-        }
-        subContinue = subPage.nextContinue
-      } while (subContinue)
-    }
-  }
-
-  return { capped }
-}
-
-async function resolveCommonsCategoryFiles(
+async function resolveCommonsCategoryCount(
   categoryName: string,
   signal?: AbortSignal,
-): Promise<CommonsCategoryFiles> {
-  const ordered: string[] = []
-  const seen = new Set<string>()
-  let capped = false
+): Promise<CommonsCategoryCount> {
+  const data = (await commonsGet(
+    {
+      action: 'query',
+      prop: 'categoryinfo',
+      titles: `Category:${categoryName}`,
+    },
+    signal,
+  )) as { query?: { pages?: Record<string, { categoryinfo?: { files?: number; subcats?: number } }> } }
 
-  try {
-    const deepcat = await enumerateDeepcatFiles(categoryName, ordered, seen, signal)
-    capped = deepcat.capped
-  } catch {
-    // fall through to BFS
-  }
-
-  if (ordered.length === 0) {
-    const bfs = await fetchCategoryFilesBfs(categoryName, ordered, seen, { signal })
-    capped = bfs.capped
-  }
-
-  await enumerateCategoryFilesPaginated(categoryName, ordered, seen, signal)
-
+  const page = Object.values(data.query?.pages ?? {})[0]
+  const info = page?.categoryinfo
   return {
-    ordered,
-    totalCount: seen.size,
-    capped,
+    count: info?.files ?? 0,
+    hasSubcats: (info?.subcats ?? 0) > 0,
   }
 }
 
-export function getCommonsCategoryFiles(
+/** Memoized, fault-tolerant direct file count for a Commons category. */
+export function getCommonsCategoryCount(
   categoryName: string,
   signal?: AbortSignal,
-): Promise<CommonsCategoryFiles> {
+): Promise<CommonsCategoryCount> {
   const key = normalizeCategoryKey(categoryName)
-  const cached = categoryResolved.get(key)
+  const cached = countResolved.get(key)
   if (cached) return Promise.resolve(cached)
 
-  let pending = categoryInFlight.get(key)
+  let pending = countInFlight.get(key)
   if (!pending) {
-    pending = resolveCommonsCategoryFiles(categoryName, signal)
+    pending = resolveCommonsCategoryCount(categoryName, signal)
       .then((result) => {
-        categoryResolved.set(key, result)
+        countResolved.set(key, result)
         return result
       })
+      .catch(() => ({ count: 0, hasSubcats: false }))
       .finally(() => {
-        categoryInFlight.delete(key)
+        countInFlight.delete(key)
       })
-    categoryInFlight.set(key, pending)
+    countInFlight.set(key, pending)
   }
 
   return pending
@@ -384,53 +211,6 @@ export function formatCommonsItemCountLabel(count: number, capped = false): stri
   return formatItemCount(count, capped)
 }
 
-/**
- * Pick carousel images: P18 first, then highest-relevance titles while
- * preferring one of each orientation from the earliest (most relevant) match.
- */
-function selectCarouselImages(
-  relevanceOrderedTitles: string[],
-  detailsMap: Map<string, ImageDetails>,
-  maxImages: number,
-): CarouselImage[] {
-  const candidates: CarouselImage[] = []
-  for (const title of relevanceOrderedTitles) {
-    const details = detailsMap.get(normalizeFileTitle(title))
-    if (!details) continue
-    candidates.push({
-      url: details.url,
-      orientation: classifyOrientation(details.width, details.height),
-    })
-  }
-
-  if (candidates.length === 0) return []
-  if (candidates.length <= maxImages) return candidates
-
-  const selected: CarouselImage[] = []
-  const usedIndices = new Set<number>()
-
-  selected.push(candidates[0])
-  usedIndices.add(0)
-
-  const orientations: CarouselImageOrientation[] = ['landscape', 'square', 'portrait', 'tall']
-  for (const orientation of orientations) {
-    if (selected.length >= maxImages) break
-    const idx = candidates.findIndex((c, i) => !usedIndices.has(i) && c.orientation === orientation)
-    if (idx >= 0) {
-      selected.push(candidates[idx])
-      usedIndices.add(idx)
-    }
-  }
-
-  for (let i = 0; i < candidates.length && selected.length < maxImages; i++) {
-    if (usedIndices.has(i)) continue
-    selected.push(candidates[i])
-    usedIndices.add(i)
-  }
-
-  return selected
-}
-
 export interface FetchCarouselImagesOptions {
   imageFilename: string | null
   commonsCategory: string | null
@@ -440,8 +220,29 @@ export interface FetchCarouselImagesOptions {
 
 export interface FetchCarouselImagesResult {
   images: CarouselImage[]
-  totalCount?: number
-  itemCountCapped?: boolean
+}
+
+function selectCarouselImages(candidates: CommonsImage[]): CarouselImage[] {
+  const images: CarouselImage[] = []
+  const seen = new Set<string>()
+
+  for (const candidate of candidates) {
+    if (images.length >= MAX_CAROUSEL_IMAGES) break
+    if (candidate.width <= 0 || candidate.height <= 0) continue
+    if (seen.has(candidate.title)) continue
+    seen.add(candidate.title)
+    images.push({
+      url: candidate.url,
+      width: candidate.width,
+      height: candidate.height,
+    })
+  }
+
+  return images
+}
+
+function escapeSearchTerm(value: string): string {
+  return value.replace(/"/g, '')
 }
 
 export async function fetchCarouselImages({
@@ -450,52 +251,55 @@ export async function fetchCarouselImages({
   label,
   signal,
 }: FetchCarouselImagesOptions): Promise<FetchCarouselImagesResult> {
+  const orderedTitles: string[] = []
   const seen = new Set<string>()
-  const relevanceOrder: string[] = []
 
-  function queueTitle(title: string | null | undefined) {
+  function queue(title: string | null | undefined) {
     if (!title) return
     const normalized = normalizeFileTitle(title)
     if (seen.has(normalized)) return
     seen.add(normalized)
-    relevanceOrder.push(normalized)
+    orderedTitles.push(normalized)
   }
 
-  queueTitle(imageFilename ? stripFilePrefix(imageFilename) : null)
+  // The Wikidata image (P18) is always the first, most representative slide.
+  queue(imageFilename)
 
-  let totalCount: number | undefined
-  let itemCountCapped = false
+  const category = commonsCategory?.trim() ?? ''
+  const labelQuery = label.trim()
 
-  if (commonsCategory) {
-    const membership = await getCommonsCategoryFiles(commonsCategory, signal)
-    totalCount = membership.totalCount
-    itemCountCapped = membership.capped
+  // We want enough candidates that ~5 reliably resolve to valid images.
+  const enough = () => orderedTitles.length >= MAX_CAROUSEL_IMAGES + 1
 
-    if (label.trim()) {
-      const labelHits = await searchCommonsFiles(label, signal)
-      for (const title of labelHits) {
-        if (membership.ordered.some((t) => normalizeFileTitle(t) === normalizeFileTitle(title))) {
-          queueTitle(title)
-        }
-      }
+  if (labelQuery) {
+    // Relevance-ranked AND scoped to the group's category — the most relevant.
+    if (category) {
+      const inCategory = await searchCommonsFiles(
+        `${labelQuery} incategory:"${escapeSearchTerm(category)}"`,
+        signal,
+      ).catch(() => [] as string[])
+      inCategory.forEach(queue)
     }
 
-    for (const title of membership.ordered) {
-      queueTitle(title)
-    }
-  } else if (label.trim()) {
-    const labelHits = await searchCommonsFiles(label, signal)
-    for (const title of labelHits) {
-      queueTitle(title)
+    // Relevance-ranked across all of Commons — also catches images nested in
+    // subcategories. Used when the in-category search is sparse.
+    if (!enough()) {
+      const relevant = await searchCommonsFiles(labelQuery, signal).catch(() => [] as string[])
+      relevant.forEach(queue)
     }
   }
 
-  if (relevanceOrder.length === 0) {
-    return { images: [], totalCount, itemCountCapped }
+  // Last resort: plain category members (alphabetical) so we still show photos.
+  if (category && !enough()) {
+    const members = await fetchCategoryMemberTitles(category, signal).catch(() => [] as string[])
+    members.forEach(queue)
   }
 
-  const detailsMap = await fetchImageDetails(relevanceOrder.slice(0, 30), signal)
-  const images = selectCarouselImages(relevanceOrder, detailsMap, 5)
+  const details = await fetchImageDetails(orderedTitles.slice(0, CANDIDATE_LIMIT), signal).catch(
+    () => [] as CommonsImage[],
+  )
 
-  return { images, totalCount, itemCountCapped }
+  return {
+    images: selectCarouselImages(details),
+  }
 }

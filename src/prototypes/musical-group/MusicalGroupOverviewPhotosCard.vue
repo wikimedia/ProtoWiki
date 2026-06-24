@@ -11,7 +11,6 @@ import type { CarouselImage, MusicalGroupOverviewPhotos } from './data/types'
 interface Props {
   photos?: MusicalGroupOverviewPhotos
   carouselImages: CarouselImage[]
-  loading?: boolean
 }
 
 const props = defineProps<Props>()
@@ -30,8 +29,7 @@ const thumbnailUrl = computed(() => offScreenCarouselThumbnailUrl(props.carousel
 
     <template #meta>
       <span>Wikimedia commons</span>
-      <span v-if="loading" class="overview-photos-card__skeleton" />
-      <span v-else-if="photos?.itemCountLabel">{{ photos.itemCountLabel }}</span>
+      <span v-if="photos?.itemCountLabel">{{ photos.itemCountLabel }}</span>
     </template>
 
     <template v-if="thumbnailUrl" #thumbnail>
@@ -60,19 +58,6 @@ const thumbnailUrl = computed(() => offScreenCarouselThumbnailUrl(props.carousel
 .overview-photos-card__title {
   font-size: var(--font-size-medium);
   font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-small);
-}
-
-.overview-photos-card__skeleton {
-  display: block;
-  width: 72px;
-  height: 22px;
-  border-radius: 4px;
-  background: linear-gradient(
-    90deg,
-    var(--background-color-interactive-subtle),
-    var(--background-color-base),
-    var(--background-color-interactive-subtle)
-  );
+  line-height: var(--line-height-medium);
 }
 </style>

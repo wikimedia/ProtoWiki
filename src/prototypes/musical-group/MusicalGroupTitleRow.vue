@@ -5,6 +5,7 @@ import { CdxIcon } from '@wikimedia/codex'
 import { cdxIconEdit, cdxIconHistory, cdxIconSpeechBubble } from '@wikimedia/codex-icons'
 
 import BookmarkIcon from './BookmarkIcon.vue'
+import MusicalGroupTitleBar from './MusicalGroupTitleBar.vue'
 import { isBookmarked, toggleBookmark } from './data/bookmarks'
 import type { EditIndicator, MusicalGroupData } from './data/types'
 import {
@@ -43,102 +44,52 @@ function showDot(target: EditIndicator): boolean {
 </script>
 
 <template>
-  <div class="musical-group-title-row">
-    <div class="musical-group-title-row__inner">
-      <div class="musical-group-title-row__lead">
-        <button
-          type="button"
-          class="musical-group-title-row__icon-btn"
-          aria-label="Bookmark"
-          @click="onBookmarkClick"
-        >
-          <BookmarkIcon :filled="bookmarked" />
-        </button>
-        <h1 class="musical-group-title-row__title">{{ data.label }}</h1>
-      </div>
+  <MusicalGroupTitleBar :title="data.label">
+    <template #lead>
+      <button
+        type="button"
+        class="musical-group-title-row__icon-btn"
+        aria-label="Bookmark"
+        @click="onBookmarkClick"
+      >
+        <BookmarkIcon :filled="bookmarked" />
+      </button>
+    </template>
 
-      <div class="musical-group-title-row__actions">
-        <button
-          type="button"
-          class="musical-group-title-row__icon-btn"
-          aria-label="History"
-          @click="onHistoryClick"
-        >
-          <CdxIcon :icon="cdxIconHistory" />
-          <span v-if="showDot('history')" class="musical-group-title-row__dot" aria-hidden="true" />
-        </button>
+    <template #actions>
+      <button
+        type="button"
+        class="musical-group-title-row__icon-btn"
+        aria-label="History"
+        @click="onHistoryClick"
+      >
+        <CdxIcon :icon="cdxIconHistory" />
+        <span v-if="showDot('history')" class="musical-group-title-row__dot" aria-hidden="true" />
+      </button>
 
-        <button
-          type="button"
-          class="musical-group-title-row__icon-btn"
-          aria-label="Talk"
-          @click="onTalkClick"
-        >
-          <CdxIcon :icon="cdxIconSpeechBubble" />
-          <span v-if="showDot('talk')" class="musical-group-title-row__dot" aria-hidden="true" />
-        </button>
+      <button
+        type="button"
+        class="musical-group-title-row__icon-btn"
+        aria-label="Talk"
+        @click="onTalkClick"
+      >
+        <CdxIcon :icon="cdxIconSpeechBubble" />
+        <span v-if="showDot('talk')" class="musical-group-title-row__dot" aria-hidden="true" />
+      </button>
 
-        <button
-          type="button"
-          class="musical-group-title-row__icon-btn"
-          aria-label="Edit"
-          @click="onEditClick"
-        >
-          <CdxIcon :icon="cdxIconEdit" />
-        </button>
-      </div>
-    </div>
-  </div>
+      <button
+        type="button"
+        class="musical-group-title-row__icon-btn"
+        aria-label="Edit"
+        @click="onEditClick"
+      >
+        <CdxIcon :icon="cdxIconEdit" />
+      </button>
+    </template>
+  </MusicalGroupTitleBar>
 </template>
 
 <style scoped>
-.musical-group-title-row {
-  position: relative;
-  padding-inline: var(--spacing-50);
-  background-color: var(--background-color-base);
-}
-
-.musical-group-title-row::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: var(--spacing-50);
-  right: var(--spacing-50);
-  height: 1px;
-  background-color: var(--color-base);
-  transition:
-    left 25ms linear,
-    right 25ms linear;
-}
-
-.musical-group-title-row__inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: var(--spacing-50);
-}
-
-.musical-group-title-row__lead {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-
-.musical-group-title-row__title {
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.musical-group-title-row__actions {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 12px;
-}
-
 .musical-group-title-row__icon-btn {
   position: relative;
   display: flex;
@@ -161,11 +112,5 @@ function showDot(target: EditIndicator): boolean {
   height: 8px;
   border-radius: 50%;
   background-color: var(--background-color-error);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .musical-group-title-row::after {
-    transition: none;
-  }
 }
 </style>
