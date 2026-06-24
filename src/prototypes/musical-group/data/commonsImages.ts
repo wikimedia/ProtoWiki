@@ -12,9 +12,9 @@ const CANDIDATE_LIMIT = 30
 
 export interface CommonsCategoryCount {
   /** Number of files directly in the category. */
-  count: number
-  /** Category has subcategories, so the direct count is a lower bound. */
-  hasSubcats: boolean
+  files: number
+  /** Number of top-level subcategories ("collections"). */
+  subcats: number
 }
 
 interface CommonsImage {
@@ -171,8 +171,8 @@ async function resolveCommonsCategoryCount(
   const page = Object.values(data.query?.pages ?? {})[0]
   const info = page?.categoryinfo
   return {
-    count: info?.files ?? 0,
-    hasSubcats: (info?.subcats ?? 0) > 0,
+    files: info?.files ?? 0,
+    subcats: info?.subcats ?? 0,
   }
 }
 
@@ -192,7 +192,7 @@ export function getCommonsCategoryCount(
         countResolved.set(key, result)
         return result
       })
-      .catch(() => ({ count: 0, hasSubcats: false }))
+      .catch(() => ({ files: 0, subcats: 0 }))
       .finally(() => {
         countInFlight.delete(key)
       })
@@ -202,13 +202,14 @@ export function getCommonsCategoryCount(
   return pending
 }
 
-function formatItemCount(count: number, capped: boolean): string {
-  if (capped) return `${count.toLocaleString()}+ items`
-  return `${count.toLocaleString()} items`
-}
-
-export function formatCommonsItemCountLabel(count: number, capped = false): string {
-  return formatItemCount(count, capped)
+/**
+ * Photos count label. Categories with subcategories are described by their
+ * top-level "collections" ("N+ collections"); flat categories show their direct
+ * file count ("N items").
+ */
+export function formatCommonsPhotosLabel(files: number, subcats: number): string {
+  if (subcats > 0) return `${subcats.toLocaleString()}+ collections`
+  return `${files.toLocaleString()} ${files === 1 ? 'item' : 'items'}`
 }
 
 export interface FetchCarouselImagesOptions {

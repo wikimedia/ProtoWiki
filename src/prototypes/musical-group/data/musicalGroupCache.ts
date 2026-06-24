@@ -9,7 +9,7 @@ import type {
   MusicalGroupOverviewPhotos,
 } from './types'
 
-export const MUSICAL_GROUP_CACHE_VERSION = 14
+export const MUSICAL_GROUP_CACHE_VERSION = 15
 
 const STORAGE_KEY = 'musical-group-page-cache'
 

@@ -1,4 +1,5 @@
-import { formatCommonsItemCountLabel, getCommonsCategoryCount } from './commonsImages'
+import { formatCommonsPhotosLabel, getCommonsCategoryCount } from './commonsImages'
+import type { CommonsCategoryCount } from './commonsImages'
 import { fetchMusicalGroupOverview } from './fetchMusicalGroupOverview'
 import {
   getCachedMusicalGroup,
@@ -11,31 +12,24 @@ export interface LoadMusicalGroupOverviewResult {
   fromCache: boolean
 }
 
-async function resolveCommonsImageCount(
+async function resolveCommonsCategoryCount(
   data: MusicalGroupData,
-  cachedCount?: number,
-  cachedCapped?: boolean,
   signal?: AbortSignal,
-): Promise<{ count?: number; capped?: boolean }> {
-  if (cachedCount !== undefined) {
-    return { count: cachedCount, capped: cachedCapped }
-  }
-
-  if (!data.commonsCategory) return {}
-
-  const { count, hasSubcats } = await getCommonsCategoryCount(data.commonsCategory, signal)
-  return { count, capped: hasSubcats }
+): Promise<CommonsCategoryCount | undefined> {
+  if (!data.commonsCategory) return undefined
+  return getCommonsCategoryCount(data.commonsCategory, signal)
 }
 
 function buildPhotosOverview(
   data: MusicalGroupData,
-  count?: number,
-  capped?: boolean,
+  info?: CommonsCategoryCount,
 ): MusicalGroupOverviewData['photos'] | undefined {
-  if (count === undefined || !data.commonsCategory) return undefined
+  if (!data.commonsCategory || !info) return undefined
+  // Nothing known (empty/missing category or a failed lookup) — show no count.
+  if (info.files === 0 && info.subcats === 0) return undefined
   return {
-    itemCount: count,
-    itemCountLabel: formatCommonsItemCountLabel(count, capped),
+    itemCount: info.subcats > 0 ? info.subcats : info.files,
+    itemCountLabel: formatCommonsPhotosLabel(info.files, info.subcats),
   }
 }
 
@@ -61,17 +55,12 @@ export async function loadMusicalGroupOverview(
 
   // The article content and the photo count are independent — run them in
   // parallel and never let the (best-effort) count block or break the article.
-  const [overview, countResult] = await Promise.all([
+  const [overview, categoryInfo] = await Promise.all([
     fetchMusicalGroupOverview(data, { signal }),
-    resolveCommonsImageCount(
-      data,
-      cached?.commonsImageCount,
-      cached?.commonsImageCountCapped,
-      signal,
-    ).catch(() => ({}) as { count?: number; capped?: boolean }),
+    resolveCommonsCategoryCount(data, signal).catch(() => undefined),
   ])
 
-  overview.photos = buildPhotosOverview(data, countResult.count, countResult.capped)
+  overview.photos = buildPhotosOverview(data, categoryInfo)
 
   setCachedMusicalGroupOverview(id, overview)
   return { overview, fromCache: false }

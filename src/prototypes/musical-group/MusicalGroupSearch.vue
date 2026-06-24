@@ -95,10 +95,7 @@ async function onSubmit() {
 
   if (results.value.length > 0) {
     emit('navigate', results.value[0].id)
-    return
   }
-
-  localError.value = 'No matching musical groups found.'
 }
 
 function onSelectResult(result: MusicalGroupSearchResult) {
