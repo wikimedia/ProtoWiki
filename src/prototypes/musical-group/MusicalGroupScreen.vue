@@ -7,6 +7,7 @@ import MusicalGroupHeader from './MusicalGroupHeader.vue'
 import MusicalGroupOverview from './MusicalGroupOverview.vue'
 import MusicalGroupTabs from './MusicalGroupTabs.vue'
 import type { MusicalGroupData, MusicalGroupOverviewData, TabId } from './data/types'
+import { useMusicalGroupScrollStates } from './useMusicalGroupScrollStates'
 
 interface Props {
   data: MusicalGroupData
@@ -18,6 +19,8 @@ interface Props {
 defineProps<Props>()
 
 const activeTab = ref<TabId>('overview')
+
+useMusicalGroupScrollStates()
 </script>
 
 <template>
@@ -28,15 +31,17 @@ const activeTab = ref<TabId>('overview')
     </div>
     <div class="musical-group-screen__details">
       <MusicalGroupFacts :data="data" />
-      <MusicalGroupTabs v-model:active-tab="activeTab" />
-      <div class="musical-group-screen__panel">
-        <MusicalGroupOverview
-          v-if="activeTab === 'overview'"
-          :overview="overview"
-          :overview-loading="overviewLoading"
-          :carousel-images="data.images"
-        />
-        <p v-else class="musical-group-screen__placeholder">Coming soon</p>
+      <div class="musical-group-screen__tabs-section">
+        <MusicalGroupTabs v-model:active-tab="activeTab" />
+        <div class="musical-group-screen__panel">
+          <MusicalGroupOverview
+            v-if="activeTab === 'overview'"
+            :overview="overview"
+            :overview-loading="overviewLoading"
+            :carousel-images="data.images"
+          />
+          <div v-else class="musical-group-screen__placeholder"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -46,7 +51,7 @@ const activeTab = ref<TabId>('overview')
 .musical-group-screen {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-100);
+  gap: var(--spacing-50);
   padding: var(--spacing-50);
   background-color: var(--background-color-base);
 }
@@ -60,11 +65,17 @@ const activeTab = ref<TabId>('overview')
 .musical-group-screen__details {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-100);
+  gap: var(--spacing-50);
+}
+
+.musical-group-screen__tabs-section {
+  display: flex;
+  flex-direction: column;
 }
 
 .musical-group-screen__panel {
   min-width: 0;
+  min-height: var(--musical-group-tab-panel-min-height);
 }
 
 .musical-group-screen__placeholder {

@@ -10,6 +10,7 @@ import { normalizeQid } from './data/wikidataApi'
 import MusicalGroupChromeHeader from './MusicalGroupChromeHeader.vue'
 import MusicalGroupScreen from './MusicalGroupScreen.vue'
 import MusicalGroupSplash from './MusicalGroupSplash.vue'
+import MusicalGroupTitleRow from './MusicalGroupTitleRow.vue'
 
 import { CdxToastContainer } from '@wikimedia/codex'
 
@@ -137,11 +138,12 @@ const showEntityChrome = computed(() => Boolean(itemId.value) && !validationFail
       <MusicalGroupSplash v-if="showSplash" :error="fetchError" />
 
       <template v-else>
-        <MusicalGroupChromeHeader v-if="showEntityChrome" />
-
-        <div v-if="loading && !data" class="musical-group-page__loading">
-          Loading…
+        <div v-if="showEntityChrome" class="musical-group-chrome-stack">
+          <MusicalGroupChromeHeader />
+          <MusicalGroupTitleRow v-if="data" :data="data" />
         </div>
+
+        <div v-if="loading && !data" class="musical-group-page__loading">Loading…</div>
 
         <div v-else-if="fetchError" class="musical-group-page__error">
           <p>{{ fetchError }}</p>
@@ -172,6 +174,20 @@ const showEntityChrome = computed(() => Boolean(itemId.value) && !validationFail
 }
 
 .musical-group-page {
+  --musical-group-chrome-height: 42px;
+  --musical-group-title-height: 47px;
+  --musical-group-chrome-stack-height: calc(
+    var(--musical-group-chrome-height) + var(--spacing-50) + var(--musical-group-title-height)
+  );
+  --musical-group-tabs-sticky-top: calc(
+    var(--musical-group-chrome-stack-height) + var(--spacing-50)
+  );
+  --musical-group-tabs-height: 46px;
+  --musical-group-tab-panel-min-height: calc(
+    100dvh - var(--musical-group-tabs-sticky-top) - var(--musical-group-tabs-height) -
+      var(--spacing-50)
+  );
+
   box-sizing: border-box;
   max-width: 412px;
   height: 100%;
@@ -192,5 +208,41 @@ const showEntityChrome = computed(() => Boolean(itemId.value) && !validationFail
 
 .musical-group-page__error p {
   color: var(--color-error);
+}
+
+.musical-group-chrome-stack {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-50);
+  background-color: var(--background-color-base);
+  container-type: scroll-state;
+  container-name: musical-group-chrome-stack;
+}
+</style>
+
+<!-- Title rule expands only while sticky chrome overlaps the carousel; retracts when tabs stick -->
+<style>
+.musical-group-page[data-title-expanded]:not([data-tabs-stuck])
+  .musical-group-chrome-stack
+  .musical-group-title-row::after {
+  left: 0;
+  right: 0;
+}
+
+.musical-group-page[data-tabs-stuck] .musical-group-chrome-stack .musical-group-title-row::after {
+  left: var(--spacing-50);
+  right: var(--spacing-50);
+}
+
+.musical-group-page[data-tabs-stuck]:not([data-scroll-at-end]) .musical-group-tabs::before {
+  bottom: calc(100% - 1px);
+  height: calc(var(--spacing-50) + 1px);
+}
+
+.musical-group-page[data-tabs-stuck]:not([data-scroll-at-end]) .musical-group-tabs::after {
+  transform: scaleY(1);
 }
 </style>
