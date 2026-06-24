@@ -109,6 +109,7 @@ interface WbEntity {
   labels?: Record<string, { value: string }>
   descriptions?: Record<string, { value: string }>
   claims?: Record<string, WbEntityClaim[]>
+  sitelinks?: Record<string, { title?: string; url?: string }>
 }
 
 interface WbGetEntitiesResponse {
@@ -120,6 +121,7 @@ export interface ParsedEntityClaims {
   description?: string
   imageFilename?: string
   commonsCategory?: string
+  enwikiTitle?: string
   websiteUrl?: string
   inceptionYear?: number
   genreIds: string[]
@@ -177,7 +179,7 @@ export async function fetchEntityClaims(
   const url = actionUrl({
     action: 'wbgetentities',
     ids: id,
-    props: 'labels|descriptions|claims',
+    props: 'labels|descriptions|claims|sitelinks',
     languages: 'en',
     languagefallback: '1',
   })
@@ -211,6 +213,7 @@ export async function fetchEntityClaims(
     description,
     imageFilename: firstClaimString(claims.P18),
     commonsCategory: firstClaimString(claims.P373),
+    enwikiTitle: entity.sitelinks?.enwiki?.title,
     websiteUrl: firstClaimString(claims.P856),
     inceptionYear: inceptionYear ?? undefined,
     genreIds: allClaimEntityIds(claims.P136),

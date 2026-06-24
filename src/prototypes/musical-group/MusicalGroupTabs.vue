@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-
 import type { TabId } from './data/types'
 
 const tabs: { id: TabId; label: string; dot?: 'blue' }[] = [
@@ -12,7 +10,7 @@ const tabs: { id: TabId; label: string; dot?: 'blue' }[] = [
   { id: 'awards', label: 'Awards' },
 ]
 
-const activeTab = ref<TabId>('overview')
+const activeTab = defineModel<TabId>('activeTab', { default: 'overview' })
 </script>
 
 <template>

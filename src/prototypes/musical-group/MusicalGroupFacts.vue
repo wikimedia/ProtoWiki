@@ -32,7 +32,7 @@ const genreLine = computed(() =>
         <h3 class="musical-group-facts__primary">{{ primaryFact }}</h3>
         <CdxIcon :icon="cdxIconMusicalScore" class="musical-group-facts__note-icon" />
       </div>
-      <p v-if="genreLine" class="musical-group-facts__genres">{{ genreLine }}</p>
+      <small v-if="genreLine" class="musical-group-facts__genres">{{ genreLine }}</small>
     </div>
 
     <p v-if="data.websiteUrl && data.websiteHost" class="musical-group-facts__website">
@@ -72,7 +72,6 @@ const genreLine = computed(() =>
 }
 
 .musical-group-facts__genres {
-  margin: 0;
   color: var(--color-subtle);
 }
 

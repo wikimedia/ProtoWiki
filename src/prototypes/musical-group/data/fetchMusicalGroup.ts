@@ -1,6 +1,6 @@
 import { fetchCarouselImages } from './commonsImages'
 import { sentenceCase } from './formatLabel'
-import type { FetchMusicalGroupOptions, MusicalGroupData, CarouselImage } from './types'
+import type { FetchMusicalGroupOptions, FetchMusicalGroupResult } from './types'
 import {
   fetchEditIndicator,
   fetchEntityClaims,
@@ -13,7 +13,7 @@ import {
 export async function fetchMusicalGroup(
   id: string,
   options: FetchMusicalGroupOptions = {},
-): Promise<MusicalGroupData> {
+): Promise<FetchMusicalGroupResult> {
   const { signal } = options
 
   const valid = await isMusicalGroup(id, signal)
@@ -23,7 +23,7 @@ export async function fetchMusicalGroup(
 
   const claims = await fetchEntityClaims(id, signal)
 
-  const [typeLabel, labelMap, editIndicator, images] = await Promise.all([
+  const [typeLabel, labelMap, editIndicator, carouselResult] = await Promise.all([
     resolveMusicalTypeLabel(id, claims.typeIds, signal),
     resolveEntityLabels(claims.genreIds, signal),
     fetchEditIndicator(id, signal).catch(() => undefined),
@@ -32,7 +32,7 @@ export async function fetchMusicalGroup(
       imageFilename: claims.imageFilename,
       commonsCategory: claims.commonsCategory,
       signal,
-    }).catch(() => [] as CarouselImage[]),
+    }).catch(() => ({ images: [], totalCount: undefined, itemCountCapped: false })),
   ])
 
   const genres = claims.genreIds
@@ -40,15 +40,21 @@ export async function fetchMusicalGroup(
     .filter((label): label is string => Boolean(label))
 
   return {
-    id,
-    label: claims.label,
-    description: claims.description,
-    typeLabel: typeLabel ? sentenceCase(typeLabel) : undefined,
-    inceptionYear: claims.inceptionYear,
-    genres,
-    websiteUrl: claims.websiteUrl,
-    websiteHost: claims.websiteUrl ? websiteHost(claims.websiteUrl) : undefined,
-    images,
-    editIndicator,
+    data: {
+      id,
+      label: claims.label,
+      description: claims.description,
+      typeLabel: typeLabel ? sentenceCase(typeLabel) : undefined,
+      inceptionYear: claims.inceptionYear,
+      genres,
+      websiteUrl: claims.websiteUrl,
+      websiteHost: claims.websiteUrl ? websiteHost(claims.websiteUrl) : undefined,
+      images: carouselResult.images,
+      editIndicator,
+      enwikiTitle: claims.enwikiTitle,
+      commonsCategory: claims.commonsCategory,
+    },
+    commonsImageCount: carouselResult.totalCount,
+    commonsImageCountCapped: carouselResult.itemCountCapped,
   }
 }

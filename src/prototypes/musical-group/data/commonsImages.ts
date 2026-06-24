@@ -1,7 +1,18 @@
-import type { CarouselImage, ImageOrientation } from './types'
+import { wikimediaApiFetchHeaders } from '@/config'
+
+import type { CarouselImage, CarouselImageOrientation } from './types'
 
 const COMMONS_API = 'https://commons.wikimedia.org/w/api.php'
 const THUMB_WIDTH = 800
+const DEEPCAT_PAGE_SIZE = 500
+const CATEGORY_PAGE_SIZE = 500
+const MAX_CATEGORY_FILES = 10_000
+
+export interface CommonsCategoryFiles {
+  ordered: string[]
+  totalCount: number
+  capped: boolean
+}
 
 interface ImageDetails {
   url: string
@@ -12,8 +23,14 @@ interface ImageDetails {
 interface CategoryBfsOptions {
   maxDepth?: number
   maxCategories?: number
-  maxFiles?: number
   signal?: AbortSignal
+}
+
+const categoryInFlight = new Map<string, Promise<CommonsCategoryFiles>>()
+const categoryResolved = new Map<string, CommonsCategoryFiles>()
+
+function normalizeCategoryKey(name: string): string {
+  return name.replace(/^Category:/i, '').trim().toLowerCase()
 }
 
 function normalizeFileTitle(title: string): string {
@@ -26,13 +43,25 @@ function stripFilePrefix(title: string): string {
   return title.replace(/^File:/i, '')
 }
 
-function classifyOrientation(width: number, height: number): ImageOrientation {
+function classifyOrientation(width: number, height: number): CarouselImageOrientation {
   if (width <= 0 || height <= 0) return 'landscape'
   const ratio = width / height
   if (ratio >= 1.25) return 'landscape'
   if (ratio >= 0.95 && ratio <= 1.05) return 'square'
   if (ratio >= 0.55) return 'portrait'
   return 'tall'
+}
+
+function mergeContinueParams(
+  base: Record<string, string>,
+  continueBlock: Record<string, unknown> | undefined,
+): Record<string, string> {
+  if (!continueBlock) return base
+  const merged = { ...base }
+  for (const [key, value] of Object.entries(continueBlock)) {
+    if (typeof value === 'string') merged[key] = value
+  }
+  return merged
 }
 
 async function commonsGet(params: Record<string, string>, signal?: AbortSignal): Promise<unknown> {
@@ -43,7 +72,10 @@ async function commonsGet(params: Record<string, string>, signal?: AbortSignal):
     url.searchParams.set(key, value)
   }
 
-  const response = await fetch(url, { signal })
+  const response = await fetch(url, {
+    signal,
+    headers: wikimediaApiFetchHeaders('musical-group-commons'),
+  })
   if (!response.ok) {
     throw new Error(`Commons API error: ${response.status}`)
   }
@@ -112,87 +144,154 @@ async function searchCommonsFiles(query: string, signal?: AbortSignal): Promise<
     .map(normalizeFileTitle)
 }
 
-/** Files in category and all nested subcategories, search-ranked (relevance order). */
-async function searchCommonsDeepCategory(categoryName: string, signal?: AbortSignal): Promise<string[]> {
-  const data = (await commonsGet(
-    {
-      action: 'query',
-      generator: 'search',
-      gsrnamespace: '6',
-      gsrsearch: `deepcat:"${categoryName.replace(/"/g, '')}"`,
-      gsrlimit: '50',
-      prop: 'info',
-    },
-    signal,
-  )) as {
-    query?: {
-      pages?: Record<string, { title?: string }>
-    }
-  }
-
-  return Object.values(data.query?.pages ?? {})
-    .map((page) => page.title)
-    .filter((title): title is string => Boolean(title))
-    .map(normalizeFileTitle)
+function addFileTitle(
+  ordered: string[],
+  seen: Set<string>,
+  title: string,
+): boolean {
+  const norm = normalizeFileTitle(title)
+  if (seen.has(norm)) return false
+  seen.add(norm)
+  ordered.push(norm)
+  return true
 }
 
-async function fetchDirectCategoryFiles(categoryName: string, signal?: AbortSignal): Promise<string[]> {
-  const data = (await commonsGet(
-    {
-      action: 'query',
-      list: 'categorymembers',
-      cmtitle: `Category:${categoryName}`,
-      cmtype: 'file',
-      cmlimit: '50',
-    },
-    signal,
-  )) as {
-    query?: {
-      categorymembers?: Array<{ title?: string }>
+/** Paginated deepcat file search — recursive category membership. */
+async function enumerateDeepcatFiles(
+  categoryName: string,
+  ordered: string[],
+  seen: Set<string>,
+  signal?: AbortSignal,
+): Promise<{ capped: boolean }> {
+  const escaped = categoryName.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+  let continueBlock: Record<string, unknown> | undefined
+  let capped = false
+
+  do {
+    const params = mergeContinueParams(
+      {
+        action: 'query',
+        generator: 'search',
+        gsrnamespace: '6',
+        gsrsearch: `deepcat:"${escaped}"`,
+        gsrlimit: String(DEEPCAT_PAGE_SIZE),
+        prop: 'info',
+      },
+      continueBlock,
+    )
+
+    const data = (await commonsGet(params, signal)) as {
+      query?: { pages?: Record<string, { title?: string }> }
+      continue?: Record<string, unknown>
     }
+
+    for (const page of Object.values(data.query?.pages ?? {})) {
+      if (!page.title) continue
+      addFileTitle(ordered, seen, page.title)
+      if (seen.size >= MAX_CATEGORY_FILES) {
+        capped = true
+        return { capped }
+      }
+    }
+
+    continueBlock = data.continue
+  } while (continueBlock)
+
+  return { capped }
+}
+
+async function fetchDirectCategoryFilesPage(
+  categoryName: string,
+  continueToken: string | undefined,
+  signal?: AbortSignal,
+): Promise<{ titles: string[]; nextContinue?: string }> {
+  const params: Record<string, string> = {
+    action: 'query',
+    list: 'categorymembers',
+    cmtitle: `Category:${categoryName}`,
+    cmtype: 'file',
+    cmlimit: String(CATEGORY_PAGE_SIZE),
+  }
+  if (continueToken) params.cmcontinue = continueToken
+
+  const data = (await commonsGet(params, signal)) as {
+    query?: { categorymembers?: Array<{ title?: string }> }
+    continue?: { cmcontinue?: string }
   }
 
-  return (data.query?.categorymembers ?? [])
+  const titles = (data.query?.categorymembers ?? [])
     .map((member) => member.title)
     .filter((title): title is string => Boolean(title))
     .map(normalizeFileTitle)
+
+  return { titles, nextContinue: data.continue?.cmcontinue }
 }
 
-async function fetchSubcategoryTitles(categoryName: string, signal?: AbortSignal): Promise<string[]> {
-  const data = (await commonsGet(
-    {
-      action: 'query',
-      list: 'categorymembers',
-      cmtitle: `Category:${categoryName}`,
-      cmtype: 'subcat',
-      cmlimit: '50',
-    },
-    signal,
-  )) as {
-    query?: {
-      categorymembers?: Array<{ title?: string }>
-    }
+async function fetchSubcategoryTitlesPage(
+  categoryName: string,
+  continueToken: string | undefined,
+  signal?: AbortSignal,
+): Promise<{ titles: string[]; nextContinue?: string }> {
+  const params: Record<string, string> = {
+    action: 'query',
+    list: 'categorymembers',
+    cmtitle: `Category:${categoryName}`,
+    cmtype: 'subcat',
+    cmlimit: String(CATEGORY_PAGE_SIZE),
+  }
+  if (continueToken) params.cmcontinue = continueToken
+
+  const data = (await commonsGet(params, signal)) as {
+    query?: { categorymembers?: Array<{ title?: string }> }
+    continue?: { cmcontinue?: string }
   }
 
-  return (data.query?.categorymembers ?? [])
+  const titles = (data.query?.categorymembers ?? [])
     .map((member) => member.title?.replace(/^Category:/i, '') ?? '')
     .filter(Boolean)
+
+  return { titles, nextContinue: data.continue?.cmcontinue }
+}
+
+async function enumerateCategoryFilesPaginated(
+  categoryName: string,
+  ordered: string[],
+  seen: Set<string>,
+  signal?: AbortSignal,
+): Promise<{ capped: boolean }> {
+  let cmcontinue: string | undefined
+  let capped = false
+
+  do {
+    const page = await fetchDirectCategoryFilesPage(categoryName, cmcontinue, signal)
+    for (const title of page.titles) {
+      addFileTitle(ordered, seen, title)
+      if (seen.size >= MAX_CATEGORY_FILES) {
+        capped = true
+        return { capped }
+      }
+    }
+    cmcontinue = page.nextContinue
+  } while (cmcontinue)
+
+  return { capped }
 }
 
 /** Walk nested subcategories and collect file titles (deduped, breadth-first). */
 async function fetchCategoryFilesBfs(
   rootCategoryName: string,
+  ordered: string[],
+  seen: Set<string>,
   options: CategoryBfsOptions = {},
-): Promise<string[]> {
-  const { maxDepth = 5, maxCategories = 50, maxFiles = 100, signal } = options
+): Promise<{ capped: boolean }> {
+  const { maxDepth = 5, maxCategories = 200, signal } = options
   const seenCategories = new Set<string>()
-  const seenFiles = new Set<string>()
-  const orderedFiles: string[] = []
+  let capped = false
 
   type QueueItem = { name: string; depth: number }
   const queue: QueueItem[] = [{ name: rootCategoryName, depth: 0 }]
 
-  while (queue.length > 0 && seenCategories.size < maxCategories && orderedFiles.length < maxFiles) {
+  while (queue.length > 0 && seenCategories.size < maxCategories) {
     const item = queue.shift()
     if (!item) break
 
@@ -200,65 +299,89 @@ async function fetchCategoryFilesBfs(
     if (seenCategories.has(key)) continue
     seenCategories.add(key)
 
-    const files = await fetchDirectCategoryFiles(item.name, signal)
-    for (const title of files) {
-      const norm = normalizeFileTitle(title)
-      if (seenFiles.has(norm)) continue
-      seenFiles.add(norm)
-      orderedFiles.push(norm)
-      if (orderedFiles.length >= maxFiles) break
+    const direct = await enumerateCategoryFilesPaginated(item.name, ordered, seen, signal)
+    if (direct.capped) return { capped: true }
+
+    if (seen.size >= MAX_CATEGORY_FILES) {
+      capped = true
+      return { capped }
     }
 
     if (item.depth < maxDepth) {
-      const subcats = await fetchSubcategoryTitles(item.name, signal)
-      for (const sub of subcats) {
-        queue.push({ name: sub, depth: item.depth + 1 })
-      }
+      let subContinue: string | undefined
+      do {
+        const subPage = await fetchSubcategoryTitlesPage(item.name, subContinue, signal)
+        for (const sub of subPage.titles) {
+          queue.push({ name: sub, depth: item.depth + 1 })
+        }
+        subContinue = subPage.nextContinue
+      } while (subContinue)
     }
   }
 
-  return orderedFiles
+  return { capped }
 }
 
-/** deepcat list + set; BFS fallback if deepcat returns nothing. */
-async function buildCategoryMembership(
+async function resolveCommonsCategoryFiles(
   categoryName: string,
   signal?: AbortSignal,
-): Promise<{ ordered: string[]; set: Set<string> }> {
-  let ordered: string[] = []
+): Promise<CommonsCategoryFiles> {
+  const ordered: string[] = []
+  const seen = new Set<string>()
+  let capped = false
+
   try {
-    ordered = await searchCommonsDeepCategory(categoryName, signal)
+    const deepcat = await enumerateDeepcatFiles(categoryName, ordered, seen, signal)
+    capped = deepcat.capped
   } catch {
     // fall through to BFS
   }
 
   if (ordered.length === 0) {
-    ordered = await fetchCategoryFilesBfs(categoryName, {
-      maxDepth: 5,
-      maxCategories: 50,
-      maxFiles: 100,
-      signal,
-    })
-  } else {
-    // Supplement deepcat with BFS files not already found (very deep nesting).
-    const set = new Set(ordered.map(normalizeFileTitle))
-    const bfsExtra = await fetchCategoryFilesBfs(categoryName, {
-      maxDepth: 5,
-      maxCategories: 50,
-      maxFiles: 100,
-      signal,
-    })
-    for (const title of bfsExtra) {
-      const norm = normalizeFileTitle(title)
-      if (!set.has(norm)) {
-        set.add(norm)
-        ordered.push(norm)
-      }
-    }
-    return { ordered, set }
+    const bfs = await fetchCategoryFilesBfs(categoryName, ordered, seen, { signal })
+    capped = bfs.capped
   }
 
-  return { ordered, set: new Set(ordered.map(normalizeFileTitle)) }
+  await enumerateCategoryFilesPaginated(categoryName, ordered, seen, signal)
+
+  return {
+    ordered,
+    totalCount: seen.size,
+    capped,
+  }
+}
+
+export function getCommonsCategoryFiles(
+  categoryName: string,
+  signal?: AbortSignal,
+): Promise<CommonsCategoryFiles> {
+  const key = normalizeCategoryKey(categoryName)
+  const cached = categoryResolved.get(key)
+  if (cached) return Promise.resolve(cached)
+
+  let pending = categoryInFlight.get(key)
+  if (!pending) {
+    pending = resolveCommonsCategoryFiles(categoryName, signal)
+      .then((result) => {
+        categoryResolved.set(key, result)
+        return result
+      })
+      .finally(() => {
+        categoryInFlight.delete(key)
+      })
+    categoryInFlight.set(key, pending)
+  }
+
+  return pending
+}
+
+function formatItemCount(count: number, capped: boolean): string {
+  if (capped) return `${count.toLocaleString()}+ items`
+  return `${count.toLocaleString()} items`
+}
+
+export function formatCommonsItemCountLabel(count: number, capped = false): string {
+  return formatItemCount(count, capped)
 }
 
 /**
@@ -286,11 +409,10 @@ function selectCarouselImages(
   const selected: CarouselImage[] = []
   const usedIndices = new Set<number>()
 
-  // P18 / first candidate always.
   selected.push(candidates[0])
   usedIndices.add(0)
 
-  const orientations: ImageOrientation[] = ['landscape', 'square', 'portrait', 'tall']
+  const orientations: CarouselImageOrientation[] = ['landscape', 'square', 'portrait', 'tall']
   for (const orientation of orientations) {
     if (selected.length >= maxImages) break
     const idx = candidates.findIndex((c, i) => !usedIndices.has(i) && c.orientation === orientation)
@@ -316,12 +438,18 @@ export interface FetchCarouselImagesOptions {
   signal?: AbortSignal
 }
 
+export interface FetchCarouselImagesResult {
+  images: CarouselImage[]
+  totalCount?: number
+  itemCountCapped?: boolean
+}
+
 export async function fetchCarouselImages({
   imageFilename,
   commonsCategory,
   label,
   signal,
-}: FetchCarouselImagesOptions): Promise<CarouselImage[]> {
+}: FetchCarouselImagesOptions): Promise<FetchCarouselImagesResult> {
   const seen = new Set<string>()
   const relevanceOrder: string[] = []
 
@@ -333,44 +461,41 @@ export async function fetchCarouselImages({
     relevanceOrder.push(normalized)
   }
 
-  // 1. Wikidata P18 — always first.
   queueTitle(imageFilename ? stripFilePrefix(imageFilename) : null)
 
-  let categoryMembership: { ordered: string[]; set: Set<string> } | null = null
+  let totalCount: number | undefined
+  let itemCountCapped = false
 
   if (commonsCategory) {
-    categoryMembership = await buildCategoryMembership(commonsCategory, signal)
+    const membership = await getCommonsCategoryFiles(commonsCategory, signal)
+    totalCount = membership.totalCount
+    itemCountCapped = membership.capped
 
-    // 2. Label search hits cross-checked against full category tree (incl. deep subcats).
     if (label.trim()) {
       const labelHits = await searchCommonsFiles(label, signal)
       for (const title of labelHits) {
-        if (categoryMembership.set.has(normalizeFileTitle(title))) {
+        if (membership.ordered.some((t) => normalizeFileTitle(t) === normalizeFileTitle(title))) {
           queueTitle(title)
         }
       }
     }
 
-    // 3. deepcat-ranked files not already queued.
-    for (const title of categoryMembership.ordered) {
-      queueTitle(title)
-    }
-
-    // 4. Direct category members (may include files deepcat missed).
-    const directFiles = await fetchDirectCategoryFiles(commonsCategory, signal)
-    for (const title of directFiles) {
+    for (const title of membership.ordered) {
       queueTitle(title)
     }
   } else if (label.trim()) {
-    // No Commons category — fall back to label search only.
     const labelHits = await searchCommonsFiles(label, signal)
     for (const title of labelHits) {
       queueTitle(title)
     }
   }
 
-  if (relevanceOrder.length === 0) return []
+  if (relevanceOrder.length === 0) {
+    return { images: [], totalCount, itemCountCapped }
+  }
 
   const detailsMap = await fetchImageDetails(relevanceOrder.slice(0, 30), signal)
-  return selectCarouselImages(relevanceOrder, detailsMap, 5)
+  const images = selectCarouselImages(relevanceOrder, detailsMap, 5)
+
+  return { images, totalCount, itemCountCapped }
 }

@@ -1,7 +1,14 @@
 import { normalizeQid } from './wikidataApi'
-import type { CarouselImage, EditIndicator, MusicalGroupData } from './types'
+import type {
+  CarouselImage,
+  EditIndicator,
+  MusicalGroupData,
+  MusicalGroupOverviewArticle,
+  MusicalGroupOverviewData,
+  MusicalGroupOverviewPhotos,
+} from './types'
 
-export const MUSICAL_GROUP_CACHE_VERSION = 7
+export const MUSICAL_GROUP_CACHE_VERSION = 8
 
 const STORAGE_KEY = 'musical-group-page-cache'
 
@@ -9,6 +16,9 @@ export interface CachedMusicalGroupEntry {
   version: number
   fetchedAt: number
   data: MusicalGroupData
+  commonsImageCount?: number
+  commonsImageCountCapped?: boolean
+  overview?: MusicalGroupOverviewData
 }
 
 type MusicalGroupCacheStore = Record<string, CachedMusicalGroupEntry>
@@ -34,6 +44,41 @@ function isCarouselImage(value: unknown): value is CarouselImage {
   )
 }
 
+function isOverviewArticle(value: unknown): value is MusicalGroupOverviewArticle {
+  if (typeof value !== 'object' || value === null) return false
+  const record = value as Record<string, unknown>
+  return (
+    typeof record.title === 'string' &&
+    typeof record.extractHtml === 'string' &&
+    typeof record.articleUrl === 'string' &&
+    typeof record.lastEditedTimestamp === 'string' &&
+    typeof record.lastEditedLabel === 'string' &&
+    typeof record.viewCount === 'number' &&
+    typeof record.viewsLabel === 'string' &&
+    typeof record.wordCount === 'number' &&
+    typeof record.wordCountLabel === 'string' &&
+    (record.thumbnailUrl === undefined || typeof record.thumbnailUrl === 'string')
+  )
+}
+
+function isOverviewPhotos(value: unknown): value is MusicalGroupOverviewPhotos {
+  if (typeof value !== 'object' || value === null) return false
+  const record = value as Record<string, unknown>
+  return typeof record.itemCount === 'number' && typeof record.itemCountLabel === 'string'
+}
+
+function isOverviewData(value: unknown): value is MusicalGroupOverviewData {
+  if (typeof value !== 'object' || value === null) return false
+  const record = value as Record<string, unknown>
+  if (typeof record.fetchedAt !== 'number') return false
+  if (record.noEnglishArticle !== undefined && typeof record.noEnglishArticle !== 'boolean') {
+    return false
+  }
+  if (record.article !== undefined && !isOverviewArticle(record.article)) return false
+  if (record.photos !== undefined && !isOverviewPhotos(record.photos)) return false
+  return true
+}
+
 function isMusicalGroupData(value: unknown): value is MusicalGroupData {
   if (typeof value !== 'object' || value === null) return false
 
@@ -53,6 +98,8 @@ function isMusicalGroupData(value: unknown): value is MusicalGroupData {
   if (record.websiteUrl !== undefined && typeof record.websiteUrl !== 'string') return false
   if (record.websiteHost !== undefined && typeof record.websiteHost !== 'string') return false
   if (record.editIndicator !== undefined && !isEditIndicator(record.editIndicator)) return false
+  if (record.enwikiTitle !== undefined && typeof record.enwikiTitle !== 'string') return false
+  if (record.commonsCategory !== undefined && typeof record.commonsCategory !== 'string') return false
 
   return true
 }
@@ -61,11 +108,20 @@ function isValidEntry(entry: unknown): entry is CachedMusicalGroupEntry {
   if (typeof entry !== 'object' || entry === null) return false
 
   const record = entry as CachedMusicalGroupEntry
-  return (
-    record.version === MUSICAL_GROUP_CACHE_VERSION &&
-    typeof record.fetchedAt === 'number' &&
-    isMusicalGroupData(record.data)
-  )
+  if (record.version !== MUSICAL_GROUP_CACHE_VERSION) return false
+  if (typeof record.fetchedAt !== 'number') return false
+  if (!isMusicalGroupData(record.data)) return false
+  if (record.commonsImageCount !== undefined && typeof record.commonsImageCount !== 'number') {
+    return false
+  }
+  if (
+    record.commonsImageCountCapped !== undefined &&
+    typeof record.commonsImageCountCapped !== 'boolean'
+  ) {
+    return false
+  }
+  if (record.overview !== undefined && !isOverviewData(record.overview)) return false
+  return true
 }
 
 function normalizeStore(raw: unknown): MusicalGroupCacheStore {
@@ -149,17 +205,52 @@ export function getCachedMusicalGroup(id: string): CachedMusicalGroupEntry | nul
   return store[key] ?? null
 }
 
-export function setCachedMusicalGroup(id: string, data: MusicalGroupData): CachedMusicalGroupEntry {
+export interface SetCachedMusicalGroupOptions {
+  commonsImageCount?: number
+  commonsImageCountCapped?: boolean
+}
+
+export function setCachedMusicalGroup(
+  id: string,
+  data: MusicalGroupData,
+  options: SetCachedMusicalGroupOptions = {},
+): CachedMusicalGroupEntry {
   const key = cacheKey(id) || cacheKey(data.id)
+  const store = readStore()
+  const existing = key.length ? store[key] : undefined
+
   const entry: CachedMusicalGroupEntry = {
     version: MUSICAL_GROUP_CACHE_VERSION,
     fetchedAt: Date.now(),
     data,
+    commonsImageCount: options.commonsImageCount ?? existing?.commonsImageCount,
+    commonsImageCountCapped:
+      options.commonsImageCountCapped ?? existing?.commonsImageCountCapped,
+    overview: existing?.overview,
   }
 
   if (!key.length) return entry
 
+  persistStore({ ...store, [key]: entry })
+  return entry
+}
+
+export function setCachedMusicalGroupOverview(
+  id: string,
+  overview: MusicalGroupOverviewData,
+): CachedMusicalGroupEntry | null {
+  const key = cacheKey(id)
+  if (!key.length) return null
+
   const store = readStore()
+  const existing = store[key]
+  if (!existing) return null
+
+  const entry: CachedMusicalGroupEntry = {
+    ...existing,
+    overview,
+  }
+
   persistStore({ ...store, [key]: entry })
   return entry
 }

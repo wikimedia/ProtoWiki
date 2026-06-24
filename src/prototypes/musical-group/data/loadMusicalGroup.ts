@@ -16,7 +16,7 @@ export async function loadMusicalGroup(
     return { data: cached.data, fromCache: true }
   }
 
-  const data = await fetchMusicalGroup(id, options)
-  setCachedMusicalGroup(id, data)
+  const { data, commonsImageCount, commonsImageCountCapped } = await fetchMusicalGroup(id, options)
+  setCachedMusicalGroup(id, data, { commonsImageCount, commonsImageCountCapped })
   return { data, fromCache: false }
 }

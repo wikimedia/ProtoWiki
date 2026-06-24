@@ -3,8 +3,9 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { loadMusicalGroup } from './data/loadMusicalGroup'
+import { loadMusicalGroupOverview, isCachedOverviewUsable } from './data/loadMusicalGroupOverview'
 import { getCachedMusicalGroup } from './data/musicalGroupCache'
-import type { MusicalGroupData } from './data/types'
+import type { MusicalGroupData, MusicalGroupOverviewData } from './data/types'
 import { normalizeQid } from './data/wikidataApi'
 import MusicalGroupChromeHeader from './MusicalGroupChromeHeader.vue'
 import MusicalGroupScreen from './MusicalGroupScreen.vue'
@@ -24,15 +25,22 @@ const route = useRoute()
 
 const itemId = computed(() => normalizeQid(route.query.item))
 const data = ref<MusicalGroupData | null>(null)
+const overview = ref<MusicalGroupOverviewData | undefined>(undefined)
 const loading = ref(false)
+const overviewLoading = ref(false)
 const fetchError = ref<string | null>(null)
 const validationFailed = ref(false)
 
 let fetchAbort: AbortController | null = null
+let overviewAbort: AbortController | null = null
 
 async function loadItem(id: string) {
   fetchAbort?.abort()
   fetchAbort = new AbortController()
+
+  overviewAbort?.abort()
+  overview.value = undefined
+  overviewLoading.value = false
 
   const cached = getCachedMusicalGroup(id)
   if (cached) {
@@ -64,18 +72,56 @@ async function loadItem(id: string) {
   }
 }
 
+async function loadOverview(id: string, groupData: MusicalGroupData) {
+  overviewAbort?.abort()
+  overviewAbort = new AbortController()
+
+  const cached = getCachedMusicalGroup(id)
+  if (cached?.overview && isCachedOverviewUsable(cached.overview)) {
+    overview.value = cached.overview
+    overviewLoading.value = false
+    return
+  }
+
+  overviewLoading.value = true
+
+  try {
+    const { overview: loaded } = await loadMusicalGroupOverview(id, groupData, {
+      signal: overviewAbort.signal,
+    })
+    overview.value = loaded
+  } catch (err) {
+    if ((err as Error).name === 'AbortError') return
+  } finally {
+    overviewLoading.value = false
+  }
+}
+
 watch(
   itemId,
   (id) => {
     if (!id) {
       fetchAbort?.abort()
+      overviewAbort?.abort()
       data.value = null
+      overview.value = undefined
       loading.value = false
+      overviewLoading.value = false
       fetchError.value = null
       validationFailed.value = false
       return
     }
     void loadItem(id)
+  },
+  { immediate: true },
+)
+
+watch(
+  [itemId, data],
+  ([id, groupData]) => {
+    if (!id || !groupData) return
+    if (overview.value) return
+    void loadOverview(id, groupData)
   },
   { immediate: true },
 )
@@ -102,7 +148,12 @@ const showEntityChrome = computed(() => Boolean(itemId.value) && !validationFail
           <MusicalGroupSplash />
         </div>
 
-        <MusicalGroupScreen v-else-if="data" :data="data" />
+        <MusicalGroupScreen
+          v-else-if="data"
+          :data="data"
+          :overview="overview"
+          :overview-loading="overviewLoading"
+        />
       </template>
     </div>
   </div>
