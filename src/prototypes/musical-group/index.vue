@@ -3,12 +3,18 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { clearCommonsImageCache } from './data/commonsImages'
+import {
+  loadHeaderVariantPreference,
+  saveHeaderVariantPreference,
+} from './data/headerVariantPreference'
 import { loadMusicalGroup } from './data/loadMusicalGroup'
 import { loadMusicalGroupOverview, isCachedOverviewUsable } from './data/loadMusicalGroupOverview'
 import { clearMusicalGroupCache, getCachedMusicalGroup } from './data/musicalGroupCache'
-import type { MusicalGroupData, MusicalGroupOverviewData } from './data/types'
+import { NOT_MUSIC_PERFORMER_ERROR, type MusicalGroupData, type MusicalGroupOverviewData } from './data/types'
 import { normalizeQid } from './data/wikidataApi'
-import WikitaChromeHeader from './components/WikitaChromeHeader.vue'
+import WikitaChromeHeader, {
+  type WikitaChromeHeaderVariant,
+} from './components/WikitaChromeHeader.vue'
 import MusicalGroupScreen from './MusicalGroupScreen.vue'
 import MusicalGroupSearch from './MusicalGroupSearch.vue'
 import MusicalGroupTitleRow from './MusicalGroupTitleRow.vue'
@@ -18,7 +24,7 @@ import { CdxProgressBar, CdxToastContainer } from '@wikimedia/codex'
 definePage({
   meta: {
     title: 'Wikita',
-    description: 'Browse music groups within Wikita.',
+    description: 'Browse musicians and groups within Wikita.',
   },
 })
 
@@ -33,6 +39,11 @@ const overviewLoading = ref(false)
 const fetchError = ref<string | null>(null)
 const validationFailed = ref(false)
 const searchOpen = ref(false)
+const headerVariant = ref<WikitaChromeHeaderVariant>(loadHeaderVariantPreference())
+
+watch(headerVariant, (variant) => {
+  saveHeaderVariantPreference(variant)
+})
 
 let fetchAbort: AbortController | null = null
 let overviewAbort: AbortController | null = null
@@ -64,12 +75,12 @@ async function loadItem(id: string) {
     data.value = loaded
   } catch (err) {
     if ((err as Error).name === 'AbortError') return
-    if ((err as Error).message === 'Not a musical group') {
+    if ((err as Error).message === NOT_MUSIC_PERFORMER_ERROR) {
       validationFailed.value = true
-      fetchError.value = 'That item is not a musical group (or subclass).'
+      fetchError.value = 'That item is not a musician, composer, or musical group.'
       return
     }
-    fetchError.value = 'Could not load this musical group. Try again.'
+    fetchError.value = 'Could not load this artist. Try again.'
   } finally {
     loading.value = false
   }
@@ -143,7 +154,9 @@ function onToggleSearch() {
 
 async function onNavigate(id: string) {
   searchOpen.value = false
-  await router.replace({ query: { ...route.query, item: id } })
+  const query = { ...route.query, item: id }
+  delete query.tab
+  await router.replace({ query })
 }
 
 async function onResetStoredData() {
@@ -171,6 +184,7 @@ async function onResetStoredData() {
     <div class="musical-group-page">
       <MusicalGroupSearch
         v-if="showSearch"
+        v-model:header-variant="headerVariant"
         :error="fetchError"
         @navigate="onNavigate"
         @toggle-search="onToggleSearch"
@@ -180,6 +194,7 @@ async function onResetStoredData() {
       <template v-else>
         <div v-if="showEntityChrome" class="musical-group-chrome-stack">
           <WikitaChromeHeader
+            v-model:variant="headerVariant"
             @toggle-search="onToggleSearch"
             @reset-stored-data="onResetStoredData"
           />
@@ -218,7 +233,7 @@ async function onResetStoredData() {
 }
 
 .musical-group-page {
-  --musical-group-chrome-height: 42px;
+  --musical-group-chrome-height: 40px;
   --musical-group-title-height: 47px;
   --musical-group-chrome-stack-height: calc(
     var(--musical-group-chrome-height) + var(--spacing-50) + var(--musical-group-title-height)
@@ -239,7 +254,7 @@ async function onResetStoredData() {
   margin: 0 auto;
   overflow-x: hidden;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
   background-color: var(--background-color-base);
 }
@@ -266,18 +281,18 @@ async function onResetStoredData() {
 }
 </style>
 
-<!-- Title rule expands only while sticky chrome overlaps the carousel; retracts when tabs stick -->
+<!-- Title rule expands only while sticky chrome overlaps the carousel track; retracts when tabs stick -->
 <style>
 .musical-group-page[data-title-expanded]:not([data-tabs-stuck])
   .musical-group-chrome-stack
-  .musical-group-title-row::after {
-  left: 0;
-  right: 0;
+  .wikita-title__header::after {
+  left: calc(-1 * var(--spacing-50));
+  right: calc(-1 * var(--spacing-50));
 }
 
-.musical-group-page[data-tabs-stuck] .musical-group-chrome-stack .musical-group-title-row::after {
-  left: var(--spacing-50);
-  right: var(--spacing-50);
+.musical-group-page[data-tabs-stuck] .musical-group-chrome-stack .wikita-title__header::after {
+  left: 0;
+  right: 0;
 }
 
 .musical-group-page[data-tabs-stuck]:not([data-scroll-at-end]) .musical-group-tabs::before {

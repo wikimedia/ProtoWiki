@@ -4,6 +4,7 @@ import type { CarouselImage } from './data/types'
 
 interface Props {
   images: CarouselImage[]
+  description?: string
   loading?: boolean
 }
 
@@ -16,6 +17,8 @@ function slideStyle(image: CarouselImage) {
 
 <template>
   <div class="image-carousel">
+    <p v-if="description" class="image-carousel__description">{{ description }}</p>
+
     <div v-if="!loading" class="image-carousel__track">
       <template v-if="images.length">
         <div
@@ -35,15 +38,27 @@ function slideStyle(image: CarouselImage) {
 
 <style scoped>
 .image-carousel {
-  margin-inline: calc(-1 * var(--spacing-50));
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-50);
+}
+
+.image-carousel__description {
+  margin: 0;
+  font-size: var(--font-size-medium);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-medium);
+  color: var(--color-emphasized);
 }
 
 .image-carousel__track {
   display: flex;
   gap: 10px;
   height: v-bind('`${CAROUSEL_SLIDE_HEIGHT}px`');
+  margin-inline: calc(-1 * var(--spacing-50));
   overflow-x: auto;
   overscroll-behavior-x: none;
+  touch-action: pan-x;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }

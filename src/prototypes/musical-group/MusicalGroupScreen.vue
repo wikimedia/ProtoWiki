@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-
 import ImageCarousel from './ImageCarousel.vue'
 import MusicalGroupFacts from './MusicalGroupFacts.vue'
-import MusicalGroupHeader from './MusicalGroupHeader.vue'
-import MusicalGroupInfo from './MusicalGroupInfo.vue'
+import WikitaCardTable from './components/WikitaCardTable.vue'
 import MusicalGroupOverview from './MusicalGroupOverview.vue'
 import MusicalGroupTabs from './MusicalGroupTabs.vue'
-import type { MusicalGroupData, MusicalGroupOverviewData, TabId } from './data/types'
+import type { MusicalGroupData, MusicalGroupOverviewData } from './data/types'
+import { useMusicalGroupRoute } from './useMusicalGroupRoute'
 import { useMusicalGroupScrollStates } from './useMusicalGroupScrollStates'
 
 interface Props {
@@ -19,7 +17,7 @@ interface Props {
 
 defineProps<Props>()
 
-const activeTab = ref<TabId>('overview')
+const { activeTab, setTab } = useMusicalGroupRoute()
 
 useMusicalGroupScrollStates()
 </script>
@@ -27,24 +25,29 @@ useMusicalGroupScrollStates()
 <template>
   <div class="musical-group-screen">
     <div class="musical-group-screen__intro">
-      <MusicalGroupHeader :data="data" />
-      <ImageCarousel :images="data.images" :loading="loadingImages" />
+      <ImageCarousel
+        :images="data.images"
+        :description="data.description"
+        :loading="loadingImages"
+      />
     </div>
     <div class="musical-group-screen__details">
       <MusicalGroupFacts :data="data" />
       <div class="musical-group-screen__tabs-section">
-        <MusicalGroupTabs v-model:active-tab="activeTab" />
+        <MusicalGroupTabs :active-tab="activeTab" @update:active-tab="setTab" />
         <div class="musical-group-screen__panel">
           <MusicalGroupOverview
             v-if="activeTab === 'overview'"
             :overview="overview"
             :overview-loading="overviewLoading"
             :carousel-images="data.images"
+            :enwiki-title="data.enwikiTitle"
           />
-          <MusicalGroupInfo
+          <WikitaCardTable
             v-else-if="activeTab === 'info' && !overviewLoading"
-            :infobox="overview?.infobox"
-            :last-edited-label="overview?.article?.lastEditedLabel"
+            :rows="overview?.infobox?.rows ?? []"
+            :info-left="overview?.article?.lastEditedLabel"
+            info-right="English Wikipedia"
           />
           <div v-else class="musical-group-screen__placeholder"></div>
         </div>

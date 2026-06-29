@@ -5,17 +5,23 @@ import { useRoute } from 'vue-router'
 import { CdxProgressBar, CdxTextInput } from '@wikimedia/codex'
 import { cdxIconSearch } from '@wikimedia/codex-icons'
 
-import WikitaCard from './components/WikitaCard.vue'
-import WikitaChromeHeader from './components/WikitaChromeHeader.vue'
-import { isMusicalGroup, parseQidInput, searchMusicalGroups } from './data/wikidataApi'
+import WikitaCardItem from './components/WikitaCardItem.vue'
+import WikitaTitle from './components/WikitaTitle.vue'
+import WikitaChromeHeader, {
+  type WikitaChromeHeaderVariant,
+} from './components/WikitaChromeHeader.vue'
+import { isMusicPerformer, parseQidInput, searchMusicPerformers } from './data/wikidataApi'
 import type { MusicalGroupSearchResult } from './data/types'
-import MusicalGroupTitleBar from './MusicalGroupTitleBar.vue'
 
 interface Props {
   error?: string | null
 }
 
 defineProps<Props>()
+
+const headerVariant = defineModel<WikitaChromeHeaderVariant>('headerVariant', {
+  default: 'black',
+})
 
 const emit = defineEmits<{
   navigate: [id: string]
@@ -53,9 +59,9 @@ async function validateAndNavigate(raw: string) {
   submitting.value = true
   localError.value = null
   try {
-    const valid = await isMusicalGroup(id)
+    const valid = await isMusicPerformer(id)
     if (!valid) {
-      localError.value = 'That item is not a musical group (or subclass).'
+      localError.value = 'That item is not a musician, composer, or musical group.'
       return
     }
     emit('navigate', id)
@@ -78,7 +84,7 @@ async function runSearch(value: string) {
   searching.value = true
 
   try {
-    results.value = await searchMusicalGroups(trimmed, searchAbort.signal)
+    results.value = await searchMusicPerformers(trimmed, searchAbort.signal)
   } catch (err) {
     if ((err as Error).name === 'AbortError') return
     results.value = []
@@ -118,11 +124,19 @@ onMounted(() => {
 <template>
   <div class="musical-group-search">
     <WikitaChromeHeader
+      v-model:variant="headerVariant"
       @toggle-search="emit('toggle-search')"
       @reset-stored-data="emit('reset-stored-data')"
     />
 
-    <MusicalGroupTitleBar title="Search" class="musical-group-search__title-bar" />
+    <WikitaTitle
+      title="Search"
+      :show-bookmark="false"
+      :show-history="false"
+      :show-talk="false"
+      :show-edit="false"
+      class="musical-group-search__title-bar"
+    />
 
     <div class="musical-group-search__body">
       <form class="musical-group-search__form" @submit.prevent="onSubmit">
@@ -132,7 +146,7 @@ onMounted(() => {
           class="musical-group-search__input"
           :start-icon="cdxIconSearch"
           :disabled="submitting"
-          aria-label="Search musical groups"
+          aria-label="Search musicians and groups"
         />
       </form>
 
@@ -140,7 +154,7 @@ onMounted(() => {
 
       <ul v-if="results.length" class="musical-group-search__results">
         <li v-for="result in results" :key="result.id" @click="onResultSelect(result.id)">
-          <WikitaCard
+          <WikitaCardItem
             :href="itemHref(result.id)"
             :show-type="false"
             :show-snippet="false"

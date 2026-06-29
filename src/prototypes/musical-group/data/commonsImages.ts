@@ -64,20 +64,37 @@ async function commonsGet(params: Record<string, string>, signal?: AbortSignal):
   return response.json()
 }
 
+interface ImageInfoEntry {
+  thumburl?: string
+  url?: string
+  width?: number
+  height?: number
+  mime?: string
+}
+
 interface ImageInfoPage {
   title?: string
-  imageinfo?: Array<{ thumburl?: string; url?: string; thumbwidth?: number; thumbheight?: number }>
+  imageinfo?: ImageInfoEntry[]
+}
+
+function isRasterImage(info: ImageInfoEntry): boolean {
+  const mime = info.mime?.toLowerCase() ?? ''
+  if (!mime.startsWith('image/')) return false
+  return (info.width ?? 0) > 0 && (info.height ?? 0) > 0
 }
 
 function imageFromPage(page: ImageInfoPage): CommonsImage | null {
   const info = page.imageinfo?.[0]
-  const url = info?.thumburl ?? info?.url
-  if (!page.title || !url) return null
+  if (!page.title || !info || !isRasterImage(info)) return null
+
+  const url = info.thumburl ?? info.url
+  if (!url || url.includes('/file-type-icons/')) return null
+
   return {
     title: normalizeFileTitle(page.title),
     url,
-    width: info?.thumbwidth ?? 0,
-    height: info?.thumbheight ?? 0,
+    width: info.width ?? 0,
+    height: info.height ?? 0,
   }
 }
 
@@ -90,7 +107,7 @@ async function fetchImageDetails(titles: string[], signal?: AbortSignal): Promis
       action: 'query',
       titles: titles.join('|'),
       prop: 'imageinfo',
-      iiprop: 'url|size',
+      iiprop: 'url|size|mime',
       iiurlwidth: String(THUMB_WIDTH),
     },
     signal,

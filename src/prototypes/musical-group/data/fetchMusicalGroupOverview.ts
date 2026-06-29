@@ -1,14 +1,19 @@
-import { wikimediaApiFetchHeaders } from '@/config'
+import { loadConfig, PROTOWIKI_API_PROJECT_URL, PROTOWIKI_API_USER_AGENT, wikimediaApiFetchHeaders } from '@/config'
 
+import { resolveEditOpportunityCopy } from './editOpportunityCopy'
 import { fetchWithTimeout } from './fetchWithTimeout'
 import type {
   MusicalGroupData,
   MusicalGroupInfobox,
   MusicalGroupInfoboxValue,
   MusicalGroupOverviewData,
+  MusicalGroupOverviewEditOpportunity,
+  MusicalGroupOverviewRelated,
 } from './types'
+import { isMusicPerformer, normalizeQid } from './wikidataApi'
 
 const EN_WIKI_HOST = 'en.wikipedia.org'
+const MICROTASK_QUALITY_CHECK_URL = 'https://microtask-generator.toolforge.org/quality-check'
 
 export interface FetchMusicalGroupOverviewOptions {
   signal?: AbortSignal
@@ -16,6 +21,7 @@ export interface FetchMusicalGroupOverviewOptions {
 
 interface PageSummaryResponse {
   title?: string
+  description?: string
   extract_html?: string
   thumbnail?: { source?: string }
   timestamp?: string
@@ -25,6 +31,69 @@ interface PageSummaryResponse {
 interface SearchHit {
   title?: string
   wordcount?: number
+}
+
+interface QualityCheckPotentialNeed {
+  need?: string
+  score?: number
+}
+
+interface QualityCheckResult {
+  title?: string
+  exists?: boolean
+  potential_needs?: QualityCheckPotentialNeed[]
+}
+
+function microtaskFetchHeaders(): HeadersInit {
+  const contact = loadConfig().apiContact.trim() || 'contact unavailable'
+  const userAgent = `${PROTOWIKI_API_USER_AGENT} (${PROTOWIKI_API_PROJECT_URL}; ${contact}) musical-group-quality-check`
+  return {
+    'Content-Type': 'application/json',
+    'User-Agent': userAgent,
+  }
+}
+
+async function fetchEditOpportunity(
+  title: string,
+  signal?: AbortSignal,
+): Promise<MusicalGroupOverviewEditOpportunity | undefined> {
+  try {
+    const response = await fetchWithTimeout(MICROTASK_QUALITY_CHECK_URL, {
+      method: 'POST',
+      signal,
+      headers: microtaskFetchHeaders(),
+      body: JSON.stringify({ lang: 'en', titles: [title] }),
+    })
+    if (!response.ok) return undefined
+
+    const json = (await response.json()) as { results?: QualityCheckResult[] }
+    const result = json.results?.[0]
+    if (!result?.exists) return undefined
+
+    const needs = (result.potential_needs ?? [])
+      .filter((item): item is { need: string; score: number } => {
+        return typeof item.need === 'string' && typeof item.score === 'number'
+      })
+      .sort((a, b) => b.score - a.score)
+
+    const top = needs[0]
+    if (!top) return undefined
+
+    const copy = resolveEditOpportunityCopy(top.need)
+    return {
+      title: copy.title,
+      body: copy.body,
+      need: top.need,
+      score: top.score,
+    }
+  } catch (err) {
+    if ((err as Error).name === 'AbortError') throw err
+    return undefined
+  }
+}
+
+function normalizeTitle(title: string): string {
+  return title.replace(/ /g, '_').toLowerCase()
 }
 
 function parseMediaWikiTimestamp(timestamp: string): Date {
@@ -111,6 +180,95 @@ async function fetchPageSummary(title: string, signal?: AbortSignal): Promise<Pa
   })
   if (!response.ok) return null
   return (await response.json()) as PageSummaryResponse
+}
+
+async function fetchMorelikeHits(
+  seedTitle: string,
+  signal?: AbortSignal,
+): Promise<SearchHit[]> {
+  const url = wikiActionUrl({
+    action: 'query',
+    list: 'search',
+    srsearch: `morelike:${seedTitle}`,
+    srwhat: 'text',
+    srnamespace: '0',
+    srlimit: '5',
+  })
+
+  const response = await fetchWithTimeout(url, {
+    signal,
+    headers: wikimediaApiFetchHeaders('musical-group-morelike'),
+  })
+  if (!response.ok) return []
+
+  const json = (await response.json()) as { query?: { search?: SearchHit[] } }
+  return json.query?.search ?? []
+}
+
+async function fetchWikibaseItemId(
+  title: string,
+  signal?: AbortSignal,
+): Promise<string | undefined> {
+  const url = wikiActionUrl({
+    action: 'query',
+    prop: 'pageprops',
+    ppprop: 'wikibase_item',
+    titles: title,
+  })
+
+  const response = await fetchWithTimeout(url, {
+    signal,
+    headers: wikimediaApiFetchHeaders('musical-group-wikibase-item'),
+  })
+  if (!response.ok) return undefined
+
+  const json = (await response.json()) as {
+    query?: { pages?: Record<string, { pageprops?: { wikibase_item?: string } }> }
+  }
+  const page = Object.values(json.query?.pages ?? {})[0]
+  return normalizeQid(page?.pageprops?.wikibase_item) ?? undefined
+}
+
+async function fetchMorelikeRelated(
+  seedTitle: string,
+  signal?: AbortSignal,
+): Promise<MusicalGroupOverviewRelated | undefined> {
+  const hits = await fetchMorelikeHits(seedTitle, signal)
+  const normalizedSeed = normalizeTitle(seedTitle)
+  const hit = hits.find((candidate) => {
+    const title = candidate.title
+    return title && normalizeTitle(title) !== normalizedSeed
+  })
+  if (!hit?.title) return undefined
+
+  const relatedTitle = hit.title
+  const [summary, views, wikibaseId] = await Promise.all([
+    fetchPageSummary(relatedTitle, signal),
+    resolvePageviewsLabel(relatedTitle, signal),
+    fetchWikibaseItemId(relatedTitle, signal),
+  ])
+  const timestamp = summary?.timestamp ?? ''
+  const relative = timestamp ? formatRelativeTime(timestamp) : '—'
+
+  let relatedId: string | undefined
+  if (wikibaseId) {
+    const isPerformer = await isMusicPerformer(wikibaseId, signal)
+    if (isPerformer) relatedId = wikibaseId
+  }
+
+  return {
+    id: relatedId,
+    title: summary?.title ?? relatedTitle,
+    description: summary?.description ?? '',
+    thumbnailUrl: summary?.thumbnail?.source,
+    articleUrl:
+      summary?.content_urls?.desktop?.page ??
+      `https://${EN_WIKI_HOST}/wiki/${pageviewsArticleSlug(relatedTitle)}`,
+    lastEditedTimestamp: timestamp,
+    lastEditedLabel: timestamp ? `Updated ${relative}` : 'Updated —',
+    viewCount: views.total,
+    viewsLabel: views.label,
+  }
 }
 
 function collapseWhitespace(text: string): string {
@@ -329,11 +487,13 @@ export async function fetchMusicalGroupOverview(
 
   const title = data.enwikiTitle
 
-  const [summary, wordCount, views, infobox] = await Promise.all([
+  const [summary, wordCount, views, infobox, related, editOpportunity] = await Promise.all([
     fetchPageSummary(title, signal),
     fetchArticleWordCount(title, signal),
     resolvePageviewsLabel(title, signal),
     fetchInfobox(title, signal).catch(() => undefined),
+    fetchMorelikeRelated(title, signal).catch(() => undefined),
+    fetchEditOpportunity(title, signal).catch(() => undefined),
   ])
 
   if (!summary) {
@@ -346,6 +506,8 @@ export async function fetchMusicalGroupOverview(
 
   return {
     infobox,
+    related,
+    editOpportunity,
     article: {
       title: summary.title ?? title,
       extractHtml,

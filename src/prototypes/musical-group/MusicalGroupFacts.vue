@@ -14,10 +14,13 @@ interface Props {
 const props = defineProps<Props>()
 
 const primaryFact = computed(() => {
-  const parts: string[] = []
-  if (props.data.typeLabel) parts.push(props.data.typeLabel)
-  if (props.data.inceptionYear) parts.push(`since ${props.data.inceptionYear}`)
-  return parts.length ? parts.join(' ') : null
+  const { typeLabel, inceptionYear, yearKind } = props.data
+  if (typeLabel && inceptionYear) {
+    if (yearKind === 'birth') return `${typeLabel}, born ${inceptionYear}`
+    return `${typeLabel} since ${inceptionYear}`
+  }
+  if (typeLabel) return typeLabel
+  return null
 })
 
 const genreLine = computed(() =>

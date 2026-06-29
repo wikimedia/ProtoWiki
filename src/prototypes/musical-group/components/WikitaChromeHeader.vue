@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { CdxIcon, CdxMenuButton } from '@wikimedia/codex'
+import { CdxButton, CdxIcon, CdxMenuButton, CdxPopover, CdxSelect } from '@wikimedia/codex'
 import type { MenuItemValue } from '@wikimedia/codex'
 import {
   cdxIconBellOutline,
@@ -10,24 +10,24 @@ import {
   cdxIconUserAvatar,
 } from '@wikimedia/codex-icons'
 
-export type WikitaChromeHeaderVariant =
-  | 'black'
-  | 'off-black'
-  | 'gray'
-  | 'green-light'
-  | 'green-dark'
+import {
+  WIKITA_CHROME_HEADER_VARIANT_MENU_ITEMS,
+  type WikitaChromeHeaderVariant,
+} from '../data/headerVariantPreference'
+
+export type { WikitaChromeHeaderVariant }
 
 interface Props {
-  variant?: WikitaChromeHeaderVariant
   showBell?: boolean
   showUser?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  variant: 'black',
   showBell: true,
   showUser: true,
 })
+
+const variant = defineModel<WikitaChromeHeaderVariant>('variant', { default: 'black' })
 
 const emit = defineEmits<{
   'toggle-search': []
@@ -35,10 +35,16 @@ const emit = defineEmits<{
 }>()
 
 const menuSelected = ref<MenuItemValue | null>(null)
+const userMenuOpen = ref(false)
+const userMenuAnchor = ref<HTMLElement | null>(null)
 
 const menuItems = [{ value: 'reset', label: 'Reset stored data' }]
 
-const variantClass = computed(() => `wikita-chrome-header--${props.variant}`)
+const variantClass = computed(() => `wikita-chrome-header--${variant.value}`)
+
+function toggleUserMenu(): void {
+  userMenuOpen.value = !userMenuOpen.value
+}
 
 function onResetMenuItem(): void {
   emit('reset-stored-data')
@@ -51,11 +57,7 @@ watch(menuSelected, (value) => {
 </script>
 
 <template>
-  <header
-    class="wikita-chrome-header"
-    :class="variantClass"
-    aria-label="Site"
-  >
+  <header class="wikita-chrome-header" :class="variantClass" aria-label="Site">
     <div class="wikita-chrome-header__start">
       <CdxMenuButton
         v-model:selected="menuSelected"
@@ -84,30 +86,39 @@ watch(menuSelected, (value) => {
     </div>
 
     <div class="wikita-chrome-header__actions">
-      <button
-        type="button"
-        class="wikita-chrome-header__icon-btn"
-        aria-label="Search"
-        @click="emit('toggle-search')"
-      >
+      <CdxButton weight="quiet" aria-label="Search" @click="emit('toggle-search')">
         <CdxIcon :icon="cdxIconSearch" />
-      </button>
-      <button
-        v-if="showBell"
-        type="button"
-        class="wikita-chrome-header__icon-btn"
-        aria-label="Notifications"
-      >
+      </CdxButton>
+      <CdxButton v-if="showBell" weight="quiet" aria-label="Notifications">
         <CdxIcon :icon="cdxIconBellOutline" />
-      </button>
-      <button
-        v-if="showUser"
-        type="button"
-        class="wikita-chrome-header__icon-btn"
-        aria-label="User menu"
-      >
-        <CdxIcon :icon="cdxIconUserAvatar" />
-      </button>
+      </CdxButton>
+      <span v-if="showUser" ref="userMenuAnchor" class="wikita-chrome-header__user-menu">
+        <CdxButton
+          weight="quiet"
+          aria-label="User menu"
+          :aria-expanded="userMenuOpen"
+          @click="toggleUserMenu"
+        >
+          <CdxIcon :icon="cdxIconUserAvatar" />
+        </CdxButton>
+        <CdxPopover
+          v-model:open="userMenuOpen"
+          :anchor="userMenuAnchor"
+          placement="bottom-end"
+          class="wikita-chrome-header__user-popover"
+        >
+          <div class="wikita-chrome-header__user-panel" @click.stop>
+            <label class="wikita-chrome-header__user-field">
+              <span class="wikita-chrome-header__user-label">Header color</span>
+              <CdxSelect
+                v-model:selected="variant"
+                :menu-items="WIKITA_CHROME_HEADER_VARIANT_MENU_ITEMS"
+                default-label="Black"
+              />
+            </label>
+          </div>
+        </CdxPopover>
+      </span>
     </div>
   </header>
 </template>
@@ -118,61 +129,171 @@ watch(menuSelected, (value) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 38px;
-  padding: 10px var(--spacing-50);
+  padding-block: 2px;
+  padding-inline: 2px;
   border-bottom: 2px solid var(--wikita-chrome-header-border, var(--border-color-interactive));
   background-color: var(--wikita-chrome-header-bg, var(--background-color-inverted));
   color: var(--wikita-chrome-header-fg, var(--color-inverted));
+  --wikita-chrome-header-btn-hover-bg: rgba(255, 255, 255, 0.12);
 }
 
 .wikita-chrome-header--black {
   --wikita-chrome-header-bg: var(--background-color-inverted);
   --wikita-chrome-header-border: var(--border-color-interactive);
-  --wikita-chrome-header-fg: var(--color-inverted);
+  --wikita-chrome-header-fg: var(--color-inverted-fixed);
 }
 
 .wikita-chrome-header--off-black {
   --wikita-chrome-header-bg: #27292d;
   --wikita-chrome-header-border: var(--color-base);
-  --wikita-chrome-header-fg: var(--color-inverted);
+  --wikita-chrome-header-fg: var(--color-inverted-fixed);
 }
 
 .wikita-chrome-header--gray {
   --wikita-chrome-header-bg: var(--background-color-neutral);
   --wikita-chrome-header-border: var(--border-color-muted);
-  --wikita-chrome-header-fg: var(--color-base);
+  --wikita-chrome-header-fg: var(--color-notice);
+}
+
+.wikita-chrome-header--red-light {
+  --wikita-chrome-header-bg: #fea998;
+  --wikita-chrome-header-border: #ff7357;
+  --wikita-chrome-header-fg: #e02500;
+}
+
+.wikita-chrome-header--red-dark {
+  --wikita-chrome-header-bg: #ff2b00;
+  --wikita-chrome-header-border: #e02500;
+  --wikita-chrome-header-fg: var(--color-inverted-fixed);
+}
+
+.wikita-chrome-header--orange-light {
+  --wikita-chrome-header-bg: #ffa666;
+  --wikita-chrome-header-border: #ff7a1a;
+  --wikita-chrome-header-fg: #c75300;
+}
+
+.wikita-chrome-header--orange-dark {
+  --wikita-chrome-header-bg: #db5b00;
+  --wikita-chrome-header-border: #c75300;
+  --wikita-chrome-header-fg: var(--color-inverted-fixed);
+}
+
+.wikita-chrome-header--yellow-light {
+  --wikita-chrome-header-bg: #f2b200;
+  --wikita-chrome-header-border: #cf9700;
+  --wikita-chrome-header-fg: #cf9700;
+}
+
+.wikita-chrome-header--yellow-dark {
+  --wikita-chrome-header-bg: #a87b00;
+  --wikita-chrome-header-border: #997000;
+  --wikita-chrome-header-fg: var(--color-inverted-fixed);
+}
+
+.wikita-chrome-header--lime-light {
+  --wikita-chrome-header-bg: #00de43;
+  --wikita-chrome-header-border: #00ba38;
+  --wikita-chrome-header-fg: #1d9d47;
+}
+
+.wikita-chrome-header--lime-dark {
+  --wikita-chrome-header-bg: #00992e;
+  --wikita-chrome-header-border: #008a29;
+  --wikita-chrome-header-fg: var(--color-inverted-fixed);
 }
 
 .wikita-chrome-header--green-light {
   --wikita-chrome-header-bg: #00f3aa;
   --wikita-chrome-header-border: #00db9a;
-  --wikita-chrome-header-fg: var(--color-base);
+  --wikita-chrome-header-fg: #00875f;
 }
 
 .wikita-chrome-header--green-dark {
   --wikita-chrome-header-bg: #00b881;
   --wikita-chrome-header-border: #009669;
-  --wikita-chrome-header-fg: var(--color-inverted);
+  --wikita-chrome-header-fg: var(--color-inverted-fixed);
+}
+
+.wikita-chrome-header--blue-light {
+  --wikita-chrome-header-bg: #a3c2ff;
+  --wikita-chrome-header-border: #709fff;
+  --wikita-chrome-header-fg: #246cff;
+}
+
+.wikita-chrome-header--blue-dark {
+  --wikita-chrome-header-bg: #3d7dff;
+  --wikita-chrome-header-border: #246cff;
+  --wikita-chrome-header-fg: var(--color-inverted-fixed);
+}
+
+.wikita-chrome-header--purple-light {
+  --wikita-chrome-header-bg: #d1b2ff;
+  --wikita-chrome-header-border: #b787ff;
+  --wikita-chrome-header-fg: #7a6db7;
+}
+
+.wikita-chrome-header--purple-dark {
+  --wikita-chrome-header-bg: #9f5eff;
+  --wikita-chrome-header-border: #934aff;
+  --wikita-chrome-header-fg: var(--color-inverted-fixed);
+}
+
+.wikita-chrome-header--pink-light {
+  --wikita-chrome-header-bg: #ffa1e5;
+  --wikita-chrome-header-border: #ff63d4;
+  --wikita-chrome-header-fg: #c764bb;
+}
+
+.wikita-chrome-header--pink-dark {
+  --wikita-chrome-header-bg: #f500b1;
+  --wikita-chrome-header-border: #e000a3;
+  --wikita-chrome-header-fg: var(--color-inverted-fixed);
+}
+
+.wikita-chrome-header--maroon-light {
+  --wikita-chrome-header-bg: #ffa6bd;
+  --wikita-chrome-header-border: #ff6e93;
+  --wikita-chrome-header-fg: #f0003d;
+}
+
+.wikita-chrome-header--maroon-dark {
+  --wikita-chrome-header-bg: #ff215a;
+  --wikita-chrome-header-border: #f0003d;
+  --wikita-chrome-header-fg: var(--color-inverted-fixed);
+}
+
+.wikita-chrome-header--gray,
+.wikita-chrome-header--red-light,
+.wikita-chrome-header--orange-light,
+.wikita-chrome-header--yellow-light,
+.wikita-chrome-header--lime-light,
+.wikita-chrome-header--green-light,
+.wikita-chrome-header--blue-light,
+.wikita-chrome-header--purple-light,
+.wikita-chrome-header--pink-light,
+.wikita-chrome-header--maroon-light {
+  --wikita-chrome-header-btn-hover-bg: rgba(0, 0, 0, 0.08);
 }
 
 .wikita-chrome-header__start {
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: var(--spacing-50);
 }
 
 .wikita-chrome-header__menu-btn {
-  display: inline-flex;
   flex-shrink: 0;
-  align-items: center;
-  height: 18px;
   line-height: 0;
 }
 
 .wikita-chrome-header__wordmark {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
   color: inherit;
 }
 
@@ -186,33 +307,73 @@ watch(menuSelected, (value) => {
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 12px;
 }
 
-.wikita-chrome-header__icon-btn {
+.wikita-chrome-header__user-menu {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.wikita-chrome-header__user-panel {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  min-width: 18px;
-  min-height: 18px;
-  max-height: 18px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+  flex-direction: column;
+  gap: var(--spacing-100);
+  min-width: 14rem;
+}
+
+.wikita-chrome-header__user-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-25);
+}
+
+.wikita-chrome-header__user-label {
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-subtle);
 }
 </style>
 
 <!-- Unscoped: beat Codex [dir] + interaction selectors on the chrome bar. -->
 <style>
+.wikita-chrome-header {
+  position: relative;
+  z-index: 1;
+}
+
+.wikita-chrome-header .cdx-menu-button {
+  position: relative;
+}
+
+.wikita-chrome-header .cdx-menu-button__menu-wrapper {
+  z-index: 1;
+}
+
+.wikita-chrome-header .cdx-button,
+[dir] .wikita-chrome-header .cdx-button,
+[dir] .wikita-chrome-header .cdx-menu-button .cdx-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  min-width: 32px;
+  min-height: 32px;
+  width: 32px;
+  height: 32px;
+  max-height: 32px;
+  padding: 0;
+  border: 0;
+  color: var(--wikita-chrome-header-fg, var(--color-inverted-fixed)) !important;
+  background-color: transparent !important;
+  mix-blend-mode: normal !important;
+  isolation: isolate;
+  transition: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .wikita-chrome-header .cdx-icon {
-  width: 18px;
-  height: 18px;
-  color: var(--wikita-chrome-header-fg, var(--color-inverted));
+  color: var(--wikita-chrome-header-fg, var(--color-inverted-fixed)) !important;
 }
 
 .wikita-chrome-header .cdx-icon svg,
@@ -220,65 +381,54 @@ watch(menuSelected, (value) => {
   fill: currentColor;
 }
 
-.wikita-chrome-header .wikita-chrome-header__icon-btn:hover,
-.wikita-chrome-header .wikita-chrome-header__icon-btn:active,
-.wikita-chrome-header .wikita-chrome-header__icon-btn:focus,
-.wikita-chrome-header .wikita-chrome-header__icon-btn:focus-visible {
-  background: transparent;
-  color: var(--wikita-chrome-header-fg, var(--color-inverted));
-}
-
-.wikita-chrome-header .wikita-chrome-header__menu-btn.cdx-menu-button .cdx-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  min-width: 18px;
-  min-height: 18px;
-  max-height: 18px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--wikita-chrome-header-fg, var(--color-inverted));
-  mix-blend-mode: normal;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.wikita-chrome-header .wikita-chrome-header__menu-btn.cdx-menu-button .cdx-button:hover,
-.wikita-chrome-header .wikita-chrome-header__menu-btn.cdx-menu-button .cdx-button:active,
-.wikita-chrome-header .wikita-chrome-header__menu-btn.cdx-menu-button .cdx-button:focus,
-.wikita-chrome-header .wikita-chrome-header__menu-btn.cdx-menu-button .cdx-button:focus-visible,
-.wikita-chrome-header .wikita-chrome-header__menu-btn.cdx-menu-button .cdx-button.cdx-button--is-active,
+.wikita-chrome-header .cdx-button:hover,
+.wikita-chrome-header .cdx-button:active,
+.wikita-chrome-header .cdx-button:focus,
+.wikita-chrome-header .cdx-button:focus-visible,
+.wikita-chrome-header .cdx-button.cdx-button--is-active,
+.wikita-chrome-header .cdx-menu-button .cdx-button:hover,
+.wikita-chrome-header .cdx-menu-button .cdx-button:active,
+.wikita-chrome-header .cdx-menu-button .cdx-button:focus,
+.wikita-chrome-header .cdx-menu-button .cdx-button:focus-visible,
+.wikita-chrome-header .cdx-menu-button .cdx-button.cdx-button--is-active,
+[dir] .wikita-chrome-header .cdx-button.cdx-button--weight-quiet:enabled:hover,
+[dir] .wikita-chrome-header .cdx-button.cdx-button--weight-quiet:enabled:active,
+[dir] .wikita-chrome-header .cdx-button.cdx-button--weight-quiet.cdx-button--is-active,
 [dir]
   .wikita-chrome-header
-  .wikita-chrome-header__menu-btn.cdx-menu-button
-  .cdx-button.cdx-button--weight-quiet:enabled:hover,
+  .cdx-button.cdx-button--weight-quiet:enabled:focus:not(:active):not(.cdx-button--is-active),
+[dir] .wikita-chrome-header .cdx-menu-button .cdx-button.cdx-button--weight-quiet:enabled:hover,
+[dir] .wikita-chrome-header .cdx-menu-button .cdx-button.cdx-button--weight-quiet:enabled:active,
 [dir]
   .wikita-chrome-header
-  .wikita-chrome-header__menu-btn.cdx-menu-button
-  .cdx-button.cdx-button--weight-quiet:enabled:active,
-[dir]
-  .wikita-chrome-header
-  .wikita-chrome-header__menu-btn.cdx-menu-button
+  .cdx-menu-button
   .cdx-button.cdx-button--weight-quiet.cdx-button--is-active,
 [dir]
   .wikita-chrome-header
-  .wikita-chrome-header__menu-btn.cdx-menu-button
+  .cdx-menu-button
   .cdx-button.cdx-button--weight-quiet:enabled:focus:not(:active):not(.cdx-button--is-active) {
-  background: transparent;
-  background-color: transparent;
-  border-color: transparent;
-  color: var(--wikita-chrome-header-fg, var(--color-inverted));
-  box-shadow: none;
-  mix-blend-mode: normal;
+  background: var(--wikita-chrome-header-btn-hover-bg) !important;
+  background-color: var(--wikita-chrome-header-btn-hover-bg) !important;
+  border-color: transparent !important;
+  color: var(--wikita-chrome-header-fg, var(--color-inverted-fixed)) !important;
+  box-shadow: none !important;
+  mix-blend-mode: normal !important;
 }
 
-.wikita-chrome-header
-  .wikita-chrome-header__menu-btn.cdx-menu-button
-  .cdx-button
-  .cdx-icon {
-  color: var(--wikita-chrome-header-fg, var(--color-inverted));
+.wikita-chrome-header .cdx-button:hover .cdx-icon,
+.wikita-chrome-header .cdx-button:active .cdx-icon,
+.wikita-chrome-header .cdx-button:focus .cdx-icon,
+.wikita-chrome-header .cdx-button:focus-visible .cdx-icon,
+.wikita-chrome-header .cdx-button.cdx-button--is-active .cdx-icon,
+.wikita-chrome-header .cdx-menu-button .cdx-button:hover .cdx-icon,
+.wikita-chrome-header .cdx-menu-button .cdx-button:active .cdx-icon,
+.wikita-chrome-header .cdx-menu-button .cdx-button:focus .cdx-icon,
+.wikita-chrome-header .cdx-menu-button .cdx-button:focus-visible .cdx-icon,
+.wikita-chrome-header .cdx-menu-button .cdx-button.cdx-button--is-active .cdx-icon {
+  color: var(--wikita-chrome-header-fg, var(--color-inverted-fixed)) !important;
+}
+
+.wikita-chrome-header__user-popover .cdx-popover__body {
+  overflow: visible;
 }
 </style>

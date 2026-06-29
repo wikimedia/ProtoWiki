@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RouterLink, type RouteLocationRaw } from 'vue-router'
+import type { RouteLocationRaw } from 'vue-router'
 
 import { CdxIcon } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
+
+import WikitaCardWrapper from './WikitaCardWrapper.vue'
 
 interface Props {
   showType?: boolean
@@ -22,6 +24,7 @@ interface Props {
   thumbnailAlt?: string
   typeIcon?: Icon
   href?: RouteLocationRaw
+  externalHref?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -41,6 +44,7 @@ const props = withDefaults(defineProps<Props>(), {
   thumbnailAlt: '',
   typeIcon: undefined,
   href: undefined,
+  externalHref: undefined,
 })
 
 const showTypeRow = computed(() => props.showType && Boolean(props.type || props.typeIcon))
@@ -57,134 +61,60 @@ const showFooterRow = computed(() => props.showInfo && Boolean(props.infoLeft ||
 </script>
 
 <template>
-  <RouterLink v-if="href" v-slot="{ href: linkHref, navigate }" :to="href" custom>
-    <a :href="linkHref" class="wikita-card wikita-card--link" @click="navigate">
-      <div class="wikita-card__inner">
-        <div class="wikita-card__header-row">
-          <div class="wikita-card__lead">
-            <div v-if="showTypeRow" class="wikita-card__type">
-              <CdxIcon v-if="typeIcon" :icon="typeIcon" class="wikita-card__type-icon" />
-              <span class="wikita-card__type-label">{{ type }}</span>
-            </div>
-
-            <div v-if="showTitleLine || showBodyLine" class="wikita-card__text">
-              <p
-                v-if="showTitleLine"
-                class="wikita-card__title"
-                :class="{ 'wikita-card__title--bold': titleBold }"
-              >
-                {{ title }}
-              </p>
-              <p v-if="showBodyLine" class="wikita-card__body">{{ body }}</p>
-            </div>
+  <WikitaCardWrapper :href="href" :external-href="externalHref">
+    <div class="wikita-card-item">
+      <div class="wikita-card-item__header-row">
+        <div class="wikita-card-item__lead">
+          <div v-if="showTypeRow" class="wikita-card-item__type">
+            <CdxIcon v-if="typeIcon" :icon="typeIcon" class="wikita-card-item__type-icon" />
+            <span class="wikita-card-item__type-label">{{ type }}</span>
           </div>
 
-          <div v-if="showThumb" class="wikita-card__thumb-wrap">
-            <img
-              class="wikita-card__thumb"
-              :src="thumbnailUrl"
-              :alt="thumbnailAlt"
-              loading="lazy"
-            />
-          </div>
-          <div v-else-if="showThumbnail" class="wikita-card__thumb-wrap">
-            <span class="wikita-card__thumb-placeholder" aria-hidden="true" />
-          </div>
-        </div>
-
-        <p v-if="showSnippetBlock" class="wikita-card__snippet">{{ snippet }}</p>
-
-        <small v-if="showFooterRow" class="wikita-card__footer">
-          <span>{{ infoLeft }}</span>
-          <span>{{ infoRight }}</span>
-        </small>
-      </div>
-    </a>
-  </RouterLink>
-
-  <article v-else class="wikita-card">
-    <div class="wikita-card__inner">
-      <div class="wikita-card__header-row">
-        <div class="wikita-card__lead">
-          <div v-if="showTypeRow" class="wikita-card__type">
-            <CdxIcon v-if="typeIcon" :icon="typeIcon" class="wikita-card__type-icon" />
-            <span class="wikita-card__type-label">{{ type }}</span>
-          </div>
-
-          <div v-if="showTitleLine || showBodyLine" class="wikita-card__text">
+          <div v-if="showTitleLine || showBodyLine" class="wikita-card-item__text">
             <p
               v-if="showTitleLine"
-              class="wikita-card__title"
-              :class="{ 'wikita-card__title--bold': titleBold }"
+              class="wikita-card-item__title"
+              :class="{ 'wikita-card-item__title--bold': titleBold }"
             >
               {{ title }}
             </p>
-            <p v-if="showBodyLine" class="wikita-card__body">{{ body }}</p>
+            <p v-if="showBodyLine" class="wikita-card-item__body">{{ body }}</p>
           </div>
         </div>
 
-        <div v-if="showThumb" class="wikita-card__thumb-wrap">
+        <div v-if="showThumb" class="wikita-card-item__thumb-wrap">
           <img
-            class="wikita-card__thumb"
+            class="wikita-card-item__thumb"
             :src="thumbnailUrl"
             :alt="thumbnailAlt"
             loading="lazy"
             draggable="false"
           />
         </div>
-        <div v-else-if="showThumbnail" class="wikita-card__thumb-wrap">
-          <span class="wikita-card__thumb-placeholder" aria-hidden="true" />
+        <div v-else-if="showThumbnail" class="wikita-card-item__thumb-wrap">
+          <span class="wikita-card-item__thumb-placeholder" aria-hidden="true" />
         </div>
       </div>
 
-      <p v-if="showSnippetBlock" class="wikita-card__snippet">{{ snippet }}</p>
+      <p v-if="showSnippetBlock" class="wikita-card-item__snippet">{{ snippet }}</p>
 
-      <small v-if="showFooterRow" class="wikita-card__footer">
+      <small v-if="showFooterRow" class="wikita-card-item__footer">
         <span>{{ infoLeft }}</span>
         <span>{{ infoRight }}</span>
       </small>
     </div>
-  </article>
+  </WikitaCardWrapper>
 </template>
 
 <style scoped>
-.wikita-card {
-  box-sizing: border-box;
+.wikita-card-item {
   display: flex;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  border: 1px solid var(--color-base);
-  border-radius: 4px;
-  background-color: var(--background-color-base);
-  color: var(--color-base);
-  font: inherit;
-  text-align: start;
-  text-decoration: none;
-}
-
-.wikita-card--link {
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.wikita-card--link:hover,
-.wikita-card--link:focus,
-.wikita-card--link:visited {
-  color: var(--color-base);
-  text-decoration: none;
-}
-
-.wikita-card__inner {
-  display: flex;
-  flex: 1;
   flex-direction: column;
   gap: var(--spacing-50);
   min-width: 0;
-  padding: var(--spacing-100);
 }
 
-.wikita-card__header-row {
+.wikita-card-item__header-row {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -192,36 +122,36 @@ const showFooterRow = computed(() => props.showInfo && Boolean(props.infoLeft ||
   width: 100%;
 }
 
-.wikita-card__lead {
+.wikita-card-item__lead {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-50);
   min-width: 0;
 }
 
-.wikita-card__type {
+.wikita-card-item__type {
   display: flex;
   align-items: center;
   gap: var(--spacing-25);
 }
 
-.wikita-card__type-icon {
+.wikita-card-item__type-icon {
   flex-shrink: 0;
 }
 
-.wikita-card__type-label {
+.wikita-card-item__type-label {
   font-size: var(--font-size-medium);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-small);
 }
 
-.wikita-card__text {
+.wikita-card-item__text {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
 
-.wikita-card__title {
+.wikita-card-item__title {
   margin: 0;
   font-size: var(--font-size-medium);
   font-weight: var(--font-weight-normal);
@@ -229,11 +159,11 @@ const showFooterRow = computed(() => props.showInfo && Boolean(props.infoLeft ||
   color: var(--color-base);
 }
 
-.wikita-card__title--bold {
+.wikita-card-item__title--bold {
   font-weight: var(--font-weight-bold);
 }
 
-.wikita-card__body {
+.wikita-card-item__body {
   margin: 0;
   font-size: var(--font-size-medium);
   font-weight: var(--font-weight-normal);
@@ -241,7 +171,7 @@ const showFooterRow = computed(() => props.showInfo && Boolean(props.infoLeft ||
   color: var(--color-base);
 }
 
-.wikita-card__snippet {
+.wikita-card-item__snippet {
   display: -webkit-box;
   margin: 0;
   overflow: hidden;
@@ -255,12 +185,12 @@ const showFooterRow = computed(() => props.showInfo && Boolean(props.infoLeft ||
   line-clamp: 3;
 }
 
-.wikita-card__thumb-wrap {
+.wikita-card-item__thumb-wrap {
   flex-shrink: 0;
   padding-left: var(--spacing-50);
 }
 
-.wikita-card__thumb {
+.wikita-card-item__thumb {
   display: block;
   width: 64px;
   height: 64px;
@@ -268,7 +198,7 @@ const showFooterRow = computed(() => props.showInfo && Boolean(props.infoLeft ||
   border: 1px solid var(--color-base);
 }
 
-.wikita-card__thumb-placeholder {
+.wikita-card-item__thumb-placeholder {
   display: block;
   width: 64px;
   height: 64px;
@@ -276,7 +206,7 @@ const showFooterRow = computed(() => props.showInfo && Boolean(props.infoLeft ||
   background-color: var(--background-color-interactive-subtle);
 }
 
-.wikita-card__footer {
+.wikita-card-item__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;

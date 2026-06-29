@@ -3,8 +3,9 @@ import { computed } from 'vue'
 
 import { cdxIconNewspaper } from '@wikimedia/codex-icons'
 
-import WikitaCard from './components/WikitaCard.vue'
+import WikitaCardItem from './components/WikitaCardItem.vue'
 import type { MusicalGroupOverviewArticle } from './data/types'
+import { useMusicalGroupRoute } from './useMusicalGroupRoute'
 
 interface Props {
   article?: MusicalGroupOverviewArticle
@@ -12,6 +13,11 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { tabRoute } = useMusicalGroupRoute()
+
+const cardHref = computed(() =>
+  props.article && !props.noArticle ? tabRoute('article') : undefined,
+)
 
 function plainExtract(html?: string): string {
   if (!html) return ''
@@ -42,7 +48,8 @@ const infoRight = computed(() => {
 </script>
 
 <template>
-  <WikitaCard
+  <WikitaCardItem
+    :href="cardHref"
     :show-snippet="Boolean(cardSnippet)"
     :title-bold="false"
     type="Article"

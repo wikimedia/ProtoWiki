@@ -1,7 +1,27 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 
 import { fetchWithTimeout } from './fetchWithTimeout'
-import { MUSICAL_GROUP_QID, type EditIndicator, type MusicalGroupSearchResult } from './types'
+import {
+  MUSIC_PERFORMER_QIDS,
+  type EditIndicator,
+  type MusicalGroupSearchResult,
+  type YearKind,
+} from './types'
+
+function musicPerformerValuesClause(variable = '?anchor'): string {
+  const values = MUSIC_PERFORMER_QIDS.map((qid) => `wd:${qid}`).join(' ')
+  return `VALUES ${variable} { ${values} }`
+}
+
+function musicPerformerMatchClause(subject: string): string {
+  return `{
+  ${subject} wdt:P31/wdt:P279* ?anchor .
+  ${musicPerformerValuesClause('?anchor')}
+} UNION {
+  ${subject} wdt:P106/wdt:P279* ?anchor .
+  ${musicPerformerValuesClause('?anchor')}
+}`
+}
 
 const WIKIDATA_API = 'https://www.wikidata.org/w/api.php'
 const WIKIDATA_SPARQL = 'https://query.wikidata.org/sparql'
@@ -48,16 +68,16 @@ export function parseQidInput(raw: string): string | null {
   return null
 }
 
-export async function isMusicalGroup(id: string, signal?: AbortSignal): Promise<boolean> {
+export async function isMusicPerformer(id: string, signal?: AbortSignal): Promise<boolean> {
   const query = `
 ASK {
-  wd:${id} wdt:P31/wdt:P279* wd:${MUSICAL_GROUP_QID} .
+  ${musicPerformerMatchClause(`wd:${id}`)}
 }`
   const data = await sparqlQuery<{ boolean: boolean }>(query, signal)
   return Boolean(data.boolean)
 }
 
-export async function searchMusicalGroups(
+export async function searchMusicPerformers(
   searchText: string,
   signal?: AbortSignal,
 ): Promise<MusicalGroupSearchResult[]> {
@@ -74,7 +94,7 @@ SELECT ?item ?itemLabel ?itemDescription ?image WHERE {
                      mwapi:language "en".
     ?item wikibase:apiOutputItem "@id".
   }
-  ?item wdt:P31/wdt:P279* wd:${MUSICAL_GROUP_QID} .
+  ${musicPerformerMatchClause('?item')}
   OPTIONAL { ?item wdt:P18 ?image }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
 }
@@ -137,6 +157,7 @@ export interface ParsedEntityClaims {
   enwikiTitle?: string
   websiteUrl?: string
   inceptionYear?: number
+  yearKind?: YearKind
   genreIds: string[]
   typeIds: string[]
 }
@@ -220,6 +241,17 @@ export async function fetchEntityClaims(
 
   const claims = entity.claims ?? {}
   const inceptionYear = claims.P571?.length ? claimTimeYear(claims.P571[0]) : null
+  const birthYear = claims.P569?.length ? claimTimeYear(claims.P569[0]) : null
+
+  let year: number | undefined
+  let yearKind: YearKind | undefined
+  if (inceptionYear != null) {
+    year = inceptionYear
+    yearKind = 'inception'
+  } else if (birthYear != null) {
+    year = birthYear
+    yearKind = 'birth'
+  }
 
   return {
     label,
@@ -228,7 +260,8 @@ export async function fetchEntityClaims(
     commonsCategory: firstClaimString(claims.P373),
     enwikiTitle: entity.sitelinks?.enwiki?.title,
     websiteUrl: firstClaimString(claims.P856),
-    inceptionYear: inceptionYear ?? undefined,
+    inceptionYear: year,
+    yearKind,
     genreIds: allClaimEntityIds(claims.P136),
     typeIds: allClaimEntityIds(claims.P31),
   }
@@ -270,17 +303,22 @@ export async function resolveEntityLabels(
   return labels
 }
 
-export async function resolveMusicalTypeLabel(
+export async function resolveMusicTypeLabel(
   entityId: string,
-  typeIds: string[],
+  _typeIds: string[],
   signal?: AbortSignal,
 ): Promise<string | undefined> {
-  if (!typeIds.length) return undefined
-
   const sparql = `
 SELECT ?type ?typeLabel WHERE {
-  wd:${entityId} wdt:P31 ?type .
-  ?type wdt:P279* wd:${MUSICAL_GROUP_QID} .
+  {
+    wd:${entityId} wdt:P31 ?type .
+    ?type wdt:P279* ?anchor .
+    ${musicPerformerValuesClause('?anchor')}
+  } UNION {
+    wd:${entityId} wdt:P106 ?type .
+    ?type wdt:P279* ?anchor .
+    ${musicPerformerValuesClause('?anchor')}
+  }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
 }`
 
@@ -381,4 +419,11 @@ export function wikidataTalkHistoryUrl(id: string): string {
 
 export function wikidataEditEntityUrl(id: string): string {
   return `https://www.wikidata.org/wiki/Special:EditEntity/${encodeURIComponent(id)}`
+}
+
+export function enwikiVisualEditorUrl(title: string): string {
+  return `https://en.wikipedia.org/w/index.php?${new URLSearchParams({
+    title: title.replace(/ /g, '_'),
+    veaction: 'edit',
+  })}`
 }

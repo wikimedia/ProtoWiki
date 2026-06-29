@@ -1,11 +1,11 @@
 import { fetchCarouselImages } from './commonsImages'
 import { sentenceCase } from './formatLabel'
-import type { FetchMusicalGroupOptions, FetchMusicalGroupResult } from './types'
+import { NOT_MUSIC_PERFORMER_ERROR, type FetchMusicalGroupOptions, type FetchMusicalGroupResult } from './types'
 import {
   fetchEditIndicator,
   fetchEntityClaims,
   resolveEntityLabels,
-  resolveMusicalTypeLabel,
+  resolveMusicTypeLabel,
   websiteHost,
 } from './wikidataApi'
 
@@ -17,12 +17,12 @@ export async function fetchMusicalGroup(
 
   const claims = await fetchEntityClaims(id, signal)
 
-  // `resolveMusicalTypeLabel` doubles as validation: a successful query with no
-  // musical-group subclass means this entity is not a musical group. A network
+  // `resolveMusicTypeLabel` doubles as validation: a successful query with no
+  // music-performer subclass means this entity is not in scope. A network
   // failure throws instead, so it surfaces as a load error rather than a
-  // "not a musical group" rejection.
+  // rejection.
   const [typeLabel, labelMap, editIndicator, carouselResult] = await Promise.all([
-    resolveMusicalTypeLabel(id, claims.typeIds, signal),
+    resolveMusicTypeLabel(id, claims.typeIds, signal),
     resolveEntityLabels(claims.genreIds, signal).catch(() => new Map<string, string>()),
     fetchEditIndicator(id, signal).catch(() => undefined),
     fetchCarouselImages({
@@ -34,7 +34,7 @@ export async function fetchMusicalGroup(
   ])
 
   if (!typeLabel) {
-    throw new Error('Not a musical group')
+    throw new Error(NOT_MUSIC_PERFORMER_ERROR)
   }
 
   const genres = claims.genreIds
@@ -48,6 +48,7 @@ export async function fetchMusicalGroup(
       description: claims.description,
       typeLabel: sentenceCase(typeLabel),
       inceptionYear: claims.inceptionYear,
+      yearKind: claims.yearKind,
       genres,
       websiteUrl: claims.websiteUrl,
       websiteHost: claims.websiteUrl ? websiteHost(claims.websiteUrl) : undefined,

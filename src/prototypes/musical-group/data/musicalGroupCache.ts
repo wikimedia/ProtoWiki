@@ -6,10 +6,12 @@ import type {
   MusicalGroupInfobox,
   MusicalGroupOverviewArticle,
   MusicalGroupOverviewData,
+  MusicalGroupOverviewEditOpportunity,
   MusicalGroupOverviewPhotos,
+  MusicalGroupOverviewRelated,
 } from './types'
 
-export const MUSICAL_GROUP_CACHE_VERSION = 15
+export const MUSICAL_GROUP_CACHE_VERSION = 22
 
 const STORAGE_KEY = 'musical-group-page-cache'
 
@@ -68,6 +70,33 @@ function isOverviewPhotos(value: unknown): value is MusicalGroupOverviewPhotos {
   return typeof record.itemCount === 'number' && typeof record.itemCountLabel === 'string'
 }
 
+function isOverviewRelated(value: unknown): value is MusicalGroupOverviewRelated {
+  if (typeof value !== 'object' || value === null) return false
+  const record = value as Record<string, unknown>
+  return (
+    typeof record.title === 'string' &&
+    typeof record.description === 'string' &&
+    (record.id === undefined || typeof record.id === 'string') &&
+    typeof record.articleUrl === 'string' &&
+    typeof record.lastEditedTimestamp === 'string' &&
+    typeof record.lastEditedLabel === 'string' &&
+    typeof record.viewCount === 'number' &&
+    typeof record.viewsLabel === 'string' &&
+    (record.thumbnailUrl === undefined || typeof record.thumbnailUrl === 'string')
+  )
+}
+
+function isOverviewEditOpportunity(value: unknown): value is MusicalGroupOverviewEditOpportunity {
+  if (typeof value !== 'object' || value === null) return false
+  const record = value as Record<string, unknown>
+  return (
+    typeof record.title === 'string' &&
+    typeof record.body === 'string' &&
+    typeof record.need === 'string' &&
+    typeof record.score === 'number'
+  )
+}
+
 function isInfoboxValue(value: unknown): boolean {
   if (typeof value !== 'object' || value === null) return false
   const v = value as Record<string, unknown>
@@ -99,6 +128,10 @@ function isOverviewData(value: unknown): value is MusicalGroupOverviewData {
   }
   if (record.article !== undefined && !isOverviewArticle(record.article)) return false
   if (record.photos !== undefined && !isOverviewPhotos(record.photos)) return false
+  if (record.editOpportunity !== undefined && !isOverviewEditOpportunity(record.editOpportunity)) {
+    return false
+  }
+  if (record.related !== undefined && !isOverviewRelated(record.related)) return false
   if (record.infobox !== undefined && !isInfobox(record.infobox)) return false
   return true
 }
@@ -119,6 +152,13 @@ function isMusicalGroupData(value: unknown): value is MusicalGroupData {
   if (record.description !== undefined && typeof record.description !== 'string') return false
   if (record.typeLabel !== undefined && typeof record.typeLabel !== 'string') return false
   if (record.inceptionYear !== undefined && typeof record.inceptionYear !== 'number') return false
+  if (
+    record.yearKind !== undefined &&
+    record.yearKind !== 'inception' &&
+    record.yearKind !== 'birth'
+  ) {
+    return false
+  }
   if (record.websiteUrl !== undefined && typeof record.websiteUrl !== 'string') return false
   if (record.websiteHost !== undefined && typeof record.websiteHost !== 'string') return false
   if (record.editIndicator !== undefined && !isEditIndicator(record.editIndicator)) return false
