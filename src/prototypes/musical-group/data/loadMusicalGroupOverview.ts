@@ -12,19 +12,27 @@ export interface LoadMusicalGroupOverviewResult {
   fromCache: boolean
 }
 
+function resolveCommonsCategory(data: MusicalGroupData): string | undefined {
+  const fromClaim = data.commonsCategory?.trim()
+  if (fromClaim) return fromClaim
+  const fromLabel = data.label.trim()
+  return fromLabel.length ? fromLabel : undefined
+}
+
 async function resolveCommonsCategoryCount(
   data: MusicalGroupData,
   signal?: AbortSignal,
 ): Promise<CommonsCategoryCount | undefined> {
-  if (!data.commonsCategory) return undefined
-  return getCommonsCategoryCount(data.commonsCategory, signal)
+  const category = resolveCommonsCategory(data)
+  if (!category) return undefined
+  return getCommonsCategoryCount(category, signal)
 }
 
 function buildPhotosOverview(
   data: MusicalGroupData,
   info?: CommonsCategoryCount,
 ): MusicalGroupOverviewData['photos'] | undefined {
-  if (!data.commonsCategory || !info) return undefined
+  if (!resolveCommonsCategory(data) || !info) return undefined
   // Nothing known (empty/missing category or a failed lookup) — show no count.
   if (info.files === 0 && info.subcats === 0) return undefined
   return {

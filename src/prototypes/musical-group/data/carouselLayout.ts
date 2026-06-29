@@ -33,10 +33,29 @@ export function offScreenCarouselThumbnailUrl(images: CarouselImage[]): string |
   const url = images[index]?.url
   if (!url) return undefined
 
+  return commonsThumbnailUrl(url)
+}
+
+function commonsThumbnailUrl(url: string): string {
   if (url.includes('commons.wikimedia.org/wiki/Special:FilePath/')) {
     const separator = url.includes('?') ? '&' : '?'
     return `${url}${separator}width=72`
   }
 
   return url
+}
+
+/** Prefer an off-screen carousel slide; otherwise the first Commons image (for overview cards). */
+export function overviewCarouselThumbnailUrl(
+  images: CarouselImage[],
+  options: { preferNonPrimary?: boolean } = {},
+): string | undefined {
+  const offScreen = offScreenCarouselThumbnailUrl(images)
+  if (offScreen) return offScreen
+
+  const index = options.preferNonPrimary && images.length > 1 ? 1 : 0
+  const url = images[index]?.url
+  if (!url) return undefined
+
+  return commonsThumbnailUrl(url)
 }

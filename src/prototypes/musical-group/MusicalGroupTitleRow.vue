@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import WikitaTitle from './components/WikitaTitle.vue'
 import { isBookmarked, toggleBookmark } from './data/bookmarks'
+import { entityDisplayLabel } from './data/formatLabel'
 import type { MusicalGroupData } from './data/types'
 import {
   wikidataEditEntityUrl,
@@ -16,6 +17,7 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const title = computed(() => entityDisplayLabel(props.data.label, props.data.enwikiTitle))
 const bookmarked = ref(isBookmarked(props.data.id))
 
 function onBookmarkClick() {
@@ -37,7 +39,7 @@ function onEditClick() {
 
 <template>
   <WikitaTitle
-    :title="data.label"
+    :title="title"
     :bookmarked="bookmarked"
     :show-history-dot="data.editIndicator === 'history'"
     :show-talk-dot="data.editIndicator === 'talk'"

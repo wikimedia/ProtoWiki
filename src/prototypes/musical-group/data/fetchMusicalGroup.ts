@@ -1,29 +1,38 @@
 import { fetchCarouselImages } from './commonsImages'
 import { sentenceCase } from './formatLabel'
-import { NOT_MUSIC_PERFORMER_ERROR, type FetchMusicalGroupOptions, type FetchMusicalGroupResult } from './types'
+import type { FetchMusicalGroupOptions, FetchMusicalGroupResult, MusicalGroupData, CarouselImage } from './types'
+import type { ParsedEntityClaims } from './wikidataApi'
 import {
   fetchEditIndicator,
   fetchEntityClaims,
+  isLocation,
+  isMusicPerformer,
   resolveEntityLabels,
+  resolveLocationTypeLabel,
   resolveMusicTypeLabel,
   websiteHost,
 } from './wikidataApi'
 
-export async function fetchMusicalGroup(
+function sparseData(id: string, claims: ParsedEntityClaims, images: CarouselImage[] = []): MusicalGroupData {
+  return {
+    id,
+    label: claims.label,
+    isMusicPerformer: false,
+    isLocation: false,
+    description: claims.description,
+    genres: [],
+    images,
+    enwikiTitle: claims.enwikiTitle,
+    commonsCategory: claims.commonsCategory,
+  }
+}
+
+async function fetchRichIntroData(
   id: string,
-  options: FetchMusicalGroupOptions = {},
-): Promise<FetchMusicalGroupResult> {
-  const { signal } = options
-
-  const claims = await fetchEntityClaims(id, signal)
-
-  // `resolveMusicTypeLabel` doubles as validation: a successful query with no
-  // music-performer subclass means this entity is not in scope. A network
-  // failure throws instead, so it surfaces as a load error rather than a
-  // rejection.
-  const [typeLabel, labelMap, editIndicator, carouselResult] = await Promise.all([
-    resolveMusicTypeLabel(id, claims.typeIds, signal),
-    resolveEntityLabels(claims.genreIds, signal).catch(() => new Map<string, string>()),
+  claims: ParsedEntityClaims,
+  signal?: AbortSignal,
+) {
+  const [editIndicator, carouselResult] = await Promise.all([
     fetchEditIndicator(id, signal).catch(() => undefined),
     fetchCarouselImages({
       label: claims.label,
@@ -33,29 +42,88 @@ export async function fetchMusicalGroup(
     }).catch(() => ({ images: [] })),
   ])
 
-  if (!typeLabel) {
-    throw new Error(NOT_MUSIC_PERFORMER_ERROR)
+  return { editIndicator, carouselResult }
+}
+
+export async function fetchMusicalGroup(
+  id: string,
+  options: FetchMusicalGroupOptions = {},
+): Promise<FetchMusicalGroupResult> {
+  const { signal } = options
+
+  const [claims, performer, location] = await Promise.all([
+    fetchEntityClaims(id, signal),
+    isMusicPerformer(id, signal),
+    isLocation(id, signal),
+  ])
+
+  if (!performer && !location) {
+    const carouselResult = await fetchCarouselImages({
+      label: claims.label,
+      imageFilename: claims.imageFilename ?? null,
+      commonsCategory: claims.commonsCategory ?? null,
+      signal,
+    }).catch(() => ({ images: [] as CarouselImage[] }))
+
+    return { data: sparseData(id, claims, carouselResult.images) }
   }
 
-  const genres = claims.genreIds
-    .map((genreId) => labelMap.get(genreId))
-    .filter((label): label is string => Boolean(label))
+  const { editIndicator, carouselResult } = await fetchRichIntroData(id, claims, signal)
+
+  const shared = {
+    id,
+    label: claims.label,
+    description: claims.description,
+    inceptionYear: claims.inceptionYear,
+    yearKind: claims.yearKind,
+    websiteUrl: claims.websiteUrl,
+    websiteHost: claims.websiteUrl ? websiteHost(claims.websiteUrl) : undefined,
+    images: carouselResult.images,
+    editIndicator,
+    enwikiTitle: claims.enwikiTitle,
+    commonsCategory: claims.commonsCategory,
+  }
+
+  if (performer) {
+    const [typeLabel, labelMap] = await Promise.all([
+      resolveMusicTypeLabel(id, claims.typeIds, signal),
+      resolveEntityLabels(claims.genreIds, signal).catch(() => new Map<string, string>()),
+    ])
+
+    const genres = claims.genreIds
+      .map((genreId) => labelMap.get(genreId))
+      .filter((label): label is string => Boolean(label))
+
+    return {
+      data: {
+        ...shared,
+        isMusicPerformer: true,
+        isLocation: false,
+        typeLabel: typeLabel ? sentenceCase(typeLabel) : undefined,
+        genres,
+      },
+    }
+  }
+
+  const [typeLabel, countryLabel] = await Promise.all([
+    resolveLocationTypeLabel(id, signal),
+    claims.countryId
+      ? resolveEntityLabels([claims.countryId], signal)
+          .then((labels) => labels.get(claims.countryId!))
+          .catch(() => undefined)
+      : Promise.resolve(undefined),
+  ])
 
   return {
     data: {
-      id,
-      label: claims.label,
-      description: claims.description,
-      typeLabel: sentenceCase(typeLabel),
-      inceptionYear: claims.inceptionYear,
-      yearKind: claims.yearKind,
-      genres,
-      websiteUrl: claims.websiteUrl,
-      websiteHost: claims.websiteUrl ? websiteHost(claims.websiteUrl) : undefined,
-      images: carouselResult.images,
-      editIndicator,
-      enwikiTitle: claims.enwikiTitle,
-      commonsCategory: claims.commonsCategory,
+      ...shared,
+      isMusicPerformer: false,
+      isLocation: true,
+      typeLabel: typeLabel ? sentenceCase(typeLabel) : undefined,
+      description: claims.description ? sentenceCase(claims.description) : undefined,
+      genres: [],
+      country: countryLabel,
+      population: claims.population,
     },
   }
 }

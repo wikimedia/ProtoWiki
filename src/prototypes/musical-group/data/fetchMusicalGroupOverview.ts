@@ -1,16 +1,17 @@
 import { loadConfig, PROTOWIKI_API_PROJECT_URL, PROTOWIKI_API_USER_AGENT, wikimediaApiFetchHeaders } from '@/config'
 
-import { resolveEditOpportunityCopy } from './editOpportunityCopy'
+import { isExcludedEditOpportunityNeed, resolveEditOpportunityCopy } from './editOpportunityCopy'
 import { fetchWithTimeout } from './fetchWithTimeout'
 import type {
   MusicalGroupData,
   MusicalGroupInfobox,
+  MusicalGroupInfoboxRow,
   MusicalGroupInfoboxValue,
   MusicalGroupOverviewData,
   MusicalGroupOverviewEditOpportunity,
   MusicalGroupOverviewRelated,
 } from './types'
-import { isMusicPerformer, normalizeQid } from './wikidataApi'
+import { isWikitaNavigableEntity, normalizeQid } from './wikidataApi'
 
 const EN_WIKI_HOST = 'en.wikipedia.org'
 const MICROTASK_QUALITY_CHECK_URL = 'https://microtask-generator.toolforge.org/quality-check'
@@ -76,7 +77,7 @@ async function fetchEditOpportunity(
       })
       .sort((a, b) => b.score - a.score)
 
-    const top = needs[0]
+    const top = needs.find((item) => !isExcludedEditOpportunityNeed(item.need))
     if (!top) return undefined
 
     const copy = resolveEditOpportunityCopy(top.need)
@@ -252,8 +253,8 @@ async function fetchMorelikeRelated(
 
   let relatedId: string | undefined
   if (wikibaseId) {
-    const isPerformer = await isMusicPerformer(wikibaseId, signal)
-    if (isPerformer) relatedId = wikibaseId
+    const navigable = await isWikitaNavigableEntity(wikibaseId, signal)
+    if (navigable) relatedId = wikibaseId
   }
 
   return {
@@ -273,6 +274,68 @@ async function fetchMorelikeRelated(
 
 function collapseWhitespace(text: string): string {
   return text.replace(/\s+/g, ' ').trim()
+}
+
+function cleanInfoboxCell(scope: Element): void {
+  scope
+    .querySelectorAll('style, sup.reference, .mw-editsection, .mw-valign-text-top')
+    .forEach((node) => node.remove())
+  scope.querySelectorAll('.ib-settlement-fn sup:not(.reference)').forEach((node) => node.remove())
+}
+
+function cellLabel(cell: Element): string {
+  const clone = cell.cloneNode(true) as Element
+  cleanInfoboxCell(clone)
+  return normalizeInfoboxLabel(collapseWhitespace(clone.textContent ?? ''))
+}
+
+function normalizeInfoboxLabel(label: string): string {
+  return label.replace(/\s*:\s*$/, '').trim()
+}
+
+function consolidateInfoboxRows(rows: MusicalGroupInfoboxRow[]): MusicalGroupInfoboxRow[] {
+  const consolidated: MusicalGroupInfoboxRow[] = []
+
+  for (const row of rows) {
+    const label = normalizeInfoboxLabel(row.label)
+    if (!label) continue
+
+    const normalized = { ...row, label }
+
+    if (row.variant === 'header') {
+      consolidated.push(normalized)
+      continue
+    }
+
+    const previous = consolidated[consolidated.length - 1]
+    if (previous && previous.variant !== 'header' && previous.label === label) {
+      previous.values.push(...row.values)
+      continue
+    }
+
+    consolidated.push(normalized)
+  }
+
+  return consolidated
+}
+
+function splitOnBreaks(cell: Element): Element[] {
+  if (!cell.querySelector('br')) return [cell]
+
+  const segments: Element[] = []
+  let bucket = cell.ownerDocument!.createElement('span')
+
+  for (const node of Array.from(cell.childNodes)) {
+    if (node.nodeName === 'BR') {
+      if (collapseWhitespace(bucket.textContent ?? '')) segments.push(bucket)
+      bucket = cell.ownerDocument!.createElement('span')
+      continue
+    }
+    bucket.appendChild(node.cloneNode(true))
+  }
+
+  if (collapseWhitespace(bucket.textContent ?? '')) segments.push(bucket)
+  return segments.length ? segments : [cell]
 }
 
 function externalHref(scope: Element): string | undefined {
@@ -296,7 +359,7 @@ function toValue(scope: Element): MusicalGroupInfoboxValue | null {
 
 function cellValues(cell: Element): MusicalGroupInfoboxValue[] {
   const clone = cell.cloneNode(true) as Element
-  clone.querySelectorAll('style, sup.reference, .mw-editsection').forEach((node) => node.remove())
+  cleanInfoboxCell(clone)
 
   const listItems = Array.from(clone.querySelectorAll('li'))
   if (listItems.length) {
@@ -305,8 +368,126 @@ function cellValues(cell: Element): MusicalGroupInfoboxValue[] {
       .filter((value): value is MusicalGroupInfoboxValue => value !== null)
   }
 
+  const segments = splitOnBreaks(clone)
+  if (segments.length > 1) {
+    return segments
+      .map((segment) => toValue(segment))
+      .filter((value): value is MusicalGroupInfoboxValue => value !== null)
+  }
+
   const single = toValue(clone)
   return single ? [single] : []
+}
+
+function directRowCells(row: Element): { ths: Element[]; tds: Element[] } {
+  return {
+    ths: Array.from(row.children).filter((cell) => cell.tagName === 'TH'),
+    tds: Array.from(row.children).filter((cell) => cell.tagName === 'TD'),
+  }
+}
+
+function hasColspanTwo(cell: Element): boolean {
+  return cell.getAttribute('colspan') === '2'
+}
+
+function isIndentedValueDiv(element: Element): boolean {
+  return (element.getAttribute('style') ?? '').includes('padding-left')
+}
+
+function colspanTwoCell(row: Element): Element | undefined {
+  const { ths, tds } = directRowCells(row)
+  if (ths.length !== 0 || tds.length !== 1 || !hasColspanTwo(tds[0])) return undefined
+  return tds[0]
+}
+
+function isColspanTwoDataRow(row: Element): boolean {
+  const cell = colspanTwoCell(row)
+  if (!cell) return false
+  if (Array.from(cell.querySelectorAll('div')).some(isIndentedValueDiv)) return false
+
+  const values = cellValues(cell)
+  return values.length > 0
+}
+
+function parseStackedColspanRow(cell: Element): MusicalGroupInfoboxRow | undefined {
+  const valueDivs = Array.from(cell.querySelectorAll('div')).filter(isIndentedValueDiv)
+  if (!valueDivs.length) return undefined
+
+  const values = valueDivs.flatMap((valueDiv) => cellValues(valueDiv))
+  if (!values.length) return undefined
+
+  const labelCell = cell.cloneNode(true) as Element
+  labelCell.querySelectorAll('div').forEach((div) => {
+    if (isIndentedValueDiv(div)) div.remove()
+  })
+
+  const label = cellLabel(labelCell)
+  if (!label) return undefined
+
+  return { label, values }
+}
+
+function parseStandardInfoboxRows(infobox: Element): MusicalGroupInfoboxRow[] {
+  const rows: MusicalGroupInfoboxRow[] = []
+
+  for (const row of Array.from(infobox.querySelectorAll('tr'))) {
+    const labelCell = row.querySelector('.infobox-label')
+    const dataCell = row.querySelector('.infobox-data')
+    if (!labelCell || !dataCell) continue
+
+    const label = cellLabel(labelCell)
+    if (!label) continue
+
+    const values = cellValues(dataCell)
+    if (!values.length) continue
+
+    rows.push({ label, values })
+  }
+
+  return rows
+}
+
+function parseLegacyInfoboxRows(infobox: Element): MusicalGroupInfoboxRow[] {
+  const tableRows = Array.from(infobox.querySelectorAll('tr'))
+  const rows: MusicalGroupInfoboxRow[] = []
+
+  for (let index = 0; index < tableRows.length; index++) {
+    const row = tableRows[index]
+    const { ths, tds } = directRowCells(row)
+
+    if (ths.length === 1 && tds.length === 0 && hasColspanTwo(ths[0])) {
+      const label = cellLabel(ths[0])
+      if (!label) continue
+
+      const nextRow = tableRows[index + 1]
+      if (nextRow && isColspanTwoDataRow(nextRow)) {
+        const cell = colspanTwoCell(nextRow)
+        const values = cell ? cellValues(cell) : []
+        if (values.length) rows.push({ label, values })
+        index++
+        continue
+      }
+
+      rows.push({ label, values: [], variant: 'header' })
+      continue
+    }
+
+    if (tds.length === 1 && hasColspanTwo(tds[0])) {
+      const stacked = parseStackedColspanRow(tds[0])
+      if (stacked) rows.push(stacked)
+      continue
+    }
+
+    if (tds.length === 2 && ths.length === 0) {
+      const label = cellLabel(tds[0])
+      const values = cellValues(tds[1])
+      if (!label || !values.length) continue
+
+      rows.push({ label, values })
+    }
+  }
+
+  return rows
 }
 
 async function fetchInfobox(title: string, signal?: AbortSignal): Promise<MusicalGroupInfobox | undefined> {
@@ -333,20 +514,9 @@ async function fetchInfobox(title: string, signal?: AbortSignal): Promise<Musica
   const infobox = doc.querySelector('table.infobox')
   if (!infobox) return undefined
 
-  const rows: MusicalGroupInfobox['rows'] = []
-  for (const row of Array.from(infobox.querySelectorAll('tr'))) {
-    const labelCell = row.querySelector('.infobox-label')
-    const dataCell = row.querySelector('.infobox-data')
-    if (!labelCell || !dataCell) continue
-
-    const label = collapseWhitespace(labelCell.textContent ?? '')
-    if (!label) continue
-
-    const values = cellValues(dataCell)
-    if (!values.length) continue
-
-    rows.push({ label, values })
-  }
+  const standard = parseStandardInfoboxRows(infobox)
+  const parsed = standard.length ? standard : parseLegacyInfoboxRows(infobox)
+  const rows = consolidateInfoboxRows(parsed)
 
   if (!rows.length) return undefined
   return { rows }

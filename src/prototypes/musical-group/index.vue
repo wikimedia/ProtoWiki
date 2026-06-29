@@ -10,7 +10,7 @@ import {
 import { loadMusicalGroup } from './data/loadMusicalGroup'
 import { loadMusicalGroupOverview, isCachedOverviewUsable } from './data/loadMusicalGroupOverview'
 import { clearMusicalGroupCache, getCachedMusicalGroup } from './data/musicalGroupCache'
-import { NOT_MUSIC_PERFORMER_ERROR, type MusicalGroupData, type MusicalGroupOverviewData } from './data/types'
+import type { MusicalGroupData, MusicalGroupOverviewData } from './data/types'
 import { normalizeQid } from './data/wikidataApi'
 import WikitaChromeHeader, {
   type WikitaChromeHeaderVariant,
@@ -24,7 +24,7 @@ import { CdxProgressBar, CdxToastContainer } from '@wikimedia/codex'
 definePage({
   meta: {
     title: 'Wikita',
-    description: 'Browse musicians and groups within Wikita.',
+    description: 'Browse Wikidata items in Wikita.',
   },
 })
 
@@ -37,7 +37,6 @@ const overview = ref<MusicalGroupOverviewData | undefined>(undefined)
 const loading = ref(false)
 const overviewLoading = ref(false)
 const fetchError = ref<string | null>(null)
-const validationFailed = ref(false)
 const searchOpen = ref(false)
 const headerVariant = ref<WikitaChromeHeaderVariant>(loadHeaderVariantPreference())
 
@@ -60,14 +59,12 @@ async function loadItem(id: string) {
   if (cached) {
     loading.value = false
     fetchError.value = null
-    validationFailed.value = false
     data.value = cached.data
     return
   }
 
   loading.value = true
   fetchError.value = null
-  validationFailed.value = false
   data.value = null
 
   try {
@@ -75,12 +72,7 @@ async function loadItem(id: string) {
     data.value = loaded
   } catch (err) {
     if ((err as Error).name === 'AbortError') return
-    if ((err as Error).message === NOT_MUSIC_PERFORMER_ERROR) {
-      validationFailed.value = true
-      fetchError.value = 'That item is not a musician, composer, or musical group.'
-      return
-    }
-    fetchError.value = 'Could not load this artist. Try again.'
+    fetchError.value = 'Could not load this item. Try again.'
   } finally {
     loading.value = false
   }
@@ -122,7 +114,6 @@ watch(
       loading.value = false
       overviewLoading.value = false
       fetchError.value = null
-      validationFailed.value = false
       return
     }
     void loadItem(id)
@@ -144,8 +135,8 @@ watch(itemId, (id) => {
   if (id) searchOpen.value = false
 })
 
-const showSearch = computed(() => !itemId.value || validationFailed.value || searchOpen.value)
-const showEntityChrome = computed(() => Boolean(itemId.value) && !validationFailed.value)
+const showSearch = computed(() => !itemId.value || searchOpen.value)
+const showEntityChrome = computed(() => Boolean(itemId.value))
 
 function onToggleSearch() {
   if (!itemId.value) return
@@ -170,7 +161,6 @@ async function onResetStoredData() {
   loading.value = false
   overviewLoading.value = false
   fetchError.value = null
-  validationFailed.value = false
   searchOpen.value = false
 
   const query = { ...route.query, item: undefined }

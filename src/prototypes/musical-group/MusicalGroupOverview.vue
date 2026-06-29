@@ -10,9 +10,12 @@ interface Props {
   overviewLoading?: boolean
   carouselImages: CarouselImage[]
   enwikiTitle?: string
+  showPhotosTab?: boolean
 }
 
-defineProps<Props>()
+withDefaults(defineProps<Props>(), {
+  showPhotosTab: true,
+})
 </script>
 
 <template>
@@ -24,6 +27,8 @@ defineProps<Props>()
     <MusicalGroupOverviewPhotosCard
       :photos="overview?.photos"
       :carousel-images="carouselImages"
+      :article-thumbnail-url="overview?.article?.thumbnailUrl"
+      :show-photos-tab="showPhotosTab"
     />
     <MusicalGroupOverviewRelatedCard
       v-if="overview?.related"

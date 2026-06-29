@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import type { TabId } from './data/types'
 
-const tabs: { id: TabId; label: string; dot?: 'blue' }[] = [
+const allTabs: { id: TabId; label: string; dot?: 'blue' }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'info', label: 'Info' },
   { id: 'article', label: 'Article' },
@@ -10,6 +12,18 @@ const tabs: { id: TabId; label: string; dot?: 'blue' }[] = [
   { id: 'members', label: 'Members' },
   { id: 'awards', label: 'Awards' },
 ]
+
+interface Props {
+  showPhotosTab?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  showPhotosTab: true,
+})
+
+const tabs = computed(() =>
+  props.showPhotosTab ? allTabs : allTabs.filter((tab) => tab.id !== 'photos'),
+)
 
 const activeTab = defineModel<TabId>('activeTab', { default: 'overview' })
 </script>

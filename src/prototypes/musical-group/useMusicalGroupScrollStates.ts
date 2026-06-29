@@ -35,29 +35,35 @@ export function useMusicalGroupScrollStates() {
     )
     const tabsSticky = scrollRoot.querySelector('.musical-group-tabs-sticky')
 
-    if (!stack || !carouselTrack || !tabsSticky) return
+    if (!stack || !tabsSticky) return
 
     syncStickyLayout(scrollRoot)
 
     const stackRect = stack.getBoundingClientRect()
-    const carouselTrackRect = carouselTrack.getBoundingClientRect()
     const pageTop = scrollRoot.getBoundingClientRect().top
     const tabsTopPx =
       parseFloat(getComputedStyle(scrollRoot).getPropertyValue('--musical-group-tabs-sticky-top')) ||
       105
 
-    // Full-width title rule only while the sticky stack is over the carousel track —
-    // not while the short description is scrolling beneath the title.
-    const titleExpanded =
-      carouselTrackRect.top < stackRect.bottom &&
-      carouselTrackRect.bottom > stackRect.bottom
-    const tabsStuck = tabsSticky.getBoundingClientRect().top <= pageTop + tabsTopPx + 1
+    let titleExpanded = false
+    if (carouselTrack) {
+      const carouselTrackRect = carouselTrack.getBoundingClientRect()
+      // Full-width title rule only while the sticky stack is over the carousel track —
+      // not while the short description is scrolling beneath the title.
+      titleExpanded =
+        carouselTrackRect.top < stackRect.bottom &&
+        carouselTrackRect.bottom > stackRect.bottom
+    }
+
+    const tabsRect = tabsSticky.getBoundingClientRect()
+    const tabsAtStickyPosition = tabsRect.top <= pageTop + tabsTopPx + 1
     const scrollEl = scrollRoot as HTMLElement
+    const hasScrolled = scrollEl.scrollTop > 1
     const scrollAtEnd =
       scrollEl.scrollTop + scrollEl.clientHeight >= scrollEl.scrollHeight - 1
 
     scrollRoot.toggleAttribute('data-title-expanded', titleExpanded)
-    scrollRoot.toggleAttribute('data-tabs-stuck', tabsStuck)
+    scrollRoot.toggleAttribute('data-tabs-stuck', tabsAtStickyPosition && hasScrolled)
     scrollRoot.toggleAttribute('data-scroll-at-end', scrollAtEnd)
   }
 

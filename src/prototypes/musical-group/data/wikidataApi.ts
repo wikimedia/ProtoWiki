@@ -1,7 +1,9 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 
 import { fetchWithTimeout } from './fetchWithTimeout'
+import { entityDisplayLabel } from './formatLabel'
 import {
+  LOCATION_QIDS,
   MUSIC_PERFORMER_QIDS,
   type EditIndicator,
   type MusicalGroupSearchResult,
@@ -13,6 +15,11 @@ function musicPerformerValuesClause(variable = '?anchor'): string {
   return `VALUES ${variable} { ${values} }`
 }
 
+function locationValuesClause(variable = '?anchor'): string {
+  const values = LOCATION_QIDS.map((qid) => `wd:${qid}`).join(' ')
+  return `VALUES ${variable} { ${values} }`
+}
+
 function musicPerformerMatchClause(subject: string): string {
   return `{
   ${subject} wdt:P31/wdt:P279* ?anchor .
@@ -20,6 +27,13 @@ function musicPerformerMatchClause(subject: string): string {
 } UNION {
   ${subject} wdt:P106/wdt:P279* ?anchor .
   ${musicPerformerValuesClause('?anchor')}
+}`
+}
+
+function locationMatchClause(subject: string): string {
+  return `{
+  ${subject} wdt:P31/wdt:P279* ?anchor .
+  ${locationValuesClause('?anchor')}
 }`
 }
 
@@ -77,6 +91,143 @@ ASK {
   return Boolean(data.boolean)
 }
 
+export async function isLocation(id: string, signal?: AbortSignal): Promise<boolean> {
+  const query = `
+ASK {
+  ${locationMatchClause(`wd:${id}`)}
+}`
+  const data = await sparqlQuery<{ boolean: boolean }>(query, signal)
+  return Boolean(data.boolean)
+}
+
+export async function isWikitaNavigableEntity(id: string, signal?: AbortSignal): Promise<boolean> {
+  const [performer, location] = await Promise.all([
+    isMusicPerformer(id, signal),
+    isLocation(id, signal),
+  ])
+  return performer || location
+}
+
+interface EntitySearchSparqlRow {
+  item: { value: string }
+  itemLabel: { value: string }
+  itemDescription?: { value: string }
+  image?: { value: string }
+  enwikiTitle?: { value: string }
+}
+
+function parseEntitySearchResults(
+  bindings: EntitySearchSparqlRow[],
+): MusicalGroupSearchResult[] {
+  const seen = new Set<string>()
+  const results: MusicalGroupSearchResult[] = []
+
+  for (const row of bindings) {
+    const id = row.item.value.replace(/^.*\//, '')
+    if (seen.has(id)) continue
+    seen.add(id)
+
+    const rawImage = row.image?.value
+    results.push({
+      id,
+      label: entityDisplayLabel(row.itemLabel.value, row.enwikiTitle?.value),
+      description: row.itemDescription?.value,
+      thumbnailUrl: rawImage ? `${rawImage}?width=256` : undefined,
+    })
+  }
+
+  return results
+}
+
+function entitySearchSparql(escaped: string, filterClause?: string): string {
+  const filter = filterClause ? `\n  ${filterClause}` : ''
+  return `
+SELECT ?item ?itemLabel ?itemDescription ?image ?enwikiTitle WHERE {
+  SERVICE wikibase:mwapi {
+    bd:serviceParam wikibase:endpoint "www.wikidata.org";
+                     wikibase:api "EntitySearch";
+                     mwapi:search "${escaped}";
+                     mwapi:language "en".
+    ?item wikibase:apiOutputItem "@id".
+  }${filter}
+  OPTIONAL { ?item wdt:P18 ?image }
+  OPTIONAL {
+    ?enwikiArticle schema:about ?item ;
+                     schema:isPartOf <https://en.wikipedia.org/> ;
+                     schema:name ?enwikiTitle .
+  }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}
+LIMIT 8`
+}
+
+interface WbSearchEntityHit {
+  id: string
+  label: string
+  description?: string
+}
+
+interface WbSearchEntitiesResponse {
+  search?: WbSearchEntityHit[]
+}
+
+export async function searchWikidataItems(
+  searchText: string,
+  signal?: AbortSignal,
+): Promise<MusicalGroupSearchResult[]> {
+  const query = searchText.trim()
+  if (!query.length) return []
+
+  // wbsearchentities ranks exact matches first (e.g. "water" → Q283). SPARQL
+  // EntitySearch via mwapi does not and often omits the primary item entirely.
+  const searchUrl = actionUrl({
+    action: 'wbsearchentities',
+    search: query,
+    language: 'en',
+    limit: '8',
+    type: 'item',
+  })
+  const searchResponse = await fetchWithTimeout(searchUrl, {
+    signal,
+    headers: wikimediaApiFetchHeaders('musical-group-wbsearchentities'),
+  })
+  if (!searchResponse.ok) {
+    throw new Error(`wbsearchentities failed (${searchResponse.status})`)
+  }
+
+  const searchData = (await searchResponse.json()) as WbSearchEntitiesResponse
+  const hits = searchData.search ?? []
+  if (!hits.length) return []
+
+  const entitiesUrl = actionUrl({
+    action: 'wbgetentities',
+    ids: hits.map((hit) => hit.id).join('|'),
+    props: 'claims|sitelinks',
+  })
+  const entitiesResponse = await fetchWithTimeout(entitiesUrl, {
+    signal,
+    headers: wikimediaApiFetchHeaders('musical-group-wbsearchentities-enrich'),
+  })
+  if (!entitiesResponse.ok) {
+    throw new Error(`wbgetentities failed (${entitiesResponse.status})`)
+  }
+
+  const entitiesData = (await entitiesResponse.json()) as WbGetEntitiesResponse
+  const entities = entitiesData.entities ?? {}
+
+  return hits.map((hit) => {
+    const entity = entities[hit.id]
+    const enwikiTitle = entity?.sitelinks?.enwiki?.title
+    const imageFilename = firstClaimString(entity?.claims?.P18)
+    return {
+      id: hit.id,
+      label: entityDisplayLabel(hit.label, enwikiTitle),
+      description: hit.description,
+      thumbnailUrl: imageFilename ? commonsFileUrl(imageFilename, 256) : undefined,
+    }
+  })
+}
+
 export async function searchMusicPerformers(
   searchText: string,
   signal?: AbortSignal,
@@ -85,47 +236,12 @@ export async function searchMusicPerformers(
   if (!query.length) return []
 
   const escaped = query.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
-  const sparql = `
-SELECT ?item ?itemLabel ?itemDescription ?image WHERE {
-  SERVICE wikibase:mwapi {
-    bd:serviceParam wikibase:endpoint "www.wikidata.org";
-                     wikibase:api "EntitySearch";
-                     mwapi:search "${escaped}";
-                     mwapi:language "en".
-    ?item wikibase:apiOutputItem "@id".
-  }
-  ${musicPerformerMatchClause('?item')}
-  OPTIONAL { ?item wdt:P18 ?image }
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-}
-LIMIT 8`
-
-  interface SparqlRow {
-    item: { value: string }
-    itemLabel: { value: string }
-    itemDescription?: { value: string }
-    image?: { value: string }
-  }
-
-  const data = await sparqlQuery<{ results: { bindings: SparqlRow[] } }>(sparql, signal)
-  const seen = new Set<string>()
-  const results: MusicalGroupSearchResult[] = []
-
-  for (const row of data.results.bindings) {
-    const id = row.item.value.replace(/^.*\//, '')
-    if (seen.has(id)) continue
-    seen.add(id)
-
-    const rawImage = row.image?.value
-    results.push({
-      id,
-      label: row.itemLabel.value,
-      description: row.itemDescription?.value,
-      thumbnailUrl: rawImage ? `${rawImage}?width=256` : undefined,
-    })
-  }
-
-  return results
+  const sparql = entitySearchSparql(escaped, musicPerformerMatchClause('?item'))
+  const data = await sparqlQuery<{ results: { bindings: EntitySearchSparqlRow[] } }>(
+    sparql,
+    signal,
+  )
+  return parseEntitySearchResults(data.results.bindings)
 }
 
 interface WbEntityClaim {
@@ -160,6 +276,8 @@ export interface ParsedEntityClaims {
   yearKind?: YearKind
   genreIds: string[]
   typeIds: string[]
+  countryId?: string
+  population?: number
 }
 
 function claimEntityId(claim: WbEntityClaim): string | null {
@@ -185,6 +303,16 @@ function claimTimeYear(claim: WbEntityClaim): number | null {
   const match = value.time.match(/^\+?(-?\d{4})/)
   if (!match) return null
   return Number.parseInt(match[1], 10)
+}
+
+function claimQuantityAmount(claim: WbEntityClaim): number | null {
+  const value = claim.mainsnak.datavalue?.value
+  if (typeof value !== 'object' || !value || !('amount' in value)) return null
+  const amount = (value as { amount?: string }).amount
+  if (!amount) return null
+  const num = Number.parseFloat(amount.replace(/^\+/, ''))
+  if (!Number.isFinite(num)) return null
+  return Math.round(num)
 }
 
 function firstClaimString(claims: WbEntityClaim[] | undefined): string | undefined {
@@ -264,6 +392,8 @@ export async function fetchEntityClaims(
     yearKind,
     genreIds: allClaimEntityIds(claims.P136),
     typeIds: allClaimEntityIds(claims.P31),
+    countryId: allClaimEntityIds(claims.P17)[0],
+    population: claims.P1082?.length ? claimQuantityAmount(claims.P1082[0]) ?? undefined : undefined,
   }
 }
 
@@ -337,6 +467,36 @@ SELECT ?type ?typeLabel WHERE {
 
   musicalTypes.sort((a, b) => b.label.length - a.label.length)
   return musicalTypes[0].label
+}
+
+export async function resolveLocationTypeLabel(
+  entityId: string,
+  signal?: AbortSignal,
+): Promise<string | undefined> {
+  const sparql = `
+SELECT ?type ?typeLabel ?anchor WHERE {
+  wd:${entityId} wdt:P31 ?type .
+  ?type wdt:P279* ?anchor .
+  ${locationValuesClause('?anchor')}
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}`
+
+  interface TypeRow {
+    type: { value: string }
+    typeLabel: { value: string }
+    anchor: { value: string }
+  }
+
+  const data = await sparqlQuery<{ results: { bindings: TypeRow[] } }>(sparql, signal)
+  const bindings = data.results.bindings
+  if (!bindings.length) return undefined
+
+  for (const anchorQid of LOCATION_QIDS) {
+    const match = bindings.find((row) => row.anchor.value.replace(/^.*\//, '') === anchorQid)
+    if (match) return match.typeLabel.value
+  }
+
+  return bindings[0].typeLabel.value
 }
 
 export async function fetchEditIndicator(

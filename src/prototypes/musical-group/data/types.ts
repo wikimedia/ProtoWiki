@@ -7,9 +7,17 @@ export const MUSIC_PERFORMER_QIDS = [
   'Q753110', // songwriter
 ] as const
 
-export type YearKind = 'inception' | 'birth'
+/** Wikidata anchor classes for geographic locations (expanded via P31/P279* in SPARQL). */
+export const LOCATION_QIDS = [
+  'Q515', // city
+  'Q6256', // country
+  'Q35657', // state
+  'Q532', // village
+  'Q23442', // island
+  'Q486972', // human settlement
+] as const
 
-export const NOT_MUSIC_PERFORMER_ERROR = 'Not a music performer'
+export type YearKind = 'inception' | 'birth'
 
 export type TabId = 'overview' | 'info' | 'article' | 'photos' | 'links' | 'members' | 'awards'
 
@@ -73,6 +81,7 @@ export interface MusicalGroupInfoboxValue {
 export interface MusicalGroupInfoboxRow {
   label: string
   values: MusicalGroupInfoboxValue[]
+  variant?: 'header' | 'row'
 }
 
 export interface MusicalGroupInfobox {
@@ -92,17 +101,25 @@ export interface MusicalGroupOverviewData {
 export interface MusicalGroupData {
   id: string
   label: string
+  isMusicPerformer: boolean
+  isLocation: boolean
   description?: string
   typeLabel?: string
   inceptionYear?: number
   yearKind?: YearKind
   genres: string[]
+  country?: string
+  population?: number
   websiteUrl?: string
   websiteHost?: string
   images: CarouselImage[]
   editIndicator?: EditIndicator
   enwikiTitle?: string
   commonsCategory?: string
+}
+
+export function hasPhotosTab(data: MusicalGroupData): boolean {
+  return data.isMusicPerformer || data.isLocation
 }
 
 export interface FetchMusicalGroupOptions {

@@ -14,6 +14,12 @@ export interface WikitaCardTableValue {
 export interface WikitaCardTableRow {
   label: string
   values: WikitaCardTableValue[]
+  variant?: 'header' | 'row'
+}
+
+interface CardSection {
+  title?: string
+  rows: WikitaCardTableRow[]
 }
 
 interface Props {
@@ -34,43 +40,87 @@ const props = withDefaults(defineProps<Props>(), {
 
 const hasRows = computed(() => props.rows.length > 0)
 
+const sections = computed((): CardSection[] => {
+  const rows = props.rows
+  if (!rows.length) return []
+
+  const hasHeaders = rows.some((row) => row.variant === 'header')
+  if (!hasHeaders) {
+    return [{ rows: rows.filter((row) => row.variant !== 'header') }]
+  }
+
+  const grouped: CardSection[] = []
+  let current: CardSection = { rows: [] }
+
+  for (const row of rows) {
+    if (row.variant === 'header') {
+      if (current.rows.length > 0) {
+        grouped.push(current)
+      }
+      current = { title: row.label, rows: [] }
+      continue
+    }
+
+    current.rows.push(row)
+  }
+
+  if (current.rows.length > 0) {
+    grouped.push(current)
+  }
+
+  return grouped
+})
+
 const showFooterRow = computed(
   () => props.showFooter && hasRows.value && Boolean(props.infoLeft || props.infoRight),
 )
 </script>
 
 <template>
-  <WikitaCardWrapper>
-    <div class="wikita-card-table">
-      <dl v-if="hasRows" class="wikita-card-table__rows">
-        <div v-for="row in rows" :key="row.label" class="wikita-card-table__row">
-          <dt class="wikita-card-table__label">{{ row.label }}</dt>
-          <dd class="wikita-card-table__value">
-            <template v-for="(value, index) in row.values" :key="index">
-              <a
-                v-if="value.href"
-                class="wikita-card-table__link"
-                :href="value.href"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {{ value.text }}
-                <CdxIcon :icon="cdxIconLinkExternal" size="small" />
-              </a>
-              <span v-else class="wikita-card-table__value-line">{{ value.text }}</span>
-            </template>
-          </dd>
-        </div>
-      </dl>
+  <div class="wikita-card-table">
+    <WikitaCardWrapper v-if="!hasRows">
+      <p class="wikita-card-table__empty">{{ emptyText }}</p>
+    </WikitaCardWrapper>
 
-      <p v-else class="wikita-card-table__empty">{{ emptyText }}</p>
+    <WikitaCardWrapper v-for="(section, sectionIndex) in sections" v-else :key="`${section.title ?? 'section'}-${sectionIndex}`">
+      <div class="wikita-card-table__section">
+        <h4 v-if="section.title" class="wikita-card-table__title">{{ section.title }}</h4>
 
-      <small v-if="showFooterRow" class="wikita-card-table__footer">
-        <span>{{ infoLeft }}</span>
-        <span>{{ infoRight }}</span>
-      </small>
-    </div>
-  </WikitaCardWrapper>
+        <dl class="wikita-card-table__rows">
+          <div
+            v-for="(row, rowIndex) in section.rows"
+            :key="`${row.label}-${rowIndex}`"
+            class="wikita-card-table__row"
+          >
+            <dt class="wikita-card-table__label">{{ row.label }}</dt>
+            <dd class="wikita-card-table__value">
+              <template v-for="(value, valueIndex) in row.values" :key="valueIndex">
+                <a
+                  v-if="value.href"
+                  class="wikita-card-table__link"
+                  :href="value.href"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ value.text }}
+                  <CdxIcon :icon="cdxIconLinkExternal" size="small" />
+                </a>
+                <span v-else class="wikita-card-table__value-line">{{ value.text }}</span>
+              </template>
+            </dd>
+          </div>
+        </dl>
+
+        <small
+          v-if="showFooterRow && sectionIndex === sections.length - 1"
+          class="wikita-card-table__footer"
+        >
+          <span>{{ infoLeft }}</span>
+          <span>{{ infoRight }}</span>
+        </small>
+      </div>
+    </WikitaCardWrapper>
+  </div>
 </template>
 
 <style scoped>
@@ -79,6 +129,18 @@ const showFooterRow = computed(
   flex-direction: column;
   gap: var(--spacing-100);
   min-width: 0;
+}
+
+.wikita-card-table__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-100);
+  min-width: 0;
+}
+
+.wikita-card-table__title {
+  margin: 0;
+  color: var(--color-base);
 }
 
 .wikita-card-table__rows {
@@ -90,13 +152,15 @@ const showFooterRow = computed(
 
 .wikita-card-table__row {
   display: grid;
-  grid-template-columns: 105px 1fr;
+  grid-template-columns: minmax(0, 42%) minmax(0, 1fr);
   gap: var(--spacing-100);
   align-items: start;
 }
 
 .wikita-card-table__label {
   margin: 0;
+  min-width: 0;
+  overflow-wrap: break-word;
   font-size: var(--font-size-medium);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-small);

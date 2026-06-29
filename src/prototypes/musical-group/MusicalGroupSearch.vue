@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { CdxProgressBar, CdxTextInput } from '@wikimedia/codex'
@@ -10,7 +10,7 @@ import WikitaTitle from './components/WikitaTitle.vue'
 import WikitaChromeHeader, {
   type WikitaChromeHeaderVariant,
 } from './components/WikitaChromeHeader.vue'
-import { isMusicPerformer, parseQidInput, searchMusicPerformers } from './data/wikidataApi'
+import { parseQidInput, searchWikidataItems } from './data/wikidataApi'
 import type { MusicalGroupSearchResult } from './data/types'
 
 interface Props {
@@ -35,7 +35,6 @@ const query = ref('')
 const searchInput = ref<{ focus: () => void } | null>(null)
 const results = ref<MusicalGroupSearchResult[]>([])
 const searching = ref(false)
-const submitting = ref(false)
 const localError = ref<string | null>(null)
 
 let searchAbort: AbortController | null = null
@@ -47,29 +46,6 @@ function itemHref(id: string) {
 
 function onResultSelect(id: string) {
   emit('navigate', id)
-}
-
-async function validateAndNavigate(raw: string) {
-  const id = parseQidInput(raw)
-  if (!id) {
-    localError.value = 'Enter a valid Wikidata item ID (e.g. Q107475751).'
-    return
-  }
-
-  submitting.value = true
-  localError.value = null
-  try {
-    const valid = await isMusicPerformer(id)
-    if (!valid) {
-      localError.value = 'That item is not a musician, composer, or musical group.'
-      return
-    }
-    emit('navigate', id)
-  } catch {
-    localError.value = 'Could not validate that item. Try again.'
-  } finally {
-    submitting.value = false
-  }
 }
 
 async function runSearch(value: string) {
@@ -84,7 +60,7 @@ async function runSearch(value: string) {
   searching.value = true
 
   try {
-    results.value = await searchMusicPerformers(trimmed, searchAbort.signal)
+    results.value = await searchWikidataItems(trimmed, searchAbort.signal)
   } catch (err) {
     if ((err as Error).name === 'AbortError') return
     results.value = []
@@ -101,13 +77,14 @@ watch(query, (value) => {
   }, 300)
 })
 
-async function onSubmit() {
+function onSubmit() {
   const trimmed = query.value.trim()
   if (!trimmed.length) return
 
   const directId = parseQidInput(trimmed)
   if (directId) {
-    await validateAndNavigate(directId)
+    localError.value = null
+    emit('navigate', directId)
     return
   }
 
@@ -145,8 +122,7 @@ onMounted(() => {
           v-model="query"
           class="musical-group-search__input"
           :start-icon="cdxIconSearch"
-          :disabled="submitting"
-          aria-label="Search musicians and groups"
+          aria-label="Search Wikidata"
         />
       </form>
 

@@ -2,7 +2,11 @@
 import { computed } from 'vue'
 
 import { CdxIcon } from '@wikimedia/codex'
-import { cdxIconLinkExternal, cdxIconMusicalScore } from '@wikimedia/codex-icons'
+import {
+  cdxIconLinkExternal,
+  cdxIconMapPin,
+  cdxIconMusicalScore,
+} from '@wikimedia/codex-icons'
 
 import { sentenceCaseList } from './data/formatLabel'
 import type { MusicalGroupData } from './data/types'
@@ -14,7 +18,12 @@ interface Props {
 const props = defineProps<Props>()
 
 const primaryFact = computed(() => {
-  const { typeLabel, inceptionYear, yearKind } = props.data
+  const { typeLabel, inceptionYear, yearKind, isLocation, country } = props.data
+  if (isLocation) {
+    if (typeLabel && country) return `${typeLabel} in ${country}`
+    if (typeLabel) return typeLabel
+    return null
+  }
   if (typeLabel && inceptionYear) {
     if (yearKind === 'birth') return `${typeLabel}, born ${inceptionYear}`
     return `${typeLabel} since ${inceptionYear}`
@@ -24,7 +33,22 @@ const primaryFact = computed(() => {
 })
 
 const genreLine = computed(() =>
-  props.data.genres.length ? sentenceCaseList(props.data.genres) : null,
+  props.data.isMusicPerformer && props.data.genres.length
+    ? sentenceCaseList(props.data.genres)
+    : null,
+)
+
+const locationLine = computed(() => {
+  if (!props.data.isLocation || props.data.population == null) return null
+  const formatted = new Intl.NumberFormat('en', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(props.data.population)
+  return `${formatted} people`
+})
+
+const factIcon = computed(() =>
+  props.data.isLocation ? cdxIconMapPin : cdxIconMusicalScore,
 )
 </script>
 
@@ -33,9 +57,10 @@ const genreLine = computed(() =>
     <div class="musical-group-facts__summary">
       <div v-if="primaryFact" class="musical-group-facts__primary-row">
         <h3 class="musical-group-facts__primary">{{ primaryFact }}</h3>
-        <CdxIcon :icon="cdxIconMusicalScore" class="musical-group-facts__note-icon" />
+        <CdxIcon :icon="factIcon" class="musical-group-facts__note-icon" />
       </div>
       <small v-if="genreLine" class="musical-group-facts__genres">{{ genreLine }}</small>
+      <small v-else-if="locationLine" class="musical-group-facts__genres">{{ locationLine }}</small>
     </div>
 
     <p v-if="data.websiteUrl && data.websiteHost" class="musical-group-facts__website">

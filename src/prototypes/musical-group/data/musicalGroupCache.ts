@@ -11,7 +11,7 @@ import type {
   MusicalGroupOverviewRelated,
 } from './types'
 
-export const MUSICAL_GROUP_CACHE_VERSION = 22
+export const MUSICAL_GROUP_CACHE_VERSION = 29
 
 const STORAGE_KEY = 'musical-group-page-cache'
 
@@ -114,7 +114,8 @@ function isInfobox(value: unknown): value is MusicalGroupInfobox {
     return (
       typeof r.label === 'string' &&
       Array.isArray(r.values) &&
-      r.values.every(isInfoboxValue)
+      r.values.every(isInfoboxValue) &&
+      (r.variant === undefined || r.variant === 'header' || r.variant === 'row')
     )
   })
 }
@@ -142,6 +143,8 @@ function isMusicalGroupData(value: unknown): value is MusicalGroupData {
   const record = value as Record<string, unknown>
   if (typeof record.id !== 'string' || !record.id.length) return false
   if (typeof record.label !== 'string' || !record.label.length) return false
+  if (typeof record.isMusicPerformer !== 'boolean') return false
+  if (typeof record.isLocation !== 'boolean') return false
   if (!Array.isArray(record.genres) || !record.genres.every((g) => typeof g === 'string')) {
     return false
   }
@@ -161,6 +164,8 @@ function isMusicalGroupData(value: unknown): value is MusicalGroupData {
   }
   if (record.websiteUrl !== undefined && typeof record.websiteUrl !== 'string') return false
   if (record.websiteHost !== undefined && typeof record.websiteHost !== 'string') return false
+  if (record.country !== undefined && typeof record.country !== 'string') return false
+  if (record.population !== undefined && typeof record.population !== 'number') return false
   if (record.editIndicator !== undefined && !isEditIndicator(record.editIndicator)) return false
   if (record.enwikiTitle !== undefined && typeof record.enwikiTitle !== 'string') return false
   if (record.commonsCategory !== undefined && typeof record.commonsCategory !== 'string') return false
