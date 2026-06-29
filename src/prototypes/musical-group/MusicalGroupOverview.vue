@@ -29,6 +29,6 @@ defineProps<Props>()
 .musical-group-overview {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-50);
+  gap: 8px;
 }
 </style>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { CdxIcon, CdxMenuButton } from '@wikimedia/codex'
 import type { MenuItemValue } from '@wikimedia/codex'
@@ -10,6 +10,25 @@ import {
   cdxIconUserAvatar,
 } from '@wikimedia/codex-icons'
 
+export type WikitaChromeHeaderVariant =
+  | 'black'
+  | 'off-black'
+  | 'gray'
+  | 'green-light'
+  | 'green-dark'
+
+interface Props {
+  variant?: WikitaChromeHeaderVariant
+  showBell?: boolean
+  showUser?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  variant: 'black',
+  showBell: true,
+  showUser: true,
+})
+
 const emit = defineEmits<{
   'toggle-search': []
   'reset-stored-data': []
@@ -18,6 +37,8 @@ const emit = defineEmits<{
 const menuSelected = ref<MenuItemValue | null>(null)
 
 const menuItems = [{ value: 'reset', label: 'Reset stored data' }]
+
+const variantClass = computed(() => `wikita-chrome-header--${props.variant}`)
 
 function onResetMenuItem(): void {
   emit('reset-stored-data')
@@ -30,20 +51,24 @@ watch(menuSelected, (value) => {
 </script>
 
 <template>
-  <header class="musical-group-chrome-header" aria-label="Site">
-    <div class="musical-group-chrome-header__start">
+  <header
+    class="wikita-chrome-header"
+    :class="variantClass"
+    aria-label="Site"
+  >
+    <div class="wikita-chrome-header__start">
       <CdxMenuButton
         v-model:selected="menuSelected"
-        class="musical-group-chrome-header__menu-btn"
+        class="wikita-chrome-header__menu-btn"
         :menu-items="menuItems"
         weight="quiet"
         aria-label="Menu"
       >
         <CdxIcon :icon="cdxIconMenu" />
       </CdxMenuButton>
-      <span class="musical-group-chrome-header__wordmark" aria-hidden="true">
+      <span class="wikita-chrome-header__wordmark" aria-hidden="true">
         <svg
-          class="musical-group-chrome-header__wordmark-svg"
+          class="wikita-chrome-header__wordmark-svg"
           xmlns="http://www.w3.org/2000/svg"
           width="28"
           height="18"
@@ -58,19 +83,29 @@ watch(menuSelected, (value) => {
       </span>
     </div>
 
-    <div class="musical-group-chrome-header__actions">
+    <div class="wikita-chrome-header__actions">
       <button
         type="button"
-        class="musical-group-chrome-header__icon-btn"
+        class="wikita-chrome-header__icon-btn"
         aria-label="Search"
-        @click="$emit('toggle-search')"
+        @click="emit('toggle-search')"
       >
         <CdxIcon :icon="cdxIconSearch" />
       </button>
-      <button type="button" class="musical-group-chrome-header__icon-btn" aria-label="Notifications">
+      <button
+        v-if="showBell"
+        type="button"
+        class="wikita-chrome-header__icon-btn"
+        aria-label="Notifications"
+      >
         <CdxIcon :icon="cdxIconBellOutline" />
       </button>
-      <button type="button" class="musical-group-chrome-header__icon-btn" aria-label="User menu">
+      <button
+        v-if="showUser"
+        type="button"
+        class="wikita-chrome-header__icon-btn"
+        aria-label="User menu"
+      >
         <CdxIcon :icon="cdxIconUserAvatar" />
       </button>
     </div>
@@ -78,146 +113,172 @@ watch(menuSelected, (value) => {
 </template>
 
 <style scoped>
-.musical-group-chrome-header {
+.wikita-chrome-header {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  height: 38px;
   padding: 10px var(--spacing-50);
-  border-bottom: 2px solid var(--border-color-interactive);
-  background-color: var(--background-color-inverted);
-  color: var(--color-inverted);
+  border-bottom: 2px solid var(--wikita-chrome-header-border, var(--border-color-interactive));
+  background-color: var(--wikita-chrome-header-bg, var(--background-color-inverted));
+  color: var(--wikita-chrome-header-fg, var(--color-inverted));
 }
 
-.musical-group-chrome-header__start {
+.wikita-chrome-header--black {
+  --wikita-chrome-header-bg: var(--background-color-inverted);
+  --wikita-chrome-header-border: var(--border-color-interactive);
+  --wikita-chrome-header-fg: var(--color-inverted);
+}
+
+.wikita-chrome-header--off-black {
+  --wikita-chrome-header-bg: #27292d;
+  --wikita-chrome-header-border: var(--color-base);
+  --wikita-chrome-header-fg: var(--color-inverted);
+}
+
+.wikita-chrome-header--gray {
+  --wikita-chrome-header-bg: var(--background-color-neutral);
+  --wikita-chrome-header-border: var(--border-color-muted);
+  --wikita-chrome-header-fg: var(--color-base);
+}
+
+.wikita-chrome-header--green-light {
+  --wikita-chrome-header-bg: #00f3aa;
+  --wikita-chrome-header-border: #00db9a;
+  --wikita-chrome-header-fg: var(--color-base);
+}
+
+.wikita-chrome-header--green-dark {
+  --wikita-chrome-header-bg: #00b881;
+  --wikita-chrome-header-border: #009669;
+  --wikita-chrome-header-fg: var(--color-inverted);
+}
+
+.wikita-chrome-header__start {
   display: flex;
   flex-shrink: 0;
   align-items: center;
   gap: var(--spacing-50);
 }
 
-.musical-group-chrome-header__menu-btn {
+.wikita-chrome-header__menu-btn {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
-  height: 20px;
+  height: 18px;
   line-height: 0;
 }
 
-.musical-group-chrome-header__wordmark {
+.wikita-chrome-header__wordmark {
   display: flex;
   align-items: center;
-  color: var(--color-inverted);
+  color: inherit;
 }
 
-.musical-group-chrome-header__wordmark-svg {
+.wikita-chrome-header__wordmark-svg {
   display: block;
   width: 27.554px;
   height: 17.433px;
 }
 
-.musical-group-chrome-header__actions {
+.wikita-chrome-header__actions {
   display: flex;
   flex-shrink: 0;
   align-items: center;
   gap: 12px;
 }
 
-.musical-group-chrome-header__icon-btn {
+.wikita-chrome-header__icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  min-width: 20px;
-  min-height: 20px;
-  max-height: 20px;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  max-height: 18px;
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--color-inverted);
+  color: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 </style>
 
-<!-- Unscoped: beat Codex [dir] + interaction selectors on the inverted chrome bar. -->
+<!-- Unscoped: beat Codex [dir] + interaction selectors on the chrome bar. -->
 <style>
-.musical-group-chrome-header .cdx-icon {
-  color: var(--color-inverted);
+.wikita-chrome-header .cdx-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--wikita-chrome-header-fg, var(--color-inverted));
 }
 
-.musical-group-chrome-header .cdx-icon svg,
-.musical-group-chrome-header .cdx-icon svg path {
+.wikita-chrome-header .cdx-icon svg,
+.wikita-chrome-header .cdx-icon svg path {
   fill: currentColor;
 }
 
-.musical-group-chrome-header .musical-group-chrome-header__icon-btn:hover,
-.musical-group-chrome-header .musical-group-chrome-header__icon-btn:active,
-.musical-group-chrome-header .musical-group-chrome-header__icon-btn:focus,
-.musical-group-chrome-header .musical-group-chrome-header__icon-btn:focus-visible {
+.wikita-chrome-header .wikita-chrome-header__icon-btn:hover,
+.wikita-chrome-header .wikita-chrome-header__icon-btn:active,
+.wikita-chrome-header .wikita-chrome-header__icon-btn:focus,
+.wikita-chrome-header .wikita-chrome-header__icon-btn:focus-visible {
   background: transparent;
-  color: var(--color-inverted);
+  color: var(--wikita-chrome-header-fg, var(--color-inverted));
 }
 
-.musical-group-chrome-header .musical-group-chrome-header__menu-btn.cdx-menu-button .cdx-button {
+.wikita-chrome-header .wikita-chrome-header__menu-btn.cdx-menu-button .cdx-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  min-width: 20px;
-  min-height: 20px;
-  max-height: 20px;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  max-height: 18px;
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--color-inverted);
+  color: var(--wikita-chrome-header-fg, var(--color-inverted));
   mix-blend-mode: normal;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
-.musical-group-chrome-header .musical-group-chrome-header__menu-btn.cdx-menu-button .cdx-button:hover,
-.musical-group-chrome-header
-  .musical-group-chrome-header__menu-btn.cdx-menu-button
-  .cdx-button:active,
-.musical-group-chrome-header
-  .musical-group-chrome-header__menu-btn.cdx-menu-button
-  .cdx-button:focus,
-.musical-group-chrome-header
-  .musical-group-chrome-header__menu-btn.cdx-menu-button
-  .cdx-button:focus-visible,
-.musical-group-chrome-header
-  .musical-group-chrome-header__menu-btn.cdx-menu-button
-  .cdx-button.cdx-button--is-active,
+.wikita-chrome-header .wikita-chrome-header__menu-btn.cdx-menu-button .cdx-button:hover,
+.wikita-chrome-header .wikita-chrome-header__menu-btn.cdx-menu-button .cdx-button:active,
+.wikita-chrome-header .wikita-chrome-header__menu-btn.cdx-menu-button .cdx-button:focus,
+.wikita-chrome-header .wikita-chrome-header__menu-btn.cdx-menu-button .cdx-button:focus-visible,
+.wikita-chrome-header .wikita-chrome-header__menu-btn.cdx-menu-button .cdx-button.cdx-button--is-active,
 [dir]
-  .musical-group-chrome-header
-  .musical-group-chrome-header__menu-btn.cdx-menu-button
+  .wikita-chrome-header
+  .wikita-chrome-header__menu-btn.cdx-menu-button
   .cdx-button.cdx-button--weight-quiet:enabled:hover,
 [dir]
-  .musical-group-chrome-header
-  .musical-group-chrome-header__menu-btn.cdx-menu-button
+  .wikita-chrome-header
+  .wikita-chrome-header__menu-btn.cdx-menu-button
   .cdx-button.cdx-button--weight-quiet:enabled:active,
 [dir]
-  .musical-group-chrome-header
-  .musical-group-chrome-header__menu-btn.cdx-menu-button
+  .wikita-chrome-header
+  .wikita-chrome-header__menu-btn.cdx-menu-button
   .cdx-button.cdx-button--weight-quiet.cdx-button--is-active,
 [dir]
-  .musical-group-chrome-header
-  .musical-group-chrome-header__menu-btn.cdx-menu-button
+  .wikita-chrome-header
+  .wikita-chrome-header__menu-btn.cdx-menu-button
   .cdx-button.cdx-button--weight-quiet:enabled:focus:not(:active):not(.cdx-button--is-active) {
   background: transparent;
   background-color: transparent;
   border-color: transparent;
-  color: var(--color-inverted);
+  color: var(--wikita-chrome-header-fg, var(--color-inverted));
   box-shadow: none;
   mix-blend-mode: normal;
 }
 
-.musical-group-chrome-header
-  .musical-group-chrome-header__menu-btn.cdx-menu-button
+.wikita-chrome-header
+  .wikita-chrome-header__menu-btn.cdx-menu-button
   .cdx-button
   .cdx-icon {
-  color: var(--color-inverted);
+  color: var(--wikita-chrome-header-fg, var(--color-inverted));
 }
 </style>

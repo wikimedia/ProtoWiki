@@ -52,7 +52,7 @@ defineProps<Props>()
   gap: var(--spacing-100);
   padding: var(--spacing-100);
   border: 1px solid var(--color-base);
-  border-radius: 6px;
+  border-radius: 4px;
   background-color: var(--background-color-base);
 }
 

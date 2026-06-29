@@ -107,7 +107,7 @@ const activeTab = defineModel<TabId>('activeTab', { default: 'overview' })
   border: 1px solid var(--color-base);
   border-bottom-width: 2px;
   border-right-width: 2px;
-  border-radius: 6px;
+  border-radius: 4px;
   background-color: var(--background-color-base);
   color: var(--color-base);
   font-family: var(--font-family-base);

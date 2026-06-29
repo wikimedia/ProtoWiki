@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { CdxIcon } from '@wikimedia/codex'
+import { computed } from 'vue'
+
 import { cdxIconNewspaper } from '@wikimedia/codex-icons'
 
-import OverviewSummaryCard from './OverviewSummaryCard.vue'
+import WikitaCard from './components/WikitaCard.vue'
 import type { MusicalGroupOverviewArticle } from './data/types'
 
 interface Props {
@@ -10,91 +11,49 @@ interface Props {
   noArticle?: boolean
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
+
+function plainExtract(html?: string): string {
+  if (!html) return ''
+  return html
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<\/p>/gi, ' ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+const cardTitle = computed(() =>
+  props.article && !props.noArticle ? 'English Wikipedia' : 'No English Wikipedia article',
+)
+
+const cardBody = computed(() =>
+  props.article && !props.noArticle ? (props.article.wordCountLabel ?? '') : '',
+)
+
+const cardSnippet = computed(() =>
+  props.article && !props.noArticle ? plainExtract(props.article.extractHtml) : '',
+)
+
+const infoRight = computed(() => {
+  const views = props.article?.viewsLabel
+  return views && views !== '—' ? views : ''
+})
 </script>
 
 <template>
-  <OverviewSummaryCard>
-    <template #header>
-      <div class="overview-article-card__title-row">
-        <CdxIcon :icon="cdxIconNewspaper" class="overview-article-card__icon" />
-        <span class="overview-article-card__title">Article</span>
-      </div>
-    </template>
-
-    <template v-if="article && !noArticle" #meta>
-      <span>English Wikipedia</span>
-      <span v-if="article.wordCountLabel">{{ article.wordCountLabel }}</span>
-    </template>
-    <template v-else-if="noArticle" #meta>
-      <span>No English Wikipedia article</span>
-    </template>
-
-    <template v-if="article?.extractHtml && !noArticle" #body>
-      <div class="overview-article-card__extract" v-html="article.extractHtml" />
-    </template>
-
-    <template v-if="article?.thumbnailUrl && !noArticle" #thumbnail>
-      <img
-        class="overview-summary-card__thumb"
-        :src="article.thumbnailUrl"
-        alt=""
-        loading="lazy"
-        draggable="false"
-      />
-    </template>
-
-    <template v-if="article && !noArticle" #footer>
-      <span>{{ article.lastEditedLabel }}</span>
-      <span v-if="article.viewsLabel !== '—'">{{ article.viewsLabel }}</span>
-    </template>
-  </OverviewSummaryCard>
+  <WikitaCard
+    :show-snippet="Boolean(cardSnippet)"
+    :title-bold="false"
+    type="Article"
+    :type-icon="cdxIconNewspaper"
+    :title="cardTitle"
+    :body="cardBody"
+    :snippet="cardSnippet"
+    :info-left="article?.lastEditedLabel ?? ''"
+    :info-right="infoRight"
+    :thumbnail-url="article?.thumbnailUrl"
+    :show-info="Boolean(article && !noArticle)"
+    :show-thumbnail="Boolean(article?.thumbnailUrl && !noArticle)"
+  />
 </template>
-
-<style scoped>
-.overview-article-card__title-row {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-25);
-}
-
-.overview-article-card__icon {
-  flex-shrink: 0;
-}
-
-.overview-article-card__title {
-  font-size: var(--font-size-medium);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-medium);
-}
-
-.overview-article-card__extract {
-  display: -webkit-box;
-  max-height: calc(var(--line-height-medium) * 3);
-  overflow: hidden;
-  font-family:
-    var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
-  font-size: var(--font-size-medium);
-  font-weight: var(--font-weight-normal);
-  line-height: var(--line-height-medium);
-  color: var(--color-base);
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-}
-
-.overview-article-card__extract :deep(p) {
-  margin: 0;
-}
-
-.overview-article-card__extract :deep(b),
-.overview-article-card__extract :deep(strong) {
-  font-weight: var(--font-weight-normal);
-}
-
-.overview-article-card__extract :deep(.overview-extract__link) {
-  color: var(--color-base);
-  text-decoration: underline;
-  cursor: default;
-}
-</style>

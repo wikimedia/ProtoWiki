@@ -55,7 +55,7 @@ function slideStyle(image: CarouselImage) {
 .image-carousel__slide {
   flex: 0 0 auto;
   height: v-bind('`${CAROUSEL_SLIDE_HEIGHT}px`');
-  border-radius: 6px;
+  border-radius: 4px;
   overflow: hidden;
   background-color: var(--background-color-interactive-subtle);
 }

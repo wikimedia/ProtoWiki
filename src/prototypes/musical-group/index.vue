@@ -8,7 +8,7 @@ import { loadMusicalGroupOverview, isCachedOverviewUsable } from './data/loadMus
 import { clearMusicalGroupCache, getCachedMusicalGroup } from './data/musicalGroupCache'
 import type { MusicalGroupData, MusicalGroupOverviewData } from './data/types'
 import { normalizeQid } from './data/wikidataApi'
-import MusicalGroupChromeHeader from './MusicalGroupChromeHeader.vue'
+import WikitaChromeHeader from './components/WikitaChromeHeader.vue'
 import MusicalGroupScreen from './MusicalGroupScreen.vue'
 import MusicalGroupSearch from './MusicalGroupSearch.vue'
 import MusicalGroupTitleRow from './MusicalGroupTitleRow.vue'
@@ -129,6 +129,10 @@ watch(
   { immediate: true },
 )
 
+watch(itemId, (id) => {
+  if (id) searchOpen.value = false
+})
+
 const showSearch = computed(() => !itemId.value || validationFailed.value || searchOpen.value)
 const showEntityChrome = computed(() => Boolean(itemId.value) && !validationFailed.value)
 
@@ -175,7 +179,7 @@ async function onResetStoredData() {
 
       <template v-else>
         <div v-if="showEntityChrome" class="musical-group-chrome-stack">
-          <MusicalGroupChromeHeader
+          <WikitaChromeHeader
             @toggle-search="onToggleSearch"
             @reset-stored-data="onResetStoredData"
           />

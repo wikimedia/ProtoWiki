@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { CdxProgressBar, CdxTextInput } from '@wikimedia/codex'
 import { cdxIconSearch } from '@wikimedia/codex-icons'
 
+import WikitaCard from './components/WikitaCard.vue'
+import WikitaChromeHeader from './components/WikitaChromeHeader.vue'
 import { isMusicalGroup, parseQidInput, searchMusicalGroups } from './data/wikidataApi'
 import type { MusicalGroupSearchResult } from './data/types'
-import MusicalGroupChromeHeader from './MusicalGroupChromeHeader.vue'
 import MusicalGroupTitleBar from './MusicalGroupTitleBar.vue'
 
 interface Props {
@@ -21,6 +23,8 @@ const emit = defineEmits<{
   'reset-stored-data': []
 }>()
 
+const route = useRoute()
+
 const query = ref('')
 const searchInput = ref<{ focus: () => void } | null>(null)
 const results = ref<MusicalGroupSearchResult[]>([])
@@ -30,6 +34,14 @@ const localError = ref<string | null>(null)
 
 let searchAbort: AbortController | null = null
 let searchTimer: ReturnType<typeof setTimeout> | null = null
+
+function itemHref(id: string) {
+  return { query: { ...route.query, item: id } }
+}
+
+function onResultSelect(id: string) {
+  emit('navigate', id)
+}
 
 async function validateAndNavigate(raw: string) {
   const id = parseQidInput(raw)
@@ -98,10 +110,6 @@ async function onSubmit() {
   }
 }
 
-function onSelectResult(result: MusicalGroupSearchResult) {
-  emit('navigate', result.id)
-}
-
 onMounted(() => {
   searchInput.value?.focus()
 })
@@ -109,7 +117,7 @@ onMounted(() => {
 
 <template>
   <div class="musical-group-search">
-    <MusicalGroupChromeHeader
+    <WikitaChromeHeader
       @toggle-search="emit('toggle-search')"
       @reset-stored-data="emit('reset-stored-data')"
     />
@@ -131,30 +139,17 @@ onMounted(() => {
       <CdxProgressBar v-if="searching" inline aria-label="Searching" />
 
       <ul v-if="results.length" class="musical-group-search__results">
-        <li v-for="result in results" :key="result.id">
-          <button
-            type="button"
-            class="musical-group-search__card"
-            @click="onSelectResult(result)"
-          >
-            <div class="musical-group-search__card-text">
-              <span class="musical-group-search__card-label">{{ result.label }}</span>
-              <span v-if="result.description" class="musical-group-search__card-desc">
-                {{ result.description }}
-              </span>
-            </div>
-
-            <span class="musical-group-search__card-thumb">
-              <img
-                v-if="result.thumbnailUrl"
-                :src="result.thumbnailUrl"
-                :alt="result.label"
-                class="musical-group-search__card-image"
-                loading="lazy"
-              />
-              <span v-else class="musical-group-search__card-placeholder" aria-hidden="true" />
-            </span>
-          </button>
+        <li v-for="result in results" :key="result.id" @click="onResultSelect(result.id)">
+          <WikitaCard
+            :href="itemHref(result.id)"
+            :show-type="false"
+            :show-snippet="false"
+            :show-info="false"
+            :title="result.label"
+            :body="result.description ?? ''"
+            :thumbnail-url="result.thumbnailUrl"
+            :thumbnail-alt="result.label"
+          />
         </li>
       </ul>
 
@@ -190,13 +185,17 @@ onMounted(() => {
 
 .musical-group-search__input {
   width: 100%;
-  border-radius: 0;
+  border-radius: 4px;
+}
+
+.musical-group-search__input :deep(.cdx-text-input) {
+  border-radius: 4px;
 }
 
 .musical-group-search__input :deep(.cdx-text-input__input) {
   min-height: var(--size-250);
   border-color: var(--color-base);
-  border-radius: 0;
+  border-radius: 4px;
   font-size: var(--font-size-medium);
 }
 
@@ -208,67 +207,14 @@ onMounted(() => {
 .musical-group-search__results {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-50);
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.musical-group-search__card {
-  display: flex;
-  align-items: stretch;
-  justify-content: space-between;
-  gap: var(--spacing-100);
-  width: 100%;
-  min-height: 80px;
-  padding: var(--spacing-100);
-  border: 1px solid var(--color-base);
-  border-radius: var(--border-radius-base);
-  background-color: var(--background-color-base);
-  text-align: start;
-  cursor: pointer;
-}
-
-.musical-group-search__card-text {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-25);
-  min-width: 0;
-}
-
-.musical-group-search__card-label {
-  font-size: var(--font-size-medium);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-small);
-  color: var(--color-base);
-}
-
-.musical-group-search__card-desc {
-  font-size: var(--font-size-medium);
-  line-height: var(--line-height-small);
-  color: var(--color-base);
-}
-
-.musical-group-search__card-thumb {
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  border: 1px solid var(--color-base);
-  overflow: hidden;
-}
-
-.musical-group-search__card-image {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.musical-group-search__card-placeholder {
-  display: block;
-  width: 100%;
-  height: 100%;
-  background-color: var(--background-color-interactive-subtle);
+.musical-group-search__results > li {
+  margin: 0;
 }
 
 .musical-group-search__error {
