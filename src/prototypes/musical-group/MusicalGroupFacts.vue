@@ -17,7 +17,10 @@ const props = defineProps<Props>()
 const primaryFact = computed(() => {
   const { typeLabel, inceptionYear, yearKind, isLocation, country } = props.data
   if (isLocation) {
-    if (typeLabel && country) return `${typeLabel} in ${country}`
+    const showCountry =
+      country &&
+      country.localeCompare(props.data.label, undefined, { sensitivity: 'accent' }) !== 0
+    if (typeLabel && showCountry) return `${typeLabel} in ${country}`
     if (typeLabel) return typeLabel
     return null
   }

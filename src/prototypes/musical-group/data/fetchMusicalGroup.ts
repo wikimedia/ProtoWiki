@@ -148,11 +148,14 @@ export async function fetchMusicalGroup(
     }
   }
 
+  const countryId =
+    claims.countryId && claims.countryId !== id ? claims.countryId : undefined
+
   const [typeLabel, countryLabel] = await Promise.all([
     resolveLocationTypeLabel(id, signal),
-    claims.countryId
-      ? resolveEntityLabels([claims.countryId], signal)
-          .then((labels) => labels.get(claims.countryId!))
+    countryId
+      ? resolveEntityLabels([countryId], signal)
+          .then((labels) => labels.get(countryId))
           .catch(() => undefined)
       : Promise.resolve(undefined),
   ])
