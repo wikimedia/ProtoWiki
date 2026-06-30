@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CdxIcon } from '@wikimedia/codex'
-import { cdxIconImage } from '@wikimedia/codex-icons'
+import { cdxIconImageGallery } from '@wikimedia/codex-icons'
 
 import { carouselSlideWidth, CAROUSEL_SLIDE_HEIGHT } from './data/carouselLayout'
 import type { CarouselImage } from './data/types'
@@ -47,8 +47,8 @@ function slideStyle(image: CarouselImage) {
           class="image-carousel__more"
           @click="emit('view-all-images')"
         >
+          <CdxIcon :icon="cdxIconImageGallery" class="image-carousel__more-icon" />
           <span class="image-carousel__more-count">{{ moreCountLabel }}</span>
-          <CdxIcon :icon="cdxIconImage" class="image-carousel__more-icon" />
         </button>
       </template>
 
@@ -143,6 +143,12 @@ function slideStyle(image: CarouselImage) {
 .image-carousel__more-icon {
   width: 1.25rem;
   height: 1.25rem;
+  color: var(--color-subtle);
+}
+
+.image-carousel__more-icon :deep(svg),
+.image-carousel__more-icon :deep(svg path) {
+  fill: currentColor;
 }
 
 .image-carousel__empty {

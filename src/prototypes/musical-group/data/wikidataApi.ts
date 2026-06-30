@@ -251,6 +251,16 @@ interface WbEntityClaim {
       value: string | { id?: string; time?: string; text?: string }
     }
   }
+  rank?: string
+  qualifiers?: Record<
+    string,
+    Array<{
+      datavalue?: {
+        type: string
+        value: string | { id?: string; time?: string; text?: string }
+      }
+    }>
+  >
 }
 
 interface WbEntity {
@@ -334,6 +344,61 @@ function allClaimEntityIds(claims: WbEntityClaim[] | undefined): string[] {
   return ids
 }
 
+function claimQualifierTime(claim: WbEntityClaim, property: string): string | null {
+  const qual = claim.qualifiers?.[property]?.[0]
+  const value = qual?.datavalue?.value
+  if (typeof value === 'object' && value && 'time' in value && value.time) {
+    return value.time
+  }
+  return null
+}
+
+function compareWikidataTime(a: string | null, b: string | null): number {
+  if (a == null && b == null) return 0
+  if (a == null) return 1
+  if (b == null) return -1
+  return a.localeCompare(b)
+}
+
+/** Pick the current or most recent value from a temporally qualified claim list (e.g. P17 country). */
+function latestClaimEntityId(claims: WbEntityClaim[] | undefined): string | undefined {
+  if (!claims?.length) return undefined
+
+  const pool = claims.filter((claim) => claim.rank !== 'deprecated')
+  const candidates = pool.length ? pool : claims
+
+  const withEntity = candidates
+    .map((claim) => ({ claim, id: claimEntityId(claim) }))
+    .filter((entry): entry is { claim: WbEntityClaim; id: string } => Boolean(entry.id))
+
+  if (!withEntity.length) return undefined
+
+  const current = withEntity.filter(({ claim }) => !claimQualifierTime(claim, 'P582'))
+
+  if (current.length) {
+    const preferred = current.find(({ claim }) => claim.rank === 'preferred')
+    if (preferred) return preferred.id
+
+    return current.reduce((best, entry) =>
+      compareWikidataTime(
+        claimQualifierTime(best.claim, 'P580'),
+        claimQualifierTime(entry.claim, 'P580'),
+      ) <= 0
+        ? entry
+        : best,
+    ).id
+  }
+
+  return withEntity.reduce((best, entry) =>
+    compareWikidataTime(
+      claimQualifierTime(best.claim, 'P582'),
+      claimQualifierTime(entry.claim, 'P582'),
+    ) <= 0
+      ? entry
+      : best,
+  ).id
+}
+
 export async function fetchEntityClaims(
   id: string,
   signal?: AbortSignal,
@@ -392,7 +457,7 @@ export async function fetchEntityClaims(
     yearKind,
     genreIds: allClaimEntityIds(claims.P136),
     typeIds: allClaimEntityIds(claims.P31),
-    countryId: allClaimEntityIds(claims.P17)[0],
+    countryId: latestClaimEntityId(claims.P17),
     population: claims.P1082?.length ? claimQuantityAmount(claims.P1082[0]) ?? undefined : undefined,
   }
 }

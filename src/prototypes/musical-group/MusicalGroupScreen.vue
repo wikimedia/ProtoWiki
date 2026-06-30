@@ -38,7 +38,7 @@ const props = withDefaults(defineProps<Props>(), {
 const { activeTab, setTab } = useMusicalGroupRoute()
 
 useMusicalGroupScrollStates()
-useMusicalGroupTabScroll()
+const { requestScrollToTabContent, scrollToTabContent } = useMusicalGroupTabScroll()
 
 const showRichIntro = computed(
   () => props.data.isMusicPerformer || props.data.isLocation,
@@ -71,6 +71,16 @@ watch(
     imagesTabEverOpened.value = false
   },
 )
+
+function viewAllImages() {
+  if (activeTab.value === 'images') {
+    scrollToTabContent()
+    return
+  }
+
+  requestScrollToTabContent()
+  void setTab('images')
+}
 
 const moreImagesCountLabel = computed(() => {
   let count = props.data.commonsImageCount
@@ -117,7 +127,7 @@ watch(
           :loading="loadingImages"
           :show-more-images="showImagesTab && Boolean(moreImagesCountLabel)"
           :more-count-label="moreImagesCountLabel"
-          @view-all-images="setTab('images')"
+          @view-all-images="viewAllImages"
         />
       </div>
       <MusicalGroupFacts :data="data" />

@@ -33,6 +33,7 @@ export function useMusicalGroupTabScroll() {
 
   let previousItem = route.query.item
   let previousTab = parseTabQuery(route.query.tab)
+  let forceScrollToContent = false
 
   function disconnectPanelObserver() {
     panelResizeObserver?.disconnect()
@@ -68,11 +69,38 @@ export function useMusicalGroupTabScroll() {
     panelResizeObserver.observe(panel)
   }
 
+  function scrollToTabContent() {
+    const page = scrollRoot ?? getMusicalGroupScrollPage()
+    if (!page) return
+
+    disconnectPanelObserver()
+
+    const target = measureMusicalGroupTabContentTopScroll(page)
+    isRestoringScroll = true
+    scrollPageTo(target)
+    observePanelForScrollRestore(page, target)
+    requestAnimationFrame(() => {
+      isRestoringScroll = false
+    })
+  }
+
+  function requestScrollToTabContent() {
+    forceScrollToContent = true
+  }
+
   function applyScrollRestore(switchInfo: PendingSwitch) {
     const page = scrollRoot ?? getMusicalGroupScrollPage()
     if (!page) return
 
     disconnectPanelObserver()
+
+    if (forceScrollToContent) {
+      forceScrollToContent = false
+      visitedTabs.add(switchInfo.to)
+      tabScrollTops.set(switchInfo.to, measureMusicalGroupTabContentTopScroll(page))
+      scrollToTabContent()
+      return
+    }
 
     if (switchInfo.tabsStuck) {
       visitedTabs.add(switchInfo.from)
@@ -164,4 +192,9 @@ export function useMusicalGroupTabScroll() {
     scrollRoot?.removeEventListener('scroll', onScroll)
     disconnectPanelObserver()
   })
+
+  return {
+    requestScrollToTabContent,
+    scrollToTabContent,
+  }
 }
