@@ -20,7 +20,7 @@ const props = withDefaults(defineProps<Props>(), {
 const LINK_SECTIONS: { category: ExternalLinkCategory; title: string }[] = [
   { category: 'official', title: 'Official website' },
   { category: 'social', title: 'Socials' },
-  { category: 'other', title: 'Others' },
+  { category: 'other', title: 'Other' },
 ]
 
 const sections = computed(() =>
@@ -82,9 +82,8 @@ const sections = computed(() =>
   min-width: 0;
 }
 
-.musical-group-links__item :deep(.wikita-external-link) {
-  display: flex;
-  width: 100%;
+.musical-group-links__item :deep(.wikita-external-link--truncate) {
+  max-width: 80%;
 }
 
 .musical-group-links__empty {

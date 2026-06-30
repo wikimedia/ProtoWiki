@@ -27,7 +27,13 @@ const displayLabel = computed(() => {
 </script>
 
 <template>
-  <a :href="href" class="wikita-external-link" target="_blank" rel="noopener noreferrer">
+  <a
+    :href="href"
+    class="wikita-external-link"
+    :class="{ 'wikita-external-link--truncate': truncate }"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
     <span
       class="wikita-external-link__text"
       :class="{ 'wikita-external-link__text--truncate': truncate }"
@@ -49,6 +55,14 @@ const displayLabel = computed(() => {
   text-decoration: none;
 }
 
+.wikita-external-link--truncate {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: top;
+  padding-right: calc(1.0625em + var(--spacing-25));
+}
+
 .wikita-external-link:hover .wikita-external-link__text {
   text-decoration: underline;
 }
@@ -59,6 +73,7 @@ const displayLabel = computed(() => {
 }
 
 .wikita-external-link__text--truncate {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -69,6 +84,14 @@ const displayLabel = computed(() => {
   flex-shrink: 0;
   margin-top: 1px;
   color: var(--color-progressive);
+}
+
+.wikita-external-link--truncate .wikita-external-link__icon {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  margin-top: 0;
+  transform: translateY(-50%);
 }
 
 .wikita-external-link__icon :deep(svg),

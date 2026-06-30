@@ -159,7 +159,7 @@ function rankOrder(rank: string | undefined): number {
   return 2
 }
 
-/** Official website first, then social/streaming, then remaining IDs in Wikidata P-id order. */
+/** Official website first, then social/streaming, then others; alphabetically within each tier. */
 function compareEntityLinks(a: RawEntityLink, b: RawEntityLink): number {
   const tier = (link: RawEntityLink): number => {
     if (link.propertyId === 'P856') return 0
@@ -170,15 +170,10 @@ function compareEntityLinks(a: RawEntityLink, b: RawEntityLink): number {
   const tierDiff = tier(a) - tier(b)
   if (tierDiff !== 0) return tierDiff
 
-  if (tier(a) === 1) {
-    const socialDiff =
-      (socialPropertyRank.get(a.propertyId) ?? Number.MAX_SAFE_INTEGER) -
-      (socialPropertyRank.get(b.propertyId) ?? Number.MAX_SAFE_INTEGER)
-    if (socialDiff !== 0) return socialDiff
-  } else if (tier(a) === 2) {
-    const propertyDiff = a.propertyNumber - b.propertyNumber
-    if (propertyDiff !== 0) return propertyDiff
-  }
+  const labelDiff = externalLinkLabel(a.url).localeCompare(externalLinkLabel(b.url), undefined, {
+    sensitivity: 'base',
+  })
+  if (labelDiff !== 0) return labelDiff
 
   const rankDiff = rankOrder(a.rank) - rankOrder(b.rank)
   if (rankDiff !== 0) return rankDiff
