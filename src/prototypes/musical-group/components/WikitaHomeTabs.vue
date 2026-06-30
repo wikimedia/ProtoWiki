@@ -1,43 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+export type HomeTabId = 'home' | 'featured' | 'trending' | 'activity' | 'edit'
 
-import type { TabId } from './data/types'
-
-const allTabs: { id: TabId; label: string; dot?: 'blue' }[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'info', label: 'Info' },
-  { id: 'article', label: 'Article' },
-  { id: 'images', label: 'Images', dot: 'blue' },
-  { id: 'links', label: 'Links' },
+const allTabs: { id: HomeTabId; label: string; dot?: boolean }[] = [
+  { id: 'home', label: 'Home' },
+  { id: 'featured', label: 'Featured' },
+  { id: 'trending', label: 'Trending', dot: true },
+  { id: 'activity', label: 'Activity' },
+  { id: 'edit', label: 'Edit' },
 ]
 
-interface Props {
-  showArticleTab?: boolean
-  showImagesTab?: boolean
-  showImagesTabDot?: boolean
-  showInfoTab?: boolean
-  showLinksTab?: boolean
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  showArticleTab: true,
-  showImagesTab: true,
-  showImagesTabDot: true,
-  showInfoTab: true,
-  showLinksTab: true,
-})
-
-const tabs = computed(() =>
-  allTabs.filter((tab) => {
-    if (tab.id === 'article' && !props.showArticleTab) return false
-    if (tab.id === 'images' && !props.showImagesTab) return false
-    if (tab.id === 'info' && !props.showInfoTab) return false
-    if (tab.id === 'links' && !props.showLinksTab) return false
-    return true
-  }),
-)
-
-const activeTab = defineModel<TabId>('activeTab', { default: 'overview' })
+const activeTab = defineModel<HomeTabId>('activeTab', { default: 'home' })
 
 function scrollTabIntoTrackView(button: HTMLElement, track: HTMLElement) {
   const buttonRect = button.getBoundingClientRect()
@@ -50,7 +22,7 @@ function scrollTabIntoTrackView(button: HTMLElement, track: HTMLElement) {
   }
 }
 
-function onTabClick(tabId: TabId, event: MouseEvent) {
+function onTabClick(tabId: HomeTabId, event: MouseEvent) {
   activeTab.value = tabId
 
   const button = event.currentTarget as HTMLElement
@@ -63,10 +35,10 @@ function onTabClick(tabId: TabId, event: MouseEvent) {
 
 <template>
   <div class="musical-group-tabs-sticky">
-    <nav class="musical-group-tabs" aria-label="Section tabs">
+    <nav class="musical-group-tabs" aria-label="Home sections">
       <div class="musical-group-tabs__track">
         <button
-          v-for="tab in tabs"
+          v-for="tab in allTabs"
           :key="tab.id"
           type="button"
           class="musical-group-tabs__tab"
@@ -76,7 +48,7 @@ function onTabClick(tabId: TabId, event: MouseEvent) {
         >
           {{ tab.label }}
           <span
-            v-if="tab.dot === 'blue' && showImagesTabDot && activeTab !== tab.id"
+            v-if="tab.dot && activeTab !== tab.id"
             class="musical-group-tabs__dot"
             aria-hidden="true"
           />
@@ -89,9 +61,8 @@ function onTabClick(tabId: TabId, event: MouseEvent) {
 <style scoped>
 .musical-group-tabs-sticky {
   position: sticky;
-  top: var(--musical-group-tabs-sticky-top, 132px);
+  top: var(--musical-group-tabs-sticky-top, 48px);
   z-index: 2;
-  margin-inline: calc(-1 * var(--spacing-50));
   container-type: scroll-state;
   container-name: musical-group-tabs;
 }

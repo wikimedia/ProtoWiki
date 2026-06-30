@@ -140,6 +140,93 @@ export function hasImagesTab(data: MusicalGroupData): boolean {
   return false
 }
 
+/** Featured "article of the day" card. */
+export interface HomeFeatured {
+  title: string
+  enwikiTitle: string
+  description: string
+  thumbnailUrl?: string
+  articleUrl: string
+  itemId?: string
+}
+
+/** A "Did you know" hook from the daily featured feed. */
+export interface HomeDidYouKnow {
+  text: string
+  enwikiTitle?: string
+  title?: string
+  thumbnailUrl?: string
+  articleUrl?: string
+  itemId?: string
+}
+
+/** A birthday entry from on-this-day births. */
+export interface HomeBornOnThisDay {
+  year: number
+  text: string
+  title: string
+  enwikiTitle: string
+  thumbnailUrl?: string
+  articleUrl: string
+  itemId?: string
+}
+
+export interface HomeFeaturedTab {
+  article?: HomeFeatured
+  didYouKnow: HomeDidYouKnow[]
+  bornOnThisDay: HomeBornOnThisDay[]
+}
+
+/** A bookmarked item resolved to display + lookup metadata. */
+export interface HomeSavedItem {
+  id: string
+  title: string
+  enwikiTitle?: string
+  description: string
+  thumbnailUrl?: string
+  savedAt: number
+}
+
+/** A "Help wanted" edit suggestion derived from a saved page. */
+export interface HomeHelpWanted {
+  itemId: string
+  /** Suggestion label, e.g. "Find a reference". */
+  suggestionLabel: string
+  /** Article/page label. */
+  title: string
+  /** Suggestion copy. */
+  body: string
+  need: string
+  thumbnailUrl?: string
+}
+
+/** A "Related reading" recommendation from a morelike query. */
+export interface HomeRelated {
+  title: string
+  description: string
+  thumbnailUrl?: string
+  articleUrl: string
+  itemId?: string
+}
+
+export type HomeRecentChangeFlag =
+  | 'first-edit'
+  | 'new-editor'
+  | 'good-faith'
+  | 'tone-issue'
+  | 'high-revert-risk'
+  | 'none'
+
+/** The most recent change to a saved page, classified for review. */
+export interface HomeRecentChange {
+  enwikiTitle: string
+  title: string
+  editSummary: string
+  thumbnailUrl?: string
+  diffUrl: string
+  flag: HomeRecentChangeFlag
+}
+
 export interface FetchMusicalGroupOptions {
   signal?: AbortSignal
 }

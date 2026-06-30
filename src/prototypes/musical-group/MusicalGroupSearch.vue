@@ -27,6 +27,7 @@ const emit = defineEmits<{
   navigate: [id: string]
   'toggle-search': []
   'reset-stored-data': []
+  'go-home': []
 }>()
 
 const route = useRoute()
@@ -96,11 +97,14 @@ onMounted(() => {
 
 <template>
   <div class="musical-group-search">
-    <WikitaChromeHeader
-      v-model:variant="headerVariant"
-      @toggle-search="emit('toggle-search')"
-      @reset-stored-data="emit('reset-stored-data')"
-    />
+    <div class="musical-group-chrome-stack">
+      <WikitaChromeHeader
+        v-model:variant="headerVariant"
+        @toggle-search="emit('toggle-search')"
+        @reset-stored-data="emit('reset-stored-data')"
+        @go-home="emit('go-home')"
+      />
+    </div>
 
     <WikitaTitle
       title="Search"

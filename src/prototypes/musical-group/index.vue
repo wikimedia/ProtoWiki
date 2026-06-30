@@ -15,6 +15,7 @@ import { normalizeQid } from './data/wikidataApi'
 import WikitaChromeHeader, {
   type WikitaChromeHeaderVariant,
 } from './components/WikitaChromeHeader.vue'
+import MusicalGroupHome from './MusicalGroupHome.vue'
 import MusicalGroupScreen from './MusicalGroupScreen.vue'
 import MusicalGroupSearch from './MusicalGroupSearch.vue'
 import MusicalGroupTitleRow from './MusicalGroupTitleRow.vue'
@@ -139,12 +140,21 @@ watch(itemId, (id) => {
   if (id) searchOpen.value = false
 })
 
-const showSearch = computed(() => !itemId.value || searchOpen.value)
-const showEntityChrome = computed(() => Boolean(itemId.value))
+const showSearch = computed(() => searchOpen.value)
+const showHome = computed(() => !itemId.value && !searchOpen.value)
+const showEntityChrome = computed(() => Boolean(itemId.value) && !searchOpen.value)
 
 function onToggleSearch() {
-  if (!itemId.value) return
   searchOpen.value = !searchOpen.value
+}
+
+async function onGoHome() {
+  searchOpen.value = false
+  if (!itemId.value) return
+  const query = { ...route.query }
+  delete query.item
+  delete query.tab
+  await router.replace({ query })
 }
 
 async function onNavigate(id: string) {
@@ -183,6 +193,15 @@ async function onResetStoredData() {
         @navigate="onNavigate"
         @toggle-search="onToggleSearch"
         @reset-stored-data="onResetStoredData"
+        @go-home="onGoHome"
+      />
+
+      <MusicalGroupHome
+        v-else-if="showHome"
+        v-model:header-variant="headerVariant"
+        @toggle-search="onToggleSearch"
+        @reset-stored-data="onResetStoredData"
+        @go-home="onGoHome"
       />
 
       <template v-else>
@@ -191,6 +210,7 @@ async function onResetStoredData() {
             v-model:variant="headerVariant"
             @toggle-search="onToggleSearch"
             @reset-stored-data="onResetStoredData"
+            @go-home="onGoHome"
           />
           <MusicalGroupTitleRow v-if="data" :data="data" />
         </div>
@@ -266,8 +286,11 @@ async function onResetStoredData() {
 .musical-group-page__error p {
   color: var(--color-error);
 }
+</style>
 
-.musical-group-chrome-stack {
+<!-- Sticky chrome applies to every view inside the scroll page (home, entity, etc.) -->
+<style>
+.musical-group-page .musical-group-chrome-stack {
   position: sticky;
   top: 0;
   z-index: 3;

@@ -1,28 +1,15 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 
 import { fetchWithTimeout } from './fetchWithTimeout'
+import { normalizeUrlForDedup, OFFICIAL_WEBSITE_LABEL } from './mergeExternalLinks'
+import {
+  getSocialPlatformLabel,
+  isSocialPlatformUrl,
+} from './socialPlatforms'
 import type { ExternalLinkCategory, WikidataExternalLink } from './types'
 import { externalLinkLabel } from './wikidataApi'
 
 const WIKIDATA_API = 'https://www.wikidata.org/w/api.php'
-
-/** Social / streaming identifiers — shown after official website, before other IDs. */
-const SOCIAL_PROPERTY_IDS = [
-  'P2002', // X (Twitter) username
-  'P2003', // Instagram username
-  'P2013', // Facebook ID
-  'P2397', // YouTube channel ID
-  'P7085', // TikTok username
-  'P4264', // LinkedIn personal profile
-  'P4033', // Mastodon address
-  'P12386', // Bluesky handle
-  'P1902', // Spotify artist ID
-  'P2722', // Deezer artist ID
-  'P2850', // Apple Music artist ID (U.S.)
-  'P3040', // SoundCloud ID
-  'P7192', // Bandcamp profile ID
-  'P4576', // Tidal artist ID
-] as const
 
 interface WbClaim {
   rank?: string
@@ -54,10 +41,6 @@ interface RawEntityLink {
 }
 
 const formatterCache = new Map<string, string | undefined>()
-
-const socialPropertyRank = new Map<string, number>(
-  SOCIAL_PROPERTY_IDS.map((propertyId, index) => [propertyId, index]),
-)
 
 function actionUrl(params: Record<string, string>): string {
   const search = new URLSearchParams({
@@ -139,20 +122,6 @@ function buildFormatterUrl(template: string, identifier: string): string {
   return template.replace(/\$1/g, identifier)
 }
 
-function normalizeUrlForDedup(url: string): string {
-  try {
-    const parsed = new URL(url)
-    parsed.hash = ''
-    parsed.hostname = parsed.hostname.toLowerCase()
-    if (parsed.pathname.endsWith('/') && parsed.pathname.length > 1) {
-      parsed.pathname = parsed.pathname.replace(/\/+$/, '')
-    }
-    return parsed.toString()
-  } catch {
-    return url.trim().toLowerCase()
-  }
-}
-
 function rankOrder(rank: string | undefined): number {
   if (rank === 'preferred') return 0
   if (rank === 'normal') return 1
@@ -163,16 +132,22 @@ function rankOrder(rank: string | undefined): number {
 function compareEntityLinks(a: RawEntityLink, b: RawEntityLink): number {
   const tier = (link: RawEntityLink): number => {
     if (link.propertyId === 'P856') return 0
-    if (socialPropertyRank.has(link.propertyId)) return 1
+    if (isSocialPlatformUrl(link.url, link.propertyId)) return 1
     return 2
   }
 
   const tierDiff = tier(a) - tier(b)
   if (tierDiff !== 0) return tierDiff
 
-  const labelDiff = externalLinkLabel(a.url).localeCompare(externalLinkLabel(b.url), undefined, {
-    sensitivity: 'base',
-  })
+  const labelDiff = (() => {
+    const aLabel =
+      getSocialPlatformLabel(a.url, a.propertyId) ??
+      (a.propertyId === 'P856' ? OFFICIAL_WEBSITE_LABEL : externalLinkLabel(a.url))
+    const bLabel =
+      getSocialPlatformLabel(b.url, b.propertyId) ??
+      (b.propertyId === 'P856' ? OFFICIAL_WEBSITE_LABEL : externalLinkLabel(b.url))
+    return aLabel.localeCompare(bLabel, undefined, { sensitivity: 'base' })
+  })()
   if (labelDiff !== 0) return labelDiff
 
   const rankDiff = rankOrder(a.rank) - rankOrder(b.rank)
@@ -181,17 +156,29 @@ function compareEntityLinks(a: RawEntityLink, b: RawEntityLink): number {
   return a.claimIndex - b.claimIndex
 }
 
-function linkCategory(propertyId: string): ExternalLinkCategory {
+function linkCategory(propertyId: string, url: string): ExternalLinkCategory {
   if (propertyId === 'P856') return 'official'
-  if (socialPropertyRank.has(propertyId)) return 'social'
+  if (isSocialPlatformUrl(url, propertyId)) return 'social'
   return 'other'
 }
 
 function toExternalLink(link: RawEntityLink): WikidataExternalLink {
+  const category = linkCategory(link.propertyId, link.url)
+  const socialLabel = getSocialPlatformLabel(link.url, link.propertyId)
+
+  let displayText: string
+  if (socialLabel) {
+    displayText = socialLabel
+  } else if (category === 'official') {
+    displayText = OFFICIAL_WEBSITE_LABEL
+  } else {
+    displayText = externalLinkLabel(link.url)
+  }
+
   return {
     url: link.url,
-    displayText: externalLinkLabel(link.url),
-    category: linkCategory(link.propertyId),
+    displayText,
+    category,
   }
 }
 

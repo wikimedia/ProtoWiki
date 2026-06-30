@@ -13,6 +13,10 @@ import {
   formatCarouselOverflowCount,
   MAX_CAROUSEL_IMAGES,
 } from './data/commonsImages'
+import {
+  loadImagesTabOpenedPreference,
+  saveImagesTabOpenedPreference,
+} from './data/imagesTabPreference'
 import type { MusicalGroupData, MusicalGroupOverviewData, WikidataExternalLink } from './data/types'
 import { hasImagesTab } from './data/types'
 import { useMusicalGroupRoute } from './useMusicalGroupRoute'
@@ -60,9 +64,17 @@ const showLinksTab = computed(
 )
 
 const imagesTabEverOpened = ref(false)
+const showImagesTabDot = ref(!loadImagesTabOpenedPreference())
 
 watch(activeTab, (tab) => {
-  if (tab === 'images') imagesTabEverOpened.value = true
+  if (tab !== 'images') return
+
+  imagesTabEverOpened.value = true
+
+  if (showImagesTabDot.value) {
+    showImagesTabDot.value = false
+    saveImagesTabOpenedPreference()
+  }
 })
 
 watch(
@@ -138,6 +150,7 @@ watch(
           :active-tab="activeTab"
           :show-article-tab="showArticleTab"
           :show-images-tab="showImagesTab"
+          :show-images-tab-dot="showImagesTabDot"
           :show-info-tab="showInfoTab"
           :show-links-tab="showLinksTab"
           @update:active-tab="setTab"

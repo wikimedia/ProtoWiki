@@ -17,14 +17,15 @@ const props = withDefaults(defineProps<Props>(), {
   error: null,
 })
 
-const LINK_SECTIONS: { category: ExternalLinkCategory; title: string }[] = [
-  { category: 'official', title: 'Official website' },
+const LINK_SECTIONS: { category: ExternalLinkCategory; title?: string }[] = [
+  { category: 'official' },
   { category: 'social', title: 'Socials' },
   { category: 'other', title: 'Other' },
 ]
 
 const sections = computed(() =>
   LINK_SECTIONS.map(({ category, title }) => ({
+    key: category,
     title,
     links: props.links.filter((link) => link.category === category),
   })).filter((section) => section.links.length > 0),
@@ -42,10 +43,11 @@ const sections = computed(() =>
     <div v-else class="musical-group-links__sections">
       <section
         v-for="section in sections"
-        :key="section.title"
+        :key="section.key"
         class="musical-group-links__section"
+        :class="{ 'musical-group-links__section--official': section.key === 'official' }"
       >
-        <h4 class="musical-group-links__heading">{{ section.title }}</h4>
+        <h4 v-if="section.title" class="musical-group-links__heading">{{ section.title }}</h4>
         <ul class="musical-group-links__list">
           <li v-for="link in section.links" :key="link.url" class="musical-group-links__item">
             <WikitaExternalLink :href="link.url" :label="link.displayText" truncate />
@@ -61,6 +63,10 @@ const sections = computed(() =>
   display: flex;
   flex-direction: column;
   gap: var(--spacing-100);
+}
+
+.musical-group-links__section--official {
+  padding-top: var(--spacing-50);
 }
 
 .musical-group-links__heading {

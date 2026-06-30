@@ -54,37 +54,21 @@ function cleanArticleTree(root: ParentNode): void {
   })
 }
 
-const LEAD_INFOBOX_SELECTOR =
-  'table.infobox, table.infobox-v2, .portable-infobox, .portable-infobox-wrapper'
-
-function isLeadBlock(element: Element): boolean {
-  const tag = element.tagName
-  if (tag !== 'P' && tag !== 'UL' && tag !== 'OL') return false
-  if (element.classList.contains('mw-empty-elt')) return false
-  return Boolean(element.textContent?.trim().length)
+/** Infobox facts live on the Info tab; strip them from article prose. */
+function removeInfoboxes(root: ParentNode): void {
+  root.querySelectorAll('.portable-infobox-wrapper').forEach((node) => node.remove())
+  root.querySelectorAll('table.infobox, table.infobox-v2, .portable-infobox').forEach((node) => node.remove())
 }
 
-/** Match mobile Wikipedia: infobox after the first real lead paragraph in section 0. */
-function reorderLeadInfobox(root: ParentNode): void {
-  root.querySelectorAll("section[data-mw-section-id='0']").forEach((section) => {
-    const infobox = section.querySelector(LEAD_INFOBOX_SELECTOR)
-    if (!infobox) return
+function findExternalLinksSection(root: ParentNode): Element | null {
+  const heading = root.querySelector('h2#External_links')
+  if (!heading) return null
+  return heading.closest('section') ?? heading.parentElement
+}
 
-    let firstLeadBlock: Element | null = null
-    for (const child of Array.from(section.children)) {
-      if (isLeadBlock(child)) {
-        firstLeadBlock = child
-        break
-      }
-    }
-    if (!firstLeadBlock) return
-
-    if (firstLeadBlock.nextElementSibling === infobox) return
-
-    if (infobox.compareDocumentPosition(firstLeadBlock) & Node.DOCUMENT_POSITION_FOLLOWING) {
-      firstLeadBlock.insertAdjacentElement('afterend', infobox)
-    }
-  })
+function removeExternalLinksSection(root: ParentNode): void {
+  const section = findExternalLinksSection(root)
+  section?.remove()
 }
 
 function flattenContentNodes(body: Element): Element[] {
@@ -216,7 +200,8 @@ export function parseWikitaArticleBlocks(html: string): WikitaArticleBlock[] {
   removeLeadNotices(doc)
   removeNavboxStylesWrappers(doc)
   cleanArticleTree(doc.body)
-  reorderLeadInfobox(doc.body)
+  removeInfoboxes(doc.body)
+  removeExternalLinksSection(doc.body)
 
   const nodes = flattenContentNodes(doc.body)
   const blocks: WikitaArticleBlock[] = []

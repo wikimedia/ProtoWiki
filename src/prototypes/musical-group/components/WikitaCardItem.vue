@@ -7,6 +7,13 @@ import type { Icon } from '@wikimedia/codex-icons'
 
 import WikitaCardWrapper from './WikitaCardWrapper.vue'
 
+export type WikitaCardItemTypeColor =
+  | 'base'
+  | 'success'
+  | 'progressive'
+  | 'warning'
+  | 'error'
+
 interface Props {
   showType?: boolean
   showTitle?: boolean
@@ -23,6 +30,7 @@ interface Props {
   thumbnailUrl?: string
   thumbnailAlt?: string
   typeIcon?: Icon
+  typeColor?: WikitaCardItemTypeColor
   href?: RouteLocationRaw
   externalHref?: string
 }
@@ -43,6 +51,7 @@ const props = withDefaults(defineProps<Props>(), {
   thumbnailUrl: undefined,
   thumbnailAlt: '',
   typeIcon: undefined,
+  typeColor: 'base',
   href: undefined,
   externalHref: undefined,
 })
@@ -65,7 +74,11 @@ const showFooterRow = computed(() => props.showInfo && Boolean(props.infoLeft ||
     <div class="wikita-card-item">
       <div class="wikita-card-item__header-row">
         <div class="wikita-card-item__lead">
-          <div v-if="showTypeRow" class="wikita-card-item__type">
+          <div
+            v-if="showTypeRow"
+            class="wikita-card-item__type"
+            :class="`wikita-card-item__type--${typeColor}`"
+          >
             <CdxIcon v-if="typeIcon" :icon="typeIcon" class="wikita-card-item__type-icon" />
             <span class="wikita-card-item__type-label">{{ type }}</span>
           </div>
@@ -135,8 +148,27 @@ const showFooterRow = computed(() => props.showInfo && Boolean(props.infoLeft ||
   gap: var(--spacing-25);
 }
 
-.wikita-card-item__type-icon {
+.wikita-card-item__type--success {
+  color: var(--color-success);
+}
+
+.wikita-card-item__type--progressive {
+  color: var(--color-progressive);
+}
+
+.wikita-card-item__type--warning {
+  color: var(--color-warning);
+}
+
+.wikita-card-item__type--error {
+  color: var(--color-error);
+}
+
+/* Codex sets `.cdx-icon { color: var(--color-base) }`; this wins over that so the
+ * flag icon matches the coloured label on its type row. */
+.wikita-card-item__type .wikita-card-item__type-icon {
   flex-shrink: 0;
+  color: inherit;
 }
 
 .wikita-card-item__type-label {
