@@ -7,11 +7,11 @@ import type {
   MusicalGroupOverviewArticle,
   MusicalGroupOverviewData,
   MusicalGroupOverviewEditOpportunity,
-  MusicalGroupOverviewPhotos,
+  MusicalGroupOverviewImages,
   MusicalGroupOverviewRelated,
 } from './types'
 
-export const MUSICAL_GROUP_CACHE_VERSION = 29
+export const MUSICAL_GROUP_CACHE_VERSION = 31
 
 const STORAGE_KEY = 'musical-group-page-cache'
 
@@ -64,7 +64,7 @@ function isOverviewArticle(value: unknown): value is MusicalGroupOverviewArticle
   )
 }
 
-function isOverviewPhotos(value: unknown): value is MusicalGroupOverviewPhotos {
+function isOverviewImages(value: unknown): value is MusicalGroupOverviewImages {
   if (typeof value !== 'object' || value === null) return false
   const record = value as Record<string, unknown>
   return typeof record.itemCount === 'number' && typeof record.itemCountLabel === 'string'
@@ -128,7 +128,7 @@ function isOverviewData(value: unknown): value is MusicalGroupOverviewData {
     return false
   }
   if (record.article !== undefined && !isOverviewArticle(record.article)) return false
-  if (record.photos !== undefined && !isOverviewPhotos(record.photos)) return false
+  if (record.images !== undefined && !isOverviewImages(record.images)) return false
   if (record.editOpportunity !== undefined && !isOverviewEditOpportunity(record.editOpportunity)) {
     return false
   }
@@ -169,6 +169,16 @@ function isMusicalGroupData(value: unknown): value is MusicalGroupData {
   if (record.editIndicator !== undefined && !isEditIndicator(record.editIndicator)) return false
   if (record.enwikiTitle !== undefined && typeof record.enwikiTitle !== 'string') return false
   if (record.commonsCategory !== undefined && typeof record.commonsCategory !== 'string') return false
+  if (record.imageFilename !== undefined && typeof record.imageFilename !== 'string') return false
+  if (record.commonsImageCount !== undefined && typeof record.commonsImageCount !== 'number') {
+    return false
+  }
+  if (
+    record.commonsImageCountCapped !== undefined &&
+    typeof record.commonsImageCountCapped !== 'boolean'
+  ) {
+    return false
+  }
 
   return true
 }
@@ -284,15 +294,10 @@ export function getCachedMusicalGroup(id: string): CachedMusicalGroupEntry | nul
   return store[key] ?? null
 }
 
-export interface SetCachedMusicalGroupOptions {
-  commonsImageCount?: number
-  commonsImageCountCapped?: boolean
-}
 
 export function setCachedMusicalGroup(
   id: string,
   data: MusicalGroupData,
-  options: SetCachedMusicalGroupOptions = {},
 ): CachedMusicalGroupEntry {
   const key = cacheKey(id) || cacheKey(data.id)
   const store = readStore()
@@ -302,9 +307,9 @@ export function setCachedMusicalGroup(
     version: MUSICAL_GROUP_CACHE_VERSION,
     fetchedAt: Date.now(),
     data,
-    commonsImageCount: options.commonsImageCount ?? existing?.commonsImageCount,
+    commonsImageCount: data.commonsImageCount ?? existing?.commonsImageCount,
     commonsImageCountCapped:
-      options.commonsImageCountCapped ?? existing?.commonsImageCountCapped,
+      data.commonsImageCountCapped ?? existing?.commonsImageCountCapped,
     overview: existing?.overview,
   }
 

@@ -1,4 +1,9 @@
-import { fetchCarouselImages } from './commonsImages'
+import {
+  commonsImageCountFromCategory,
+  fetchCarouselImages,
+  getCommonsCategoryCount,
+  resolveCommonsCategory,
+} from './commonsImages'
 import { sentenceCase } from './formatLabel'
 import type { FetchMusicalGroupOptions, FetchMusicalGroupResult, MusicalGroupData, CarouselImage } from './types'
 import type { ParsedEntityClaims } from './wikidataApi'
@@ -24,6 +29,7 @@ function sparseData(id: string, claims: ParsedEntityClaims, images: CarouselImag
     images,
     enwikiTitle: claims.enwikiTitle,
     commonsCategory: claims.commonsCategory,
+    imageFilename: claims.imageFilename,
   }
 }
 
@@ -32,7 +38,12 @@ async function fetchRichIntroData(
   claims: ParsedEntityClaims,
   signal?: AbortSignal,
 ) {
-  const [editIndicator, carouselResult] = await Promise.all([
+  const category = resolveCommonsCategory({
+    commonsCategory: claims.commonsCategory,
+    label: claims.label,
+  })
+
+  const [editIndicator, carouselResult, categoryInfo] = await Promise.all([
     fetchEditIndicator(id, signal).catch(() => undefined),
     fetchCarouselImages({
       label: claims.label,
@@ -40,9 +51,19 @@ async function fetchRichIntroData(
       commonsCategory: claims.commonsCategory,
       signal,
     }).catch(() => ({ images: [] })),
+    category
+      ? getCommonsCategoryCount(category, signal).catch(() => undefined)
+      : Promise.resolve(undefined),
   ])
 
-  return { editIndicator, carouselResult }
+  const countMeta = categoryInfo ? commonsImageCountFromCategory(categoryInfo) : undefined
+
+  return {
+    editIndicator,
+    carouselResult,
+    commonsImageCount: countMeta?.count,
+    commonsImageCountCapped: countMeta?.capped,
+  }
 }
 
 export async function fetchMusicalGroup(
@@ -68,7 +89,8 @@ export async function fetchMusicalGroup(
     return { data: sparseData(id, claims, carouselResult.images) }
   }
 
-  const { editIndicator, carouselResult } = await fetchRichIntroData(id, claims, signal)
+  const { editIndicator, carouselResult, commonsImageCount, commonsImageCountCapped } =
+    await fetchRichIntroData(id, claims, signal)
 
   const shared = {
     id,
@@ -82,6 +104,9 @@ export async function fetchMusicalGroup(
     editIndicator,
     enwikiTitle: claims.enwikiTitle,
     commonsCategory: claims.commonsCategory,
+    imageFilename: claims.imageFilename,
+    commonsImageCount,
+    commonsImageCountCapped,
   }
 
   if (performer) {

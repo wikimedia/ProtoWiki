@@ -2,26 +2,29 @@ export type WikitaChromeHeaderVariant =
   | 'black'
   | 'off-black'
   | 'gray'
+  | 'gray-bold'
   | 'red-light'
   | 'red-dark'
   | 'orange-light'
   | 'orange-dark'
+  | 'brown-light'
+  | 'orange-bold'
   | 'yellow-light'
-  | 'yellow-dark'
+  | 'yellow-bold'
   | 'lime-light'
-  | 'lime-dark'
+  | 'lime-bold'
   | 'green-light'
   | 'green-dark'
   | 'blue-light'
-  | 'blue-dark'
+  | 'blue-bold'
   | 'purple-light'
-  | 'purple-dark'
+  | 'purple-bold'
   | 'pink-light'
-  | 'pink-dark'
+  | 'pink-bold'
   | 'maroon-light'
-  | 'maroon-dark'
+  | 'maroon-bold'
 
-export const DEFAULT_HEADER_VARIANT: WikitaChromeHeaderVariant = 'orange-light'
+export const DEFAULT_HEADER_VARIANT: WikitaChromeHeaderVariant = 'gray'
 
 export const WIKITA_CHROME_HEADER_VARIANT_MENU_ITEMS: {
   value: WikitaChromeHeaderVariant
@@ -30,25 +33,37 @@ export const WIKITA_CHROME_HEADER_VARIANT_MENU_ITEMS: {
   { value: 'black', label: 'Black' },
   { value: 'off-black', label: 'Off black' },
   { value: 'gray', label: 'Gray' },
+  { value: 'gray-bold', label: 'Gray bold' },
   { value: 'red-light', label: 'Red light' },
-  { value: 'red-dark', label: 'Red dark' },
+  { value: 'red-dark', label: 'Red' },
   { value: 'orange-light', label: 'Orange light' },
-  { value: 'orange-dark', label: 'Orange dark' },
+  { value: 'orange-dark', label: 'Brown' },
+  { value: 'brown-light', label: 'Brown light' },
+  { value: 'orange-bold', label: 'Orange bold' },
   { value: 'yellow-light', label: 'Yellow light' },
-  { value: 'yellow-dark', label: 'Yellow dark' },
+  { value: 'yellow-bold', label: 'Yellow bold' },
   { value: 'lime-light', label: 'Lime light' },
-  { value: 'lime-dark', label: 'Lime dark' },
+  { value: 'lime-bold', label: 'Lime bold' },
   { value: 'green-light', label: 'Green light' },
   { value: 'green-dark', label: 'Green dark' },
   { value: 'blue-light', label: 'Blue light' },
-  { value: 'blue-dark', label: 'Blue dark' },
+  { value: 'blue-bold', label: 'Blue bold' },
   { value: 'purple-light', label: 'Purple light' },
-  { value: 'purple-dark', label: 'Purple dark' },
+  { value: 'purple-bold', label: 'Purple bold' },
   { value: 'pink-light', label: 'Pink light' },
-  { value: 'pink-dark', label: 'Pink dark' },
+  { value: 'pink-bold', label: 'Pink bold' },
   { value: 'maroon-light', label: 'Maroon light' },
-  { value: 'maroon-dark', label: 'Maroon dark' },
+  { value: 'maroon-bold', label: 'Maroon bold' },
 ]
+
+const LEGACY_VARIANT_ALIASES: Record<string, WikitaChromeHeaderVariant> = {
+  'yellow-dark': 'yellow-bold',
+  'lime-dark': 'lime-bold',
+  'blue-dark': 'blue-bold',
+  'purple-dark': 'purple-bold',
+  'pink-dark': 'pink-bold',
+  'maroon-dark': 'maroon-bold',
+}
 
 const VALID_VARIANTS = new Set<WikitaChromeHeaderVariant>(
   WIKITA_CHROME_HEADER_VARIANT_MENU_ITEMS.map((item) => item.value),
@@ -56,8 +71,11 @@ const VALID_VARIANTS = new Set<WikitaChromeHeaderVariant>(
 
 const STORAGE_KEY = 'musical-group-header-variant'
 
-function isHeaderVariant(value: unknown): value is WikitaChromeHeaderVariant {
-  return typeof value === 'string' && VALID_VARIANTS.has(value as WikitaChromeHeaderVariant)
+function resolveHeaderVariant(value: string): WikitaChromeHeaderVariant | null {
+  if (VALID_VARIANTS.has(value as WikitaChromeHeaderVariant)) {
+    return value as WikitaChromeHeaderVariant
+  }
+  return LEGACY_VARIANT_ALIASES[value] ?? null
 }
 
 export function loadHeaderVariantPreference(): WikitaChromeHeaderVariant {
@@ -66,7 +84,7 @@ export function loadHeaderVariantPreference(): WikitaChromeHeaderVariant {
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY)
     if (!stored) return DEFAULT_HEADER_VARIANT
-    return isHeaderVariant(stored) ? stored : DEFAULT_HEADER_VARIANT
+    return resolveHeaderVariant(stored) ?? DEFAULT_HEADER_VARIANT
   } catch {
     return DEFAULT_HEADER_VARIANT
   }

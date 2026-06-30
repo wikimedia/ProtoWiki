@@ -569,6 +569,19 @@ export function websiteHost(url: string): string {
   }
 }
 
+/** Host + path for external link labels, e.g. `instagram.com/jadethirlwall`. */
+export function externalLinkLabel(url: string): string {
+  try {
+    const parsed = new URL(url)
+    const host = parsed.hostname.replace(/^www\./, '')
+    let path = parsed.pathname.replace(/\/+$/, '')
+    if (!path || path === '/') return host
+    return `${host}${path}`
+  } catch {
+    return url.replace(/^https?:\/\//, '')
+  }
+}
+
 export function wikidataHistoryUrl(id: string): string {
   return `https://www.wikidata.org/w/index.php?title=${encodeURIComponent(id)}&action=history`
 }

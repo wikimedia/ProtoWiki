@@ -7,22 +7,29 @@ const allTabs: { id: TabId; label: string; dot?: 'blue' }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'info', label: 'Info' },
   { id: 'article', label: 'Article' },
-  { id: 'photos', label: 'Photos', dot: 'blue' },
+  { id: 'images', label: 'Images', dot: 'blue' },
   { id: 'links', label: 'Links' },
-  { id: 'members', label: 'Members' },
-  { id: 'awards', label: 'Awards' },
 ]
 
 interface Props {
-  showPhotosTab?: boolean
+  showImagesTab?: boolean
+  showInfoTab?: boolean
+  showLinksTab?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  showPhotosTab: true,
+  showImagesTab: true,
+  showInfoTab: true,
+  showLinksTab: true,
 })
 
 const tabs = computed(() =>
-  props.showPhotosTab ? allTabs : allTabs.filter((tab) => tab.id !== 'photos'),
+  allTabs.filter((tab) => {
+    if (tab.id === 'images' && !props.showImagesTab) return false
+    if (tab.id === 'info' && !props.showInfoTab) return false
+    if (tab.id === 'links' && !props.showLinksTab) return false
+    return true
+  }),
 )
 
 const activeTab = defineModel<TabId>('activeTab', { default: 'overview' })

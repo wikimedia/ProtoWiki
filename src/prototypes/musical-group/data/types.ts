@@ -19,9 +19,17 @@ export const LOCATION_QIDS = [
 
 export type YearKind = 'inception' | 'birth'
 
-export type TabId = 'overview' | 'info' | 'article' | 'photos' | 'links' | 'members' | 'awards'
+export type TabId = 'overview' | 'info' | 'article' | 'images' | 'links'
 
 export type EditIndicator = 'history' | 'talk'
+
+export type ExternalLinkCategory = 'official' | 'social' | 'other'
+
+export interface WikidataExternalLink {
+  url: string
+  displayText: string
+  category: ExternalLinkCategory
+}
 
 export interface MusicalGroupSearchResult {
   id: string
@@ -34,6 +42,8 @@ export interface CarouselImage {
   url: string
   width: number
   height: number
+  /** Canonical `File:` title on Wikimedia Commons. */
+  title?: string
 }
 
 export interface MusicalGroupOverviewArticle {
@@ -49,7 +59,7 @@ export interface MusicalGroupOverviewArticle {
   wordCountLabel: string
 }
 
-export interface MusicalGroupOverviewPhotos {
+export interface MusicalGroupOverviewImages {
   itemCount: number
   itemCountLabel: string
 }
@@ -90,7 +100,7 @@ export interface MusicalGroupInfobox {
 
 export interface MusicalGroupOverviewData {
   article?: MusicalGroupOverviewArticle
-  photos?: MusicalGroupOverviewPhotos
+  images?: MusicalGroupOverviewImages
   editOpportunity?: MusicalGroupOverviewEditOpportunity
   related?: MusicalGroupOverviewRelated
   infobox?: MusicalGroupInfobox
@@ -116,9 +126,13 @@ export interface MusicalGroupData {
   editIndicator?: EditIndicator
   enwikiTitle?: string
   commonsCategory?: string
+  /** Wikidata P18 filename, used to seed Commons image ordering. */
+  imageFilename?: string
+  commonsImageCount?: number
+  commonsImageCountCapped?: boolean
 }
 
-export function hasPhotosTab(data: MusicalGroupData): boolean {
+export function hasImagesTab(data: MusicalGroupData): boolean {
   return data.isMusicPerformer || data.isLocation
 }
 

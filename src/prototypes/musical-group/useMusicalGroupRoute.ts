@@ -7,13 +7,12 @@ const TAB_IDS: TabId[] = [
   'overview',
   'info',
   'article',
-  'photos',
+  'images',
   'links',
-  'members',
-  'awards',
 ]
 
 export function parseTabQuery(raw: unknown): TabId {
+  if (raw === 'photos') return 'images'
   if (typeof raw === 'string' && TAB_IDS.includes(raw as TabId)) {
     return raw as TabId
   }

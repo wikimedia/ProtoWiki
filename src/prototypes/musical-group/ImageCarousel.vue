@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { CdxIcon } from '@wikimedia/codex'
+import { cdxIconImage } from '@wikimedia/codex-icons'
+
 import { carouselSlideWidth, CAROUSEL_SLIDE_HEIGHT } from './data/carouselLayout'
 import type { CarouselImage } from './data/types'
 
@@ -6,9 +9,17 @@ interface Props {
   images: CarouselImage[]
   description?: string
   loading?: boolean
+  showMoreImages?: boolean
+  moreCountLabel?: string
 }
 
-defineProps<Props>()
+withDefaults(defineProps<Props>(), {
+  showMoreImages: false,
+})
+
+const emit = defineEmits<{
+  'view-all-images': []
+}>()
 
 function slideStyle(image: CarouselImage) {
   return { width: `${carouselSlideWidth(image)}px` }
@@ -29,6 +40,16 @@ function slideStyle(image: CarouselImage) {
         >
           <img :src="image.url" :alt="''" loading="lazy" draggable="false" />
         </div>
+
+        <button
+          v-if="showMoreImages && moreCountLabel"
+          type="button"
+          class="image-carousel__more"
+          @click="emit('view-all-images')"
+        >
+          <span class="image-carousel__more-count">{{ moreCountLabel }}</span>
+          <CdxIcon :icon="cdxIconImage" class="image-carousel__more-icon" />
+        </button>
       </template>
 
       <p v-else class="image-carousel__empty">No images available</p>
@@ -79,7 +100,7 @@ function slideStyle(image: CarouselImage) {
   margin-inline-start: var(--spacing-50);
 }
 
-.image-carousel__slide:last-child {
+.image-carousel__track:not(:has(.image-carousel__more)) .image-carousel__slide:last-child {
   margin-inline-end: var(--spacing-50);
 }
 
@@ -90,6 +111,38 @@ function slideStyle(image: CarouselImage) {
   object-fit: cover;
   pointer-events: none;
   user-select: none;
+}
+
+.image-carousel__more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-25);
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: v-bind('`${CAROUSEL_SLIDE_HEIGHT}px`');
+  height: v-bind('`${CAROUSEL_SLIDE_HEIGHT}px`');
+  margin-inline-end: var(--spacing-50);
+  padding: var(--spacing-50);
+  border: none;
+  border-radius: 4px;
+  background-color: var(--background-color-neutral);
+  color: var(--color-subtle);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-small);
+  cursor: pointer;
+}
+
+.image-carousel__more-count {
+  display: block;
+}
+
+.image-carousel__more-icon {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .image-carousel__empty {

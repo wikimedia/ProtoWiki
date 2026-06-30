@@ -2,12 +2,19 @@
 import { computed, watch } from 'vue'
 
 import ImageCarousel from './ImageCarousel.vue'
+import MusicalGroupArticle from './MusicalGroupArticle.vue'
 import MusicalGroupFacts from './MusicalGroupFacts.vue'
+import MusicalGroupLinks from './MusicalGroupLinks.vue'
+import MusicalGroupPhotos from './MusicalGroupPhotos.vue'
 import WikitaCardTable from './components/WikitaCardTable.vue'
 import MusicalGroupOverview from './MusicalGroupOverview.vue'
 import MusicalGroupTabs from './MusicalGroupTabs.vue'
-import type { MusicalGroupData, MusicalGroupOverviewData } from './data/types'
-import { hasPhotosTab } from './data/types'
+import {
+  formatCarouselOverflowCount,
+  MAX_CAROUSEL_IMAGES,
+} from './data/commonsImages'
+import type { MusicalGroupData, MusicalGroupOverviewData, WikidataExternalLink } from './data/types'
+import { hasImagesTab } from './data/types'
 import { useMusicalGroupRoute } from './useMusicalGroupRoute'
 import { useMusicalGroupScrollStates } from './useMusicalGroupScrollStates'
 
@@ -16,9 +23,16 @@ interface Props {
   overview?: MusicalGroupOverviewData
   overviewLoading?: boolean
   loadingImages?: boolean
+  externalLinks?: WikidataExternalLink[]
+  linksLoading?: boolean
+  linksError?: string | null
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  externalLinks: () => [],
+  linksLoading: false,
+  linksError: null,
+})
 
 const { activeTab, setTab } = useMusicalGroupRoute()
 
@@ -27,12 +41,42 @@ useMusicalGroupScrollStates()
 const showRichIntro = computed(
   () => props.data.isMusicPerformer || props.data.isLocation,
 )
-const showPhotosTab = computed(() => hasPhotosTab(props.data))
+const showImagesTab = computed(() => hasImagesTab(props.data))
+
+const showInfoTab = computed(() => {
+  if (props.overviewLoading) return false
+  return (props.overview?.infobox?.rows?.length ?? 0) > 0
+})
+
+const showLinksTab = computed(
+  () => !props.linksLoading && props.externalLinks.length > 0,
+)
+
+const moreImagesCountLabel = computed(() => {
+  let count = props.data.commonsImageCount
+  let capped = props.data.commonsImageCountCapped ?? false
+
+  if (count == null && props.data.images.length >= MAX_CAROUSEL_IMAGES) {
+    count = props.data.images.length
+    capped = true
+  }
+
+  if (!count || count <= 0) return undefined
+
+  const effectiveCapped = capped || count > props.data.images.length
+  return formatCarouselOverflowCount(count, effectiveCapped)
+})
 
 watch(
-  [activeTab, showPhotosTab],
-  ([tab, photosAllowed]) => {
-    if (tab === 'photos' && !photosAllowed) {
+  [activeTab, showImagesTab, showInfoTab, showLinksTab],
+  ([tab, imagesAllowed, infoAllowed, linksAllowed]) => {
+    if (tab === 'images' && !imagesAllowed) {
+      void setTab('overview')
+    }
+    if (tab === 'info' && !infoAllowed) {
+      void setTab('overview')
+    }
+    if (tab === 'links' && !linksAllowed) {
       void setTab('overview')
     }
   },
@@ -48,6 +92,9 @@ watch(
           :images="data.images"
           :description="data.description"
           :loading="loadingImages"
+          :show-more-images="showImagesTab && Boolean(moreImagesCountLabel)"
+          :more-count-label="moreImagesCountLabel"
+          @view-all-images="setTab('images')"
         />
       </div>
       <MusicalGroupFacts :data="data" />
@@ -56,7 +103,9 @@ watch(
       <div class="musical-group-screen__tabs-section">
         <MusicalGroupTabs
           :active-tab="activeTab"
-          :show-photos-tab="showPhotosTab"
+          :show-images-tab="showImagesTab"
+          :show-info-tab="showInfoTab"
+          :show-links-tab="showLinksTab"
           @update:active-tab="setTab"
         />
         <div class="musical-group-screen__panel">
@@ -66,13 +115,28 @@ watch(
             :overview-loading="overviewLoading"
             :carousel-images="data.images"
             :enwiki-title="data.enwikiTitle"
-            :show-photos-tab="showPhotosTab"
+            :show-images-tab="showImagesTab"
           />
           <WikitaCardTable
             v-else-if="activeTab === 'info' && !overviewLoading"
             :rows="overview?.infobox?.rows ?? []"
             :info-left="overview?.article?.lastEditedLabel"
             info-right="English Wikipedia"
+          />
+          <MusicalGroupArticle
+            v-else-if="activeTab === 'article'"
+            :title="data.enwikiTitle"
+          />
+          <MusicalGroupPhotos
+            v-else-if="activeTab === 'images'"
+            :data="data"
+            :active="activeTab === 'images'"
+          />
+          <MusicalGroupLinks
+            v-else-if="activeTab === 'links'"
+            :links="externalLinks"
+            :loading="linksLoading"
+            :error="linksError"
           />
           <div v-else class="musical-group-screen__placeholder"></div>
         </div>

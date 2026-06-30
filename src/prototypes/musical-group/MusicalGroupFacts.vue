@@ -2,12 +2,9 @@
 import { computed } from 'vue'
 
 import { CdxIcon } from '@wikimedia/codex'
-import {
-  cdxIconLinkExternal,
-  cdxIconMapPin,
-  cdxIconMusicalScore,
-} from '@wikimedia/codex-icons'
+import { cdxIconMapPin, cdxIconMusicalScore } from '@wikimedia/codex-icons'
 
+import WikitaExternalLink from './components/WikitaExternalLink.vue'
 import { sentenceCaseList } from './data/formatLabel'
 import type { MusicalGroupData } from './data/types'
 
@@ -61,24 +58,14 @@ const factIcon = computed(() =>
       </div>
       <small v-if="genreLine" class="musical-group-facts__genres">{{ genreLine }}</small>
       <small v-else-if="locationLine" class="musical-group-facts__genres">{{ locationLine }}</small>
+      <p v-if="data.websiteUrl" class="musical-group-facts__website">
+        <WikitaExternalLink :href="data.websiteUrl" :label="data.websiteHost" host-only />
+      </p>
     </div>
-
-    <p v-if="data.websiteUrl && data.websiteHost" class="musical-group-facts__website">
-      <a :href="data.websiteUrl" target="_blank" rel="noopener noreferrer">
-        {{ data.websiteHost }}
-        <CdxIcon :icon="cdxIconLinkExternal" size="small" />
-      </a>
-    </p>
   </section>
 </template>
 
 <style scoped>
-.musical-group-facts {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-25);
-}
-
 .musical-group-facts__summary {
   display: flex;
   flex-direction: column;
@@ -107,27 +94,5 @@ const factIcon = computed(() =>
 
 .musical-group-facts__website {
   margin: 0;
-}
-
-.musical-group-facts__website a {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-25);
-  color: var(--color-progressive);
-  line-height: var(--line-height-small);
-  text-decoration: none;
-}
-
-.musical-group-facts__website a:hover {
-  text-decoration: underline;
-}
-
-.musical-group-facts__website a :deep(.cdx-icon) {
-  color: var(--color-progressive);
-}
-
-.musical-group-facts__website a :deep(.cdx-icon svg),
-.musical-group-facts__website a :deep(.cdx-icon svg path) {
-  fill: currentColor;
 }
 </style>

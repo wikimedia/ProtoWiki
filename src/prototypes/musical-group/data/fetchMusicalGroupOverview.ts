@@ -1,5 +1,6 @@
 import { loadConfig, PROTOWIKI_API_PROJECT_URL, PROTOWIKI_API_USER_AGENT, wikimediaApiFetchHeaders } from '@/config'
 
+import { EN_WIKI_HOST, fetchWikibaseItemId, wikiActionUrl } from './enwikiTitle'
 import { isExcludedEditOpportunityNeed, resolveEditOpportunityCopy } from './editOpportunityCopy'
 import { fetchWithTimeout } from './fetchWithTimeout'
 import type {
@@ -11,9 +12,8 @@ import type {
   MusicalGroupOverviewEditOpportunity,
   MusicalGroupOverviewRelated,
 } from './types'
-import { isWikitaNavigableEntity, normalizeQid } from './wikidataApi'
+import { isWikitaNavigableEntity } from './wikidataApi'
 
-const EN_WIKI_HOST = 'en.wikipedia.org'
 const MICROTASK_QUALITY_CHECK_URL = 'https://microtask-generator.toolforge.org/quality-check'
 
 export interface FetchMusicalGroupOverviewOptions {
@@ -164,15 +164,6 @@ function deadLinkExtractHtml(html: string): string {
     .replace(/<\/?strong>/gi, '')
 }
 
-function wikiActionUrl(params: Record<string, string>): string {
-  const search = new URLSearchParams({
-    ...params,
-    format: 'json',
-    origin: '*',
-  })
-  return `https://${EN_WIKI_HOST}/w/api.php?${search.toString()}`
-}
-
 async function fetchPageSummary(title: string, signal?: AbortSignal): Promise<PageSummaryResponse | null> {
   const slug = encodeURIComponent(title.replace(/ /g, '_'))
   const response = await fetchWithTimeout(`https://${EN_WIKI_HOST}/api/rest_v1/page/summary/${slug}`, {
@@ -204,30 +195,6 @@ async function fetchMorelikeHits(
 
   const json = (await response.json()) as { query?: { search?: SearchHit[] } }
   return json.query?.search ?? []
-}
-
-async function fetchWikibaseItemId(
-  title: string,
-  signal?: AbortSignal,
-): Promise<string | undefined> {
-  const url = wikiActionUrl({
-    action: 'query',
-    prop: 'pageprops',
-    ppprop: 'wikibase_item',
-    titles: title,
-  })
-
-  const response = await fetchWithTimeout(url, {
-    signal,
-    headers: wikimediaApiFetchHeaders('musical-group-wikibase-item'),
-  })
-  if (!response.ok) return undefined
-
-  const json = (await response.json()) as {
-    query?: { pages?: Record<string, { pageprops?: { wikibase_item?: string } }> }
-  }
-  const page = Object.values(json.query?.pages ?? {})[0]
-  return normalizeQid(page?.pageprops?.wikibase_item) ?? undefined
 }
 
 async function fetchMorelikeRelated(

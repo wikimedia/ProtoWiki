@@ -1,5 +1,7 @@
 import { onMounted, onUnmounted } from 'vue'
 
+import { measureMusicalGroupStickyScrollOffset } from './musicalGroupScrollOffset'
+
 function syncStickyLayout(page: Element) {
   const stack = page.querySelector('.musical-group-chrome-stack')
   if (!stack) return
@@ -18,6 +20,11 @@ function syncStickyLayout(page: Element) {
       `${tabsSticky.getBoundingClientRect().height}px`,
     )
   }
+
+  page.style.setProperty(
+    '--musical-group-scroll-margin-top',
+    `${measureMusicalGroupStickyScrollOffset(page)}px`,
+  )
 }
 
 /** Tracks title rule expand (chrome over carousel) and tabs stuck for border / layout state. */

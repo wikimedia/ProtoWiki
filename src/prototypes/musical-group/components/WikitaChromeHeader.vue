@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 import { CdxButton, CdxIcon, CdxMenuButton, CdxPopover, CdxSelect } from '@wikimedia/codex'
 import type { MenuItemValue } from '@wikimedia/codex'
@@ -14,6 +14,11 @@ import {
   WIKITA_CHROME_HEADER_VARIANT_MENU_ITEMS,
   type WikitaChromeHeaderVariant,
 } from '../data/headerVariantPreference'
+import {
+  WIKITA_CHROME_HEADER_BOLD_HOVER_BG,
+  WIKITA_CHROME_HEADER_LIGHT_HOVER_BG,
+  WIKITA_CHROME_HEADER_VARIANT_STYLES,
+} from '../data/wikitaChromeHeaderVariants'
 
 export type { WikitaChromeHeaderVariant }
 
@@ -37,13 +42,92 @@ const emit = defineEmits<{
 const menuSelected = ref<MenuItemValue | null>(null)
 const userMenuOpen = ref(false)
 const userMenuAnchor = ref<HTMLElement | null>(null)
+const userPanelRef = ref<HTMLElement | null>(null)
+const previewVariant = ref<WikitaChromeHeaderVariant | null>(null)
+
+let activeDescendantObserver: MutationObserver | null = null
 
 const menuItems = [{ value: 'reset', label: 'Reset stored data' }]
 
-const variantClass = computed(() => `wikita-chrome-header--${variant.value}`)
+const displayVariant = computed(() => previewVariant.value ?? variant.value)
+
+const variantClass = computed(() => `wikita-chrome-header--${displayVariant.value}`)
+
+const headerStyle = computed(() => {
+  const colors = WIKITA_CHROME_HEADER_VARIANT_STYLES[displayVariant.value]
+  return {
+    '--wikita-chrome-header-bg': colors.bg,
+    '--wikita-chrome-header-border': colors.border,
+    '--wikita-chrome-header-fg': colors.fg,
+    '--wikita-chrome-header-btn-hover-bg': colors.lightHover
+      ? WIKITA_CHROME_HEADER_LIGHT_HOVER_BG
+      : WIKITA_CHROME_HEADER_BOLD_HOVER_BG,
+  }
+})
 
 function toggleUserMenu(): void {
   userMenuOpen.value = !userMenuOpen.value
+}
+
+function clearVariantPreview(): void {
+  previewVariant.value = null
+}
+
+function variantFromMenuOption(option: Element): WikitaChromeHeaderVariant | null {
+  const listbox = option.closest('[role="listbox"]')
+  if (!listbox || !userPanelRef.value?.contains(listbox)) return null
+
+  const options = Array.from(listbox.querySelectorAll('[role="option"]'))
+  const index = options.indexOf(option as HTMLElement)
+  if (index < 0) return null
+
+  return WIKITA_CHROME_HEADER_VARIANT_MENU_ITEMS[index]?.value ?? null
+}
+
+function setVariantPreviewFromOption(option: Element | null): void {
+  if (!option) return
+
+  const value = variantFromMenuOption(option)
+  if (value) previewVariant.value = value
+}
+
+function syncPreviewFromActiveDescendant(): void {
+  const handle = userPanelRef.value?.querySelector('.cdx-select-vue__handle')
+  if (!handle) return
+
+  if (handle.getAttribute('aria-expanded') !== 'true') {
+    clearVariantPreview()
+    return
+  }
+
+  const id = handle.getAttribute('aria-activedescendant')
+  if (!id) return
+
+  setVariantPreviewFromOption(document.getElementById(id))
+}
+
+function onVariantMenuPointerOver(event: PointerEvent): void {
+  const option = (event.target as HTMLElement).closest('[role="option"]')
+  if (!option) return
+  setVariantPreviewFromOption(option)
+}
+
+function stopActiveDescendantObserver(): void {
+  activeDescendantObserver?.disconnect()
+  activeDescendantObserver = null
+}
+
+function startActiveDescendantObserver(): void {
+  stopActiveDescendantObserver()
+
+  const handle = userPanelRef.value?.querySelector('.cdx-select-vue__handle')
+  if (!handle) return
+
+  activeDescendantObserver = new MutationObserver(syncPreviewFromActiveDescendant)
+  activeDescendantObserver.observe(handle, {
+    attributes: true,
+    attributeFilter: ['aria-activedescendant', 'aria-expanded'],
+  })
 }
 
 function onResetMenuItem(): void {
@@ -54,10 +138,34 @@ function onResetMenuItem(): void {
 watch(menuSelected, (value) => {
   if (value === 'reset') onResetMenuItem()
 })
+
+watch(userMenuOpen, async (open) => {
+  if (!open) {
+    clearVariantPreview()
+    stopActiveDescendantObserver()
+    return
+  }
+
+  await nextTick()
+  startActiveDescendantObserver()
+})
+
+watch(variant, () => {
+  clearVariantPreview()
+})
+
+onBeforeUnmount(() => {
+  stopActiveDescendantObserver()
+})
 </script>
 
 <template>
-  <header class="wikita-chrome-header" :class="variantClass" aria-label="Site">
+  <header
+    class="wikita-chrome-header"
+    :class="variantClass"
+    :style="headerStyle"
+    aria-label="Site"
+  >
     <div class="wikita-chrome-header__start">
       <CdxMenuButton
         v-model:selected="menuSelected"
@@ -107,7 +215,12 @@ watch(menuSelected, (value) => {
           placement="bottom-end"
           class="wikita-chrome-header__user-popover"
         >
-          <div class="wikita-chrome-header__user-panel" @click.stop>
+          <div
+            ref="userPanelRef"
+            class="wikita-chrome-header__user-panel"
+            @click.stop
+            @pointerover="onVariantMenuPointerOver"
+          >
             <label class="wikita-chrome-header__user-field">
               <span class="wikita-chrome-header__user-label">Header color</span>
               <CdxSelect
@@ -134,146 +247,6 @@ watch(menuSelected, (value) => {
   border-bottom: 2px solid var(--wikita-chrome-header-border, var(--border-color-interactive));
   background-color: var(--wikita-chrome-header-bg, var(--background-color-inverted));
   color: var(--wikita-chrome-header-fg, var(--color-inverted));
-  --wikita-chrome-header-btn-hover-bg: rgba(255, 255, 255, 0.12);
-}
-
-.wikita-chrome-header--black {
-  --wikita-chrome-header-bg: var(--background-color-inverted);
-  --wikita-chrome-header-border: var(--border-color-interactive);
-  --wikita-chrome-header-fg: var(--color-inverted-fixed);
-}
-
-.wikita-chrome-header--off-black {
-  --wikita-chrome-header-bg: #27292d;
-  --wikita-chrome-header-border: var(--color-base);
-  --wikita-chrome-header-fg: var(--color-inverted-fixed);
-}
-
-.wikita-chrome-header--gray {
-  --wikita-chrome-header-bg: var(--background-color-neutral);
-  --wikita-chrome-header-border: var(--border-color-muted);
-  --wikita-chrome-header-fg: var(--color-notice);
-}
-
-.wikita-chrome-header--red-light {
-  --wikita-chrome-header-bg: #fea998;
-  --wikita-chrome-header-border: #ff7357;
-  --wikita-chrome-header-fg: #e02500;
-}
-
-.wikita-chrome-header--red-dark {
-  --wikita-chrome-header-bg: #ff2b00;
-  --wikita-chrome-header-border: #e02500;
-  --wikita-chrome-header-fg: var(--color-inverted-fixed);
-}
-
-.wikita-chrome-header--orange-light {
-  --wikita-chrome-header-bg: #ffa666;
-  --wikita-chrome-header-border: #ff7a1a;
-  --wikita-chrome-header-fg: #c75300;
-}
-
-.wikita-chrome-header--orange-dark {
-  --wikita-chrome-header-bg: #db5b00;
-  --wikita-chrome-header-border: #c75300;
-  --wikita-chrome-header-fg: var(--color-inverted-fixed);
-}
-
-.wikita-chrome-header--yellow-light {
-  --wikita-chrome-header-bg: #f2b200;
-  --wikita-chrome-header-border: #cf9700;
-  --wikita-chrome-header-fg: #cf9700;
-}
-
-.wikita-chrome-header--yellow-dark {
-  --wikita-chrome-header-bg: #a87b00;
-  --wikita-chrome-header-border: #997000;
-  --wikita-chrome-header-fg: var(--color-inverted-fixed);
-}
-
-.wikita-chrome-header--lime-light {
-  --wikita-chrome-header-bg: #00de43;
-  --wikita-chrome-header-border: #00ba38;
-  --wikita-chrome-header-fg: #1d9d47;
-}
-
-.wikita-chrome-header--lime-dark {
-  --wikita-chrome-header-bg: #00992e;
-  --wikita-chrome-header-border: #008a29;
-  --wikita-chrome-header-fg: var(--color-inverted-fixed);
-}
-
-.wikita-chrome-header--green-light {
-  --wikita-chrome-header-bg: #00f3aa;
-  --wikita-chrome-header-border: #00db9a;
-  --wikita-chrome-header-fg: #00875f;
-}
-
-.wikita-chrome-header--green-dark {
-  --wikita-chrome-header-bg: #00b881;
-  --wikita-chrome-header-border: #009669;
-  --wikita-chrome-header-fg: var(--color-inverted-fixed);
-}
-
-.wikita-chrome-header--blue-light {
-  --wikita-chrome-header-bg: #a3c2ff;
-  --wikita-chrome-header-border: #709fff;
-  --wikita-chrome-header-fg: #246cff;
-}
-
-.wikita-chrome-header--blue-dark {
-  --wikita-chrome-header-bg: #3d7dff;
-  --wikita-chrome-header-border: #246cff;
-  --wikita-chrome-header-fg: var(--color-inverted-fixed);
-}
-
-.wikita-chrome-header--purple-light {
-  --wikita-chrome-header-bg: #d1b2ff;
-  --wikita-chrome-header-border: #b787ff;
-  --wikita-chrome-header-fg: #7a6db7;
-}
-
-.wikita-chrome-header--purple-dark {
-  --wikita-chrome-header-bg: #9f5eff;
-  --wikita-chrome-header-border: #934aff;
-  --wikita-chrome-header-fg: var(--color-inverted-fixed);
-}
-
-.wikita-chrome-header--pink-light {
-  --wikita-chrome-header-bg: #ffa1e5;
-  --wikita-chrome-header-border: #ff63d4;
-  --wikita-chrome-header-fg: #c764bb;
-}
-
-.wikita-chrome-header--pink-dark {
-  --wikita-chrome-header-bg: #f500b1;
-  --wikita-chrome-header-border: #e000a3;
-  --wikita-chrome-header-fg: var(--color-inverted-fixed);
-}
-
-.wikita-chrome-header--maroon-light {
-  --wikita-chrome-header-bg: #ffa6bd;
-  --wikita-chrome-header-border: #ff6e93;
-  --wikita-chrome-header-fg: #f0003d;
-}
-
-.wikita-chrome-header--maroon-dark {
-  --wikita-chrome-header-bg: #ff215a;
-  --wikita-chrome-header-border: #f0003d;
-  --wikita-chrome-header-fg: var(--color-inverted-fixed);
-}
-
-.wikita-chrome-header--gray,
-.wikita-chrome-header--red-light,
-.wikita-chrome-header--orange-light,
-.wikita-chrome-header--yellow-light,
-.wikita-chrome-header--lime-light,
-.wikita-chrome-header--green-light,
-.wikita-chrome-header--blue-light,
-.wikita-chrome-header--purple-light,
-.wikita-chrome-header--pink-light,
-.wikita-chrome-header--maroon-light {
-  --wikita-chrome-header-btn-hover-bg: rgba(0, 0, 0, 0.08);
 }
 
 .wikita-chrome-header__start {

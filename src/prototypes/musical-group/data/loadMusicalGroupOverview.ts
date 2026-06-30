@@ -1,4 +1,4 @@
-import { formatCommonsPhotosLabel, getCommonsCategoryCount } from './commonsImages'
+import { formatCommonsPhotosLabel, getCommonsCategoryCount, resolveCommonsCategory } from './commonsImages'
 import type { CommonsCategoryCount } from './commonsImages'
 import { fetchMusicalGroupOverview } from './fetchMusicalGroupOverview'
 import {
@@ -12,12 +12,6 @@ export interface LoadMusicalGroupOverviewResult {
   fromCache: boolean
 }
 
-function resolveCommonsCategory(data: MusicalGroupData): string | undefined {
-  const fromClaim = data.commonsCategory?.trim()
-  if (fromClaim) return fromClaim
-  const fromLabel = data.label.trim()
-  return fromLabel.length ? fromLabel : undefined
-}
 
 async function resolveCommonsCategoryCount(
   data: MusicalGroupData,
@@ -28,10 +22,10 @@ async function resolveCommonsCategoryCount(
   return getCommonsCategoryCount(category, signal)
 }
 
-function buildPhotosOverview(
+function buildImagesOverview(
   data: MusicalGroupData,
   info?: CommonsCategoryCount,
-): MusicalGroupOverviewData['photos'] | undefined {
+): MusicalGroupOverviewData['images'] | undefined {
   if (!resolveCommonsCategory(data) || !info) return undefined
   // Nothing known (empty/missing category or a failed lookup) — show no count.
   if (info.files === 0 && info.subcats === 0) return undefined
@@ -61,14 +55,14 @@ export async function loadMusicalGroupOverview(
 
   const { signal } = options
 
-  // The article content and the photo count are independent — run them in
+  // The article content and the image count are independent — run them in
   // parallel and never let the (best-effort) count block or break the article.
   const [overview, categoryInfo] = await Promise.all([
     fetchMusicalGroupOverview(data, { signal }),
     resolveCommonsCategoryCount(data, signal).catch(() => undefined),
   ])
 
-  overview.photos = buildPhotosOverview(data, categoryInfo)
+  overview.images = buildImagesOverview(data, categoryInfo)
 
   setCachedMusicalGroupOverview(id, overview)
   return { overview, fromCache: false }

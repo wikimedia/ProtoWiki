@@ -18,6 +18,7 @@ import WikitaChromeHeader, {
 import MusicalGroupScreen from './MusicalGroupScreen.vue'
 import MusicalGroupSearch from './MusicalGroupSearch.vue'
 import MusicalGroupTitleRow from './MusicalGroupTitleRow.vue'
+import { useEntityExternalLinks } from './useEntityExternalLinks'
 
 import { CdxProgressBar, CdxToastContainer } from '@wikimedia/codex'
 
@@ -39,6 +40,9 @@ const overviewLoading = ref(false)
 const fetchError = ref<string | null>(null)
 const searchOpen = ref(false)
 const headerVariant = ref<WikitaChromeHeaderVariant>(loadHeaderVariantPreference())
+
+const { links: externalLinks, loading: linksLoading, error: linksError } =
+  useEntityExternalLinks(itemId)
 
 watch(headerVariant, (variant) => {
   saveHeaderVariantPreference(variant)
@@ -204,6 +208,9 @@ async function onResetStoredData() {
           :data="data"
           :overview="overview"
           :overview-loading="overviewLoading"
+          :external-links="externalLinks"
+          :links-loading="linksLoading"
+          :links-error="linksError"
         />
       </template>
     </div>
@@ -232,6 +239,7 @@ async function onResetStoredData() {
     var(--musical-group-chrome-stack-height) + var(--spacing-50)
   );
   --musical-group-tabs-height: 46px;
+  --musical-group-scroll-margin-top: 140px;
   --musical-group-tab-panel-min-height: calc(
     100dvh - var(--musical-group-tabs-sticky-top) - var(--musical-group-tabs-height) -
       var(--spacing-50)
@@ -292,5 +300,9 @@ async function onResetStoredData() {
 
 .musical-group-page[data-tabs-stuck]:not([data-scroll-at-end]) .musical-group-tabs::after {
   transform: scaleY(1);
+}
+
+.musical-group-page :is([id^='cite_note-'], [id^='cite_ref-']) {
+  scroll-margin-top: var(--musical-group-scroll-margin-top);
 }
 </style>

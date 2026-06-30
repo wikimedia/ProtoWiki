@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import MusicalGroupOverviewArticleCard from './MusicalGroupOverviewArticleCard.vue'
 import MusicalGroupOverviewEditOpportunityCard from './MusicalGroupOverviewEditOpportunityCard.vue'
-import MusicalGroupOverviewPhotosCard from './MusicalGroupOverviewPhotosCard.vue'
+import MusicalGroupOverviewImagesCard from './MusicalGroupOverviewImagesCard.vue'
 import MusicalGroupOverviewRelatedCard from './MusicalGroupOverviewRelatedCard.vue'
 import type { CarouselImage, MusicalGroupOverviewData } from './data/types'
 
@@ -10,11 +10,11 @@ interface Props {
   overviewLoading?: boolean
   carouselImages: CarouselImage[]
   enwikiTitle?: string
-  showPhotosTab?: boolean
+  showImagesTab?: boolean
 }
 
 withDefaults(defineProps<Props>(), {
-  showPhotosTab: true,
+  showImagesTab: true,
 })
 </script>
 
@@ -24,11 +24,11 @@ withDefaults(defineProps<Props>(), {
       :article="overview?.article"
       :no-article="overview?.noEnglishArticle"
     />
-    <MusicalGroupOverviewPhotosCard
-      :photos="overview?.photos"
+    <MusicalGroupOverviewImagesCard
+      :images="overview?.images"
       :carousel-images="carouselImages"
       :article-thumbnail-url="overview?.article?.thumbnailUrl"
-      :show-photos-tab="showPhotosTab"
+      :show-images-tab="showImagesTab"
     />
     <MusicalGroupOverviewRelatedCard
       v-if="overview?.related"
