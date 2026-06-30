@@ -56,6 +56,7 @@ export function useCommonsPhotosFeed(data: Ref<MusicalGroupData>, active: Ref<bo
   const seenKeys = shallowRef(new Set<string>())
   let cursor: CommonsPhotosFeedCursor | null = null
   let fetchAbort: AbortController | null = null
+  let loadedForDataId: string | null = null
 
   function resetFeed(nextData: MusicalGroupData) {
     fetchAbort?.abort()
@@ -67,6 +68,7 @@ export function useCommonsPhotosFeed(data: Ref<MusicalGroupData>, active: Ref<bo
     hasMore.value = true
     loading.value = false
     error.value = null
+    loadedForDataId = nextData.id
   }
 
   async function loadMore() {
@@ -115,14 +117,26 @@ export function useCommonsPhotosFeed(data: Ref<MusicalGroupData>, active: Ref<bo
 
   watch(
     () => [data.value.id, active.value] as const,
-    ([, isActive]) => {
+    ([dataId, isActive], oldValue) => {
+      const prevDataId = oldValue?.[0]
+
+      if (dataId !== prevDataId) {
+        loadedForDataId = null
+      }
+
       if (!isActive) {
         fetchAbort?.abort()
         fetchAbort = null
         loading.value = false
         return
       }
+
+      if (loadedForDataId === dataId && images.value.length > 0) {
+        return
+      }
+
       resetFeed(data.value)
+      void loadMore()
     },
     { immediate: true },
   )

@@ -122,9 +122,14 @@ const hasActions = computed(
 
 .wikita-title__lead {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
   min-width: 0;
+}
+
+.wikita-title__lead .wikita-title__icon-btn {
+  /* Optically center 20px bookmark with the first line’s line box (xxx-large / xx-large). */
+  margin-top: calc((var(--line-height-xx-large) - 20px) / 2);
 }
 
 .wikita-title__title {
@@ -134,9 +139,11 @@ const hasActions = computed(
   font-weight: var(--font-weight-normal);
   line-height: var(--line-height-xx-large);
   color: var(--color-base);
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .wikita-title__actions {
@@ -149,6 +156,7 @@ const hasActions = computed(
 .wikita-title__icon-btn {
   position: relative;
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   width: 20px;

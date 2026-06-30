@@ -1,3 +1,64 @@
+export function getMusicalGroupScrollPage(): HTMLElement | null {
+  return document.querySelector('.musical-group-page')
+}
+
+export function isMusicalGroupTabsStuck(page: Element): boolean {
+  return page.hasAttribute('data-tabs-stuck')
+}
+
+function getScrollContentOffsetTop(el: Element, scrollPage: HTMLElement): number {
+  const pageRect = scrollPage.getBoundingClientRect()
+  const elRect = el.getBoundingClientRect()
+  return scrollPage.scrollTop + (elRect.top - pageRect.top)
+}
+
+/** ScrollTop at which the tab bar first pins below the chrome stack. */
+export function measureMusicalGroupTabsStuckBaseline(page: HTMLElement): number {
+  const tabsEl = page.querySelector('.musical-group-tabs-sticky')
+  if (!tabsEl) return 0
+
+  const stickyTop =
+    parseFloat(getComputedStyle(page).getPropertyValue('--musical-group-tabs-sticky-top')) || 0
+  const tabsOffsetTop = getScrollContentOffsetTop(tabsEl, page)
+
+  return Math.max(0, tabsOffsetTop - stickyTop)
+}
+
+/** Viewport inset for the top of tab panel content (sticky chrome + tab bar). */
+export function measureMusicalGroupTabPanelTopInset(page: Element): number {
+  const styles = getComputedStyle(page)
+  const tabsTop = parseFloat(styles.getPropertyValue('--musical-group-tabs-sticky-top'))
+  const tabsHeight = parseFloat(styles.getPropertyValue('--musical-group-tabs-height'))
+
+  if (tabsTop > 0 && tabsHeight > 0) {
+    return tabsTop + tabsHeight
+  }
+
+  const pageTop = page.getBoundingClientRect().top
+  let bottom = 0
+
+  for (const selector of ['.musical-group-chrome-stack', '.musical-group-tabs-sticky']) {
+    const el = page.querySelector(selector)
+    if (el) {
+      bottom = Math.max(bottom, el.getBoundingClientRect().bottom - pageTop)
+    }
+  }
+
+  return bottom
+}
+
+/** ScrollTop that places the top of the active tab panel below sticky chrome + tabs. */
+export function measureMusicalGroupTabContentTopScroll(page: HTMLElement): number {
+  const panel = page.querySelector('.musical-group-screen__panel')
+  const stuckBaseline = measureMusicalGroupTabsStuckBaseline(page)
+  if (!panel) return stuckBaseline
+
+  const panelOffsetTop = getScrollContentOffsetTop(panel, page)
+  const panelTopScroll = Math.max(0, panelOffsetTop - measureMusicalGroupTabPanelTopInset(page))
+
+  return Math.max(stuckBaseline, panelTopScroll)
+}
+
 /** Space to leave above in-page scroll targets so sticky chrome + tabs do not cover them. */
 export function measureMusicalGroupStickyScrollOffset(page: Element): number {
   const styles = getComputedStyle(page)

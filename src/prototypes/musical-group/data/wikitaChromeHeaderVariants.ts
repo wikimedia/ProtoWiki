@@ -163,3 +163,26 @@ export const WIKITA_CHROME_HEADER_VARIANT_STYLES: Record<
 
 export const WIKITA_CHROME_HEADER_LIGHT_HOVER_BG = 'rgba(0, 0, 0, 0.08)'
 export const WIKITA_CHROME_HEADER_BOLD_HOVER_BG = 'rgba(255, 255, 255, 0.12)'
+
+export type HeaderVariantMenuItemStyle = {
+  lightHover: boolean
+  style: {
+    backgroundColor: string
+    borderBottom: string
+    color: string
+  }
+}
+
+export function headerVariantMenuItemStyle(
+  variant: WikitaChromeHeaderVariant,
+): HeaderVariantMenuItemStyle {
+  const colors = WIKITA_CHROME_HEADER_VARIANT_STYLES[variant]
+  return {
+    lightHover: colors.lightHover,
+    style: {
+      backgroundColor: colors.bg,
+      borderBottom: `2px solid ${colors.border}`,
+      color: colors.fg,
+    },
+  }
+}

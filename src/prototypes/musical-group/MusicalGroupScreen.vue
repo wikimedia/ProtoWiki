@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import ImageCarousel from './ImageCarousel.vue'
 import MusicalGroupArticle from './MusicalGroupArticle.vue'
@@ -17,6 +17,7 @@ import type { MusicalGroupData, MusicalGroupOverviewData, WikidataExternalLink }
 import { hasImagesTab } from './data/types'
 import { useMusicalGroupRoute } from './useMusicalGroupRoute'
 import { useMusicalGroupScrollStates } from './useMusicalGroupScrollStates'
+import { useMusicalGroupTabScroll } from './useMusicalGroupTabScroll'
 
 interface Props {
   data: MusicalGroupData
@@ -37,6 +38,7 @@ const props = withDefaults(defineProps<Props>(), {
 const { activeTab, setTab } = useMusicalGroupRoute()
 
 useMusicalGroupScrollStates()
+useMusicalGroupTabScroll()
 
 const showRichIntro = computed(
   () => props.data.isMusicPerformer || props.data.isLocation,
@@ -48,8 +50,26 @@ const showInfoTab = computed(() => {
   return (props.overview?.infobox?.rows?.length ?? 0) > 0
 })
 
+const showArticleTab = computed(() => {
+  if (props.overviewLoading) return false
+  return Boolean(props.overview?.article) && !props.overview?.noEnglishArticle
+})
+
 const showLinksTab = computed(
   () => !props.linksLoading && props.externalLinks.length > 0,
+)
+
+const imagesTabEverOpened = ref(false)
+
+watch(activeTab, (tab) => {
+  if (tab === 'images') imagesTabEverOpened.value = true
+})
+
+watch(
+  () => props.data.id,
+  () => {
+    imagesTabEverOpened.value = false
+  },
 )
 
 const moreImagesCountLabel = computed(() => {
@@ -68,8 +88,11 @@ const moreImagesCountLabel = computed(() => {
 })
 
 watch(
-  [activeTab, showImagesTab, showInfoTab, showLinksTab],
-  ([tab, imagesAllowed, infoAllowed, linksAllowed]) => {
+  [activeTab, showArticleTab, showImagesTab, showInfoTab, showLinksTab],
+  ([tab, articleAllowed, imagesAllowed, infoAllowed, linksAllowed]) => {
+    if (tab === 'article' && !articleAllowed) {
+      void setTab('overview')
+    }
     if (tab === 'images' && !imagesAllowed) {
       void setTab('overview')
     }
@@ -103,6 +126,7 @@ watch(
       <div class="musical-group-screen__tabs-section">
         <MusicalGroupTabs
           :active-tab="activeTab"
+          :show-article-tab="showArticleTab"
           :show-images-tab="showImagesTab"
           :show-info-tab="showInfoTab"
           :show-links-tab="showLinksTab"
@@ -127,18 +151,19 @@ watch(
             v-else-if="activeTab === 'article'"
             :title="data.enwikiTitle"
           />
-          <MusicalGroupPhotos
-            v-else-if="activeTab === 'images'"
-            :data="data"
-            :active="activeTab === 'images'"
-          />
           <MusicalGroupLinks
             v-else-if="activeTab === 'links'"
             :links="externalLinks"
             :loading="linksLoading"
             :error="linksError"
           />
-          <div v-else class="musical-group-screen__placeholder"></div>
+          <div v-else-if="activeTab !== 'images'" class="musical-group-screen__placeholder"></div>
+          <MusicalGroupPhotos
+            v-if="showImagesTab && (activeTab === 'images' || imagesTabEverOpened)"
+            v-show="activeTab === 'images'"
+            :data="data"
+            :active="activeTab === 'images'"
+          />
         </div>
       </div>
     </div>

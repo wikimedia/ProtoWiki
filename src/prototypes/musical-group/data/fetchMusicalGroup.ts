@@ -79,14 +79,32 @@ export async function fetchMusicalGroup(
   ])
 
   if (!performer && !location) {
-    const carouselResult = await fetchCarouselImages({
+    const category = resolveCommonsCategory({
+      commonsCategory: claims.commonsCategory,
       label: claims.label,
-      imageFilename: claims.imageFilename ?? null,
-      commonsCategory: claims.commonsCategory ?? null,
-      signal,
-    }).catch(() => ({ images: [] as CarouselImage[] }))
+    })
 
-    return { data: sparseData(id, claims, carouselResult.images) }
+    const [carouselResult, categoryInfo] = await Promise.all([
+      fetchCarouselImages({
+        label: claims.label,
+        imageFilename: claims.imageFilename ?? null,
+        commonsCategory: claims.commonsCategory ?? null,
+        signal,
+      }).catch(() => ({ images: [] as CarouselImage[] })),
+      category
+        ? getCommonsCategoryCount(category, signal).catch(() => undefined)
+        : Promise.resolve(undefined),
+    ])
+
+    const countMeta = categoryInfo ? commonsImageCountFromCategory(categoryInfo) : undefined
+
+    return {
+      data: {
+        ...sparseData(id, claims, carouselResult.images),
+        commonsImageCount: countMeta?.count,
+        commonsImageCountCapped: countMeta?.capped,
+      },
+    }
   }
 
   const { editIndicator, carouselResult, commonsImageCount, commonsImageCountCapped } =

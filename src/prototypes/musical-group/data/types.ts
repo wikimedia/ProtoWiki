@@ -132,8 +132,12 @@ export interface MusicalGroupData {
   commonsImageCountCapped?: boolean
 }
 
+/** True when the item has Commons photos worth a dedicated Images tab. */
 export function hasImagesTab(data: MusicalGroupData): boolean {
-  return data.isMusicPerformer || data.isLocation
+  if (data.images.length > 0) return true
+  if (data.imageFilename) return true
+  if ((data.commonsImageCount ?? 0) > 0) return true
+  return false
 }
 
 export interface FetchMusicalGroupOptions {

@@ -12,12 +12,14 @@ const allTabs: { id: TabId; label: string; dot?: 'blue' }[] = [
 ]
 
 interface Props {
+  showArticleTab?: boolean
   showImagesTab?: boolean
   showInfoTab?: boolean
   showLinksTab?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  showArticleTab: true,
   showImagesTab: true,
   showInfoTab: true,
   showLinksTab: true,
@@ -25,6 +27,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const tabs = computed(() =>
   allTabs.filter((tab) => {
+    if (tab.id === 'article' && !props.showArticleTab) return false
     if (tab.id === 'images' && !props.showImagesTab) return false
     if (tab.id === 'info' && !props.showInfoTab) return false
     if (tab.id === 'links' && !props.showLinksTab) return false
@@ -33,6 +36,27 @@ const tabs = computed(() =>
 )
 
 const activeTab = defineModel<TabId>('activeTab', { default: 'overview' })
+
+function scrollTabIntoTrackView(button: HTMLElement, track: HTMLElement) {
+  const buttonRect = button.getBoundingClientRect()
+  const trackRect = track.getBoundingClientRect()
+
+  if (buttonRect.left < trackRect.left) {
+    track.scrollLeft -= trackRect.left - buttonRect.left
+  } else if (buttonRect.right > trackRect.right) {
+    track.scrollLeft += buttonRect.right - trackRect.right
+  }
+}
+
+function onTabClick(tabId: TabId, event: MouseEvent) {
+  activeTab.value = tabId
+
+  const button = event.currentTarget as HTMLElement
+  const track = button.closest('.musical-group-tabs__track')
+  if (track instanceof HTMLElement) {
+    scrollTabIntoTrackView(button, track)
+  }
+}
 </script>
 
 <template>
@@ -46,7 +70,7 @@ const activeTab = defineModel<TabId>('activeTab', { default: 'overview' })
           class="musical-group-tabs__tab"
           :class="{ 'musical-group-tabs__tab--active': activeTab === tab.id }"
           :aria-pressed="activeTab === tab.id"
-          @click="activeTab = tab.id"
+          @click="onTabClick(tab.id, $event)"
         >
           {{ tab.label }}
           <span
@@ -63,7 +87,7 @@ const activeTab = defineModel<TabId>('activeTab', { default: 'overview' })
 <style scoped>
 .musical-group-tabs-sticky {
   position: sticky;
-  top: var(--musical-group-tabs-sticky-top, 105px);
+  top: var(--musical-group-tabs-sticky-top, 132px);
   z-index: 2;
   margin-inline: calc(-1 * var(--spacing-50));
   container-type: scroll-state;

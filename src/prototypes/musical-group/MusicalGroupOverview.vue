@@ -21,8 +21,8 @@ withDefaults(defineProps<Props>(), {
 <template>
   <div v-if="!overviewLoading" class="musical-group-overview">
     <MusicalGroupOverviewArticleCard
-      :article="overview?.article"
-      :no-article="overview?.noEnglishArticle"
+      v-if="overview?.article && !overview?.noEnglishArticle"
+      :article="overview.article"
     />
     <MusicalGroupOverviewImagesCard
       :images="overview?.images"

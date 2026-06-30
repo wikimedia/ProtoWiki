@@ -48,6 +48,8 @@ function cleanArticleTree(root: ParentNode): void {
   })
   root.querySelectorAll('[style]').forEach((node) => {
     if (node.closest('.navbox')) return
+    // Location maps position their marker with inline top/left percentages.
+    if (node.closest('.locmap')) return
     node.removeAttribute('style')
   })
 }

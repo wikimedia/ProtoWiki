@@ -18,6 +18,7 @@ import {
   WIKITA_CHROME_HEADER_BOLD_HOVER_BG,
   WIKITA_CHROME_HEADER_LIGHT_HOVER_BG,
   WIKITA_CHROME_HEADER_VARIANT_STYLES,
+  headerVariantMenuItemStyle,
 } from '../data/wikitaChromeHeaderVariants'
 
 export type { WikitaChromeHeaderVariant }
@@ -135,6 +136,10 @@ function onResetMenuItem(): void {
   menuSelected.value = null
 }
 
+function getVariantMenuItemStyles(value: MenuItemValue) {
+  return headerVariantMenuItemStyle(value as WikitaChromeHeaderVariant)
+}
+
 watch(menuSelected, (value) => {
   if (value === 'reset') onResetMenuItem()
 })
@@ -225,9 +230,23 @@ onBeforeUnmount(() => {
               <span class="wikita-chrome-header__user-label">Header color</span>
               <CdxSelect
                 v-model:selected="variant"
+                class="wikita-chrome-header__variant-select"
                 :menu-items="WIKITA_CHROME_HEADER_VARIANT_MENU_ITEMS"
                 default-label="Black"
-              />
+              >
+                <template #menu-item="{ menuItem }">
+                  <span
+                    class="wikita-header-variant-option"
+                    :class="{
+                      'wikita-header-variant-option--light-hover':
+                        getVariantMenuItemStyles(menuItem.value).lightHover,
+                    }"
+                    :style="getVariantMenuItemStyles(menuItem.value).style"
+                  >
+                    {{ menuItem.label }}
+                  </span>
+                </template>
+              </CdxSelect>
             </label>
           </div>
         </CdxPopover>
@@ -403,5 +422,55 @@ onBeforeUnmount(() => {
 
 .wikita-chrome-header__user-popover .cdx-popover__body {
   overflow: visible;
+}
+
+.wikita-chrome-header__variant-select .cdx-menu-item:has(.wikita-header-variant-option) {
+  padding: 0;
+  background: transparent;
+}
+
+.wikita-chrome-header__variant-select
+  .cdx-menu-item:has(.wikita-header-variant-option)
+  .cdx-menu-item__content {
+  padding: 0;
+}
+
+.wikita-header-variant-option {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--spacing-75) var(--spacing-100);
+  font-size: var(--font-size-medium);
+  line-height: var(--line-height-medium);
+}
+
+.wikita-chrome-header__variant-select
+  .cdx-menu-item--highlighted:has(.wikita-header-variant-option),
+.wikita-chrome-header__variant-select
+  .cdx-menu-item:has(.wikita-header-variant-option):hover {
+  background: transparent;
+}
+
+.wikita-chrome-header__variant-select
+  .cdx-menu-item--highlighted
+  .wikita-header-variant-option,
+.wikita-chrome-header__variant-select
+  .cdx-menu-item:hover
+  .wikita-header-variant-option {
+  box-shadow: inset 0 0 0 9999px rgba(255, 255, 255, 0.12);
+}
+
+.wikita-chrome-header__variant-select
+  .cdx-menu-item--highlighted
+  .wikita-header-variant-option--light-hover,
+.wikita-chrome-header__variant-select
+  .cdx-menu-item:hover
+  .wikita-header-variant-option--light-hover {
+  box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.08);
+}
+
+.wikita-chrome-header__variant-select
+  .cdx-menu-item--selected:has(.wikita-header-variant-option) {
+  background: transparent;
 }
 </style>

@@ -17,6 +17,9 @@ interface Props {
 
 const props = defineProps<Props>()
 
+/** Set to true to show history, talk, and edit buttons in the title row. */
+const SHOW_WIKIDATA_TITLE_ACTIONS = false
+
 const title = computed(() => entityDisplayLabel(props.data.label, props.data.enwikiTitle))
 const bookmarked = ref(isBookmarked(props.data.id))
 
@@ -41,6 +44,9 @@ function onEditClick() {
   <WikitaTitle
     :title="title"
     :bookmarked="bookmarked"
+    :show-history="SHOW_WIKIDATA_TITLE_ACTIONS"
+    :show-talk="SHOW_WIKIDATA_TITLE_ACTIONS"
+    :show-edit="SHOW_WIKIDATA_TITLE_ACTIONS"
     :show-history-dot="data.editIndicator === 'history'"
     :show-talk-dot="data.editIndicator === 'talk'"
     @bookmark-click="onBookmarkClick"

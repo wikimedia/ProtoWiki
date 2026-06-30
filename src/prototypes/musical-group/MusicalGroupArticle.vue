@@ -324,6 +324,97 @@ watch(
   margin-inline: auto;
 }
 
+/* Infobox lead thumbs — not the full-width article figure cards above. */
+.wikita-article__prose :deep(table.infobox .thumb),
+.wikita-article__prose :deep(table.infobox-v2 .thumb) {
+  width: auto;
+  max-width: 100%;
+  margin: 0 auto;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  background-color: transparent;
+}
+
+.wikita-article__prose :deep(table.infobox .thumbinner),
+.wikita-article__prose :deep(table.infobox-v2 .thumbinner) {
+  width: fit-content !important;
+  max-width: 100%;
+}
+
+.wikita-article__prose :deep(table.infobox .thumbimage),
+.wikita-article__prose :deep(table.infobox-v2 .thumbimage) {
+  width: auto;
+  max-width: 100%;
+}
+
+.wikita-article__prose :deep(table.infobox .thumb img),
+.wikita-article__prose :deep(table.infobox-v2 .thumb img) {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+}
+
+/*
+ * {{Multiple image}} photomontages (e.g. Kingston upon Thames) — 1 / 2 / 1 grid.
+ * Parsoid nests display:table divs; flex recreates the grid at full infobox width.
+ */
+.wikita-article__prose :deep(table.infobox .thumb:has(.thumbimage > div)),
+.wikita-article__prose :deep(table.infobox-v2 .thumb:has(.thumbimage > div)) {
+  width: 100%;
+}
+
+.wikita-article__prose :deep(table.infobox .thumb:has(.thumbimage > div) .thumbinner),
+.wikita-article__prose :deep(table.infobox-v2 .thumb:has(.thumbimage > div) .thumbinner) {
+  width: 100% !important;
+}
+
+.wikita-article__prose :deep(table.infobox .thumbimage > div),
+.wikita-article__prose :deep(table.infobox-v2 .thumbimage > div) {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  margin-inline: auto;
+  border: 1px solid var(--color-base);
+  background-color: var(--color-base);
+}
+
+.wikita-article__prose :deep(table.infobox .thumbimage > div > div > div),
+.wikita-article__prose :deep(table.infobox-v2 .thumbimage > div > div > div) {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.wikita-article__prose :deep(table.infobox .thumbimage > div > div > div > div > div),
+.wikita-article__prose :deep(table.infobox-v2 .thumbimage > div > div > div > div > div) {
+  display: flex;
+  flex-direction: row;
+  gap: 1px;
+}
+
+.wikita-article__prose :deep(table.infobox .thumbimage > div > div > div > div > div > div),
+.wikita-article__prose :deep(table.infobox-v2 .thumbimage > div > div > div > div > div > div) {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.wikita-article__prose :deep(table.infobox .thumbimage > div img),
+.wikita-article__prose :deep(table.infobox-v2 .thumbimage > div img) {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.wikita-article__prose :deep(table.infobox .infobox-full-data > div:not(.center)),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-full-data > div:not(.center)) {
+  margin-top: var(--spacing-25);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+  text-align: center;
+  color: var(--color-subtle);
+}
+
 .wikita-article__prose :deep(table.infobox .infobox-caption),
 .wikita-article__prose :deep(table.infobox-v2 .infobox-caption) {
   margin-top: var(--spacing-25);
@@ -369,7 +460,180 @@ watch(
 .wikita-article__prose :deep(table.infobox-v2 .plainlist ul),
 .wikita-article__prose :deep(table.infobox-v2 .plainlist ol) {
   margin: 0;
-  padding-inline-start: var(--spacing-100);
+  padding: 0;
+  list-style: none;
+}
+
+.wikita-article__prose :deep(table.infobox .plainlist li),
+.wikita-article__prose :deep(table.infobox-v2 .plainlist li) {
+  margin: 0;
+}
+
+/* Infobox location maps (Module:Location map). */
+.wikita-article__prose :deep(table.infobox .locmap .od),
+.wikita-article__prose :deep(table.infobox-v2 .locmap .od) {
+  position: absolute;
+}
+
+.wikita-article__prose :deep(table.infobox .locmap .id),
+.wikita-article__prose :deep(table.infobox-v2 .locmap .id) {
+  position: absolute;
+  line-height: 0;
+}
+
+.wikita-article__prose :deep(table.infobox .locmap .l0),
+.wikita-article__prose :deep(table.infobox-v2 .locmap .l0) {
+  position: absolute;
+  font-size: 0;
+}
+
+.wikita-article__prose :deep(table.infobox .locmap .pv),
+.wikita-article__prose :deep(table.infobox-v2 .locmap .pv) {
+  position: absolute;
+  line-height: 110%;
+  text-align: center;
+}
+
+.wikita-article__prose :deep(table.infobox .locmap .pl),
+.wikita-article__prose :deep(table.infobox-v2 .locmap .pl) {
+  position: absolute;
+  top: -0.75em;
+  line-height: 110%;
+  text-align: end;
+}
+
+.wikita-article__prose :deep(table.infobox .locmap .pr),
+.wikita-article__prose :deep(table.infobox-v2 .locmap .pr) {
+  position: absolute;
+  top: -0.75em;
+  line-height: 110%;
+  text-align: start;
+}
+
+.wikita-article__prose :deep(table.infobox .locmap .pv > div),
+.wikita-article__prose :deep(table.infobox-v2 .locmap .pv > div) {
+  display: inline;
+  padding: 1px;
+}
+
+.wikita-article__prose :deep(table.infobox .locmap .pl > div),
+.wikita-article__prose :deep(table.infobox-v2 .locmap .pl > div) {
+  display: inline;
+  padding: 1px;
+  float: inline-end;
+}
+
+.wikita-article__prose :deep(table.infobox .locmap .pr > div),
+.wikita-article__prose :deep(table.infobox-v2 .locmap .pr > div) {
+  display: inline;
+  padding: 1px;
+  float: inline-start;
+}
+
+.wikita-article__prose :deep(table.infobox .locmap),
+.wikita-article__prose :deep(table.infobox-v2 .locmap) {
+  max-width: 100%;
+  margin-inline: auto;
+}
+
+.wikita-article__prose :deep(table.infobox .locmap img),
+.wikita-article__prose :deep(table.infobox-v2 .locmap img) {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  margin-inline: auto;
+}
+
+[data-theme='dark'] .wikita-article__prose :deep(table.infobox .locmap img),
+[data-theme='dark'] .wikita-article__prose :deep(table.infobox-v2 .locmap img) {
+  filter: grayscale(0.6);
+}
+
+[data-theme='dark'] .wikita-article__prose :deep(table.infobox .infobox-full-data .locmap div),
+[data-theme='dark'] .wikita-article__prose :deep(table.infobox-v2 .infobox-full-data .locmap div) {
+  background-color: transparent !important;
+}
+
+/* List of places + coordinates footer (Hlist + Module:Coordinates). */
+.wikita-article__prose :deep(table.infobox .infobox-below),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below) {
+  padding: var(--spacing-25) var(--spacing-50);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+  text-align: center;
+}
+
+.wikita-article__prose :deep(table.infobox .infobox-below .hlist dl),
+.wikita-article__prose :deep(table.infobox .infobox-below .hlist ol),
+.wikita-article__prose :deep(table.infobox .infobox-below .hlist ul),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .hlist dl),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .hlist ol),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .hlist ul) {
+  margin: 0;
+  padding: 0;
+}
+
+.wikita-article__prose :deep(table.infobox .infobox-below .hlist dd),
+.wikita-article__prose :deep(table.infobox .infobox-below .hlist dt),
+.wikita-article__prose :deep(table.infobox .infobox-below .hlist li),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .hlist dd),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .hlist dt),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .hlist li) {
+  margin: 0;
+  display: inline;
+}
+
+.wikita-article__prose :deep(table.infobox .infobox-below .hlist dt::after),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .hlist dt::after) {
+  content: ': ';
+}
+
+.wikita-article__prose :deep(table.infobox .infobox-below .hlist dd::after),
+.wikita-article__prose :deep(table.infobox .infobox-below .hlist li::after),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .hlist dd::after),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .hlist li::after) {
+  content: ' · ';
+  font-weight: var(--font-weight-bold);
+}
+
+.wikita-article__prose :deep(table.infobox .infobox-below .hlist dd:last-child::after),
+.wikita-article__prose :deep(table.infobox .infobox-below .hlist dt:last-child::after),
+.wikita-article__prose :deep(table.infobox .infobox-below .hlist li:last-child::after),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .hlist dd:last-child::after),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .hlist dt:last-child::after),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .hlist li:last-child::after) {
+  content: none;
+}
+
+.wikita-article__prose :deep(table.infobox .infobox-below .geo-inline),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .geo-inline) {
+  display: inline;
+}
+
+.wikita-article__prose :deep(table.infobox .infobox-below .geo-default),
+.wikita-article__prose :deep(table.infobox .infobox-below .geo-dms),
+.wikita-article__prose :deep(table.infobox .infobox-below .geo-dec),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .geo-default),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .geo-dms),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .geo-dec) {
+  display: inline;
+}
+
+.wikita-article__prose :deep(table.infobox .infobox-below .geo-nondefault),
+.wikita-article__prose :deep(table.infobox .infobox-below .geo-multi-punct),
+.wikita-article__prose :deep(table.infobox .infobox-below .geo-inline-hidden),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .geo-nondefault),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .geo-multi-punct),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .geo-inline-hidden) {
+  display: none;
+}
+
+.wikita-article__prose :deep(table.infobox .infobox-below .latitude),
+.wikita-article__prose :deep(table.infobox .infobox-below .longitude),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .latitude),
+.wikita-article__prose :deep(table.infobox-v2 .infobox-below .longitude) {
+  white-space: nowrap;
 }
 
 .wikita-article__prose :deep(.portable-infobox),
@@ -585,6 +849,54 @@ watch(
 .wikita-article__prose :deep(.navbox ul),
 .wikita-article__prose :deep(.navbox ol) {
   margin: 0;
+}
+
+/*
+ * Route nav tables inside navboxes (e.g. {{London Outer Orbital Path}} on Kingston upon Thames).
+ * Parsoid renders these as a full-width inner table; without fixed columns, centered th cells
+ * and start-aligned td cells no longer line up.
+ */
+.wikita-article__prose :deep(.navbox-list:has(> div > table)) {
+  max-width: none;
+  width: 100%;
+  text-align: center;
+}
+
+.wikita-article__prose :deep(.navbox-list > div > table) {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: var(--font-size-small);
+  text-align: center;
+}
+
+.wikita-article__prose :deep(.navbox-list > div > table th),
+.wikita-article__prose :deep(.navbox-list > div > table td) {
+  text-align: center;
+  vertical-align: middle;
+  padding: var(--spacing-25) var(--spacing-50);
+  border: none;
+  font-weight: var(--font-weight-normal);
+  background-color: transparent;
+}
+
+.wikita-article__prose :deep(.navbox-list > div > table th:nth-child(1)),
+.wikita-article__prose :deep(.navbox-list > div > table td:nth-child(1)) {
+  width: 30%;
+}
+
+.wikita-article__prose :deep(.navbox-list > div > table th:nth-child(2)),
+.wikita-article__prose :deep(.navbox-list > div > table td:nth-child(2)) {
+  width: 40%;
+}
+
+.wikita-article__prose :deep(.navbox-list > div > table th:nth-child(3)),
+.wikita-article__prose :deep(.navbox-list > div > table td:nth-child(3)) {
+  width: 30%;
+}
+
+.wikita-article__prose :deep(.navbox-list > div > table a) {
+  font-weight: var(--font-weight-bold);
 }
 
 /* Maintenance notices sit tight under section headings — avoid stacked gap + heading margin. */

@@ -231,7 +231,7 @@ async function onResetStoredData() {
 
 .musical-group-page {
   --musical-group-chrome-height: 40px;
-  --musical-group-title-height: 47px;
+  --musical-group-title-height: 76px;
   --musical-group-chrome-stack-height: calc(
     var(--musical-group-chrome-height) + var(--spacing-50) + var(--musical-group-title-height)
   );
@@ -239,7 +239,8 @@ async function onResetStoredData() {
     var(--musical-group-chrome-stack-height) + var(--spacing-50)
   );
   --musical-group-tabs-height: 46px;
-  --musical-group-scroll-margin-top: 140px;
+  --musical-group-scroll-margin-top: 186px;
+  --musical-group-title-collapse-padding: 0px;
   --musical-group-tab-panel-min-height: calc(
     100dvh - var(--musical-group-tabs-sticky-top) - var(--musical-group-tabs-height) -
       var(--spacing-50)
@@ -291,6 +292,21 @@ async function onResetStoredData() {
 .musical-group-page[data-tabs-stuck] .musical-group-chrome-stack .wikita-title__header::after {
   left: 0;
   right: 0;
+}
+
+.musical-group-page[data-scrolled] .wikita-title__title {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  -webkit-box-orient: unset;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Offset chrome shrink so document positions (and scroll) stay stable. */
+.musical-group-page[data-scrolled] .musical-group-screen {
+  padding-top: calc(var(--spacing-50) + var(--musical-group-title-collapse-padding, 0px));
 }
 
 .musical-group-page[data-tabs-stuck]:not([data-scroll-at-end]) .musical-group-tabs::before {

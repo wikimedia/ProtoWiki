@@ -2,7 +2,7 @@
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { CdxProgressBar, CdxTextInput } from '@wikimedia/codex'
+import { CdxTextInput } from '@wikimedia/codex'
 import { cdxIconSearch } from '@wikimedia/codex-icons'
 
 import WikitaCardItem from './components/WikitaCardItem.vue'
@@ -34,7 +34,6 @@ const route = useRoute()
 const query = ref('')
 const searchInput = ref<{ focus: () => void } | null>(null)
 const results = ref<MusicalGroupSearchResult[]>([])
-const searching = ref(false)
 const localError = ref<string | null>(null)
 
 let searchAbort: AbortController | null = null
@@ -57,15 +56,12 @@ async function runSearch(value: string) {
 
   searchAbort?.abort()
   searchAbort = new AbortController()
-  searching.value = true
 
   try {
     results.value = await searchWikidataItems(trimmed, searchAbort.signal)
   } catch (err) {
     if ((err as Error).name === 'AbortError') return
     results.value = []
-  } finally {
-    searching.value = false
   }
 }
 
@@ -126,8 +122,6 @@ onMounted(() => {
         />
       </form>
 
-      <CdxProgressBar v-if="searching" inline aria-label="Searching" />
-
       <ul v-if="results.length" class="musical-group-search__results">
         <li v-for="result in results" :key="result.id" @click="onResultSelect(result.id)">
           <WikitaCardItem
@@ -135,6 +129,7 @@ onMounted(() => {
             :show-type="false"
             :show-snippet="false"
             :show-info="false"
+            :show-thumbnail="Boolean(result.thumbnailUrl)"
             :title="result.label"
             :body="result.description ?? ''"
             :thumbnail-url="result.thumbnailUrl"
