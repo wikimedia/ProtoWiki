@@ -32,6 +32,10 @@ const primaryFact = computed(() => {
   return null
 })
 
+const showPrimaryFact = computed(
+  () => Boolean(primaryFact.value) && props.data.isMusicPerformer,
+)
+
 const genreLine = computed(() =>
   props.data.isMusicPerformer && props.data.genres.length
     ? sentenceCaseList(props.data.genres)
@@ -57,7 +61,7 @@ const factIcon = computed(() => {
 <template>
   <section class="musical-group-facts">
     <div class="musical-group-facts__summary">
-      <div v-if="primaryFact" class="musical-group-facts__primary-row">
+      <div v-if="showPrimaryFact" class="musical-group-facts__primary-row">
         <h3 class="musical-group-facts__primary">{{ primaryFact }}</h3>
         <CdxIcon :icon="factIcon" class="musical-group-facts__note-icon" />
       </div>

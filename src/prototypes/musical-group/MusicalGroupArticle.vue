@@ -489,7 +489,11 @@ watch(
 
 /* Maintenance notices sit tight under section headings — avoid stacked gap + heading margin. */
 .wikita-article-notice {
-  margin-block: calc(-1 * var(--spacing-50));
+  margin-bottom: calc(-1 * var(--spacing-50));
+}
+
+.wikita-article__prose + .wikita-article-notice {
+  margin-top: calc(-1 * var(--spacing-50));
 }
 
 /*
