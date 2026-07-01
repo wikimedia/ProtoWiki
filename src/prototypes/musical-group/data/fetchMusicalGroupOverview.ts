@@ -4,12 +4,16 @@ import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 
 import { EN_WIKI_HOST, enwikiTitlesMatch, fetchWikibaseItemId, normalizeEnwikiTitle, wikiActionUrl } from './enwikiTitle'
 import { isExcludedEditOpportunityNeed, resolveEditOpportunityCopy } from './editOpportunityCopy'
+import { fetchRecentChangeForItem } from './fetchRecentChanges'
 import { fetchWithTimeout } from './fetchWithTimeout'
 import type {
+  HomeRecentChange,
+  HomeSavedItem,
   MusicalGroupData,
   MusicalGroupInfobox,
   MusicalGroupInfoboxRow,
   MusicalGroupInfoboxValue,
+  MusicalGroupOverviewArticle,
   MusicalGroupOverviewData,
   MusicalGroupOverviewEditOpportunity,
   MusicalGroupOverviewRelated,
@@ -18,9 +22,13 @@ import type {
 import { normalizeQid } from './wikidataApi'
 
 const MICROTASK_QUALITY_CHECK_URL = 'https://microtask-generator.toolforge.org/quality-check'
+/** Related-reading candidates resolved in parallel per overview load. */
+const MAX_RELATED_CANDIDATES = 4
 
 export interface FetchMusicalGroupOverviewOptions {
   signal?: AbortSignal
+  /** Called as each overview stage resolves so the UI can paint progressively. */
+  onPartial?: (overview: MusicalGroupOverviewData) => void
 }
 
 interface PageSummaryResponse {
@@ -97,8 +105,8 @@ async function fetchEditOpportunity(
   }
 }
 
-function normalizeTitle(title: string): string {
-  return title.replace(/ /g, '_').toLowerCase()
+function titleCacheKey(title: string): string {
+  return normalizeEnwikiTitle(title).toLowerCase()
 }
 
 function parseMediaWikiTimestamp(timestamp: string): Date {
@@ -202,10 +210,6 @@ async function fetchMorelikeHits(
   return json.query?.search ?? []
 }
 
-function titleCacheKey(title: string): string {
-  return normalizeEnwikiTitle(title).toLowerCase()
-}
-
 function isSameOverviewItem(
   itemId: string | undefined,
   title: string | undefined,
@@ -221,58 +225,87 @@ function isSameOverviewItem(
   return false
 }
 
-async function fetchMorelikeRelated(
+async function tryRelatedCandidate(
+  relatedTitle: string,
   seedTitle: string,
   relatedToTitle: string,
   excludeItemId: string | undefined,
   signal?: AbortSignal,
 ): Promise<MusicalGroupOverviewRelated | undefined> {
-  const hits = await fetchMorelikeHits(seedTitle, signal, 10)
-  const excludedTitles = new Set<string>([titleCacheKey(seedTitle)])
+  const [summary, views, wikibaseId] = await Promise.all([
+    fetchPageSummary(relatedTitle, signal),
+    resolvePageviewsLabel(relatedTitle, signal),
+    fetchWikibaseItemId(relatedTitle, signal),
+  ])
 
-  for (const candidate of hits) {
-    if (!candidate.title || excludedTitles.has(titleCacheKey(candidate.title))) continue
-
-    const relatedTitle = candidate.title
-    const [summary, views, wikibaseId] = await Promise.all([
-      fetchPageSummary(relatedTitle, signal),
-      resolvePageviewsLabel(relatedTitle, signal),
-      fetchWikibaseItemId(relatedTitle, signal),
-    ])
-
-    const resolvedTitle = summary?.title ?? relatedTitle
-    if (
-      isSameOverviewItem(wikibaseId, resolvedTitle, excludeItemId, seedTitle) ||
-      isSameOverviewItem(wikibaseId, relatedTitle, excludeItemId, seedTitle)
-    ) {
-      continue
-    }
-
-    excludedTitles.add(titleCacheKey(relatedTitle))
-    excludedTitles.add(titleCacheKey(resolvedTitle))
-
-    const timestamp = summary?.timestamp ?? ''
-    const relative = timestamp ? formatRelativeTime(timestamp) : '—'
-
-    // Any article with a Wikidata item opens inside Wikita — the item view renders a
-    // sparse entity (label, description, Commons images) when it isn't a performer or place.
-    return {
-      id: wikibaseId,
-      title: resolvedTitle,
-      description: summary?.description ?? '',
-      thumbnailUrl: summary?.thumbnail?.source,
-      articleUrl:
-        summary?.content_urls?.desktop?.page ??
-        `https://${EN_WIKI_HOST}/wiki/${pageviewsArticleSlug(relatedTitle)}`,
-      lastEditedTimestamp: timestamp,
-      lastEditedLabel: timestamp ? `Updated ${relative}` : 'Updated —',
-      viewCount: views.total,
-      viewsLabel: views.label,
-      relatedToTitle,
-    }
+  const resolvedTitle = summary?.title ?? relatedTitle
+  if (
+    isSameOverviewItem(wikibaseId, resolvedTitle, excludeItemId, seedTitle) ||
+    isSameOverviewItem(wikibaseId, relatedTitle, excludeItemId, seedTitle)
+  ) {
+    return undefined
   }
 
-  return undefined
+  const timestamp = summary?.timestamp ?? ''
+  const relative = timestamp ? formatRelativeTime(timestamp) : '—'
+
+  return {
+    id: wikibaseId,
+    title: resolvedTitle,
+    description: summary?.description ?? '',
+    thumbnailUrl: summary?.thumbnail?.source,
+    articleUrl:
+      summary?.content_urls?.desktop?.page ??
+      `https://${EN_WIKI_HOST}/wiki/${pageviewsArticleSlug(relatedTitle)}`,
+    lastEditedTimestamp: timestamp,
+    lastEditedLabel: timestamp ? `Updated ${relative}` : 'Updated —',
+    viewCount: views.total,
+    viewsLabel: views.label,
+    relatedToTitle,
+  }
+}
+
+function normalizeTitle(title: string): string {
+  return title.replace(/ /g, '_').toLowerCase()
+}
+
+async function fetchMorelikeRelated(
+  seedTitle: string,
+  relatedToTitle: string,
+  excludeItemId: string | undefined,
+  signal?: AbortSignal,
+  prefetchedHits?: SearchHit[],
+): Promise<MusicalGroupOverviewRelated | undefined> {
+  const hits = prefetchedHits ?? (await fetchMorelikeHits(seedTitle, signal, 10))
+  const seen = new Set<string>([titleCacheKey(seedTitle)])
+
+  const candidates = hits
+    .map((hit) => hit.title)
+    .filter((title): title is string => Boolean(title))
+    .filter((title) => {
+      const key = titleCacheKey(title)
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    .slice(0, MAX_RELATED_CANDIDATES)
+
+  if (!candidates.length) return undefined
+
+  const results = await mapWithConcurrency(
+    candidates,
+    3,
+    (relatedTitle) =>
+      tryRelatedCandidate(relatedTitle, seedTitle, relatedToTitle, excludeItemId, signal).catch(
+        (err) => {
+          if ((err as Error).name === 'AbortError') throw err
+          return undefined
+        },
+      ),
+    signal,
+  )
+
+  return results.find((result): result is MusicalGroupOverviewRelated => result !== undefined)
 }
 
 async function fetchSnippetHits(
@@ -282,8 +315,6 @@ async function fetchSnippetHits(
   const url = wikiActionUrl({
     action: 'query',
     list: 'search',
-    // Exact-phrase search finds pages that mention the item by name, and returns
-    // a highlighted snippet of where the mention occurs.
     srsearch: `"${seedTitle}"`,
     srwhat: 'text',
     srnamespace: '0',
@@ -301,10 +332,6 @@ async function fetchSnippetHits(
   return json.query?.search ?? []
 }
 
-/**
- * Structural / index pages that technically contain the phrase but aren't a
- * meaningful "mention" of the item (lists, discographies, year-in-x, etc.).
- */
 function isLowValueMentionTitle(title: string): boolean {
   return (
     /^Main Page$/i.test(title) ||
@@ -315,16 +342,6 @@ function isLowValueMentionTitle(title: string): boolean {
   )
 }
 
-/**
- * Tidy a search snippet for display:
- * - Merge adjacent `searchmatch` highlights separated only by spaces so a
- *   multi-word match reads as one continuous highlight ("Wet Leg", not
- *   "[Wet] [Leg]").
- * - Replace hard line breaks (fragment boundaries in the source text) with an
- *   ellipsis so the snippet doesn't read as one run-on sentence.
- * - Prefix a leading ellipsis when the snippet begins mid-text, so it reads as a
- *   continuation and matches the trailing ellipsis.
- */
 function formatSnippetHtml(html: string): string {
   const formatted = html
     .replace(/<\/span>([^\S\r\n]+)<span class="searchmatch">/g, '$1')
@@ -334,27 +351,34 @@ function formatSnippetHtml(html: string): string {
   return /^\s*(…|\.\.\.)/.test(formatted) ? formatted : `… ${formatted}`
 }
 
-/**
- * Find an article that mentions the item and return it as a Snippet card.
- *
- * Candidates come from a `morelike` query (the same topically-related pool the
- * Related card draws from), and we pick the highest-ranked related article that
- * actually mentions the item by name — showing the highlighted mention snippet.
- * Falls back to the top plain phrase-search mention when no related page mentions
- * it. Excludes the item's own page (`ownTitle`).
- */
+async function isUsableMentionTitle(
+  title: string | undefined,
+  ownTitle: string,
+  excludeItemId: string | undefined,
+  signal?: AbortSignal,
+): Promise<boolean> {
+  if (!title || enwikiTitlesMatch(title, ownTitle) || isLowValueMentionTitle(title)) {
+    return false
+  }
+  if (!excludeItemId) return true
+  const wikibaseId = await fetchWikibaseItemId(title, signal)
+  return !isSameOverviewItem(wikibaseId, title, excludeItemId, ownTitle)
+}
+
 async function fetchSnippetMention(
   searchTerm: string,
   ownTitle: string,
   excludeItemId: string | undefined,
   signal?: AbortSignal,
+  prefetchedMorelikeHits?: SearchHit[],
 ): Promise<MusicalGroupOverviewSnippet | undefined> {
   const [morelikeHits, mentionHits] = await Promise.all([
-    fetchMorelikeHits(ownTitle, signal, 15),
+    prefetchedMorelikeHits
+      ? Promise.resolve(prefetchedMorelikeHits)
+      : fetchMorelikeHits(ownTitle, signal, 15),
     fetchSnippetHits(searchTerm, signal),
   ])
 
-  // Which pages actually mention the item, and the snippet of that mention.
   const snippetByTitle = new Map<string, string>()
   for (const candidate of mentionHits) {
     if (candidate.title && candidate.snippet) {
@@ -362,21 +386,11 @@ async function fetchSnippetMention(
     }
   }
 
-  const usable = async (title: string | undefined): Promise<boolean> => {
-    if (!title || enwikiTitlesMatch(title, ownTitle) || isLowValueMentionTitle(title)) {
-      return false
-    }
-    if (!excludeItemId) return true
-    const wikibaseId = await fetchWikibaseItemId(title, signal)
-    return !isSameOverviewItem(wikibaseId, title, excludeItemId, ownTitle)
-  }
-
   let mentionTitle: string | undefined
   let snippet: string | undefined
 
-  // Prefer a topically-related (morelike) page that mentions the item.
   for (const candidate of morelikeHits) {
-    if (!(await usable(candidate.title))) continue
+    if (!(await isUsableMentionTitle(candidate.title, ownTitle, excludeItemId, signal))) continue
     const related = snippetByTitle.get(normalizeTitle(candidate.title as string))
     if (!related) continue
     mentionTitle = candidate.title
@@ -384,10 +398,12 @@ async function fetchSnippetMention(
     break
   }
 
-  // Fall back to the strongest plain mention if no related page mentions it.
   if (!mentionTitle) {
     for (const candidate of mentionHits) {
-      if (!(await usable(candidate.title)) || !candidate.snippet) continue
+      if (!(await isUsableMentionTitle(candidate.title, ownTitle, excludeItemId, signal))) {
+        continue
+      }
+      if (!candidate.snippet) continue
       mentionTitle = candidate.title
       snippet = candidate.snippet
       break
@@ -415,6 +431,32 @@ async function fetchSnippetMention(
       summary?.content_urls?.desktop?.page ??
       `https://${EN_WIKI_HOST}/wiki/${pageviewsArticleSlug(mentionTitle)}`,
   }
+}
+
+function overviewSavedItem(data: MusicalGroupData): HomeSavedItem | undefined {
+  if (!data.enwikiTitle) return undefined
+  return {
+    id: data.id,
+    title: data.label,
+    enwikiTitle: data.enwikiTitle,
+    description: data.description ?? '',
+    thumbnailUrl: data.images[0]?.url,
+    savedAt: 0,
+  }
+}
+
+async function fetchOverviewLatestEdit(
+  data: MusicalGroupData,
+  signal?: AbortSignal,
+): Promise<HomeRecentChange | undefined> {
+  const item = overviewSavedItem(data)
+  if (!item) return undefined
+
+  const change = await fetchRecentChangeForItem(item, signal).catch((err) => {
+    if ((err as Error).name === 'AbortError') throw err
+    return null
+  })
+  return change ?? undefined
 }
 
 function collapseWhitespace(text: string): string {
@@ -789,67 +831,133 @@ async function resolvePageviewsLabel(
   return { total: 0, label: '—' }
 }
 
+function buildOverviewArticle(
+  summary: PageSummaryResponse,
+  title: string,
+  extras: {
+    wordCount?: number
+    views?: { total: number; label: string }
+  } = {},
+): MusicalGroupOverviewArticle {
+  const timestamp = summary.timestamp ?? ''
+  const relative = timestamp ? formatRelativeTime(timestamp) : '—'
+  const wordCount = extras.wordCount ?? 0
+
+  return {
+    title: summary.title ?? title,
+    extractHtml: deadLinkExtractHtml(summary.extract_html ?? ''),
+    thumbnailUrl: summary.thumbnail?.source,
+    articleUrl:
+      summary.content_urls?.desktop?.page ??
+      `https://${EN_WIKI_HOST}/wiki/${pageviewsArticleSlug(title)}`,
+    lastEditedTimestamp: timestamp,
+    lastEditedLabel: timestamp ? `Updated ${relative}` : 'Updated —',
+    viewCount: extras.views?.total ?? 0,
+    viewsLabel: extras.views?.label ?? '—',
+    wordCount,
+    wordCountLabel: wordCount ? `${wordCount.toLocaleString()} words` : '',
+  }
+}
+
 export async function fetchMusicalGroupOverview(
   data: MusicalGroupData,
   options: FetchMusicalGroupOverviewOptions = {},
 ): Promise<MusicalGroupOverviewData> {
-  const { signal } = options
+  const { signal, onPartial } = options
   const fetchedAt = Date.now()
 
+  const emit = (overview: MusicalGroupOverviewData) => {
+    onPartial?.({ ...overview, fetchedAt })
+  }
+
   if (!data.enwikiTitle) {
-    return { noEnglishArticle: true, fetchedAt }
+    const result: MusicalGroupOverviewData = { noEnglishArticle: true, fetchedAt }
+    emit(result)
+    return result
   }
 
   const title = data.enwikiTitle
 
-  const [
-    summary,
-    wordCount,
-    views,
-    infobox,
-    related,
-    snippet,
-    editOpportunity,
-  ] = await mapWithConcurrency(
-    [
-      () => fetchPageSummary(title, signal),
-      () => fetchArticleWordCount(title, signal),
-      () => resolvePageviewsLabel(title, signal),
-      () => fetchInfobox(title, signal).catch(() => undefined),
-      () => fetchMorelikeRelated(title, data.label, data.id, signal).catch(() => undefined),
-      () => fetchSnippetMention(data.label, title, data.id, signal).catch(() => undefined),
-      () => fetchEditOpportunity(title, signal).catch(() => undefined),
-    ],
-    3,
-    (task) => task(),
-    signal,
-  )
-
+  const summary = await fetchPageSummary(title, signal)
   if (!summary) {
-    return { noEnglishArticle: true, infobox, fetchedAt }
+    const result: MusicalGroupOverviewData = { noEnglishArticle: true, fetchedAt }
+    emit(result)
+    return result
   }
 
-  const extractHtml = deadLinkExtractHtml(summary.extract_html ?? '')
-  const timestamp = summary.timestamp ?? ''
-  const relative = timestamp ? formatRelativeTime(timestamp) : '—'
-
-  return {
-    infobox,
-    related,
-    snippet,
-    editOpportunity,
-    article: {
-      title: summary.title ?? title,
-      extractHtml,
-      thumbnailUrl: summary.thumbnail?.source,
-      articleUrl: summary.content_urls?.desktop?.page ?? `https://${EN_WIKI_HOST}/wiki/${pageviewsArticleSlug(title)}`,
-      lastEditedTimestamp: timestamp,
-      lastEditedLabel: timestamp ? `Updated ${relative}` : 'Updated —',
-      viewCount: views.total,
-      viewsLabel: views.label,
-      wordCount: wordCount ?? 0,
-      wordCountLabel: wordCount ? `${wordCount.toLocaleString()} words` : '',
-    },
+  let overview: MusicalGroupOverviewData = {
+    article: buildOverviewArticle(summary, title),
     fetchedAt,
   }
+  emit(overview)
+
+  const [wordCount, views] = await Promise.all([
+    fetchArticleWordCount(title, signal),
+    resolvePageviewsLabel(title, signal),
+  ])
+
+  overview = {
+    ...overview,
+    article: buildOverviewArticle(summary, title, { wordCount, views }),
+  }
+  emit(overview)
+
+  const patch = (partial: Partial<MusicalGroupOverviewData>) => {
+    overview = { ...overview, ...partial }
+    emit(overview)
+  }
+
+  const morelikeHitsPromise = fetchMorelikeHits(title, signal, 15).catch((err) => {
+    if ((err as Error).name === 'AbortError') throw err
+    return [] as SearchHit[]
+  })
+
+  await Promise.all([
+    fetchInfobox(title, signal)
+      .catch((err) => {
+        if ((err as Error).name === 'AbortError') throw err
+        return undefined
+      })
+      .then((infobox) => {
+        if (infobox) patch({ infobox })
+      }),
+    morelikeHitsPromise.then((hits) =>
+      fetchMorelikeRelated(title, data.label, data.id, signal, hits)
+        .catch((err) => {
+          if ((err as Error).name === 'AbortError') throw err
+          return undefined
+        })
+        .then((related) => {
+          if (related) patch({ related })
+        }),
+    ),
+    morelikeHitsPromise.then((hits) =>
+      fetchSnippetMention(data.label, title, data.id, signal, hits)
+        .catch((err) => {
+          if ((err as Error).name === 'AbortError') throw err
+          return undefined
+        })
+        .then((snippet) => {
+          if (snippet) patch({ snippet })
+        }),
+    ),
+    fetchEditOpportunity(title, signal)
+      .catch((err) => {
+        if ((err as Error).name === 'AbortError') throw err
+        return undefined
+      })
+      .then((editOpportunity) => {
+        if (editOpportunity) patch({ editOpportunity })
+      }),
+    fetchOverviewLatestEdit(data, signal)
+      .catch((err) => {
+        if ((err as Error).name === 'AbortError') throw err
+        return undefined
+      })
+      .then((latestEdit) => {
+        if (latestEdit) patch({ latestEdit })
+      }),
+  ])
+
+  return overview
 }

@@ -29,6 +29,7 @@ interface Props {
   data: MusicalGroupData
   overview?: MusicalGroupOverviewData
   overviewLoading?: boolean
+  overviewExtrasLoading?: boolean
   loadingImages?: boolean
   externalLinks?: WikidataExternalLink[]
   linksLoading?: boolean
@@ -52,15 +53,11 @@ const showRichIntro = computed(
 const showImageCarousel = computed(() => showImageCarouselFor(props.data))
 const showImagesTab = computed(() => hasImagesTab(props.data))
 
-const showInfoTab = computed(() => {
-  if (props.overviewLoading) return false
-  return (props.overview?.infobox?.rows?.length ?? 0) > 0
-})
+const showInfoTab = computed(() => (props.overview?.infobox?.rows?.length ?? 0) > 0)
 
-const showArticleTab = computed(() => {
-  if (props.overviewLoading) return false
-  return Boolean(props.overview?.article) && !props.overview?.noEnglishArticle
-})
+const showArticleTab = computed(
+  () => Boolean(props.overview?.article) && !props.overview?.noEnglishArticle,
+)
 
 const showActivityTab = computed(() => showArticleTab.value)
 const showContributeTab = computed(() => showArticleTab.value)
@@ -155,23 +152,19 @@ watch(
 
 <template>
   <div class="musical-group-screen">
+    <p v-if="data.description" class="musical-group-screen__description">
+      {{ data.description }}
+    </p>
+
     <template v-if="showRichIntro">
-      <div
-        v-if="showImageCarousel || data.description"
-        class="musical-group-screen__intro"
-      >
+      <div v-if="showImageCarousel" class="musical-group-screen__intro">
         <ImageCarousel
-          v-if="showImageCarousel"
           :images="data.images"
-          :description="data.description"
           :loading="loadingImages"
           :show-more-images="showImagesTab && Boolean(moreImagesCountLabel)"
           :more-count-label="moreImagesCountLabel"
           @view-all-images="viewAllImages"
         />
-        <p v-else-if="data.description" class="musical-group-screen__description">
-          {{ data.description }}
-        </p>
       </div>
       <MusicalGroupFacts :data="data" />
     </template>
@@ -194,12 +187,13 @@ watch(
             :item-id="data.id"
             :overview="overview"
             :overview-loading="overviewLoading"
+            :overview-extras-loading="overviewExtrasLoading"
             :carousel-images="data.images"
             :enwiki-title="data.enwikiTitle"
             :show-images-tab="showImagesTab"
           />
           <WikitaCardTable
-            v-else-if="activeTab === 'info' && !overviewLoading"
+            v-else-if="activeTab === 'info'"
             :rows="overview?.infobox?.rows ?? []"
             :info-left="overview?.article?.lastEditedLabel"
             info-right="English Wikipedia"

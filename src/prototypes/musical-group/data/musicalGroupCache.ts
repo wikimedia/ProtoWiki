@@ -2,6 +2,8 @@ import { normalizeQid } from './wikidataApi'
 import type {
   CarouselImage,
   EditIndicator,
+  HomeRecentChange,
+  HomeRecentChangeFlag,
   MusicalGroupData,
   MusicalGroupInfobox,
   MusicalGroupOverviewArticle,
@@ -108,6 +110,36 @@ function isOverviewEditOpportunity(value: unknown): value is MusicalGroupOvervie
   )
 }
 
+function isHomeRecentChangeFlag(value: unknown): value is HomeRecentChangeFlag {
+  return (
+    value === 'first-edit' ||
+    value === 'new-editor' ||
+    value === 'good-faith' ||
+    value === 'needs-reference' ||
+    value === 'tone-issue' ||
+    value === 'high-revert-risk' ||
+    value === 'none'
+  )
+}
+
+function isHomeRecentChange(value: unknown): value is HomeRecentChange {
+  if (typeof value !== 'object' || value === null) return false
+  const record = value as Record<string, unknown>
+  return (
+    typeof record.enwikiTitle === 'string' &&
+    typeof record.title === 'string' &&
+    typeof record.editSummary === 'string' &&
+    typeof record.diffUrl === 'string' &&
+    typeof record.revid === 'number' &&
+    isHomeRecentChangeFlag(record.flag) &&
+    typeof record.reverted === 'boolean' &&
+    typeof record.isLatest === 'boolean' &&
+    typeof record.editedTimestamp === 'string' &&
+    typeof record.editedLabel === 'string' &&
+    (record.thumbnailUrl === undefined || typeof record.thumbnailUrl === 'string')
+  )
+}
+
 function isInfoboxValue(value: unknown): boolean {
   if (typeof value !== 'object' || value === null) return false
   const v = value as Record<string, unknown>
@@ -144,6 +176,7 @@ function isOverviewData(value: unknown): value is MusicalGroupOverviewData {
     return false
   }
   if (record.related !== undefined && !isOverviewRelated(record.related)) return false
+  if (record.latestEdit !== undefined && !isHomeRecentChange(record.latestEdit)) return false
   if (record.infobox !== undefined && !isInfobox(record.infobox)) return false
   return true
 }

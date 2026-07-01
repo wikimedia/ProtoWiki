@@ -6,6 +6,7 @@ import { CdxProgressBar } from '@wikimedia/codex'
 import MusicalGroupOverviewArticleCard from './MusicalGroupOverviewArticleCard.vue'
 import MusicalGroupOverviewEditOpportunityCard from './MusicalGroupOverviewEditOpportunityCard.vue'
 import MusicalGroupOverviewImagesCard from './MusicalGroupOverviewImagesCard.vue'
+import MusicalGroupOverviewLatestEditCard from './MusicalGroupOverviewLatestEditCard.vue'
 import MusicalGroupOverviewRelatedCard from './MusicalGroupOverviewRelatedCard.vue'
 import MusicalGroupOverviewSnippetCard from './MusicalGroupOverviewSnippetCard.vue'
 import { enwikiTitlesMatch } from './data/enwikiTitle'
@@ -21,6 +22,7 @@ interface Props {
   itemId?: string
   overview?: MusicalGroupOverviewData
   overviewLoading?: boolean
+  overviewExtrasLoading?: boolean
   carouselImages: CarouselImage[]
   enwikiTitle?: string
   showImagesTab?: boolean
@@ -50,13 +52,17 @@ function isSameArticle(
   return related.title.trim().toLowerCase() === snippet.title.trim().toLowerCase()
 }
 
-/** When the Related and Mention cards resolve to the same article, merge them:
- *  fold the mention snippet into the Related card and drop the standalone one. */
+/** When Related and Mentioned resolve to the same article, fold the snippet into Related. */
 const mergedSnippetHtml = computed(() => {
   const related = props.overview?.related
   const snippet = props.overview?.snippet
   if (!related || !snippet) return undefined
   return isSameArticle(related, snippet) ? snippet.snippetHtml : undefined
+})
+
+const showImagesCard = computed(() => {
+  if (Boolean(props.overview?.images?.itemCountLabel)) return true
+  return props.showImagesTab && props.carouselImages.length > 0
 })
 
 const showRelatedCard = computed(
@@ -69,14 +75,13 @@ const showSnippetCard = computed(() => {
   return !isCurrentItem(snippet)
 })
 
-const showImagesCard = computed(() => {
-  if (Boolean(props.overview?.images?.itemCountLabel)) return true
-  return props.showImagesTab && props.carouselImages.length > 0
-})
+const showInitialLoading = computed(
+  () => props.overviewLoading && !props.overview?.article && !props.overview?.noEnglishArticle,
+)
 </script>
 
 <template>
-  <div v-if="overviewLoading" class="musical-group-overview musical-group-overview--loading">
+  <div v-if="showInitialLoading" class="musical-group-overview musical-group-overview--loading">
     <CdxProgressBar inline aria-label="Loading overview" />
   </div>
   <div v-else class="musical-group-overview">
@@ -84,6 +89,9 @@ const showImagesCard = computed(() => {
       v-if="overview?.article && !overview?.noEnglishArticle"
       :article="overview.article"
     />
+    <p v-else-if="overview?.noEnglishArticle" class="musical-group-overview__empty">
+      No English Wikipedia article.
+    </p>
     <MusicalGroupOverviewImagesCard
       v-if="showImagesCard"
       :images="overview?.images"
@@ -98,6 +106,11 @@ const showImagesCard = computed(() => {
       :article-title="overview?.article?.title"
       :article-thumbnail-url="overview?.article?.thumbnailUrl"
     />
+    <MusicalGroupOverviewLatestEditCard
+      v-if="overview?.latestEdit"
+      :change="overview.latestEdit"
+      :thumbnail-url="overview?.article?.thumbnailUrl"
+    />
     <MusicalGroupOverviewRelatedCard
       v-if="showRelatedCard"
       :related="overview!.related!"
@@ -107,6 +120,9 @@ const showImagesCard = computed(() => {
       v-if="showSnippetCard"
       :snippet="overview!.snippet!"
     />
+    <div v-if="overviewExtrasLoading" class="musical-group-overview__extras-loading">
+      <CdxProgressBar inline aria-label="Loading overview suggestions" />
+    </div>
   </div>
 </template>
 
@@ -119,5 +135,16 @@ const showImagesCard = computed(() => {
 
 .musical-group-overview--loading {
   min-height: var(--musical-group-tab-panel-min-height, 50vh);
+}
+
+.musical-group-overview__empty {
+  margin: 0;
+  font-size: var(--font-size-medium);
+  line-height: var(--line-height-medium);
+  color: var(--color-subtle);
+}
+
+.musical-group-overview__extras-loading {
+  padding-block: var(--spacing-50);
 }
 </style>

@@ -29,6 +29,7 @@ const externalHref = computed(() =>
     type="Edit"
     :type-icon="cdxIconEdit"
     :title="editOpportunity.title"
+    title-color="progressive"
     :body="editOpportunity.body"
     :thumbnail-url="articleThumbnailUrl"
     :show-thumbnail="Boolean(articleThumbnailUrl)"

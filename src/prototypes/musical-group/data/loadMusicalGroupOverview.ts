@@ -5,13 +5,17 @@ import {
   getCachedMusicalGroup,
   setCachedMusicalGroupOverview,
 } from './musicalGroupCache'
-import type { FetchMusicalGroupOptions, MusicalGroupData, MusicalGroupOverviewData } from './types'
+import type { MusicalGroupData, MusicalGroupOverviewData } from './types'
+
+export interface LoadMusicalGroupOverviewOptions {
+  signal?: AbortSignal
+  onPartial?: (overview: MusicalGroupOverviewData) => void
+}
 
 export interface LoadMusicalGroupOverviewResult {
   overview: MusicalGroupOverviewData
   fromCache: boolean
 }
-
 
 async function resolveCommonsCategoryCount(
   data: MusicalGroupData,
@@ -48,23 +52,27 @@ export function isCachedOverviewUsable(overview: MusicalGroupOverviewData): bool
 export async function loadMusicalGroupOverview(
   id: string,
   data: MusicalGroupData,
-  options: FetchMusicalGroupOptions = {},
+  options: LoadMusicalGroupOverviewOptions = {},
 ): Promise<LoadMusicalGroupOverviewResult> {
   const cached = getCachedMusicalGroup(id)
   if (cached?.overview && isCachedOverviewUsable(cached.overview)) {
     return { overview: cached.overview, fromCache: true }
   }
 
-  const { signal } = options
+  const { signal, onPartial } = options
 
-  // The article content and the image count are independent — run them in
-  // parallel and never let the (best-effort) count block or break the article.
-  const [overview, categoryInfo] = await Promise.all([
-    fetchMusicalGroupOverview(data, { signal }),
-    resolveCommonsCategoryCount(data, signal).catch(() => undefined),
-  ])
+  const categoryPromise = resolveCommonsCategoryCount(data, signal).catch(() => undefined)
 
+  const overview = await fetchMusicalGroupOverview(data, {
+    signal,
+    onPartial,
+  })
+
+  const categoryInfo = await categoryPromise
   overview.images = buildImagesOverview(data, categoryInfo)
+  if (overview.images) {
+    onPartial?.(overview)
+  }
 
   setCachedMusicalGroupOverview(id, overview)
   return { overview, fromCache: false }

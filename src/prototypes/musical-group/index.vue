@@ -43,6 +43,7 @@ const overview = ref<MusicalGroupOverviewData | undefined>(undefined)
 const loading = ref(false)
 const imagesLoading = ref(false)
 const overviewLoading = ref(false)
+const overviewExtrasLoading = ref(false)
 const fetchError = ref<string | null>(null)
 const searchOpen = ref(false)
 const headerVariant = ref<WikitaChromeHeaderVariant>(loadHeaderVariantPreference())
@@ -68,6 +69,7 @@ async function loadItem(id: string) {
   overviewAbort?.abort()
   overview.value = undefined
   overviewLoading.value = false
+  overviewExtrasLoading.value = false
   overviewFetchId = null
 
   const cached = getCachedMusicalGroup(id)
@@ -76,6 +78,9 @@ async function loadItem(id: string) {
     imagesLoading.value = false
     fetchError.value = null
     data.value = cached.data
+    if (cached.overview && isCachedOverviewUsable(cached.overview)) {
+      overview.value = cached.overview
+    }
     return
   }
 
@@ -117,20 +122,28 @@ async function loadOverview(id: string, groupData: MusicalGroupData) {
   if (cached?.overview && isCachedOverviewUsable(cached.overview)) {
     overview.value = cached.overview
     overviewLoading.value = false
+    overviewExtrasLoading.value = false
     return
   }
 
+  overview.value = undefined
   overviewLoading.value = true
+  overviewExtrasLoading.value = true
 
   try {
     const { overview: loaded } = await loadMusicalGroupOverview(id, groupData, {
       signal: overviewAbort.signal,
+      onPartial: (partial) => {
+        overview.value = partial
+        overviewLoading.value = false
+      },
     })
     overview.value = loaded
   } catch (err) {
     if ((err as Error).name === 'AbortError') return
   } finally {
     overviewLoading.value = false
+    overviewExtrasLoading.value = false
   }
 }
 
@@ -146,6 +159,7 @@ watch(
       loading.value = false
       imagesLoading.value = false
       overviewLoading.value = false
+      overviewExtrasLoading.value = false
       fetchError.value = null
       return
     }
@@ -178,10 +192,10 @@ const showEntityChrome = computed(() => Boolean(itemId.value) && !searchOpen.val
 
 const showFloatingEdit = computed(() => {
   if (itemId.value) {
-    if (overviewLoading.value || overview.value === undefined) {
+    if (overview.value === undefined && overviewLoading.value) {
       return listBookmarks().length > 0
     }
-    return Boolean(overview.value.article) && !overview.value.noEnglishArticle
+    return Boolean(overview.value?.article) && !overview.value?.noEnglishArticle
   }
   return listBookmarks().length > 0
 })
@@ -226,6 +240,7 @@ async function onResetStoredData() {
   loading.value = false
   imagesLoading.value = false
   overviewLoading.value = false
+  overviewExtrasLoading.value = false
   fetchError.value = null
   searchOpen.value = false
 
@@ -301,6 +316,7 @@ async function onFloatingGoContribute() {
           :data="data"
           :overview="overview"
           :overview-loading="overviewLoading"
+          :overview-extras-loading="overviewExtrasLoading"
           :loading-images="imagesLoading"
           :external-links="externalLinks"
           :links-loading="linksLoading"

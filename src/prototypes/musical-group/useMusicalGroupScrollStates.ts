@@ -161,9 +161,7 @@ export function useMusicalGroupScrollStates() {
       resizeObserver.observe(stack)
       const title = stack.querySelector('.wikita-title')
       if (title) resizeObserver.observe(title)
-      const description = scrollRoot.querySelector(
-        '.image-carousel__description, .musical-group-screen__description',
-      )
+      const description = scrollRoot.querySelector('.musical-group-screen__description')
       if (description) resizeObserver.observe(description)
       const tabsSticky = scrollRoot.querySelector('.musical-group-tabs-sticky')
       if (tabsSticky) resizeObserver.observe(tabsSticky)

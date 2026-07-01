@@ -175,6 +175,7 @@ export interface MusicalGroupOverviewData {
   editOpportunity?: MusicalGroupOverviewEditOpportunity
   related?: MusicalGroupOverviewRelated
   snippet?: MusicalGroupOverviewSnippet
+  latestEdit?: HomeRecentChange
   infobox?: MusicalGroupInfobox
   noEnglishArticle?: boolean
   fetchedAt: number

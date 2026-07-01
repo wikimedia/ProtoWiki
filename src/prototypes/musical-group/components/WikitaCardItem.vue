@@ -24,6 +24,7 @@ interface Props {
   showInfo?: boolean
   showAction?: boolean
   titleBold?: boolean
+  titleColor?: WikitaCardItemTypeColor
   type?: string
   title?: string
   body?: string
@@ -37,6 +38,9 @@ interface Props {
   thumbnailAlt?: string
   typeIcon?: Icon
   typeColor?: WikitaCardItemTypeColor
+  subType?: string
+  subTypeIcon?: Icon
+  subTypeColor?: WikitaCardItemTypeColor
   actionLabel?: string
   actionIcon?: Icon
   actionActive?: boolean
@@ -52,6 +56,7 @@ const props = withDefaults(defineProps<Props>(), {
   showInfo: true,
   showAction: false,
   titleBold: true,
+  titleColor: 'base',
   type: 'Card type',
   title: 'Item title',
   body: 'Item body',
@@ -65,6 +70,9 @@ const props = withDefaults(defineProps<Props>(), {
   thumbnailAlt: '',
   typeIcon: undefined,
   typeColor: 'base',
+  subType: undefined,
+  subTypeIcon: undefined,
+  subTypeColor: 'base',
   actionLabel: 'Save',
   actionIcon: undefined,
   actionActive: false,
@@ -88,6 +96,10 @@ const resolvedActionIcon = computed(() => {
 })
 
 const showTypeRow = computed(() => props.showType && Boolean(props.type || props.typeIcon))
+
+const showSubTypeRow = computed(
+  () => Boolean(props.subType || props.subTypeIcon),
+)
 
 const showTitleLine = computed(() => props.showTitle && Boolean(props.title))
 
@@ -155,12 +167,26 @@ const showFooterRow = computed(() => showInfoLeft.value || showInfoRight.value)
             <span class="wikita-card-item__type-label">{{ type }}</span>
           </div>
 
-          <div v-if="showTitleLine || showBodyLine" class="wikita-card-item__text">
+          <div
+            v-if="showSubTypeRow || showTitleLine || showBodyLine"
+            class="wikita-card-item__text"
+          >
+            <div
+              v-if="showSubTypeRow"
+              class="wikita-card-item__type"
+              :class="`wikita-card-item__type--${subTypeColor}`"
+            >
+              <CdxIcon v-if="subTypeIcon" :icon="subTypeIcon" class="wikita-card-item__type-icon" />
+              <span class="wikita-card-item__type-label">{{ subType }}</span>
+            </div>
             <p
               v-if="showTitleLine"
               :id="titleId"
               class="wikita-card-item__title"
-              :class="{ 'wikita-card-item__title--bold': titleBold }"
+              :class="{
+                'wikita-card-item__title--bold': titleBold,
+                [`wikita-card-item__title--${titleColor}`]: titleColor !== 'base',
+              }"
             >
               {{ title }}
             </p>
@@ -289,6 +315,22 @@ const showFooterRow = computed(() => showInfoLeft.value || showInfoRight.value)
 
 .wikita-card-item__title--bold {
   font-weight: var(--font-weight-bold);
+}
+
+.wikita-card-item__title--success {
+  color: var(--color-icon-success);
+}
+
+.wikita-card-item__title--progressive {
+  color: var(--color-progressive);
+}
+
+.wikita-card-item__title--warning {
+  color: var(--color-warning);
+}
+
+.wikita-card-item__title--error {
+  color: var(--color-error);
 }
 
 .wikita-card-item__body {

@@ -7,7 +7,6 @@ import type { CarouselImage } from './data/types'
 
 interface Props {
   images: CarouselImage[]
-  description?: string
   loading?: boolean
   showMoreImages?: boolean
   moreCountLabel?: string
@@ -31,8 +30,6 @@ function slideStyle(image: CarouselImage) {
 
 <template>
   <div class="image-carousel">
-    <p v-if="description" class="image-carousel__description">{{ description }}</p>
-
     <div v-if="!loading" class="image-carousel__track">
       <template v-if="images.length">
         <div
@@ -74,14 +71,6 @@ function slideStyle(image: CarouselImage) {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-50);
-}
-
-.image-carousel__description {
-  margin: 0;
-  font-size: var(--font-size-medium);
-  font-weight: var(--font-weight-normal);
-  line-height: var(--line-height-medium);
-  color: var(--color-emphasized);
 }
 
 .image-carousel__track {
