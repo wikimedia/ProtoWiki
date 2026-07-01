@@ -11,8 +11,8 @@ import type {
   MusicalGroupOverviewData,
   MusicalGroupOverviewEditOpportunity,
   MusicalGroupOverviewRelated,
+  MusicalGroupOverviewSnippet,
 } from './types'
-import { isWikitaNavigableEntity } from './wikidataApi'
 
 const MICROTASK_QUALITY_CHECK_URL = 'https://microtask-generator.toolforge.org/quality-check'
 
@@ -32,6 +32,7 @@ interface PageSummaryResponse {
 interface SearchHit {
   title?: string
   wordcount?: number
+  snippet?: string
 }
 
 interface QualityCheckPotentialNeed {
@@ -177,6 +178,7 @@ async function fetchPageSummary(title: string, signal?: AbortSignal): Promise<Pa
 async function fetchMorelikeHits(
   seedTitle: string,
   signal?: AbortSignal,
+  limit = 5,
 ): Promise<SearchHit[]> {
   const url = wikiActionUrl({
     action: 'query',
@@ -184,7 +186,7 @@ async function fetchMorelikeHits(
     srsearch: `morelike:${seedTitle}`,
     srwhat: 'text',
     srnamespace: '0',
-    srlimit: '5',
+    srlimit: String(limit),
   })
 
   const response = await fetchWithTimeout(url, {
@@ -199,6 +201,7 @@ async function fetchMorelikeHits(
 
 async function fetchMorelikeRelated(
   seedTitle: string,
+  relatedToTitle: string,
   signal?: AbortSignal,
 ): Promise<MusicalGroupOverviewRelated | undefined> {
   const hits = await fetchMorelikeHits(seedTitle, signal)
@@ -218,14 +221,10 @@ async function fetchMorelikeRelated(
   const timestamp = summary?.timestamp ?? ''
   const relative = timestamp ? formatRelativeTime(timestamp) : '—'
 
-  let relatedId: string | undefined
-  if (wikibaseId) {
-    const navigable = await isWikitaNavigableEntity(wikibaseId, signal)
-    if (navigable) relatedId = wikibaseId
-  }
-
+  // Any article with a Wikidata item opens inside Wikita — the item view renders a
+  // sparse entity (label, description, Commons images) when it isn't a performer or place.
   return {
-    id: relatedId,
+    id: wikibaseId,
     title: summary?.title ?? relatedTitle,
     description: summary?.description ?? '',
     thumbnailUrl: summary?.thumbnail?.source,
@@ -236,6 +235,140 @@ async function fetchMorelikeRelated(
     lastEditedLabel: timestamp ? `Updated ${relative}` : 'Updated —',
     viewCount: views.total,
     viewsLabel: views.label,
+    relatedToTitle,
+  }
+}
+
+async function fetchSnippetHits(
+  seedTitle: string,
+  signal?: AbortSignal,
+): Promise<SearchHit[]> {
+  const url = wikiActionUrl({
+    action: 'query',
+    list: 'search',
+    // Exact-phrase search finds pages that mention the item by name, and returns
+    // a highlighted snippet of where the mention occurs.
+    srsearch: `"${seedTitle}"`,
+    srwhat: 'text',
+    srnamespace: '0',
+    srprop: 'snippet',
+    srlimit: '50',
+  })
+
+  const response = await fetchWithTimeout(url, {
+    signal,
+    headers: wikimediaApiFetchHeaders('musical-group-snippet'),
+  })
+  if (!response.ok) return []
+
+  const json = (await response.json()) as { query?: { search?: SearchHit[] } }
+  return json.query?.search ?? []
+}
+
+/**
+ * Structural / index pages that technically contain the phrase but aren't a
+ * meaningful "mention" of the item (lists, discographies, year-in-x, etc.).
+ */
+function isLowValueMentionTitle(title: string): boolean {
+  return (
+    /^Main Page$/i.test(title) ||
+    /^(List|Index|Outline|Timeline|Glossary|Comparison|Bibliography) of\b/i.test(title) ||
+    /\bdiscography\b/i.test(title) ||
+    /\(disambiguation\)$/i.test(title) ||
+    /^\d{3,4} in\b/i.test(title)
+  )
+}
+
+/**
+ * Tidy a search snippet for display:
+ * - Merge adjacent `searchmatch` highlights separated only by spaces so a
+ *   multi-word match reads as one continuous highlight ("Wet Leg", not
+ *   "[Wet] [Leg]").
+ * - Replace hard line breaks (fragment boundaries in the source text) with an
+ *   ellipsis so the snippet doesn't read as one run-on sentence.
+ * - Prefix a leading ellipsis when the snippet begins mid-text, so it reads as a
+ *   continuation and matches the trailing ellipsis.
+ */
+function formatSnippetHtml(html: string): string {
+  const formatted = html
+    .replace(/<\/span>([^\S\r\n]+)<span class="searchmatch">/g, '$1')
+    .replace(/\s*[\r\n]+\s*/g, ' … ')
+    .trim()
+  if (!formatted) return formatted
+  return /^\s*(…|\.\.\.)/.test(formatted) ? formatted : `… ${formatted}`
+}
+
+/**
+ * Find an article that mentions the item and return it as a Snippet card.
+ *
+ * Candidates come from a `morelike` query (the same topically-related pool the
+ * Related card draws from), and we pick the highest-ranked related article that
+ * actually mentions the item by name — showing the highlighted mention snippet.
+ * Falls back to the top plain phrase-search mention when no related page mentions
+ * it. Excludes the item's own page (`ownTitle`).
+ */
+async function fetchSnippetMention(
+  searchTerm: string,
+  ownTitle: string,
+  signal?: AbortSignal,
+): Promise<MusicalGroupOverviewSnippet | undefined> {
+  const [morelikeHits, mentionHits] = await Promise.all([
+    fetchMorelikeHits(ownTitle, signal, 15),
+    fetchSnippetHits(searchTerm, signal),
+  ])
+
+  const normalizedOwn = normalizeTitle(ownTitle)
+
+  // Which pages actually mention the item, and the snippet of that mention.
+  const snippetByTitle = new Map<string, string>()
+  for (const candidate of mentionHits) {
+    if (candidate.title && candidate.snippet) {
+      snippetByTitle.set(normalizeTitle(candidate.title), candidate.snippet)
+    }
+  }
+
+  const usable = (title: string | undefined): title is string =>
+    Boolean(title) &&
+    normalizeTitle(title as string) !== normalizedOwn &&
+    !isLowValueMentionTitle(title as string)
+
+  let mentionTitle: string | undefined
+  let snippet: string | undefined
+
+  // Prefer a topically-related (morelike) page that mentions the item.
+  for (const candidate of morelikeHits) {
+    if (!usable(candidate.title)) continue
+    const related = snippetByTitle.get(normalizeTitle(candidate.title))
+    if (!related) continue
+    mentionTitle = candidate.title
+    snippet = related
+    break
+  }
+
+  // Fall back to the strongest plain mention if no related page mentions it.
+  if (!mentionTitle) {
+    const hit = mentionHits.find(
+      (candidate) => usable(candidate.title) && Boolean(candidate.snippet),
+    )
+    mentionTitle = hit?.title
+    snippet = hit?.snippet
+  }
+
+  if (!mentionTitle || !snippet) return undefined
+
+  const [summary, wikibaseId] = await Promise.all([
+    fetchPageSummary(mentionTitle, signal),
+    fetchWikibaseItemId(mentionTitle, signal),
+  ])
+
+  return {
+    id: wikibaseId,
+    title: summary?.title ?? mentionTitle,
+    snippetHtml: formatSnippetHtml(snippet),
+    thumbnailUrl: summary?.thumbnail?.source,
+    articleUrl:
+      summary?.content_urls?.desktop?.page ??
+      `https://${EN_WIKI_HOST}/wiki/${pageviewsArticleSlug(mentionTitle)}`,
   }
 }
 
@@ -624,14 +757,16 @@ export async function fetchMusicalGroupOverview(
 
   const title = data.enwikiTitle
 
-  const [summary, wordCount, views, infobox, related, editOpportunity] = await Promise.all([
-    fetchPageSummary(title, signal),
-    fetchArticleWordCount(title, signal),
-    resolvePageviewsLabel(title, signal),
-    fetchInfobox(title, signal).catch(() => undefined),
-    fetchMorelikeRelated(title, signal).catch(() => undefined),
-    fetchEditOpportunity(title, signal).catch(() => undefined),
-  ])
+  const [summary, wordCount, views, infobox, related, snippet, editOpportunity] =
+    await Promise.all([
+      fetchPageSummary(title, signal),
+      fetchArticleWordCount(title, signal),
+      resolvePageviewsLabel(title, signal),
+      fetchInfobox(title, signal).catch(() => undefined),
+      fetchMorelikeRelated(title, data.label, signal).catch(() => undefined),
+      fetchSnippetMention(data.label, title, signal).catch(() => undefined),
+      fetchEditOpportunity(title, signal).catch(() => undefined),
+    ])
 
   if (!summary) {
     return { noEnglishArticle: true, infobox, fetchedAt }
@@ -644,6 +779,7 @@ export async function fetchMusicalGroupOverview(
   return {
     infobox,
     related,
+    snippet,
     editOpportunity,
     article: {
       title: summary.title ?? title,

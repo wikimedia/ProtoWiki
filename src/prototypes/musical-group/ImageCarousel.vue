@@ -21,6 +21,9 @@ const emit = defineEmits<{
   'view-all-images': []
 }>()
 
+/** Placeholder slide widths (px) shown while Commons images stream in. */
+const SKELETON_SLIDE_WIDTHS = [200, 150, 230, 170]
+
 function slideStyle(image: CarouselImage) {
   return { width: `${carouselSlideWidth(image)}px` }
 }
@@ -53,6 +56,15 @@ function slideStyle(image: CarouselImage) {
       </template>
 
       <p v-else class="image-carousel__empty">No images available</p>
+    </div>
+
+    <div v-else class="image-carousel__track" aria-hidden="true">
+      <div
+        v-for="(width, index) in SKELETON_SLIDE_WIDTHS"
+        :key="`skeleton-${index}`"
+        class="image-carousel__slide image-carousel__slide--skeleton"
+        :style="{ width: `${width}px` }"
+      />
     </div>
   </div>
 </template>
@@ -94,6 +106,26 @@ function slideStyle(image: CarouselImage) {
   border-radius: 4px;
   overflow: hidden;
   background-color: var(--background-color-interactive-subtle);
+}
+
+.image-carousel__slide--skeleton {
+  animation: image-carousel-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes image-carousel-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image-carousel__slide--skeleton {
+    animation: none;
+  }
 }
 
 .image-carousel__slide:first-child {

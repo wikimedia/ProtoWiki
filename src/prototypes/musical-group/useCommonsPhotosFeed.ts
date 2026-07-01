@@ -163,20 +163,38 @@ export function useCommonsPhotosInfiniteScroll(options: {
 }) {
   let observer: IntersectionObserver | null = null
   let scrollRoot: HTMLElement | null = null
-  let hasScrolled = false
-
-  function onScroll() {
-    if (scrollRoot && scrollRoot.scrollTop > 0) {
-      hasScrolled = true
-    }
-  }
 
   function disconnect() {
     observer?.disconnect()
     observer = null
     scrollRoot?.removeEventListener('scroll', onScroll)
     scrollRoot = null
-    hasScrolled = false
+  }
+
+  function sentinelNearViewport(): boolean {
+    const target = options.sentinel.value
+    if (!scrollRoot || !target) return false
+
+    const rootRect = scrollRoot.getBoundingClientRect()
+    const targetRect = target.getBoundingClientRect()
+    return targetRect.top <= rootRect.bottom + 120
+  }
+
+  function nearScrollEnd(): boolean {
+    if (!scrollRoot) return false
+    return (
+      scrollRoot.scrollTop + scrollRoot.clientHeight >= scrollRoot.scrollHeight - 160
+    )
+  }
+
+  function maybeLoadMore() {
+    if (!options.active.value || options.loading.value || !options.hasMore.value) return
+    if (!sentinelNearViewport() && !nearScrollEnd()) return
+    void options.loadMore()
+  }
+
+  function onScroll() {
+    maybeLoadMore()
   }
 
   function connect() {
@@ -191,14 +209,16 @@ export function useCommonsPhotosInfiniteScroll(options: {
     observer = new IntersectionObserver(
       (entries) => {
         if (!entries.some((entry) => entry.isIntersecting)) return
-        if (!hasScrolled) return
-        if (!options.active.value || options.loading.value || !options.hasMore.value) return
-        void options.loadMore()
+        maybeLoadMore()
       },
       { root: scrollRoot, rootMargin: '120px' },
     )
 
     observer.observe(target)
+
+    requestAnimationFrame(() => {
+      maybeLoadMore()
+    })
   }
 
   watch(
@@ -211,6 +231,16 @@ export function useCommonsPhotosInfiniteScroll(options: {
       }
     },
     { flush: 'post' },
+  )
+
+  watch(
+    () => options.loading.value,
+    (isLoading, wasLoading) => {
+      if (!wasLoading || isLoading) return
+      requestAnimationFrame(() => {
+        maybeLoadMore()
+      })
+    },
   )
 
   onUnmounted(disconnect)

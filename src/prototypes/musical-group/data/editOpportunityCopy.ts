@@ -29,7 +29,11 @@ const EDIT_OPPORTUNITY_COPY: Record<string, EditOpportunityCopy> = {
     body: 'Help readers discover this article through categories.',
   },
   'Expand the content': {
-    title: 'Expand the article',
+    title: 'Extend article',
+    body: 'Add more detail so the article better covers its topic.',
+  },
+  'This article is too short, try to expand the content': {
+    title: 'Extend article',
     body: 'Add more detail so the article better covers its topic.',
   },
 }

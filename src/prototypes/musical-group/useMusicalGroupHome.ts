@@ -1,17 +1,18 @@
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { listBookmarks } from './data/bookmarks'
 import { fetchFeaturedTabContent } from './data/fetchFeaturedFeed'
 import { fetchHelpWanted } from './data/fetchHelpWanted'
 import { fetchRecentChanges } from './data/fetchRecentChanges'
-import { fetchRelatedReading } from './data/fetchRelatedReading'
 import { fetchSavedItemSummaries } from './data/fetchSavedItemSummaries'
+import { fetchTrendingFeed } from './data/fetchTrending'
 import type {
   HomeFeaturedTab,
   HomeHelpWanted,
   HomeRecentChange,
-  HomeRelated,
   HomeSavedItem,
+  HomeTrending,
 } from './data/types'
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -28,11 +29,14 @@ function isAbort(err: unknown): boolean {
 }
 
 export function useMusicalGroupHome() {
+  const route = useRoute()
   const featuredTab = ref<HomeFeaturedTab>(EMPTY_FEATURED_TAB)
   const featuredTabLoading = ref(true)
+  const trendingItems = ref<HomeTrending[]>([])
+  const trendingLoading = ref(true)
+  const hasSavedPages = ref(listBookmarks().length > 0)
   const savedItems = ref<HomeSavedItem[]>([])
   const helpWanted = ref<HomeHelpWanted[]>([])
-  const related = ref<HomeRelated[]>([])
   const recentChanges = ref<HomeRecentChange[]>([])
 
   const featuredArticle = computed(() => featuredTab.value.article)
@@ -43,16 +47,58 @@ export function useMusicalGroupHome() {
    * The newest two saved items always; plus any saved within the past day,
    * capped at five.
    */
+  /** Every saved item, newest first. */
+  const savedSorted = computed<HomeSavedItem[]>(() =>
+    [...savedItems.value].sort((a, b) => b.savedAt - a.savedAt),
+  )
+
   const recentlySaved = computed<HomeSavedItem[]>(() => {
-    const sorted = [...savedItems.value].sort((a, b) => b.savedAt - a.savedAt)
-    if (!sorted.length) return []
+    if (!savedSorted.value.length) return []
     const now = Date.now()
-    const withinDay = sorted.filter((item) => now - item.savedAt <= DAY_MS).length
+    const withinDay = savedSorted.value.filter((item) => now - item.savedAt <= DAY_MS).length
     const count = Math.min(MAX_RECENTLY_SAVED, Math.max(MIN_RECENTLY_SAVED, withinDay))
-    return sorted.slice(0, count)
+    return savedSorted.value.slice(0, count)
   })
 
   let abort: AbortController | null = null
+  let bookmarkAbort: AbortController | null = null
+
+  function reloadBookmarks(): void {
+    bookmarkAbort?.abort()
+    bookmarkAbort = new AbortController()
+    const { signal } = bookmarkAbort
+
+    const entries = listBookmarks()
+    hasSavedPages.value = entries.length > 0
+    if (!entries.length) {
+      savedItems.value = []
+      helpWanted.value = []
+      recentChanges.value = []
+      return
+    }
+
+    fetchSavedItemSummaries(entries, signal)
+      .then((items) => {
+        savedItems.value = items
+        if (!items.length) return
+
+        fetchHelpWanted(items, signal)
+          .then((value) => {
+            helpWanted.value = value
+          })
+          .catch(() => {})
+
+        fetchRecentChanges(items, signal)
+          .then((value) => {
+            recentChanges.value = value
+          })
+          .catch(() => {})
+      })
+      .catch((err) => {
+        if (isAbort(err)) return
+        savedItems.value = []
+      })
+  }
 
   function load(): void {
     abort?.abort()
@@ -70,55 +116,45 @@ export function useMusicalGroupHome() {
         featuredTabLoading.value = false
       })
 
-    const entries = listBookmarks()
-    if (!entries.length) {
-      savedItems.value = []
-      helpWanted.value = []
-      related.value = []
-      recentChanges.value = []
-      return
-    }
-
-    fetchSavedItemSummaries(entries, signal)
-      .then((items) => {
-        savedItems.value = items
-        if (!items.length) return
-
-        fetchHelpWanted(items, signal)
-          .then((value) => {
-            helpWanted.value = value
-          })
-          .catch(() => {})
-
-        fetchRelatedReading(items, signal)
-          .then((value) => {
-            related.value = value
-          })
-          .catch(() => {})
-
-        fetchRecentChanges(items, signal)
-          .then((value) => {
-            recentChanges.value = value
-          })
-          .catch(() => {})
+    trendingItems.value = []
+    trendingLoading.value = true
+    fetchTrendingFeed(signal)
+      .then((value) => {
+        trendingItems.value = value
       })
-      .catch((err) => {
-        if (isAbort(err)) return
-        savedItems.value = []
+      .catch(() => {})
+      .finally(() => {
+        trendingLoading.value = false
       })
+
+    reloadBookmarks()
   }
 
+  watch(
+    () => [route.query.item, route.query.tab] as const,
+    () => {
+      reloadBookmarks()
+    },
+  )
+
   onMounted(load)
-  onBeforeUnmount(() => abort?.abort())
+  onBeforeUnmount(() => {
+    abort?.abort()
+    bookmarkAbort?.abort()
+  })
 
   return {
     featuredArticle,
     didYouKnow,
     bornOnThisDay,
     featuredTabLoading,
+    trendingItems,
+    trendingLoading,
+    hasSavedPages,
+    savedSorted,
     recentlySaved,
     helpWanted,
-    related,
     recentChanges,
+    reloadBookmarks,
   }
 }

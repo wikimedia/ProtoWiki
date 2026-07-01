@@ -11,7 +11,7 @@ import type {
   MusicalGroupOverviewRelated,
 } from './types'
 
-export const MUSICAL_GROUP_CACHE_VERSION = 31
+export const MUSICAL_GROUP_CACHE_VERSION = 32
 
 const STORAGE_KEY = 'musical-group-page-cache'
 
@@ -82,6 +82,7 @@ function isOverviewRelated(value: unknown): value is MusicalGroupOverviewRelated
     typeof record.lastEditedLabel === 'string' &&
     typeof record.viewCount === 'number' &&
     typeof record.viewsLabel === 'string' &&
+    typeof record.relatedToTitle === 'string' &&
     (record.thumbnailUrl === undefined || typeof record.thumbnailUrl === 'string')
   )
 }

@@ -6,8 +6,8 @@ import { fetchPageSummary } from './pageSummary'
 import type { HomeRelated, HomeSavedItem } from './types'
 import { normalizeQid } from './wikidataApi'
 
-/** How many saved pages to seed related reading from. */
-const RELATED_SEED_COUNT = 2
+/** Minimum related cards shown on the personalized home tab. */
+const MIN_RELATED_COUNT = 3
 
 interface SearchHit {
   title?: string
@@ -22,14 +22,20 @@ function pickRandom<T>(items: T[], count: number): T[] {
   return pool.slice(0, count)
 }
 
-async function fetchMorelikeHits(seedTitle: string, signal?: AbortSignal): Promise<SearchHit[]> {
+async function fetchMorelikeHits(
+  seedTitle: string,
+  limit: number,
+  offset: number,
+  signal?: AbortSignal,
+): Promise<SearchHit[]> {
   const url = wikiActionUrl({
     action: 'query',
     list: 'search',
     srsearch: `morelike:${seedTitle}`,
     srwhat: 'text',
     srnamespace: '0',
-    srlimit: '8',
+    srlimit: String(limit),
+    sroffset: String(offset),
   })
 
   const response = await fetchWithTimeout(url, {
@@ -42,35 +48,70 @@ async function fetchMorelikeHits(seedTitle: string, signal?: AbortSignal): Promi
   return json.query?.search ?? []
 }
 
-async function relatedForSeed(
+/** Titles of pages similar to `seedTitle`, via a morelike search. */
+export async function fetchMorelikeTitles(
   seedTitle: string,
-  excluded: Set<string>,
+  signal?: AbortSignal,
+  limit = 20,
+  offset = 0,
+): Promise<string[]> {
+  const hits = await fetchMorelikeHits(seedTitle, limit, offset, signal)
+  return hits
+    .map((hit) => hit.title)
+    .filter((title): title is string => Boolean(title))
+}
+
+/** Resolve a single article title to a Related reading card, or null. */
+export async function resolveRelatedSummary(
+  title: string,
+  relatedToTitle: string,
   signal?: AbortSignal,
 ): Promise<HomeRelated | null> {
-  const hits = await fetchMorelikeHits(seedTitle, signal)
-  const hit = hits.find((candidate) => {
-    if (!candidate.title) return false
-    return !excluded.has(normalizeEnwikiTitle(candidate.title).toLowerCase())
-  })
-  if (!hit?.title) return null
-
-  const relatedTitle = hit.title
-  const summary = await fetchPageSummary(relatedTitle, signal, 'musical-group-home-related')
+  const summary = await fetchPageSummary(title, signal, 'musical-group-home-related')
 
   // Reading cards open inside Wikita whenever the article has a Wikidata item.
   const itemId = normalizeQid(summary?.wikibase_item) ?? undefined
 
   return {
-    title: summary?.normalizedtitle ?? summary?.title ?? relatedTitle,
+    title: summary?.normalizedtitle ?? summary?.title ?? title,
     description: summary?.description ?? '',
     thumbnailUrl: summary?.thumbnail?.source,
-    articleUrl:
-      summary?.content_urls?.desktop?.page ?? enwikiArticleUrl(relatedTitle),
+    articleUrl: summary?.content_urls?.desktop?.page ?? enwikiArticleUrl(title),
     itemId,
+    relatedToTitle,
   }
 }
 
-/** Top related article (not already saved) from 2 randomly chosen saved pages. */
+async function relatedForSeed(
+  seedTitle: string,
+  relatedToTitle: string,
+  excluded: Set<string>,
+  signal?: AbortSignal,
+  maxCount = 1,
+): Promise<HomeRelated[]> {
+  const titles = await fetchMorelikeTitles(seedTitle, signal, 8)
+  const results: HomeRelated[] = []
+
+  for (const title of titles) {
+    if (results.length >= maxCount) break
+
+    const key = normalizeEnwikiTitle(title).toLowerCase()
+    if (excluded.has(key)) continue
+
+    const result = await resolveRelatedSummary(title, relatedToTitle, signal)
+    if (!result) continue
+
+    const resultKey = normalizeEnwikiTitle(result.title).toLowerCase()
+    if (excluded.has(resultKey)) continue
+
+    excluded.add(resultKey)
+    results.push(result)
+  }
+
+  return results
+}
+
+/** Related articles (not already saved) from saved pages; empty unless at least three resolve. */
 export async function fetchRelatedReading(
   items: HomeSavedItem[],
   signal?: AbortSignal,
@@ -83,18 +124,35 @@ export async function fetchRelatedReading(
     if (item.enwikiTitle) excluded.add(normalizeEnwikiTitle(item.enwikiTitle).toLowerCase())
   }
 
-  const seeds = pickRandom(candidates, RELATED_SEED_COUNT)
-  const seen = new Set<string>(excluded)
+  const primarySeeds = pickRandom(candidates, Math.min(candidates.length, MIN_RELATED_COUNT))
   const related: HomeRelated[] = []
 
-  for (const seed of seeds) {
-    const result = await relatedForSeed(seed.enwikiTitle as string, seen, signal)
-    if (!result) continue
-    const key = normalizeEnwikiTitle(result.title).toLowerCase()
-    if (seen.has(key)) continue
-    seen.add(key)
-    related.push(result)
+  // One recommendation per saved page first so the home preview mixes sources.
+  for (const seed of primarySeeds) {
+    const fromSeed = await relatedForSeed(
+      seed.enwikiTitle as string,
+      seed.title,
+      excluded,
+      signal,
+      1,
+    )
+    related.push(...fromSeed)
   }
 
-  return related
+  if (related.length < MIN_RELATED_COUNT) {
+    for (const seed of pickRandom(candidates, candidates.length)) {
+      if (related.length >= MIN_RELATED_COUNT) break
+
+      const fromSeed = await relatedForSeed(
+        seed.enwikiTitle as string,
+        seed.title,
+        excluded,
+        signal,
+        1,
+      )
+      related.push(...fromSeed)
+    }
+  }
+
+  return related.length >= MIN_RELATED_COUNT ? related : []
 }

@@ -10,6 +10,7 @@ import type { MusicalGroupOverviewEditOpportunity } from './data/types'
 interface Props {
   editOpportunity: MusicalGroupOverviewEditOpportunity
   enwikiTitle?: string
+  articleTitle?: string
   articleThumbnailUrl?: string
 }
 

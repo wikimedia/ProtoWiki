@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import WikitaButton from './components/WikitaButton.vue'
+import { scrollTabIntoTrackView } from './scrollTabIntoTrackView'
 import type { TabId } from './data/types'
 
 const allTabs: { id: TabId; label: string; dot?: 'blue' }[] = [
@@ -39,23 +41,14 @@ const tabs = computed(() =>
 
 const activeTab = defineModel<TabId>('activeTab', { default: 'overview' })
 
-function scrollTabIntoTrackView(button: HTMLElement, track: HTMLElement) {
-  const buttonRect = button.getBoundingClientRect()
-  const trackRect = track.getBoundingClientRect()
-
-  if (buttonRect.left < trackRect.left) {
-    track.scrollLeft -= trackRect.left - buttonRect.left
-  } else if (buttonRect.right > trackRect.right) {
-    track.scrollLeft += buttonRect.right - trackRect.right
-  }
-}
-
 function onTabClick(tabId: TabId, event: MouseEvent) {
   activeTab.value = tabId
 
-  const button = event.currentTarget as HTMLElement
-  const track = button.closest('.musical-group-tabs__track')
-  if (track instanceof HTMLElement) {
+  const target = event.target
+  const button =
+    target instanceof HTMLElement ? target.closest('.wikita-button') : null
+  const track = button?.closest('.musical-group-tabs__track')
+  if (button instanceof HTMLElement && track instanceof HTMLElement) {
     scrollTabIntoTrackView(button, track)
   }
 }
@@ -65,22 +58,24 @@ function onTabClick(tabId: TabId, event: MouseEvent) {
   <div class="musical-group-tabs-sticky">
     <nav class="musical-group-tabs" aria-label="Section tabs">
       <div class="musical-group-tabs__track">
-        <button
+        <div
           v-for="tab in tabs"
           :key="tab.id"
-          type="button"
-          class="musical-group-tabs__tab"
-          :class="{ 'musical-group-tabs__tab--active': activeTab === tab.id }"
-          :aria-pressed="activeTab === tab.id"
-          @click="onTabClick(tab.id, $event)"
+          class="musical-group-tabs__tab-wrap"
         >
-          {{ tab.label }}
+          <WikitaButton
+            :variant="activeTab === tab.id ? 'filled' : 'subtle'"
+            :aria-pressed="activeTab === tab.id"
+            @click="onTabClick(tab.id, $event)"
+          >
+            {{ tab.label }}
+          </WikitaButton>
           <span
             v-if="tab.dot === 'blue' && showImagesTabDot && activeTab !== tab.id"
             class="musical-group-tabs__dot"
             aria-hidden="true"
           />
-        </button>
+        </div>
       </div>
     </nav>
   </div>
@@ -142,33 +137,9 @@ function onTabClick(tabId: TabId, event: MouseEvent) {
   display: none;
 }
 
-.musical-group-tabs__tab {
+.musical-group-tabs__tab-wrap {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex: 0 0 auto;
-  box-sizing: border-box;
-  height: 38px;
-  padding: 1px var(--spacing-100);
-  border: 1px solid var(--color-base);
-  border-bottom-width: 2px;
-  border-right-width: 2px;
-  border-radius: 4px;
-  background-color: var(--background-color-base);
-  color: var(--color-base);
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-medium);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-medium);
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.musical-group-tabs__tab--active {
-  border-color: var(--background-color-inverted);
-  background-color: var(--background-color-inverted);
-  color: var(--color-inverted);
 }
 
 .musical-group-tabs__dot {

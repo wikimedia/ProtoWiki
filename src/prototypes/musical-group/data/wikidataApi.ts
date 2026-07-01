@@ -1,7 +1,7 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 
 import { fetchWithTimeout } from './fetchWithTimeout'
-import { entityDisplayLabel } from './formatLabel'
+import { entityDisplayLabel, sentenceCase } from './formatLabel'
 import {
   LOCATION_QIDS,
   MUSIC_PERFORMER_QIDS,
@@ -27,13 +27,6 @@ function musicPerformerMatchClause(subject: string): string {
 } UNION {
   ${subject} wdt:P106/wdt:P279* ?anchor .
   ${musicPerformerValuesClause('?anchor')}
-}`
-}
-
-function locationMatchClause(subject: string): string {
-  return `{
-  ${subject} wdt:P31/wdt:P279* ?anchor .
-  ${locationValuesClause('?anchor')}
 }`
 }
 
@@ -82,30 +75,97 @@ export function parseQidInput(raw: string): string | null {
   return null
 }
 
-export async function isMusicPerformer(id: string, signal?: AbortSignal): Promise<boolean> {
-  const query = `
-ASK {
-  ${musicPerformerMatchClause(`wd:${id}`)}
-}`
-  const data = await sparqlQuery<{ boolean: boolean }>(query, signal)
-  return Boolean(data.boolean)
+export interface EntityClassification {
+  isMusicPerformer: boolean
+  isLocation: boolean
+  musicTypeLabel?: string
+  locationTypeLabel?: string
 }
 
-export async function isLocation(id: string, signal?: AbortSignal): Promise<boolean> {
-  const query = `
-ASK {
-  ${locationMatchClause(`wd:${id}`)}
-}`
-  const data = await sparqlQuery<{ boolean: boolean }>(query, signal)
-  return Boolean(data.boolean)
+interface ClassificationSparqlRow {
+  perfType?: { value: string }
+  perfTypeLabel?: { value: string }
+  locType?: { value: string }
+  locTypeLabel?: { value: string }
+  locAnchor?: { value: string }
 }
 
-export async function isWikitaNavigableEntity(id: string, signal?: AbortSignal): Promise<boolean> {
-  const [performer, location] = await Promise.all([
-    isMusicPerformer(id, signal),
-    isLocation(id, signal),
-  ])
-  return performer || location
+/**
+ * Classify an entity as a music performer and/or a location, and resolve the
+ * best display label for each, in a single WDQS round-trip. Replaces the
+ * separate `isMusicPerformer` / `isLocation` ASK queries and the
+ * `resolveMusicTypeLabel` / `resolveLocationTypeLabel` SELECT queries.
+ */
+export async function classifyEntity(
+  id: string,
+  signal?: AbortSignal,
+): Promise<EntityClassification> {
+  const sparql = `
+SELECT ?perfType ?perfTypeLabel ?locType ?locTypeLabel ?locAnchor WHERE {
+  OPTIONAL {
+    {
+      wd:${id} wdt:P31 ?perfType .
+      ?perfType wdt:P279* ?pa .
+      ${musicPerformerValuesClause('?pa')}
+    } UNION {
+      wd:${id} wdt:P106 ?perfType .
+      ?perfType wdt:P279* ?pa .
+      ${musicPerformerValuesClause('?pa')}
+    }
+  }
+  OPTIONAL {
+    wd:${id} wdt:P31 ?locType .
+    ?locType wdt:P279* ?locAnchor .
+    ${locationValuesClause('?locAnchor')}
+  }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}`
+
+  const data = await sparqlQuery<{ results: { bindings: ClassificationSparqlRow[] } }>(
+    sparql,
+    signal,
+  )
+  const bindings = data.results.bindings
+
+  const performerLabels: string[] = []
+  const locationEntries: { anchor: string; label: string }[] = []
+
+  for (const row of bindings) {
+    if (row.perfType && row.perfTypeLabel?.value) {
+      performerLabels.push(row.perfTypeLabel.value)
+    }
+    if (row.locType && row.locAnchor) {
+      locationEntries.push({
+        anchor: row.locAnchor.value.replace(/^.*\//, ''),
+        label: row.locTypeLabel?.value ?? '',
+      })
+    }
+  }
+
+  const isMusicPerformer = performerLabels.length > 0
+  const isLocation = locationEntries.length > 0
+
+  // Longest label wins — matches the old resolveMusicTypeLabel heuristic.
+  const musicTypeLabel = isMusicPerformer
+    ? [...performerLabels].sort((a, b) => b.length - a.length)[0]
+    : undefined
+
+  // Prefer the earliest anchor in LOCATION_QIDS priority order.
+  let locationTypeLabel: string | undefined
+  if (isLocation) {
+    for (const anchorQid of LOCATION_QIDS) {
+      const match = locationEntries.find((entry) => entry.anchor === anchorQid && entry.label)
+      if (match) {
+        locationTypeLabel = match.label
+        break
+      }
+    }
+    if (!locationTypeLabel) {
+      locationTypeLabel = locationEntries.find((entry) => entry.label)?.label
+    }
+  }
+
+  return { isMusicPerformer, isLocation, musicTypeLabel, locationTypeLabel }
 }
 
 interface EntitySearchSparqlRow {
@@ -131,7 +191,9 @@ function parseEntitySearchResults(
     results.push({
       id,
       label: entityDisplayLabel(row.itemLabel.value, row.enwikiTitle?.value),
-      description: row.itemDescription?.value,
+      description: row.itemDescription?.value
+        ? sentenceCase(row.itemDescription.value)
+        : undefined,
       thumbnailUrl: rawImage ? `${rawImage}?width=256` : undefined,
     })
   }
@@ -222,7 +284,7 @@ export async function searchWikidataItems(
     return {
       id: hit.id,
       label: entityDisplayLabel(hit.label, enwikiTitle),
-      description: hit.description,
+      description: hit.description ? sentenceCase(hit.description) : undefined,
       thumbnailUrl: imageFilename ? commonsFileUrl(imageFilename, 256) : undefined,
     }
   })
@@ -429,8 +491,9 @@ export async function fetchEntityClaims(
     entity.labels?.en?.value ??
     Object.values(entity.labels ?? {})[0]?.value ??
     id
-  const description =
+  const rawDescription =
     entity.descriptions?.en?.value ?? Object.values(entity.descriptions ?? {})[0]?.value
+  const description = rawDescription ? sentenceCase(rawDescription) : undefined
 
   const claims = entity.claims ?? {}
   const inceptionYear = claims.P571?.length ? claimTimeYear(claims.P571[0]) : null
@@ -496,72 +559,6 @@ export async function resolveEntityLabels(
     labels.set(entityId, label)
   }
   return labels
-}
-
-export async function resolveMusicTypeLabel(
-  entityId: string,
-  _typeIds: string[],
-  signal?: AbortSignal,
-): Promise<string | undefined> {
-  const sparql = `
-SELECT ?type ?typeLabel WHERE {
-  {
-    wd:${entityId} wdt:P31 ?type .
-    ?type wdt:P279* ?anchor .
-    ${musicPerformerValuesClause('?anchor')}
-  } UNION {
-    wd:${entityId} wdt:P106 ?type .
-    ?type wdt:P279* ?anchor .
-    ${musicPerformerValuesClause('?anchor')}
-  }
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-}`
-
-  interface TypeRow {
-    type: { value: string }
-    typeLabel: { value: string }
-  }
-
-  const data = await sparqlQuery<{ results: { bindings: TypeRow[] } }>(sparql, signal)
-  const musicalTypes = data.results.bindings.map((row) => ({
-    id: row.type.value.replace(/^.*\//, ''),
-    label: row.typeLabel.value,
-  }))
-
-  if (!musicalTypes.length) return undefined
-
-  musicalTypes.sort((a, b) => b.label.length - a.label.length)
-  return musicalTypes[0].label
-}
-
-export async function resolveLocationTypeLabel(
-  entityId: string,
-  signal?: AbortSignal,
-): Promise<string | undefined> {
-  const sparql = `
-SELECT ?type ?typeLabel ?anchor WHERE {
-  wd:${entityId} wdt:P31 ?type .
-  ?type wdt:P279* ?anchor .
-  ${locationValuesClause('?anchor')}
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-}`
-
-  interface TypeRow {
-    type: { value: string }
-    typeLabel: { value: string }
-    anchor: { value: string }
-  }
-
-  const data = await sparqlQuery<{ results: { bindings: TypeRow[] } }>(sparql, signal)
-  const bindings = data.results.bindings
-  if (!bindings.length) return undefined
-
-  for (const anchorQid of LOCATION_QIDS) {
-    const match = bindings.find((row) => row.anchor.value.replace(/^.*\//, '') === anchorQid)
-    if (match) return match.typeLabel.value
-  }
-
-  return bindings[0].typeLabel.value
 }
 
 export async function fetchEditIndicator(

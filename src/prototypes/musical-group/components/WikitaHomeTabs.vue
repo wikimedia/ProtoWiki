@@ -1,58 +1,86 @@
 <script setup lang="ts">
-export type HomeTabId = 'home' | 'featured' | 'trending' | 'activity' | 'edit'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
-const allTabs: { id: HomeTabId; label: string; dot?: boolean }[] = [
+import { scrollTabIntoTrackView } from '../scrollTabIntoTrackView'
+import WikitaButton from './WikitaButton.vue'
+
+export type HomeTabId = 'home' | 'read' | 'featured' | 'trending' | 'activity' | 'contribute' | 'saved'
+
+const allTabs: { id: HomeTabId; label: string }[] = [
   { id: 'home', label: 'Home' },
+  { id: 'read', label: 'Read' },
   { id: 'featured', label: 'Featured' },
-  { id: 'trending', label: 'Trending', dot: true },
+  { id: 'trending', label: 'Trending' },
   { id: 'activity', label: 'Activity' },
-  { id: 'edit', label: 'Edit' },
+  { id: 'contribute', label: 'Contribute' },
+  { id: 'saved', label: 'Saved' },
 ]
+
+const { hasSavedPages = true } = defineProps<{
+  hasSavedPages?: boolean
+}>()
+
+const visibleTabs = computed(() =>
+  hasSavedPages
+    ? allTabs
+    : allTabs.filter(
+        (tab) =>
+          tab.id !== 'read' &&
+          tab.id !== 'featured' &&
+          tab.id !== 'saved' &&
+          tab.id !== 'contribute',
+      ),
+)
 
 const activeTab = defineModel<HomeTabId>('activeTab', { default: 'home' })
 
-function scrollTabIntoTrackView(button: HTMLElement, track: HTMLElement) {
-  const buttonRect = button.getBoundingClientRect()
-  const trackRect = track.getBoundingClientRect()
+const trackRef = ref<HTMLElement | null>(null)
 
-  if (buttonRect.left < trackRect.left) {
-    track.scrollLeft -= trackRect.left - buttonRect.left
-  } else if (buttonRect.right > trackRect.right) {
-    track.scrollLeft += buttonRect.right - trackRect.right
-  }
-}
+function scrollActiveTabIntoView() {
+  const track = trackRef.value
+  if (!track) return
 
-function onTabClick(tabId: HomeTabId, event: MouseEvent) {
-  activeTab.value = tabId
-
-  const button = event.currentTarget as HTMLElement
-  const track = button.closest('.musical-group-tabs__track')
-  if (track instanceof HTMLElement) {
+  const button = track.querySelector<HTMLElement>(
+    `[data-home-tab="${activeTab.value}"]`,
+  )
+  if (button) {
     scrollTabIntoTrackView(button, track)
   }
 }
+
+function onTabClick(tabId: HomeTabId) {
+  activeTab.value = tabId
+}
+
+watch(activeTab, async () => {
+  await nextTick()
+  scrollActiveTabIntoView()
+})
+
+watch(visibleTabs, async () => {
+  await nextTick()
+  scrollActiveTabIntoView()
+})
+
+onMounted(() => {
+  scrollActiveTabIntoView()
+})
 </script>
 
 <template>
   <div class="musical-group-tabs-sticky">
     <nav class="musical-group-tabs" aria-label="Home sections">
-      <div class="musical-group-tabs__track">
-        <button
-          v-for="tab in allTabs"
+      <div ref="trackRef" class="musical-group-tabs__track">
+        <WikitaButton
+          v-for="tab in visibleTabs"
           :key="tab.id"
-          type="button"
-          class="musical-group-tabs__tab"
-          :class="{ 'musical-group-tabs__tab--active': activeTab === tab.id }"
+          :data-home-tab="tab.id"
+          :variant="activeTab === tab.id ? 'filled' : 'subtle'"
           :aria-pressed="activeTab === tab.id"
-          @click="onTabClick(tab.id, $event)"
+          @click="onTabClick(tab.id)"
         >
           {{ tab.label }}
-          <span
-            v-if="tab.dot && activeTab !== tab.id"
-            class="musical-group-tabs__dot"
-            aria-hidden="true"
-          />
-        </button>
+        </WikitaButton>
       </div>
     </nav>
   </div>
@@ -111,45 +139,6 @@ function onTabClick(tabId: HomeTabId, event: MouseEvent) {
 
 .musical-group-tabs__track::-webkit-scrollbar {
   display: none;
-}
-
-.musical-group-tabs__tab {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  box-sizing: border-box;
-  height: 38px;
-  padding: 1px var(--spacing-100);
-  border: 1px solid var(--color-base);
-  border-bottom-width: 2px;
-  border-right-width: 2px;
-  border-radius: 4px;
-  background-color: var(--background-color-base);
-  color: var(--color-base);
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-medium);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-medium);
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.musical-group-tabs__tab--active {
-  border-color: var(--background-color-inverted);
-  background-color: var(--background-color-inverted);
-  color: var(--color-inverted);
-}
-
-.musical-group-tabs__dot {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: var(--color-progressive);
 }
 
 @media (prefers-reduced-motion: reduce) {

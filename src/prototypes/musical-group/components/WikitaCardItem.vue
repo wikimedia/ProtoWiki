@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 
 import { CdxIcon } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
+import { cdxIconBookmark, cdxIconBookmarkOutline } from '@wikimedia/codex-icons'
 
+import WikitaButton from './WikitaButton.vue'
 import WikitaCardWrapper from './WikitaCardWrapper.vue'
 
 export type WikitaCardItemTypeColor =
@@ -20,17 +22,24 @@ interface Props {
   showThumbnail?: boolean
   showSnippet?: boolean
   showInfo?: boolean
+  showAction?: boolean
   titleBold?: boolean
   type?: string
   title?: string
   body?: string
+  bodyEmphasis?: string
   snippet?: string
+  snippetHtml?: string
   infoLeft?: string
   infoRight?: string
+  infoRightSubtle?: boolean
   thumbnailUrl?: string
   thumbnailAlt?: string
   typeIcon?: Icon
   typeColor?: WikitaCardItemTypeColor
+  actionLabel?: string
+  actionIcon?: Icon
+  actionActive?: boolean
   href?: RouteLocationRaw
   externalHref?: string
 }
@@ -41,19 +50,41 @@ const props = withDefaults(defineProps<Props>(), {
   showThumbnail: true,
   showSnippet: true,
   showInfo: true,
+  showAction: false,
   titleBold: true,
   type: 'Card type',
   title: 'Item title',
   body: 'Item body',
+  bodyEmphasis: undefined,
   snippet: '',
-  infoLeft: 'Info (left)',
-  infoRight: 'Info (right)',
+  snippetHtml: undefined,
+  infoLeft: '',
+  infoRight: '',
+  infoRightSubtle: false,
   thumbnailUrl: undefined,
   thumbnailAlt: '',
   typeIcon: undefined,
   typeColor: 'base',
+  actionLabel: 'Save',
+  actionIcon: undefined,
+  actionActive: false,
   href: undefined,
   externalHref: undefined,
+})
+
+const emit = defineEmits<{
+  'action-click': []
+}>()
+
+const titleId = useId()
+
+const allowNestedInteractive = computed(
+  () => props.showAction && Boolean(props.href || props.externalHref),
+)
+
+const resolvedActionIcon = computed(() => {
+  if (props.actionIcon) return props.actionIcon
+  return props.actionActive ? cdxIconBookmark : cdxIconBookmarkOutline
 })
 
 const showTypeRow = computed(() => props.showType && Boolean(props.type || props.typeIcon))
@@ -62,15 +93,56 @@ const showTitleLine = computed(() => props.showTitle && Boolean(props.title))
 
 const showBodyLine = computed(() => Boolean(props.body))
 
+interface BodySegment {
+  text: string
+  bold: boolean
+}
+
+const bodySegments = computed((): BodySegment[] => {
+  const text = props.body
+  if (!text) return []
+
+  const emphasis = props.bodyEmphasis
+  if (!emphasis) return [{ text, bold: false }]
+
+  const pattern = emphasis
+    .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    .replace(/\s+/g, '[\\u00a0 ]+')
+  const match = text.match(new RegExp(pattern))
+  if (!match?.index && match?.index !== 0) return [{ text, bold: false }]
+
+  const segments: BodySegment[] = []
+  if (match.index > 0) {
+    segments.push({ text: text.slice(0, match.index), bold: false })
+  }
+  segments.push({ text: match[0], bold: true })
+  const after = match.index + match[0].length
+  if (after < text.length) {
+    segments.push({ text: text.slice(after), bold: false })
+  }
+  return segments
+})
+
 const showThumb = computed(() => props.showThumbnail && Boolean(props.thumbnailUrl))
 
-const showSnippetBlock = computed(() => props.showSnippet && Boolean(props.snippet))
+const showSnippetBlock = computed(
+  () => props.showSnippet && Boolean(props.snippetHtml || props.snippet),
+)
 
-const showFooterRow = computed(() => props.showInfo && Boolean(props.infoLeft || props.infoRight))
+const showInfoLeft = computed(() => props.showInfo && Boolean(props.infoLeft))
+
+const showInfoRight = computed(() => props.showInfo && Boolean(props.infoRight))
+
+const showFooterRow = computed(() => showInfoLeft.value || showInfoRight.value)
 </script>
 
 <template>
-  <WikitaCardWrapper :href="href" :external-href="externalHref">
+  <WikitaCardWrapper
+    :href="href"
+    :external-href="externalHref"
+    :allow-nested-interactive="allowNestedInteractive"
+    :cover-link-labelled-by="allowNestedInteractive && showTitleLine ? titleId : undefined"
+  >
     <div class="wikita-card-item">
       <div class="wikita-card-item__header-row">
         <div class="wikita-card-item__lead">
@@ -86,12 +158,18 @@ const showFooterRow = computed(() => props.showInfo && Boolean(props.infoLeft ||
           <div v-if="showTitleLine || showBodyLine" class="wikita-card-item__text">
             <p
               v-if="showTitleLine"
+              :id="titleId"
               class="wikita-card-item__title"
               :class="{ 'wikita-card-item__title--bold': titleBold }"
             >
               {{ title }}
             </p>
-            <p v-if="showBodyLine" class="wikita-card-item__body">{{ body }}</p>
+            <p v-if="showBodyLine" class="wikita-card-item__body">
+              <template v-for="(segment, index) in bodySegments" :key="index">
+                <strong v-if="segment.bold">{{ segment.text }}</strong>
+                <template v-else>{{ segment.text }}</template>
+              </template>
+            </p>
           </div>
         </div>
 
@@ -104,16 +182,34 @@ const showFooterRow = computed(() => props.showInfo && Boolean(props.infoLeft ||
             draggable="false"
           />
         </div>
-        <div v-else-if="showThumbnail" class="wikita-card-item__thumb-wrap">
-          <span class="wikita-card-item__thumb-placeholder" aria-hidden="true" />
-        </div>
       </div>
 
-      <p v-if="showSnippetBlock" class="wikita-card-item__snippet">{{ snippet }}</p>
+      <!-- eslint-disable-next-line vue/no-v-html -->
+      <p v-if="showSnippetBlock && snippetHtml" class="wikita-card-item__snippet" v-html="snippetHtml" />
+      <p v-else-if="showSnippetBlock" class="wikita-card-item__snippet">{{ snippet }}</p>
 
-      <small v-if="showFooterRow" class="wikita-card-item__footer">
-        <span>{{ infoLeft }}</span>
-        <span>{{ infoRight }}</span>
+      <WikitaButton
+        v-if="showAction"
+        variant="outlined"
+        class="wikita-card-item__action"
+        :icon="resolvedActionIcon"
+        :aria-pressed="actionActive"
+        @click.stop.prevent="emit('action-click')"
+      >
+        {{ actionLabel }}
+      </WikitaButton>
+
+      <small
+        v-if="showFooterRow"
+        class="wikita-card-item__footer"
+        :class="{ 'wikita-card-item__footer--left-only': showInfoLeft && !showInfoRight }"
+      >
+        <span v-if="showInfoLeft" class="wikita-card-item__footer-left">{{ infoLeft }}</span>
+        <span
+          v-if="showInfoRight"
+          class="wikita-card-item__footer-right"
+          :class="{ 'wikita-card-item__footer-right--subtle': infoRightSubtle }"
+        >{{ infoRight }}</span>
       </small>
     </div>
   </WikitaCardWrapper>
@@ -149,7 +245,7 @@ const showFooterRow = computed(() => props.showInfo && Boolean(props.infoLeft ||
 }
 
 .wikita-card-item__type--success {
-  color: var(--color-success);
+  color: var(--color-icon-success);
 }
 
 .wikita-card-item__type--progressive {
@@ -203,6 +299,13 @@ const showFooterRow = computed(() => props.showInfo && Boolean(props.infoLeft ||
   color: var(--color-base);
 }
 
+.wikita-card-item__action {
+  position: relative;
+  z-index: 1;
+  align-self: flex-start;
+  pointer-events: auto;
+}
+
 .wikita-card-item__snippet {
   display: -webkit-box;
   margin: 0;
@@ -215,6 +318,14 @@ const showFooterRow = computed(() => props.showInfo && Boolean(props.infoLeft ||
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   line-clamp: 3;
+}
+
+/* Highlight for the matched terms in a search snippet (`<span class="searchmatch">`). */
+.wikita-card-item__snippet :deep(.searchmatch) {
+  padding: 0 1px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-base);
+  background-color: #ffe49c;
 }
 
 .wikita-card-item__thumb-wrap {
@@ -230,17 +341,9 @@ const showFooterRow = computed(() => props.showInfo && Boolean(props.infoLeft ||
   border: 1px solid var(--color-base);
 }
 
-.wikita-card-item__thumb-placeholder {
-  display: block;
-  width: 64px;
-  height: 64px;
-  border: 1px solid var(--color-base);
-  background-color: var(--background-color-interactive-subtle);
-}
-
 .wikita-card-item__footer {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--spacing-50);
   width: 100%;
@@ -248,5 +351,25 @@ const showFooterRow = computed(() => props.showInfo && Boolean(props.infoLeft ||
   font-weight: var(--font-weight-normal);
   line-height: var(--line-height-small);
   color: var(--color-base);
+}
+
+.wikita-card-item__footer--left-only {
+  justify-content: flex-start;
+}
+
+.wikita-card-item__footer-left {
+  min-width: 0;
+  flex: 1 1 auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.wikita-card-item__footer-right {
+  flex-shrink: 0;
+  text-align: end;
+}
+
+.wikita-card-item__footer-right--subtle {
+  color: var(--color-subtle);
 }
 </style>

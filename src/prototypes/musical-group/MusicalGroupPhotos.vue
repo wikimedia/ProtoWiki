@@ -133,13 +133,6 @@ function cellHref(title?: string) {
     <div v-if="loading" class="musical-group-photos__loading">
       <CdxProgressBar inline aria-label="Loading images" />
     </div>
-
-    <p
-      v-else-if="!hasMore && rows.length"
-      class="musical-group-photos__message musical-group-photos__message--end"
-    >
-      All images loaded
-    </p>
   </div>
 </template>
 
@@ -205,9 +198,5 @@ function cellHref(title?: string) {
   font-weight: var(--font-weight-normal);
   line-height: var(--line-height-medium);
   color: var(--color-subtle);
-}
-
-.musical-group-photos__message--end {
-  text-align: center;
 }
 </style>

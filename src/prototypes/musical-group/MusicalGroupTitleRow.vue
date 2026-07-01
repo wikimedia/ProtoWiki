@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import WikitaTitle from './components/WikitaTitle.vue'
 import { isBookmarked, toggleBookmark } from './data/bookmarks'
@@ -22,6 +22,13 @@ const SHOW_WIKIDATA_TITLE_ACTIONS = false
 
 const title = computed(() => entityDisplayLabel(props.data.label, props.data.enwikiTitle))
 const bookmarked = ref(isBookmarked(props.data.id))
+
+watch(
+  () => props.data.id,
+  (id) => {
+    bookmarked.value = isBookmarked(id)
+  },
+)
 
 function onBookmarkClick() {
   bookmarked.value = toggleBookmark(props.data.id)

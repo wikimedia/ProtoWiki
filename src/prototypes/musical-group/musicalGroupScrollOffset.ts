@@ -59,6 +59,18 @@ export function measureMusicalGroupTabContentTopScroll(page: HTMLElement): numbe
   return Math.max(stuckBaseline, panelTopScroll)
 }
 
+/** ScrollTop that places the top of the home tab body below sticky chrome + tabs. */
+export function measureMusicalGroupHomeTabContentTopScroll(page: HTMLElement): number {
+  const body = page.querySelector('.musical-group-home__body')
+  const stuckBaseline = measureMusicalGroupTabsStuckBaseline(page)
+  if (!body) return stuckBaseline
+
+  const bodyOffsetTop = getScrollContentOffsetTop(body, page)
+  const bodyTopScroll = Math.max(0, bodyOffsetTop - measureMusicalGroupTabPanelTopInset(page))
+
+  return Math.max(stuckBaseline, bodyTopScroll)
+}
+
 /** Space to leave above in-page scroll targets so sticky chrome + tabs do not cover them. */
 export function measureMusicalGroupStickyScrollOffset(page: Element): number {
   const styles = getComputedStyle(page)

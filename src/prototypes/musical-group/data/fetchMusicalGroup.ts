@@ -5,16 +5,19 @@ import {
   resolveCommonsCategory,
 } from './commonsImages'
 import { sentenceCase } from './formatLabel'
-import type { FetchMusicalGroupOptions, FetchMusicalGroupResult, MusicalGroupData, CarouselImage } from './types'
-import type { ParsedEntityClaims } from './wikidataApi'
+import type {
+  CarouselImage,
+  EditIndicator,
+  FetchMusicalGroupOptions,
+  FetchMusicalGroupResult,
+  MusicalGroupData,
+} from './types'
+import type { EntityClassification, ParsedEntityClaims } from './wikidataApi'
 import {
+  classifyEntity,
   fetchEditIndicator,
   fetchEntityClaims,
-  isLocation,
-  isMusicPerformer,
   resolveEntityLabels,
-  resolveLocationTypeLabel,
-  resolveMusicTypeLabel,
   websiteHost,
 } from './wikidataApi'
 
@@ -33,24 +36,62 @@ function sparseData(id: string, claims: ParsedEntityClaims, images: CarouselImag
   }
 }
 
-async function fetchRichIntroData(
+interface RichExtras {
+  images?: CarouselImage[]
+  editIndicator?: EditIndicator
+  commonsImageCount?: number
+  commonsImageCountCapped?: boolean
+}
+
+/** Fields shared by performer + location records, given whatever enrichment is ready. */
+function richSharedData(id: string, claims: ParsedEntityClaims, extras: RichExtras = {}) {
+  return {
+    id,
+    label: claims.label,
+    description: claims.description,
+    inceptionYear: claims.inceptionYear,
+    yearKind: claims.yearKind,
+    websiteUrl: claims.websiteUrl,
+    websiteHost: claims.websiteUrl ? websiteHost(claims.websiteUrl) : undefined,
+    images: extras.images ?? [],
+    editIndicator: extras.editIndicator,
+    enwikiTitle: claims.enwikiTitle,
+    commonsCategory: claims.commonsCategory,
+    imageFilename: claims.imageFilename,
+    commonsImageCount: extras.commonsImageCount,
+    commonsImageCountCapped: extras.commonsImageCountCapped,
+  }
+}
+
+interface IntroMedia {
+  editIndicator?: EditIndicator
+  images: CarouselImage[]
+  commonsImageCount?: number
+  commonsImageCountCapped?: boolean
+}
+
+/** Commons carousel + image count (+ optional edit indicator) — all non-SPARQL. */
+async function fetchIntroMedia(
   id: string,
   claims: ParsedEntityClaims,
-  signal?: AbortSignal,
-) {
+  options: { editIndicator: boolean; signal?: AbortSignal },
+): Promise<IntroMedia> {
+  const { signal } = options
   const category = resolveCommonsCategory({
     commonsCategory: claims.commonsCategory,
     label: claims.label,
   })
 
   const [editIndicator, carouselResult, categoryInfo] = await Promise.all([
-    fetchEditIndicator(id, signal).catch(() => undefined),
+    options.editIndicator
+      ? fetchEditIndicator(id, signal).catch(() => undefined)
+      : Promise.resolve(undefined),
     fetchCarouselImages({
       label: claims.label,
-      imageFilename: claims.imageFilename,
-      commonsCategory: claims.commonsCategory,
+      imageFilename: claims.imageFilename ?? null,
+      commonsCategory: claims.commonsCategory ?? null,
       signal,
-    }).catch(() => ({ images: [] })),
+    }).catch(() => ({ images: [] as CarouselImage[] })),
     category
       ? getCommonsCategoryCount(category, signal).catch(() => undefined)
       : Promise.resolve(undefined),
@@ -60,76 +101,71 @@ async function fetchRichIntroData(
 
   return {
     editIndicator,
-    carouselResult,
+    images: carouselResult.images,
     commonsImageCount: countMeta?.count,
     commonsImageCountCapped: countMeta?.capped,
   }
+}
+
+function classificationTypeLabel(classification: EntityClassification): string | undefined {
+  const raw = classification.isMusicPerformer
+    ? classification.musicTypeLabel
+    : classification.isLocation
+      ? classification.locationTypeLabel
+      : undefined
+  return raw ? sentenceCase(raw) : undefined
 }
 
 export async function fetchMusicalGroup(
   id: string,
   options: FetchMusicalGroupOptions = {},
 ): Promise<FetchMusicalGroupResult> {
-  const { signal } = options
+  const { signal, onPartial } = options
 
-  const [claims, performer, location] = await Promise.all([
+  // Stage 0: entity claims (fast Action API) and classification (a single WDQS
+  // query) run in parallel. Everything shown in the title + facts is known once
+  // both resolve — no further SPARQL on the critical path.
+  const [claims, classification] = await Promise.all([
     fetchEntityClaims(id, signal),
-    isMusicPerformer(id, signal),
-    isLocation(id, signal),
+    classifyEntity(id, signal),
   ])
 
+  const performer = classification.isMusicPerformer
+  const location = classification.isLocation
+  const typeLabel = classificationTypeLabel(classification)
+
+  // Emit a partial record so the UI can paint the title + facts immediately
+  // while Stage 1 (images, genres, country, edit indicator) streams in.
+  if (onPartial) {
+    if (performer || location) {
+      onPartial({
+        ...richSharedData(id, claims),
+        isMusicPerformer: performer,
+        isLocation: location,
+        typeLabel,
+        genres: [],
+        ...(location ? { population: claims.population } : {}),
+      })
+    } else {
+      onPartial(sparseData(id, claims))
+    }
+  }
+
+  // Stage 1: Commons media + label lookups — all Action / Commons API.
   if (!performer && !location) {
-    const category = resolveCommonsCategory({
-      commonsCategory: claims.commonsCategory,
-      label: claims.label,
-    })
-
-    const [carouselResult, categoryInfo] = await Promise.all([
-      fetchCarouselImages({
-        label: claims.label,
-        imageFilename: claims.imageFilename ?? null,
-        commonsCategory: claims.commonsCategory ?? null,
-        signal,
-      }).catch(() => ({ images: [] as CarouselImage[] })),
-      category
-        ? getCommonsCategoryCount(category, signal).catch(() => undefined)
-        : Promise.resolve(undefined),
-    ])
-
-    const countMeta = categoryInfo ? commonsImageCountFromCategory(categoryInfo) : undefined
-
+    const media = await fetchIntroMedia(id, claims, { editIndicator: false, signal })
     return {
       data: {
-        ...sparseData(id, claims, carouselResult.images),
-        commonsImageCount: countMeta?.count,
-        commonsImageCountCapped: countMeta?.capped,
+        ...sparseData(id, claims, media.images),
+        commonsImageCount: media.commonsImageCount,
+        commonsImageCountCapped: media.commonsImageCountCapped,
       },
     }
   }
 
-  const { editIndicator, carouselResult, commonsImageCount, commonsImageCountCapped } =
-    await fetchRichIntroData(id, claims, signal)
-
-  const shared = {
-    id,
-    label: claims.label,
-    description: claims.description,
-    inceptionYear: claims.inceptionYear,
-    yearKind: claims.yearKind,
-    websiteUrl: claims.websiteUrl,
-    websiteHost: claims.websiteUrl ? websiteHost(claims.websiteUrl) : undefined,
-    images: carouselResult.images,
-    editIndicator,
-    enwikiTitle: claims.enwikiTitle,
-    commonsCategory: claims.commonsCategory,
-    imageFilename: claims.imageFilename,
-    commonsImageCount,
-    commonsImageCountCapped,
-  }
-
   if (performer) {
-    const [typeLabel, labelMap] = await Promise.all([
-      resolveMusicTypeLabel(id, claims.typeIds, signal),
+    const [media, labelMap] = await Promise.all([
+      fetchIntroMedia(id, claims, { editIndicator: true, signal }),
       resolveEntityLabels(claims.genreIds, signal).catch(() => new Map<string, string>()),
     ])
 
@@ -139,10 +175,10 @@ export async function fetchMusicalGroup(
 
     return {
       data: {
-        ...shared,
+        ...richSharedData(id, claims, media),
         isMusicPerformer: true,
         isLocation: false,
-        typeLabel: typeLabel ? sentenceCase(typeLabel) : undefined,
+        typeLabel,
         genres,
       },
     }
@@ -151,8 +187,8 @@ export async function fetchMusicalGroup(
   const countryId =
     claims.countryId && claims.countryId !== id ? claims.countryId : undefined
 
-  const [typeLabel, countryLabel] = await Promise.all([
-    resolveLocationTypeLabel(id, signal),
+  const [media, countryLabel] = await Promise.all([
+    fetchIntroMedia(id, claims, { editIndicator: true, signal }),
     countryId
       ? resolveEntityLabels([countryId], signal)
           .then((labels) => labels.get(countryId))
@@ -162,11 +198,10 @@ export async function fetchMusicalGroup(
 
   return {
     data: {
-      ...shared,
+      ...richSharedData(id, claims, media),
       isMusicPerformer: false,
       isLocation: true,
-      typeLabel: typeLabel ? sentenceCase(typeLabel) : undefined,
-      description: claims.description ? sentenceCase(claims.description) : undefined,
+      typeLabel,
       genres: [],
       country: countryLabel,
       population: claims.population,

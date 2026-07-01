@@ -1,6 +1,9 @@
 import { onMounted, onUnmounted } from 'vue'
 
-import { measureMusicalGroupStickyScrollOffset } from './musicalGroupScrollOffset'
+import {
+  measureMusicalGroupStickyScrollOffset,
+  measureMusicalGroupTabContentTopScroll,
+} from './musicalGroupScrollOffset'
 
 function syncStickyLayout(page: Element) {
   const stack = page.querySelector('.musical-group-chrome-stack')
@@ -52,6 +55,7 @@ export function useMusicalGroupScrollStates() {
   let titleCollapseDelta = 0
   let remeasureCollapseDelta = true
   let titleCollapsed = false
+  let tabContentScrollThreshold = 0
 
   function update() {
     if (!scrollRoot) return
@@ -81,10 +85,20 @@ export function useMusicalGroupScrollStates() {
 
     const tabsRect = tabsSticky.getBoundingClientRect()
     const tabsAtStickyPosition = tabsRect.top <= pageTop + expandedTabsTopPx + 1
-    const scrollAtEnd =
-      scrollEl.scrollTop + scrollEl.clientHeight >= scrollEl.scrollHeight - 1
+    const tabsStuck = tabsAtStickyPosition && hasScrolled
 
     scrollRoot.toggleAttribute('data-scrolled', wantTitleCollapsed)
+
+    // Threshold is layout-stable only while tabs are in document flow; once sticky,
+    // getBoundingClientRect-based measurement tracks scrollTop and never exceeds it.
+    if (!tabsStuck) {
+      tabContentScrollThreshold = measureMusicalGroupTabContentTopScroll(scrollEl)
+    }
+
+    scrollRoot.toggleAttribute(
+      'data-page-scrolled',
+      tabsStuck && scrollTop > tabContentScrollThreshold + 1,
+    )
     scrollRoot.style.setProperty(
       '--musical-group-title-collapse-padding',
       wantTitleCollapsed && titleCollapseDelta > 0 ? `${titleCollapseDelta}px` : '0px',
@@ -112,8 +126,7 @@ export function useMusicalGroupScrollStates() {
     }
 
     scrollRoot.toggleAttribute('data-title-expanded', titleExpanded)
-    scrollRoot.toggleAttribute('data-tabs-stuck', tabsAtStickyPosition && hasScrolled)
-    scrollRoot.toggleAttribute('data-scroll-at-end', scrollAtEnd)
+    scrollRoot.toggleAttribute('data-tabs-stuck', tabsStuck)
 
     syncStickyLayout(scrollRoot)
     lastScrollTop = scrollTop
@@ -166,7 +179,7 @@ export function useMusicalGroupScrollStates() {
     scrollRoot?.removeAttribute('data-scrolled')
     scrollRoot?.removeAttribute('data-title-expanded')
     scrollRoot?.removeAttribute('data-tabs-stuck')
-    scrollRoot?.removeAttribute('data-scroll-at-end')
+    scrollRoot?.removeAttribute('data-page-scrolled')
     scrollRoot?.style.removeProperty('--musical-group-title-collapse-padding')
   })
 }

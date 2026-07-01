@@ -74,6 +74,23 @@ export interface MusicalGroupOverviewRelated {
   lastEditedLabel: string
   viewCount: number
   viewsLabel: string
+  /** Display title of the page this recommendation was seeded from. */
+  relatedToTitle: string
+}
+
+/**
+ * A "Snippet" card (labelled "Mentioned" to users): an article that mentions the
+ * item, shown with the highlighted search snippet where the mention occurs.
+ */
+export interface MusicalGroupOverviewSnippet {
+  /** Wikidata item of the mentioning page, when it has one (opens inside Wikita). */
+  id?: string
+  /** Title of the page that mentions the item. */
+  title: string
+  /** Search snippet HTML, including `<span class="searchmatch">` highlights. */
+  snippetHtml: string
+  thumbnailUrl?: string
+  articleUrl: string
 }
 
 export interface MusicalGroupOverviewEditOpportunity {
@@ -103,6 +120,7 @@ export interface MusicalGroupOverviewData {
   images?: MusicalGroupOverviewImages
   editOpportunity?: MusicalGroupOverviewEditOpportunity
   related?: MusicalGroupOverviewRelated
+  snippet?: MusicalGroupOverviewSnippet
   infobox?: MusicalGroupInfobox
   noEnglishArticle?: boolean
   fetchedAt: number
@@ -153,6 +171,8 @@ export interface HomeFeatured {
 /** A "Did you know" hook from the daily featured feed. */
 export interface HomeDidYouKnow {
   text: string
+  /** Primary hook subject to bold within {@link text}. */
+  emphasis?: string
   enwikiTitle?: string
   title?: string
   thumbnailUrl?: string
@@ -187,7 +207,7 @@ export interface HomeSavedItem {
   savedAt: number
 }
 
-/** A "Help wanted" edit suggestion derived from a saved page. */
+/** A "Help wanted" edit suggestion for a saved or recommended page. */
 export interface HomeHelpWanted {
   itemId: string
   /** Suggestion label, e.g. "Find a reference". */
@@ -197,7 +217,10 @@ export interface HomeHelpWanted {
   /** Suggestion copy. */
   body: string
   need: string
+  enwikiTitle?: string
   thumbnailUrl?: string
+  /** Display title of the saved page this suggestion is related to. */
+  relatedToTitle: string
 }
 
 /** A "Related reading" recommendation from a morelike query. */
@@ -207,28 +230,66 @@ export interface HomeRelated {
   thumbnailUrl?: string
   articleUrl: string
   itemId?: string
+  /** Display title of the page this recommendation was seeded from. */
+  relatedToTitle: string
+}
+
+/** A most-read article from the daily featured feed. */
+export interface HomeTrending {
+  title: string
+  enwikiTitle: string
+  description: string
+  thumbnailUrl?: string
+  articleUrl: string
+  itemId?: string
+  viewCount: number
+  viewsLabel: string
+  lastEditedTimestamp: string
+  lastEditedLabel: string
+  rank?: number
 }
 
 export type HomeRecentChangeFlag =
   | 'first-edit'
   | 'new-editor'
   | 'good-faith'
+  | 'needs-reference'
   | 'tone-issue'
   | 'high-revert-risk'
   | 'none'
 
-/** The most recent change to a saved page, classified for review. */
+/** A classified edit on a saved page, for the Activity feed. */
 export interface HomeRecentChange {
   enwikiTitle: string
   title: string
   editSummary: string
   thumbnailUrl?: string
   diffUrl: string
+  revid: number
   flag: HomeRecentChangeFlag
+  reverted: boolean
+  /** True when this revision is still the current tip of the article. */
+  isLatest: boolean
+  editedTimestamp: string
+  /** e.g. "2 hours ago by SomeUser" */
+  editedLabel: string
+}
+
+/** Flags for positive edits that can receive a thank action. */
+export type ThankableEditFlag = 'first-edit' | 'new-editor' | 'good-faith'
+
+export function isThankableEditFlag(flag: HomeRecentChangeFlag): flag is ThankableEditFlag {
+  return flag === 'first-edit' || flag === 'new-editor' || flag === 'good-faith'
 }
 
 export interface FetchMusicalGroupOptions {
   signal?: AbortSignal
+  /**
+   * Called once with a partial record as soon as Stage 0 (claims +
+   * classification) resolves, before images / genres / edit indicator stream
+   * in. Lets the UI render the title + facts immediately.
+   */
+  onPartial?: (data: MusicalGroupData) => void
 }
 
 export interface FetchMusicalGroupResult {

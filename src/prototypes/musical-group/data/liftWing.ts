@@ -7,6 +7,7 @@ const LIFT_WING_BASE = 'https://api.wikimedia.org/service/lw/inference/v1/models
 /** Lift Wing predictions are slow; cache per revision for the session. */
 const goodFaithCache = new Map<number, boolean | undefined>()
 const revertRiskCache = new Map<number, RevertRiskResult | undefined>()
+const referenceNeedCache = new Map<number, number | undefined>()
 
 export interface RevertRiskResult {
   prediction: boolean
@@ -56,6 +57,38 @@ export async function predictGoodFaith(
   } catch (err) {
     if ((err as Error).name === 'AbortError') throw err
     goodFaithCache.set(revId, undefined)
+    return undefined
+  }
+}
+
+/** Reference-need score for a revision (0–1; higher = more citation follow-up needed). */
+export async function predictReferenceNeed(
+  revId: number,
+  lang = 'en',
+  signal?: AbortSignal,
+): Promise<number | undefined> {
+  if (referenceNeedCache.has(revId)) return referenceNeedCache.get(revId)
+
+  try {
+    const response = await fetchWithTimeout(`${LIFT_WING_BASE}/reference-need:predict`, {
+      method: 'POST',
+      signal,
+      headers: liftWingHeaders('musical-group-reference-need'),
+      body: JSON.stringify({ rev_id: revId, lang }),
+    })
+    if (!response.ok) {
+      referenceNeedCache.set(revId, undefined)
+      return undefined
+    }
+
+    const json = (await response.json()) as { reference_need_score?: number }
+    const score = json.reference_need_score
+    const value = typeof score === 'number' ? score : undefined
+    referenceNeedCache.set(revId, value)
+    return value
+  } catch (err) {
+    if ((err as Error).name === 'AbortError') throw err
+    referenceNeedCache.set(revId, undefined)
     return undefined
   }
 }

@@ -37,6 +37,7 @@ const itemId = computed(() => normalizeQid(route.query.item))
 const data = ref<MusicalGroupData | null>(null)
 const overview = ref<MusicalGroupOverviewData | undefined>(undefined)
 const loading = ref(false)
+const imagesLoading = ref(false)
 const overviewLoading = ref(false)
 const fetchError = ref<string | null>(null)
 const searchOpen = ref(false)
@@ -51,35 +52,54 @@ watch(headerVariant, (variant) => {
 
 let fetchAbort: AbortController | null = null
 let overviewAbort: AbortController | null = null
+let overviewFetchId: string | null = null
 
 async function loadItem(id: string) {
   fetchAbort?.abort()
   fetchAbort = new AbortController()
+  const { signal } = fetchAbort
 
   overviewAbort?.abort()
   overview.value = undefined
   overviewLoading.value = false
+  overviewFetchId = null
 
   const cached = getCachedMusicalGroup(id)
   if (cached) {
     loading.value = false
+    imagesLoading.value = false
     fetchError.value = null
     data.value = cached.data
     return
   }
 
   loading.value = true
+  imagesLoading.value = false
   fetchError.value = null
   data.value = null
 
   try {
-    const { data: loaded } = await loadMusicalGroup(id, { signal: fetchAbort.signal })
+    const { data: loaded } = await loadMusicalGroup(id, {
+      signal,
+      onPartial: (partial) => {
+        if (signal.aborted) return
+        // Paint title + facts immediately; carousel shows a skeleton until
+        // Stage 1 images arrive.
+        data.value = partial
+        loading.value = false
+        imagesLoading.value = true
+      },
+    })
+    if (signal.aborted) return
     data.value = loaded
   } catch (err) {
     if ((err as Error).name === 'AbortError') return
     fetchError.value = 'Could not load this item. Try again.'
   } finally {
-    loading.value = false
+    if (!signal.aborted) {
+      loading.value = false
+      imagesLoading.value = false
+    }
   }
 }
 
@@ -114,9 +134,11 @@ watch(
     if (!id) {
       fetchAbort?.abort()
       overviewAbort?.abort()
+      overviewFetchId = null
       data.value = null
       overview.value = undefined
       loading.value = false
+      imagesLoading.value = false
       overviewLoading.value = false
       fetchError.value = null
       return
@@ -131,6 +153,10 @@ watch(
   ([id, groupData]) => {
     if (!id || !groupData) return
     if (overview.value) return
+    // `data` is set twice under progressive loading (partial then full); the
+    // overview only depends on `enwikiTitle`, so fetch it once per id.
+    if (overviewFetchId === id) return
+    overviewFetchId = id
     void loadOverview(id, groupData)
   },
   { immediate: true },
@@ -170,9 +196,11 @@ async function onResetStoredData() {
 
   fetchAbort?.abort()
   overviewAbort?.abort()
+  overviewFetchId = null
   data.value = null
   overview.value = undefined
   loading.value = false
+  imagesLoading.value = false
   overviewLoading.value = false
   fetchError.value = null
   searchOpen.value = false
@@ -228,6 +256,7 @@ async function onResetStoredData() {
           :data="data"
           :overview="overview"
           :overview-loading="overviewLoading"
+          :loading-images="imagesLoading"
           :external-links="externalLinks"
           :links-loading="linksLoading"
           :links-error="linksError"
@@ -332,12 +361,12 @@ async function onResetStoredData() {
   padding-top: calc(var(--spacing-50) + var(--musical-group-title-collapse-padding, 0px));
 }
 
-.musical-group-page[data-tabs-stuck]:not([data-scroll-at-end]) .musical-group-tabs::before {
+.musical-group-page[data-tabs-stuck] .musical-group-tabs::before {
   bottom: calc(100% - 1px);
   height: calc(var(--spacing-50) + 1px);
 }
 
-.musical-group-page[data-tabs-stuck]:not([data-scroll-at-end]) .musical-group-tabs::after {
+.musical-group-page[data-page-scrolled] .musical-group-tabs::after {
   transform: scaleY(1);
 }
 

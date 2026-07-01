@@ -86,6 +86,46 @@ async function pageCardFields(
   }
 }
 
+/** Anchor text of the primary bold-linked article in a DYK hook. */
+function extractDykEmphasis(html: string): string | undefined {
+  const match = html.match(/<b[^>]*>\s*<a[^>]*>([\s\S]*?)<\/a>/i)
+  if (!match) return undefined
+
+  return match[1]
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\u00a0/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function splitTextEmphasis(
+  text: string,
+  emphasis: string,
+): { before: string; match: string; after: string } | null {
+  const pattern = emphasis
+    .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    .replace(/\s+/g, '[\\u00a0 ]+')
+  const match = text.match(new RegExp(pattern))
+  if (!match?.index && match?.index !== 0) return null
+
+  return {
+    before: text.slice(0, match.index),
+    match: match[0],
+    after: text.slice(match.index + match[0].length),
+  }
+}
+
+function resolveDykEmphasis(text: string, html?: string): string | undefined {
+  if (!html) return undefined
+  const emphasis = extractDykEmphasis(html)
+  if (!emphasis || !splitTextEmphasis(text, emphasis)) return undefined
+  return emphasis
+}
+
 /** Primary linked article from DYK feed item (pages array or Parsoid html hook). */
 function dykPrimaryPageTitle(item: FeedDyk): string | undefined {
   const fromPages = item.pages?.[0]?.title
@@ -117,14 +157,19 @@ async function parseDidYouKnow(
       const text = item.text?.trim()
       if (!text) return null
 
+      const emphasis = resolveDykEmphasis(text, item.html)
       const pageTitle = dykPrimaryPageTitle(item)
       if (!pageTitle) {
-        return { text } satisfies HomeDidYouKnow
+        return {
+          text,
+          ...(emphasis ? { emphasis } : {}),
+        } satisfies HomeDidYouKnow
       }
 
       const fields = await pageCardFields(pageTitle, signal)
       return {
         text,
+        ...(emphasis ? { emphasis } : {}),
         enwikiTitle: pageTitle.replace(/_/g, ' '),
         title: fields.title,
         thumbnailUrl: fields.thumbnailUrl,
