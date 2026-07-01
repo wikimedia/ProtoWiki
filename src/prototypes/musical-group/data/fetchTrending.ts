@@ -2,9 +2,9 @@ import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 
 import { utcDayKey } from './cacheKeys'
 import { enwikiArticleUrl } from './enwikiTitle'
-import { fetchEnwikiFeaturedFeedDay } from './fetchEnwikiFeaturedFeedDay'
+import { fetchEnwikiFeaturedFeedDay, wikimediaFeedErrorMessage } from './fetchEnwikiFeaturedFeedDay'
 import { getCachedTrendingFeed, setCachedTrendingFeed } from './homeTabCache'
-import { fetchPageSummary } from './pageSummary'
+import { fetchPageSummary, type PageSummary } from './pageSummary'
 import type { HomeTrending } from './types'
 import { normalizeQid } from './wikidataApi'
 
@@ -55,10 +55,10 @@ function formatViewCount(total: number): string {
 }
 
 function viewsPeriodLabel(mostreadDate?: string): string {
-  if (!mostreadDate) return 'yesterday'
+  if (!mostreadDate) return 'today'
 
   const parsed = parseMediaWikiTimestamp(mostreadDate)
-  if (Number.isNaN(parsed.getTime())) return 'yesterday'
+  if (Number.isNaN(parsed.getTime())) return 'today'
 
   const yesterday = new Date()
   yesterday.setUTCDate(yesterday.getUTCDate() - 1)
@@ -66,13 +66,38 @@ function viewsPeriodLabel(mostreadDate?: string): string {
     parsed.getUTCFullYear() === yesterday.getUTCFullYear() &&
     parsed.getUTCMonth() === yesterday.getUTCMonth() &&
     parsed.getUTCDate() === yesterday.getUTCDate()
-  if (isYesterday) return 'yesterday'
+  if (isYesterday) return 'today'
 
   return `on ${parsed.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     timeZone: 'UTC',
   })}`
+}
+
+export function isTrendingSummaryIncomplete(item: HomeTrending): boolean {
+  return !item.lastEditedTimestamp
+}
+
+function applySummaryToTrendingItem(
+  item: HomeTrending,
+  summary: PageSummary | null,
+): HomeTrending {
+  if (!summary) return item
+
+  const title = (summary.normalizedtitle ?? summary.title ?? item.enwikiTitle).replace(/_/g, ' ')
+  const timestamp = summary.timestamp ?? ''
+
+  return {
+    ...item,
+    title,
+    description: summary.description ?? summary.extract ?? item.description,
+    thumbnailUrl: summary.thumbnail?.source ?? item.thumbnailUrl,
+    articleUrl: summary.content_urls?.desktop?.page ?? item.articleUrl,
+    itemId: normalizeQid(summary.wikibase_item) ?? item.itemId,
+    lastEditedTimestamp: timestamp,
+    lastEditedLabel: timestamp ? `Updated ${formatRelativeTime(timestamp)}` : item.lastEditedLabel,
+  }
 }
 
 async function enrichMostreadArticle(
@@ -103,6 +128,53 @@ async function enrichMostreadArticle(
   }
 }
 
+function trendingItemsChanged(before: HomeTrending[], after: HomeTrending[]): boolean {
+  if (before.length !== after.length) return true
+  return after.some(
+    (item, index) =>
+      item.lastEditedTimestamp !== before[index]?.lastEditedTimestamp ||
+      item.description !== before[index]?.description ||
+      item.thumbnailUrl !== before[index]?.thumbnailUrl ||
+      item.itemId !== before[index]?.itemId,
+  )
+}
+
+/** Re-fetch summaries for trending cards that failed enrichment earlier. */
+export async function refillIncompleteTrendingItems(
+  items: HomeTrending[],
+  signal?: AbortSignal,
+): Promise<HomeTrending[]> {
+  const incomplete = items.filter(isTrendingSummaryIncomplete)
+  if (!incomplete.length) return items
+
+  const byTitle = new Map(items.map((item) => [item.enwikiTitle.toLowerCase(), item]))
+
+  for (const item of incomplete) {
+    if (signal?.aborted) break
+
+    const summary = await fetchPageSummary(item.enwikiTitle, signal, 'musical-group-trending', {
+      bypassFailureCache: true,
+    })
+    byTitle.set(item.enwikiTitle.toLowerCase(), applySummaryToTrendingItem(item, summary))
+  }
+
+  return items.map((item) => byTitle.get(item.enwikiTitle.toLowerCase()) ?? item)
+}
+
+async function persistTrendingIfChanged(
+  dayKey: string,
+  before: HomeTrending[],
+  after: HomeTrending[],
+): Promise<HomeTrending[]> {
+  if (after.length) {
+    sessionCached = { day: dayKey, value: after }
+    if (trendingItemsChanged(before, after)) {
+      setCachedTrendingFeed(dayKey, after)
+    }
+  }
+  return after
+}
+
 export function clearTrendingSessionCache(): void {
   sessionCached = null
 }
@@ -112,36 +184,45 @@ export async function fetchTrendingFeed(signal?: AbortSignal): Promise<HomeTrend
   const dayKey = utcDayKey()
 
   const stored = getCachedTrendingFeed(dayKey)
-  if (stored) {
-    sessionCached = { day: dayKey, value: stored }
-    return stored
+  if (stored?.length) {
+    const refilled = await refillIncompleteTrendingItems(stored, signal)
+    return persistTrendingIfChanged(dayKey, stored, refilled)
   }
 
-  if (sessionCached && sessionCached.day === dayKey) return sessionCached.value
-
-  try {
-    const { json } = await fetchEnwikiFeaturedFeedDay(signal, 'musical-group-trending-feed')
-    const articles = json?.mostread?.articles
-    if (!articles?.length) return []
-
-    const viewsPeriod = viewsPeriodLabel(json.mostread?.date)
-    const slice = [...articles]
-      .sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity))
-      .slice(0, MAX_TRENDING)
-
-    const enriched = await mapWithConcurrency(
-      slice,
-      SUMMARY_CONCURRENCY,
-      (article) => enrichMostreadArticle(article, viewsPeriod, signal),
-      signal,
-    )
-    const value = enriched.filter((item): item is HomeTrending => item !== null)
-
-    sessionCached = { day: dayKey, value }
-    setCachedTrendingFeed(dayKey, value)
-    return value
-  } catch (err) {
-    if ((err as Error).name === 'AbortError') throw err
-    return []
+  if (sessionCached && sessionCached.day === dayKey && sessionCached.value.length) {
+    const refilled = await refillIncompleteTrendingItems(sessionCached.value, signal)
+    return persistTrendingIfChanged(dayKey, sessionCached.value, refilled)
   }
+
+  const { ok, json, status } = await fetchEnwikiFeaturedFeedDay(signal, 'musical-group-trending-feed')
+  if (!ok) {
+    throw new Error(wikimediaFeedErrorMessage(status, 'Trending articles'))
+  }
+
+  const articles = json?.mostread?.articles
+  if (!articles?.length) return []
+
+  const viewsPeriod = viewsPeriodLabel(json.mostread?.date)
+  const slice = [...articles]
+    .sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity))
+    .slice(0, MAX_TRENDING)
+
+  const [firstArticle, ...restArticles] = slice
+  const firstEnriched = firstArticle
+    ? await enrichMostreadArticle(firstArticle, viewsPeriod, signal)
+    : null
+  const restEnriched = restArticles.length
+    ? await mapWithConcurrency(
+        restArticles,
+        SUMMARY_CONCURRENCY,
+        (article) => enrichMostreadArticle(article, viewsPeriod, signal),
+        signal,
+      )
+    : []
+
+  const enriched = [firstEnriched, ...restEnriched].filter(
+    (item): item is HomeTrending => item !== null,
+  )
+  const refilled = await refillIncompleteTrendingItems(enriched, signal)
+  return persistTrendingIfChanged(dayKey, enriched, refilled)
 }

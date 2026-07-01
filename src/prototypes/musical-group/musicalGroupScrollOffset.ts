@@ -1,5 +1,25 @@
+import { scrollTabIntoTrackView } from './scrollTabIntoTrackView'
+
 export function getMusicalGroupScrollPage(): HTMLElement | null {
   return document.querySelector('.musical-group-page')
+}
+
+export function scrollMusicalGroupPageToTop(behavior: ScrollBehavior = 'instant'): void {
+  const page = getMusicalGroupScrollPage()
+  if (!page) return
+  page.scrollTo({ top: 0, behavior })
+}
+
+/** Scroll a tab button into view in the home or entity tab strip. */
+export function scrollMusicalGroupTabIntoView(tabId: string): void {
+  const page = getMusicalGroupScrollPage()
+  if (!page) return
+
+  const track = page.querySelector('.musical-group-tabs__track')
+  if (!(track instanceof HTMLElement)) return
+
+  const button = track.querySelector<HTMLElement>(`[data-tab-id="${tabId}"]`)
+  if (button) scrollTabIntoTrackView(button, track)
 }
 
 export function isMusicalGroupTabsStuck(page: Element): boolean {

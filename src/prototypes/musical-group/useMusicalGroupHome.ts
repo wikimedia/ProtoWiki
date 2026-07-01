@@ -3,12 +3,17 @@ import { useRoute } from 'vue-router'
 
 import { listBookmarks } from './data/bookmarks'
 import { bookmarksKey, utcDayKey } from './data/cacheKeys'
-import { fetchFeaturedTabContent } from './data/fetchFeaturedFeed'
+import { fetchFeaturedTabContent, isUsableFeaturedTab } from './data/fetchFeaturedFeed'
 import { fetchHelpWanted } from './data/fetchHelpWanted'
 import { fetchRecentChanges } from './data/fetchRecentChanges'
 import { fetchSavedItemSummaries } from './data/fetchSavedItemSummaries'
-import { fetchTrendingFeed } from './data/fetchTrending'
+import { fetchTrendingFeed, isTrendingSummaryIncomplete } from './data/fetchTrending'
+import { clearFeaturedFeedSessionCache } from './data/fetchEnwikiFeaturedFeedDay'
+import { clearFeaturedTabSessionCache } from './data/fetchFeaturedFeed'
+import { clearTrendingSessionCache } from './data/fetchTrending'
 import {
+  clearCachedFeaturedTab,
+  clearCachedTrendingFeed,
   getCachedFeaturedTab,
   getCachedHelpWanted,
   getCachedRecentChangesPreview,
@@ -40,12 +45,17 @@ export function useMusicalGroupHome() {
   const route = useRoute()
   const featuredTab = ref<HomeFeaturedTab>(EMPTY_FEATURED_TAB)
   const featuredTabLoading = ref(true)
+  const featuredTabError = ref<string | null>(null)
   const trendingItems = ref<HomeTrending[]>([])
   const trendingLoading = ref(true)
+  const trendingTabError = ref<string | null>(null)
   const hasSavedPages = ref(listBookmarks().length > 0)
   const savedItems = ref<HomeSavedItem[]>([])
+  const savedItemsLoading = ref(listBookmarks().length > 0)
   const helpWanted = ref<HomeHelpWanted[]>([])
   const recentChanges = ref<HomeRecentChange[]>([])
+  const helpWantedLoading = ref(listBookmarks().length > 0)
+  const recentChangesLoading = ref(listBookmarks().length > 0)
 
   const featuredArticle = computed(() => featuredTab.value.article)
   const didYouKnow = computed(() => featuredTab.value.didYouKnow)
@@ -66,20 +76,53 @@ export function useMusicalGroupHome() {
   let abort: AbortController | null = null
   let bookmarkAbort: AbortController | null = null
 
-  function hydrateBookmarksFromCache(): boolean {
+  function hydrateBookmarksFromCache(): void {
     const dependencyKey = bookmarksKey()
     const cachedSummaries = getCachedSavedSummaries(dependencyKey)
-    if (!cachedSummaries) return false
-
-    savedItems.value = cachedSummaries
+    if (cachedSummaries) {
+      savedItems.value = cachedSummaries
+    }
 
     const cachedHelp = getCachedHelpWanted(dependencyKey)
     if (cachedHelp) helpWanted.value = cachedHelp
 
     const cachedRecent = getCachedRecentChangesPreview(dependencyKey)
     if (cachedRecent) recentChanges.value = cachedRecent
+  }
 
-    return true
+  function loadPersonalizedFeeds(items: HomeSavedItem[], signal: AbortSignal): void {
+    if (!items.length) {
+      helpWanted.value = []
+      recentChanges.value = []
+      helpWantedLoading.value = false
+      recentChangesLoading.value = false
+      return
+    }
+
+    helpWantedLoading.value = true
+    recentChangesLoading.value = true
+
+    fetchHelpWanted(items, signal)
+      .then((value) => {
+        helpWanted.value = value
+      })
+      .catch((err) => {
+        if (isAbort(err)) return
+      })
+      .finally(() => {
+        helpWantedLoading.value = false
+      })
+
+    fetchRecentChanges(items, signal)
+      .then((value) => {
+        recentChanges.value = value
+      })
+      .catch((err) => {
+        if (isAbort(err)) return
+      })
+      .finally(() => {
+        recentChangesLoading.value = false
+      })
   }
 
   function reloadBookmarks(): void {
@@ -91,40 +134,48 @@ export function useMusicalGroupHome() {
     hasSavedPages.value = entries.length > 0
     if (!entries.length) {
       savedItems.value = []
+      savedItemsLoading.value = false
       helpWanted.value = []
       recentChanges.value = []
+      helpWantedLoading.value = false
+      recentChangesLoading.value = false
       return
     }
 
-    if (hydrateBookmarksFromCache()) return
+    hydrateBookmarksFromCache()
+    savedItemsLoading.value = true
+
+    if (!getCachedHelpWanted(bookmarksKey())) {
+      helpWantedLoading.value = true
+    }
+    if (!getCachedRecentChangesPreview(bookmarksKey())) {
+      recentChangesLoading.value = true
+    }
 
     fetchSavedItemSummaries(entries, signal)
       .then((items) => {
         savedItems.value = items
-        if (!items.length) return
-
-        fetchHelpWanted(items, signal)
-          .then((value) => {
-            helpWanted.value = value
-          })
-          .catch(() => {})
-
-        fetchRecentChanges(items, signal)
-          .then((value) => {
-            recentChanges.value = value
-          })
-          .catch(() => {})
+        loadPersonalizedFeeds(items, signal)
       })
       .catch((err) => {
         if (isAbort(err)) return
         savedItems.value = []
+        helpWanted.value = []
+        recentChanges.value = []
+        helpWantedLoading.value = false
+        recentChangesLoading.value = false
+      })
+      .finally(() => {
+        savedItemsLoading.value = false
       })
   }
 
   async function loadFeatured(signal: AbortSignal): Promise<void> {
     const dayKey = utcDayKey()
+    featuredTabError.value = null
+
     const cached = getCachedFeaturedTab(dayKey)
-    if (cached) {
+    if (cached && isUsableFeaturedTab(cached)) {
       featuredTab.value = cached
       featuredTabLoading.value = false
       return
@@ -134,31 +185,73 @@ export function useMusicalGroupHome() {
     featuredTabLoading.value = true
     try {
       featuredTab.value = await fetchFeaturedTabContent(signal)
-    } catch {
-      // Keep empty state.
+      if (!isUsableFeaturedTab(featuredTab.value)) {
+        featuredTabError.value = 'No featured content is available right now.'
+      }
+    } catch (err) {
+      if (isAbort(err)) return
+      featuredTab.value = EMPTY_FEATURED_TAB
+      featuredTabError.value =
+        err instanceof Error ? err.message : 'Could not load featured content.'
     } finally {
       featuredTabLoading.value = false
     }
   }
 
-  async function loadTrending(signal: AbortSignal): Promise<void> {
-    const dayKey = utcDayKey()
-    const cached = getCachedTrendingFeed(dayKey)
-    if (cached) {
-      trendingItems.value = cached
-      trendingLoading.value = false
-      return
+  async function loadTrending(signal: AbortSignal, options?: { background?: boolean }): Promise<void> {
+    trendingTabError.value = null
+
+    if (!options?.background && !trendingItems.value.length) {
+      trendingLoading.value = true
     }
 
-    trendingItems.value = []
-    trendingLoading.value = true
     try {
       trendingItems.value = await fetchTrendingFeed(signal)
-    } catch {
-      trendingItems.value = []
+    } catch (err) {
+      if (isAbort(err)) return
+      if (!trendingItems.value.length) {
+        trendingItems.value = []
+      }
+      trendingTabError.value =
+        err instanceof Error ? err.message : 'Could not load trending articles.'
     } finally {
       trendingLoading.value = false
     }
+  }
+
+  async function refreshIncompleteTrending(signal?: AbortSignal): Promise<void> {
+    if (!trendingItems.value.some(isTrendingSummaryIncomplete)) return
+    if (!signal) {
+      abort?.abort()
+      abort = new AbortController()
+      signal = abort.signal
+    }
+    try {
+      trendingItems.value = await fetchTrendingFeed(signal)
+    } catch (err) {
+      if (isAbort(err)) return
+    }
+  }
+
+  async function retryFeaturedFeed(): Promise<void> {
+    const dayKey = utcDayKey()
+    clearFeaturedTabSessionCache()
+    clearFeaturedFeedSessionCache()
+    clearCachedFeaturedTab(dayKey)
+
+    abort?.abort()
+    abort = new AbortController()
+    await loadFeatured(abort.signal)
+  }
+
+  async function retryTrendingFeed(): Promise<void> {
+    const dayKey = utcDayKey()
+    clearTrendingSessionCache()
+    clearCachedTrendingFeed(dayKey)
+
+    abort?.abort()
+    abort = new AbortController()
+    await loadTrending(abort.signal)
   }
 
   function load(): void {
@@ -170,7 +263,7 @@ export function useMusicalGroupHome() {
     const featuredCached = getCachedFeaturedTab(dayKey)
     const trendingCached = getCachedTrendingFeed(dayKey)
 
-    if (featuredCached) {
+    if (featuredCached && isUsableFeaturedTab(featuredCached)) {
       featuredTab.value = featuredCached
       featuredTabLoading.value = false
     } else {
@@ -178,7 +271,7 @@ export function useMusicalGroupHome() {
       featuredTabLoading.value = true
     }
 
-    if (trendingCached) {
+    if (trendingCached?.length) {
       trendingItems.value = trendingCached
       trendingLoading.value = false
     } else {
@@ -192,14 +285,20 @@ export function useMusicalGroupHome() {
       }
       if (signal.aborted) return
 
-      if (!trendingCached) {
-        await loadTrending(signal)
-      }
+      await loadTrending(signal, { background: Boolean(trendingCached?.length) })
       if (signal.aborted) return
 
       reloadBookmarks()
     })()
   }
+
+  watch(
+    () => route.query.tab,
+    (tab) => {
+      if (tab !== 'trending') return
+      void refreshIncompleteTrending()
+    },
+  )
 
   watch(
     () => [route.query.item, route.query.tab] as const,
@@ -219,13 +318,20 @@ export function useMusicalGroupHome() {
     didYouKnow,
     bornOnThisDay,
     featuredTabLoading,
+    featuredTabError,
+    retryFeaturedFeed,
     trendingItems,
     trendingLoading,
+    trendingTabError,
+    retryTrendingFeed,
     hasSavedPages,
     savedSorted,
     recentlySaved,
+    savedItemsLoading,
     helpWanted,
     recentChanges,
+    helpWantedLoading,
+    recentChangesLoading,
     reloadBookmarks,
   }
 }

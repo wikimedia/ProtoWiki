@@ -8,23 +8,27 @@ interface Props {
   title?: string
   /** When set, the title links to this home tab (preview sections on Home). */
   toTab?: HomeTabId
+  /** Hash fragment (without #) appended when navigating via toTab. */
+  toHash?: string
+  /** Element id for in-page scroll targets on full tab views. */
+  sectionId?: string
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  'title-navigate': [tab: HomeTabId]
+  'title-navigate': [tab: HomeTabId, hash?: string]
 }>()
 
 function onTitleClick() {
   if (props.toTab) {
-    emit('title-navigate', props.toTab)
+    emit('title-navigate', props.toTab, props.toHash)
   }
 }
 </script>
 
 <template>
-  <section class="wikita-home-section">
+  <section :id="sectionId" class="wikita-home-section">
     <h2 v-if="title && !toTab" class="wikita-home-section__title">{{ title }}</h2>
     <h2 v-if="title && toTab" class="wikita-home-section__title">
       <button

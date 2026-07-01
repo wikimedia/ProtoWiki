@@ -8,7 +8,7 @@ export type HomeTabId = 'home' | 'read' | 'featured' | 'trending' | 'activity' |
 
 const allTabs: { id: HomeTabId; label: string }[] = [
   { id: 'home', label: 'Home' },
-  { id: 'read', label: 'Read' },
+  { id: 'read', label: 'For you' },
   { id: 'featured', label: 'Featured' },
   { id: 'trending', label: 'Trending' },
   { id: 'activity', label: 'Activity' },
@@ -26,7 +26,6 @@ const visibleTabs = computed(() =>
     : allTabs.filter(
         (tab) =>
           tab.id !== 'read' &&
-          tab.id !== 'featured' &&
           tab.id !== 'saved' &&
           tab.id !== 'contribute' &&
           tab.id !== 'activity',
@@ -41,9 +40,7 @@ function scrollActiveTabIntoView() {
   const track = trackRef.value
   if (!track) return
 
-  const button = track.querySelector<HTMLElement>(
-    `[data-home-tab="${activeTab.value}"]`,
-  )
+  const button = track.querySelector<HTMLElement>(`[data-tab-id="${activeTab.value}"]`)
   if (button) {
     scrollTabIntoTrackView(button, track)
   }
@@ -75,7 +72,7 @@ onMounted(() => {
         <WikitaButton
           v-for="tab in visibleTabs"
           :key="tab.id"
-          :data-home-tab="tab.id"
+          :data-tab-id="tab.id"
           :variant="activeTab === tab.id ? 'filled' : 'subtle'"
           :aria-pressed="activeTab === tab.id"
           @click="onTabClick(tab.id)"

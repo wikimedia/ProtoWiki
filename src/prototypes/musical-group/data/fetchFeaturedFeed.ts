@@ -4,7 +4,7 @@ import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 
 import { utcDayKey, utcDayParts } from './cacheKeys'
 import { EN_WIKI_HOST, enwikiArticleUrl } from './enwikiTitle'
-import { fetchEnwikiFeaturedFeedDay } from './fetchEnwikiFeaturedFeedDay'
+import { fetchEnwikiFeaturedFeedDay, wikimediaFeedErrorMessage } from './fetchEnwikiFeaturedFeedDay'
 import {
   getCachedFeaturedTab,
   setCachedFeaturedTab,
@@ -214,6 +214,10 @@ async function parseBornOnThisDay(
   )
 }
 
+export function isUsableFeaturedTab(tab: HomeFeaturedTab): boolean {
+  return Boolean(tab.article) || tab.didYouKnow.length > 0 || tab.bornOnThisDay.length > 0
+}
+
 export function clearFeaturedTabSessionCache(): void {
   sessionCached = null
 }
@@ -223,18 +227,20 @@ export async function fetchFeaturedTabContent(signal?: AbortSignal): Promise<Hom
   const dayKey = utcDayKey()
 
   const stored = getCachedFeaturedTab(dayKey)
-  if (stored) {
+  if (stored && isUsableFeaturedTab(stored)) {
     sessionCached = { day: dayKey, value: stored }
     return stored
   }
 
-  if (sessionCached && sessionCached.day === dayKey) return sessionCached.value
+  if (sessionCached && sessionCached.day === dayKey && isUsableFeaturedTab(sessionCached.value)) {
+    return sessionCached.value
+  }
 
   const { mm, dd } = utcDayParts()
   const birthsUrl = `https://${EN_WIKI_HOST}/api/rest_v1/feed/onthisday/births/${mm}/${dd}`
 
-  try {
-    const [{ json: featuredJson }, birthsResponse] = await Promise.all([
+  const [{ ok: featuredOk, json: featuredJson, status: featuredStatus }, birthsResponse] =
+    await Promise.all([
       fetchEnwikiFeaturedFeedDay(signal, 'musical-group-featured-feed'),
       fetchWikimedia(birthsUrl, {
         signal,
@@ -242,29 +248,31 @@ export async function fetchFeaturedTabContent(signal?: AbortSignal): Promise<Hom
       }),
     ])
 
-    const featured = (featuredJson ?? {}) as FeaturedFeedResponse
-    const birthsJson = birthsResponse.ok
-      ? ((await birthsResponse.json()) as BirthsFeedResponse)
-      : {}
-
-    const [didYouKnow, bornOnThisDay] = await Promise.all([
-      parseDidYouKnow(featured.dyk, signal),
-      parseBornOnThisDay(birthsJson.births, signal),
-    ])
-
-    const value: HomeFeaturedTab = {
-      article: parseTfa(featured.tfa),
-      didYouKnow,
-      bornOnThisDay,
-    }
-
-    sessionCached = { day: dayKey, value }
-    setCachedFeaturedTab(dayKey, value)
-    return value
-  } catch (err) {
-    if ((err as Error).name === 'AbortError') throw err
-    return { didYouKnow: [], bornOnThisDay: [] }
+  if (!featuredOk) {
+    throw new Error(wikimediaFeedErrorMessage(featuredStatus, 'Featured content'))
   }
+
+  const featured = (featuredJson ?? {}) as FeaturedFeedResponse
+  const birthsJson = birthsResponse.ok
+    ? ((await birthsResponse.json()) as BirthsFeedResponse)
+    : {}
+
+  const [didYouKnow, bornOnThisDay] = await Promise.all([
+    parseDidYouKnow(featured.dyk, signal),
+    parseBornOnThisDay(birthsJson.births, signal),
+  ])
+
+  const value: HomeFeaturedTab = {
+    article: parseTfa(featured.tfa),
+    didYouKnow,
+    bornOnThisDay,
+  }
+
+  sessionCached = { day: dayKey, value }
+  if (isUsableFeaturedTab(value)) {
+    setCachedFeaturedTab(dayKey, value)
+  }
+  return value
 }
 
 /** Today's featured article only — convenience wrapper. */

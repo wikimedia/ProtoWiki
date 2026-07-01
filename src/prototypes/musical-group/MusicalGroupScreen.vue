@@ -20,7 +20,7 @@ import {
   saveImagesTabOpenedPreference,
 } from './data/imagesTabPreference'
 import type { HomeSavedItem, MusicalGroupData, MusicalGroupOverviewData, WikidataExternalLink } from './data/types'
-import { hasImagesTab } from './data/types'
+import { hasImagesTab, showImageCarouselFor } from './data/types'
 import { useMusicalGroupRoute } from './useMusicalGroupRoute'
 import { useMusicalGroupScrollStates } from './useMusicalGroupScrollStates'
 import { useMusicalGroupTabScroll } from './useMusicalGroupTabScroll'
@@ -47,8 +47,9 @@ useMusicalGroupScrollStates()
 const { requestScrollToTabContent, scrollToTabContent } = useMusicalGroupTabScroll()
 
 const showRichIntro = computed(
-  () => props.data.isMusicPerformer || props.data.isLocation,
+  () => props.data.isMusicPerformer || props.data.isLocation || props.data.isPerson,
 )
+const showImageCarousel = computed(() => showImageCarouselFor(props.data))
 const showImagesTab = computed(() => hasImagesTab(props.data))
 
 const showInfoTab = computed(() => {
@@ -155,8 +156,12 @@ watch(
 <template>
   <div class="musical-group-screen">
     <template v-if="showRichIntro">
-      <div class="musical-group-screen__intro">
+      <div
+        v-if="showImageCarousel || data.description"
+        class="musical-group-screen__intro"
+      >
         <ImageCarousel
+          v-if="showImageCarousel"
           :images="data.images"
           :description="data.description"
           :loading="loadingImages"
@@ -164,6 +169,9 @@ watch(
           :more-count-label="moreImagesCountLabel"
           @view-all-images="viewAllImages"
         />
+        <p v-else-if="data.description" class="musical-group-screen__description">
+          {{ data.description }}
+        </p>
       </div>
       <MusicalGroupFacts :data="data" />
     </template>
@@ -183,6 +191,7 @@ watch(
         <div class="musical-group-screen__panel">
           <MusicalGroupOverview
             v-if="activeTab === 'overview'"
+            :item-id="data.id"
             :overview="overview"
             :overview-loading="overviewLoading"
             :carousel-images="data.images"
@@ -244,6 +253,14 @@ watch(
   display: flex;
   flex-direction: column;
   gap: var(--spacing-50);
+}
+
+.musical-group-screen__description {
+  margin: 0;
+  font-size: var(--font-size-medium);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-medium);
+  color: var(--color-emphasized);
 }
 
 .musical-group-screen__details {

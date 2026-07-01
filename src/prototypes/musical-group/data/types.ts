@@ -17,6 +17,51 @@ export const LOCATION_QIDS = [
   'Q486972', // human settlement
 ] as const
 
+/** Wikidata anchor classes for people (expanded via P31/P279* in SPARQL). */
+export const PERSON_QIDS = [
+  'Q5', // human
+] as const
+
+/** Occupations treated as on-screen / performance actors for carousel rules. */
+export const ACTOR_OCCUPATION_QIDS = [
+  'Q33999', // actor
+  'Q10798782', // television actor
+  'Q2405480', // voice actor
+] as const
+
+/** Occupations treated as sportspeople for carousel rules (P279* of athlete). */
+export const SPORTS_OCCUPATION_QIDS = [
+  'Q2066131', // athlete
+  'Q10833314', // sportsperson
+] as const
+
+export function occupationMatches(
+  occupationIds: string[],
+  anchors: readonly string[],
+): boolean {
+  return occupationIds.some((id) => (anchors as readonly string[]).includes(id))
+}
+
+/** Whether an entity profile should show the intro image carousel. */
+export function resolveShowImageCarousel(input: {
+  isMusicPerformer: boolean
+  isLocation: boolean
+  isPerson: boolean
+  actorMusician?: boolean
+  personShowsCarousel?: boolean
+}): boolean {
+  if (input.isMusicPerformer || input.isLocation) return true
+  if (!input.isPerson || input.actorMusician) return false
+  return Boolean(input.personShowsCarousel)
+}
+
+/** Resolve carousel visibility from stored data, including older cache entries. */
+export function showImageCarouselFor(data: MusicalGroupData): boolean {
+  if (typeof data.showImageCarousel === 'boolean') return data.showImageCarousel
+  if (data.isMusicPerformer || data.isLocation) return true
+  return false
+}
+
 export type YearKind = 'inception' | 'birth'
 
 export type TabId =
@@ -94,6 +139,8 @@ export interface MusicalGroupOverviewSnippet {
   id?: string
   /** Title of the page that mentions the item. */
   title: string
+  /** REST summary short description of the mentioning page. */
+  description: string
   /** Search snippet HTML, including `<span class="searchmatch">` highlights. */
   snippetHtml: string
   thumbnailUrl?: string
@@ -138,6 +185,9 @@ export interface MusicalGroupData {
   label: string
   isMusicPerformer: boolean
   isLocation: boolean
+  isPerson: boolean
+  /** Intro carousel: performers/locations always; people when creative, performing, or sports. */
+  showImageCarousel?: boolean
   description?: string
   typeLabel?: string
   inceptionYear?: number

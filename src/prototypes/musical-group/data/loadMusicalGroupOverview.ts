@@ -1,4 +1,4 @@
-import { formatCommonsPhotosLabel, getCommonsCategoryCount, resolveCommonsCategory } from './commonsImages'
+import { formatCommonsPhotosLabel, getCommonsCategoryCount } from './commonsImages'
 import type { CommonsCategoryCount } from './commonsImages'
 import { fetchMusicalGroupOverview } from './fetchMusicalGroupOverview'
 import {
@@ -17,7 +17,7 @@ async function resolveCommonsCategoryCount(
   data: MusicalGroupData,
   signal?: AbortSignal,
 ): Promise<CommonsCategoryCount | undefined> {
-  const category = resolveCommonsCategory(data)
+  const category = data.commonsCategory?.trim()
   if (!category) return undefined
   return getCommonsCategoryCount(category, signal)
 }
@@ -26,7 +26,9 @@ function buildImagesOverview(
   data: MusicalGroupData,
   info?: CommonsCategoryCount,
 ): MusicalGroupOverviewData['images'] | undefined {
-  if (!resolveCommonsCategory(data) || !info) return undefined
+  // Overview Images card is for Wikidata entities with a Commons category (P373),
+  // not enwiki-only articles where label fallback would invent a category name.
+  if (!data.commonsCategory?.trim() || !info) return undefined
   // Nothing known (empty/missing category or a failed lookup) — show no count.
   if (info.files === 0 && info.subcats === 0) return undefined
   return {

@@ -1,6 +1,6 @@
 import { onUnmounted, ref, watch, type Ref } from 'vue'
 
-import { bookmarksKey } from './data/cacheKeys'
+import { savedPagesListKey } from './data/cacheKeys'
 import { normalizeEnwikiTitle } from './data/enwikiTitle'
 import { fetchAllSavedSuggestions, fetchEditSuggestionForPage } from './data/fetchEditSuggestion'
 import { fetchMorelikeTitles, resolveRelatedSummary } from './data/fetchRelatedReading'
@@ -64,20 +64,13 @@ export function useContributeSuggestionsFeed(
   let loadedForKey: string | null = null
   let savedLoadedForKey: string | null = null
 
-  function dependencyKey(): string {
-    return bookmarksKey()
-  }
-
   function savedKey(): string {
-    return [...savedItems.value]
-      .map((item) => item.id)
-      .sort()
-      .join(',')
+    return savedPagesListKey(savedItems.value)
   }
 
   function persistState() {
     setCachedContributeFeed({
-      dependencyKey: dependencyKey(),
+      dependencyKey: savedKey(),
       savedSuggestions: savedSuggestions.value,
       relatedSuggestions: relatedSuggestions.value,
       seenTitles: [...seenTitles],
@@ -309,8 +302,7 @@ export function useContributeSuggestionsFeed(
       if (loadedForKey === key) return
 
       loadedForKey = key
-      const depKey = dependencyKey()
-      if (restoreFromCache(depKey)) return
+      if (restoreFromCache(key)) return
 
       resetRelatedState()
 

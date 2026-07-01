@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import WikitaButton from './components/WikitaButton.vue'
 import { scrollTabIntoTrackView } from './scrollTabIntoTrackView'
@@ -49,32 +49,49 @@ const tabs = computed(() =>
 
 const activeTab = defineModel<TabId>('activeTab', { default: 'overview' })
 
-function onTabClick(tabId: TabId, event: MouseEvent) {
-  activeTab.value = tabId
+const trackRef = ref<HTMLElement | null>(null)
 
-  const target = event.target
-  const button =
-    target instanceof HTMLElement ? target.closest('.wikita-button') : null
-  const track = button?.closest('.musical-group-tabs__track')
-  if (button instanceof HTMLElement && track instanceof HTMLElement) {
-    scrollTabIntoTrackView(button, track)
-  }
+function scrollActiveTabIntoView() {
+  const track = trackRef.value
+  if (!track) return
+
+  const button = track.querySelector<HTMLElement>(`[data-tab-id="${activeTab.value}"]`)
+  if (button) scrollTabIntoTrackView(button, track)
 }
+
+function onTabClick(tabId: TabId) {
+  activeTab.value = tabId
+}
+
+watch(activeTab, async () => {
+  await nextTick()
+  scrollActiveTabIntoView()
+})
+
+watch(tabs, async () => {
+  await nextTick()
+  scrollActiveTabIntoView()
+})
+
+onMounted(() => {
+  scrollActiveTabIntoView()
+})
 </script>
 
 <template>
   <div class="musical-group-tabs-sticky">
     <nav class="musical-group-tabs" aria-label="Section tabs">
-      <div class="musical-group-tabs__track">
+      <div ref="trackRef" class="musical-group-tabs__track">
         <div
           v-for="tab in tabs"
           :key="tab.id"
           class="musical-group-tabs__tab-wrap"
         >
           <WikitaButton
+            :data-tab-id="tab.id"
             :variant="activeTab === tab.id ? 'filled' : 'subtle'"
             :aria-pressed="activeTab === tab.id"
-            @click="onTabClick(tab.id, $event)"
+            @click="onTabClick(tab.id)"
           >
             {{ tab.label }}
           </WikitaButton>

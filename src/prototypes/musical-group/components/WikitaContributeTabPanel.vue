@@ -56,12 +56,6 @@ function editSuggestionRelatedToLabel(suggestion: HomeHelpWanted): string {
 function contributeSuggestionHref(enwikiTitle?: string): string | undefined {
   return enwikiTitle ? enwikiVisualEditorUrl(enwikiTitle) : undefined
 }
-
-const noItemSuggestionsMessage = computed(() =>
-  props.scope === 'item'
-    ? 'No edit suggestions for this page right now.'
-    : 'No edit suggestions for your saved pages right now.',
-)
 </script>
 
 <template>
@@ -78,13 +72,6 @@ const noItemSuggestionsMessage = computed(() =>
         <div v-if="contributeSavedLoading" class="wikita-contribute-tab-panel__loading">
           <CdxProgressBar inline aria-label="Loading edit suggestions" />
         </div>
-
-        <p
-          v-if="!contributeSavedLoading && !contributeSavedSuggestions.length"
-          class="wikita-contribute-tab-panel__empty"
-        >
-          {{ noItemSuggestionsMessage }}
-        </p>
 
         <WikitaHomeSection
           v-if="contributeSavedSuggestions.length || contributeRelatedSuggestions.length"
@@ -144,13 +131,6 @@ const noItemSuggestionsMessage = computed(() =>
       <div v-if="contributeSavedLoading" class="wikita-contribute-tab-panel__loading">
         <CdxProgressBar inline aria-label="Loading edit suggestions" />
       </div>
-
-      <p
-        v-if="!contributeSavedLoading && !contributeSavedSuggestions.length"
-        class="wikita-contribute-tab-panel__empty"
-      >
-        {{ noItemSuggestionsMessage }}
-      </p>
 
       <WikitaHomeSection
         v-if="contributeSavedSuggestions.length || contributeRelatedSuggestions.length"

@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 import { CdxIcon } from '@wikimedia/codex'
-import { cdxIconMapPin, cdxIconMusicalScore } from '@wikimedia/codex-icons'
+import { cdxIconMapPin, cdxIconMusicalScore, cdxIconUserAvatar } from '@wikimedia/codex-icons'
 
 import WikitaExternalLink from './components/WikitaExternalLink.vue'
 import { sentenceCaseList } from './data/formatLabel'
@@ -47,9 +47,11 @@ const locationLine = computed(() => {
   return `${formatted} people`
 })
 
-const factIcon = computed(() =>
-  props.data.isLocation ? cdxIconMapPin : cdxIconMusicalScore,
-)
+const factIcon = computed(() => {
+  if (props.data.isLocation) return cdxIconMapPin
+  if (props.data.isPerson) return cdxIconUserAvatar
+  return cdxIconMusicalScore
+})
 </script>
 
 <template>
@@ -61,7 +63,7 @@ const factIcon = computed(() =>
       </div>
       <small v-if="genreLine" class="musical-group-facts__genres">{{ genreLine }}</small>
       <small v-else-if="locationLine" class="musical-group-facts__genres">{{ locationLine }}</small>
-      <p v-if="data.websiteUrl" class="musical-group-facts__website">
+      <p v-if="data.websiteUrl && !data.isPerson" class="musical-group-facts__website">
         <WikitaExternalLink :href="data.websiteUrl" :label="data.websiteHost" host-only />
       </p>
     </div>

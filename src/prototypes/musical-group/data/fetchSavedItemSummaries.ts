@@ -14,6 +14,10 @@ import { commonsFileUrl, fetchEntityClaims } from './wikidataApi'
 
 const RESOLVE_CONCURRENCY = 3
 
+function savedSummariesNeedRefresh(items: HomeSavedItem[]): boolean {
+  return items.some((item) => !item.enwikiTitle)
+}
+
 async function resolveSavedThumbnailUrl(
   thumbnailUrl: string | undefined,
   enwikiTitle: string | undefined,
@@ -76,7 +80,7 @@ export async function fetchSavedItemSummaries(
 ): Promise<HomeSavedItem[]> {
   const dependencyKey = bookmarksKey()
   const cached = getCachedSavedSummaries(dependencyKey)
-  if (cached) return cached
+  if (cached && !savedSummariesNeedRefresh(cached)) return cached
 
   const resolved = await mapWithConcurrency(
     entries,

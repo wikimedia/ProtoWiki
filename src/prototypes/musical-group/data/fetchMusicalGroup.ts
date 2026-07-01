@@ -12,6 +12,7 @@ import type {
   FetchMusicalGroupResult,
   MusicalGroupData,
 } from './types'
+import { resolveShowImageCarousel } from './types'
 import type { EntityClassification, ParsedEntityClaims } from './wikidataApi'
 import {
   classifyEntity,
@@ -20,6 +21,12 @@ import {
   resolveEntityLabels,
   websiteHost,
 } from './wikidataApi'
+import {
+  type OccupationResolution,
+  personShowsImageCarousel,
+  primaryOccupationLabel,
+  resolveOccupations,
+} from './resolvePrimaryOccupation'
 
 function sparseData(id: string, claims: ParsedEntityClaims, images: CarouselImage[] = []): MusicalGroupData {
   return {
@@ -27,6 +34,8 @@ function sparseData(id: string, claims: ParsedEntityClaims, images: CarouselImag
     label: claims.label,
     isMusicPerformer: false,
     isLocation: false,
+    isPerson: false,
+    showImageCarousel: false,
     description: claims.description,
     genres: [],
     images,
@@ -116,33 +125,65 @@ function classificationTypeLabel(classification: EntityClassification): string |
   return raw ? sentenceCase(raw) : undefined
 }
 
+function resolveEntityProfile(
+  classification: EntityClassification,
+  occupation: OccupationResolution,
+) {
+  const actorMusician = occupation.primaryIsActor && occupation.hasMusicOccupation
+
+  const isMusicPerformer =
+    classification.isMusicPerformer &&
+    !actorMusician &&
+    (!classification.isHuman || occupation.primaryIsMusic)
+
+  const isLocation = classification.isLocation
+  const isPerson = classification.isHuman && !isMusicPerformer && !isLocation
+
+  const showImageCarousel = resolveShowImageCarousel({
+    isMusicPerformer,
+    isLocation,
+    isPerson,
+    actorMusician,
+    personShowsCarousel: personShowsImageCarousel(occupation, actorMusician),
+  })
+
+  return { isMusicPerformer, isLocation, isPerson, showImageCarousel, actorMusician }
+}
+
 export async function fetchMusicalGroup(
   id: string,
   options: FetchMusicalGroupOptions = {},
 ): Promise<FetchMusicalGroupResult> {
   const { signal, onPartial } = options
 
-  // Stage 0: entity claims (fast Action API) and classification (a single WDQS
-  // query) run in parallel. Everything shown in the title + facts is known once
-  // both resolve — no further SPARQL on the critical path.
+  // Stage 0: entity claims (Action API), classification (WDQS), and occupation
+  // resolution (P279* on P106) run in parallel where possible.
   const [claims, classification] = await Promise.all([
     fetchEntityClaims(id, signal),
     classifyEntity(id, signal),
   ])
 
-  const performer = classification.isMusicPerformer
-  const location = classification.isLocation
+  const occupation = await resolveOccupations(claims.occupationIds, {
+    preferredIds: claims.preferredOccupationIds,
+    signal,
+  })
+
+  const profile = resolveEntityProfile(classification, occupation)
+  const { isMusicPerformer: performer, isLocation: location, isPerson: person, showImageCarousel } =
+    profile
   const typeLabel = classificationTypeLabel(classification)
 
   // Emit a partial record so the UI can paint the title + facts immediately
   // while Stage 1 (images, genres, country, edit indicator) streams in.
   if (onPartial) {
-    if (performer || location) {
+    if (performer || location || person) {
       onPartial({
         ...richSharedData(id, claims),
         isMusicPerformer: performer,
         isLocation: location,
-        typeLabel,
+        isPerson: person,
+        showImageCarousel,
+        typeLabel: person ? undefined : typeLabel,
         genres: [],
         ...(location ? { population: claims.population } : {}),
       })
@@ -152,7 +193,7 @@ export async function fetchMusicalGroup(
   }
 
   // Stage 1: Commons media + label lookups — all Action / Commons API.
-  if (!performer && !location) {
+  if (!performer && !location && !person) {
     const media = await fetchIntroMedia(id, claims, { editIndicator: false, signal })
     return {
       data: {
@@ -178,8 +219,33 @@ export async function fetchMusicalGroup(
         ...richSharedData(id, claims, media),
         isMusicPerformer: true,
         isLocation: false,
+        isPerson: false,
+        showImageCarousel: true,
         typeLabel,
         genres,
+      },
+    }
+  }
+
+  if (person) {
+    const labelIds = occupation.primaryId
+      ? [occupation.primaryId]
+      : claims.occupationIds.slice(0, 1)
+
+    const [media, labelMap] = await Promise.all([
+      fetchIntroMedia(id, claims, { editIndicator: true, signal }),
+      resolveEntityLabels(labelIds, signal).catch(() => new Map<string, string>()),
+    ])
+
+    return {
+      data: {
+        ...richSharedData(id, claims, media),
+        isMusicPerformer: false,
+        isLocation: false,
+        isPerson: true,
+        showImageCarousel,
+        typeLabel: primaryOccupationLabel(labelMap, occupation),
+        genres: [],
       },
     }
   }
@@ -201,6 +267,8 @@ export async function fetchMusicalGroup(
       ...richSharedData(id, claims, media),
       isMusicPerformer: false,
       isLocation: true,
+      isPerson: false,
+      showImageCarousel: true,
       typeLabel,
       genres: [],
       country: countryLabel,

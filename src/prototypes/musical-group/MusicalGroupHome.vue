@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { CdxProgressBar } from '@wikimedia/codex'
+import { CdxButton, CdxProgressBar } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
 import {
   cdxIconAlert,
@@ -41,6 +41,10 @@ import {
 import { useCommonsPhotosInfiniteScroll } from './useCommonsPhotosFeed'
 import { useMusicalGroupHome } from './useMusicalGroupHome'
 import { useMusicalGroupHomeTabScroll } from './useMusicalGroupHomeTabScroll'
+import {
+  getMusicalGroupScrollPage,
+  scrollMusicalGroupPageToElement,
+} from './musicalGroupScrollOffset'
 import { useMusicalGroupRoute } from './useMusicalGroupRoute'
 import { useMusicalGroupScrollStates } from './useMusicalGroupScrollStates'
 import { useRelatedReadingFeed } from './useRelatedReadingFeed'
@@ -66,30 +70,46 @@ const {
   didYouKnow,
   bornOnThisDay,
   featuredTabLoading,
+  featuredTabError,
+  retryFeaturedFeed,
   trendingItems,
   trendingLoading,
+  trendingTabError,
+  retryTrendingFeed,
   hasSavedPages,
   savedSorted,
   recentlySaved,
   helpWanted,
   recentChanges,
+  helpWantedLoading,
+  savedItemsLoading,
 } = useMusicalGroupHome()
 
-const showFeaturedFeed = computed(
+const featuredTabHasContent = computed(
   () =>
-    activeTab.value === 'featured' ||
-    (activeTab.value === 'home' && !hasSavedPages.value),
-)
-const showPersonalizedHome = computed(
-  () => activeTab.value === 'home' && hasSavedPages.value,
+    Boolean(featuredArticle.value) ||
+    didYouKnow.value.length > 0 ||
+    bornOnThisDay.value.length > 0,
 )
 
-const homeActive = computed(() => showPersonalizedHome.value)
+const showFeaturedFeed = computed(() => activeTab.value === 'featured')
+
+const FEATURED_DYK_SECTION_ID = 'featured-did-you-know'
+const FEATURED_BORN_SECTION_ID = 'featured-born-on-this-day'
+const HOME_FEATURED_PREVIEW_LIMIT = 3
+
+const homeActive = computed(() => activeTab.value === 'home' && hasSavedPages.value)
 const readActive = computed(() => activeTab.value === 'read')
 const savedActive = computed(() => activeTab.value === 'saved')
 const readTabRecent = computed(() => savedSorted.value.slice(0, 5))
 const savedTabRelatedLimit = 3
 const homeTrendingPreview = computed(() => trendingItems.value.slice(0, 2))
+const homeDidYouKnowPreview = computed(() =>
+  didYouKnow.value.slice(0, HOME_FEATURED_PREVIEW_LIMIT),
+)
+const homeBornOnThisDayPreview = computed(() =>
+  bornOnThisDay.value.slice(0, HOME_FEATURED_PREVIEW_LIMIT),
+)
 const homeRelatedLimit = 3
 const relatedSentinel = ref<HTMLElement | null>(null)
 
@@ -196,10 +216,31 @@ function editSuggestionRelatedToLabel(suggestion: HomeHelpWanted): string {
   return formatEditSuggestionRelatedToLabel(suggestion, savedSorted.value)
 }
 
+async function scrollToFeaturedSectionHash(rawHash: string): Promise<void> {
+  await nextTick()
+  requestAnimationFrame(() => {
+    const page = getMusicalGroupScrollPage()
+    const id = rawHash.startsWith('#') ? rawHash.slice(1) : rawHash
+    const target = document.getElementById(id)
+    if (page && target) {
+      scrollMusicalGroupPageToElement(page, target)
+    }
+  })
+}
+
+watch(
+  () => [route.hash, activeTab.value, featuredTabLoading.value] as const,
+  ([hash, tab, loading]) => {
+    if (tab !== 'featured' || loading || !hash) return
+    void scrollToFeaturedSectionHash(hash)
+  },
+  { immediate: true },
+)
+
 watch(
   [hasSavedPages, activeTab],
   ([saved, tab]) => {
-    if (!saved && (tab === 'read' || tab === 'featured' || tab === 'saved' || tab === 'contribute' || tab === 'activity')) {
+    if (!saved && (tab === 'read' || tab === 'saved' || tab === 'contribute' || tab === 'activity')) {
       setHomeTab('home')
     }
   },
@@ -230,22 +271,35 @@ watch(
         <CdxProgressBar v-if="featuredTabLoading" inline aria-label="Loading featured" />
 
         <template v-else>
-          <WikitaCardItem
-            v-if="featuredArticle"
-            type="Article of the day"
-            :type-icon="cdxIconStar"
-            type-color="success"
-            :title="featuredArticle.title"
-            :body="featuredArticle.description"
-            :show-snippet="false"
-            :show-info="false"
-            :thumbnail-url="featuredArticle.thumbnailUrl"
-            :thumbnail-alt="featuredArticle.title"
-            :href="featuredArticle.itemId ? itemHref(featuredArticle.itemId) : undefined"
-            :external-href="featuredArticle.itemId ? undefined : featuredArticle.articleUrl"
-          />
+          <div v-if="featuredTabError" class="musical-group-home__feed-error">
+            <p>{{ featuredTabError }}</p>
+            <CdxButton weight="quiet" @click="retryFeaturedFeed">Try again</CdxButton>
+          </div>
 
-          <WikitaHomeSection v-if="didYouKnow.length" title="Did you know">
+          <WikitaHomeSection
+            v-if="featuredArticle"
+            title="Community curated"
+          >
+            <WikitaCardItem
+              type="Article of the day"
+              :type-icon="cdxIconStar"
+              type-color="success"
+              :title="featuredArticle.title"
+              :body="featuredArticle.description"
+              :show-snippet="false"
+              :show-info="false"
+              :thumbnail-url="featuredArticle.thumbnailUrl"
+              :thumbnail-alt="featuredArticle.title"
+              :href="featuredArticle.itemId ? itemHref(featuredArticle.itemId) : undefined"
+              :external-href="featuredArticle.itemId ? undefined : featuredArticle.articleUrl"
+            />
+          </WikitaHomeSection>
+
+          <WikitaHomeSection
+            v-if="didYouKnow.length"
+            title="Did you know"
+            :section-id="FEATURED_DYK_SECTION_ID"
+          >
             <WikitaCardItem
               v-for="(item, index) in didYouKnow"
               :key="`dyk-${index}`"
@@ -263,7 +317,11 @@ watch(
             />
           </WikitaHomeSection>
 
-          <WikitaHomeSection v-if="bornOnThisDay.length" title="Born on this day">
+          <WikitaHomeSection
+            v-if="bornOnThisDay.length"
+            title="Born on this day"
+            :section-id="FEATURED_BORN_SECTION_ID"
+          >
             <WikitaCardItem
               v-for="item in bornOnThisDay"
               :key="item.enwikiTitle"
@@ -278,10 +336,17 @@ watch(
               :external-href="item.itemId ? undefined : item.articleUrl"
             />
           </WikitaHomeSection>
+
+          <p
+            v-else-if="!featuredTabHasContent && !featuredTabError"
+            class="musical-group-home__feed-empty"
+          >
+            No featured content is available right now.
+          </p>
         </template>
       </template>
 
-      <template v-else-if="showPersonalizedHome">
+      <template v-else-if="activeTab === 'home'">
         <WikitaHomeSection
           v-if="featuredArticle"
           title="Featured"
@@ -329,7 +394,53 @@ watch(
         </WikitaHomeSection>
 
         <WikitaHomeSection
-          v-if="recentlySaved.length"
+          v-if="!hasSavedPages && homeDidYouKnowPreview.length"
+          title="Did you know"
+          to-tab="featured"
+          :to-hash="FEATURED_DYK_SECTION_ID"
+          @title-navigate="setHomeTab"
+        >
+          <WikitaCardItem
+            v-for="(item, index) in homeDidYouKnowPreview"
+            :key="`home-dyk-${index}`"
+            :show-type="false"
+            :show-title="false"
+            :body="item.text"
+            :body-emphasis="item.emphasis"
+            :show-snippet="false"
+            :show-info="false"
+            :show-thumbnail="Boolean(item.thumbnailUrl)"
+            :thumbnail-url="item.thumbnailUrl"
+            :thumbnail-alt="item.title ?? 'Did you know'"
+            :href="item.itemId ? itemHref(item.itemId) : undefined"
+            :external-href="item.itemId ? undefined : item.articleUrl"
+          />
+        </WikitaHomeSection>
+
+        <WikitaHomeSection
+          v-if="!hasSavedPages && homeBornOnThisDayPreview.length"
+          title="Born on this day"
+          to-tab="featured"
+          :to-hash="FEATURED_BORN_SECTION_ID"
+          @title-navigate="setHomeTab"
+        >
+          <WikitaCardItem
+            v-for="item in homeBornOnThisDayPreview"
+            :key="`home-born-${item.enwikiTitle}`"
+            :show-type="false"
+            :title="item.title"
+            :body="`Born ${item.year}: ${item.text}`"
+            :show-snippet="false"
+            :show-info="false"
+            :thumbnail-url="item.thumbnailUrl"
+            :thumbnail-alt="item.title"
+            :href="item.itemId ? itemHref(item.itemId) : undefined"
+            :external-href="item.itemId ? undefined : item.articleUrl"
+          />
+        </WikitaHomeSection>
+
+        <WikitaHomeSection
+          v-if="hasSavedPages && recentlySaved.length"
           title="Saved"
           to-tab="saved"
           @title-navigate="setHomeTab"
@@ -349,7 +460,7 @@ watch(
         </WikitaHomeSection>
 
         <WikitaHomeSection
-          v-if="homeRelatedPreview.length || homeRelatedLoading"
+          v-if="hasSavedPages && (homeRelatedPreview.length || homeRelatedLoading)"
           title="Related reading"
           to-tab="read"
           @title-navigate="setHomeTab"
@@ -378,30 +489,35 @@ watch(
         </WikitaHomeSection>
 
         <WikitaHomeSection
-          v-if="helpWanted.length"
+          v-if="hasSavedPages"
           title="Help wanted"
           to-tab="contribute"
           @title-navigate="setHomeTab"
         >
-          <WikitaCardItem
-            v-for="suggestion in helpWanted"
-            :key="suggestion.itemId"
-            :type="suggestion.suggestionLabel"
-            :type-icon="resolveEditOpportunityIcon(suggestion.need)"
-            type-color="progressive"
-            :title="suggestion.title"
-            :body="suggestion.body"
-            :show-snippet="false"
-            :show-info="Boolean(editSuggestionRelatedToLabel(suggestion))"
-            :info-left="editSuggestionRelatedToLabel(suggestion)"
-            :thumbnail-url="suggestion.thumbnailUrl"
-            :thumbnail-alt="suggestion.title"
-            :href="itemHref(suggestion.itemId)"
-          />
+          <div v-if="helpWantedLoading" class="musical-group-home__loading">
+            <CdxProgressBar inline aria-label="Loading edit suggestions" />
+          </div>
+          <template v-else>
+            <WikitaCardItem
+              v-for="suggestion in helpWanted"
+              :key="suggestion.itemId"
+              :type="suggestion.suggestionLabel"
+              :type-icon="resolveEditOpportunityIcon(suggestion.need)"
+              type-color="progressive"
+              :title="suggestion.title"
+              :body="suggestion.body"
+              :show-snippet="false"
+              :show-info="Boolean(editSuggestionRelatedToLabel(suggestion))"
+              :info-left="editSuggestionRelatedToLabel(suggestion)"
+              :thumbnail-url="suggestion.thumbnailUrl"
+              :thumbnail-alt="suggestion.title"
+              :href="itemHref(suggestion.itemId)"
+            />
+          </template>
         </WikitaHomeSection>
 
         <WikitaHomeSection
-          v-if="recentChanges.length"
+          v-if="hasSavedPages && recentChanges.length"
           title="Recent changes"
           to-tab="activity"
           @title-navigate="setHomeTab"
@@ -533,6 +649,11 @@ watch(
       <template v-else-if="activeTab === 'trending'">
         <CdxProgressBar v-if="trendingLoading" inline aria-label="Loading trending" />
 
+        <div v-else-if="trendingTabError" class="musical-group-home__feed-error">
+          <p>{{ trendingTabError }}</p>
+          <CdxButton weight="quiet" @click="retryTrendingFeed">Try again</CdxButton>
+        </div>
+
         <WikitaHomeSection v-else-if="trendingItems.length">
           <WikitaCardItem
             v-for="item in trendingItems"
@@ -553,7 +674,7 @@ watch(
           />
         </WikitaHomeSection>
 
-        <p v-else class="musical-group-home__trending-empty">
+        <p v-else class="musical-group-home__feed-empty">
           No trending articles available.
         </p>
       </template>
@@ -561,6 +682,7 @@ watch(
       <WikitaActivityTabPanel
         v-else-if="activeTab === 'activity'"
         :items="savedSorted"
+        :saved-items-loading="savedItemsLoading"
         :active="activeTab === 'activity'"
         scope="home"
       />
@@ -609,12 +731,21 @@ watch(
 
 .musical-group-home__read-empty,
 .musical-group-home__saved-empty,
-.musical-group-home__trending-empty {
+.musical-group-home__feed-empty,
+.musical-group-home__feed-error p {
   margin: 0;
   font-size: var(--font-size-medium);
   font-weight: var(--font-weight-normal);
   line-height: var(--line-height-medium);
   color: var(--color-subtle);
+}
+
+.musical-group-home__feed-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-50);
+  min-height: var(--musical-group-tab-panel-min-height, 50vh);
 }
 
 .musical-group-home__saved-tab {

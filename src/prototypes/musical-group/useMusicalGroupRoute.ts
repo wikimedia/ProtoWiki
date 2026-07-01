@@ -3,6 +3,7 @@ import { useRoute, useRouter, type RouteLocationRaw } from 'vue-router'
 
 import type { HomeTabId } from './components/WikitaHomeTabs.vue'
 import type { TabId } from './data/types'
+import { normalizeQid } from './data/wikidataApi'
 
 const TAB_IDS: TabId[] = [
   'overview',
@@ -62,23 +63,42 @@ export function useMusicalGroupRoute() {
     return { query }
   }
 
-  function homeTabRoute(tab: HomeTabId): RouteLocationRaw {
+  function homeTabRoute(tab: HomeTabId, hash?: string): RouteLocationRaw {
     const query = { ...route.query }
     if (tab === 'home') {
       delete query.tab
     } else {
       query.tab = tab
     }
-    return { query }
+    if (hash) {
+      return { query, hash: hash.startsWith('#') ? hash : `#${hash}` }
+    }
+    return { query, hash: '' }
   }
 
   async function setTab(tab: TabId) {
     await router.replace(tabRoute(tab))
   }
 
-  async function setHomeTab(tab: HomeTabId) {
-    if (tab === activeHomeTab.value) return
-    await router.push(homeTabRoute(tab))
+  async function setHomeTab(tab: HomeTabId, hash?: string) {
+    if (tab === activeHomeTab.value && !hash) return
+    await router.push(homeTabRoute(tab, hash))
+  }
+
+  async function goToHomeTab() {
+    const query = { ...route.query }
+    delete query.item
+    delete query.tab
+    await router.replace({ query })
+  }
+
+  async function goToContribute() {
+    const id = normalizeQid(route.query.item)
+    if (id) {
+      await setTab('contribute')
+    } else {
+      await setHomeTab('contribute')
+    }
   }
 
   return {
@@ -91,5 +111,7 @@ export function useMusicalGroupRoute() {
     itemRoute,
     setTab,
     setHomeTab,
+    goToHomeTab,
+    goToContribute,
   }
 }

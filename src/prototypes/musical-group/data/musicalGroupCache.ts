@@ -12,7 +12,7 @@ import type {
   WikidataExternalLink,
 } from './types'
 
-export const MUSICAL_GROUP_CACHE_VERSION = 33
+export const MUSICAL_GROUP_CACHE_VERSION = 38
 
 const STORAGE_KEY = 'musical-group-page-cache'
 
@@ -156,6 +156,13 @@ function isMusicalGroupData(value: unknown): value is MusicalGroupData {
   if (typeof record.label !== 'string' || !record.label.length) return false
   if (typeof record.isMusicPerformer !== 'boolean') return false
   if (typeof record.isLocation !== 'boolean') return false
+  if (typeof record.isPerson !== 'boolean') return false
+  if (
+    record.showImageCarousel !== undefined &&
+    typeof record.showImageCarousel !== 'boolean'
+  ) {
+    return false
+  }
   if (!Array.isArray(record.genres) || !record.genres.every((g) => typeof g === 'string')) {
     return false
   }

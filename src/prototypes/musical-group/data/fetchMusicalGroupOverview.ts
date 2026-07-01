@@ -2,7 +2,7 @@ import { loadConfig, PROTOWIKI_API_PROJECT_URL, PROTOWIKI_API_USER_AGENT, wikime
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 
-import { EN_WIKI_HOST, fetchWikibaseItemId, wikiActionUrl } from './enwikiTitle'
+import { EN_WIKI_HOST, enwikiTitlesMatch, fetchWikibaseItemId, normalizeEnwikiTitle, wikiActionUrl } from './enwikiTitle'
 import { isExcludedEditOpportunityNeed, resolveEditOpportunityCopy } from './editOpportunityCopy'
 import { fetchWithTimeout } from './fetchWithTimeout'
 import type {
@@ -15,6 +15,7 @@ import type {
   MusicalGroupOverviewRelated,
   MusicalGroupOverviewSnippet,
 } from './types'
+import { normalizeQid } from './wikidataApi'
 
 const MICROTASK_QUALITY_CHECK_URL = 'https://microtask-generator.toolforge.org/quality-check'
 
@@ -201,44 +202,77 @@ async function fetchMorelikeHits(
   return json.query?.search ?? []
 }
 
+function titleCacheKey(title: string): string {
+  return normalizeEnwikiTitle(title).toLowerCase()
+}
+
+function isSameOverviewItem(
+  itemId: string | undefined,
+  title: string | undefined,
+  excludeItemId?: string,
+  excludeTitle?: string,
+): boolean {
+  if (excludeItemId && itemId && normalizeQid(itemId) === normalizeQid(excludeItemId)) {
+    return true
+  }
+  if (excludeTitle && title && enwikiTitlesMatch(title, excludeTitle)) {
+    return true
+  }
+  return false
+}
+
 async function fetchMorelikeRelated(
   seedTitle: string,
   relatedToTitle: string,
+  excludeItemId: string | undefined,
   signal?: AbortSignal,
 ): Promise<MusicalGroupOverviewRelated | undefined> {
-  const hits = await fetchMorelikeHits(seedTitle, signal)
-  const normalizedSeed = normalizeTitle(seedTitle)
-  const hit = hits.find((candidate) => {
-    const title = candidate.title
-    return title && normalizeTitle(title) !== normalizedSeed
-  })
-  if (!hit?.title) return undefined
+  const hits = await fetchMorelikeHits(seedTitle, signal, 10)
+  const excludedTitles = new Set<string>([titleCacheKey(seedTitle)])
 
-  const relatedTitle = hit.title
-  const [summary, views, wikibaseId] = await Promise.all([
-    fetchPageSummary(relatedTitle, signal),
-    resolvePageviewsLabel(relatedTitle, signal),
-    fetchWikibaseItemId(relatedTitle, signal),
-  ])
-  const timestamp = summary?.timestamp ?? ''
-  const relative = timestamp ? formatRelativeTime(timestamp) : '—'
+  for (const candidate of hits) {
+    if (!candidate.title || excludedTitles.has(titleCacheKey(candidate.title))) continue
 
-  // Any article with a Wikidata item opens inside Wikita — the item view renders a
-  // sparse entity (label, description, Commons images) when it isn't a performer or place.
-  return {
-    id: wikibaseId,
-    title: summary?.title ?? relatedTitle,
-    description: summary?.description ?? '',
-    thumbnailUrl: summary?.thumbnail?.source,
-    articleUrl:
-      summary?.content_urls?.desktop?.page ??
-      `https://${EN_WIKI_HOST}/wiki/${pageviewsArticleSlug(relatedTitle)}`,
-    lastEditedTimestamp: timestamp,
-    lastEditedLabel: timestamp ? `Updated ${relative}` : 'Updated —',
-    viewCount: views.total,
-    viewsLabel: views.label,
-    relatedToTitle,
+    const relatedTitle = candidate.title
+    const [summary, views, wikibaseId] = await Promise.all([
+      fetchPageSummary(relatedTitle, signal),
+      resolvePageviewsLabel(relatedTitle, signal),
+      fetchWikibaseItemId(relatedTitle, signal),
+    ])
+
+    const resolvedTitle = summary?.title ?? relatedTitle
+    if (
+      isSameOverviewItem(wikibaseId, resolvedTitle, excludeItemId, seedTitle) ||
+      isSameOverviewItem(wikibaseId, relatedTitle, excludeItemId, seedTitle)
+    ) {
+      continue
+    }
+
+    excludedTitles.add(titleCacheKey(relatedTitle))
+    excludedTitles.add(titleCacheKey(resolvedTitle))
+
+    const timestamp = summary?.timestamp ?? ''
+    const relative = timestamp ? formatRelativeTime(timestamp) : '—'
+
+    // Any article with a Wikidata item opens inside Wikita — the item view renders a
+    // sparse entity (label, description, Commons images) when it isn't a performer or place.
+    return {
+      id: wikibaseId,
+      title: resolvedTitle,
+      description: summary?.description ?? '',
+      thumbnailUrl: summary?.thumbnail?.source,
+      articleUrl:
+        summary?.content_urls?.desktop?.page ??
+        `https://${EN_WIKI_HOST}/wiki/${pageviewsArticleSlug(relatedTitle)}`,
+      lastEditedTimestamp: timestamp,
+      lastEditedLabel: timestamp ? `Updated ${relative}` : 'Updated —',
+      viewCount: views.total,
+      viewsLabel: views.label,
+      relatedToTitle,
+    }
   }
+
+  return undefined
 }
 
 async function fetchSnippetHits(
@@ -312,14 +346,13 @@ function formatSnippetHtml(html: string): string {
 async function fetchSnippetMention(
   searchTerm: string,
   ownTitle: string,
+  excludeItemId: string | undefined,
   signal?: AbortSignal,
 ): Promise<MusicalGroupOverviewSnippet | undefined> {
   const [morelikeHits, mentionHits] = await Promise.all([
     fetchMorelikeHits(ownTitle, signal, 15),
     fetchSnippetHits(searchTerm, signal),
   ])
-
-  const normalizedOwn = normalizeTitle(ownTitle)
 
   // Which pages actually mention the item, and the snippet of that mention.
   const snippetByTitle = new Map<string, string>()
@@ -329,18 +362,22 @@ async function fetchSnippetMention(
     }
   }
 
-  const usable = (title: string | undefined): title is string =>
-    Boolean(title) &&
-    normalizeTitle(title as string) !== normalizedOwn &&
-    !isLowValueMentionTitle(title as string)
+  const usable = async (title: string | undefined): Promise<boolean> => {
+    if (!title || enwikiTitlesMatch(title, ownTitle) || isLowValueMentionTitle(title)) {
+      return false
+    }
+    if (!excludeItemId) return true
+    const wikibaseId = await fetchWikibaseItemId(title, signal)
+    return !isSameOverviewItem(wikibaseId, title, excludeItemId, ownTitle)
+  }
 
   let mentionTitle: string | undefined
   let snippet: string | undefined
 
   // Prefer a topically-related (morelike) page that mentions the item.
   for (const candidate of morelikeHits) {
-    if (!usable(candidate.title)) continue
-    const related = snippetByTitle.get(normalizeTitle(candidate.title))
+    if (!(await usable(candidate.title))) continue
+    const related = snippetByTitle.get(normalizeTitle(candidate.title as string))
     if (!related) continue
     mentionTitle = candidate.title
     snippet = related
@@ -349,11 +386,12 @@ async function fetchSnippetMention(
 
   // Fall back to the strongest plain mention if no related page mentions it.
   if (!mentionTitle) {
-    const hit = mentionHits.find(
-      (candidate) => usable(candidate.title) && Boolean(candidate.snippet),
-    )
-    mentionTitle = hit?.title
-    snippet = hit?.snippet
+    for (const candidate of mentionHits) {
+      if (!(await usable(candidate.title)) || !candidate.snippet) continue
+      mentionTitle = candidate.title
+      snippet = candidate.snippet
+      break
+    }
   }
 
   if (!mentionTitle || !snippet) return undefined
@@ -363,9 +401,14 @@ async function fetchSnippetMention(
     fetchWikibaseItemId(mentionTitle, signal),
   ])
 
+  if (isSameOverviewItem(wikibaseId, summary?.title ?? mentionTitle, excludeItemId, ownTitle)) {
+    return undefined
+  }
+
   return {
     id: wikibaseId,
     title: summary?.title ?? mentionTitle,
+    description: summary?.description ?? '',
     snippetHtml: formatSnippetHtml(snippet),
     thumbnailUrl: summary?.thumbnail?.source,
     articleUrl:
@@ -773,8 +816,8 @@ export async function fetchMusicalGroupOverview(
       () => fetchArticleWordCount(title, signal),
       () => resolvePageviewsLabel(title, signal),
       () => fetchInfobox(title, signal).catch(() => undefined),
-      () => fetchMorelikeRelated(title, data.label, signal).catch(() => undefined),
-      () => fetchSnippetMention(data.label, title, signal).catch(() => undefined),
+      () => fetchMorelikeRelated(title, data.label, data.id, signal).catch(() => undefined),
+      () => fetchSnippetMention(data.label, title, data.id, signal).catch(() => undefined),
       () => fetchEditOpportunity(title, signal).catch(() => undefined),
     ],
     3,

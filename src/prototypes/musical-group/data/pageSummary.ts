@@ -37,14 +37,22 @@ async function fetchPageSummaryFromNetwork(
   return (await response.json()) as PageSummary
 }
 
+export interface FetchPageSummaryOptions {
+  /** Retry the network when the only cached value is a prior failure (`null`). */
+  bypassFailureCache?: boolean
+}
+
 /** REST `/page/summary/{title}` on English Wikipedia. */
 export async function fetchPageSummary(
   title: string,
   signal?: AbortSignal,
   purpose = 'musical-group-home-summary',
+  options?: FetchPageSummaryOptions,
 ): Promise<PageSummary | null> {
   const cached = getCachedPageSummary(title)
-  if (cached !== undefined) return cached
+  if (cached !== undefined) {
+    if (cached !== null || !options?.bypassFailureCache) return cached
+  }
 
   const inFlight = getPageSummaryInFlight(title)
   if (inFlight) return inFlight

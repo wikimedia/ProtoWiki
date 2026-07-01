@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, toRef } from 'vue'
 
-import { CdxProgressBar } from '@wikimedia/codex'
+import { CdxButton, CdxProgressBar } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
 import {
   cdxIconAlert,
@@ -23,21 +23,27 @@ import {
   type HomeRecentChangeFlag,
   type HomeSavedItem,
 } from '../data/types'
-import { useActivityFeed } from '../useActivityFeed'
+import { useActivityFeed, type ActivityFeedMode } from '../useActivityFeed'
 import { useCommonsPhotosInfiniteScroll } from '../useCommonsPhotosFeed'
 
 interface Props {
   items: HomeSavedItem[]
   active: boolean
+  savedItemsLoading?: boolean
   scope?: 'home' | 'item'
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  savedItemsLoading: false,
   scope: 'home',
 })
 
 const itemsRef = toRef(props, 'items')
 const activeRef = toRef(props, 'active')
+
+const feedMode = computed<ActivityFeedMode>(() =>
+  props.scope === 'home' ? 'latest' : 'full',
+)
 
 const itemsWithEnwiki = computed(() =>
   props.items.filter((item) => item.enwikiTitle),
@@ -51,12 +57,15 @@ const {
   loading: activityLoading,
   hasMore: activityHasMore,
   queueReady: activityQueueReady,
+  itemIdsWithoutRevisions,
+  revisionLookupFailed,
   loadMore: loadMoreActivity,
-} = useActivityFeed(itemsRef, activeRef)
+  retry: retryActivity,
+} = useActivityFeed(itemsRef, activeRef, feedMode)
 
 useCommonsPhotosInfiniteScroll({
   sentinel: activitySentinel,
-  active: activeRef,
+  active: computed(() => activeRef.value && feedMode.value === 'full'),
   hasMore: activityHasMore,
   loading: activityLoading,
   loadMore: loadMoreActivity,
@@ -103,28 +112,65 @@ function onToggleEditThank(revid: number) {
   }
 }
 
+const activityLoadErrorMessage = computed(() =>
+  props.scope === 'item'
+    ? 'Could not load recent edits on this page.'
+    : 'Could not load recent edits on your saved pages.',
+)
+
 const noEditsMessage = computed(() =>
   props.scope === 'item'
     ? 'No recent edits on this page.'
     : 'No recent edits on your saved pages.',
 )
+
+const allEnwikiItemsMissingRevisions = computed(() => {
+  if (!itemsWithEnwiki.value.length) return false
+  if (!itemIdsWithoutRevisions.value.length) return false
+  const missing = new Set(itemIdsWithoutRevisions.value)
+  return itemsWithEnwiki.value.every((item) => missing.has(item.id))
+})
 </script>
 
 <template>
   <div class="wikita-activity-tab-panel">
     <template v-if="scope === 'home'">
+      <div v-if="savedItemsLoading" class="wikita-activity-tab-panel__loading">
+        <CdxProgressBar inline aria-label="Loading saved pages" />
+      </div>
+      <template v-else>
       <p v-if="!hasItems" class="wikita-activity-tab-panel__empty">
         You have not saved any pages yet.
       </p>
       <p v-else-if="!itemsWithEnwiki.length" class="wikita-activity-tab-panel__empty">
         None of your saved pages have English Wikipedia articles.
       </p>
+      <div
+        v-else-if="activityQueueReady && revisionLookupFailed && !activityChanges.length && !activityLoading"
+        class="wikita-activity-tab-panel__error"
+      >
+        <p>{{ activityLoadErrorMessage }}</p>
+        <CdxButton weight="quiet" @click="retryActivity">Try again</CdxButton>
+      </div>
+      <div
+        v-else-if="
+          activityQueueReady &&
+          !activityChanges.length &&
+          !activityLoading &&
+          allEnwikiItemsMissingRevisions
+        "
+        class="wikita-activity-tab-panel__error"
+      >
+        <p>{{ activityLoadErrorMessage }}</p>
+        <CdxButton weight="quiet" @click="retryActivity">Try again</CdxButton>
+      </div>
       <p
         v-else-if="activityQueueReady && !activityChanges.length && !activityLoading"
         class="wikita-activity-tab-panel__empty"
       >
         {{ noEditsMessage }}
       </p>
+      </template>
     </template>
     <template v-else>
       <p
@@ -165,7 +211,12 @@ const noEditsMessage = computed(() =>
       <CdxProgressBar inline aria-label="Loading activity" />
     </div>
 
-    <div ref="activitySentinel" class="wikita-activity-tab-panel__sentinel" aria-hidden="true" />
+    <div
+      v-if="feedMode === 'full'"
+      ref="activitySentinel"
+      class="wikita-activity-tab-panel__sentinel"
+      aria-hidden="true"
+    />
   </div>
 </template>
 
@@ -178,6 +229,21 @@ const noEditsMessage = computed(() =>
 }
 
 .wikita-activity-tab-panel__empty {
+  margin: 0;
+  font-size: var(--font-size-medium);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-medium);
+  color: var(--color-subtle);
+}
+
+.wikita-activity-tab-panel__error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-50);
+}
+
+.wikita-activity-tab-panel__error p {
   margin: 0;
   font-size: var(--font-size-medium);
   font-weight: var(--font-weight-normal);

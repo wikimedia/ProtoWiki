@@ -2,8 +2,8 @@ import { onUnmounted, ref, watch, type Ref } from 'vue'
 
 import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 
-import { bookmarksKey } from './data/cacheKeys'
 import {
+  fetchLatestRecentChanges,
   fetchLatestRevisionsForTitles,
   fetchNextActivityCandidates,
   fetchRecentChangeForItem,
@@ -13,24 +13,30 @@ import {
   type PageActivityState,
 } from './data/fetchRecentChanges'
 import { getCachedActivityFeed, setCachedActivityFeed } from './data/homeTabCache'
+import { savedPagesListKey } from './data/cacheKeys'
 import type { HomeRecentChange, HomeSavedItem } from './data/types'
 
 /** How many classified change cards to resolve per loadMore call. */
 const PAGE_SIZE = 3
 
+export type ActivityFeedMode = 'latest' | 'full'
+
 /**
- * Paginated Activity feed: fetches revision history for saved pages in
- * chronological order, classifying edits lazily as the user scrolls.
+ * Activity feed for saved pages. `latest` returns one classified edit per page;
+ * `full` paginates revision history as the user scrolls.
  */
 export function useActivityFeed(
   savedItems: Ref<HomeSavedItem[]>,
   active: Ref<boolean>,
+  mode: Ref<ActivityFeedMode> = ref('full'),
 ) {
   const changes = ref<HomeRecentChange[]>([])
   const loading = ref(false)
   const hasMore = ref(true)
   const error = ref<string | null>(null)
   const queueReady = ref(false)
+  const itemIdsWithoutRevisions = ref<string[]>([])
+  const revisionLookupFailed = ref(false)
 
   let queue: ActivityCandidate[] = []
   let pageStates: PageActivityState[] = []
@@ -40,14 +46,11 @@ export function useActivityFeed(
   let loadedForKey: string | null = null
 
   function savedKey(): string {
-    return [...savedItems.value]
-      .map((item) => item.id)
-      .sort()
-      .join(',')
+    return savedPagesListKey(savedItems.value)
   }
 
-  function dependencyKey(): string {
-    return bookmarksKey()
+  function feedCacheKey(listKey: string): string {
+    return `${mode.value}:${listKey}`
   }
 
   function resetState() {
@@ -55,6 +58,8 @@ export function useActivityFeed(
     loading.value = false
     error.value = null
     queueReady.value = false
+    itemIdsWithoutRevisions.value = []
+    revisionLookupFailed.value = false
     queue = []
     pageStates = []
     latestRevidByTitle = new Map()
@@ -63,8 +68,9 @@ export function useActivityFeed(
   }
 
   function persistState() {
+    const listKey = savedKey()
     setCachedActivityFeed({
-      dependencyKey: dependencyKey(),
+      dependencyKey: feedCacheKey(listKey),
       changes: changes.value,
       seenRevids: [...seenRevids],
       pageStates: pageStates.map((state) => ({
@@ -90,8 +96,8 @@ export function useActivityFeed(
     })
   }
 
-  function restoreFromCache(key: string): boolean {
-    const cached = getCachedActivityFeed(key)
+  function restoreFromCache(listKey: string): boolean {
+    const cached = getCachedActivityFeed(feedCacheKey(listKey))
     if (!cached) return false
 
     changes.value = cached.changes
@@ -152,7 +158,7 @@ export function useActivityFeed(
       return
     }
 
-    const revisions = await fetchLatestRevisionsForTitles(titles, signal)
+    const { revisions } = await fetchLatestRevisionsForTitles(titles, signal)
     latestRevidByTitle = new Map(
       [...revisions.entries()].map(([key, revision]) => [key, revision.revid]),
     )
@@ -171,6 +177,17 @@ export function useActivityFeed(
     queueReady.value = true
   }
 
+  async function loadLatest(signal: AbortSignal) {
+    const { changes: fresh, itemIdsWithoutRevisions: missing, revisionLookupFailed: lookupFailed } =
+      await fetchLatestRecentChanges(savedItems.value, signal)
+    changes.value = fresh
+    itemIdsWithoutRevisions.value = missing
+    revisionLookupFailed.value = lookupFailed
+    hasMore.value = false
+    queueReady.value = true
+    persistState()
+  }
+
   async function loadMore() {
     if (!active.value || loading.value || !hasMore.value) return
 
@@ -182,6 +199,11 @@ export function useActivityFeed(
     error.value = null
 
     try {
+      if (mode.value === 'latest') {
+        await loadLatest(signal)
+        return
+      }
+
       await ensureQueue(signal)
 
       if (!queue.length) {
@@ -219,12 +241,20 @@ export function useActivityFeed(
     }
   }
 
-  watch(
-    () => [savedKey(), active.value] as const,
-    ([key, isActive], oldValue) => {
-      const prevKey = oldValue?.[0]
+  function retry() {
+    if (!active.value) return
+    loadedForKey = null
+    resetState()
+    void loadMore()
+  }
 
-      if (key !== prevKey) {
+  watch(
+    () => [savedKey(), active.value, mode.value] as const,
+    ([key, isActive, feedMode], oldValue) => {
+      const prevKey = oldValue?.[0]
+      const prevMode = oldValue?.[2]
+
+      if (key !== prevKey || feedMode !== prevMode) {
         loadedForKey = null
       }
 
@@ -235,14 +265,14 @@ export function useActivityFeed(
         return
       }
 
-      if (loadedForKey === key) return
+      const loadKey = `${key}:${feedMode}`
+      if (loadedForKey === loadKey) return
 
-      loadedForKey = key
+      loadedForKey = loadKey
       fetchAbort?.abort()
       fetchAbort = null
 
-      const depKey = dependencyKey()
-      if (restoreFromCache(depKey)) return
+      if (restoreFromCache(key)) return
 
       resetState()
       void loadMore()
@@ -260,6 +290,9 @@ export function useActivityFeed(
     hasMore,
     error,
     queueReady,
+    itemIdsWithoutRevisions,
+    revisionLookupFailed,
     loadMore,
+    retry,
   }
 }

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { resetAllStoredData } from './data/resetAllStoredData'
+import { listBookmarks } from './data/bookmarks'
 import {
   loadHeaderVariantPreference,
   saveHeaderVariantPreference,
@@ -15,11 +16,14 @@ import { normalizeQid } from './data/wikidataApi'
 import WikitaChromeHeader, {
   type WikitaChromeHeaderVariant,
 } from './components/WikitaChromeHeader.vue'
+import WikitaFloatingNav from './components/WikitaFloatingNav.vue'
 import MusicalGroupHome from './MusicalGroupHome.vue'
 import MusicalGroupScreen from './MusicalGroupScreen.vue'
 import MusicalGroupSearch from './MusicalGroupSearch.vue'
 import MusicalGroupTitleRow from './MusicalGroupTitleRow.vue'
 import { useEntityExternalLinks } from './useEntityExternalLinks'
+import { useMusicalGroupRoute } from './useMusicalGroupRoute'
+import { scrollMusicalGroupPageToTop, scrollMusicalGroupTabIntoView } from './musicalGroupScrollOffset'
 
 import { CdxProgressBar, CdxToastContainer } from '@wikimedia/codex'
 
@@ -42,6 +46,8 @@ const overviewLoading = ref(false)
 const fetchError = ref<string | null>(null)
 const searchOpen = ref(false)
 const headerVariant = ref<WikitaChromeHeaderVariant>(loadHeaderVariantPreference())
+
+const { activeTab, activeHomeTab, goToHomeTab, goToContribute } = useMusicalGroupRoute()
 
 const { links: externalLinks, loading: linksLoading, error: linksError } =
   useEntityExternalLinks(itemId)
@@ -170,17 +176,36 @@ const showSearch = computed(() => searchOpen.value)
 const showHome = computed(() => !itemId.value && !searchOpen.value)
 const showEntityChrome = computed(() => Boolean(itemId.value) && !searchOpen.value)
 
+const showFloatingEdit = computed(() => {
+  if (itemId.value) {
+    if (overviewLoading.value || overview.value === undefined) {
+      return listBookmarks().length > 0
+    }
+    return Boolean(overview.value.article) && !overview.value.noEnglishArticle
+  }
+  return listBookmarks().length > 0
+})
+
+const floatingHomeActive = computed(
+  () => !itemId.value && !searchOpen.value && activeHomeTab.value === 'home',
+)
+
+const floatingEditActive = computed(() => {
+  if (itemId.value) return activeTab.value === 'contribute'
+  return !searchOpen.value && activeHomeTab.value === 'contribute'
+})
+
 function onToggleSearch() {
   searchOpen.value = !searchOpen.value
 }
 
 async function onGoHome() {
+  if (!itemId.value && !searchOpen.value && activeHomeTab.value === 'home') {
+    scrollMusicalGroupPageToTop()
+    return
+  }
   searchOpen.value = false
-  if (!itemId.value) return
-  const query = { ...route.query }
-  delete query.item
-  delete query.tab
-  await router.replace({ query })
+  await goToHomeTab()
 }
 
 async function onNavigate(id: string) {
@@ -206,6 +231,27 @@ async function onResetStoredData() {
 
   const query = { ...route.query, item: undefined }
   await router.replace({ query })
+}
+
+async function onFloatingGoHome() {
+  if (floatingHomeActive.value) {
+    scrollMusicalGroupPageToTop()
+    return
+  }
+  searchOpen.value = false
+  await goToHomeTab()
+}
+
+async function onFloatingGoContribute() {
+  if (floatingEditActive.value) {
+    scrollMusicalGroupPageToTop()
+    scrollMusicalGroupTabIntoView('contribute')
+    return
+  }
+  searchOpen.value = false
+  await goToContribute()
+  await nextTick()
+  scrollMusicalGroupTabIntoView('contribute')
 }
 </script>
 
@@ -262,6 +308,13 @@ async function onResetStoredData() {
         />
       </template>
     </div>
+    <WikitaFloatingNav
+      :show-edit="showFloatingEdit"
+      :home-active="floatingHomeActive"
+      :edit-active="floatingEditActive"
+      @go-home="onFloatingGoHome"
+      @go-contribute="onFloatingGoContribute"
+    />
   </div>
 </template>
 
@@ -293,12 +346,17 @@ async function onResetStoredData() {
     100dvh - var(--musical-group-tabs-sticky-top) - var(--musical-group-tabs-height) -
       var(--spacing-50)
   );
+  --musical-group-floating-nav-clearance: calc(
+    20px + env(safe-area-inset-bottom, 0px) + 44px + var(--spacing-25) + var(--spacing-25) +
+      var(--spacing-100)
+  );
 
   box-sizing: border-box;
   max-width: 412px;
   height: 100%;
   max-height: 100dvh;
   margin: 0 auto;
+  padding-bottom: var(--musical-group-floating-nav-clearance);
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: contain;

@@ -1,19 +1,24 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { CdxProgressBar } from '@wikimedia/codex'
+
 import MusicalGroupOverviewArticleCard from './MusicalGroupOverviewArticleCard.vue'
 import MusicalGroupOverviewEditOpportunityCard from './MusicalGroupOverviewEditOpportunityCard.vue'
 import MusicalGroupOverviewImagesCard from './MusicalGroupOverviewImagesCard.vue'
 import MusicalGroupOverviewRelatedCard from './MusicalGroupOverviewRelatedCard.vue'
 import MusicalGroupOverviewSnippetCard from './MusicalGroupOverviewSnippetCard.vue'
+import { enwikiTitlesMatch } from './data/enwikiTitle'
 import type {
   CarouselImage,
   MusicalGroupOverviewData,
   MusicalGroupOverviewRelated,
   MusicalGroupOverviewSnippet,
 } from './data/types'
+import { normalizeQid } from './data/wikidataApi'
 
 interface Props {
+  itemId?: string
   overview?: MusicalGroupOverviewData
   overviewLoading?: boolean
   carouselImages: CarouselImage[]
@@ -24,6 +29,18 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   showImagesTab: true,
 })
+
+function isCurrentItem(
+  candidate: Pick<MusicalGroupOverviewRelated, 'id' | 'title'>,
+): boolean {
+  if (props.itemId && candidate.id && normalizeQid(candidate.id) === normalizeQid(props.itemId)) {
+    return true
+  }
+  if (props.enwikiTitle && enwikiTitlesMatch(candidate.title, props.enwikiTitle)) {
+    return true
+  }
+  return false
+}
 
 function isSameArticle(
   related: MusicalGroupOverviewRelated,
@@ -42,18 +59,33 @@ const mergedSnippetHtml = computed(() => {
   return isSameArticle(related, snippet) ? snippet.snippetHtml : undefined
 })
 
-const showSnippetCard = computed(
-  () => Boolean(props.overview?.snippet) && !mergedSnippetHtml.value,
+const showRelatedCard = computed(
+  () => Boolean(props.overview?.related) && !isCurrentItem(props.overview!.related!),
 )
+
+const showSnippetCard = computed(() => {
+  const snippet = props.overview?.snippet
+  if (!snippet || mergedSnippetHtml.value) return false
+  return !isCurrentItem(snippet)
+})
+
+const showImagesCard = computed(() => {
+  if (Boolean(props.overview?.images?.itemCountLabel)) return true
+  return props.showImagesTab && props.carouselImages.length > 0
+})
 </script>
 
 <template>
-  <div v-if="!overviewLoading" class="musical-group-overview">
+  <div v-if="overviewLoading" class="musical-group-overview musical-group-overview--loading">
+    <CdxProgressBar inline aria-label="Loading overview" />
+  </div>
+  <div v-else class="musical-group-overview">
     <MusicalGroupOverviewArticleCard
       v-if="overview?.article && !overview?.noEnglishArticle"
       :article="overview.article"
     />
     <MusicalGroupOverviewImagesCard
+      v-if="showImagesCard"
       :images="overview?.images"
       :carousel-images="carouselImages"
       :article-thumbnail-url="overview?.article?.thumbnailUrl"
@@ -67,13 +99,13 @@ const showSnippetCard = computed(
       :article-thumbnail-url="overview?.article?.thumbnailUrl"
     />
     <MusicalGroupOverviewRelatedCard
-      v-if="overview?.related"
-      :related="overview.related"
+      v-if="showRelatedCard"
+      :related="overview!.related!"
       :snippet-html="mergedSnippetHtml"
     />
     <MusicalGroupOverviewSnippetCard
-      v-if="showSnippetCard && overview?.snippet"
-      :snippet="overview.snippet"
+      v-if="showSnippetCard"
+      :snippet="overview!.snippet!"
     />
   </div>
 </template>
@@ -83,5 +115,9 @@ const showSnippetCard = computed(
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.musical-group-overview--loading {
+  min-height: var(--musical-group-tab-panel-min-height, 50vh);
 }
 </style>

@@ -1,5 +1,3 @@
-import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
-
 import { bookmarksKey } from './cacheKeys'
 import { normalizeEnwikiTitle } from './enwikiTitle'
 import {
@@ -10,12 +8,12 @@ import { fetchMorelikeTitles, resolveRelatedSummary } from './fetchRelatedReadin
 import { getCachedHelpWanted, setCachedHelpWanted } from './homeTabCache'
 import type { HomeHelpWanted, HomeSavedItem } from './types'
 
-const MAX_SAVED_HELP_WANTED = 2
-const MAX_UNSAVED_HELP_WANTED = 1
+const HOME_HELP_WANTED_LIMIT = 2
 
 async function fetchUnsavedSuggestion(
   items: HomeSavedItem[],
   signal?: AbortSignal,
+  existing: HomeHelpWanted[] = [],
 ): Promise<HomeHelpWanted | null> {
   const seeds = items.filter((item) => item.enwikiTitle)
   if (!seeds.length) return null
@@ -26,6 +24,12 @@ async function fetchUnsavedSuggestion(
     excludedIds.add(item.id)
     if (item.enwikiTitle) {
       excludedTitles.add(normalizeEnwikiTitle(item.enwikiTitle).toLowerCase())
+    }
+  }
+  for (const suggestion of existing) {
+    excludedIds.add(suggestion.itemId)
+    if (suggestion.enwikiTitle) {
+      excludedTitles.add(normalizeEnwikiTitle(suggestion.enwikiTitle).toLowerCase())
     }
   }
 
@@ -63,29 +67,38 @@ async function fetchUnsavedSuggestion(
   return null
 }
 
-/** Up to two edit suggestions from saved pages, plus up to one from an unsaved page. */
+/** Up to two edit suggestions for the home Help wanted preview. */
 export async function fetchHelpWanted(
   items: HomeSavedItem[],
   signal?: AbortSignal,
 ): Promise<HomeHelpWanted[]> {
   const dependencyKey = bookmarksKey()
   const cached = getCachedHelpWanted(dependencyKey)
-  if (cached) return cached
+  if (cached?.length >= HOME_HELP_WANTED_LIMIT) {
+    return cached.slice(0, HOME_HELP_WANTED_LIMIT)
+  }
 
-  const candidates = items.filter((item) => item.enwikiTitle).slice(0, MAX_SAVED_HELP_WANTED)
-  const savedSuggestions = await mapWithConcurrency(
-    candidates,
-    2,
-    (item) => fetchEditSuggestionForSavedItem(item, signal, 'musical-group-help-wanted'),
-    signal,
-  )
-  const suggestions = savedSuggestions.filter((entry): entry is HomeHelpWanted => entry !== null)
+  const suggestions: HomeHelpWanted[] = []
+  const savedCandidates = items.filter((item) => item.enwikiTitle)
 
-  const unsavedSuggestion = await fetchUnsavedSuggestion(items, signal)
-  if (unsavedSuggestion) {
+  for (const item of savedCandidates) {
+    if (suggestions.length >= HOME_HELP_WANTED_LIMIT) break
+    const suggestion = await fetchEditSuggestionForSavedItem(
+      item,
+      signal,
+      'musical-group-help-wanted',
+    )
+    if (suggestion) suggestions.push(suggestion)
+  }
+
+  while (suggestions.length < HOME_HELP_WANTED_LIMIT) {
+    const unsavedSuggestion = await fetchUnsavedSuggestion(items, signal, suggestions)
+    if (!unsavedSuggestion) break
     suggestions.push(unsavedSuggestion)
   }
 
-  setCachedHelpWanted(dependencyKey, suggestions)
+  if (suggestions.length) {
+    setCachedHelpWanted(dependencyKey, suggestions)
+  }
   return suggestions
 }

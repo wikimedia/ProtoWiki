@@ -156,12 +156,26 @@ export function setCachedFeaturedTab(dependencyKey: string, data: HomeFeaturedTa
   setEntry('featured', { dependencyKey, data, fetchedAt: Date.now() })
 }
 
+export function clearCachedFeaturedTab(dependencyKey: string): void {
+  const entries = readEntries()
+  if (entries.featured?.dependencyKey !== dependencyKey) return
+  delete entries.featured
+  writeEntries(entries)
+}
+
 export function getCachedTrendingFeed(dependencyKey: string): HomeTrending[] | null {
   return getEntry<CachedTrendingEntry>('trending', dependencyKey)?.data ?? null
 }
 
 export function setCachedTrendingFeed(dependencyKey: string, data: HomeTrending[]): void {
   setEntry('trending', { dependencyKey, data, fetchedAt: Date.now() })
+}
+
+export function clearCachedTrendingFeed(dependencyKey: string): void {
+  const entries = readEntries()
+  if (entries.trending?.dependencyKey !== dependencyKey) return
+  delete entries.trending
+  writeEntries(entries)
 }
 
 export function getCachedSavedSummaries(dependencyKey: string): HomeSavedItem[] | null {
@@ -173,7 +187,9 @@ export function setCachedSavedSummaries(dependencyKey: string, data: HomeSavedIt
 }
 
 export function getCachedHelpWanted(dependencyKey: string): HomeHelpWanted[] | null {
-  return getEntry<CachedHelpWantedEntry>('helpWanted', dependencyKey)?.data ?? null
+  const data = getEntry<CachedHelpWantedEntry>('helpWanted', dependencyKey)?.data
+  if (!data?.length) return null
+  return data
 }
 
 export function setCachedHelpWanted(dependencyKey: string, data: HomeHelpWanted[]): void {
@@ -181,7 +197,9 @@ export function setCachedHelpWanted(dependencyKey: string, data: HomeHelpWanted[
 }
 
 export function getCachedRecentChangesPreview(dependencyKey: string): HomeRecentChange[] | null {
-  return getEntry<CachedRecentChangesEntry>('recentChanges', dependencyKey)?.data ?? null
+  const data = getEntry<CachedRecentChangesEntry>('recentChanges', dependencyKey)?.data
+  if (!data?.length) return null
+  return data
 }
 
 export function setCachedRecentChangesPreview(dependencyKey: string, data: HomeRecentChange[]): void {
@@ -203,20 +221,28 @@ export function setCachedRelatedFeed(tab: RelatedFeedTabId, state: CachedRelated
   setEntry(relatedFeedCacheKey(tab, state.dependencyKey), state)
 }
 
-export function getCachedActivityFeed(dependencyKey: string): CachedActivityFeedState | null {
-  return getEntry<CachedActivityFeedState>('activity', dependencyKey)
+export function activityFeedCacheKey(savedKey: string): string {
+  return `activity:${savedKey}`
+}
+
+export function contributeFeedCacheKey(savedKey: string): string {
+  return `contribute:${savedKey}`
+}
+
+export function getCachedActivityFeed(savedKey: string): CachedActivityFeedState | null {
+  return getEntry<CachedActivityFeedState>(activityFeedCacheKey(savedKey), savedKey)
 }
 
 export function setCachedActivityFeed(state: CachedActivityFeedState): void {
-  setEntry('activity', state)
+  setEntry(activityFeedCacheKey(state.dependencyKey), state)
 }
 
-export function getCachedContributeFeed(dependencyKey: string): CachedContributeFeedState | null {
-  return getEntry<CachedContributeFeedState>('contribute', dependencyKey)
+export function getCachedContributeFeed(savedKey: string): CachedContributeFeedState | null {
+  return getEntry<CachedContributeFeedState>(contributeFeedCacheKey(savedKey), savedKey)
 }
 
 export function setCachedContributeFeed(state: CachedContributeFeedState): void {
-  setEntry('contribute', state)
+  setEntry(contributeFeedCacheKey(state.dependencyKey), state)
 }
 
 export function clearHomeTabCache(): void {

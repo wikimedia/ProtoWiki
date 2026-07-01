@@ -5,6 +5,7 @@ import { entityDisplayLabel, sentenceCase } from './formatLabel'
 import {
   LOCATION_QIDS,
   MUSIC_PERFORMER_QIDS,
+  PERSON_QIDS,
   type EditIndicator,
   type MusicalGroupSearchResult,
   type YearKind,
@@ -17,6 +18,11 @@ function musicPerformerValuesClause(variable = '?anchor'): string {
 
 function locationValuesClause(variable = '?anchor'): string {
   const values = LOCATION_QIDS.map((qid) => `wd:${qid}`).join(' ')
+  return `VALUES ${variable} { ${values} }`
+}
+
+function personValuesClause(variable = '?anchor'): string {
+  const values = PERSON_QIDS.map((qid) => `wd:${qid}`).join(' ')
   return `VALUES ${variable} { ${values} }`
 }
 
@@ -78,6 +84,8 @@ export function parseQidInput(raw: string): string | null {
 export interface EntityClassification {
   isMusicPerformer: boolean
   isLocation: boolean
+  isPerson: boolean
+  isHuman: boolean
   musicTypeLabel?: string
   locationTypeLabel?: string
 }
@@ -88,6 +96,7 @@ interface ClassificationSparqlRow {
   locType?: { value: string }
   locTypeLabel?: { value: string }
   locAnchor?: { value: string }
+  humanType?: { value: string }
 }
 
 /**
@@ -101,7 +110,7 @@ export async function classifyEntity(
   signal?: AbortSignal,
 ): Promise<EntityClassification> {
   const sparql = `
-SELECT ?perfType ?perfTypeLabel ?locType ?locTypeLabel ?locAnchor WHERE {
+SELECT ?perfType ?perfTypeLabel ?locType ?locTypeLabel ?locAnchor ?humanType WHERE {
   OPTIONAL {
     {
       wd:${id} wdt:P31 ?perfType .
@@ -117,6 +126,11 @@ SELECT ?perfType ?perfTypeLabel ?locType ?locTypeLabel ?locAnchor WHERE {
     wd:${id} wdt:P31 ?locType .
     ?locType wdt:P279* ?locAnchor .
     ${locationValuesClause('?locAnchor')}
+  }
+  OPTIONAL {
+    wd:${id} wdt:P31 ?humanType .
+    ?humanType wdt:P279* ?ha .
+    ${personValuesClause('?ha')}
   }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
 }`
@@ -144,6 +158,8 @@ SELECT ?perfType ?perfTypeLabel ?locType ?locTypeLabel ?locAnchor WHERE {
 
   const isMusicPerformer = performerLabels.length > 0
   const isLocation = locationEntries.length > 0
+  const isHuman = bindings.some((row) => row.humanType)
+  const isPerson = isHuman && !isMusicPerformer && !isLocation
 
   // Longest label wins — matches the old resolveMusicTypeLabel heuristic.
   const musicTypeLabel = isMusicPerformer
@@ -165,7 +181,7 @@ SELECT ?perfType ?perfTypeLabel ?locType ?locTypeLabel ?locAnchor WHERE {
     }
   }
 
-  return { isMusicPerformer, isLocation, musicTypeLabel, locationTypeLabel }
+  return { isMusicPerformer, isLocation, isPerson, isHuman, musicTypeLabel, locationTypeLabel }
 }
 
 interface EntitySearchSparqlRow {
@@ -347,6 +363,10 @@ export interface ParsedEntityClaims {
   inceptionYear?: number
   yearKind?: YearKind
   genreIds: string[]
+  /** Non-deprecated P106 values, preferred rank first. */
+  occupationIds: string[]
+  /** P106 values marked preferred in Wikidata (subset of {@link occupationIds}). */
+  preferredOccupationIds: string[]
   typeIds: string[]
   countryId?: string
   population?: number
@@ -404,6 +424,33 @@ function allClaimEntityIds(claims: WbEntityClaim[] | undefined): string[] {
     if (id) ids.push(id)
   }
   return ids
+}
+
+/** P106 claim values in Wikidata order, preferred rank first, deprecated omitted. */
+function orderedOccupationClaimIds(claims: WbEntityClaim[] | undefined): {
+  occupationIds: string[]
+  preferredOccupationIds: string[]
+} {
+  if (!claims?.length) {
+    return { occupationIds: [], preferredOccupationIds: [] }
+  }
+
+  const active = claims.filter((claim) => claim.rank !== 'deprecated')
+  const pool = active.length ? active : claims
+  const preferredOccupationIds: string[] = []
+  const normalOccupationIds: string[] = []
+
+  for (const claim of pool) {
+    const id = claimEntityId(claim)
+    if (!id) continue
+    if (claim.rank === 'preferred') preferredOccupationIds.push(id)
+    else normalOccupationIds.push(id)
+  }
+
+  return {
+    occupationIds: [...preferredOccupationIds, ...normalOccupationIds],
+    preferredOccupationIds,
+  }
 }
 
 function claimQualifierTime(claim: WbEntityClaim, property: string): string | null {
@@ -519,6 +566,7 @@ export async function fetchEntityClaims(
     inceptionYear: year,
     yearKind,
     genreIds: allClaimEntityIds(claims.P136),
+    ...orderedOccupationClaimIds(claims.P106),
     typeIds: allClaimEntityIds(claims.P31),
     countryId: latestClaimEntityId(claims.P17),
     population: claims.P1082?.length ? claimQuantityAmount(claims.P1082[0]) ?? undefined : undefined,

@@ -91,6 +91,31 @@ function isSidebar(element: Element): boolean {
   return element.tagName === 'TABLE' && element.classList.contains('sidebar')
 }
 
+/** Wikipedia "part of a series about …" navigation templates (e.g. {{Keir Starmer sidebar}}). */
+function isSeriesSidebar(element: Element): boolean {
+  if (!isSidebar(element)) return false
+
+  if (element.classList.contains('sidebar-person')) return true
+
+  const text = element.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() ?? ''
+  if (text.includes('part of a series about')) return true
+  if (text.includes('this article is part of') && text.includes('series')) return true
+
+  return false
+}
+
+function removeSeriesSidebars(root: ParentNode): void {
+  root.querySelectorAll('table.sidebar').forEach((table) => {
+    if (!isSeriesSidebar(table)) return
+
+    const previous = table.previousElementSibling
+    if (previous?.classList.contains('mw-empty-elt') && !previous.textContent?.trim()) {
+      previous.remove()
+    }
+    table.remove()
+  })
+}
+
 function isMaintenanceNotice(element: Element): boolean {
   return element.tagName === 'TABLE' && element.classList.contains('ambox')
 }
@@ -167,6 +192,7 @@ function processElements(
     }
 
     if (isSidebar(element)) {
+      if (isSeriesSidebar(element)) continue
       flushProse(proseParts, blocks)
       pushSidebarBlock(element, blocks)
       continue
@@ -201,6 +227,7 @@ export function parseWikitaArticleBlocks(html: string): WikitaArticleBlock[] {
   removeNavboxStylesWrappers(doc)
   cleanArticleTree(doc.body)
   removeInfoboxes(doc.body)
+  removeSeriesSidebars(doc.body)
   removeExternalLinksSection(doc.body)
 
   const nodes = flattenContentNodes(doc.body)

@@ -119,6 +119,8 @@ export function useMusicalGroupHomeTabScroll() {
     if (!switchInfo) return
     pendingSwitch.value = null
 
+    if (route.hash) return
+
     await nextTick()
     requestAnimationFrame(() => {
       applyScrollRestore(switchInfo)

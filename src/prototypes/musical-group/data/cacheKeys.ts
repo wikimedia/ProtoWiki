@@ -1,4 +1,5 @@
 import { listBookmarks } from './bookmarks'
+import type { HomeSavedItem } from './types'
 
 /** Stable fingerprint of the saved-pages library. Changes on add/remove/re-save. */
 export function bookmarksKey(): string {
@@ -6,6 +7,14 @@ export function bookmarksKey(): string {
     .map((entry) => `${entry.id}:${entry.savedAt}`)
     .sort()
     .join('|')
+}
+
+/** Feed dependency key from saved item ids — changes only on add/remove. */
+export function savedPagesListKey(items: HomeSavedItem[]): string {
+  return [...items]
+    .map((item) => item.id)
+    .sort()
+    .join(',')
 }
 
 /** UTC calendar day for daily feeds, e.g. `20260701`. */

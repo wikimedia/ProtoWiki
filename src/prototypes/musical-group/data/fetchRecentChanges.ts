@@ -9,7 +9,7 @@ import { getCachedRecentChangesPreview, setCachedRecentChangesPreview } from './
 import { predictGoodFaith, predictReferenceNeed, predictRevertRisk, predictTone } from './liftWing'
 import type { HomeRecentChange, HomeRecentChangeFlag, HomeSavedItem } from './types'
 
-/** How many saved pages to inspect for recent changes. */
+/** How many saved pages to show in the home Activity preview. */
 const MAX_RECENT_CHANGES = 2
 /** Titles per batch revision metadata query. */
 const REVISION_BATCH_SIZE = 50
@@ -124,13 +124,12 @@ export function formatEditMetaLabel(timestamp: string, user: string): string {
   return `${relative} by ${editor}`
 }
 
-/** Footer status for activity cards: reverted wins over latest. */
+/** Footer status for activity cards. */
 export function formatEditStatusLabel(
   reverted: boolean,
-  isLatest: boolean,
+  _isLatest: boolean,
 ): string {
   if (reverted) return 'Reverted'
-  if (isLatest) return 'Latest'
   return ''
 }
 
@@ -200,9 +199,12 @@ export async function fetchRevisionsForTitle(
 export async function fetchLatestRevisionsForTitles(
   titles: string[],
   signal?: AbortSignal,
-): Promise<Map<string, LatestRevision>> {
-  const result = new Map<string, LatestRevision>()
-  if (!titles.length) return result
+): Promise<{ revisions: Map<string, LatestRevision>; lookupFailed: boolean }> {
+  const revisions = new Map<string, LatestRevision>()
+  if (!titles.length) return { revisions, lookupFailed: false }
+
+  let anyOk = false
+  let anyFailed = false
 
   for (let offset = 0; offset < titles.length; offset += REVISION_BATCH_SIZE) {
     const batch = titles.slice(offset, offset + REVISION_BATCH_SIZE)
@@ -218,7 +220,12 @@ export async function fetchLatestRevisionsForTitles(
       signal,
       headers: wikimediaApiFetchHeaders('musical-group-activity'),
     })
-    if (!response.ok) continue
+    if (!response.ok) {
+      anyFailed = true
+      continue
+    }
+
+    anyOk = true
 
     const json = (await response.json()) as {
       query?: { pages?: Record<string, RevisionPageRow> }
@@ -228,11 +235,11 @@ export async function fetchLatestRevisionsForTitles(
       if (page.missing !== undefined || !page.title) continue
       const revision = parseRevisionRow(page.revisions?.[0] ?? {})
       if (!revision) continue
-      result.set(titleKey(page.title), revision)
+      revisions.set(titleKey(page.title), revision)
     }
   }
 
-  return result
+  return { revisions, lookupFailed: anyFailed && !anyOk }
 }
 
 export function initPageActivityStates(
@@ -523,7 +530,77 @@ export async function fetchRecentChangeForItem(
   }
 }
 
-/** The most recent change to up to two saved pages, each classified for review. */
+/** Latest classified edit on each saved page with an enwiki article, newest first. */
+export async function fetchLatestRecentChanges(
+  items: HomeSavedItem[],
+  signal?: AbortSignal,
+): Promise<{
+  changes: HomeRecentChange[]
+  itemIdsWithoutRevisions: string[]
+  revisionLookupFailed: boolean
+}> {
+  const candidates = items.filter(
+    (item): item is HomeSavedItem & { enwikiTitle: string } => Boolean(item.enwikiTitle),
+  )
+  if (!candidates.length) {
+    return { changes: [], itemIdsWithoutRevisions: [], revisionLookupFailed: false }
+  }
+
+  const titles = candidates.map((item) => item.enwikiTitle)
+  const { revisions: latestRevisions, lookupFailed: revisionLookupFailed } =
+    await fetchLatestRevisionsForTitles(titles, signal)
+
+  const unresolved = candidates.filter(
+    (item) => !latestRevisions.has(titleKey(item.enwikiTitle)),
+  )
+  if (unresolved.length) {
+    const fallback = await mapWithConcurrency(
+      unresolved,
+      3,
+      async (item) => {
+        const revision = await fetchLatestRevision(item.enwikiTitle, signal)
+        if (!revision) return null
+        return { key: titleKey(item.enwikiTitle), revision }
+      },
+      signal,
+    )
+    for (const entry of fallback) {
+      if (entry) latestRevisions.set(entry.key, entry.revision)
+    }
+  }
+
+  const latestRevidByTitle = new Map(
+    [...latestRevisions.entries()].map(([key, revision]) => [key, revision.revid]),
+  )
+
+  const itemIdsWithoutRevisions = candidates
+    .filter((item) => !latestRevisions.has(titleKey(item.enwikiTitle)))
+    .map((item) => item.id)
+
+  const changes = await mapWithConcurrency(
+    candidates,
+    3,
+    (item) => {
+      const revision = latestRevisions.get(titleKey(item.enwikiTitle))
+      if (!revision) return Promise.resolve(null)
+      return fetchRecentChangeForItem(item, signal, revision, latestRevidByTitle).catch((err) => {
+        if ((err as Error).name === 'AbortError') throw err
+        return null
+      })
+    },
+    signal,
+  )
+
+  return {
+    changes: changes
+      .filter((change): change is HomeRecentChange => change !== null)
+      .sort((a, b) => b.editedTimestamp.localeCompare(a.editedTimestamp)),
+    itemIdsWithoutRevisions,
+    revisionLookupFailed,
+  }
+}
+
+/** Latest classified edits for the home Activity preview (newest first, capped). */
 export async function fetchRecentChanges(
   items: HomeSavedItem[],
   signal?: AbortSignal,
@@ -532,18 +609,12 @@ export async function fetchRecentChanges(
   const cached = getCachedRecentChangesPreview(dependencyKey)
   if (cached) return cached
 
-  const candidates = items.filter((item) => item.enwikiTitle).slice(0, MAX_RECENT_CHANGES)
-  const changes = await mapWithConcurrency(
-    candidates,
-    2,
-    (item) =>
-      fetchRecentChangeForItem(item, signal).catch((err) => {
-        if ((err as Error).name === 'AbortError') throw err
-        return null
-      }),
-    signal,
+  const result = (await fetchLatestRecentChanges(items, signal)).changes.slice(
+    0,
+    MAX_RECENT_CHANGES,
   )
-  const result = changes.filter((change): change is HomeRecentChange => change !== null)
-  setCachedRecentChangesPreview(dependencyKey, result)
+  if (result.length) {
+    setCachedRecentChangesPreview(dependencyKey, result)
+  }
   return result
 }
