@@ -1,13 +1,18 @@
 import { wikimediaApiFetchHeaders } from '@/config'
+import { fetchWikimedia } from '@/lib/fetchWikimedia'
 
 import { EN_WIKI_HOST, normalizeEnwikiTitle } from './enwikiTitle'
-import { fetchWithTimeout } from './fetchWithTimeout'
+import {
+  getCachedMusicalGroup,
+  setCachedMusicalGroupArticleHtml,
+} from './musicalGroupCache'
 
 export interface FetchWikitaArticleOptions {
   signal?: AbortSignal
+  itemId?: string
 }
 
-const articleHtmlCache = new Map<string, string>()
+const articleHtmlMemory = new Map<string, string>()
 const inFlightFetches = new Map<string, Promise<string>>()
 
 function extractParserOutput(raw: string): string {
@@ -20,6 +25,11 @@ function cacheKey(title: string): string {
   return normalizeEnwikiTitle(title).toLowerCase()
 }
 
+export function clearWikitaArticleMemoryCache(): void {
+  articleHtmlMemory.clear()
+  inFlightFetches.clear()
+}
+
 export async function fetchWikitaArticleHtml(
   title: string,
   options: FetchWikitaArticleOptions = {},
@@ -30,7 +40,16 @@ export async function fetchWikitaArticleHtml(
   }
 
   const key = cacheKey(normalized)
-  const cached = articleHtmlCache.get(key)
+
+  if (options.itemId) {
+    const entityCached = getCachedMusicalGroup(options.itemId)
+    if (entityCached?.articleHtml) {
+      articleHtmlMemory.set(key, entityCached.articleHtml)
+      return entityCached.articleHtml
+    }
+  }
+
+  const cached = articleHtmlMemory.get(key)
   if (cached) return cached
 
   let bodyPromise = inFlightFetches.get(key)
@@ -38,7 +57,7 @@ export async function fetchWikitaArticleHtml(
     bodyPromise = (async () => {
       const slug = encodeURIComponent(normalized.replace(/ /g, '_'))
       const url = `https://${EN_WIKI_HOST}/api/rest_v1/page/html/${slug}`
-      const response = await fetchWithTimeout(url, {
+      const response = await fetchWikimedia(url, {
         signal: options.signal,
         headers: {
           Accept: 'text/html; charset=utf-8',
@@ -50,7 +69,10 @@ export async function fetchWikitaArticleHtml(
       }
       const text = await response.text()
       const html = extractParserOutput(text)
-      articleHtmlCache.set(key, html)
+      articleHtmlMemory.set(key, html)
+      if (options.itemId) {
+        setCachedMusicalGroupArticleHtml(options.itemId, html)
+      }
       return html
     })().finally(() => {
       inFlightFetches.delete(key)

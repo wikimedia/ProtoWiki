@@ -19,7 +19,14 @@ export const LOCATION_QIDS = [
 
 export type YearKind = 'inception' | 'birth'
 
-export type TabId = 'overview' | 'info' | 'article' | 'images' | 'links'
+export type TabId =
+  | 'overview'
+  | 'info'
+  | 'article'
+  | 'images'
+  | 'links'
+  | 'activity'
+  | 'contribute'
 
 export type EditIndicator = 'history' | 'talk'
 

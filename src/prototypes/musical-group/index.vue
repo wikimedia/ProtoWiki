@@ -2,14 +2,14 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { clearCommonsImageCache } from './data/commonsImages'
+import { resetAllStoredData } from './data/resetAllStoredData'
 import {
   loadHeaderVariantPreference,
   saveHeaderVariantPreference,
 } from './data/headerVariantPreference'
 import { loadMusicalGroup } from './data/loadMusicalGroup'
 import { loadMusicalGroupOverview, isCachedOverviewUsable } from './data/loadMusicalGroupOverview'
-import { clearMusicalGroupCache, getCachedMusicalGroup } from './data/musicalGroupCache'
+import { getCachedMusicalGroup } from './data/musicalGroupCache'
 import type { MusicalGroupData, MusicalGroupOverviewData } from './data/types'
 import { normalizeQid } from './data/wikidataApi'
 import WikitaChromeHeader, {
@@ -191,8 +191,7 @@ async function onNavigate(id: string) {
 }
 
 async function onResetStoredData() {
-  clearMusicalGroupCache()
-  clearCommonsImageCache()
+  resetAllStoredData()
 
   fetchAbort?.abort()
   overviewAbort?.abort()

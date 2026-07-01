@@ -7,11 +7,13 @@ import WikitaCardNotice from './components/WikitaCardNotice.vue'
 import WikitaCardScrollTable from './components/WikitaCardScrollTable.vue'
 import WikitaCardSidebar from './components/WikitaCardSidebar.vue'
 import { fetchWikitaArticleHtml } from './data/fetchWikitaArticle'
+import { getCachedMusicalGroup } from './data/musicalGroupCache'
 import { parseWikitaArticleBlocks, type WikitaArticleBlock } from './data/parseWikitaArticle'
 import { useWikitaArticleLinks } from './useWikitaArticleLinks'
 
 interface Props {
   title?: string
+  itemId?: string
 }
 
 const props = defineProps<Props>()
@@ -32,12 +34,26 @@ async function loadArticle(title: string) {
   fetchAbort?.abort()
   fetchAbort = new AbortController()
 
+  if (props.itemId) {
+    const cached = getCachedMusicalGroup(props.itemId)
+    if (cached?.articleHtml) {
+      loading.value = false
+      error.value = null
+      blocks.value = parseWikitaArticleBlocks(cached.articleHtml)
+      void prefetchLinkTargets(blocks.value, fetchAbort.signal)
+      return
+    }
+  }
+
   loading.value = true
   error.value = null
   blocks.value = []
 
   try {
-    const html = await fetchWikitaArticleHtml(title, { signal: fetchAbort.signal })
+    const html = await fetchWikitaArticleHtml(title, {
+      signal: fetchAbort.signal,
+      itemId: props.itemId,
+    })
     const parsed = parseWikitaArticleBlocks(html)
     blocks.value = parsed
     void prefetchLinkTargets(parsed, fetchAbort.signal)

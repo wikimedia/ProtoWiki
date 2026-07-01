@@ -28,7 +28,8 @@ const visibleTabs = computed(() =>
           tab.id !== 'read' &&
           tab.id !== 'featured' &&
           tab.id !== 'saved' &&
-          tab.id !== 'contribute',
+          tab.id !== 'contribute' &&
+          tab.id !== 'activity',
       ),
 )
 

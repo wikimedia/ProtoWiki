@@ -1,4 +1,6 @@
 import { loadConfig, PROTOWIKI_API_PROJECT_URL, PROTOWIKI_API_USER_AGENT, wikimediaApiFetchHeaders } from '@/config'
+import { fetchWikimedia } from '@/lib/fetchWikimedia'
+import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 
 import { EN_WIKI_HOST, fetchWikibaseItemId, wikiActionUrl } from './enwikiTitle'
 import { isExcludedEditOpportunityNeed, resolveEditOpportunityCopy } from './editOpportunityCopy'
@@ -167,7 +169,7 @@ function deadLinkExtractHtml(html: string): string {
 
 async function fetchPageSummary(title: string, signal?: AbortSignal): Promise<PageSummaryResponse | null> {
   const slug = encodeURIComponent(title.replace(/ /g, '_'))
-  const response = await fetchWithTimeout(`https://${EN_WIKI_HOST}/api/rest_v1/page/summary/${slug}`, {
+  const response = await fetchWikimedia(`https://${EN_WIKI_HOST}/api/rest_v1/page/summary/${slug}`, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-page-summary'),
   })
@@ -189,7 +191,7 @@ async function fetchMorelikeHits(
     srlimit: String(limit),
   })
 
-  const response = await fetchWithTimeout(url, {
+  const response = await fetchWikimedia(url, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-morelike'),
   })
@@ -255,7 +257,7 @@ async function fetchSnippetHits(
     srlimit: '50',
   })
 
-  const response = await fetchWithTimeout(url, {
+  const response = await fetchWikimedia(url, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-snippet'),
   })
@@ -600,7 +602,7 @@ async function fetchInfobox(title: string, signal?: AbortSignal): Promise<Musica
     disableeditsection: '1',
   })
 
-  const response = await fetchWithTimeout(url, {
+  const response = await fetchWikimedia(url, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-infobox'),
   })
@@ -631,7 +633,7 @@ async function fetchArticleWordCount(title: string, signal?: AbortSignal): Promi
     srlimit: '5',
   })
 
-  const response = await fetchWithTimeout(url, {
+  const response = await fetchWikimedia(url, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-wordcount'),
   })
@@ -673,7 +675,7 @@ async function fetchArticlePageviews(
   })
 
   try {
-    const response = await fetchWithTimeout(url, {
+    const response = await fetchWikimedia(url, {
       signal,
       headers: wikimediaApiFetchHeaders('musical-group-pageviews'),
     })
@@ -757,16 +759,28 @@ export async function fetchMusicalGroupOverview(
 
   const title = data.enwikiTitle
 
-  const [summary, wordCount, views, infobox, related, snippet, editOpportunity] =
-    await Promise.all([
-      fetchPageSummary(title, signal),
-      fetchArticleWordCount(title, signal),
-      resolvePageviewsLabel(title, signal),
-      fetchInfobox(title, signal).catch(() => undefined),
-      fetchMorelikeRelated(title, data.label, signal).catch(() => undefined),
-      fetchSnippetMention(data.label, title, signal).catch(() => undefined),
-      fetchEditOpportunity(title, signal).catch(() => undefined),
-    ])
+  const [
+    summary,
+    wordCount,
+    views,
+    infobox,
+    related,
+    snippet,
+    editOpportunity,
+  ] = await mapWithConcurrency(
+    [
+      () => fetchPageSummary(title, signal),
+      () => fetchArticleWordCount(title, signal),
+      () => resolvePageviewsLabel(title, signal),
+      () => fetchInfobox(title, signal).catch(() => undefined),
+      () => fetchMorelikeRelated(title, data.label, signal).catch(() => undefined),
+      () => fetchSnippetMention(data.label, title, signal).catch(() => undefined),
+      () => fetchEditOpportunity(title, signal).catch(() => undefined),
+    ],
+    3,
+    (task) => task(),
+    signal,
+  )
 
   if (!summary) {
     return { noEnglishArticle: true, infobox, fetchedAt }

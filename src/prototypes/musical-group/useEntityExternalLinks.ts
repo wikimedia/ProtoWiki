@@ -1,6 +1,10 @@
 import { ref, watch, type Ref } from 'vue'
 
 import { fetchEntityExternalLinks } from './data/fetchEntityExternalLinks'
+import {
+  getCachedMusicalGroup,
+  setCachedMusicalGroupExternalLinks,
+} from './data/musicalGroupCache'
 import type { WikidataExternalLink } from './data/types'
 
 export function useEntityExternalLinks(qid: Ref<string | null | undefined>) {
@@ -14,12 +18,22 @@ export function useEntityExternalLinks(qid: Ref<string | null | undefined>) {
     fetchAbort?.abort()
     fetchAbort = new AbortController()
 
+    const cached = getCachedMusicalGroup(id)
+    if (cached?.externalLinks) {
+      links.value = cached.externalLinks
+      loading.value = false
+      error.value = null
+      return
+    }
+
     loading.value = true
     error.value = null
     links.value = []
 
     try {
-      links.value = await fetchEntityExternalLinks(id, fetchAbort.signal)
+      const loaded = await fetchEntityExternalLinks(id, fetchAbort.signal)
+      links.value = loaded
+      setCachedMusicalGroupExternalLinks(id, loaded)
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
       error.value = 'Could not load links. Try again.'

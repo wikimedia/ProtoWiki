@@ -1,13 +1,21 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 
 import { fetchWithTimeout } from './fetchWithTimeout'
+import {
+  getCachedGoodFaith,
+  getCachedReferenceNeed,
+  getCachedRevertRisk,
+  setCachedGoodFaith,
+  setCachedReferenceNeed,
+  setCachedRevertRisk,
+} from './liftWingCache'
 
 const LIFT_WING_BASE = 'https://api.wikimedia.org/service/lw/inference/v1/models'
 
-/** Lift Wing predictions are slow; cache per revision for the session. */
-const goodFaithCache = new Map<number, boolean | undefined>()
-const revertRiskCache = new Map<number, RevertRiskResult | undefined>()
-const referenceNeedCache = new Map<number, number | undefined>()
+/** Session layer on top of localStorage. */
+const goodFaithMemory = new Map<number, boolean | undefined>()
+const revertRiskMemory = new Map<number, RevertRiskResult | undefined>()
+const referenceNeedMemory = new Map<number, number | undefined>()
 
 export interface RevertRiskResult {
   prediction: boolean
@@ -18,6 +26,8 @@ export interface ToneResult {
   prediction: boolean
   probability: number
 }
+
+export { clearLiftWingCache } from './liftWingCache'
 
 function liftWingHeaders(purpose: string): HeadersInit {
   return {
@@ -31,7 +41,14 @@ export async function predictGoodFaith(
   revId: number,
   signal?: AbortSignal,
 ): Promise<boolean | undefined> {
-  if (goodFaithCache.has(revId)) return goodFaithCache.get(revId)
+  if (goodFaithMemory.has(revId)) return goodFaithMemory.get(revId)
+
+  const stored = getCachedGoodFaith(revId)
+  if (stored !== undefined) {
+    const value = stored === null ? undefined : stored
+    goodFaithMemory.set(revId, value)
+    return value
+  }
 
   try {
     const response = await fetchWithTimeout(`${LIFT_WING_BASE}/enwiki-goodfaith:predict`, {
@@ -41,7 +58,8 @@ export async function predictGoodFaith(
       body: JSON.stringify({ rev_id: revId }),
     })
     if (!response.ok) {
-      goodFaithCache.set(revId, undefined)
+      goodFaithMemory.set(revId, undefined)
+      setCachedGoodFaith(revId, null)
       return undefined
     }
 
@@ -52,11 +70,13 @@ export async function predictGoodFaith(
     }
     const prediction = json.enwiki?.scores?.[String(revId)]?.goodfaith?.score?.prediction
     const value = typeof prediction === 'boolean' ? prediction : undefined
-    goodFaithCache.set(revId, value)
+    goodFaithMemory.set(revId, value)
+    setCachedGoodFaith(revId, value ?? null)
     return value
   } catch (err) {
     if ((err as Error).name === 'AbortError') throw err
-    goodFaithCache.set(revId, undefined)
+    goodFaithMemory.set(revId, undefined)
+    setCachedGoodFaith(revId, null)
     return undefined
   }
 }
@@ -67,7 +87,14 @@ export async function predictReferenceNeed(
   lang = 'en',
   signal?: AbortSignal,
 ): Promise<number | undefined> {
-  if (referenceNeedCache.has(revId)) return referenceNeedCache.get(revId)
+  if (referenceNeedMemory.has(revId)) return referenceNeedMemory.get(revId)
+
+  const stored = getCachedReferenceNeed(revId)
+  if (stored !== undefined) {
+    const value = stored === null ? undefined : stored
+    referenceNeedMemory.set(revId, value)
+    return value
+  }
 
   try {
     const response = await fetchWithTimeout(`${LIFT_WING_BASE}/reference-need:predict`, {
@@ -77,18 +104,21 @@ export async function predictReferenceNeed(
       body: JSON.stringify({ rev_id: revId, lang }),
     })
     if (!response.ok) {
-      referenceNeedCache.set(revId, undefined)
+      referenceNeedMemory.set(revId, undefined)
+      setCachedReferenceNeed(revId, null)
       return undefined
     }
 
     const json = (await response.json()) as { reference_need_score?: number }
     const score = json.reference_need_score
     const value = typeof score === 'number' ? score : undefined
-    referenceNeedCache.set(revId, value)
+    referenceNeedMemory.set(revId, value)
+    setCachedReferenceNeed(revId, value ?? null)
     return value
   } catch (err) {
     if ((err as Error).name === 'AbortError') throw err
-    referenceNeedCache.set(revId, undefined)
+    referenceNeedMemory.set(revId, undefined)
+    setCachedReferenceNeed(revId, null)
     return undefined
   }
 }
@@ -98,7 +128,14 @@ export async function predictRevertRisk(
   revId: number,
   signal?: AbortSignal,
 ): Promise<RevertRiskResult | undefined> {
-  if (revertRiskCache.has(revId)) return revertRiskCache.get(revId)
+  if (revertRiskMemory.has(revId)) return revertRiskMemory.get(revId)
+
+  const stored = getCachedRevertRisk(revId)
+  if (stored !== undefined) {
+    const value = stored === null ? undefined : stored
+    revertRiskMemory.set(revId, value)
+    return value
+  }
 
   try {
     const response = await fetchWithTimeout(
@@ -111,7 +148,8 @@ export async function predictRevertRisk(
       },
     )
     if (!response.ok) {
-      revertRiskCache.set(revId, undefined)
+      revertRiskMemory.set(revId, undefined)
+      setCachedRevertRisk(revId, null)
       return undefined
     }
 
@@ -120,18 +158,21 @@ export async function predictRevertRisk(
     }
     const prediction = json.output?.prediction
     if (typeof prediction !== 'boolean') {
-      revertRiskCache.set(revId, undefined)
+      revertRiskMemory.set(revId, undefined)
+      setCachedRevertRisk(revId, null)
       return undefined
     }
     const result: RevertRiskResult = {
       prediction,
       probability: json.output?.probabilities?.true ?? (prediction ? 1 : 0),
     }
-    revertRiskCache.set(revId, result)
+    revertRiskMemory.set(revId, result)
+    setCachedRevertRisk(revId, result)
     return result
   } catch (err) {
     if ((err as Error).name === 'AbortError') throw err
-    revertRiskCache.set(revId, undefined)
+    revertRiskMemory.set(revId, undefined)
+    setCachedRevertRisk(revId, null)
     return undefined
   }
 }
@@ -177,4 +218,10 @@ export async function predictTone(
     if ((err as Error).name === 'AbortError') throw err
     return undefined
   }
+}
+
+export function clearLiftWingMemoryCache(): void {
+  goodFaithMemory.clear()
+  revertRiskMemory.clear()
+  referenceNeedMemory.clear()
 }

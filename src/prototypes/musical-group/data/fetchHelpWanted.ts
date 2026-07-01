@@ -1,14 +1,16 @@
+import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
+
+import { bookmarksKey } from './cacheKeys'
 import { normalizeEnwikiTitle } from './enwikiTitle'
 import {
   fetchEditSuggestionForPage,
   fetchEditSuggestionForSavedItem,
 } from './fetchEditSuggestion'
 import { fetchMorelikeTitles, resolveRelatedSummary } from './fetchRelatedReading'
+import { getCachedHelpWanted, setCachedHelpWanted } from './homeTabCache'
 import type { HomeHelpWanted, HomeSavedItem } from './types'
 
-/** How many saved pages to probe for an edit suggestion. */
 const MAX_SAVED_HELP_WANTED = 2
-/** Extra edit suggestion from a page the user has not saved. */
 const MAX_UNSAVED_HELP_WANTED = 1
 
 async function fetchUnsavedSuggestion(
@@ -66,11 +68,16 @@ export async function fetchHelpWanted(
   items: HomeSavedItem[],
   signal?: AbortSignal,
 ): Promise<HomeHelpWanted[]> {
+  const dependencyKey = bookmarksKey()
+  const cached = getCachedHelpWanted(dependencyKey)
+  if (cached) return cached
+
   const candidates = items.filter((item) => item.enwikiTitle).slice(0, MAX_SAVED_HELP_WANTED)
-  const savedSuggestions = await Promise.all(
-    candidates.map((item) =>
-      fetchEditSuggestionForSavedItem(item, signal, 'musical-group-help-wanted'),
-    ),
+  const savedSuggestions = await mapWithConcurrency(
+    candidates,
+    2,
+    (item) => fetchEditSuggestionForSavedItem(item, signal, 'musical-group-help-wanted'),
+    signal,
   )
   const suggestions = savedSuggestions.filter((entry): entry is HomeHelpWanted => entry !== null)
 
@@ -79,5 +86,6 @@ export async function fetchHelpWanted(
     suggestions.push(unsavedSuggestion)
   }
 
+  setCachedHelpWanted(dependencyKey, suggestions)
   return suggestions
 }

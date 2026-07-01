@@ -14,12 +14,14 @@ import {
   cdxIconUserAdd,
 } from '@wikimedia/codex-icons'
 
+import WikitaActivityTabPanel from './components/WikitaActivityTabPanel.vue'
 import WikitaCardItem, {
   type WikitaCardItemTypeColor,
 } from './components/WikitaCardItem.vue'
 import WikitaChromeHeader, {
   type WikitaChromeHeaderVariant,
 } from './components/WikitaChromeHeader.vue'
+import WikitaContributeTabPanel from './components/WikitaContributeTabPanel.vue'
 import WikitaHomeSection from './components/WikitaHomeSection.vue'
 import WikitaHomeTabs from './components/WikitaHomeTabs.vue'
 import { isBookmarked, toggleBookmark } from './data/bookmarks'
@@ -36,10 +38,7 @@ import {
   type HomeRecentChange,
   type HomeRecentChangeFlag,
 } from './data/types'
-import { enwikiVisualEditorUrl } from './data/wikidataApi'
-import { useActivityFeed } from './useActivityFeed'
 import { useCommonsPhotosInfiniteScroll } from './useCommonsPhotosFeed'
-import { useContributeSuggestionsFeed } from './useContributeSuggestionsFeed'
 import { useMusicalGroupHome } from './useMusicalGroupHome'
 import { useMusicalGroupHomeTabScroll } from './useMusicalGroupHomeTabScroll'
 import { useMusicalGroupRoute } from './useMusicalGroupRoute'
@@ -88,21 +87,16 @@ const showPersonalizedHome = computed(
 const homeActive = computed(() => showPersonalizedHome.value)
 const readActive = computed(() => activeTab.value === 'read')
 const savedActive = computed(() => activeTab.value === 'saved')
-const activityActive = computed(() => activeTab.value === 'activity')
-const contributeActive = computed(() => activeTab.value === 'contribute')
 const readTabRecent = computed(() => savedSorted.value.slice(0, 5))
 const savedTabRelatedLimit = 3
-const savedWithEnwiki = computed(() => savedSorted.value.filter((item) => item.enwikiTitle))
 const homeTrendingPreview = computed(() => trendingItems.value.slice(0, 2))
 const homeRelatedLimit = 3
 const relatedSentinel = ref<HTMLElement | null>(null)
-const activitySentinel = ref<HTMLElement | null>(null)
-const contributeSentinel = ref<HTMLElement | null>(null)
 
 const {
   related: homeRelatedFeed,
   loading: homeRelatedLoading,
-} = useRelatedReadingFeed(savedSorted, homeActive)
+} = useRelatedReadingFeed(savedSorted, homeActive, 'home')
 
 const homeRelatedPreview = computed(() => homeRelatedFeed.value.slice(0, homeRelatedLimit))
 
@@ -111,12 +105,12 @@ const {
   loading: relatedFeedLoading,
   hasMore: relatedFeedHasMore,
   loadMore: loadMoreRelated,
-} = useRelatedReadingFeed(savedSorted, readActive)
+} = useRelatedReadingFeed(savedSorted, readActive, 'read')
 
 const {
   related: savedRelatedFeed,
   loading: savedRelatedLoading,
-} = useRelatedReadingFeed(savedSorted, savedActive)
+} = useRelatedReadingFeed(savedSorted, savedActive, 'saved')
 
 const savedTabRelated = computed(() => savedRelatedFeed.value.slice(0, savedTabRelatedLimit))
 
@@ -126,39 +120,6 @@ useCommonsPhotosInfiniteScroll({
   hasMore: relatedFeedHasMore,
   loading: relatedFeedLoading,
   loadMore: loadMoreRelated,
-})
-
-const {
-  changes: activityChanges,
-  loading: activityLoading,
-  hasMore: activityHasMore,
-  queueReady: activityQueueReady,
-  loadMore: loadMoreActivity,
-} = useActivityFeed(savedSorted, activityActive)
-
-useCommonsPhotosInfiniteScroll({
-  sentinel: activitySentinel,
-  active: activityActive,
-  hasMore: activityHasMore,
-  loading: activityLoading,
-  loadMore: loadMoreActivity,
-})
-
-const {
-  savedSuggestions: contributeSavedSuggestions,
-  savedLoading: contributeSavedLoading,
-  relatedSuggestions: contributeRelatedSuggestions,
-  relatedLoading: contributeRelatedLoading,
-  relatedHasMore: contributeRelatedHasMore,
-  loadMoreRelated: loadMoreContributeRelated,
-} = useContributeSuggestionsFeed(savedSorted, contributeActive)
-
-useCommonsPhotosInfiniteScroll({
-  sentinel: contributeSentinel,
-  active: contributeActive,
-  hasMore: contributeRelatedHasMore,
-  loading: contributeRelatedLoading,
-  loadMore: loadMoreContributeRelated,
 })
 
 interface FlagPresentation {
@@ -235,14 +196,10 @@ function editSuggestionRelatedToLabel(suggestion: HomeHelpWanted): string {
   return formatEditSuggestionRelatedToLabel(suggestion, savedSorted.value)
 }
 
-function contributeSuggestionHref(enwikiTitle?: string): string | undefined {
-  return enwikiTitle ? enwikiVisualEditorUrl(enwikiTitle) : undefined
-}
-
 watch(
   [hasSavedPages, activeTab],
   ([saved, tab]) => {
-    if (!saved && (tab === 'read' || tab === 'featured' || tab === 'saved' || tab === 'contribute')) {
+    if (!saved && (tab === 'read' || tab === 'featured' || tab === 'saved' || tab === 'contribute' || tab === 'activity')) {
       setHomeTab('home')
     }
   },
@@ -601,130 +558,19 @@ watch(
         </p>
       </template>
 
-      <template v-else-if="activeTab === 'activity'">
-        <div class="musical-group-home__activity">
-          <p v-if="!hasSavedPages" class="musical-group-home__activity-empty">
-            You have not saved any pages yet.
-          </p>
-          <p v-else-if="!savedWithEnwiki.length" class="musical-group-home__activity-empty">
-            None of your saved pages have English Wikipedia articles.
-          </p>
-          <p
-            v-else-if="activityQueueReady && !activityChanges.length && !activityLoading"
-            class="musical-group-home__activity-empty"
-          >
-            No recent edits on your saved pages.
-          </p>
+      <WikitaActivityTabPanel
+        v-else-if="activeTab === 'activity'"
+        :items="savedSorted"
+        :active="activeTab === 'activity'"
+        scope="home"
+      />
 
-          <template v-else>
-            <WikitaCardItem
-              v-for="change in activityChanges"
-              :key="`${change.enwikiTitle}-${change.revid}`"
-              :show-type="flagPresentation(change.flag) !== null"
-              :type="flagPresentation(change.flag)?.label"
-              :type-icon="flagPresentation(change.flag)?.icon"
-              :type-color="flagPresentation(change.flag)?.color ?? 'base'"
-              :title="change.title"
-              :body="change.editSummary"
-              :show-snippet="false"
-            :show-info="Boolean(change.editedLabel || editCardStatusLabel(change))"
-            :info-left="change.editedLabel"
-            :info-right="editCardStatusLabel(change)"
-            :info-right-subtle="Boolean(editCardStatusLabel(change))"
-              :show-action="isThankableEditFlag(change.flag)"
-              :action-active="editThanked(change.revid)"
-              :action-label="editThanked(change.revid) ? 'Thanked' : 'Thank'"
-              :action-icon="editThanked(change.revid) ? cdxIconHeart : cdxIconHeartOutline"
-              :thumbnail-url="change.thumbnailUrl"
-              :thumbnail-alt="change.title"
-              :external-href="change.diffUrl"
-              @action-click="onToggleEditThank(change.revid)"
-            />
-          </template>
-
-          <div v-if="activityLoading" class="musical-group-home__loading">
-            <CdxProgressBar inline aria-label="Loading activity" />
-          </div>
-
-          <div ref="activitySentinel" class="musical-group-home__sentinel" aria-hidden="true" />
-        </div>
-      </template>
-
-      <template v-else-if="activeTab === 'contribute'">
-        <div class="musical-group-home__contribute">
-          <p v-if="!hasSavedPages" class="musical-group-home__contribute-empty">
-            Save pages to see edit suggestions.
-          </p>
-          <p v-else-if="!savedWithEnwiki.length" class="musical-group-home__contribute-empty">
-            None of your saved pages have English Wikipedia articles.
-          </p>
-
-          <template v-else>
-            <div v-if="contributeSavedLoading" class="musical-group-home__loading">
-              <CdxProgressBar inline aria-label="Loading edit suggestions" />
-            </div>
-
-            <p
-              v-if="!contributeSavedLoading && !contributeSavedSuggestions.length"
-              class="musical-group-home__contribute-empty"
-            >
-              No edit suggestions for your saved pages right now.
-            </p>
-
-            <WikitaHomeSection
-              v-if="contributeSavedSuggestions.length || contributeRelatedSuggestions.length"
-            >
-              <WikitaCardItem
-                v-for="suggestion in contributeSavedSuggestions"
-                :key="`saved-${suggestion.itemId}`"
-                :type="suggestion.suggestionLabel"
-                :type-icon="resolveEditOpportunityIcon(suggestion.need)"
-                type-color="progressive"
-                :title="suggestion.title"
-                :body="suggestion.body"
-                :show-snippet="false"
-                :show-info="false"
-                :thumbnail-url="suggestion.thumbnailUrl"
-                :thumbnail-alt="suggestion.title"
-                :external-href="contributeSuggestionHref(suggestion.enwikiTitle)"
-              />
-              <WikitaCardItem
-                v-for="suggestion in contributeRelatedSuggestions"
-                :key="`related-${suggestion.itemId}`"
-                :type="suggestion.suggestionLabel"
-                :type-icon="resolveEditOpportunityIcon(suggestion.need)"
-                type-color="progressive"
-                :title="suggestion.title"
-                :body="suggestion.body"
-                :show-snippet="false"
-                :show-info="Boolean(editSuggestionRelatedToLabel(suggestion))"
-                :info-left="editSuggestionRelatedToLabel(suggestion)"
-                :thumbnail-url="suggestion.thumbnailUrl"
-                :thumbnail-alt="suggestion.title"
-                :external-href="contributeSuggestionHref(suggestion.enwikiTitle)"
-              />
-            </WikitaHomeSection>
-
-            <p
-              v-if="
-                !contributeSavedLoading &&
-                !contributeRelatedLoading &&
-                !contributeRelatedSuggestions.length &&
-                !contributeRelatedHasMore
-              "
-              class="musical-group-home__contribute-empty"
-            >
-              No edit suggestions for related pages right now.
-            </p>
-
-            <div v-if="contributeRelatedLoading" class="musical-group-home__loading">
-              <CdxProgressBar inline aria-label="Loading related edit suggestions" />
-            </div>
-
-            <div ref="contributeSentinel" class="musical-group-home__sentinel" aria-hidden="true" />
-          </template>
-        </div>
-      </template>
+      <WikitaContributeTabPanel
+        v-else-if="activeTab === 'contribute'"
+        :items="savedSorted"
+        :active="activeTab === 'contribute'"
+        scope="home"
+      />
 
       <div v-else class="musical-group-home__empty" aria-hidden="true" />
     </div>
@@ -761,23 +607,7 @@ watch(
   min-height: var(--musical-group-tab-panel-min-height, 50vh);
 }
 
-.musical-group-home__activity {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-50);
-  min-height: var(--musical-group-tab-panel-min-height, 50vh);
-}
-
-.musical-group-home__contribute {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-100);
-  min-height: var(--musical-group-tab-panel-min-height, 50vh);
-}
-
 .musical-group-home__read-empty,
-.musical-group-home__activity-empty,
-.musical-group-home__contribute-empty,
 .musical-group-home__saved-empty,
 .musical-group-home__trending-empty {
   margin: 0;

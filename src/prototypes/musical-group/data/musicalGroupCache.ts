@@ -9,11 +9,18 @@ import type {
   MusicalGroupOverviewEditOpportunity,
   MusicalGroupOverviewImages,
   MusicalGroupOverviewRelated,
+  WikidataExternalLink,
 } from './types'
 
-export const MUSICAL_GROUP_CACHE_VERSION = 32
+export const MUSICAL_GROUP_CACHE_VERSION = 33
 
 const STORAGE_KEY = 'musical-group-page-cache'
+
+export interface CachedCommonsPhotos {
+  images: CarouselImage[]
+  seenKeys: string[]
+  hasMore: boolean
+}
 
 export interface CachedMusicalGroupEntry {
   version: number
@@ -22,6 +29,9 @@ export interface CachedMusicalGroupEntry {
   commonsImageCount?: number
   commonsImageCountCapped?: boolean
   overview?: MusicalGroupOverviewData
+  externalLinks?: WikidataExternalLink[]
+  articleHtml?: string
+  commonsPhotos?: CachedCommonsPhotos
 }
 
 type MusicalGroupCacheStore = Record<string, CachedMusicalGroupEntry>
@@ -184,6 +194,28 @@ function isMusicalGroupData(value: unknown): value is MusicalGroupData {
   return true
 }
 
+function isExternalLink(value: unknown): value is WikidataExternalLink {
+  if (typeof value !== 'object' || value === null) return false
+  const record = value as Record<string, unknown>
+  return (
+    typeof record.url === 'string' &&
+    typeof record.displayText === 'string' &&
+    (record.category === 'official' || record.category === 'social' || record.category === 'other')
+  )
+}
+
+function isCommonsPhotos(value: unknown): value is CachedCommonsPhotos {
+  if (typeof value !== 'object' || value === null) return false
+  const record = value as Record<string, unknown>
+  return (
+    Array.isArray(record.images) &&
+    record.images.every(isCarouselImage) &&
+    Array.isArray(record.seenKeys) &&
+    record.seenKeys.every((key) => typeof key === 'string') &&
+    typeof record.hasMore === 'boolean'
+  )
+}
+
 function isValidEntry(entry: unknown): entry is CachedMusicalGroupEntry {
   if (typeof entry !== 'object' || entry === null) return false
 
@@ -201,6 +233,11 @@ function isValidEntry(entry: unknown): entry is CachedMusicalGroupEntry {
     return false
   }
   if (record.overview !== undefined && !isOverviewData(record.overview)) return false
+  if (record.externalLinks !== undefined && !record.externalLinks.every(isExternalLink)) {
+    return false
+  }
+  if (record.articleHtml !== undefined && typeof record.articleHtml !== 'string') return false
+  if (record.commonsPhotos !== undefined && !isCommonsPhotos(record.commonsPhotos)) return false
   return true
 }
 
@@ -312,6 +349,9 @@ export function setCachedMusicalGroup(
     commonsImageCountCapped:
       data.commonsImageCountCapped ?? existing?.commonsImageCountCapped,
     overview: existing?.overview,
+    externalLinks: existing?.externalLinks,
+    articleHtml: existing?.articleHtml,
+    commonsPhotos: existing?.commonsPhotos,
   }
 
   if (!key.length) return entry
@@ -338,4 +378,50 @@ export function setCachedMusicalGroupOverview(
 
   persistStore({ ...store, [key]: entry })
   return entry
+}
+
+function updateCachedEntry(
+  id: string,
+  patch: Partial<
+    Pick<
+      CachedMusicalGroupEntry,
+      'overview' | 'externalLinks' | 'articleHtml' | 'commonsPhotos'
+    >
+  >,
+): CachedMusicalGroupEntry | null {
+  const key = cacheKey(id)
+  if (!key.length) return null
+
+  const store = readStore()
+  const existing = store[key]
+  if (!existing) return null
+
+  const entry: CachedMusicalGroupEntry = {
+    ...existing,
+    ...patch,
+  }
+
+  persistStore({ ...store, [key]: entry })
+  return entry
+}
+
+export function setCachedMusicalGroupExternalLinks(
+  id: string,
+  externalLinks: WikidataExternalLink[],
+): CachedMusicalGroupEntry | null {
+  return updateCachedEntry(id, { externalLinks })
+}
+
+export function setCachedMusicalGroupArticleHtml(
+  id: string,
+  articleHtml: string,
+): CachedMusicalGroupEntry | null {
+  return updateCachedEntry(id, { articleHtml })
+}
+
+export function setCachedMusicalGroupCommonsPhotos(
+  id: string,
+  commonsPhotos: CachedCommonsPhotos,
+): CachedMusicalGroupEntry | null {
+  return updateCachedEntry(id, { commonsPhotos })
 }

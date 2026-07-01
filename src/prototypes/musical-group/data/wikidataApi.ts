@@ -1,6 +1,6 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 
-import { fetchWithTimeout } from './fetchWithTimeout'
+import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import { entityDisplayLabel, sentenceCase } from './formatLabel'
 import {
   LOCATION_QIDS,
@@ -45,7 +45,7 @@ function actionUrl(params: Record<string, string>): string {
 
 async function sparqlQuery<T>(query: string, signal?: AbortSignal): Promise<T> {
   const url = `${WIKIDATA_SPARQL}?query=${encodeURIComponent(query)}`
-  const response = await fetchWithTimeout(url, {
+  const response = await fetchWikimedia(url, {
     signal,
     headers: {
       Accept: 'application/sparql-results+json',
@@ -249,7 +249,7 @@ export async function searchWikidataItems(
     limit: '8',
     type: 'item',
   })
-  const searchResponse = await fetchWithTimeout(searchUrl, {
+  const searchResponse = await fetchWikimedia(searchUrl, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-wbsearchentities'),
   })
@@ -266,7 +266,7 @@ export async function searchWikidataItems(
     ids: hits.map((hit) => hit.id).join('|'),
     props: 'claims|sitelinks',
   })
-  const entitiesResponse = await fetchWithTimeout(entitiesUrl, {
+  const entitiesResponse = await fetchWikimedia(entitiesUrl, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-wbsearchentities-enrich'),
   })
@@ -473,7 +473,7 @@ export async function fetchEntityClaims(
     languagefallback: '1',
   })
 
-  const response = await fetchWithTimeout(url, {
+  const response = await fetchWikimedia(url, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-wbgetentities'),
   })
@@ -541,7 +541,7 @@ export async function resolveEntityLabels(
     languagefallback: '1',
   })
 
-  const response = await fetchWithTimeout(url, {
+  const response = await fetchWikimedia(url, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-wbgetentities-labels'),
   })
@@ -573,7 +573,7 @@ export async function fetchEditIndicator(
     titles: `${id}|Talk:${id}`,
   })
 
-  const response = await fetchWithTimeout(url, {
+  const response = await fetchWikimedia(url, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-revisions'),
   })

@@ -1,6 +1,6 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 
-import { fetchWithTimeout } from './fetchWithTimeout'
+import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import { normalizeQid } from './wikidataApi'
 
 export const EN_WIKI_HOST = 'en.wikipedia.org'
@@ -128,7 +128,7 @@ export async function fetchWikibaseItemId(
     titles: title,
   })
 
-  const response = await fetchWithTimeout(url, {
+  const response = await fetchWikimedia(url, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-wikibase-item'),
   })
@@ -156,7 +156,7 @@ export async function fetchWikibaseItemIds(
     titles: unique.join('|'),
   })
 
-  const response = await fetchWithTimeout(url, {
+  const response = await fetchWikimedia(url, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-wikibase-item-batch'),
   })

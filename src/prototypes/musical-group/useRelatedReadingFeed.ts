@@ -1,7 +1,15 @@
 import { onUnmounted, ref, watch, type Ref } from 'vue'
 
+import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
+
+import { bookmarksKey } from './data/cacheKeys'
 import { normalizeEnwikiTitle } from './data/enwikiTitle'
 import { fetchMorelikeTitles, resolveRelatedSummary } from './data/fetchRelatedReading'
+import {
+  getCachedRelatedFeed,
+  setCachedRelatedFeed,
+  type RelatedFeedTabId,
+} from './data/homeTabCache'
 import type { HomeRelated, HomeSavedItem } from './data/types'
 
 /** How many related cards to resolve per loadMore call. */
@@ -12,6 +20,7 @@ const REFILL_THRESHOLD = PAGE_SIZE
 const MORELIKE_BATCH = 20
 /** Max titles to add from one saved page per refill round. */
 const TITLES_PER_SEED = 2
+const SUMMARY_CONCURRENCY = 2
 
 interface SeedCursor {
   searchTitle: string
@@ -35,6 +44,30 @@ function shuffleSeeds(seeds: SeedCursor[]): void {
   }
 }
 
+function persistFeedState(
+  feedTabId: RelatedFeedTabId,
+  dependencyKey: string,
+  related: HomeRelated[],
+  seen: Set<string>,
+  seedTitles: Set<string>,
+  seeds: SeedCursor[],
+  titlePool: PooledTitle[],
+  nextSeedIndex: number,
+  hasMore: boolean,
+): void {
+  setCachedRelatedFeed(feedTabId, {
+    dependencyKey,
+    items: related,
+    seen: [...seen],
+    seedTitles: [...seedTitles],
+    seeds,
+    titlePool,
+    nextSeedIndex,
+    hasMore,
+    fetchedAt: Date.now(),
+  })
+}
+
 /**
  * A paginated "Related reading" feed: each page draws morelike results from
  * saved pages (and later from related cards), resolves them to cards, and
@@ -44,6 +77,7 @@ function shuffleSeeds(seeds: SeedCursor[]): void {
 export function useRelatedReadingFeed(
   savedItems: Ref<HomeSavedItem[]>,
   active: Ref<boolean>,
+  feedTabId: RelatedFeedTabId = 'read',
 ) {
   const related = ref<HomeRelated[]>([])
   const loading = ref(false)
@@ -57,6 +91,10 @@ export function useRelatedReadingFeed(
   let nextSeedIndex = 0
   let fetchAbort: AbortController | null = null
   let loadedForKey: string | null = null
+
+  function dependencyKey(): string {
+    return bookmarksKey()
+  }
 
   function savedKey(): string {
     return [...savedItems.value]
@@ -92,7 +130,22 @@ export function useRelatedReadingFeed(
     hasMore.value = seeds.length > 0
   }
 
-  /** Turn a freshly resolved related card into a future morelike seed. */
+  function restoreFromCache(key: string): boolean {
+    const cached = getCachedRelatedFeed(feedTabId, key)
+    if (!cached) return false
+
+    related.value = cached.items
+    seen = new Set(cached.seen)
+    seedTitles = new Set(cached.seedTitles)
+    seeds = cached.seeds
+    titlePool = cached.titlePool
+    nextSeedIndex = cached.nextSeedIndex
+    hasMore.value = cached.hasMore
+    loading.value = false
+    error.value = null
+    return true
+  }
+
   function promoteRelatedSeed(item: HomeRelated) {
     const key = titleKey(item.title)
     if (seedTitles.has(key)) return
@@ -100,7 +153,6 @@ export function useRelatedReadingFeed(
     seeds.push({ searchTitle: item.title, displayTitle: item.title, offset: 0 })
   }
 
-  /** Round-robin morelike queries across saved pages so each batch mixes seeds. */
   async function refillPool(signal: AbortSignal) {
     if (!seeds.length) {
       hasMore.value = false
@@ -152,15 +204,18 @@ export function useRelatedReadingFeed(
     loading.value = true
     error.value = null
 
+    const key = dependencyKey()
+
     try {
       await refillPool(signal)
 
       const batchTitles = titlePool.splice(0, PAGE_SIZE)
       if (batchTitles.length) {
-        const resolved = await Promise.all(
-          batchTitles.map(({ title, relatedToTitle }) =>
-            resolveRelatedSummary(title, relatedToTitle, signal),
-          ),
+        const resolved = await mapWithConcurrency(
+          batchTitles,
+          SUMMARY_CONCURRENCY,
+          ({ title, relatedToTitle }) => resolveRelatedSummary(title, relatedToTitle, signal),
+          signal,
         )
         const fresh = resolved.filter((item): item is HomeRelated => item !== null)
         if (fresh.length) {
@@ -172,6 +227,17 @@ export function useRelatedReadingFeed(
       }
 
       hasMore.value = seeds.length > 0
+      persistFeedState(
+        feedTabId,
+        key,
+        related.value,
+        seen,
+        seedTitles,
+        seeds,
+        titlePool,
+        nextSeedIndex,
+        hasMore.value,
+      )
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
       error.value = 'Could not load more related reading.'
@@ -200,6 +266,9 @@ export function useRelatedReadingFeed(
       if (loadedForKey === key) return
 
       loadedForKey = key
+      const depKey = dependencyKey()
+      if (restoreFromCache(depKey)) return
+
       reset()
       void loadMore()
     },

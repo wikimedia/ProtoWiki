@@ -11,6 +11,8 @@ const allTabs: { id: TabId; label: string; dot?: 'blue' }[] = [
   { id: 'article', label: 'Article' },
   { id: 'images', label: 'Images', dot: 'blue' },
   { id: 'links', label: 'Links' },
+  { id: 'activity', label: 'Activity' },
+  { id: 'contribute', label: 'Contribute' },
 ]
 
 interface Props {
@@ -19,6 +21,8 @@ interface Props {
   showImagesTabDot?: boolean
   showInfoTab?: boolean
   showLinksTab?: boolean
+  showActivityTab?: boolean
+  showContributeTab?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -27,6 +31,8 @@ const props = withDefaults(defineProps<Props>(), {
   showImagesTabDot: true,
   showInfoTab: true,
   showLinksTab: true,
+  showActivityTab: true,
+  showContributeTab: true,
 })
 
 const tabs = computed(() =>
@@ -35,6 +41,8 @@ const tabs = computed(() =>
     if (tab.id === 'images' && !props.showImagesTab) return false
     if (tab.id === 'info' && !props.showInfoTab) return false
     if (tab.id === 'links' && !props.showLinksTab) return false
+    if (tab.id === 'activity' && !props.showActivityTab) return false
+    if (tab.id === 'contribute' && !props.showContributeTab) return false
     return true
   }),
 )

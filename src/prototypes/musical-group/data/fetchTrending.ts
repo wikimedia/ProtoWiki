@@ -1,12 +1,15 @@
-import { wikimediaApiFetchHeaders } from '@/config'
+import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 
-import { EN_WIKI_HOST, enwikiArticleUrl } from './enwikiTitle'
-import { fetchWithTimeout } from './fetchWithTimeout'
+import { utcDayKey } from './cacheKeys'
+import { enwikiArticleUrl } from './enwikiTitle'
+import { fetchEnwikiFeaturedFeedDay } from './fetchEnwikiFeaturedFeedDay'
+import { getCachedTrendingFeed, setCachedTrendingFeed } from './homeTabCache'
 import { fetchPageSummary } from './pageSummary'
 import type { HomeTrending } from './types'
 import { normalizeQid } from './wikidataApi'
 
 const MAX_TRENDING = 10
+const SUMMARY_CONCURRENCY = 3
 
 interface MostreadArticle {
   title?: string
@@ -14,23 +17,7 @@ interface MostreadArticle {
   rank?: number
 }
 
-interface MostreadBlock {
-  date?: string
-  articles?: MostreadArticle[]
-}
-
-interface FeaturedFeedResponse {
-  mostread?: MostreadBlock
-}
-
-let cached: { day: string; value: HomeTrending[] } | null = null
-
-function utcDayParts(date: Date): { yyyy: string; mm: string; dd: string; key: string } {
-  const yyyy = String(date.getUTCFullYear())
-  const mm = String(date.getUTCMonth() + 1).padStart(2, '0')
-  const dd = String(date.getUTCDate()).padStart(2, '0')
-  return { yyyy, mm, dd, key: `${yyyy}${mm}${dd}` }
-}
+let sessionCached: { day: string; value: HomeTrending[] } | null = null
 
 function parseMediaWikiTimestamp(timestamp: string): Date {
   const trimmed = timestamp.trim()
@@ -116,22 +103,25 @@ async function enrichMostreadArticle(
   }
 }
 
+export function clearTrendingSessionCache(): void {
+  sessionCached = null
+}
+
 /** Most-read articles from today's featured feed, enriched with page summaries. */
 export async function fetchTrendingFeed(signal?: AbortSignal): Promise<HomeTrending[]> {
-  const { yyyy, mm, dd, key } = utcDayParts(new Date())
-  if (cached && cached.day === key) return cached.value
+  const dayKey = utcDayKey()
 
-  const featuredUrl = `https://${EN_WIKI_HOST}/api/rest_v1/feed/featured/${yyyy}/${mm}/${dd}`
+  const stored = getCachedTrendingFeed(dayKey)
+  if (stored) {
+    sessionCached = { day: dayKey, value: stored }
+    return stored
+  }
+
+  if (sessionCached && sessionCached.day === dayKey) return sessionCached.value
 
   try {
-    const response = await fetchWithTimeout(featuredUrl, {
-      signal,
-      headers: wikimediaApiFetchHeaders('musical-group-trending-feed'),
-    })
-    if (!response.ok) return []
-
-    const json = (await response.json()) as FeaturedFeedResponse
-    const articles = json.mostread?.articles
+    const { json } = await fetchEnwikiFeaturedFeedDay(signal, 'musical-group-trending-feed')
+    const articles = json?.mostread?.articles
     if (!articles?.length) return []
 
     const viewsPeriod = viewsPeriodLabel(json.mostread?.date)
@@ -139,12 +129,16 @@ export async function fetchTrendingFeed(signal?: AbortSignal): Promise<HomeTrend
       .sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity))
       .slice(0, MAX_TRENDING)
 
-    const enriched = await Promise.all(
-      slice.map((article) => enrichMostreadArticle(article, viewsPeriod, signal)),
+    const enriched = await mapWithConcurrency(
+      slice,
+      SUMMARY_CONCURRENCY,
+      (article) => enrichMostreadArticle(article, viewsPeriod, signal),
+      signal,
     )
     const value = enriched.filter((item): item is HomeTrending => item !== null)
 
-    cached = { day: key, value }
+    sessionCached = { day: dayKey, value }
+    setCachedTrendingFeed(dayKey, value)
     return value
   } catch (err) {
     if ((err as Error).name === 'AbortError') throw err

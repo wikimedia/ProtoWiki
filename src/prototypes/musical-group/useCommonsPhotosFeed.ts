@@ -8,6 +8,10 @@ import {
   resolveCommonsCategory,
   type CommonsPhotosFeedCursor,
 } from './data/commonsImages'
+import {
+  getCachedMusicalGroup,
+  setCachedMusicalGroupCommonsPhotos,
+} from './data/musicalGroupCache'
 import type { CarouselImage, MusicalGroupData } from './data/types'
 
 function seedSeenKeys(data: MusicalGroupData, carouselImages: CarouselImage[]): Set<string> {
@@ -58,9 +62,29 @@ export function useCommonsPhotosFeed(data: Ref<MusicalGroupData>, active: Ref<bo
   let fetchAbort: AbortController | null = null
   let loadedForDataId: string | null = null
 
+  function persistFeedState() {
+    setCachedMusicalGroupCommonsPhotos(data.value.id, {
+      images: images.value,
+      seenKeys: [...seenKeys.value],
+      hasMore: hasMore.value,
+    })
+  }
+
   function resetFeed(nextData: MusicalGroupData) {
     fetchAbort?.abort()
     fetchAbort = null
+
+    const cached = getCachedMusicalGroup(nextData.id)?.commonsPhotos
+    if (cached?.images.length) {
+      images.value = dedupeCarouselImages([...cached.images])
+      seenKeys.value = new Set(cached.seenKeys)
+      hasMore.value = cached.hasMore
+      cursor = createCommonsPhotosFeedCursor(feedSourceFromData(nextData), { categoryOnly: true })
+      loading.value = false
+      error.value = null
+      loadedForDataId = nextData.id
+      return
+    }
 
     images.value = dedupeCarouselImages([...nextData.images])
     seenKeys.value = seedSeenKeys(nextData, nextData.images)
@@ -106,6 +130,8 @@ export function useCommonsPhotosFeed(data: Ref<MusicalGroupData>, active: Ref<bo
           images.value = dedupeCarouselImages([...images.value, ...fresh])
         }
       }
+
+      persistFeedState()
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
       error.value = 'Could not load more images.'
@@ -136,6 +162,8 @@ export function useCommonsPhotosFeed(data: Ref<MusicalGroupData>, active: Ref<bo
       }
 
       resetFeed(data.value)
+      const cached = getCachedMusicalGroup(data.value.id)?.commonsPhotos
+      if (cached?.images.length) return
       void loadMore()
     },
     { immediate: true },

@@ -1,6 +1,6 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 
-import { fetchWithTimeout } from './fetchWithTimeout'
+import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import { normalizeUrlForDedup, OFFICIAL_WEBSITE_LABEL } from './mergeExternalLinks'
 import {
   getSocialPlatformLabel,
@@ -93,7 +93,7 @@ async function fetchPropertyFormatters(
       props: 'claims',
     })
 
-    const response = await fetchWithTimeout(url, {
+    const response = await fetchWikimedia(url, {
       signal,
       headers: wikimediaApiFetchHeaders('musical-group-wikidata-formatters'),
     })
@@ -192,7 +192,7 @@ export async function fetchEntityExternalLinks(
     props: 'claims',
   })
 
-  const response = await fetchWithTimeout(url, {
+  const response = await fetchWikimedia(url, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-wikidata-links'),
   })

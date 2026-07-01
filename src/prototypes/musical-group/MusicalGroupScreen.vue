@@ -7,6 +7,8 @@ import MusicalGroupFacts from './MusicalGroupFacts.vue'
 import MusicalGroupLinks from './MusicalGroupLinks.vue'
 import MusicalGroupPhotos from './MusicalGroupPhotos.vue'
 import WikitaCardTable from './components/WikitaCardTable.vue'
+import WikitaActivityTabPanel from './components/WikitaActivityTabPanel.vue'
+import WikitaContributeTabPanel from './components/WikitaContributeTabPanel.vue'
 import MusicalGroupOverview from './MusicalGroupOverview.vue'
 import MusicalGroupTabs from './MusicalGroupTabs.vue'
 import {
@@ -17,7 +19,7 @@ import {
   loadImagesTabOpenedPreference,
   saveImagesTabOpenedPreference,
 } from './data/imagesTabPreference'
-import type { MusicalGroupData, MusicalGroupOverviewData, WikidataExternalLink } from './data/types'
+import type { HomeSavedItem, MusicalGroupData, MusicalGroupOverviewData, WikidataExternalLink } from './data/types'
 import { hasImagesTab } from './data/types'
 import { useMusicalGroupRoute } from './useMusicalGroupRoute'
 import { useMusicalGroupScrollStates } from './useMusicalGroupScrollStates'
@@ -57,6 +59,21 @@ const showInfoTab = computed(() => {
 const showArticleTab = computed(() => {
   if (props.overviewLoading) return false
   return Boolean(props.overview?.article) && !props.overview?.noEnglishArticle
+})
+
+const showActivityTab = computed(() => showArticleTab.value)
+const showContributeTab = computed(() => showArticleTab.value)
+
+const itemFeedItems = computed((): HomeSavedItem[] => {
+  if (!showArticleTab.value) return []
+  return [{
+    id: props.data.id,
+    title: props.data.label,
+    enwikiTitle: props.data.enwikiTitle,
+    description: props.data.description ?? '',
+    thumbnailUrl: props.data.images[0]?.url,
+    savedAt: 0,
+  }]
 })
 
 const showLinksTab = computed(
@@ -110,8 +127,8 @@ const moreImagesCountLabel = computed(() => {
 })
 
 watch(
-  [activeTab, showArticleTab, showImagesTab, showInfoTab, showLinksTab],
-  ([tab, articleAllowed, imagesAllowed, infoAllowed, linksAllowed]) => {
+  [activeTab, showArticleTab, showImagesTab, showInfoTab, showLinksTab, showActivityTab, showContributeTab],
+  ([tab, articleAllowed, imagesAllowed, infoAllowed, linksAllowed, activityAllowed, contributeAllowed]) => {
     if (tab === 'article' && !articleAllowed) {
       void setTab('overview')
     }
@@ -122,6 +139,12 @@ watch(
       void setTab('overview')
     }
     if (tab === 'links' && !linksAllowed) {
+      void setTab('overview')
+    }
+    if (tab === 'activity' && !activityAllowed) {
+      void setTab('overview')
+    }
+    if (tab === 'contribute' && !contributeAllowed) {
       void setTab('overview')
     }
   },
@@ -153,6 +176,8 @@ watch(
           :show-images-tab-dot="showImagesTabDot"
           :show-info-tab="showInfoTab"
           :show-links-tab="showLinksTab"
+          :show-activity-tab="showActivityTab"
+          :show-contribute-tab="showContributeTab"
           @update:active-tab="setTab"
         />
         <div class="musical-group-screen__panel">
@@ -173,12 +198,25 @@ watch(
           <MusicalGroupArticle
             v-else-if="activeTab === 'article'"
             :title="data.enwikiTitle"
+            :item-id="data.id"
           />
           <MusicalGroupLinks
             v-else-if="activeTab === 'links'"
             :links="externalLinks"
             :loading="linksLoading"
             :error="linksError"
+          />
+          <WikitaActivityTabPanel
+            v-else-if="activeTab === 'activity'"
+            :items="itemFeedItems"
+            :active="activeTab === 'activity'"
+            scope="item"
+          />
+          <WikitaContributeTabPanel
+            v-else-if="activeTab === 'contribute'"
+            :items="itemFeedItems"
+            :active="activeTab === 'contribute'"
+            scope="item"
           />
           <div v-else-if="activeTab !== 'images'" class="musical-group-screen__placeholder"></div>
           <MusicalGroupPhotos

@@ -10,6 +10,8 @@ const TAB_IDS: TabId[] = [
   'article',
   'images',
   'links',
+  'activity',
+  'contribute',
 ]
 
 const HOME_TAB_IDS: HomeTabId[] = [

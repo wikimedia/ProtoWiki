@@ -1,8 +1,10 @@
 import { onUnmounted, ref, watch, type Ref } from 'vue'
 
+import { bookmarksKey } from './data/cacheKeys'
 import { normalizeEnwikiTitle } from './data/enwikiTitle'
 import { fetchAllSavedSuggestions, fetchEditSuggestionForPage } from './data/fetchEditSuggestion'
 import { fetchMorelikeTitles, resolveRelatedSummary } from './data/fetchRelatedReading'
+import { getCachedContributeFeed, setCachedContributeFeed } from './data/homeTabCache'
 import type { HomeHelpWanted, HomeSavedItem } from './data/types'
 
 /** How many related suggestions to resolve per loadMore call. */
@@ -14,7 +16,6 @@ const MORELIKE_BATCH = 20
 /** Minimum titles to add from one seed per refill round. */
 const TITLES_PER_SEED = 2
 
-/** Wider pool when few saved pages seed the morelike search. */
 function titlesPerSeed(seedCount: number): number {
   return Math.max(TITLES_PER_SEED, Math.ceil(REFILL_THRESHOLD / Math.max(seedCount, 1)))
 }
@@ -41,10 +42,6 @@ function shuffleSeeds(seeds: SeedCursor[]): void {
   }
 }
 
-/**
- * Contribute tab feed: all edit suggestions from saved pages, then a paginated
- * list from related pages discovered via morelike search.
- */
 export function useContributeSuggestionsFeed(
   savedItems: Ref<HomeSavedItem[]>,
   active: Ref<boolean>,
@@ -67,11 +64,51 @@ export function useContributeSuggestionsFeed(
   let loadedForKey: string | null = null
   let savedLoadedForKey: string | null = null
 
+  function dependencyKey(): string {
+    return bookmarksKey()
+  }
+
   function savedKey(): string {
     return [...savedItems.value]
       .map((item) => item.id)
       .sort()
       .join(',')
+  }
+
+  function persistState() {
+    setCachedContributeFeed({
+      dependencyKey: dependencyKey(),
+      savedSuggestions: savedSuggestions.value,
+      relatedSuggestions: relatedSuggestions.value,
+      seenTitles: [...seenTitles],
+      excludedIds: [...excludedIds],
+      seedTitles: [...seedTitles],
+      seeds,
+      titlePool,
+      nextSeedIndex,
+      relatedHasMore: relatedHasMore.value,
+      fetchedAt: Date.now(),
+    })
+  }
+
+  function restoreFromCache(key: string): boolean {
+    const cached = getCachedContributeFeed(key)
+    if (!cached) return false
+
+    savedSuggestions.value = cached.savedSuggestions
+    relatedSuggestions.value = cached.relatedSuggestions
+    seenTitles = new Set(cached.seenTitles)
+    excludedIds = new Set(cached.excludedIds)
+    seedTitles = new Set(cached.seedTitles)
+    seeds = cached.seeds
+    titlePool = cached.titlePool
+    nextSeedIndex = cached.nextSeedIndex
+    relatedHasMore.value = cached.relatedHasMore
+    savedLoading.value = false
+    relatedLoading.value = false
+    error.value = null
+    savedLoadedForKey = key
+    return true
   }
 
   function resetRelatedState() {
@@ -198,6 +235,7 @@ export function useContributeSuggestionsFeed(
         },
       })
       savedLoadedForKey = key
+      persistState()
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
       savedSuggestions.value = []
@@ -238,6 +276,7 @@ export function useContributeSuggestionsFeed(
       }
 
       relatedHasMore.value = seeds.length > 0
+      persistState()
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
       error.value = 'Could not load more edit suggestions.'
@@ -270,6 +309,9 @@ export function useContributeSuggestionsFeed(
       if (loadedForKey === key) return
 
       loadedForKey = key
+      const depKey = dependencyKey()
+      if (restoreFromCache(depKey)) return
+
       resetRelatedState()
 
       void (async () => {

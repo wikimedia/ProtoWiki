@@ -1,6 +1,6 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 
-import { fetchWithTimeout } from './fetchWithTimeout'
+import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import type { CarouselImage } from './types'
 
 const COMMONS_API = 'https://commons.wikimedia.org/w/api.php'
@@ -59,7 +59,7 @@ async function commonsGet(params: Record<string, string>, signal?: AbortSignal):
     url.searchParams.set(key, value)
   }
 
-  const response = await fetchWithTimeout(url, {
+  const response = await fetchWikimedia(url, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-commons'),
   })

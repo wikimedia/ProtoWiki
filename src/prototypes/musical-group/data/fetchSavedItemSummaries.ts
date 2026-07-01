@@ -1,9 +1,18 @@
+import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
+
 import type { BookmarkEntry } from './bookmarks'
+import { bookmarksKey } from './cacheKeys'
 import { sentenceCase } from './formatLabel'
+import {
+  getCachedSavedSummaries,
+  setCachedSavedSummaries,
+} from './homeTabCache'
 import { getCachedMusicalGroup } from './musicalGroupCache'
 import { fetchPageSummary } from './pageSummary'
 import type { HomeSavedItem } from './types'
 import { commonsFileUrl, fetchEntityClaims } from './wikidataApi'
+
+const RESOLVE_CONCURRENCY = 3
 
 async function resolveSavedThumbnailUrl(
   thumbnailUrl: string | undefined,
@@ -65,6 +74,17 @@ export async function fetchSavedItemSummaries(
   entries: BookmarkEntry[],
   signal?: AbortSignal,
 ): Promise<HomeSavedItem[]> {
-  const resolved = await Promise.all(entries.map((entry) => resolveSavedItem(entry, signal)))
-  return resolved.filter((item): item is HomeSavedItem => item !== null)
+  const dependencyKey = bookmarksKey()
+  const cached = getCachedSavedSummaries(dependencyKey)
+  if (cached) return cached
+
+  const resolved = await mapWithConcurrency(
+    entries,
+    RESOLVE_CONCURRENCY,
+    (entry) => resolveSavedItem(entry, signal),
+    signal,
+  )
+  const items = resolved.filter((item): item is HomeSavedItem => item !== null)
+  setCachedSavedSummaries(dependencyKey, items)
+  return items
 }

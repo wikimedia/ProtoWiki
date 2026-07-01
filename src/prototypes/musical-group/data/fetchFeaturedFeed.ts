@@ -1,13 +1,21 @@
 import { wikimediaApiFetchHeaders } from '@/config'
+import { fetchWikimedia } from '@/lib/fetchWikimedia'
+import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 
+import { utcDayKey, utcDayParts } from './cacheKeys'
 import { EN_WIKI_HOST, enwikiArticleUrl } from './enwikiTitle'
-import { fetchWithTimeout } from './fetchWithTimeout'
+import { fetchEnwikiFeaturedFeedDay } from './fetchEnwikiFeaturedFeedDay'
+import {
+  getCachedFeaturedTab,
+  setCachedFeaturedTab,
+} from './homeTabCache'
 import { fetchPageSummary } from './pageSummary'
 import type { HomeBornOnThisDay, HomeDidYouKnow, HomeFeatured, HomeFeaturedTab } from './types'
 import { normalizeQid } from './wikidataApi'
 
 const MAX_DYK = 5
 const MAX_BIRTHS = 5
+const SUMMARY_CONCURRENCY = 3
 
 interface FeedPage {
   title?: string
@@ -44,14 +52,7 @@ interface BirthsFeedResponse {
   births?: FeedBirth[]
 }
 
-let cached: { day: string; value: HomeFeaturedTab } | null = null
-
-function utcDayParts(date: Date): { yyyy: string; mm: string; dd: string; key: string } {
-  const yyyy = String(date.getUTCFullYear())
-  const mm = String(date.getUTCMonth() + 1).padStart(2, '0')
-  const dd = String(date.getUTCDate()).padStart(2, '0')
-  return { yyyy, mm, dd, key: `${yyyy}${mm}${dd}` }
-}
+let sessionCached: { day: string; value: HomeFeaturedTab } | null = null
 
 function parseTfa(tfa: FeedTfa | undefined): HomeFeatured | undefined {
   if (!tfa?.title) return undefined
@@ -86,7 +87,6 @@ async function pageCardFields(
   }
 }
 
-/** Anchor text of the primary bold-linked article in a DYK hook. */
 function extractDykEmphasis(html: string): string | undefined {
   const match = html.match(/<b[^>]*>\s*<a[^>]*>([\s\S]*?)<\/a>/i)
   if (!match) return undefined
@@ -126,7 +126,6 @@ function resolveDykEmphasis(text: string, html?: string): string | undefined {
   return emphasis
 }
 
-/** Primary linked article from DYK feed item (pages array or Parsoid html hook). */
 function dykPrimaryPageTitle(item: FeedDyk): string | undefined {
   const fromPages = item.pages?.[0]?.title
   if (fromPages) return fromPages
@@ -152,8 +151,10 @@ async function parseDidYouKnow(
 
   const slice = items.slice(0, MAX_DYK)
 
-  return Promise.all(
-    slice.map(async (item) => {
+  const results = await mapWithConcurrency(
+    slice,
+    SUMMARY_CONCURRENCY,
+    async (item) => {
       const text = item.text?.trim()
       if (!text) return null
 
@@ -176,8 +177,11 @@ async function parseDidYouKnow(
         articleUrl: fields.articleUrl,
         itemId: fields.itemId,
       } satisfies HomeDidYouKnow
-    }),
-  ).then((entries) => entries.filter((entry): entry is HomeDidYouKnow => entry !== null))
+    },
+    signal,
+  )
+
+  return results.filter((entry): entry is HomeDidYouKnow => entry !== null)
 }
 
 async function parseBornOnThisDay(
@@ -190,8 +194,10 @@ async function parseBornOnThisDay(
     .slice(0, MAX_BIRTHS)
     .filter((item) => item.pages?.[0]?.title && item.text?.trim() && item.year != null)
 
-  return Promise.all(
-    slice.map(async (item) => {
+  return mapWithConcurrency(
+    slice,
+    SUMMARY_CONCURRENCY,
+    async (item) => {
       const pageTitle = item.pages![0].title!
       const fields = await pageCardFields(pageTitle, signal)
       return {
@@ -203,49 +209,57 @@ async function parseBornOnThisDay(
         articleUrl: fields.articleUrl,
         itemId: fields.itemId,
       } satisfies HomeBornOnThisDay
-    }),
+    },
+    signal,
   )
+}
+
+export function clearFeaturedTabSessionCache(): void {
+  sessionCached = null
 }
 
 /** Today's featured tab: article of the day, Did you know, and Born on this day. */
 export async function fetchFeaturedTabContent(signal?: AbortSignal): Promise<HomeFeaturedTab> {
-  const { yyyy, mm, dd, key } = utcDayParts(new Date())
-  if (cached && cached.day === key) return cached.value
+  const dayKey = utcDayKey()
 
-  const featuredUrl = `https://${EN_WIKI_HOST}/api/rest_v1/feed/featured/${yyyy}/${mm}/${dd}`
+  const stored = getCachedFeaturedTab(dayKey)
+  if (stored) {
+    sessionCached = { day: dayKey, value: stored }
+    return stored
+  }
+
+  if (sessionCached && sessionCached.day === dayKey) return sessionCached.value
+
+  const { mm, dd } = utcDayParts()
   const birthsUrl = `https://${EN_WIKI_HOST}/api/rest_v1/feed/onthisday/births/${mm}/${dd}`
 
   try {
-    const [featuredResponse, birthsResponse] = await Promise.all([
-      fetchWithTimeout(featuredUrl, {
-        signal,
-        headers: wikimediaApiFetchHeaders('musical-group-featured-feed'),
-      }),
-      fetchWithTimeout(birthsUrl, {
+    const [{ json: featuredJson }, birthsResponse] = await Promise.all([
+      fetchEnwikiFeaturedFeedDay(signal, 'musical-group-featured-feed'),
+      fetchWikimedia(birthsUrl, {
         signal,
         headers: wikimediaApiFetchHeaders('musical-group-born-on-this-day'),
       }),
     ])
 
-    const featuredJson = featuredResponse.ok
-      ? ((await featuredResponse.json()) as FeaturedFeedResponse)
-      : {}
+    const featured = (featuredJson ?? {}) as FeaturedFeedResponse
     const birthsJson = birthsResponse.ok
       ? ((await birthsResponse.json()) as BirthsFeedResponse)
       : {}
 
     const [didYouKnow, bornOnThisDay] = await Promise.all([
-      parseDidYouKnow(featuredJson.dyk, signal),
+      parseDidYouKnow(featured.dyk, signal),
       parseBornOnThisDay(birthsJson.births, signal),
     ])
 
     const value: HomeFeaturedTab = {
-      article: parseTfa(featuredJson.tfa),
+      article: parseTfa(featured.tfa),
       didYouKnow,
       bornOnThisDay,
     }
 
-    cached = { day: key, value }
+    sessionCached = { day: dayKey, value }
+    setCachedFeaturedTab(dayKey, value)
     return value
   } catch (err) {
     if ((err as Error).name === 'AbortError') throw err

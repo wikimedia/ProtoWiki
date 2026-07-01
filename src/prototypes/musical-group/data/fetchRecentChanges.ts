@@ -1,8 +1,11 @@
 import { wikimediaApiFetchHeaders } from '@/config'
+import { fetchWikimedia } from '@/lib/fetchWikimedia'
+import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 
+import { bookmarksKey } from './cacheKeys'
 import { EN_WIKI_HOST, normalizeEnwikiTitle, wikiActionUrl } from './enwikiTitle'
 import { formatEditSummaryDisplay } from './editSummaryDisplay'
-import { fetchWithTimeout } from './fetchWithTimeout'
+import { getCachedRecentChangesPreview, setCachedRecentChangesPreview } from './homeTabCache'
 import { predictGoodFaith, predictReferenceNeed, predictRevertRisk, predictTone } from './liftWing'
 import type { HomeRecentChange, HomeRecentChangeFlag, HomeSavedItem } from './types'
 
@@ -173,7 +176,7 @@ export async function fetchRevisionsForTitle(
     params.rvdir = 'older'
   }
 
-  const response = await fetchWithTimeout(wikiActionUrl(params), {
+  const response = await fetchWikimedia(wikiActionUrl(params), {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-activity'),
   })
@@ -211,7 +214,7 @@ export async function fetchLatestRevisionsForTitles(
       rvlimit: '1',
     })
 
-    const response = await fetchWithTimeout(url, {
+    const response = await fetchWikimedia(url, {
       signal,
       headers: wikimediaApiFetchHeaders('musical-group-activity'),
     })
@@ -253,8 +256,10 @@ export async function fetchNextActivityCandidates(
   const activePages = pageStates.filter((state) => !state.exhausted)
   if (!activePages.length) return []
 
-  const batches = await Promise.all(
-    activePages.map(async (state) => {
+  const batches = await mapWithConcurrency(
+    activePages,
+    2,
+    async (state) => {
       const revisions = await fetchRevisionsForTitle(
         state.item.enwikiTitle,
         limit,
@@ -262,7 +267,8 @@ export async function fetchNextActivityCandidates(
         signal,
       )
       return { state, revisions }
-    }),
+    },
+    signal,
   )
 
   const candidates: ActivityCandidate[] = []
@@ -302,7 +308,7 @@ async function fetchEditorEditCount(
     usprop: 'editcount|registration',
   })
 
-  const response = await fetchWithTimeout(url, {
+  const response = await fetchWikimedia(url, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-user-info'),
   })
@@ -379,7 +385,7 @@ async function fetchRevisionDiff(
     prop: 'diff',
   })
 
-  const response = await fetchWithTimeout(url, {
+  const response = await fetchWikimedia(url, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-compare'),
   })
@@ -522,14 +528,22 @@ export async function fetchRecentChanges(
   items: HomeSavedItem[],
   signal?: AbortSignal,
 ): Promise<HomeRecentChange[]> {
+  const dependencyKey = bookmarksKey()
+  const cached = getCachedRecentChangesPreview(dependencyKey)
+  if (cached) return cached
+
   const candidates = items.filter((item) => item.enwikiTitle).slice(0, MAX_RECENT_CHANGES)
-  const changes = await Promise.all(
-    candidates.map((item) =>
+  const changes = await mapWithConcurrency(
+    candidates,
+    2,
+    (item) =>
       fetchRecentChangeForItem(item, signal).catch((err) => {
         if ((err as Error).name === 'AbortError') throw err
         return null
       }),
-    ),
+    signal,
   )
-  return changes.filter((change): change is HomeRecentChange => change !== null)
+  const result = changes.filter((change): change is HomeRecentChange => change !== null)
+  setCachedRecentChangesPreview(dependencyKey, result)
+  return result
 }

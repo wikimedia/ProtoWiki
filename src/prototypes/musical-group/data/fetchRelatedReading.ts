@@ -1,7 +1,7 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 
 import { enwikiArticleUrl, normalizeEnwikiTitle, wikiActionUrl } from './enwikiTitle'
-import { fetchWithTimeout } from './fetchWithTimeout'
+import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import { fetchPageSummary } from './pageSummary'
 import type { HomeRelated, HomeSavedItem } from './types'
 import { normalizeQid } from './wikidataApi'
@@ -38,7 +38,7 @@ async function fetchMorelikeHits(
     sroffset: String(offset),
   })
 
-  const response = await fetchWithTimeout(url, {
+  const response = await fetchWikimedia(url, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-home-morelike'),
   })
