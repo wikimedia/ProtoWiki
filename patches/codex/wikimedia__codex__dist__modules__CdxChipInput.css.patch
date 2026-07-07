@@ -1,0 +1,15 @@
+Index: dist/modules/CdxChipInput.css
+===================================================================
+--- dist/modules/CdxChipInput.css
++++ dist/modules/CdxChipInput.css
+@@ -69,9 +69,9 @@
+   font-size: var(--font-size-small, 0.875rem);
+ }
+ .cdx-chip-input {
+   min-height: 32px;
+-  border-radius: 2px;
++  border-radius: 4px;
+   overflow: hidden;
+ }
+ .cdx-chip-input__chips,
+ .cdx-chip-input__separate-input {

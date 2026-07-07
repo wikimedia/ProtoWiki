@@ -1,0 +1,15 @@
+Index: dist/modules/CdxProgressBar.css
+===================================================================
+--- dist/modules/CdxProgressBar.css
++++ dist/modules/CdxProgressBar.css
+@@ -29,9 +29,9 @@
+   border: 1px solid var(--border-color-progressive, #36c);
+   border-width: 1px;
+   border-style: solid;
+   border-color: var(--border-color-progressive, #36c);
+-  border-radius: 2px;
++  border-radius: 4px;
+ }
+ .cdx-progress-bar:not(.cdx-progress-bar--inline).cdx-progress-bar--disabled {
+   border-color: var(--border-color-disabled, #c8ccd1);
+ }

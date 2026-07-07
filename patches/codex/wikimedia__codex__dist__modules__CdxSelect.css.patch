@@ -1,0 +1,26 @@
+Index: dist/modules/CdxSelect.css
+===================================================================
+--- dist/modules/CdxSelect.css
++++ dist/modules/CdxSelect.css
+@@ -4,9 +4,9 @@
+   min-width: 256px;
+   min-height: 32px;
+   border-width: 1px;
+   border-style: solid;
+-  border-radius: 2px;
++  border-radius: 4px;
+   padding-top: 4px;
+   padding-bottom: 4px;
+   padding-left: 8px;
+   padding-right: calc(8px + 8px + calc(var(--font-size-medium, 1rem) + 4px));
+@@ -62,9 +62,9 @@
+   min-width: 256px;
+   min-height: 32px;
+   border-width: 1px;
+   border-style: solid;
+-  border-radius: 2px;
++  border-radius: 4px;
+   padding-top: 4px;
+   padding-bottom: 4px;
+   padding-left: 8px;
+   padding-right: calc(8px + 8px + calc(var(--font-size-medium, 1rem) + 4px));

@@ -1,0 +1,36 @@
+Index: dist/modules/CdxButtonGroup-bidi.css
+===================================================================
+--- dist/modules/CdxButtonGroup-bidi.css
++++ dist/modules/CdxButtonGroup-bidi.css
+@@ -5,9 +5,9 @@
+   width: fit-content;
+   overflow: hidden;
+ }
+ [dir] .cdx-button-group {
+-  border-radius: 2px;
++  border-radius: 4px;
+   padding-top: 1px;
+ }
+ [dir='ltr'] .cdx-button-group {
+   padding-left: 1px;
+@@ -45,4 +45,20 @@
+   box-shadow:
+     0 -1px 0 0 var(--box-shadow-color-inverted, #fff),
+     1px 0 0 0 var(--box-shadow-color-inverted, #fff);
+ }
++[dir='ltr'] .cdx-button-group .cdx-button:first-child {
++  border-top-left-radius: inherit;
++  border-bottom-left-radius: inherit;
++}
++[dir='rtl'] .cdx-button-group .cdx-button:first-child {
++  border-top-right-radius: inherit;
++  border-bottom-right-radius: inherit;
++}
++[dir='ltr'] .cdx-button-group .cdx-button:last-child {
++  border-top-right-radius: inherit;
++  border-bottom-right-radius: inherit;
++}
++[dir='rtl'] .cdx-button-group .cdx-button:last-child {
++  border-top-left-radius: inherit;
++  border-bottom-left-radius: inherit;
++}

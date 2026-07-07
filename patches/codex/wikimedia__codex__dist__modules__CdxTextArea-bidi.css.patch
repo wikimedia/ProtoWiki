@@ -1,0 +1,15 @@
+Index: dist/modules/CdxTextArea-bidi.css
+===================================================================
+--- dist/modules/CdxTextArea-bidi.css
++++ dist/modules/CdxTextArea-bidi.css
+@@ -92,9 +92,9 @@
+ }
+ [dir] .cdx-text-area__textarea {
+   border-width: 1px;
+   border-style: solid;
+-  border-radius: 2px;
++  border-radius: 4px;
+   padding: 4px 8px;
+ }
+ .cdx-text-area__textarea--is-autosize {
+   resize: none;

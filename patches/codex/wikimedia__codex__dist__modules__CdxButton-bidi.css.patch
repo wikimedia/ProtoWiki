@@ -1,0 +1,15 @@
+Index: dist/modules/CdxButton-bidi.css
+===================================================================
+--- dist/modules/CdxButton-bidi.css
++++ dist/modules/CdxButton-bidi.css
+@@ -17,9 +17,9 @@
+ [dir] .cdx-button {
+   margin: 0;
+   border-width: 1px;
+   border-style: solid;
+-  border-radius: 2px;
++  border-radius: 4px;
+   padding-right: 11px;
+   padding-left: 11px;
+   transition-property: background-color, color, border-color, box-shadow;
+   transition-duration: 0.1s;

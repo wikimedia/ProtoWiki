@@ -1,0 +1,15 @@
+Index: dist/modules/CdxCard.css
+===================================================================
+--- dist/modules/CdxCard.css
++++ dist/modules/CdxCard.css
+@@ -3,9 +3,9 @@
+   display: flex;
+   align-items: flex-start;
+   position: relative;
+   border: 1px solid var(--border-color-base, #a2a9b1);
+-  border-radius: 2px;
++  border-radius: 4px;
+   padding: 12px;
+ }
+ .cdx-card--is-link {
+   transition-property: background-color, color, border-color, box-shadow;

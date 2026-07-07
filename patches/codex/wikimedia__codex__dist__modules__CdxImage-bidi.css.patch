@@ -1,0 +1,26 @@
+Index: dist/modules/CdxImage-bidi.css
+===================================================================
+--- dist/modules/CdxImage-bidi.css
++++ dist/modules/CdxImage-bidi.css
+@@ -22,9 +22,9 @@
+ }
+ [dir] .cdx-image__image {
+   margin: 0;
+   border: 1px solid var(--border-color-subtle, #c8ccd1);
+-  border-radius: 2px;
++  border-radius: 4px;
+ }
+ .cdx-image__image--object-fit-fill {
+   object-fit: fill;
+ }
+@@ -73,9 +73,9 @@
+ }
+ [dir] .cdx-image__placeholder {
+   background-color: var(--background-color-interactive-subtle, #f8f9fa);
+   border: 1px solid var(--border-color-subtle, #c8ccd1);
+-  border-radius: 2px;
++  border-radius: 4px;
+ }
+ .cdx-image__placeholder__icon--size-smallest {
+   width: 0.75rem;
+   height: 0.75rem;

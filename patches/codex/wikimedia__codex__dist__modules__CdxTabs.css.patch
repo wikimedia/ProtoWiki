@@ -1,0 +1,17 @@
+Index: dist/modules/CdxTabs.css
+===================================================================
+--- dist/modules/CdxTabs.css
++++ dist/modules/CdxTabs.css
+@@ -50,10 +50,10 @@
+   display: block;
+   flex: 0 0 auto;
+   max-width: 16rem;
+   border-width: 0;
+-  border-top-left-radius: 2px;
+-  border-top-right-radius: 2px;
++  border-top-left-radius: 4px;
++  border-top-right-radius: 4px;
+   padding: 4px 12px;
+   font-size: var(--font-size-medium, 1rem);
+   font-weight: 700;
+   line-height: var(--line-height-small, 1.375rem);

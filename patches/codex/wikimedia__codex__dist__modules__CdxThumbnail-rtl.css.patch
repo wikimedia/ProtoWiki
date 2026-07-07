@@ -1,0 +1,15 @@
+Index: dist/modules/CdxThumbnail-rtl.css
+===================================================================
+--- dist/modules/CdxThumbnail-rtl.css
++++ dist/modules/CdxThumbnail-rtl.css
+@@ -12,9 +12,9 @@
+   min-height: 40px;
+   width: 2.5rem;
+   height: 2.5rem;
+   border: 1px solid var(--border-color-subtle, #c8ccd1);
+-  border-radius: 2px;
++  border-radius: 4px;
+ }
+ .cdx-thumbnail__image {
+   background-color: var(--background-color-base-fixed, #fff);
+   display: inline-block;

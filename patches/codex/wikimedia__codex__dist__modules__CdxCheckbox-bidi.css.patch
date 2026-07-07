@@ -1,0 +1,15 @@
+Index: dist/modules/CdxCheckbox-bidi.css
+===================================================================
+--- dist/modules/CdxCheckbox-bidi.css
++++ dist/modules/CdxCheckbox-bidi.css
+@@ -114,9 +114,9 @@
+ [dir='rtl'] .cdx-checkbox__custom-input:not(.cdx-checkbox__custom-input--inline) {
+   padding-right: calc(var(--font-size-medium, 1rem) + 10px);
+ }
+ [dir] .cdx-checkbox__icon {
+-  border-radius: 2px;
++  border-radius: 4px;
+ }
+ .cdx-checkbox__input:indeterminate + .cdx-checkbox__icon:before {
+   content: ' ';
+   position: absolute;
