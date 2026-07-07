@@ -11,7 +11,10 @@
     "type-check": "vue-tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,vue,css}\"",
     "lint": "eslint . --ext .ts,.vue",
-    "snapshot:wiki-skins": "bash scripts/snapshot-wiki-skins.sh"
+    "snapshot:wiki-skins": "bash scripts/snapshot-wiki-skins.sh",
+    "postinstall": "node scripts/apply-codex-patch.mjs",
+    "patch-codex": "node scripts/patch-codex.mjs",
+    "patch-codex:reset": "node scripts/patch-codex.mjs --reset"
   },
   "dependencies": {
     "@wikimedia/codex": "^2.6.0",
@@ -24,6 +27,7 @@
     "@types/node": "^22.10.0",
     "@vitejs/plugin-vue": "^6.0.0",
     "@vue/eslint-config-typescript": "^14.0.0",
+    "diff": "^9.0.0",
     "eslint": "^9.16.0",
     "eslint-plugin-vue": "^10.0.0",
     "postcss": "^8.5.12",
