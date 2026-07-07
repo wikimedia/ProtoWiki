@@ -17,12 +17,11 @@ const TAB_IDS: TabId[] = [
 
 const HOME_TAB_IDS: HomeTabId[] = [
   'home',
-  'read',
   'featured',
   'trending',
+  'saved',
   'activity',
   'contribute',
-  'saved',
 ]
 
 export function parseTabQuery(raw: unknown): TabId {
@@ -81,7 +80,12 @@ export function useMusicalGroupRoute() {
   }
 
   async function setHomeTab(tab: HomeTabId, hash?: string) {
-    if (tab === activeHomeTab.value && !hash) return
+    if (tab === activeHomeTab.value && !hash) {
+      if (route.hash) {
+        await router.push(homeTabRoute(tab))
+      }
+      return
+    }
     await router.push(homeTabRoute(tab, hash))
   }
 

@@ -4,7 +4,9 @@ import { computed, ref } from 'vue'
 import { cdxIconQuotes } from '@wikimedia/codex-icons'
 
 import WikitaCardItem from './components/WikitaCardItem.vue'
-import { isBookmarked, toggleBookmark } from './data/bookmarks'
+import { useWikitaSaveFeedback } from './composables/useWikitaSaveFeedback'
+import { isBookmarked } from './data/bookmarks'
+import { isPageInAnyList } from './data/lists'
 import type { MusicalGroupOverviewSnippet } from './data/types'
 import { useMusicalGroupRoute } from './useMusicalGroupRoute'
 
@@ -14,6 +16,7 @@ interface Props {
 
 const props = defineProps<Props>()
 const { itemRoute } = useMusicalGroupRoute()
+const { savePage, listsVersion } = useWikitaSaveFeedback()
 
 const cardHref = computed(() => (props.snippet.id ? itemRoute(props.snippet.id) : undefined))
 
@@ -27,8 +30,13 @@ function snippetSaved(itemId: string): boolean {
   return isBookmarked(itemId)
 }
 
+function snippetInList(itemId: string): boolean {
+  void listsVersion.value
+  return isPageInAnyList(itemId)
+}
+
 function onSave(itemId: string) {
-  const saved = toggleBookmark(itemId)
+  const saved = savePage(itemId, props.snippet.title, props.snippet.thumbnailUrl)
   bookmarkState.value = {
     ...bookmarkState.value,
     [itemId]: saved,
@@ -43,6 +51,7 @@ function onSave(itemId: string) {
     :show-info="false"
     :show-action="Boolean(snippet.id)"
     :action-active="snippet.id ? snippetSaved(snippet.id) : false"
+    :action-in-list="snippet.id ? snippetInList(snippet.id) : false"
     :action-label="snippet.id && snippetSaved(snippet.id) ? 'Saved' : 'Save'"
     :title-bold="true"
     type="Mentioned"

@@ -270,11 +270,11 @@ watch(
 
 .musical-group-screen__panel {
   min-width: 0;
-  min-height: var(--musical-group-tab-panel-min-height);
 }
 
 .musical-group-screen__placeholder {
   margin: 0;
   color: var(--color-subtle);
+  min-height: var(--musical-group-tab-panel-min-height);
 }
 </style>

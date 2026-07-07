@@ -59,6 +59,10 @@ const sections = computed(() =>
 </template>
 
 <style scoped>
+.musical-group-links {
+  min-height: var(--musical-group-tab-panel-min-height, 50vh);
+}
+
 .musical-group-links__sections {
   display: flex;
   flex-direction: column;

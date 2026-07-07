@@ -11,7 +11,7 @@ import { readVersionedStore, setVersionedEntry, writeVersionedStore } from './wi
 const STORAGE_KEY = 'musical-group-home-cache'
 const CACHE_VERSION = 1
 
-export type RelatedFeedTabId = 'home' | 'read' | 'saved'
+export type RelatedFeedTabId = 'home' | 'saved'
 
 export interface RelatedFeedSeedCursor {
   searchTitle: string

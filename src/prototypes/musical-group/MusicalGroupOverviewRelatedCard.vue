@@ -4,7 +4,9 @@ import { computed, ref } from 'vue'
 import { cdxIconLink } from '@wikimedia/codex-icons'
 
 import WikitaCardItem from './components/WikitaCardItem.vue'
-import { isBookmarked, toggleBookmark } from './data/bookmarks'
+import { useWikitaSaveFeedback } from './composables/useWikitaSaveFeedback'
+import { isBookmarked } from './data/bookmarks'
+import { isPageInAnyList } from './data/lists'
 import type { MusicalGroupOverviewRelated } from './data/types'
 import { useMusicalGroupRoute } from './useMusicalGroupRoute'
 
@@ -18,6 +20,7 @@ const props = withDefaults(defineProps<Props>(), {
   snippetHtml: undefined,
 })
 const { itemRoute } = useMusicalGroupRoute()
+const { savePage, listsVersion } = useWikitaSaveFeedback()
 
 const cardHref = computed(() => (props.related.id ? itemRoute(props.related.id) : undefined))
 
@@ -31,8 +34,13 @@ function relatedSaved(itemId: string): boolean {
   return isBookmarked(itemId)
 }
 
+function relatedInList(itemId: string): boolean {
+  void listsVersion.value
+  return isPageInAnyList(itemId)
+}
+
 function onSave(itemId: string) {
-  const saved = toggleBookmark(itemId)
+  const saved = savePage(itemId, props.related.title, props.related.thumbnailUrl)
   bookmarkState.value = {
     ...bookmarkState.value,
     [itemId]: saved,
@@ -48,6 +56,7 @@ function onSave(itemId: string) {
     :show-info="false"
     :show-action="Boolean(related.id)"
     :action-active="related.id ? relatedSaved(related.id) : false"
+    :action-in-list="related.id ? relatedInList(related.id) : false"
     :action-label="related.id && relatedSaved(related.id) ? 'Saved' : 'Save'"
     :title-bold="true"
     type="Related"

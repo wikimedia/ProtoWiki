@@ -9,6 +9,7 @@ import WikitaIcon from './WikitaIcon.vue'
 interface Props {
   title: string
   bookmarked?: boolean
+  inList?: boolean
   showBookmark?: boolean
   showHistory?: boolean
   showTalk?: boolean
@@ -19,6 +20,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   bookmarked: false,
+  inList: false,
   showBookmark: true,
   showHistory: true,
   showTalk: true,
@@ -47,10 +49,10 @@ const hasActions = computed(
           v-if="showBookmark"
           type="button"
           class="wikita-title__icon-btn"
-          aria-label="Bookmark"
+          :aria-label="inList ? 'In list' : bookmarked ? 'Saved' : 'Bookmark'"
           @click="emit('bookmark-click')"
         >
-          <BookmarkIcon :filled="bookmarked" />
+          <BookmarkIcon :filled="bookmarked && !inList" :in-list="inList" />
         </button>
 
         <h1 class="wikita-title__title">{{ title }}</h1>

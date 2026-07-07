@@ -11,6 +11,14 @@ export function carouselSlideWidth(image: CarouselImage): number {
   return Math.round((CAROUSEL_SLIDE_HEIGHT * image.width) / image.height)
 }
 
+/** Wider than the carousel viewport at slide height — banners, logos, panoramas. */
+export const CAROUSEL_MAX_ASPECT_RATIO = CAROUSEL_VIEWPORT_WIDTH / CAROUSEL_SLIDE_HEIGHT
+
+export function isCarouselEligibleImage(image: Pick<CarouselImage, 'width' | 'height'>): boolean {
+  if (image.width <= 0 || image.height <= 0) return false
+  return image.width / image.height <= CAROUSEL_MAX_ASPECT_RATIO
+}
+
 /** First slide whose start x is fully off-screen (start >= viewport width). */
 export function firstOffScreenCarouselIndex(images: CarouselImage[]): number | null {
   if (!images.length) return null

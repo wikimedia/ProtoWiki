@@ -14,7 +14,7 @@ import type {
   WikidataExternalLink,
 } from './types'
 
-export const MUSICAL_GROUP_CACHE_VERSION = 38
+export const MUSICAL_GROUP_CACHE_VERSION = 39
 
 const STORAGE_KEY = 'musical-group-page-cache'
 

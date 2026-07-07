@@ -79,6 +79,53 @@ export function measureMusicalGroupTabContentTopScroll(page: HTMLElement): numbe
   return Math.max(stuckBaseline, panelTopScroll)
 }
 
+/** First home-section in the active tab body, skipping chrome like loaders/errors. */
+function getFirstHomeTabSection(body: Element): Element | null {
+  for (const child of body.children) {
+    if (child.classList.contains('wikita-home-section')) {
+      return child
+    }
+
+    if (child.classList.contains('musical-group-home__saved-tab')) {
+      const firstSection = child.querySelector('.wikita-home-section')
+      if (firstSection) return firstSection
+    }
+  }
+
+  return null
+}
+
+/** Section heading that gates the tab border, when the first section has one. */
+function getHomeTabBorderAnchor(body: Element): Element | null {
+  const firstSection = getFirstHomeTabSection(body)
+  if (!firstSection?.classList.contains('wikita-home-section--has-title')) {
+    return null
+  }
+
+  return firstSection.querySelector('.wikita-home-section__title') ?? firstSection
+}
+
+/** Whether the active home tab's first visible section has a heading. */
+export function hasMusicalGroupHomeTabBorderAnchor(page: HTMLElement): boolean {
+  const body = page.querySelector('.musical-group-home__body')
+  return Boolean(body && getHomeTabBorderAnchor(body))
+}
+
+/** ScrollTop at which the first home-section title reaches the bottom of the sticky tabs. */
+export function measureMusicalGroupHomeTabBorderScroll(page: HTMLElement): number {
+  const stuckBaseline = measureMusicalGroupTabsStuckBaseline(page)
+  const body = page.querySelector('.musical-group-home__body')
+  if (!body) return stuckBaseline
+
+  const anchor = getHomeTabBorderAnchor(body)
+  if (!anchor) return stuckBaseline
+
+  const anchorOffsetTop = getScrollContentOffsetTop(anchor, page)
+  const anchorTopScroll = Math.max(0, anchorOffsetTop - measureMusicalGroupTabPanelTopInset(page))
+
+  return Math.max(stuckBaseline, anchorTopScroll)
+}
+
 /** ScrollTop that places the top of the home tab body below sticky chrome + tabs. */
 export function measureMusicalGroupHomeTabContentTopScroll(page: HTMLElement): number {
   const body = page.querySelector('.musical-group-home__body')

@@ -119,7 +119,7 @@ onMounted(() => {
 .musical-group-tabs {
   position: relative;
   box-sizing: border-box;
-  padding-bottom: var(--spacing-50);
+  padding-bottom: calc(var(--spacing-50) + 1px);
   background-color: var(--background-color-base);
 }
 

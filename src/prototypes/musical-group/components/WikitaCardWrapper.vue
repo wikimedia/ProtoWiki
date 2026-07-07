@@ -9,6 +9,8 @@ interface Props {
   coverLinkLabelledBy?: string
   /** When true (default), use `--border-color-muted` instead of `--color-base`. */
   subtleBorder?: boolean
+  /** Hover/focus background for non-link cards (e.g. list picker). */
+  interactive?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -17,10 +19,12 @@ const props = withDefaults(defineProps<Props>(), {
   allowNestedInteractive: false,
   coverLinkLabelledBy: undefined,
   subtleBorder: true,
+  interactive: false,
 })
 
 const wrapperClass = computed(() => ({
   'wikita-card-wrapper--subtle-border': props.subtleBorder,
+  'wikita-card-wrapper--interactive': props.interactive,
 }))
 
 const useCoverLink = computed(
@@ -114,6 +118,11 @@ const useCoverLink = computed(
 
 .wikita-card-wrapper--subtle-border {
   border-color: var(--border-color-muted);
+}
+
+.wikita-card-wrapper--interactive:hover,
+.wikita-card-wrapper--interactive:has(:focus-visible) {
+  background-color: var(--background-color-interactive-subtle);
 }
 
 .wikita-card-wrapper--link {

@@ -17,13 +17,16 @@ import {
   getCachedFeaturedTab,
   getCachedHelpWanted,
   getCachedRecentChangesPreview,
+  getCachedRelatedFeed,
   getCachedSavedSummaries,
   getCachedTrendingFeed,
 } from './data/homeTabCache'
+import { loadRelatedFeedInitialBatch } from './loadRelatedFeedInitialBatch'
 import type {
   HomeFeaturedTab,
   HomeHelpWanted,
   HomeRecentChange,
+  HomeRelated,
   HomeSavedItem,
   HomeTrending,
 } from './data/types'
@@ -51,11 +54,13 @@ export function useMusicalGroupHome() {
   const trendingTabError = ref<string | null>(null)
   const hasSavedPages = ref(listBookmarks().length > 0)
   const savedItems = ref<HomeSavedItem[]>([])
-  const savedItemsLoading = ref(listBookmarks().length > 0)
+  const savedItemsLoading = ref(false)
+  const homeRelatedItems = ref<HomeRelated[]>([])
+  const homeRelatedLoading = ref(false)
   const helpWanted = ref<HomeHelpWanted[]>([])
   const recentChanges = ref<HomeRecentChange[]>([])
-  const helpWantedLoading = ref(listBookmarks().length > 0)
-  const recentChangesLoading = ref(listBookmarks().length > 0)
+  const helpWantedLoading = ref(false)
+  const recentChangesLoading = ref(false)
 
   const featuredArticle = computed(() => featuredTab.value.article)
   const didYouKnow = computed(() => featuredTab.value.didYouKnow)
@@ -83,6 +88,11 @@ export function useMusicalGroupHome() {
       savedItems.value = cachedSummaries
     }
 
+    const cachedRelated = getCachedRelatedFeed('home', dependencyKey)
+    if (cachedRelated) {
+      homeRelatedItems.value = cachedRelated.items
+    }
+
     const cachedHelp = getCachedHelpWanted(dependencyKey)
     if (cachedHelp) helpWanted.value = cachedHelp
 
@@ -90,42 +100,18 @@ export function useMusicalGroupHome() {
     if (cachedRecent) recentChanges.value = cachedRecent
   }
 
-  function loadPersonalizedFeeds(items: HomeSavedItem[], signal: AbortSignal): void {
-    if (!items.length) {
-      helpWanted.value = []
-      recentChanges.value = []
-      helpWantedLoading.value = false
-      recentChangesLoading.value = false
-      return
-    }
-
-    helpWantedLoading.value = true
-    recentChangesLoading.value = true
-
-    fetchHelpWanted(items, signal)
-      .then((value) => {
-        helpWanted.value = value
-      })
-      .catch((err) => {
-        if (isAbort(err)) return
-      })
-      .finally(() => {
-        helpWantedLoading.value = false
-      })
-
-    fetchRecentChanges(items, signal)
-      .then((value) => {
-        recentChanges.value = value
-      })
-      .catch((err) => {
-        if (isAbort(err)) return
-      })
-      .finally(() => {
-        recentChangesLoading.value = false
-      })
+  function clearPersonalizedFeeds(): void {
+    savedItems.value = []
+    homeRelatedItems.value = []
+    helpWanted.value = []
+    recentChanges.value = []
+    savedItemsLoading.value = false
+    homeRelatedLoading.value = false
+    helpWantedLoading.value = false
+    recentChangesLoading.value = false
   }
 
-  function reloadBookmarks(): void {
+  async function reloadBookmarks(): Promise<void> {
     bookmarkAbort?.abort()
     bookmarkAbort = new AbortController()
     const { signal } = bookmarkAbort
@@ -133,41 +119,77 @@ export function useMusicalGroupHome() {
     const entries = listBookmarks()
     hasSavedPages.value = entries.length > 0
     if (!entries.length) {
-      savedItems.value = []
-      savedItemsLoading.value = false
-      helpWanted.value = []
-      recentChanges.value = []
-      helpWantedLoading.value = false
-      recentChangesLoading.value = false
+      clearPersonalizedFeeds()
       return
     }
 
     hydrateBookmarksFromCache()
-    savedItemsLoading.value = true
+    const dependencyKey = bookmarksKey()
 
-    if (!getCachedHelpWanted(bookmarksKey())) {
+    if (!getCachedSavedSummaries(dependencyKey)) {
+      savedItemsLoading.value = true
+    }
+
+    let items: HomeSavedItem[]
+    try {
+      items = await fetchSavedItemSummaries(entries, signal)
+      if (signal.aborted) return
+      savedItems.value = items
+    } catch (err) {
+      if (isAbort(err)) return
+      clearPersonalizedFeeds()
+      return
+    } finally {
+      savedItemsLoading.value = false
+    }
+
+    if (!items.length) {
+      homeRelatedItems.value = []
+      helpWanted.value = []
+      recentChanges.value = []
+      return
+    }
+
+    if (!getCachedRelatedFeed('home', dependencyKey)) {
+      homeRelatedLoading.value = true
+    }
+    try {
+      homeRelatedItems.value = await loadRelatedFeedInitialBatch(
+        'home',
+        items,
+        dependencyKey,
+        signal,
+      )
+      if (signal.aborted) return
+    } catch (err) {
+      if (isAbort(err)) return
+      homeRelatedItems.value = []
+    } finally {
+      homeRelatedLoading.value = false
+    }
+
+    if (!getCachedHelpWanted(dependencyKey)) {
       helpWantedLoading.value = true
     }
-    if (!getCachedRecentChangesPreview(bookmarksKey())) {
-      recentChangesLoading.value = true
+    try {
+      helpWanted.value = await fetchHelpWanted(items, signal)
+      if (signal.aborted) return
+    } catch (err) {
+      if (isAbort(err)) return
+    } finally {
+      helpWantedLoading.value = false
     }
 
-    fetchSavedItemSummaries(entries, signal)
-      .then((items) => {
-        savedItems.value = items
-        loadPersonalizedFeeds(items, signal)
-      })
-      .catch((err) => {
-        if (isAbort(err)) return
-        savedItems.value = []
-        helpWanted.value = []
-        recentChanges.value = []
-        helpWantedLoading.value = false
-        recentChangesLoading.value = false
-      })
-      .finally(() => {
-        savedItemsLoading.value = false
-      })
+    if (!getCachedRecentChangesPreview(dependencyKey)) {
+      recentChangesLoading.value = true
+    }
+    try {
+      recentChanges.value = await fetchRecentChanges(items, signal)
+    } catch (err) {
+      if (isAbort(err)) return
+    } finally {
+      recentChangesLoading.value = false
+    }
   }
 
   async function loadFeatured(signal: AbortSignal): Promise<void> {
@@ -288,7 +310,7 @@ export function useMusicalGroupHome() {
       await loadTrending(signal, { background: Boolean(trendingCached?.length) })
       if (signal.aborted) return
 
-      reloadBookmarks()
+      await reloadBookmarks()
     })()
   }
 
@@ -303,7 +325,7 @@ export function useMusicalGroupHome() {
   watch(
     () => [route.query.item, route.query.tab] as const,
     () => {
-      reloadBookmarks()
+      void reloadBookmarks()
     },
   )
 
@@ -328,6 +350,8 @@ export function useMusicalGroupHome() {
     savedSorted,
     recentlySaved,
     savedItemsLoading,
+    homeRelatedItems,
+    homeRelatedLoading,
     helpWanted,
     recentChanges,
     helpWantedLoading,

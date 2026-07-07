@@ -4,7 +4,7 @@ import type { RouteLocationRaw } from 'vue-router'
 
 import { CdxIcon } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
-import { cdxIconBookmark, cdxIconBookmarkOutline } from '@wikimedia/codex-icons'
+import { cdxIconBookmark, cdxIconBookmarkList, cdxIconBookmarkOutline } from '@wikimedia/codex-icons'
 
 import WikitaButton from './WikitaButton.vue'
 import WikitaCardWrapper from './WikitaCardWrapper.vue'
@@ -44,8 +44,11 @@ interface Props {
   actionLabel?: string
   actionIcon?: Icon
   actionActive?: boolean
+  actionInList?: boolean
   href?: RouteLocationRaw
   externalHref?: string
+  /** Whole-card click (e.g. list picker); ignored when href/externalHref is set. */
+  interactive?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -76,12 +79,15 @@ const props = withDefaults(defineProps<Props>(), {
   actionLabel: 'Save',
   actionIcon: undefined,
   actionActive: false,
+  actionInList: false,
   href: undefined,
   externalHref: undefined,
+  interactive: false,
 })
 
 const emit = defineEmits<{
   'action-click': []
+  click: []
 }>()
 
 const titleId = useId()
@@ -92,6 +98,7 @@ const allowNestedInteractive = computed(
 
 const resolvedActionIcon = computed(() => {
   if (props.actionIcon) return props.actionIcon
+  if (props.actionInList) return cdxIconBookmarkList
   return props.actionActive ? cdxIconBookmark : cdxIconBookmarkOutline
 })
 
@@ -146,6 +153,10 @@ const showInfoLeft = computed(() => props.showInfo && Boolean(props.infoLeft))
 const showInfoRight = computed(() => props.showInfo && Boolean(props.infoRight))
 
 const showFooterRow = computed(() => showInfoLeft.value || showInfoRight.value)
+
+const useCoverButton = computed(
+  () => props.interactive && !props.href && !props.externalHref,
+)
 </script>
 
 <template>
@@ -154,8 +165,16 @@ const showFooterRow = computed(() => showInfoLeft.value || showInfoRight.value)
     :external-href="externalHref"
     :allow-nested-interactive="allowNestedInteractive"
     :cover-link-labelled-by="allowNestedInteractive && showTitleLine ? titleId : undefined"
+    :interactive="useCoverButton"
   >
-    <div class="wikita-card-item">
+    <div class="wikita-card-item" :class="{ 'wikita-card-item--interactive': useCoverButton }">
+      <button
+        v-if="useCoverButton"
+        type="button"
+        class="wikita-card-item__cover"
+        :aria-labelledby="showTitleLine ? titleId : undefined"
+        @click="emit('click')"
+      />
       <div class="wikita-card-item__header-row">
         <div class="wikita-card-item__lead">
           <div
@@ -247,6 +266,37 @@ const showFooterRow = computed(() => showInfoLeft.value || showInfoRight.value)
   flex-direction: column;
   gap: var(--spacing-50);
   min-width: 0;
+}
+
+.wikita-card-item--interactive {
+  position: relative;
+}
+
+.wikita-card-item__cover {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wikita-card-item__cover:focus-visible {
+  outline: 2px solid var(--color-progressive);
+  outline-offset: 2px;
+}
+
+.wikita-card-item--interactive .wikita-card-item__header-row,
+.wikita-card-item--interactive .wikita-card-item__snippet,
+.wikita-card-item--interactive .wikita-card-item__action,
+.wikita-card-item--interactive .wikita-card-item__footer {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
 }
 
 .wikita-card-item__header-row {

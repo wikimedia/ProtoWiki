@@ -1,6 +1,8 @@
 import { onMounted, onUnmounted } from 'vue'
 
 import {
+  hasMusicalGroupHomeTabBorderAnchor,
+  measureMusicalGroupHomeTabBorderScroll,
   measureMusicalGroupStickyScrollOffset,
   measureMusicalGroupTabContentTopScroll,
 } from './musicalGroupScrollOffset'
@@ -72,19 +74,25 @@ export function useMusicalGroupScrollStates() {
     const pageTop = scrollRoot.getBoundingClientRect().top
     const scrollEl = scrollRoot as HTMLElement
     const scrollTop = scrollEl.scrollTop
-    const hasScrolled = scrollTop > 1
-
-    let wantTitleCollapsed = titleCollapsed
-    if (scrollTop <= 1) {
-      wantTitleCollapsed = false
-    } else if (scrollTop > lastScrollTop) {
-      wantTitleCollapsed = true
-    } else if (scrollTop < lastScrollTop) {
-      wantTitleCollapsed = false
-    }
+    const hasPageTitle = Boolean(stack.querySelector('.wikita-title'))
+    const hasHomeSectionTitle = hasMusicalGroupHomeTabBorderAnchor(scrollEl)
+    const deferBorderUntilContent = hasPageTitle || hasHomeSectionTitle
+    const hasScrolled = deferBorderUntilContent ? scrollTop > 1 : scrollTop >= 1
 
     const tabsRect = tabsSticky.getBoundingClientRect()
     const tabsAtStickyPosition = tabsRect.top <= pageTop + expandedTabsTopPx + 1
+
+    let wantTitleCollapsed = titleCollapsed
+    if (hasPageTitle ? scrollTop <= 1 : scrollTop <= 0) {
+      wantTitleCollapsed = false
+    } else if (scrollTop > lastScrollTop) {
+      wantTitleCollapsed = true
+    } else if (scrollTop < lastScrollTop && !tabsAtStickyPosition) {
+      // Stay collapsed while tabs remain stuck — tab switches that restore scroll
+      // upward would otherwise expand the title and open a gap under the rule.
+      wantTitleCollapsed = false
+    }
+
     const tabsStuck = tabsAtStickyPosition && hasScrolled
 
     scrollRoot.toggleAttribute('data-scrolled', wantTitleCollapsed)
@@ -92,12 +100,18 @@ export function useMusicalGroupScrollStates() {
     // Threshold is layout-stable only while tabs are in document flow; once sticky,
     // getBoundingClientRect-based measurement tracks scrollTop and never exceeds it.
     if (!tabsStuck) {
-      tabContentScrollThreshold = measureMusicalGroupTabContentTopScroll(scrollEl)
+      tabContentScrollThreshold = hasPageTitle
+        ? measureMusicalGroupTabContentTopScroll(scrollEl)
+        : hasHomeSectionTitle
+          ? measureMusicalGroupHomeTabBorderScroll(scrollEl)
+          : 0
     }
 
     scrollRoot.toggleAttribute(
       'data-page-scrolled',
-      tabsStuck && scrollTop > tabContentScrollThreshold + 1,
+      deferBorderUntilContent
+        ? tabsStuck && scrollTop > tabContentScrollThreshold + 1
+        : tabsStuck && scrollTop >= 1,
     )
     scrollRoot.style.setProperty(
       '--musical-group-title-collapse-padding',
@@ -165,6 +179,8 @@ export function useMusicalGroupScrollStates() {
       if (description) resizeObserver.observe(description)
       const tabsSticky = scrollRoot.querySelector('.musical-group-tabs-sticky')
       if (tabsSticky) resizeObserver.observe(tabsSticky)
+      const homeBody = scrollRoot.querySelector('.musical-group-home__body')
+      if (homeBody) resizeObserver.observe(homeBody)
     }
 
     lastScrollTop = scrollRoot.scrollTop

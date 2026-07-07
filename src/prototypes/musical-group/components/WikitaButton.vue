@@ -9,6 +9,7 @@ interface Props {
   icon?: Icon
   ariaPressed?: boolean
   disabled?: boolean
+  compact?: boolean
 }
 
 withDefaults(defineProps<Props>(), {
@@ -16,6 +17,7 @@ withDefaults(defineProps<Props>(), {
   icon: undefined,
   ariaPressed: undefined,
   disabled: false,
+  compact: false,
 })
 
 defineEmits<{
@@ -33,7 +35,7 @@ defineOptions({
     class="wikita-button"
     :class="[
       `wikita-button--${variant}`,
-      { 'wikita-button--has-icon': icon },
+      { 'wikita-button--has-icon': icon, 'wikita-button--compact': compact },
     ]"
     :aria-pressed="ariaPressed"
     :disabled="disabled"
@@ -113,5 +115,18 @@ defineOptions({
   border-color: var(--background-color-inverted);
   background-color: var(--background-color-inverted);
   color: var(--color-inverted);
+}
+
+.wikita-button--compact {
+  height: 32px;
+  max-height: 32px;
+  min-height: 32px;
+  padding-block: var(--spacing-25);
+  font-size: var(--font-size-medium);
+  line-height: var(--line-height-small);
+}
+
+.wikita-button--compact.wikita-button--has-icon {
+  padding-inline: var(--spacing-75);
 }
 </style>

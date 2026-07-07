@@ -1,15 +1,26 @@
 <script setup lang="ts">
+import { CdxIcon } from '@wikimedia/codex'
+import { cdxIconBookmarkList } from '@wikimedia/codex-icons'
+
 interface Props {
   filled?: boolean
+  inList?: boolean
 }
 
 withDefaults(defineProps<Props>(), {
   filled: false,
+  inList: false,
 })
 </script>
 
 <template>
+  <CdxIcon
+    v-if="inList"
+    :icon="cdxIconBookmarkList"
+    class="bookmark-icon bookmark-icon--list"
+  />
   <svg
+    v-else
     class="bookmark-icon"
     xmlns="http://www.w3.org/2000/svg"
     width="15"
@@ -39,5 +50,10 @@ withDefaults(defineProps<Props>(), {
 .bookmark-icon {
   display: block;
   flex-shrink: 0;
+}
+
+.bookmark-icon--list {
+  width: 20px;
+  height: 20px;
 }
 </style>

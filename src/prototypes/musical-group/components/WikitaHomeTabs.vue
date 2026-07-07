@@ -4,16 +4,15 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { scrollTabIntoTrackView } from '../scrollTabIntoTrackView'
 import WikitaButton from './WikitaButton.vue'
 
-export type HomeTabId = 'home' | 'read' | 'featured' | 'trending' | 'activity' | 'contribute' | 'saved'
+export type HomeTabId = 'home' | 'featured' | 'trending' | 'activity' | 'contribute' | 'saved'
 
 const allTabs: { id: HomeTabId; label: string }[] = [
   { id: 'home', label: 'Home' },
-  { id: 'read', label: 'For you' },
   { id: 'featured', label: 'Featured' },
   { id: 'trending', label: 'Trending' },
+  { id: 'saved', label: 'Saved' },
   { id: 'activity', label: 'Activity' },
   { id: 'contribute', label: 'Contribute' },
-  { id: 'saved', label: 'Saved' },
 ]
 
 const { hasSavedPages = true } = defineProps<{
@@ -25,7 +24,6 @@ const visibleTabs = computed(() =>
     ? allTabs
     : allTabs.filter(
         (tab) =>
-          tab.id !== 'read' &&
           tab.id !== 'saved' &&
           tab.id !== 'contribute' &&
           tab.id !== 'activity',
@@ -96,7 +94,7 @@ onMounted(() => {
 .musical-group-tabs {
   position: relative;
   box-sizing: border-box;
-  padding-bottom: var(--spacing-50);
+  padding-bottom: calc(var(--spacing-50) + 1px);
   background-color: var(--background-color-base);
 }
 

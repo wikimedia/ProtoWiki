@@ -365,13 +365,16 @@ async function isUsableMentionTitle(
   return !isSameOverviewItem(wikibaseId, title, excludeItemId, ownTitle)
 }
 
-async function fetchSnippetMention(
+/** How many "Mentioned" cards to surface per overview feed. */
+const MAX_SNIPPET_MENTIONS = 3
+
+async function fetchSnippetMentions(
   searchTerm: string,
   ownTitle: string,
   excludeItemId: string | undefined,
   signal?: AbortSignal,
   prefetchedMorelikeHits?: SearchHit[],
-): Promise<MusicalGroupOverviewSnippet | undefined> {
+): Promise<MusicalGroupOverviewSnippet[]> {
   const [morelikeHits, mentionHits] = await Promise.all([
     prefetchedMorelikeHits
       ? Promise.resolve(prefetchedMorelikeHits)
@@ -386,51 +389,62 @@ async function fetchSnippetMention(
     }
   }
 
-  let mentionTitle: string | undefined
-  let snippet: string | undefined
+  // Order candidates by morelike relevance first, then remaining raw mention hits,
+  // deduping by title so the same page isn't considered twice.
+  const orderedCandidates: { title: string; snippet: string }[] = []
+  const seenTitles = new Set<string>()
+  const pushCandidate = (title: string | undefined, snippet: string | undefined): void => {
+    if (!title || !snippet) return
+    const key = normalizeTitle(title)
+    if (seenTitles.has(key)) return
+    seenTitles.add(key)
+    orderedCandidates.push({ title, snippet })
+  }
 
   for (const candidate of morelikeHits) {
+    if (!candidate.title) continue
+    pushCandidate(candidate.title, snippetByTitle.get(normalizeTitle(candidate.title)))
+  }
+  for (const candidate of mentionHits) {
+    pushCandidate(candidate.title, candidate.snippet)
+  }
+
+  const mentions: MusicalGroupOverviewSnippet[] = []
+  const seenResolvedIds = new Set<string>()
+  const seenResolvedTitles = new Set<string>()
+
+  for (const candidate of orderedCandidates) {
+    if (mentions.length >= MAX_SNIPPET_MENTIONS) break
     if (!(await isUsableMentionTitle(candidate.title, ownTitle, excludeItemId, signal))) continue
-    const related = snippetByTitle.get(normalizeTitle(candidate.title as string))
-    if (!related) continue
-    mentionTitle = candidate.title
-    snippet = related
-    break
+
+    const [summary, wikibaseId] = await Promise.all([
+      fetchPageSummary(candidate.title, signal),
+      fetchWikibaseItemId(candidate.title, signal),
+    ])
+
+    const resolvedTitle = summary?.title ?? candidate.title
+    if (isSameOverviewItem(wikibaseId, resolvedTitle, excludeItemId, ownTitle)) continue
+
+    // Avoid two candidates that resolve to the same underlying article.
+    const resolvedTitleKey = normalizeTitle(resolvedTitle)
+    if (wikibaseId && seenResolvedIds.has(wikibaseId)) continue
+    if (seenResolvedTitles.has(resolvedTitleKey)) continue
+    if (wikibaseId) seenResolvedIds.add(wikibaseId)
+    seenResolvedTitles.add(resolvedTitleKey)
+
+    mentions.push({
+      id: wikibaseId,
+      title: resolvedTitle,
+      description: summary?.description ?? '',
+      snippetHtml: formatSnippetHtml(candidate.snippet),
+      thumbnailUrl: summary?.thumbnail?.source,
+      articleUrl:
+        summary?.content_urls?.desktop?.page ??
+        `https://${EN_WIKI_HOST}/wiki/${pageviewsArticleSlug(candidate.title)}`,
+    })
   }
 
-  if (!mentionTitle) {
-    for (const candidate of mentionHits) {
-      if (!(await isUsableMentionTitle(candidate.title, ownTitle, excludeItemId, signal))) {
-        continue
-      }
-      if (!candidate.snippet) continue
-      mentionTitle = candidate.title
-      snippet = candidate.snippet
-      break
-    }
-  }
-
-  if (!mentionTitle || !snippet) return undefined
-
-  const [summary, wikibaseId] = await Promise.all([
-    fetchPageSummary(mentionTitle, signal),
-    fetchWikibaseItemId(mentionTitle, signal),
-  ])
-
-  if (isSameOverviewItem(wikibaseId, summary?.title ?? mentionTitle, excludeItemId, ownTitle)) {
-    return undefined
-  }
-
-  return {
-    id: wikibaseId,
-    title: summary?.title ?? mentionTitle,
-    description: summary?.description ?? '',
-    snippetHtml: formatSnippetHtml(snippet),
-    thumbnailUrl: summary?.thumbnail?.source,
-    articleUrl:
-      summary?.content_urls?.desktop?.page ??
-      `https://${EN_WIKI_HOST}/wiki/${pageviewsArticleSlug(mentionTitle)}`,
-  }
+  return mentions
 }
 
 function overviewSavedItem(data: MusicalGroupData): HomeSavedItem | undefined {
@@ -932,13 +946,13 @@ export async function fetchMusicalGroupOverview(
         }),
     ),
     morelikeHitsPromise.then((hits) =>
-      fetchSnippetMention(data.label, title, data.id, signal, hits)
+      fetchSnippetMentions(data.label, title, data.id, signal, hits)
         .catch((err) => {
           if ((err as Error).name === 'AbortError') throw err
-          return undefined
+          return [] as MusicalGroupOverviewSnippet[]
         })
-        .then((snippet) => {
-          if (snippet) patch({ snippet })
+        .then((snippets) => {
+          if (snippets.length) patch({ snippets })
         }),
     ),
     fetchEditOpportunity(title, signal)

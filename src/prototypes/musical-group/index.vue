@@ -25,7 +25,10 @@ import { useEntityExternalLinks } from './useEntityExternalLinks'
 import { useMusicalGroupRoute } from './useMusicalGroupRoute'
 import { scrollMusicalGroupPageToTop, scrollMusicalGroupTabIntoView } from './musicalGroupScrollOffset'
 
-import { CdxProgressBar, CdxToastContainer } from '@wikimedia/codex'
+import { CdxProgressBar } from '@wikimedia/codex'
+
+import { provideWikitaSaveFeedback } from './composables/useWikitaSaveFeedback'
+import WikitaToastContainer from './components/WikitaToastContainer.vue'
 
 definePage({
   meta: {
@@ -49,6 +52,8 @@ const searchOpen = ref(false)
 const headerVariant = ref<WikitaChromeHeaderVariant>(loadHeaderVariantPreference())
 
 const { activeTab, activeHomeTab, goToHomeTab, goToContribute } = useMusicalGroupRoute()
+
+provideWikitaSaveFeedback()
 
 const { links: externalLinks, loading: linksLoading, error: linksError } =
   useEntityExternalLinks(itemId)
@@ -272,7 +277,7 @@ async function onFloatingGoContribute() {
 
 <template>
   <div class="musical-group-shell">
-    <CdxToastContainer />
+    <WikitaToastContainer />
     <div class="musical-group-page">
       <MusicalGroupSearch
         v-if="showSearch"
@@ -336,10 +341,12 @@ async function onFloatingGoContribute() {
 
 <style scoped>
 .musical-group-shell {
+  position: relative;
   height: 100dvh;
   max-height: 100dvh;
   overflow: hidden;
   background-color: var(--background-color-neutral);
+  --wikita-toast-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
 }
 
 [data-theme='dark'] .musical-group-shell {

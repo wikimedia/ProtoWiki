@@ -2,10 +2,13 @@
 import { computed, ref, watch } from 'vue'
 
 import WikitaTitle from './components/WikitaTitle.vue'
-import { isBookmarked, toggleBookmark } from './data/bookmarks'
+import { useWikitaSaveFeedback } from './composables/useWikitaSaveFeedback'
+import { isBookmarked } from './data/bookmarks'
+import { isPageInAnyList } from './data/lists'
 import { entityDisplayLabel } from './data/formatLabel'
 import type { MusicalGroupData } from './data/types'
 import {
+  commonsFileUrl,
   wikidataEditEntityUrl,
   wikidataHistoryUrl,
   wikidataTalkHistoryUrl,
@@ -21,7 +24,18 @@ const props = defineProps<Props>()
 const SHOW_WIKIDATA_TITLE_ACTIONS = false
 
 const title = computed(() => entityDisplayLabel(props.data.label, props.data.enwikiTitle))
+const thumbnailUrl = computed(
+  () =>
+    props.data.images[0]?.url ??
+    (props.data.imageFilename ? commonsFileUrl(props.data.imageFilename, 256) : undefined),
+)
 const bookmarked = ref(isBookmarked(props.data.id))
+const { savePage, listsVersion } = useWikitaSaveFeedback()
+
+const inList = computed(() => {
+  void listsVersion.value
+  return isPageInAnyList(props.data.id)
+})
 
 watch(
   () => props.data.id,
@@ -31,7 +45,7 @@ watch(
 )
 
 function onBookmarkClick() {
-  bookmarked.value = toggleBookmark(props.data.id)
+  bookmarked.value = savePage(props.data.id, title.value, thumbnailUrl.value)
 }
 
 function onHistoryClick() {
@@ -51,6 +65,7 @@ function onEditClick() {
   <WikitaTitle
     :title="title"
     :bookmarked="bookmarked"
+    :in-list="inList"
     :show-history="SHOW_WIKIDATA_TITLE_ACTIONS"
     :show-talk="SHOW_WIKIDATA_TITLE_ACTIONS"
     :show-edit="SHOW_WIKIDATA_TITLE_ACTIONS"

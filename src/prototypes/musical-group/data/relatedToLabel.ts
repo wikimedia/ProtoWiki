@@ -35,6 +35,12 @@ export function formatEditSuggestionRelatedToLabel(
   return formatRelatedToLabel(suggestion.relatedToTitle, savedItems, { alwaysShow: true })
 }
 
+/** "Related to …" for recommendations seeded from a list on the Saved tab. */
+export function formatRelatedToListLabel(listName: string): string {
+  if (!listName) return ''
+  return `Related to ${listName}`
+}
+
 /** Saved page titles from the local entity cache (for views outside the home feed). */
 export function getCachedSavedPageTitles(): Pick<HomeSavedItem, 'title'>[] {
   return listBookmarks()

@@ -28,7 +28,13 @@ function onTitleClick() {
 </script>
 
 <template>
-  <section :id="sectionId" class="wikita-home-section">
+  <section
+    :id="sectionId"
+    :class="[
+      'wikita-home-section',
+      title ? 'wikita-home-section--has-title' : 'wikita-home-section--no-title',
+    ]"
+  >
     <h2 v-if="title && !toTab" class="wikita-home-section__title">{{ title }}</h2>
     <h2 v-if="title && toTab" class="wikita-home-section__title">
       <button

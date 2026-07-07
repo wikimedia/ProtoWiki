@@ -52,12 +52,13 @@ function isSameArticle(
   return related.title.trim().toLowerCase() === snippet.title.trim().toLowerCase()
 }
 
-/** When Related and Mentioned resolve to the same article, fold the snippet into Related. */
+/** When Related and a Mentioned card resolve to the same article, fold that snippet into Related. */
 const mergedSnippetHtml = computed(() => {
   const related = props.overview?.related
-  const snippet = props.overview?.snippet
-  if (!related || !snippet) return undefined
-  return isSameArticle(related, snippet) ? snippet.snippetHtml : undefined
+  const snippets = props.overview?.snippets
+  if (!related || !snippets?.length) return undefined
+  const match = snippets.find((snippet) => isSameArticle(related, snippet))
+  return match?.snippetHtml
 })
 
 const showImagesCard = computed(() => {
@@ -69,10 +70,16 @@ const showRelatedCard = computed(
   () => Boolean(props.overview?.related) && !isCurrentItem(props.overview!.related!),
 )
 
-const showSnippetCard = computed(() => {
-  const snippet = props.overview?.snippet
-  if (!snippet || mergedSnippetHtml.value) return false
-  return !isCurrentItem(snippet)
+/** Mention cards to render: skip the current item and any snippet folded into Related. */
+const visibleSnippets = computed(() => {
+  const snippets = props.overview?.snippets
+  if (!snippets?.length) return []
+  const related = props.overview?.related
+  return snippets.filter((snippet) => {
+    if (isCurrentItem(snippet)) return false
+    if (related && isSameArticle(related, snippet)) return false
+    return true
+  })
 })
 
 const showInitialLoading = computed(
@@ -117,8 +124,9 @@ const showInitialLoading = computed(
       :snippet-html="mergedSnippetHtml"
     />
     <MusicalGroupOverviewSnippetCard
-      v-if="showSnippetCard"
-      :snippet="overview!.snippet!"
+      v-for="snippet in visibleSnippets"
+      :key="snippet.id ?? snippet.title"
+      :snippet="snippet"
     />
     <div v-if="overviewExtrasLoading" class="musical-group-overview__extras-loading">
       <CdxProgressBar inline aria-label="Loading overview suggestions" />

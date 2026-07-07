@@ -1,4 +1,5 @@
 import { listBookmarks } from './bookmarks'
+import { listUserLists } from './lists'
 import type { HomeSavedItem } from './types'
 
 /** Stable fingerprint of the saved-pages library. Changes on add/remove/re-save. */
@@ -6,6 +7,13 @@ export function bookmarksKey(): string {
   return listBookmarks()
     .map((entry) => `${entry.id}:${entry.savedAt}`)
     .sort()
+    .join('|')
+}
+
+/** Stable fingerprint of user lists and their item membership. */
+export function listsKey(): string {
+  return listUserLists()
+    .map((list) => `${list.id}:${list.itemIds.join(',')}`)
     .join('|')
 }
 

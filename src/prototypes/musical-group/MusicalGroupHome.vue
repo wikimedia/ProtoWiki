@@ -15,22 +15,30 @@ import {
 } from '@wikimedia/codex-icons'
 
 import WikitaActivityTabPanel from './components/WikitaActivityTabPanel.vue'
-import WikitaCardItem, {
-  type WikitaCardItemTypeColor,
-} from './components/WikitaCardItem.vue'
+import WikitaCardItem, { type WikitaCardItemTypeColor } from './components/WikitaCardItem.vue'
 import WikitaChromeHeader, {
   type WikitaChromeHeaderVariant,
 } from './components/WikitaChromeHeader.vue'
 import WikitaContributeTabPanel from './components/WikitaContributeTabPanel.vue'
 import WikitaHomeSection from './components/WikitaHomeSection.vue'
 import WikitaHomeTabs from './components/WikitaHomeTabs.vue'
-import { isBookmarked, toggleBookmark } from './data/bookmarks'
+import { useListCardThumbnails } from './composables/useListCardThumbnails'
+import { useWikitaSaveFeedback } from './composables/useWikitaSaveFeedback'
+import { isBookmarked } from './data/bookmarks'
+import {
+  formatListItemCount,
+  addPageToList,
+  isPageInAnyList,
+  isPageInList,
+  listUserLists,
+} from './data/lists'
 import { isEditThanked, toggleEditThank } from './data/editThanks'
 import { resolveEditOpportunityIcon } from './data/editOpportunityIcons'
 import { formatEditStatusLabel } from './data/fetchRecentChanges'
 import {
   formatEditSuggestionRelatedToLabel,
   formatRelatedToLabel,
+  formatRelatedToListLabel,
 } from './data/relatedToLabel'
 import {
   isThankableEditFlag,
@@ -38,7 +46,6 @@ import {
   type HomeRecentChange,
   type HomeRecentChangeFlag,
 } from './data/types'
-import { useCommonsPhotosInfiniteScroll } from './useCommonsPhotosFeed'
 import { useMusicalGroupHome } from './useMusicalGroupHome'
 import { useMusicalGroupHomeTabScroll } from './useMusicalGroupHomeTabScroll'
 import {
@@ -61,6 +68,7 @@ const emit = defineEmits<{
 
 const route = useRoute()
 const { activeHomeTab: activeTab, setHomeTab } = useMusicalGroupRoute()
+const { savePage, listsVersion } = useWikitaSaveFeedback()
 
 useMusicalGroupScrollStates()
 useMusicalGroupHomeTabScroll()
@@ -79,68 +87,80 @@ const {
   hasSavedPages,
   savedSorted,
   recentlySaved,
+  savedItemsLoading,
+  homeRelatedItems,
+  homeRelatedLoading,
   helpWanted,
   recentChanges,
   helpWantedLoading,
-  savedItemsLoading,
 } = useMusicalGroupHome()
 
 const featuredTabHasContent = computed(
   () =>
-    Boolean(featuredArticle.value) ||
-    didYouKnow.value.length > 0 ||
-    bornOnThisDay.value.length > 0,
+    Boolean(featuredArticle.value) || didYouKnow.value.length > 0 || bornOnThisDay.value.length > 0,
 )
 
 const showFeaturedFeed = computed(() => activeTab.value === 'featured')
 
 const FEATURED_DYK_SECTION_ID = 'featured-did-you-know'
 const FEATURED_BORN_SECTION_ID = 'featured-born-on-this-day'
+const SAVED_LISTS_HASH = 'saved-lists'
+const SAVED_PAGES_HASH = 'saved-pages'
 const HOME_FEATURED_PREVIEW_LIMIT = 3
+const SAVED_TAB_LISTS_PREVIEW_LIMIT = 3
+const SAVED_TAB_SAVED_PREVIEW_LIMIT = 5
 
-const homeActive = computed(() => activeTab.value === 'home' && hasSavedPages.value)
-const readActive = computed(() => activeTab.value === 'read')
-const savedActive = computed(() => activeTab.value === 'saved')
-const readTabRecent = computed(() => savedSorted.value.slice(0, 5))
-const savedTabRelatedLimit = 3
-const homeTrendingPreview = computed(() => trendingItems.value.slice(0, 2))
-const homeDidYouKnowPreview = computed(() =>
-  didYouKnow.value.slice(0, HOME_FEATURED_PREVIEW_LIMIT),
+const savedViewMode = computed(() => {
+  if (activeTab.value !== 'saved') return 'hub'
+  const hash = route.hash.replace(/^#/, '')
+  if (hash === SAVED_LISTS_HASH) return 'lists'
+  if (hash === SAVED_PAGES_HASH) return 'pages'
+  return 'hub'
+})
+const savedHubActive = computed(() => activeTab.value === 'saved' && savedViewMode.value === 'hub')
+const savedPagesActive = computed(
+  () => activeTab.value === 'saved' && savedViewMode.value === 'pages',
 )
+const savedTabRelatedLimit = 3
+const userLists = computed(() => {
+  listsVersion.value
+  return listUserLists()
+})
+const { listCards } = useListCardThumbnails(userLists)
+const savedTabListsPreview = computed(() => listCards.value.slice(0, SAVED_TAB_LISTS_PREVIEW_LIMIT))
+const savedTabSavedPreview = computed(() =>
+  savedSorted.value.slice(0, SAVED_TAB_SAVED_PREVIEW_LIMIT),
+)
+const homeTrendingPreview = computed(() => trendingItems.value.slice(0, 2))
+const homeDidYouKnowPreview = computed(() => didYouKnow.value.slice(0, HOME_FEATURED_PREVIEW_LIMIT))
 const homeBornOnThisDayPreview = computed(() =>
   bornOnThisDay.value.slice(0, HOME_FEATURED_PREVIEW_LIMIT),
 )
 const homeRelatedLimit = 3
-const relatedSentinel = ref<HTMLElement | null>(null)
 
-const {
-  related: homeRelatedFeed,
-  loading: homeRelatedLoading,
-} = useRelatedReadingFeed(savedSorted, homeActive, 'home')
+const homeRelatedPreview = computed(() => homeRelatedItems.value.slice(0, homeRelatedLimit))
 
-const homeRelatedPreview = computed(() => homeRelatedFeed.value.slice(0, homeRelatedLimit))
+const { related: savedHubRelatedFeed, loading: savedHubRelatedLoading } = useRelatedReadingFeed(
+  savedSorted,
+  savedHubActive,
+  'saved',
+  'bookmarks',
+)
 
-const {
-  related: relatedFeed,
-  loading: relatedFeedLoading,
-  hasMore: relatedFeedHasMore,
-  loadMore: loadMoreRelated,
-} = useRelatedReadingFeed(savedSorted, readActive, 'read')
+const { related: savedListsRelatedFeed, loading: savedListsRelatedLoading } = useRelatedReadingFeed(
+  userLists,
+  savedPagesActive,
+  'saved',
+  'lists',
+)
 
-const {
-  related: savedRelatedFeed,
-  loading: savedRelatedLoading,
-} = useRelatedReadingFeed(savedSorted, savedActive, 'saved')
+const savedHubRelated = computed(() =>
+  savedHubRelatedFeed.value
+    .filter((item) => !item.itemId || !isBookmarked(item.itemId))
+    .slice(0, savedTabRelatedLimit),
+)
 
-const savedTabRelated = computed(() => savedRelatedFeed.value.slice(0, savedTabRelatedLimit))
-
-useCommonsPhotosInfiniteScroll({
-  sentinel: relatedSentinel,
-  active: readActive,
-  hasMore: relatedFeedHasMore,
-  loading: relatedFeedLoading,
-  loadMore: loadMoreRelated,
-})
+const savedListsRelated = computed(() => savedListsRelatedFeed.value)
 
 interface FlagPresentation {
   label: string
@@ -152,7 +172,11 @@ const FLAG_PRESENTATION: Record<Exclude<HomeRecentChangeFlag, 'none'>, FlagPrese
   'first-edit': { label: "User's first edit", icon: cdxIconUserAdd, color: 'success' },
   'new-editor': { label: 'New editor', icon: cdxIconUserAdd, color: 'success' },
   'good-faith': { label: 'Good faith', icon: cdxIconHeartOutline, color: 'success' },
-  'needs-reference': { label: 'Needs a reference check', icon: cdxIconReference, color: 'progressive' },
+  'needs-reference': {
+    label: 'Needs a reference check',
+    icon: cdxIconReference,
+    color: 'progressive',
+  },
   'tone-issue': { label: 'Tone issue', icon: cdxIconAlert, color: 'warning' },
   'high-revert-risk': { label: 'High revert risk', icon: cdxIconError, color: 'error' },
 }
@@ -182,12 +206,27 @@ function relatedReadingSaved(itemId: string): boolean {
   return isBookmarked(itemId)
 }
 
-function onRelatedReadingSave(itemId: string) {
-  const saved = toggleBookmark(itemId)
+function relatedReadingInList(itemId: string): boolean {
+  void listsVersion.value
+  return isPageInAnyList(itemId)
+}
+
+function onRelatedReadingSave(itemId: string, title: string, thumbnailUrl?: string) {
+  const saved = savePage(itemId, title, thumbnailUrl)
   relatedReadingBookmarkState.value = {
     ...relatedReadingBookmarkState.value,
     [itemId]: saved,
   }
+}
+
+function listRelatedAdded(listId: string, itemId: string): boolean {
+  void listsVersion.value
+  return isPageInList(listId, itemId)
+}
+
+function onAddRelatedToList(listId: string, itemId: string, thumbnailUrl?: string) {
+  addPageToList(listId, itemId, thumbnailUrl)
+  listsVersion.value += 1
 }
 
 /** Local thank state for recent-change cards; feed refreshes on remount only. */
@@ -210,6 +249,10 @@ function onToggleEditThank(revid: number) {
 
 function relatedReadingToLabel(title: string): string {
   return formatRelatedToLabel(title, savedSorted.value, { alwaysShow: true })
+}
+
+function savedTabRelatedToLabel(listName: string): string {
+  return formatRelatedToListLabel(listName)
 }
 
 function editSuggestionRelatedToLabel(suggestion: HomeHelpWanted): string {
@@ -240,13 +283,12 @@ watch(
 watch(
   [hasSavedPages, activeTab],
   ([saved, tab]) => {
-    if (!saved && (tab === 'read' || tab === 'saved' || tab === 'contribute' || tab === 'activity')) {
+    if (!saved && (tab === 'saved' || tab === 'contribute' || tab === 'activity')) {
       setHomeTab('home')
     }
   },
   { immediate: true },
 )
-
 </script>
 
 <template>
@@ -276,10 +318,7 @@ watch(
             <CdxButton weight="quiet" @click="retryFeaturedFeed">Try again</CdxButton>
           </div>
 
-          <WikitaHomeSection
-            v-if="featuredArticle"
-            title="Community curated"
-          >
+          <WikitaHomeSection v-if="featuredArticle">
             <WikitaCardItem
               type="Article of the day"
               :type-icon="cdxIconStar"
@@ -440,11 +479,14 @@ watch(
         </WikitaHomeSection>
 
         <WikitaHomeSection
-          v-if="hasSavedPages && recentlySaved.length"
+          v-if="hasSavedPages && (savedItemsLoading || recentlySaved.length)"
           title="Saved"
           to-tab="saved"
           @title-navigate="setHomeTab"
         >
+          <div v-if="savedItemsLoading" class="musical-group-home__loading">
+            <CdxProgressBar inline aria-label="Loading saved pages" />
+          </div>
           <WikitaCardItem
             v-for="item in recentlySaved"
             :key="item.id"
@@ -460,10 +502,10 @@ watch(
         </WikitaHomeSection>
 
         <WikitaHomeSection
-          v-if="hasSavedPages && (homeRelatedPreview.length || homeRelatedLoading)"
+          v-if="
+            hasSavedPages && !savedItemsLoading && (homeRelatedPreview.length || homeRelatedLoading)
+          "
           title="Related reading"
-          to-tab="read"
-          @title-navigate="setHomeTab"
         >
           <WikitaCardItem
             v-for="item in homeRelatedPreview"
@@ -474,6 +516,7 @@ watch(
             :info-left="relatedReadingToLabel(item.relatedToTitle)"
             :show-action="Boolean(item.itemId)"
             :action-active="item.itemId ? relatedReadingSaved(item.itemId) : false"
+            :action-in-list="item.itemId ? relatedReadingInList(item.itemId) : false"
             :action-label="item.itemId && relatedReadingSaved(item.itemId) ? 'Saved' : 'Save'"
             :title="item.title"
             :body="item.description"
@@ -481,7 +524,7 @@ watch(
             :thumbnail-alt="item.title"
             :href="item.itemId ? itemHref(item.itemId) : undefined"
             :external-href="item.itemId ? undefined : item.articleUrl"
-            @action-click="onRelatedReadingSave(item.itemId!)"
+            @action-click="onRelatedReadingSave(item.itemId!, item.title, item.thumbnailUrl)"
           />
           <div v-if="homeRelatedLoading" class="musical-group-home__loading">
             <CdxProgressBar inline aria-label="Loading related reading" />
@@ -489,7 +532,12 @@ watch(
         </WikitaHomeSection>
 
         <WikitaHomeSection
-          v-if="hasSavedPages"
+          v-if="
+            hasSavedPages &&
+            !savedItemsLoading &&
+            !homeRelatedLoading &&
+            (helpWantedLoading || helpWanted.length)
+          "
           title="Help wanted"
           to-tab="contribute"
           @title-navigate="setHomeTab"
@@ -517,7 +565,13 @@ watch(
         </WikitaHomeSection>
 
         <WikitaHomeSection
-          v-if="hasSavedPages && recentChanges.length"
+          v-if="
+            hasSavedPages &&
+            !savedItemsLoading &&
+            !homeRelatedLoading &&
+            !helpWantedLoading &&
+            recentChanges.length
+          "
           title="Recent changes"
           to-tab="activity"
           @title-navigate="setHomeTab"
@@ -548,101 +602,161 @@ watch(
         </WikitaHomeSection>
       </template>
 
-      <template v-else-if="activeTab === 'read'">
-        <div class="musical-group-home__read">
-          <WikitaHomeSection v-if="readTabRecent.length" title="Saved">
-            <WikitaCardItem
-              v-for="item in readTabRecent"
-              :key="item.id"
-              :show-type="false"
-              :show-snippet="false"
-              :show-info="false"
-              :title="item.title"
-              :body="item.description"
-              :thumbnail-url="item.thumbnailUrl"
-              :thumbnail-alt="item.title"
-              :href="itemHref(item.id)"
-            />
-          </WikitaHomeSection>
-          <p v-else class="musical-group-home__read-empty">
-            You have not saved any pages yet.
-          </p>
-
-          <WikitaHomeSection title="Related reading">
-            <WikitaCardItem
-              v-for="item in relatedFeed"
-              :key="item.title"
-              :show-type="false"
-              :show-snippet="false"
-              :show-info="Boolean(relatedReadingToLabel(item.relatedToTitle))"
-              :info-left="relatedReadingToLabel(item.relatedToTitle)"
-              :show-action="Boolean(item.itemId)"
-              :action-active="item.itemId ? relatedReadingSaved(item.itemId) : false"
-              :action-label="item.itemId && relatedReadingSaved(item.itemId) ? 'Saved' : 'Save'"
-              :title="item.title"
-              :body="item.description"
-              :thumbnail-url="item.thumbnailUrl"
-              :thumbnail-alt="item.title"
-              :href="item.itemId ? itemHref(item.itemId) : undefined"
-              :external-href="item.itemId ? undefined : item.articleUrl"
-              @action-click="onRelatedReadingSave(item.itemId!)"
-            />
-          </WikitaHomeSection>
-
-          <div v-if="relatedFeedLoading" class="musical-group-home__loading">
-            <CdxProgressBar inline aria-label="Loading related reading" />
-          </div>
-
-          <div ref="relatedSentinel" class="musical-group-home__sentinel" aria-hidden="true" />
-        </div>
-      </template>
-
       <template v-else-if="activeTab === 'saved'">
         <div class="musical-group-home__saved-tab">
-          <WikitaHomeSection v-if="savedSorted.length">
-            <WikitaCardItem
-              v-for="item in savedSorted"
-              :key="item.id"
-              :show-type="false"
-              :show-snippet="false"
-              :show-info="false"
-              :title="item.title"
-              :body="item.description"
-              :thumbnail-url="item.thumbnailUrl"
-              :thumbnail-alt="item.title"
-              :href="itemHref(item.id)"
-            />
-          </WikitaHomeSection>
-          <p v-else class="musical-group-home__saved-empty">
-            You have not saved any pages yet.
-          </p>
+          <template v-if="savedViewMode === 'lists'">
+            <WikitaHomeSection v-if="listCards.length">
+              <WikitaCardItem
+                v-for="{ list, thumbnailUrl } in listCards"
+                :key="list.id"
+                :show-type="false"
+                :show-snippet="false"
+                :show-info="false"
+                :title="list.name"
+                :body="formatListItemCount(list.itemIds.length)"
+                :thumbnail-url="thumbnailUrl"
+                :thumbnail-alt="list.name"
+              />
+            </WikitaHomeSection>
+            <p v-else class="musical-group-home__saved-empty">
+              You have not created any lists yet.
+            </p>
+          </template>
 
-          <WikitaHomeSection
-            v-if="savedTabRelated.length || savedRelatedLoading"
-            title="Related"
-          >
-            <WikitaCardItem
-              v-for="item in savedTabRelated"
-              :key="item.title"
-              :show-type="false"
-              :show-snippet="false"
-              :show-info="Boolean(relatedReadingToLabel(item.relatedToTitle))"
-              :info-left="relatedReadingToLabel(item.relatedToTitle)"
-              :show-action="Boolean(item.itemId)"
-              :action-active="item.itemId ? relatedReadingSaved(item.itemId) : false"
-              :action-label="item.itemId && relatedReadingSaved(item.itemId) ? 'Saved' : 'Save'"
-              :title="item.title"
-              :body="item.description"
-              :thumbnail-url="item.thumbnailUrl"
-              :thumbnail-alt="item.title"
-              :href="item.itemId ? itemHref(item.itemId) : undefined"
-              :external-href="item.itemId ? undefined : item.articleUrl"
-              @action-click="onRelatedReadingSave(item.itemId!)"
-            />
-            <div v-if="savedRelatedLoading" class="musical-group-home__loading">
-              <CdxProgressBar inline aria-label="Loading related pages" />
-            </div>
-          </WikitaHomeSection>
+          <template v-else-if="savedViewMode === 'pages'">
+            <WikitaHomeSection v-if="savedSorted.length">
+              <WikitaCardItem
+                v-for="item in savedSorted"
+                :key="item.id"
+                :show-type="false"
+                :show-snippet="false"
+                :show-info="false"
+                :title="item.title"
+                :body="item.description"
+                :thumbnail-url="item.thumbnailUrl"
+                :thumbnail-alt="item.title"
+                :href="itemHref(item.id)"
+              />
+            </WikitaHomeSection>
+            <p v-else class="musical-group-home__saved-empty">You have not saved any pages yet.</p>
+
+            <WikitaHomeSection
+              v-if="savedListsRelated.length || savedListsRelatedLoading"
+              title="Related"
+            >
+              <WikitaCardItem
+                v-for="item in savedListsRelated"
+                :key="`${item.relatedToListId ?? 'list'}-${item.title}`"
+                :show-type="false"
+                :show-snippet="false"
+                :show-info="Boolean(savedTabRelatedToLabel(item.relatedToTitle))"
+                :info-left="savedTabRelatedToLabel(item.relatedToTitle)"
+                :show-action="Boolean(item.itemId && item.relatedToListId)"
+                :action-active="
+                  item.relatedToListId && item.itemId
+                    ? listRelatedAdded(item.relatedToListId, item.itemId)
+                    : false
+                "
+                :action-in-list="true"
+                :action-label="
+                  item.relatedToListId &&
+                  item.itemId &&
+                  listRelatedAdded(item.relatedToListId, item.itemId)
+                    ? 'Added'
+                    : 'Add to list'
+                "
+                :title="item.title"
+                :body="item.description"
+                :thumbnail-url="item.thumbnailUrl"
+                :thumbnail-alt="item.title"
+                :href="item.itemId ? itemHref(item.itemId) : undefined"
+                :external-href="item.itemId ? undefined : item.articleUrl"
+                @action-click="
+                  onAddRelatedToList(item.relatedToListId!, item.itemId!, item.thumbnailUrl)
+                "
+              />
+              <div v-if="savedListsRelatedLoading" class="musical-group-home__loading">
+                <CdxProgressBar inline aria-label="Loading related pages" />
+              </div>
+            </WikitaHomeSection>
+          </template>
+
+          <template v-else>
+            <WikitaHomeSection
+              v-if="userLists.length"
+              title="Lists"
+              to-tab="saved"
+              :to-hash="SAVED_LISTS_HASH"
+              @title-navigate="setHomeTab"
+            >
+              <WikitaCardItem
+                v-for="{ list, thumbnailUrl } in savedTabListsPreview"
+                :key="list.id"
+                :show-type="false"
+                :show-snippet="false"
+                :show-info="false"
+                :title="list.name"
+                :body="formatListItemCount(list.itemIds.length)"
+                :thumbnail-url="thumbnailUrl"
+                :thumbnail-alt="list.name"
+              />
+            </WikitaHomeSection>
+
+            <WikitaHomeSection
+              v-if="savedSorted.length"
+              title="Saved"
+              to-tab="saved"
+              :to-hash="SAVED_PAGES_HASH"
+              @title-navigate="setHomeTab"
+            >
+              <WikitaCardItem
+                v-for="item in savedTabSavedPreview"
+                :key="item.id"
+                :show-type="false"
+                :show-snippet="false"
+                :show-info="false"
+                :title="item.title"
+                :body="item.description"
+                :thumbnail-url="item.thumbnailUrl"
+                :thumbnail-alt="item.title"
+                :href="itemHref(item.id)"
+              />
+            </WikitaHomeSection>
+
+            <p
+              v-if="!userLists.length && !savedSorted.length"
+              class="musical-group-home__saved-empty"
+            >
+              You have not saved any pages yet.
+            </p>
+
+            <WikitaHomeSection
+              v-if="savedHubRelated.length || savedHubRelatedLoading"
+              title="Related"
+            >
+              <WikitaCardItem
+                v-for="item in savedHubRelated"
+                :key="item.title"
+                :show-type="false"
+                :show-snippet="false"
+                :show-info="Boolean(relatedReadingToLabel(item.relatedToTitle))"
+                :info-left="relatedReadingToLabel(item.relatedToTitle)"
+                :show-action="Boolean(item.itemId)"
+                :action-active="item.itemId ? relatedReadingSaved(item.itemId) : false"
+                :action-label="item.itemId && relatedReadingSaved(item.itemId) ? 'Saved' : 'Save'"
+                :title="item.title"
+                :body="item.description"
+                :thumbnail-url="item.thumbnailUrl"
+                :thumbnail-alt="item.title"
+                :href="item.itemId ? itemHref(item.itemId) : undefined"
+                :external-href="item.itemId ? undefined : item.articleUrl"
+                @action-click="onRelatedReadingSave(item.itemId!, item.title, item.thumbnailUrl)"
+              />
+              <div v-if="savedHubRelatedLoading" class="musical-group-home__loading">
+                <CdxProgressBar inline aria-label="Loading related pages" />
+              </div>
+            </WikitaHomeSection>
+          </template>
         </div>
       </template>
 
@@ -674,9 +788,7 @@ watch(
           />
         </WikitaHomeSection>
 
-        <p v-else class="musical-group-home__feed-empty">
-          No trending articles available.
-        </p>
+        <p v-else class="musical-group-home__feed-empty">No trending articles available.</p>
       </template>
 
       <WikitaActivityTabPanel
@@ -711,25 +823,24 @@ watch(
   display: flex;
   flex-direction: column;
   gap: var(--spacing-100);
-  padding: var(--spacing-50);
+  padding-inline: var(--spacing-50);
+  padding-bottom: var(--spacing-50);
 }
 
-.musical-group-home__body > :first-child {
-  margin-top: var(--spacing-50);
+.musical-group-home__body > .wikita-home-section--has-title:first-child,
+.musical-group-home__saved-tab > .wikita-home-section--has-title:first-child {
+  margin-top: var(--spacing-100);
+}
+
+.musical-group-home__body > .wikita-home-section--no-title:first-child,
+.musical-group-home__saved-tab > .wikita-home-section--no-title:first-child {
+  margin-top: calc(var(--spacing-50) + 0px);
 }
 
 .musical-group-home__empty {
   min-height: var(--musical-group-tab-panel-min-height, 50vh);
 }
 
-.musical-group-home__read {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-100);
-  min-height: var(--musical-group-tab-panel-min-height, 50vh);
-}
-
-.musical-group-home__read-empty,
 .musical-group-home__saved-empty,
 .musical-group-home__feed-empty,
 .musical-group-home__feed-error p {
@@ -752,12 +863,6 @@ watch(
   display: flex;
   flex-direction: column;
   gap: var(--spacing-100);
-}
-
-.musical-group-home__sentinel {
-  height: 1px;
-  margin-top: auto;
-  flex-shrink: 0;
 }
 
 .musical-group-home__loading {

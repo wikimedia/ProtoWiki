@@ -174,7 +174,8 @@ export interface MusicalGroupOverviewData {
   images?: MusicalGroupOverviewImages
   editOpportunity?: MusicalGroupOverviewEditOpportunity
   related?: MusicalGroupOverviewRelated
-  snippet?: MusicalGroupOverviewSnippet
+  /** Up to 3 articles that mention the item, each shown as a "Mentioned" card. */
+  snippets?: MusicalGroupOverviewSnippet[]
   latestEdit?: HomeRecentChange
   infobox?: MusicalGroupInfobox
   noEnglishArticle?: boolean
@@ -290,6 +291,8 @@ export interface HomeRelated {
   itemId?: string
   /** Display title of the page this recommendation was seeded from. */
   relatedToTitle: string
+  /** When seeded from a list, the list to add this recommendation to. */
+  relatedToListId?: string
 }
 
 /** A most-read article from the daily featured feed. */

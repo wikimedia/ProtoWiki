@@ -1,6 +1,7 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
+import { isCarouselEligibleImage } from './carouselLayout'
 import type { CarouselImage } from './types'
 
 const COMMONS_API = 'https://commons.wikimedia.org/w/api.php'
@@ -567,7 +568,7 @@ function selectCarouselImages(candidates: CommonsImage[]): CarouselImage[] {
 
   for (const candidate of candidates) {
     if (images.length >= MAX_CAROUSEL_IMAGES) break
-    if (candidate.width <= 0 || candidate.height <= 0) continue
+    if (!isCarouselEligibleImage(candidate)) continue
     if (seen.has(candidate.title)) continue
     seen.add(candidate.title)
     images.push(commonsImageToCarousel(candidate))
@@ -599,6 +600,7 @@ export async function fetchCarouselImages({
     for (const image of batch.images) {
       if (!image.title || seen.has(image.title)) continue
       seen.add(image.title)
+      if (!isCarouselEligibleImage(image)) continue
       candidates.push({
         title: image.title,
         url: image.url,
