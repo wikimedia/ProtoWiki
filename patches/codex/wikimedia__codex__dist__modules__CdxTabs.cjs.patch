@@ -1,0 +1,80 @@
+Index: dist/modules/CdxTabs.cjs
+===================================================================
+--- dist/modules/CdxTabs.cjs
++++ dist/modules/CdxTabs.cjs
+@@ -1,18 +1,18 @@
+ 'use strict'
+ const e = require('vue'),
+   x = require('./Icon.js'),
+-  q = require('./CdxButton.cjs'),
++  M = require('./CdxButton.cjs'),
+   $ = require('./CdxTab.cjs'),
+   R = require('./useComputedDirection.cjs'),
+   W = require('./useOptionalModelWrapper.js'),
+   S = require('./useIntersectionObserver.cjs'),
+   I = require('./useSlotContents.js'),
+   V = require('./constants.js'),
+-  F = require('./_plugin-vue_export-helper.js'),
+-  O = e.defineComponent({
++  O = require('./_plugin-vue_export-helper.js'),
++  F = e.defineComponent({
+     name: 'CdxTabs',
+-    components: { CdxButton: q, CdxIcon: x.CdxIcon },
++    components: { CdxButton: M, CdxIcon: x.CdxIcon },
+     props: { active: { type: String, default: null }, framed: { type: Boolean, default: !1 } },
+     emits: ['update:active'],
+     setup(t, { slots: s, emit: d }) {
+       const f = e.ref(),
+@@ -60,9 +60,9 @@
+         const r = o
+         r &&
+           (C.value.set(n, r), n === 0 ? (E.value = r) : n === w.value.length - 1 && (L.value = r))
+       }
+-      const M = e.computed(() => ({ 'cdx-tabs--framed': t.framed, 'cdx-tabs--quiet': !t.framed }))
++      const _ = e.computed(() => ({ 'cdx-tabs--framed': t.framed, 'cdx-tabs--quiet': !t.framed }))
+       function N() {
+         var o
+         ;(o = C.value.get(g.value)) == null || o.focus()
+       }
+@@ -75,9 +75,9 @@
+           D = l.value.scrollLeft + n.clientWidth,
+           K = l.value.scrollLeft + l.value.clientWidth - r.clientWidth
+         return a < D ? a - D : h > K ? h - K : 0
+       }
+-      function _(o) {
++      function q(o) {
+         if (!l.value || !p.value || !u.value) return
+         const n =
+           (o === 'next' && v.value === 'ltr') || (o === 'prev' && v.value === 'rtl') ? 1 : -1
+         let r = 0,
+@@ -106,18 +106,18 @@
+           rootElement: f,
+           tabListElement: l,
+           prevScroller: p,
+           nextScroller: u,
+-          rootClasses: M,
++          rootClasses: _,
+           tabNames: w,
+           tabsData: b,
+           firstLabelVisible: k,
+           lastLabelVisible: A,
+           assignTemplateRefForTabButton: B,
+-          scrollTabs: _,
++          scrollTabs: q,
+           focusActiveTab: N,
+-          cdxIconPrevious: x.F8,
+-          cdxIconNext: x.M8,
++          cdxIconPrevious: x.y8,
++          cdxIconNext: x.i8,
+         }
+       )
+     },
+     methods: {
+@@ -296,6 +296,6 @@
+       2,
+     )
+   )
+ }
+-const U = F._export_sfc(O, [['render', Q]])
++const U = O._export_sfc(F, [['render', Q]])
+ module.exports = U

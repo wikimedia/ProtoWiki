@@ -1,0 +1,15 @@
+Index: dist/modules/CdxMenuItem.cjs
+===================================================================
+--- dist/modules/CdxMenuItem.cjs
++++ dist/modules/CdxMenuItem.cjs
+@@ -71,9 +71,9 @@
+         rootClasses: i,
+         contentTag: a,
+         linkAttrs: l,
+         title: u,
+-        cdxIconCheck: f.J3,
++        cdxIconCheck: f.X5,
+       }
+     },
+   }),
+   B = ['id', 'aria-disabled', 'aria-selected', 'aria-checked'],

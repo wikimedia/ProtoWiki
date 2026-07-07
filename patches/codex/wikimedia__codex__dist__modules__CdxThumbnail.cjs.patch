@@ -1,0 +1,15 @@
+Index: dist/modules/CdxThumbnail.cjs
+===================================================================
+--- dist/modules/CdxThumbnail.cjs
++++ dist/modules/CdxThumbnail.cjs
+@@ -7,9 +7,9 @@
+     name: 'CdxThumbnail',
+     components: { CdxIcon: s.CdxIcon },
+     props: {
+       thumbnail: { type: [Object, null], default: null },
+-      placeholderIcon: { type: [String, Object], default: s.Y7 },
++      placeholderIcon: { type: [String, Object], default: s.$6 },
+     },
+     setup: (n) => {
+       const l = e.ref(!1),
+         c = e.ref({}),

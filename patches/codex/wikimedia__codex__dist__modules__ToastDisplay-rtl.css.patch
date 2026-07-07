@@ -1,0 +1,25 @@
+Index: dist/modules/ToastDisplay-rtl.css
+===================================================================
+--- dist/modules/ToastDisplay-rtl.css
++++ dist/modules/ToastDisplay-rtl.css
+@@ -19,11 +19,9 @@
+   background-color: var(--background-color-base, #fff);
+ }
+ .cdx-toast__message {
+   margin: 0;
+-  box-shadow:
+-    0 4px 8px 0 var(--box-shadow-color-alpha-base, rgba(0, 0, 0, 0.06)),
+-    0 0 16px 0 var(--box-shadow-color-alpha-base, rgba(0, 0, 0, 0.06));
++  box-shadow: 0 0 0 1px var(--box-shadow-color-base, #171717);
+ }
+ @media screen and (max-width: 639px) {
+   .cdx-toast__message .cdx-message__dismiss-button {
+     display: none;
+@@ -57,6 +55,6 @@
+   opacity: 0;
+   transform: translate(50%) translateY(20px);
+ }
+ .cdx-toast:focus-visible {
+-  outline: 1px solid var(--border-color-progressive--focus, #36c);
++  outline: 1px solid var(--border-color-progressive--focus, #0052f5);
+ }

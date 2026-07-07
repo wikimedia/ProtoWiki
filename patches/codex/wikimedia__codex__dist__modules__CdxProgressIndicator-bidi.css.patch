@@ -1,0 +1,15 @@
+Index: dist/modules/CdxProgressIndicator-bidi.css
+===================================================================
+--- dist/modules/CdxProgressIndicator-bidi.css
++++ dist/modules/CdxProgressIndicator-bidi.css
+@@ -12,9 +12,9 @@
+ }
+ [dir] .cdx-progress-indicator__indicator {
+   border-width: 2px;
+   border-style: solid;
+-  border-color: var(--accent-color-base, #36c);
++  border-color: var(--accent-color-base, #0052f5);
+   border-radius: 50%;
+   animation-duration: 1s;
+   animation-timing-function: linear;
+   animation-delay: -0.16s;

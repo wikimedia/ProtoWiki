@@ -1,0 +1,15 @@
+Index: dist/modules/CdxMultiselectLookup-bidi.css
+===================================================================
+--- dist/modules/CdxMultiselectLookup-bidi.css
++++ dist/modules/CdxMultiselectLookup-bidi.css
+@@ -7,9 +7,9 @@
+   .cdx-multiselect-lookup--pending
+   .cdx-chip-input:not(.cdx-chip-input--has-separate-input)
+   .cdx-chip-input__chips,
+ [dir] .cdx-multiselect-lookup--pending .cdx-chip-input .cdx-chip-input__separate-input {
+-  background-color: var(--background-color-interactive, #eaecf0);
++  background-color: var(--background-color-interactive, #ebebeb);
+   background-size: calc(var(--font-size-medium, 1rem) + 4px)
+     calc(var(--font-size-medium, 1rem) + 4px);
+   animation-duration: 0.65s;
+   animation-timing-function: linear;

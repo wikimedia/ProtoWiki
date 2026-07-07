@@ -1,0 +1,15 @@
+Index: dist/modules/CdxPopover.cjs
+===================================================================
+--- dist/modules/CdxPopover.cjs
++++ dist/modules/CdxPopover.cjs
+@@ -294,9 +294,9 @@
+           showHeader: a,
+           showFooter: W,
+           footerActionsClasses: U,
+           close: C,
+-          cdxIconClose: z._3,
++          cdxIconClose: z.h6,
+           transitionName: k,
+           backdropClassObject: K,
+           panelClassObject: X,
+           panelInlineStyles: ue,

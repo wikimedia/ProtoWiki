@@ -1,0 +1,72 @@
+Index: dist/modules/CdxDialog-rtl.css
+===================================================================
+--- dist/modules/CdxDialog-rtl.css
++++ dist/modules/CdxDialog-rtl.css
+@@ -1,6 +1,6 @@
+ .cdx-dialog-backdrop {
+-  background-color: var(--background-color-backdrop-light, rgba(255, 255, 255, 0.65));
++  background-color: var(--background-color-backdrop-dark, rgba(0, 0, 0, 0.65));
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   position: fixed;
+@@ -19,19 +19,16 @@
+   box-sizing: border-box;
+   width: calc(100vw - 2rem);
+   height: unset;
+   max-height: calc(100vh - 2rem);
+-  border: 1px solid var(--border-color-base, #a2a9b1);
+-  border-radius: 2px;
+-  box-shadow:
+-    0 4px 8px 0 var(--box-shadow-color-alpha-base, rgba(0, 0, 0, 0.06)),
+-    0 0 16px 0 var(--box-shadow-color-alpha-base, rgba(0, 0, 0, 0.06));
++  border-radius: 0;
++  box-shadow: 0 0 0 1px var(--box-shadow-color-base, #171717);
+ }
+ .cdx-dialog--fixed-height {
+   height: calc(100vh - 2rem);
+ }
+ .cdx-dialog--fixed-height-custom {
+-  height: var(--17e0a1f0);
++  height: var(--6345fe62);
+ }
+ @media (min-width: 640px) {
+   .cdx-dialog {
+     max-width: 32rem;
+@@ -61,9 +58,9 @@
+   font-weight: 700;
+   line-height: var(--line-height-x-large, 1.875rem);
+ }
+ .cdx-dialog__header .cdx-dialog__header__subtitle {
+-  color: var(--color-subtle, #54595d);
++  color: var(--color-subtle, #595959);
+   margin: 0;
+   padding: 0;
+   font-size: var(--font-size-medium, 1rem);
+   line-height: var(--line-height-small, 1.375rem);
+@@ -76,9 +73,9 @@
+     display: none;
+   }
+ }
+ .cdx-dialog--dividers .cdx-dialog__header {
+-  border-bottom: 1px solid var(--border-color-subtle, #c8ccd1);
++  border-bottom: 1px solid var(--border-color-subtle, #cccccc);
+ }
+ .cdx-dialog__body {
+   padding: 8px 24px;
+   overflow-y: auto;
+@@ -124,12 +121,12 @@
+     max-width: none;
+   }
+ }
+ .cdx-dialog--dividers .cdx-dialog__footer {
+-  border-top: 1px solid var(--border-color-subtle, #c8ccd1);
++  border-top: 1px solid var(--border-color-subtle, #cccccc);
+ }
+ .cdx-dialog__footer .cdx-dialog__footer__text {
+-  color: var(--color-subtle, #54595d);
++  color: var(--color-subtle, #595959);
+   flex: 1 0 auto;
+   width: 100%;
+   margin: 0;
+   font-size: var(--font-size-small, 0.875rem);

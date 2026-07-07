@@ -1,0 +1,391 @@
+Index: dist/codex.js
+===================================================================
+--- dist/codex.js
++++ dist/codex.js
+@@ -121,89 +121,88 @@
+     Symbol.toStringTag,
+     { value: 'Module' },
+   ),
+ )
+-const m = '<path d="M19.765 16.059 18 19H2L.235 16.059l8-15h3.53zM9 14v2h2v-2zm0-8v6h2V6z"/>',
++const m = '<path d="M19 19H1v-1.8L9.444 1h1.112L19 17.2zM9 15v2h2v-2zm0-8v6h2V7z"/>',
+   B =
+-    '<path d="M18 19H2V1h16zM4 17h11.586l-3.922-3.922a3.5 3.5 0 111.414-1.414L16 14.586V3H4zm6-8.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3"/>',
+-  V1 = '<path d="M18.154 3.837 8.034 16.62l-1.384.18-4.8-3.6 1.2-1.6 4.02 3.015 9.517-12.02z"/>',
++    '<path d="M18 20H2V0h16zM4 18h10.969l-3.343-4.347a4 4 0 111.565-1.244L16 16.06V2H4zm6-10a2 2 0 100 4 2 2 0 000-4"/>',
++  M1 = '<path d="M18.154 3.837 8 16.8H6.65l-4.8-3.6 1.2-1.6 4.02 3.015 9.517-12.02z"/>',
+   p1 =
+     '<path d="M14.243 7.172 11.413 10l2.828 2.83-1.414 1.413L10 11.415l-2.827 2.827-1.414-1.414L8.585 10 5.757 7.172l1.415-1.414 2.827 2.828 2.83-2.828z"/><path d="M10 1a9 9 0 110 18 9 9 0 010-18m0 2a7 7 0 100 14 7 7 0 000-14"/>',
+   i1 =
+     '<path d="M16.707 4.707 11.414 10l5.293 5.293-1.414 1.414L10 11.414l-5.293 5.293-1.414-1.414L8.586 10 3.293 4.707l1.414-1.414L10 8.586l5.293-5.293z"/>',
+-  S1 = '<path d="M14 7H6v2.5l4 3.5 4-3.5z"/>',
+-  R1 = '<path d="M19 6.4v7.199L13.6 19H6.4L1 13.599v-7.2L6.4 1h7.2zM9 14v2h2v-2zm0-9v7h2V5z"/>',
+-  P1 = '<path d="m16.707 8.017-6 5.983H9.293l-6-5.983 1.414-1.414L10 11.896l5.293-5.293z"/>',
+-  z0 =
+-    '<path d="M15 15H5l3.5-4 2 2L15 8zM6.25 5a1.25 1.25 0 110 2.5 1.25 1.25 0 010-2.5"/><path d="M19 19H1V1h18zM3 17h14V3H3z"/>',
+-  g0 =
+-    '<path d="M19 19H1V1h18zm-8.5-6-2-2L5 15h10V8zM6.25 5a1.25 1.25 0 100 2.5 1.25 1.25 0 000-2.5"/>',
+-  M =
++  S1 = '<path d="M5 8h10v1l-5 5-5-5z"/>',
++  P1 = '<path d="M19 6.4v7.199L13.6 19H6.4L1 13.599v-7.2L6.4 1h7.2zM9 14v2h2v-2zm0-9v7h2V5z"/>',
++  O1 = '<path d="m16.707 8.017-6 5.983H9.293l-6-5.983 1.414-1.414L10 11.896l5.293-5.293z"/>',
++  V0 =
++    '<path d="M15 15H5l3.5-4 2 2L15 8zM6.5 5a1.5 1.5 0 110 3 1.5 1.5 0 010-3"/><path d="M19 19H1V1h18zM3 17h14V3H3z"/>',
++  u0 = '<path d="M19 19H1V1h18zm-8.5-6-2-2L5 15h10V8zm-4-8a1.5 1.5 0 100 3 1.5 1.5 0 000-3"/>',
++  V =
+     '<path d="M13 20H7v-2h6zM10 0c1.938 0 3.58.556 4.745 1.644C15.918 2.738 16.5 4.27 16.5 6c0 2.22-1.15 3.732-2.04 4.727-.644.72-.96 1.633-.96 2.662V16h-7v-2.611c0-1.029-.317-1.942-.96-2.662C4.65 9.732 3.5 8.22 3.5 6c0-1.627.593-3.145 1.743-4.255C6.395.634 8.032 0 10 0"/>',
+-  f0 = '<path d="M10 1a9 9 0 110 18 9 9 0 010-18M8 9v2h1v2H8v2h4v-2h-1V9zm1-4v2h2V5z"/>',
+-  W2 = '<path d="M6 17H4V3h2zM16.417 4.707 11.124 10l5.293 5.293-1.414 1.414-6-6V9.293l6-6z"/>',
+-  R2 =
++  S0 = '<path d="M10 1a9 9 0 110 18 9 9 0 010-18M8 9v2h1v2H8v2h4v-2h-1V9zm1-4v2h2V5z"/>',
++  P2 = '<path d="M6 17H4V3h2zM16.417 4.707 11.124 10l5.293 5.293-1.414 1.414-6-6V9.293l6-6z"/>',
++  E2 =
+     '<path d="M16 17h-2V3h2zm-5-7.707v1.414l-5.993 6-1.414-1.414L8.886 10 3.593 4.707l1.414-1.414z"/>',
+-  Q2 = '<path d="M14 9.293v1.414l-5.982 6-1.415-1.414L11.896 10 6.603 4.707l1.414-1.414z"/>',
+-  s5 = '<path d="M13.417 4.707 8.124 10l5.293 5.293-1.414 1.414-6-6V9.293l6-6z"/>',
+-  C5 =
++  Y2 = '<path d="M14 9.293v1.414l-5.982 6-1.415-1.414L11.896 10 6.603 4.707l1.414-1.414z"/>',
++  d4 = '<path d="M13.417 4.707 8.124 10l5.293 5.293-1.414 1.414-6-6V9.293l6-6z"/>',
++  b4 =
+     '<path d="M8 1a7 7 0 015.605 11.191l5.102 5.102-1.414 1.414-5.102-5.102A7 7 0 118 1m0 2a5 5 0 100 10A5 5 0 008 3"/>',
+-  U5 = '<path d="M14 14.5 10 18l-4-3.5V12h8zm0-9V8H6V5.5L10 2z"/>',
+-  X5 =
+-    '<path d="M10 1a9 9 0 110 18 9 9 0 010-18M8.823 11.118 6.8 9.6l-1.2 1.6 2.8 2.1 1.381-.175 4.624-5.781-1.561-1.25z"/>',
+-  q4 = '<path d="M14 13H6v-2.5L10 7l4 3.5z"/>',
+-  v3 = m,
+-  A3 = B,
+-  J3 = V1,
+-  j3 = p1,
+-  _3 = i1,
+-  d7 = S1,
+-  m7 = R1,
+-  g7 = P1,
+-  O7 = z0,
+-  Y7 = g0,
+-  o6 = {
++  D4 = '<path d="m15 13-5 5-5-5v-1h10zm0-6v1H5V7l5-5z"/>',
++  h3 =
++    '<path d="M10 1a9 9 0 110 18 9 9 0 010-18M8.823 11.118 6.8 9.6l-1.2 1.6 2.8 2.1h1.1l4.905-5.956-1.561-1.25z"/>',
++  Z3 = '<path d="M15 12H5v-1l5-5 5 5z"/>',
++  e5 = m,
++  k5 = B,
++  X5 = M1,
++  _5 = p1,
++  h6 = i1,
++  z6 = S1,
++  u6 = P1,
++  I6 = O1,
++  K6 = V0,
++  $6 = u0,
++  v7 = {
+     langCodeMap: {
+-      ar: M,
++      ar: V,
+     },
+-    default: f0,
++    default: S0,
+   },
+-  l8 = {
+-    ltr: W2,
++  e8 = {
++    ltr: P2,
+     shouldFlip: true,
+   },
+-  s8 = {
+-    ltr: R2,
++  z8 = {
++    ltr: E2,
+     shouldFlip: true,
+   },
+-  M8 = {
+-    ltr: Q2,
++  i8 = {
++    ltr: Y2,
+     shouldFlip: true,
+   },
+-  F8 = {
+-    ltr: s5,
++  y8 = {
++    ltr: d4,
+     shouldFlip: true,
+   },
+-  G8 = C5,
+-  t9 = U5,
+-  p9 = X5,
+-  Y9 = q4
+-function Ih(h, l, o) {
++  X8 = b4,
++  n9 = D4,
++  u9 = h3,
++  hh = Z3
++function bh(h, s, o) {
+   if (typeof h == 'string' || 'path' in h) return h
+   if ('shouldFlip' in h) return h.ltr
+   if ('rtl' in h) return o === 'rtl' ? h.rtl : h.ltr
+-  const v = l in h.langCodeMap ? h.langCodeMap[l] : h.default
++  const v = s in h.langCodeMap ? h.langCodeMap[s] : h.default
+   return typeof v == 'string' || 'path' in v ? v : v.ltr
+ }
+-function Ah(h, l) {
++function fh(h, s) {
+   if (typeof h == 'string') return false
+   if ('langCodeMap' in h) {
+-    const o = l in h.langCodeMap ? h.langCodeMap[l] : h.default
++    const o = s in h.langCodeMap ? h.langCodeMap[s] : h.default
+     if (typeof o == 'string') return false
+     h = o
+   }
+   if ('shouldFlipExceptions' in h && Array.isArray(h.shouldFlipExceptions)) {
+-    const o = h.shouldFlipExceptions.indexOf(l)
++    const o = h.shouldFlipExceptions.indexOf(s)
+     return o === void 0 || o === -1
+   }
+   return 'shouldFlip' in h ? h.shouldFlip : false
+ }
+@@ -355,14 +354,14 @@
+     const rootClasses = computed(() => ({
+       'cdx-icon--flipped':
+         overriddenDir.value === 'rtl' &&
+         overriddenLang.value !== null &&
+-        Ah(props.icon, overriddenLang.value),
++        fh(props.icon, overriddenLang.value),
+       ['cdx-icon--'.concat(props.size)]: true,
+     }))
+     const resolvedIcon = computed(() => {
+       var _a, _b
+-      return Ih(
++      return bh(
+         props.icon,
+         (_a = overriddenLang.value) != null ? _a : '',
+         (_b = overriddenDir.value) != null ? _b : 'ltr',
+       )
+@@ -1080,9 +1079,9 @@
+      * Thumbnail placeholder icon.
+      */
+     placeholderIcon: {
+       type: [String, Object],
+-      default: Y7,
++      default: $6,
+     },
+   },
+   setup: (props) => {
+     const thumbnailLoaded = ref(false)
+@@ -3965,9 +3964,9 @@
+       rootElement,
+       rootClasses,
+       ariaDescription,
+       onKeydown,
+-      cdxIconClose: _3,
++      cdxIconClose: h6,
+       tabIndex,
+       tooltipContent,
+       textElement,
+     }
+@@ -4843,9 +4842,9 @@
+       rootClasses,
+       contentTag,
+       linkAttrs,
+       title,
+-      cdxIconCheck: J3,
++      cdxIconCheck: X5,
+     }
+   },
+ })
+ const _hoisted_1$p = ['id', 'aria-disabled', 'aria-selected', 'aria-checked']
+@@ -6619,9 +6618,9 @@
+       onCompositionUpdate,
+       onCompositionEnd,
+       onInvalid,
+       shouldPreventDefault,
+-      cdxIconClear: j3,
++      cdxIconClear: _5,
+     }
+   },
+   // Public methods
+   // These must be in the methods block, not in the setup function, otherwise their documentation
+@@ -7104,9 +7103,9 @@
+       onInputBlur,
+       onKeydown,
+       onButtonClick,
+       onButtonMousedown,
+-      cdxIconExpand: g7,
++      cdxIconExpand: I6,
+       rootClasses,
+       rootStyle,
+       otherAttrs,
+     }
+@@ -7748,9 +7747,9 @@
+     return {
+       close,
+       onBackdropClick,
+       onBackdropMouseDown,
+-      cdxIconClose: _3,
++      cdxIconClose: h6,
+       labelId,
+       rootClasses,
+       backdrop,
+       dialogElement,
+@@ -7770,9 +7769,9 @@
+   },
+ })
+ const __injectCSSVars__ = () => {
+   useCssVars((_ctx) => ({
+-    '17e0a1f0': _ctx.fixedHeightRem,
++    '6345fe62': _ctx.fixedHeightRem,
+   }))
+ }
+ const __setup__ = __default__.setup
+ __default__.setup = __setup__
+@@ -8103,14 +8102,14 @@
+   )
+ }
+ const Dialog = /* @__PURE__ */ _export_sfc(__default__, [['render', _sfc_render$o]])
+ const iconMap$2 = {
+-  subtle: o6,
+-  notice: o6,
+-  progressive: o6,
+-  error: m7,
+-  warning: v3,
+-  success: p9,
++  subtle: v7,
++  notice: v7,
++  progressive: v7,
++  error: u6,
++  warning: e5,
++  success: u9,
+ }
+ const _sfc_main$n = defineComponent({
+   name: 'CdxMessage',
+   components: { CdxButton, CdxIcon },
+@@ -8274,9 +8273,9 @@
+       leaveActiveClass,
+       computedIcon,
+       onDismiss,
+       onActionButtonClick,
+-      cdxIconClose: _3,
++      cdxIconClose: h6,
+     }
+   },
+ })
+ const _hoisted_1$j = ['aria-live', 'role']
+@@ -8775,9 +8774,9 @@
+       otherAttrs,
+       placeholderStyles,
+       handleError,
+       handleLoad,
+-      cdxIconImage: O7,
++      cdxIconImage: K6,
+       iconSizeClass,
+       placeholderClasses,
+     }
+   },
+@@ -8849,14 +8848,14 @@
+   )
+ }
+ const Image$1 = /* @__PURE__ */ _export_sfc(_sfc_main$l, [['render', _sfc_render$l]])
+ const iconMap$1 = {
+-  subtle: o6,
+-  notice: o6,
+-  progressive: o6,
+-  error: m7,
+-  warning: v3,
+-  success: p9,
++  subtle: v7,
++  notice: v7,
++  progressive: v7,
++  error: u6,
++  warning: e5,
++  success: u9,
+ }
+ const _sfc_main$k = defineComponent({
+   name: 'CdxInfoChip',
+   components: { CdxIcon },
+@@ -10457,9 +10456,9 @@
+       showHeader,
+       showFooter,
+       footerActionsClasses,
+       close,
+-      cdxIconClose: _3,
++      cdxIconClose: h6,
+       transitionName,
+       backdropClassObject,
+       panelClassObject,
+       panelInlineStyles,
+@@ -11233,9 +11232,9 @@
+       rootClasses,
+       rootStyle,
+       otherAttrs,
+       handleSubmit,
+-      searchIcon: G8,
++      searchIcon: X8,
+       translatedSearchButtonLabel,
+       useButtonOrLabel,
+     }
+   },
+@@ -11526,9 +11525,9 @@
+       otherAttrsMinusId,
+       onClick,
+       onKeydown,
+       startIcon,
+-      cdxIconExpand: g7,
++      cdxIconExpand: I6,
+     }
+   },
+ })
+ const _hoisted_1$a = ['aria-disabled']
+@@ -11817,12 +11816,12 @@
+       btnLabelNext,
+       btnLabelPrev,
+       btnLabelLast,
+       wrappedItemsPerPage,
+-      cdxIconPrevious: F8,
+-      cdxIconNext: M8,
+-      cdxIconMoveFirst: l8,
+-      cdxIconMoveLast: s8,
++      cdxIconPrevious: y8,
++      cdxIconNext: i8,
++      cdxIconMoveFirst: e8,
++      cdxIconMoveLast: z8,
+     }
+   },
+ })
+ const _hoisted_1$8 = { class: 'cdx-table-pager' }
+@@ -11962,11 +11961,11 @@
+ const CdxTablePager = /* @__PURE__ */ _export_sfc(_sfc_main$a, [['render', _sfc_render$a]])
+ const tableTextAlignmentsValidator = makeStringTypeValidator(TableTextAlignments)
+ const paginationPositionValidator = makeStringTypeValidator(TablePaginationPositions)
+ const iconMap = {
+-  none: t9,
+-  asc: Y9,
+-  desc: d7,
++  none: n9,
++  asc: hh,
++  desc: z6,
+ }
+ const sortDirectionMap = {
+   none: 'none',
+   asc: 'ascending',
+@@ -13188,10 +13187,10 @@
+       lastLabelVisible,
+       assignTemplateRefForTabButton,
+       scrollTabs,
+       focusActiveTab,
+-      cdxIconPrevious: F8,
+-      cdxIconNext: M8,
++      cdxIconPrevious: y8,
++      cdxIconNext: i8,
+     }
+   },
+   /**
+    * Some non-public methods are defined here rather than in setup because
+@@ -15522,9 +15521,9 @@
+       onSearchFooterClick,
+       onSubmit,
+       onKeydown,
+       MenuFooterValue,
+-      articleIcon: A3,
++      articleIcon: k5,
+       translatedSearchResultsLabel,
+     }
+   },
+   methods: {

@@ -1,0 +1,31 @@
+Index: dist/modules/CdxLabel-rtl.css
+===================================================================
+--- dist/modules/CdxLabel-rtl.css
++++ dist/modules/CdxLabel-rtl.css
+@@ -4,9 +4,9 @@
+   font-size: var(--font-size-medium, 1rem);
+   line-height: var(--line-height-small, 1.375rem);
+ }
+ .cdx-label__label__icon.cdx-icon {
+-  color: var(--color-subtle, #54595d);
++  color: var(--color-subtle, #595959);
+   margin-left: 4px;
+ }
+ .cdx-label__label__text {
+   font-weight: 700;
+@@ -18,13 +18,13 @@
+   font-weight: 400;
+ }
+ .cdx-label:not(.cdx-label--disabled) .cdx-label__label__optional-flag,
+ .cdx-label:not(.cdx-label--disabled) .cdx-label__description {
+-  color: var(--color-subtle, #54595d);
++  color: var(--color-subtle, #595959);
+ }
+ .cdx-label--disabled,
+ .cdx-label--disabled .cdx-label__label__icon {
+-  color: var(--color-disabled, #a2a9b1);
++  color: var(--color-disabled, #a8a8a8);
+ }
+ .cdx-label--visually-hidden {
+   display: block;
+   clip: rect(1px, 1px, 1px, 1px);

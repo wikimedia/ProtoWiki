@@ -1,0 +1,155 @@
+Index: dist/modules/CdxTabs.css
+===================================================================
+--- dist/modules/CdxTabs.css
++++ dist/modules/CdxTabs.css
+@@ -50,20 +50,17 @@
+   display: block;
+   flex: 0 0 auto;
+   max-width: 16rem;
+   border-width: 0;
+-  border-top-left-radius: 2px;
+-  border-top-right-radius: 2px;
+-  padding: 4px 12px;
++  border-top-left-radius: 4px;
++  border-top-right-radius: 4px;
++  padding: 4px 0;
+   font-size: var(--font-size-medium, 1rem);
+-  font-weight: 700;
+   line-height: var(--line-height-small, 1.375rem);
+   text-decoration: none;
+   overflow: hidden;
+   text-overflow: ellipsis;
+   white-space: nowrap;
+-  transition-property: background-color, color, border-color, box-shadow;
+-  transition-duration: 0.1s;
+ }
+ .cdx-tabs__list__item:hover {
+   cursor: pointer;
+ }
+@@ -73,58 +70,59 @@
+ .cdx-tabs > .cdx-tabs__header .cdx-tabs__list__item + .cdx-tabs__list__item {
+   margin-left: 0;
+ }
+ .cdx-tabs--framed > .cdx-tabs__header {
+-  background-color: var(--background-color-interactive, #eaecf0);
++  background-color: var(--background-color-interactive, #ebebeb);
+ }
+ .cdx-tabs--framed > .cdx-tabs__header .cdx-tabs__prev-scroller:after {
+   background-image: linear-gradient(
+     to right,
+-    var(--background-color-interactive, #eaecf0) 0,
++    var(--background-color-interactive, #ebebeb) 0,
+     var(--background-color-transparent, transparent) 100%
+   );
+ }
+ .cdx-tabs--framed > .cdx-tabs__header .cdx-tabs__next-scroller:before {
+   background-image: linear-gradient(
+     to left,
+-    var(--background-color-interactive, #eaecf0) 0,
++    var(--background-color-interactive, #ebebeb) 0,
+     var(--background-color-transparent, transparent) 100%
+   );
+ }
+ .cdx-tabs--framed > .cdx-tabs__header .cdx-tabs__list__item {
+-  color: var(--color-base, #202122);
++  color: var(--color-base, #171717);
+   margin: 8px 4px 0 8px;
++  padding: 4px 12px;
+ }
+ .cdx-tabs--framed > .cdx-tabs__header .cdx-tabs__list__item:enabled {
+   overflow: hidden;
+ }
+ .cdx-tabs--framed > .cdx-tabs__header .cdx-tabs__list__item:enabled:hover {
+-  background-color: var(--background-color-interactive-subtle--hover, #eaecf0);
+-  color: var(--color-base, #202122);
++  background-color: var(--background-color-interactive-subtle--hover, #ebebeb);
++  color: var(--color-base, #171717);
+   mix-blend-mode: var(--mix-blend-mode-blend, multiply);
+ }
+ .cdx-tabs--framed > .cdx-tabs__header .cdx-tabs__list__item:enabled:active {
+-  background-color: var(--background-color-interactive-subtle--active, #dadde3);
+-  color: var(--color-base, #202122);
++  background-color: var(--background-color-interactive-subtle--active, #dbdbdb);
++  color: var(--color-base, #171717);
+ }
+ .cdx-tabs--framed > .cdx-tabs__header .cdx-tabs__list__item[aria-selected='true'],
+ .cdx-tabs--framed > .cdx-tabs__header .cdx-tabs__list__item[aria-selected='true']:hover {
+   background-color: var(--background-color-base, #fff);
+-  color: var(--color-base, #202122);
++  color: var(--color-base, #171717);
+   mix-blend-mode: var(--mix-blend-mode-base, normal);
+ }
+ .cdx-tabs--framed > .cdx-tabs__header .cdx-tabs__list__item:disabled {
+-  background-color: var(--background-color-interactive, #eaecf0);
+-  color: var(--color-disabled, #a2a9b1);
++  background-color: var(--background-color-interactive, #ebebeb);
++  color: var(--color-disabled, #a8a8a8);
+   cursor: default;
+ }
+ .cdx-tabs--framed > .cdx-tabs__header .cdx-tabs__list__item:last-child {
+   margin-right: 8px;
+ }
+ .cdx-tabs:not(.cdx-tabs--framed) > .cdx-tabs__header {
+   background-color: var(--background-color-base, #fff);
+   margin: 0 4px;
+-  border-bottom: 1px solid var(--border-color-base, #a2a9b1);
++  box-shadow: inset 0 -1px 0 0 var(--box-shadow-color-base, #171717);
+ }
+ .cdx-tabs:not(.cdx-tabs--framed) > .cdx-tabs__header .cdx-tabs__prev-scroller:after {
+   background-image: linear-gradient(
+     to right,
+@@ -139,36 +137,30 @@
+     var(--background-color-transparent, transparent) 100%
+   );
+ }
+ .cdx-tabs:not(.cdx-tabs--framed) > .cdx-tabs__header .cdx-tabs__list__item {
+-  margin: 0 2px;
++  margin: 0 8px;
+ }
+ .cdx-tabs:not(.cdx-tabs--framed) > .cdx-tabs__header .cdx-tabs__list__item:enabled {
+-  color: var(--color-base, #202122);
++  color: var(--color-progressive, #0052f5);
+ }
+ .cdx-tabs:not(.cdx-tabs--framed)
+   > .cdx-tabs__header
+   .cdx-tabs__list__item:enabled:hover:not([aria-selected='true']) {
+-  color: var(--color-progressive--hover, #3056a9);
+-  box-shadow: inset 0 -2px 0 0 var(--box-shadow-color-progressive-selected--hover, #3056a9);
++  box-shadow: inset 0 -2px 0 0 var(--box-shadow-color-progressive--focus, #0052f5);
+ }
+ .cdx-tabs:not(.cdx-tabs--framed)
+   > .cdx-tabs__header
+   .cdx-tabs__list__item:enabled:active:not([aria-selected='true']) {
+-  color: var(--color-progressive--active, #233566);
+-  box-shadow: inset 0 -2px 0 0 var(--box-shadow-color-progressive-selected--active, #233566);
++  color: var(--color-base, #171717);
++  box-shadow: inset 0 -2px 0 0 var(--box-shadow-color-emphasized, #171717);
+ }
+ .cdx-tabs:not(.cdx-tabs--framed) > .cdx-tabs__header .cdx-tabs__list__item[aria-selected='true'] {
+-  color: var(--color-progressive, #36c);
+-  box-shadow: inset 0 -2px 0 0 var(--box-shadow-color-progressive-selected, #36c);
++  color: var(--color-base, #171717);
++  box-shadow: inset 0 -2px 0 0 var(--box-shadow-color-emphasized, #171717);
+ }
+-.cdx-tabs:not(.cdx-tabs--framed)
+-  > .cdx-tabs__header
+-  .cdx-tabs__list__item[aria-selected='true']:hover {
+-  color: var(--color-progressive, #36c);
+-}
+ .cdx-tabs:not(.cdx-tabs--framed) > .cdx-tabs__header .cdx-tabs__list__item:disabled {
+-  color: var(--color-disabled, #a2a9b1);
++  color: var(--color-disabled, #a8a8a8);
+   cursor: default;
+ }
+ .cdx-tabs:not(.cdx-tabs--framed) > .cdx-tabs__header .cdx-tabs__list__item:first-child {
+   margin-left: 0;
+@@ -177,8 +169,8 @@
+   margin-right: 0;
+ }
+ .cdx-tabs--framed > .cdx-tabs__header .cdx-tabs__list__item:focus-visible,
+ .cdx-tabs:not(.cdx-tabs--framed) > .cdx-tabs__header .cdx-tabs__list__item:focus-visible {
+-  box-shadow: inset 0 0 0 2px var(--outline-color-progressive--focus, #36c);
++  box-shadow: inset 0 0 0 2px var(--outline-color-progressive--focus, #0052f5);
+   outline: 1px solid transparent;
+   overflow: hidden;
+ }

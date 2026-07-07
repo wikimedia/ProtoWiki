@@ -1,0 +1,12 @@
+Index: dist/theme-wikimedia-ui-mixin-x-large.less
+===================================================================
+--- dist/theme-wikimedia-ui-mixin-x-large.less
++++ dist/theme-wikimedia-ui-mixin-x-large.less
+@@ -1,6 +1,6 @@
+ /**
+- * Codex Design Tokens v2.6.0
++ * Codex Design Tokens v2.6.1
+  * Design System for Wikimedia
+  * See https://doc.wikimedia.org/codex/latest/design-tokens/overview.html
+  */
+ 

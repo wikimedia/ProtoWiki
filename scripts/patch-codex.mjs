@@ -110,6 +110,31 @@ function installedVersion(pkg) {
   return JSON.parse(fs.readFileSync(p, 'utf8')).version
 }
 
+// Resolve the commit the INSTALLED published Codex was built from, so the diff
+// we emit is layered onto a baseline that matches the published artifact. We
+// prefer the release tag for the installed version (its build == what shipped to
+// npm, so the 3-way merge sees base ~= current and lands cleanly). When no such
+// tag exists we fall back to merge-base(change, origin/main) — the newest merged
+// ancestor beneath the change — which is correct for a change based at/near the
+// release but can miss commits that landed between the release and the change's
+// own base.
+function resolveBaselineSha(version, changeSha) {
+  for (const tag of [`v${version}`, version]) {
+    const res = tryRun('git', ['rev-parse', '--verify', '--quiet', `refs/tags/${tag}^{commit}`], {
+      cwd: CODEX_REPO_DIR,
+    })
+    if (res.status === 0 && res.stdout.trim()) {
+      console.log(`Baseline: release tag ${tag} (${res.stdout.trim().slice(0, 10)})`)
+      return res.stdout.trim()
+    }
+  }
+  console.warn(
+    `Could not resolve a release tag for Codex ${version}; ` +
+      'falling back to merge-base(change, origin/main).',
+  )
+  return run('git', ['merge-base', changeSha, 'origin/main'], { cwd: CODEX_REPO_DIR })
+}
+
 function ensureRepo() {
   fs.mkdirSync(CACHE_ROOT, { recursive: true })
   if (!fs.existsSync(CODEX_REPO_DIR)) {
@@ -243,17 +268,26 @@ async function makePatch(changeInput) {
   const versions = Object.fromEntries(CODEX_PACKAGES.map((pkg) => [pkg, installedVersion(pkg)]))
   console.log(`Baseline Codex version: ${versions['@wikimedia/codex']}`)
 
-  // 2. Fetch the change and its parent.
+  // 2. Fetch the change and resolve the published baseline the diff lands on.
   ensureRepo()
   run('git', ['fetch', 'origin', ref], { cwd: CODEX_REPO_DIR })
   const changeSha = run('git', ['rev-parse', 'FETCH_HEAD'], { cwd: CODEX_REPO_DIR })
-  const parentSha = run('git', ['rev-parse', 'FETCH_HEAD^'], { cwd: CODEX_REPO_DIR })
+  // Baseline against the commit the INSTALLED published Codex was built from (its
+  // release tag), so the emitted diff spans published -> change: every change
+  // needed to ship this patch on top of the published package, including commits
+  // that landed on main between the release and the change's own base. This lets
+  // a change stacked ahead of the latest release still apply cleanly onto the
+  // published artifact CI installs, instead of capturing only the change's delta
+  // from an unpublished ancestor (which would conflict on files that drifted
+  // between the release and that ancestor).
+  run('git', ['fetch', 'origin', 'main', '--tags'], { cwd: CODEX_REPO_DIR })
+  const baselineSha = resolveBaselineSha(versions['@wikimedia/codex'], changeSha)
 
-  // 3. Build the unpatched parent and the patched change.
+  // 3. Build the unpatched published baseline and the patched change.
   const candidates = collectCandidates()
 
-  console.log('Building Codex at the parent commit (unpatched)')
-  run('git', ['checkout', '--force', '--detach', parentSha], { cwd: CODEX_REPO_DIR })
+  console.log('Building Codex at the published baseline (unpatched)')
+  run('git', ['checkout', '--force', '--detach', baselineSha], { cwd: CODEX_REPO_DIR })
   installCodexDeps()
   buildCodex()
   const unpatched = snapshotBuild(candidates)
@@ -327,6 +361,7 @@ async function makePatch(changeInput) {
     change: changeNumber,
     patchset,
     revision: changeSha,
+    baseline: baselineSha,
     generatedAt: new Date().toISOString(),
     codexVersions: versions,
     prettierVersion: prettierVersion(prettier),

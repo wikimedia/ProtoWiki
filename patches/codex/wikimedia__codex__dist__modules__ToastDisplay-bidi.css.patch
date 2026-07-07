@@ -1,0 +1,25 @@
+Index: dist/modules/ToastDisplay-bidi.css
+===================================================================
+--- dist/modules/ToastDisplay-bidi.css
++++ dist/modules/ToastDisplay-bidi.css
+@@ -25,11 +25,9 @@
+   background-color: var(--background-color-base, #fff);
+ }
+ [dir] .cdx-toast__message {
+   margin: 0;
+-  box-shadow:
+-    0 4px 8px 0 var(--box-shadow-color-alpha-base, rgba(0, 0, 0, 0.06)),
+-    0 0 16px 0 var(--box-shadow-color-alpha-base, rgba(0, 0, 0, 0.06));
++  box-shadow: 0 0 0 1px var(--box-shadow-color-base, #171717);
+ }
+ @media screen and (max-width: 639px) {
+   .cdx-toast__message .cdx-message__dismiss-button {
+     display: none;
+@@ -79,6 +77,6 @@
+ [dir='rtl'] .cdx-toast-leave-to {
+   transform: translate(50%) translateY(20px);
+ }
+ .cdx-toast:focus-visible {
+-  outline: 1px solid var(--border-color-progressive--focus, #36c);
++  outline: 1px solid var(--border-color-progressive--focus, #0052f5);
+ }

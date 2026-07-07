@@ -1,0 +1,52 @@
+Index: dist/modules/CdxDialog.cjs
+===================================================================
+--- dist/modules/CdxDialog.cjs
++++ dist/modules/CdxDialog.cjs
+@@ -63,15 +63,15 @@
+           'cdx-dialog--dividers': g.value,
+           'cdx-dialog--fixed-height': o.fixedHeight !== !1,
+           'cdx-dialog--fixed-height-custom': typeof o.fixedHeight == 'number',
+         })),
+-        _ = e.computed(() =>
++        E = e.computed(() =>
+           typeof o.fixedHeight == 'number' ? ''.concat(o.fixedHeight / 16, 'rem') : '',
+         ),
+-        E = e.inject('CdxTeleportTarget', void 0),
++        _ = e.inject('CdxTeleportTarget', void 0),
+         $ = e.computed(() => {
+           var l, a
+-          return (a = (l = o.target) != null ? l : e.unref(E)) != null ? a : 'body'
++          return (a = (l = o.target) != null ? l : e.unref(_)) != null ? a : 'body'
+         })
+       e.provide('CdxTeleportTarget', s)
+       const S = e.computed(() => o.open)
+       B.useScrollLock(S)
+@@ -134,9 +134,9 @@
+         {
+           close: b,
+           onBackdropClick: H,
+           onBackdropMouseDown: D,
+-          cdxIconClose: k._3,
++          cdxIconClose: k.h6,
+           labelId: m,
+           rootClasses: V,
+           backdrop: d,
+           dialogElement: c,
+@@ -150,15 +150,15 @@
+           showFooterActions: A,
+           useCloseButtonOrLabel: r,
+           translatedCloseButtonLabel: n,
+           computedTarget: $,
+-          fixedHeightRem: _,
++          fixedHeightRem: E,
+         }
+       )
+     },
+   }),
+   v = () => {
+-    e.useCssVars((o) => ({ '17e0a1f0': o.fixedHeightRem }))
++    e.useCssVars((o) => ({ '6345fe62': o.fixedHeightRem }))
+   },
+   T = p.setup
+ p.setup = T ? (o, t) => (v(), T(o, t)) : v
+ const U = ['aria-label', 'aria-labelledby'],

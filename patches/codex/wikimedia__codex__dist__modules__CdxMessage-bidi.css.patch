@@ -1,0 +1,300 @@
+Index: dist/modules/CdxMessage-bidi.css
+===================================================================
+--- dist/modules/CdxMessage-bidi.css
++++ dist/modules/CdxMessage-bidi.css
+@@ -1,14 +1,14 @@
+ .cdx-message {
+-  color: var(--color-base, #202122);
++  color: var(--color-base, #171717);
+   display: flex;
+   align-items: flex-start;
+   position: relative;
+ }
+ [dir] .cdx-message {
+-  background-color: var(--background-color-notice-subtle, #eaecf0);
+-  border: 1px solid var(--border-color-notice, #72777d);
+-  border-radius: 2px;
++  background-color: var(--background-color-notice-subtle, #ebebeb);
++  border: 1px solid var(--border-color-transparent, transparent);
++  border-radius: 0;
+   padding: 12px;
+ }
+ .cdx-message__icon,
+ .cdx-message__icon--vue {
+@@ -22,8 +22,11 @@
+   display: inline-block;
+   vertical-align: text-bottom;
+ }
+ @supports not (((-webkit-mask-image: none) or (mask-image: none))) {
++  .cdx-message .cdx-message__icon {
++    background-size: calc(var(--font-size-medium, 1rem) + 4px);
++  }
+   [dir] .cdx-message .cdx-message__icon {
+     background-position: center;
+     background-repeat: no-repeat;
+     background-size: max(calc(var(--font-size-medium, 1rem) + 4px), 10px);
+@@ -34,8 +37,10 @@
+     -webkit-mask-position: center;
+     mask-position: center;
+     -webkit-mask-repeat: no-repeat;
+     mask-repeat: no-repeat;
++    -webkit-mask-size: calc(var(--font-size-medium, 1rem) + 4px);
++    mask-size: calc(var(--font-size-medium, 1rem) + 4px);
+     -webkit-mask-size: max(calc(var(--font-size-medium, 1rem) + 4px), 10px);
+     mask-size: max(calc(var(--font-size-medium, 1rem) + 4px), 10px);
+   }
+ }
+@@ -53,9 +58,9 @@
+     -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M10 1a9 9 0 110 18 9 9 0 010-18M8 9v2h1v2H8v2h4v-2h-1V9zm1-4v2h2V5z"/></svg>');
+     mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M10 1a9 9 0 110 18 9 9 0 010-18M8 9v2h1v2H8v2h4v-2h-1V9zm1-4v2h2V5z"/></svg>');
+   }
+   [dir] .cdx-message .cdx-message__icon {
+-    background-color: var(--color-icon-notice, #72777d);
++    background-color: var(--color-icon-notice, #424242);
+   }
+ }
+ @supports not (((-webkit-mask-image: none) or (mask-image: none))) {
+   .cdx-message .cdx-message__icon:lang(ar) {
+@@ -71,21 +76,20 @@
+     -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M13 20H7v-2h6zM10 0c1.938 0 3.58.556 4.745 1.644C15.918 2.738 16.5 4.27 16.5 6c0 2.22-1.15 3.732-2.04 4.727-.644.72-.96 1.633-.96 2.662V16h-7v-2.611c0-1.029-.317-1.942-.96-2.662C4.65 9.732 3.5 8.22 3.5 6c0-1.627.593-3.145 1.743-4.255C6.395.634 8.032 0 10 0"/></svg>');
+     mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M13 20H7v-2h6zM10 0c1.938 0 3.58.556 4.745 1.644C15.918 2.738 16.5 4.27 16.5 6c0 2.22-1.15 3.732-2.04 4.727-.644.72-.96 1.633-.96 2.662V16h-7v-2.611c0-1.029-.317-1.942-.96-2.662C4.65 9.732 3.5 8.22 3.5 6c0-1.627.593-3.145 1.743-4.255C6.395.634 8.032 0 10 0"/></svg>');
+   }
+   [dir] .cdx-message .cdx-message__icon:lang(ar) {
+-    background-color: var(--color-icon-notice, #72777d);
++    background-color: var(--color-icon-notice, #424242);
+   }
+ }
+ .cdx-message .cdx-message__icon--vue {
+-  color: var(--color-icon-notice, #72777d);
++  color: var(--color-icon-notice, #424242);
+ }
+ [dir] .cdx-message--subtle {
+   background-color: var(--background-color-transparent, transparent);
+-  border-color: var(--border-color-base, #a2a9b1);
++  border-color: var(--border-color-subtle, #cccccc);
+ }
+ [dir] .cdx-message--progressive {
+-  background-color: var(--background-color-progressive-subtle, #e8eeff);
+-  border-color: var(--border-color-progressive, #36c);
++  background-color: var(--background-color-progressive-subtle, #dbe7ff);
+ }
+ .cdx-message--progressive .cdx-message__icon {
+   min-width: 10px;
+   min-height: 10px;
+@@ -94,8 +98,11 @@
+   display: inline-block;
+   vertical-align: text-bottom;
+ }
+ @supports not (((-webkit-mask-image: none) or (mask-image: none))) {
++  .cdx-message--progressive .cdx-message__icon {
++    background-size: calc(var(--font-size-medium, 1rem) + 4px);
++  }
+   [dir] .cdx-message--progressive .cdx-message__icon {
+     background-position: center;
+     background-repeat: no-repeat;
+     background-size: max(calc(var(--font-size-medium, 1rem) + 4px), 10px);
+@@ -106,8 +113,10 @@
+     -webkit-mask-position: center;
+     mask-position: center;
+     -webkit-mask-repeat: no-repeat;
+     mask-repeat: no-repeat;
++    -webkit-mask-size: calc(var(--font-size-medium, 1rem) + 4px);
++    mask-size: calc(var(--font-size-medium, 1rem) + 4px);
+     -webkit-mask-size: max(calc(var(--font-size-medium, 1rem) + 4px), 10px);
+     mask-size: max(calc(var(--font-size-medium, 1rem) + 4px), 10px);
+   }
+ }
+@@ -125,9 +134,9 @@
+     -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M10 1a9 9 0 110 18 9 9 0 010-18M8 9v2h1v2H8v2h4v-2h-1V9zm1-4v2h2V5z"/></svg>');
+     mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M10 1a9 9 0 110 18 9 9 0 010-18M8 9v2h1v2H8v2h4v-2h-1V9zm1-4v2h2V5z"/></svg>');
+   }
+   [dir] .cdx-message--progressive .cdx-message__icon {
+-    background-color: var(--color-icon-progressive, #36c);
++    background-color: var(--color-icon-progressive, #0052f5);
+   }
+ }
+ @supports not (((-webkit-mask-image: none) or (mask-image: none))) {
+   .cdx-message--progressive .cdx-message__icon:lang(ar) {
+@@ -143,17 +152,16 @@
+     -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M13 20H7v-2h6zM10 0c1.938 0 3.58.556 4.745 1.644C15.918 2.738 16.5 4.27 16.5 6c0 2.22-1.15 3.732-2.04 4.727-.644.72-.96 1.633-.96 2.662V16h-7v-2.611c0-1.029-.317-1.942-.96-2.662C4.65 9.732 3.5 8.22 3.5 6c0-1.627.593-3.145 1.743-4.255C6.395.634 8.032 0 10 0"/></svg>');
+     mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M13 20H7v-2h6zM10 0c1.938 0 3.58.556 4.745 1.644C15.918 2.738 16.5 4.27 16.5 6c0 2.22-1.15 3.732-2.04 4.727-.644.72-.96 1.633-.96 2.662V16h-7v-2.611c0-1.029-.317-1.942-.96-2.662C4.65 9.732 3.5 8.22 3.5 6c0-1.627.593-3.145 1.743-4.255C6.395.634 8.032 0 10 0"/></svg>');
+   }
+   [dir] .cdx-message--progressive .cdx-message__icon:lang(ar) {
+-    background-color: var(--color-icon-progressive, #36c);
++    background-color: var(--color-icon-progressive, #0052f5);
+   }
+ }
+ .cdx-message--progressive .cdx-message__icon--vue {
+-  color: var(--color-icon-progressive, #36c);
++  color: var(--color-icon-progressive, #0052f5);
+ }
+ [dir] .cdx-message--warning {
+-  background-color: var(--background-color-warning-subtle, #fdf2d5);
+-  border-color: var(--border-color-warning, #ab7f2a);
++  background-color: var(--background-color-warning-subtle, #ffe49c);
+ }
+ .cdx-message--warning .cdx-message__icon {
+   min-width: 10px;
+   min-height: 10px;
+@@ -162,8 +170,11 @@
+   display: inline-block;
+   vertical-align: text-bottom;
+ }
+ @supports not (((-webkit-mask-image: none) or (mask-image: none))) {
++  .cdx-message--warning .cdx-message__icon {
++    background-size: calc(var(--font-size-medium, 1rem) + 4px);
++  }
+   [dir] .cdx-message--warning .cdx-message__icon {
+     background-position: center;
+     background-repeat: no-repeat;
+     background-size: max(calc(var(--font-size-medium, 1rem) + 4px), 10px);
+@@ -174,8 +185,10 @@
+     -webkit-mask-position: center;
+     mask-position: center;
+     -webkit-mask-repeat: no-repeat;
+     mask-repeat: no-repeat;
++    -webkit-mask-size: calc(var(--font-size-medium, 1rem) + 4px);
++    mask-size: calc(var(--font-size-medium, 1rem) + 4px);
+     -webkit-mask-size: max(calc(var(--font-size-medium, 1rem) + 4px), 10px);
+     mask-size: max(calc(var(--font-size-medium, 1rem) + 4px), 10px);
+   }
+ }
+@@ -184,26 +197,25 @@
+     filter: invert(var(--filter-invert-icon, 0));
+     opacity: var(--opacity-icon-base, 0.87);
+   }
+   [dir] .cdx-message--warning .cdx-message__icon {
+-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M19.765 16.059 18 19H2L.235 16.059l8-15h3.53zM9 14v2h2v-2zm0-8v6h2V6z"/></svg>');
++    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M19 19H1v-1.8L9.444 1h1.112L19 17.2zM9 15v2h2v-2zm0-8v6h2V7z"/></svg>');
+   }
+ }
+ @supports ((-webkit-mask-image: none) or (mask-image: none)) {
+   .cdx-message--warning .cdx-message__icon {
+-    -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M19.765 16.059 18 19H2L.235 16.059l8-15h3.53zM9 14v2h2v-2zm0-8v6h2V6z"/></svg>');
+-    mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M19.765 16.059 18 19H2L.235 16.059l8-15h3.53zM9 14v2h2v-2zm0-8v6h2V6z"/></svg>');
++    -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M19 19H1v-1.8L9.444 1h1.112L19 17.2zM9 15v2h2v-2zm0-8v6h2V7z"/></svg>');
++    mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M19 19H1v-1.8L9.444 1h1.112L19 17.2zM9 15v2h2v-2zm0-8v6h2V7z"/></svg>');
+   }
+   [dir] .cdx-message--warning .cdx-message__icon {
+-    background-color: var(--color-icon-warning, #ab7f2a);
++    background-color: var(--color-icon-warning, #856100);
+   }
+ }
+ .cdx-message--warning .cdx-message__icon--vue {
+-  color: var(--color-icon-warning, #ab7f2a);
++  color: var(--color-icon-warning, #856100);
+ }
+ [dir] .cdx-message--error {
+-  background-color: var(--background-color-error-subtle, #ffe9e5);
+-  border-color: var(--border-color-error, #f54739);
++  background-color: var(--background-color-error-subtle, #ffe1db);
+ }
+ .cdx-message--error .cdx-message__icon {
+   min-width: 10px;
+   min-height: 10px;
+@@ -212,8 +224,11 @@
+   display: inline-block;
+   vertical-align: text-bottom;
+ }
+ @supports not (((-webkit-mask-image: none) or (mask-image: none))) {
++  .cdx-message--error .cdx-message__icon {
++    background-size: calc(var(--font-size-medium, 1rem) + 4px);
++  }
+   [dir] .cdx-message--error .cdx-message__icon {
+     background-position: center;
+     background-repeat: no-repeat;
+     background-size: max(calc(var(--font-size-medium, 1rem) + 4px), 10px);
+@@ -224,8 +239,10 @@
+     -webkit-mask-position: center;
+     mask-position: center;
+     -webkit-mask-repeat: no-repeat;
+     mask-repeat: no-repeat;
++    -webkit-mask-size: calc(var(--font-size-medium, 1rem) + 4px);
++    mask-size: calc(var(--font-size-medium, 1rem) + 4px);
+     -webkit-mask-size: max(calc(var(--font-size-medium, 1rem) + 4px), 10px);
+     mask-size: max(calc(var(--font-size-medium, 1rem) + 4px), 10px);
+   }
+ }
+@@ -243,17 +260,16 @@
+     -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M19 6.4v7.199L13.6 19H6.4L1 13.599v-7.2L6.4 1h7.2zM9 14v2h2v-2zm0-9v7h2V5z"/></svg>');
+     mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M19 6.4v7.199L13.6 19H6.4L1 13.599v-7.2L6.4 1h7.2zM9 14v2h2v-2zm0-9v7h2V5z"/></svg>');
+   }
+   [dir] .cdx-message--error .cdx-message__icon {
+-    background-color: var(--color-icon-error, #f54739);
++    background-color: var(--color-icon-error, #c92200);
+   }
+ }
+ .cdx-message--error .cdx-message__icon--vue {
+-  color: var(--color-icon-error, #f54739);
++  color: var(--color-icon-error, #c92200);
+ }
+ [dir] .cdx-message--success {
+-  background-color: var(--background-color-success-subtle, #dff2eb);
+-  border-color: var(--border-color-success, #099979);
++  background-color: var(--background-color-success-subtle, #76ffd6);
+ }
+ .cdx-message--success .cdx-message__icon {
+   min-width: 10px;
+   min-height: 10px;
+@@ -262,8 +278,11 @@
+   display: inline-block;
+   vertical-align: text-bottom;
+ }
+ @supports not (((-webkit-mask-image: none) or (mask-image: none))) {
++  .cdx-message--success .cdx-message__icon {
++    background-size: calc(var(--font-size-medium, 1rem) + 4px);
++  }
+   [dir] .cdx-message--success .cdx-message__icon {
+     background-position: center;
+     background-repeat: no-repeat;
+     background-size: max(calc(var(--font-size-medium, 1rem) + 4px), 10px);
+@@ -274,8 +293,10 @@
+     -webkit-mask-position: center;
+     mask-position: center;
+     -webkit-mask-repeat: no-repeat;
+     mask-repeat: no-repeat;
++    -webkit-mask-size: calc(var(--font-size-medium, 1rem) + 4px);
++    mask-size: calc(var(--font-size-medium, 1rem) + 4px);
+     -webkit-mask-size: max(calc(var(--font-size-medium, 1rem) + 4px), 10px);
+     mask-size: max(calc(var(--font-size-medium, 1rem) + 4px), 10px);
+   }
+ }
+@@ -284,22 +305,22 @@
+     filter: invert(var(--filter-invert-icon, 0));
+     opacity: var(--opacity-icon-base, 0.87);
+   }
+   [dir] .cdx-message--success .cdx-message__icon {
+-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M10 1a9 9 0 110 18 9 9 0 010-18M8.823 11.118 6.8 9.6l-1.2 1.6 2.8 2.1 1.381-.175 4.624-5.781-1.561-1.25z"/></svg>');
++    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M10 1a9 9 0 110 18 9 9 0 010-18M8.823 11.118 6.8 9.6l-1.2 1.6 2.8 2.1h1.1l4.905-5.956-1.561-1.25z"/></svg>');
+   }
+ }
+ @supports ((-webkit-mask-image: none) or (mask-image: none)) {
+   .cdx-message--success .cdx-message__icon {
+-    -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M10 1a9 9 0 110 18 9 9 0 010-18M8.823 11.118 6.8 9.6l-1.2 1.6 2.8 2.1 1.381-.175 4.624-5.781-1.561-1.25z"/></svg>');
+-    mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M10 1a9 9 0 110 18 9 9 0 010-18M8.823 11.118 6.8 9.6l-1.2 1.6 2.8 2.1 1.381-.175 4.624-5.781-1.561-1.25z"/></svg>');
++    -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M10 1a9 9 0 110 18 9 9 0 010-18M8.823 11.118 6.8 9.6l-1.2 1.6 2.8 2.1h1.1l4.905-5.956-1.561-1.25z"/></svg>');
++    mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="M10 1a9 9 0 110 18 9 9 0 010-18M8.823 11.118 6.8 9.6l-1.2 1.6 2.8 2.1h1.1l4.905-5.956-1.561-1.25z"/></svg>');
+   }
+   [dir] .cdx-message--success .cdx-message__icon {
+-    background-color: var(--color-icon-success, #099979);
++    background-color: var(--color-icon-success, #007552);
+   }
+ }
+ .cdx-message--success .cdx-message__icon--vue {
+-  color: var(--color-icon-success, #099979);
++  color: var(--color-icon-success, #007552);
+ }
+ [dir='ltr'] .cdx-message--user-dismissable {
+   padding-right: 48px;
+ }
+@@ -319,9 +340,9 @@
+   border: 0;
+   padding: 0;
+ }
+ .cdx-message--inline.cdx-message--error {
+-  color: var(--color-error, #bf3c2c);
++  color: var(--color-error, #c92200);
+ }
+ .cdx-message .cdx-message__icon,
+ .cdx-message .cdx-message__icon--vue {
+   height: var(--line-height-medium, 1.625rem);

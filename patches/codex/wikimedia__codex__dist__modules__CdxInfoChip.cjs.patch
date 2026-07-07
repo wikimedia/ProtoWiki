@@ -1,0 +1,36 @@
+Index: dist/modules/CdxInfoChip.cjs
+===================================================================
+--- dist/modules/CdxInfoChip.cjs
++++ dist/modules/CdxInfoChip.cjs
+@@ -4,10 +4,10 @@
+   o = require('./Icon.js'),
+   d = require('./useSlotContents.js'),
+   p = require('./CdxTooltip.cjs'),
+   f = require('./_plugin-vue_export-helper.js'),
+-  m = { subtle: o.o6, notice: o.o6, progressive: o.o6, error: o.m7, warning: o.v3, success: o.p9 },
+-  v = e.defineComponent({
++  v = { subtle: o.v7, notice: o.v7, progressive: o.v7, error: o.u6, warning: o.e5, success: o.u9 },
++  m = e.defineComponent({
+     name: 'CdxInfoChip',
+     components: { CdxIcon: o.CdxIcon },
+     directives: { tooltip: p },
+     props: {
+@@ -16,9 +16,9 @@
+     },
+     setup(t, { slots: c }) {
+       const r = e.computed(() => ({ ['cdx-info-chip--'.concat(t.status)]: !0 })),
+         u = e.computed(() =>
+-          ['notice', 'subtle', 'progressive'].includes(t.status) ? t.icon : m[t.status],
++          ['notice', 'subtle', 'progressive'].includes(t.status) ? t.icon : v[t.status],
+         ),
+         n = e.ref(),
+         s = e.ref(!1),
+         i = e.computed(() =>
+@@ -60,6 +60,6 @@
+     )),
+     [[l, t.tooltipContent]],
+   )
+ }
+-const x = f._export_sfc(v, [['render', _]])
++const x = f._export_sfc(m, [['render', _]])
+ module.exports = x

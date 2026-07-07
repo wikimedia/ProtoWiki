@@ -1,0 +1,66 @@
+Index: dist/modules/CdxButtonGroup-bidi.css
+===================================================================
+--- dist/modules/CdxButtonGroup-bidi.css
++++ dist/modules/CdxButtonGroup-bidi.css
+@@ -2,12 +2,11 @@
+   position: relative;
+   z-index: 0;
+   width: -webkit-fit-content;
+   width: fit-content;
+-  overflow: hidden;
+ }
+ [dir] .cdx-button-group {
+-  border-radius: 2px;
++  border-radius: 4px;
+   padding-top: 1px;
+ }
+ [dir='ltr'] .cdx-button-group {
+   padding-left: 1px;
+@@ -19,30 +18,35 @@
+   position: relative;
+   z-index: 1;
+ }
+ [dir] .cdx-button-group .cdx-button {
+-  margin-top: -1px;
+-  border-radius: 0;
++  margin-top: 2px;
+ }
+ [dir='ltr'] .cdx-button-group .cdx-button {
+-  margin-left: -1px;
++  margin-left: 2px;
+ }
+ [dir='rtl'] .cdx-button-group .cdx-button {
+-  margin-right: -1px;
++  margin-right: 2px;
+ }
+ .cdx-button-group .cdx-button:enabled:active,
+ .cdx-button-group .cdx-button:enabled:focus {
+   z-index: 3;
+ }
+ .cdx-button-group .cdx-button:disabled {
+   z-index: 0;
+ }
+-[dir='ltr'] .cdx-button-group .cdx-button:disabled {
+-  box-shadow:
+-    0 -1px 0 0 var(--box-shadow-color-inverted, #fff),
+-    -1px 0 0 0 var(--box-shadow-color-inverted, #fff);
++[dir='ltr'] .cdx-button-group .cdx-button:first-child {
++  border-top-left-radius: inherit;
++  border-bottom-left-radius: inherit;
+ }
+-[dir='rtl'] .cdx-button-group .cdx-button:disabled {
+-  box-shadow:
+-    0 -1px 0 0 var(--box-shadow-color-inverted, #fff),
+-    1px 0 0 0 var(--box-shadow-color-inverted, #fff);
++[dir='rtl'] .cdx-button-group .cdx-button:first-child {
++  border-top-right-radius: inherit;
++  border-bottom-right-radius: inherit;
+ }
++[dir='ltr'] .cdx-button-group .cdx-button:last-child {
++  border-top-right-radius: inherit;
++  border-bottom-right-radius: inherit;
++}
++[dir='rtl'] .cdx-button-group .cdx-button:last-child {
++  border-top-left-radius: inherit;
++  border-bottom-left-radius: inherit;
++}
