@@ -1,11 +1,50 @@
+<script lang="ts">
+import type { RandomArticleSource } from './shared/selectRandomArticle'
+import type { Skin, Theme } from '@/theme'
+
+interface ArticleLiveCommonProps {
+  lang?: string
+  dir?: 'ltr' | 'rtl'
+  header?: string
+  host?: string
+  skin?: Skin
+  theme?: Theme
+  languagesCount?: number
+}
+
+/** Fixed article: `article` set; the random-only props are forbidden. */
+export type ArticleLiveFixedProps = ArticleLiveCommonProps & {
+  article: string
+  source?: never
+  langs?: never
+}
+
+/** Random article: `article` omitted; optional `source` / `langs` / `vitalLevel`. */
+export type ArticleLiveRandomProps = ArticleLiveCommonProps & {
+  article?: undefined
+  source?: RandomArticleSource
+  langs?: string[]
+  vitalLevel?: number
+}
+
+/**
+ * Public prop contract for **`ArticleLive`** — `source` / `langs` are
+ * type-gated to the no-`article` (random) case. Annotate call sites against
+ * this type to catch e.g. `<ArticleLive article="X" source="vital" />`.
+ */
+export type ArticleLiveProps = ArticleLiveFixedProps | ArticleLiveRandomProps
+</script>
+
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { CdxMessage, CdxProgressBar } from '@wikimedia/codex'
 
 import ArticleRenderer from './ArticleRenderer.vue'
 import ArticleWrapper from './ArticleWrapper.vue'
-import { wikimediaApiFetchHeaders } from '@/config'
-import type { Skin, Theme } from '@/theme'
+import { DEFAULT_RANDOM_SOURCE, selectRandomArticle } from './shared/selectRandomArticle'
+import { wikiHostFromLang, wikimediaApiFetchHeaders } from '@/config'
+// `RandomArticleSource`, `Skin`, and `Theme` types come from the companion
+// `<script>` block above (merged into this module's scope).
 /** Cache of successfully fetched live article HTML (key: host + title). */
 type CachedArticleBody = { html: string; liveTitle: string }
 const articleBodyCache = new Map<string, CachedArticleBody>()
@@ -88,11 +127,27 @@ interface Props {
   /**
    * Wiki page title for REST **`page/html/{title}`**.
    * When **`header`** is **`undefined`**, seeds **`ArticleWrapper`** **`title`** (and thus **`ArticleHeader`**) from this value (normalized).
+   *
+   * **Omit `article` to load a random article on each mount** (see **`source`** / **`langs`**).
    */
   article?: string
   /** Reader-visible title override for **`ArticleHeader`**. **`undefined`** → derive from **`article`** (normalized). */
   header?: string
   host?: string
+  /**
+   * Random-mode pool — only meaningful when **`article`** is omitted.
+   * **`'random'`** (default) draws a live random page; **`'vital'`** draws a Wikipedia Vital article.
+   */
+  source?: RandomArticleSource
+  /**
+   * Random-mode languages — only meaningful when **`article`** is omitted.
+   * One is chosen at random per mount (default **`['en']`**); the wiki host is derived from it.
+   */
+  langs?: string[]
+  /**
+   * Vital articles level to draw from — only meaningful when **`article`** is omitted and **`source`** is **`'vital'`** (default **`2`** ≈ 100 titles; **`3`** ≈ 1,000).
+   */
+  vitalLevel?: number
   skin?: Skin
   theme?: Theme
   /** Forwarded **`ArticleWrapper`** → **`ArticleHeader`** (**`languagesCount` languages**). */
@@ -105,6 +160,9 @@ const props = withDefaults(defineProps<Props>(), {
   article: undefined,
   header: undefined,
   host: 'en.wikipedia.org',
+  source: undefined,
+  langs: undefined,
+  vitalLevel: undefined,
   skin: undefined,
   theme: undefined,
   languagesCount: undefined,
@@ -115,16 +173,21 @@ const liveTitle = ref<string | null>(null)
 const error = ref<string | null>(null)
 const loading = ref(false)
 
+/** Title shown in chrome — the `article` prop, or the selected random title. */
+const resolvedTitle = ref<string | null>(props.article ?? null)
+/** Host actually being read — `host` prop, or derived from the random language. */
+const resolvedHost = ref(props.host)
+
 function extractParserOutput(raw: string): string {
   const bodyMatch = raw.match(/<body[^>]*>([\s\S]*?)<\/body>/i)
   if (bodyMatch) return bodyMatch[1]
   return raw
 }
 
-async function fetchArticle(title: string) {
+async function fetchArticle(title: string, host: string) {
   if (!title) return
 
-  const key = articleCacheKey(props.host, title)
+  const key = articleCacheKey(host, title)
   let cached = articleBodyCache.get(key)
   let cacheSource: 'memory' | 'localStorage' | null = cached ? 'memory' : null
   if (!cached) {
@@ -137,7 +200,7 @@ async function fetchArticle(title: string) {
   }
   if (cached) {
     console.info(`${LOG_PREFIX} load from cache`, {
-      host: props.host,
+      host,
       title: title.trim(),
       source: cacheSource,
     })
@@ -152,9 +215,9 @@ async function fetchArticle(title: string) {
   const isFollower = Boolean(bodyPromise)
   if (!bodyPromise) {
     bodyPromise = (async (): Promise<CachedArticleBody> => {
-      const url = `https://${props.host}/api/rest_v1/page/html/${encodeURIComponent(title)}`
+      const url = `https://${host}/api/rest_v1/page/html/${encodeURIComponent(title)}`
       console.info(`${LOG_PREFIX} fetching from network`, {
-        host: props.host,
+        host,
         title: title.trim(),
         url,
       })
@@ -174,7 +237,7 @@ async function fetchArticle(title: string) {
       articleBodyCache.set(key, body)
       saveToStorage(key, body)
       console.info(`${LOG_PREFIX} fetch OK (cached)`, {
-        host: props.host,
+        host,
         title: title.trim(),
         htmlChars: html.length,
       })
@@ -185,7 +248,7 @@ async function fetchArticle(title: string) {
     inFlightFetches.set(key, bodyPromise)
   } else {
     console.info(`${LOG_PREFIX} coalesced with in-flight fetch`, {
-      host: props.host,
+      host,
       title: title.trim(),
     })
   }
@@ -209,10 +272,46 @@ async function fetchArticle(title: string) {
   }
 }
 
+/**
+ * Resolve which article to load, then fetch its body. When **`article`** is
+ * set, this is the fixed page on **`host`**; when omitted, a random title is
+ * *selected* (title-only) from the requested pool/language, and the host is
+ * derived from that language.
+ */
+async function resolveAndFetch() {
+  if (props.article) {
+    resolvedTitle.value = props.article
+    resolvedHost.value = props.host
+    void fetchArticle(props.article, props.host)
+    return
+  }
+
+  loading.value = true
+  error.value = null
+  liveHtml.value = null
+  liveTitle.value = null
+  resolvedTitle.value = null
+
+  try {
+    const selected = await selectRandomArticle({
+      source: props.source ?? DEFAULT_RANDOM_SOURCE,
+      langs: props.langs,
+      vitalLevel: props.vitalLevel,
+    })
+    resolvedHost.value = wikiHostFromLang(selected.lang)
+    resolvedTitle.value = selected.title
+    await fetchArticle(selected.title, resolvedHost.value)
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : String(err)
+    loading.value = false
+  }
+}
+
 watch(
-  () => [props.host, props.article] as const,
-  ([, article]) => {
-    if (article) void fetchArticle(article)
+  () =>
+    [props.host, props.article, props.source, (props.langs ?? []).join('|'), props.vitalLevel] as const,
+  () => {
+    void resolveAndFetch()
   },
   { immediate: true },
 )
@@ -222,7 +321,7 @@ watch(
   <ArticleWrapper
     :lang="props.lang"
     :dir="props.dir"
-    :title="props.article"
+    :title="resolvedTitle ?? undefined"
     :header="props.header"
     :skin="props.skin"
     :theme="props.theme"

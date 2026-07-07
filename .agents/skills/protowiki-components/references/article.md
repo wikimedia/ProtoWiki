@@ -22,7 +22,7 @@ When any of these roots sit inside **`ChromeWrapper`**, they **inherit** effecti
 
 - **`ArticleWrapper`** uses **`title?`** (+ **`header?`**, optional **`languagesCount?`**): **`ArticleHeader`** shows **`header`** trimmed if set; otherwise underscores in **`title`** become spaces (default **`title`** is **`'Article'`**).
 
-- **`ArticleLive.article`** selects the **`page/html/{title}`** page and forwards the same string to **`ArticleWrapper`** as **`title`** (optional **`header`** overrides **`ArticleHeader`**).
+- **`ArticleLive.article`** selects the **`page/html/{title}`** page and forwards the same string to **`ArticleWrapper`** as **`title`** (optional **`header`** overrides **`ArticleHeader`**). **When `article` is omitted, a random title is selected each load** (see **Random mode** below) and that resolved title feeds **`ArticleWrapper`**.
 
 - **`ArticleSnapshot.article`** picks **`public/snapshots/&lt;slug&gt;.html`** via **`articleSnapshotSlug`** and is forwarded to **`ArticleWrapper`** **`title`** (**`ArticleHeader`** label — underscores → spaces the same as **`ArticleLive`**).
 
@@ -86,17 +86,36 @@ Same chrome / i18n / theme surface as **`ArticleWrapper`** — **`title?`**, **`
 
 Live fetch via **`page/html`** (in-memory cache + **`localStorage`**). Single import for **`ChromeWrapper` → live reader** demos.
 
+### Random mode (omit `article`)
+
+**Leaving `article` off loads a random article on every mount** — there is no `random` boolean; absence of `article` _is_ random mode. Two extra props tune the draw (they only apply in random mode and are **type-gated** to the no-`article` case via the exported **`ArticleLiveProps`** union — passing them alongside `article` is a type error):
+
+- **`source`**: **`'random'`** (default) draws a live random page via REST **`page/random/title`**; **`'vital'`** draws a Wikipedia **Vital article** (title list fetched once via the Action API and cached in memory + **`localStorage`**; falls back to the random pool when a language has no Vital list).
+- **`langs`**: `string[]` (default **`['en']`**). One language is picked at random per mount; the wiki host is derived from it via **`wikiHostFromLang()`**.
+- **`vitalLevel`**: `number` (default **`2`** ≈ 100 titles; **`3`** ≈ 1,000). Only used when **`source`** is **`'vital'`** — picks which `Wikipedia:Vital articles/Level/{n}` list to draw from.
+
+The selection is memoized per **`source`** + **`langs`** + **`vitalLevel`**, so component remounts (and HMR while editing) reuse the same article; a hard page refresh re-selects.
+
+Selection only resolves a **title** (a lightweight, title-only request for the random pool; a local pick from the cached list for vital); the article **body** still loads through the existing **`page/html`** fetch + cache.
+
 ### Example
 
 ```vue
+<!-- Fixed article -->
 <ArticleLive article="Albert Einstein" />
 <ArticleLive article="Marie Curie" host="en.wikipedia.org" />
 <ArticleLive article="Talk:Albert Einstein" />
+
+<!-- Random article each load -->
+<ArticleLive />
+<ArticleLive source="vital" />
+<ArticleLive source="vital" :vital-level="3" />
+<ArticleLive :langs="['en', 'fr', 'es']" />
 ```
 
 ### Props (`ArticleLive`)
 
-**`host`** (**wiki hostname** for **`page/html`** and cache keys; default **`en.wikipedia.org`**), **`article`** (REST page title → **`ArticleWrapper`** **`title`**), **`header`**, **`languagesCount?`**, **`lang`**, **`dir`**, **`skin`**, **`theme`**.
+**`host`** (**wiki hostname** for **`page/html`** and cache keys; default **`en.wikipedia.org`** — used in fixed mode; random mode derives the host from the chosen `langs`), **`article`** (REST page title → **`ArticleWrapper`** **`title`**; **omit for random mode**), **`source?`** (**`'random'`** | **`'vital'`**, random mode only), **`langs?`** (**`string[]`**, random mode only), **`vitalLevel?`** (**`number`**, default **`2`**, `source="vital"` only), **`header`**, **`languagesCount?`**, **`lang`**, **`dir`**, **`skin`**, **`theme`**.
 
 ### Slots
 

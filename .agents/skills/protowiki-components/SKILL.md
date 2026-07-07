@@ -40,7 +40,7 @@ This skill is the cross-cutting guide. Per-component depth lives in
 | `ChromeFooter` | Footer chrome (via ChromeWrapper): **desktop** Vector strip with optional mock last-edited + CC lines, or **mobile** Minerva well + optional strip | n/a | n/a |
 | `ArticleWrapper` | Reader outer **`<article>`**: always **`ArticleHeader`** + **default slot** (**main column** — usually **`ArticleRenderer`**) — no **`v-html`** by itself | No | No |
 | `ArticleRenderer` | Parser column (**`.article-content`**, **`.mw-parser-output`**, **`#default`** only); mobile **`section > h2`** on mobile skin — title chrome lives elsewhere | No | No |
-| `ArticleLive` | **`ArticleWrapper`** + nested **`ArticleRenderer`** for REST **`page/html`** (+ cache); progress/errors in **default slot** before **`ArticleRenderer`** | No | No |
+| `ArticleLive` | **`ArticleWrapper`** + nested **`ArticleRenderer`** for REST **`page/html`** (+ cache); progress/errors in **default slot** before **`ArticleRenderer`**. **Omit `article` → random article each load** (**`source`** = `'random'` \| `'vital'`, **`langs`**) | No | No |
 | `ArticleSnapshot` | **`ArticleWrapper`** + **`ArticleRenderer`** (omitted until snapshot load succeeds or **`#default`**) + **`public/snapshots/`** | No | No |
 | `ArticleCustom` | **`ArticleWrapper`** + **`ArticleRenderer`**: **`#default`** is the parser body — no **`page/html`**, no snapshot file | No | No |
 | `ArticleHeader` | Title row, tabs, read/edit/history, tools (**used inside **`ArticleWrapper`**) | No | No |
@@ -140,7 +140,7 @@ The `@/` prefix resolves to `src/`.
 | `ChromeFooter` | `skin?`, `theme?`, **`lastEditedNotice?`**, **`username?`** | default |
 | `ArticleWrapper` | **`title?`**, **`header?`**, **`languagesCount?`**, **`lang`**, **`dir`**, **`skin`**, **`theme`** | **default** |
 | `ArticleRenderer` | **`lang`/`dir`/`skin`/`theme`** | **default** — parser subtree ( **`ArticleLive`** / **`ArticleSnapshot`** use **`v-html`** here unless **`#default`** is forwarded ) |
-| `ArticleLive` | Same **`ArticleWrapper`** chrome **`+`** **`article`** (**`page/html`** title) **`+`** **`host`** | **default** → **`ArticleRenderer`** (**`ArticleLive`** injects **`Cdx`** progress/errors before **`ArticleRenderer`**) |
+| `ArticleLive` | Same **`ArticleWrapper`** chrome **`+`** **`article`** (**`page/html`** title; **omit for random**) **`+`** **`host`** **`+`** random-mode **`source?`** (`'random'`\|`'vital'`) / **`langs?`** / **`vitalLevel?`** (`source="vital"`) | **default** → **`ArticleRenderer`** (**`ArticleLive`** injects **`Cdx`** progress/errors before **`ArticleRenderer`**) |
 | `ArticleSnapshot` | **`article`** (snapshot key **`+`** **`ArticleWrapper`** **`title`**) **`+`** chrome passthroughs (**no **`host`** / **`header`**) | **default** → **`ArticleRenderer`** (**`ArticleSnapshot`** injects **`Cdx`** UI before **`ArticleRenderer`**) |
 | `ArticleCustom` | Same **`ArticleWrapper`** chrome keys as manual composition (**`title`**, **`header`**, …) — **no `article` / `host`** | **default** → **`ArticleRenderer`** (your **`#default`** is the parser subtree) |
 | `ArticleHeader` | **`title`** (required), **`languagesCount?`** (default 18), **`skin?`** | **`#title`**, emits (`languageSelect`, `languageSettingsClick`, tab/action clicks) |
