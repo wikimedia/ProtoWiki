@@ -1,0 +1,15 @@
+Index: dist/modules/CdxTextInput-bidi.css
+===================================================================
+--- dist/modules/CdxTextInput-bidi.css
++++ dist/modules/CdxTextInput-bidi.css
+@@ -4,9 +4,9 @@
+   min-width: 256px;
+   overflow: hidden;
+ }
+ [dir] .cdx-text-input {
+-  border-radius: 2px;
++  border-radius: 4px;
+ }
+ .cdx-text-input .cdx-text-input__start-icon {
+   position: absolute;
+   top: 50%;

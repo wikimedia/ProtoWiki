@@ -1,0 +1,15 @@
+Index: dist/modules/CdxMessage.css
+===================================================================
+--- dist/modules/CdxMessage.css
++++ dist/modules/CdxMessage.css
+@@ -4,9 +4,9 @@
+   display: flex;
+   align-items: flex-start;
+   position: relative;
+   border: 1px solid var(--border-color-notice, #72777d);
+-  border-radius: 2px;
++  border-radius: 4px;
+   padding: 12px;
+ }
+ .cdx-message__icon,
+ .cdx-message__icon--vue {

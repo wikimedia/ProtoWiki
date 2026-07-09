@@ -1,0 +1,15 @@
+Index: dist/modules/CdxDialog-bidi.css
+===================================================================
+--- dist/modules/CdxDialog-bidi.css
++++ dist/modules/CdxDialog-bidi.css
+@@ -29,9 +29,9 @@
+ }
+ [dir] .cdx-dialog {
+   background-color: var(--background-color-base, #fff);
+   border: 1px solid var(--border-color-base, #a2a9b1);
+-  border-radius: 2px;
++  border-radius: 4px;
+   box-shadow:
+     0 4px 8px 0 var(--box-shadow-color-alpha-base, rgba(0, 0, 0, 0.06)),
+     0 0 16px 0 var(--box-shadow-color-alpha-base, rgba(0, 0, 0, 0.06));
+ }

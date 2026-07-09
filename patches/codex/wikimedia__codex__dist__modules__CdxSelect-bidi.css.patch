@@ -1,0 +1,26 @@
+Index: dist/modules/CdxSelect-bidi.css
+===================================================================
+--- dist/modules/CdxSelect-bidi.css
++++ dist/modules/CdxSelect-bidi.css
+@@ -10,9 +10,9 @@
+ }
+ [dir] .cdx-select {
+   border-width: 1px;
+   border-style: solid;
+-  border-radius: 2px;
++  border-radius: 4px;
+   padding-top: 4px;
+   padding-bottom: 4px;
+   background-repeat: no-repeat;
+   background-size: max(calc(var(--font-size-medium, 1rem) - 4px), 10px);
+@@ -88,9 +88,9 @@
+ }
+ [dir] .cdx-select-vue__handle {
+   border-width: 1px;
+   border-style: solid;
+-  border-radius: 2px;
++  border-radius: 4px;
+   padding-top: 4px;
+   padding-bottom: 4px;
+ }
+ [dir='ltr'] .cdx-select-vue__handle {

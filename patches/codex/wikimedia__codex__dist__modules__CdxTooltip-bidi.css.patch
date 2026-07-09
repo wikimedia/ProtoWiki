@@ -1,0 +1,15 @@
+Index: dist/modules/CdxTooltip-bidi.css
+===================================================================
+--- dist/modules/CdxTooltip-bidi.css
++++ dist/modules/CdxTooltip-bidi.css
+@@ -20,9 +20,9 @@
+   line-height: var(--line-height-small, 1.375rem);
+ }
+ [dir] .cdx-tooltip {
+   background-color: var(--background-color-inverted, #101418);
+-  border-radius: 2px;
++  border-radius: 4px;
+   padding: 2px 6px;
+   animation-name: cdx-animation-tooltip;
+   animation-duration: 0.1s;
+   animation-timing-function: linear;

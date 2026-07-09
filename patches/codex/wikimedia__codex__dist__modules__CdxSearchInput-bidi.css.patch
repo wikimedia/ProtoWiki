@@ -1,0 +1,15 @@
+Index: dist/modules/CdxSearchInput-bidi.css
+===================================================================
+--- dist/modules/CdxSearchInput-bidi.css
++++ dist/modules/CdxSearchInput-bidi.css
+@@ -3,9 +3,9 @@
+ }
+ [dir] .cdx-search-input--has-end-button {
+   background-color: var(--background-color-base, #fff);
+   border: 1px solid var(--border-color-base, #a2a9b1);
+-  border-radius: 2px;
++  border-radius: 4px;
+ }
+ .cdx-search-input--has-end-button .cdx-search-input__input-wrapper {
+   flex-grow: 1;
+ }

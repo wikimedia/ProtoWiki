@@ -1,0 +1,15 @@
+Index: dist/modules/CdxCard-bidi.css
+===================================================================
+--- dist/modules/CdxCard-bidi.css
++++ dist/modules/CdxCard-bidi.css
+@@ -5,9 +5,9 @@
+ }
+ [dir] .cdx-card {
+   background-color: var(--background-color-base, #fff);
+   border: 1px solid var(--border-color-base, #a2a9b1);
+-  border-radius: 2px;
++  border-radius: 4px;
+   padding: 12px;
+ }
+ [dir] .cdx-card--is-link {
+   transition-property: background-color, color, border-color, box-shadow;
