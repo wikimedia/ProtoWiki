@@ -1,0 +1,177 @@
+Index: dist/modules/CdxToggleButton.css
+===================================================================
+--- dist/modules/CdxToggleButton.css
++++ dist/modules/CdxToggleButton.css
+@@ -8,9 +8,9 @@
+   max-width: 28rem;
+   margin: 0;
+   border-width: 1px;
+   border-style: solid;
+-  border-radius: 2px;
++  border-radius: 4px;
+   padding-right: 11px;
+   padding-left: 11px;
+   font-family: inherit;
+   font-size: var(--font-size-medium, 1rem);
+@@ -18,21 +18,21 @@
+   overflow: hidden;
+   text-overflow: ellipsis;
+   white-space: nowrap;
+   text-transform: none;
+-  transition-property: background-color, color, border-color, box-shadow;
+-  transition-duration: 0.1s;
+ }
+ .cdx-toggle-button--size-small {
+   gap: 4px;
+   min-height: 1.5rem;
+   padding-right: 5px;
+   padding-left: 5px;
++  font-size: var(--font-size-small, 0.875rem);
+ }
+ .cdx-toggle-button--size-large {
+   min-height: 44px;
+   padding-right: 15px;
+   padding-left: 15px;
++  font-size: var(--font-size-large, 1.125rem);
+ }
+ .cdx-toggle-button--icon-only {
+   min-width: 32px;
+   padding-right: 0;
+@@ -48,90 +48,94 @@
+   border: 0;
+   padding: 0;
+ }
+ .cdx-toggle-button:enabled {
+-  color: var(--color-base, #202122);
++  color: var(--color-base, #171717);
+ }
+ .cdx-toggle-button:enabled:hover {
+-  background-color: var(--background-color-interactive-subtle--hover, #eaecf0);
++  color: var(--color-progressive, #0052f5);
++  border-color: var(--border-color-progressive, #0052f5);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
+   cursor: pointer;
+ }
+ .cdx-toggle-button:enabled:focus {
+-  border-color: var(--border-color-progressive--focus, #36c);
+-  box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--focus, #36c);
++  border-color: var(--border-color-progressive--focus, #0052f5);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
+   outline: 1px solid transparent;
+ }
+ .cdx-toggle-button:enabled:active,
+ .cdx-toggle-button:enabled.cdx-toggle-button--is-active {
+-  background-color: var(--background-color-interactive-subtle--active, #dadde3);
+-  border-color: var(--border-color-transparent, transparent);
+-  box-shadow: none;
++  box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
+ }
+ .cdx-toggle-button .cdx-icon {
+   color: inherit;
+   vertical-align: middle;
+ }
+ .cdx-toggle-button--framed:enabled {
+-  background-color: var(--background-color-interactive-subtle, #f8f9fa);
+-  color: var(--color-base, #202122);
+-  border-color: var(--border-color-interactive, #72777d);
++  background-color: var(--background-color-base, #fff);
++  color: var(--color-base, #171717);
++  border-color: var(--border-color-emphasized, #171717);
+ }
+ .cdx-toggle-button--framed:enabled:hover {
+-  background-color: var(--background-color-interactive-subtle--hover, #eaecf0);
+-  border-color: var(--border-color-interactive--hover, #27292d);
+-  cursor: pointer;
++  color: var(--color-progressive, #0052f5);
++  border-color: var(--border-color-progressive, #0052f5);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
+ }
+ .cdx-toggle-button--framed:enabled:active,
+ .cdx-toggle-button--framed:enabled.cdx-toggle-button--is-active {
+-  background-color: var(--background-color-interactive-subtle--active, #dadde3);
+-  border-color: var(--border-color-interactive--active, #202122);
+-  box-shadow: none;
++  box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
+ }
+ .cdx-toggle-button--framed:disabled {
+-  background-color: var(--background-color-disabled, #dadde3);
+-  color: var(--color-disabled-emphasized, #a2a9b1);
+-  border-color: var(--border-color-transparent, transparent);
++  background-color: var(--background-color-base, #fff);
++  color: var(--color-disabled-emphasized, #a8a8a8);
++  border-color: var(--border-color-disabled, #cccccc);
+ }
+ .cdx-toggle-button--framed.cdx-toggle-button--toggled-on:enabled {
+-  background-color: var(--background-color-progressive, #36c);
++  background-color: var(--background-color-progressive, #0052f5);
+   color: var(--color-inverted-fixed, #fff);
+   border-color: var(--border-color-transparent, transparent);
+ }
+ .cdx-toggle-button--framed.cdx-toggle-button--toggled-on:enabled:hover {
+-  background-color: var(--background-color-progressive--hover, #3056a9);
+-  border-color: var(--border-color-transparent, transparent);
++  background-color: var(--background-color-progressive--hover, #0049db);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-progressive--hover, #0049db);
+ }
+ .cdx-toggle-button--framed.cdx-toggle-button--toggled-on:enabled:focus {
+-  border-color: var(--border-color-progressive--focus, #36c);
+-  box-shadow:
+-    inset 0 0 0 1px var(--box-shadow-color-progressive--focus, #36c),
+-    inset 0 0 0 2px var(--box-shadow-color-inverted, #fff);
++  background-color: var(--background-color-progressive, #0052f5);
++  border-color: var(--border-color-transparent, transparent);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
+ }
+ .cdx-toggle-button--framed.cdx-toggle-button--toggled-on:enabled:active,
+ .cdx-toggle-button--framed.cdx-toggle-button--toggled-on:enabled.cdx-toggle-button--is-active {
+-  background-color: var(--background-color-progressive--active, #233566);
+-  border-color: var(--border-color-transparent, transparent);
+-  box-shadow: none;
++  background-color: var(--background-color-progressive--active, #002d87);
++  box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--active, #002d87);
+ }
+ .cdx-toggle-button--quiet {
+-  background-color: var(--background-color-transparent, transparent);
++  background-color: var(--background-color-base, #fff);
+   border-color: var(--border-color-transparent, transparent);
+ }
++.cdx-toggle-button--quiet:hover {
++  color: var(--color-progressive, #0052f5);
++  border-color: var(--border-color-progressive, #0052f5);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
++}
++.cdx-toggle-button--quiet:active {
++  border-color: var(--border-color-progressive, #0052f5);
++  box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
++}
+ .cdx-toggle-button--quiet:enabled.cdx-toggle-button--toggled-on {
+-  background-color: var(--background-color-progressive-subtle, #e8eeff);
+-  color: var(--color-progressive, #36c);
++  color: var(--color-progressive, #0052f5);
++  border-color: var(--border-color-progressive, #0052f5);
+ }
+ .cdx-toggle-button--quiet:enabled.cdx-toggle-button--toggled-on:hover {
+-  background-color: var(--background-color-progressive-subtle--hover, #d9e2ff);
+-  color: var(--color-progressive--hover, #3056a9);
++  color: var(--color-progressive, #0052f5);
++  border-color: var(--border-color-progressive, #0052f5);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
+ }
+-.cdx-toggle-button--quiet:enabled.cdx-toggle-button--toggled-on:focus {
+-  background-color: var(--background-color-progressive-subtle, #e8eeff);
++.cdx-toggle-button--quiet:enabled.cdx-toggle-button--toggled-on:active {
++  border-color: var(--border-color-progressive, #0052f5);
++  box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
+ }
+-.cdx-toggle-button--quiet:enabled.cdx-toggle-button--toggled-on:active,
+-.cdx-toggle-button--quiet:enabled.cdx-toggle-button--toggled-on.cdx-toggle-button--is-active {
+-  background-color: var(--background-color-progressive-subtle--active, #b6d4fb);
+-  color: var(--color-progressive--active, #233566);
++.cdx-toggle-button--quiet:enabled.cdx-toggle-button--toggled-on:focus:not(:active):not(
++    .cdx-button--is-active
++  ) {
++  box-shadow: 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
+ }
+-.cdx-toggle-button--quiet:disabled {
+-  color: var(--color-disabled, #a2a9b1);
+-}

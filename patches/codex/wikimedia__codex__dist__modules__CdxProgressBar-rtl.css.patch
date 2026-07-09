@@ -1,0 +1,50 @@
+Index: dist/modules/CdxProgressBar-rtl.css
+===================================================================
+--- dist/modules/CdxProgressBar-rtl.css
++++ dist/modules/CdxProgressBar-rtl.css
+@@ -2,14 +2,14 @@
+   box-sizing: border-box;
+   overflow-x: hidden;
+ }
+ .cdx-progress-bar__bar {
+-  background-color: var(--background-color-progressive, #36c);
++  background-color: var(--background-color-progressive, #0052f5);
+   width: 33.33%;
+   height: 100%;
+ }
+ .cdx-progress-bar--disabled .cdx-progress-bar__bar {
+-  background-color: var(--background-color-disabled, #dadde3);
++  background-color: var(--background-color-disabled, #dbdbdb);
+ }
+ .cdx-progress-bar:not(.cdx-progress-bar--disabled)
+   .cdx-progress-bar__bar:not(.cdx-progress-bar__bar--determinate) {
+   animation-name: cdx-animation-progress-bar__bar;
+@@ -25,23 +25,23 @@
+   position: relative;
+   z-index: 1;
+   height: 0.75rem;
+   max-width: none;
+-  border: 1px solid var(--border-color-progressive, #36c);
++  border: 1px solid var(--border-color-progressive, #0052f5);
+   border-width: 1px;
+   border-style: solid;
+-  border-color: var(--border-color-progressive, #36c);
+-  border-radius: 2px;
++  border-color: var(--border-color-progressive, #0052f5);
++  border-radius: 0;
+ }
+ .cdx-progress-bar:not(.cdx-progress-bar--inline).cdx-progress-bar--disabled {
+-  border-color: var(--border-color-disabled, #c8ccd1);
++  border-color: var(--border-color-disabled, #cccccc);
+ }
+ .cdx-progress-bar--inline {
+   width: 100%;
+   height: 0.25rem;
+ }
+ .cdx-progress-bar__label {
+-  color: var(--color-base, #202122);
++  color: var(--color-base, #171717);
+   font-size: var(--font-size-small, 0.875rem);
+   white-space: wrap;
+ }
+ .cdx-progress-bar__labels {

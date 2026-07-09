@@ -1,0 +1,16 @@
+Index: dist/modules/CdxField-rtl.css
+===================================================================
+--- dist/modules/CdxField-rtl.css
++++ dist/modules/CdxField-rtl.css
+@@ -14,9 +14,9 @@
+ .cdx-field__validation-message {
+   margin-top: 4px;
+ }
+ .cdx-field:not(.cdx-field--disabled) .cdx-field__help-text {
+-  color: var(--color-subtle, #54595d);
++  color: var(--color-subtle, #595959);
+ }
+ .cdx-field--disabled .cdx-field__help-text {
+-  color: var(--color-disabled, #a2a9b1);
++  color: var(--color-disabled, #a8a8a8);
+ }

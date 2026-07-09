@@ -1,0 +1,12 @@
+Index: dist/modules/Icon-bidi.css
+===================================================================
+--- dist/modules/Icon-bidi.css
++++ dist/modules/Icon-bidi.css
+@@ -1,6 +1,6 @@
+ .cdx-icon {
+-  color: var(--color-base, #202122);
++  color: var(--color-base, #171717);
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+   vertical-align: text-bottom;

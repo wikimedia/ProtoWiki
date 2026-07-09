@@ -1,0 +1,204 @@
+Index: dist/modules/CdxTable.cjs
+===================================================================
+--- dist/modules/CdxTable.cjs
++++ dist/modules/CdxTable.cjs
+@@ -35,12 +35,12 @@
+         btnLabelNext: p,
+         btnLabelPrev: g,
+         btnLabelLast: b,
+         wrappedItemsPerPage: s,
+-        cdxIconPrevious: f.F8,
+-        cdxIconNext: f.M8,
+-        cdxIconMoveFirst: f.l8,
+-        cdxIconMoveLast: f.s8,
++        cdxIconPrevious: f.y8,
++        cdxIconNext: f.i8,
++        cdxIconMoveFirst: f.e8,
++        cdxIconMoveLast: f.z8,
+       }
+     },
+   }),
+   ie = { class: 'cdx-table-pager' },
+@@ -165,9 +165,9 @@
+ }
+ const be = P._export_sfc(se, [['render', ge]]),
+   me = y.makeStringTypeValidator(y.TableTextAlignments),
+   ve = y.makeStringTypeValidator(y.TablePaginationPositions),
+-  fe = { none: f.t9, asc: f.Y9, desc: f.d7 },
++  fe = { none: f.n9, asc: f.hh, desc: f.z6 },
+   he = { none: 'none', asc: 'ascending', desc: 'descending' },
+   Se = e.defineComponent({
+     name: 'CdxTable',
+     components: { CdxCheckbox: ae, CdxIcon: f.CdxIcon, CdxTablePager: be, CdxProgressBar: le },
+@@ -284,20 +284,20 @@
+         ),
+         I = e.computed(() =>
+           t.pending ? V.value : p.value && m.value ? B.value : p.value ? L.value : D.value,
+         )
+-      function F() {
++      function z() {
+         ;((s.value += i.value), t.serverPagination && n('load-more', s.value, i.value))
+       }
+-      function T() {
++      function F() {
+         s.value - i.value < 1
+           ? _()
+           : ((s.value -= i.value), t.serverPagination && n('load-more', s.value, i.value))
+       }
+       function _() {
+         ;((s.value = 0), t.serverPagination && n('load-more', s.value, i.value))
+       }
+-      function z() {
++      function T() {
+         u.value % i.value === 0
+           ? ((s.value = u.value - i.value), n('load-more', s.value, i.value))
+           : ((s.value = Math.floor(u.value / i.value) * i.value), n('load-more', s.value, i.value))
+       }
+@@ -307,10 +307,10 @@
+       const C = $(e.toRef(t, 'selectedRows'), n, 'update:selectedRows'),
+         w = e.ref(u.value === C.value.length),
+         k = e.ref(!1),
+         A = e.computed(() => Object.keys(t.sort)[0]),
+-        M = e.computed(() => t.columns.some((a) => a.allowSort)),
+-        q = e.computed(() => {
++        q = e.computed(() => t.columns.some((a) => a.allowSort)),
++        M = e.computed(() => {
+           var o
+           return {
+             'cdx-table__table--layout-fixed':
+               (o = t.columns) == null ? void 0 : o.some((r) => 'width' in r || 'minWidth' in r),
+@@ -339,13 +339,13 @@
+       function j(a) {
+         const o = t.columns[0].id
+         if (t.useRowHeaders && a === o) return 'row'
+       }
+-      function Y(a) {
++      function G(a) {
+         const o = t.columns[0].id
+         return t.useRowHeaders && a === o ? 'th' : 'td'
+       }
+-      function G(a, o = !1) {
++      function J(a, o = !1) {
+         if ('textAlign' in a && !me(a.textAlign)) {
+           console.warn('[CdxTable]: Invalid value for TableColumn "textAlign" property.')
+           return
+         }
+@@ -354,24 +354,24 @@
+             'textAlign' in a && a.textAlign !== 'start',
+           'cdx-table__table__cell--has-sort': o,
+         }
+       }
+-      function J(a) {
++      function Q(a) {
+         const o = {}
+         return (
+           'width' in a && (o.width = a.width),
+           'minWidth' in a && (o.minWidth = a.minWidth),
+           o
+         )
+       }
+-      function Q(a) {
++      function X(a) {
+         if (u.value === a.length) {
+           ;((w.value = !0), (k.value = !1))
+           return
+         }
+         ;((w.value = !1), u.value > a.length && (k.value = !0), a.length === 0 && (k.value = !1))
+       }
+-      function X(a) {
++      function Y(a) {
+         ;((k.value = !1), a ? (C.value = t.data.map((o, r) => N(o, r))) : (C.value = []))
+       }
+       function Z(a) {
+         var S
+@@ -393,12 +393,12 @@
+       }
+       return {
+         dataForDisplay: v,
+         pageSize: i,
+-        onNext: F,
+-        onPrev: T,
++        onNext: z,
++        onPrev: F,
+         onFirst: _,
+-        onLast: z,
++        onLast: T,
+         nextDisabled: m,
+         prevDisabled: h,
+         lastDisabled: l,
+         paginationStatusMessageShort: R,
+@@ -406,19 +406,19 @@
+         wrappedSelectedRows: C,
+         selectAll: w,
+         selectAllIndeterminate: k,
+         activeSortColumn: A,
+-        hasSortableColumns: M,
+-        tableClasses: q,
++        hasSortableColumns: q,
++        tableClasses: M,
+         tableWrapperClasses: O,
+         getRowKey: N,
+         getRowClass: K,
+         getRowHeaderScope: j,
+-        getCellElement: Y,
+-        getCellClass: G,
+-        getCellStyle: J,
+-        handleRowSelection: Q,
+-        handleSelectAll: X,
++        getCellElement: G,
++        getCellClass: J,
++        getCellStyle: Q,
++        handleRowSelection: X,
++        handleSelectAll: Y,
+         handleSort: Z,
+         getSortIcon: ee,
+         getSortOrder: te,
+         translatedSortCaption: U,
+@@ -442,11 +442,11 @@
+   Ee = { key: 0 },
+   Le = { key: 1 },
+   Re = { class: 'cdx-table__table__empty-state' },
+   Ie = ['colspan'],
+-  Fe = { class: 'cdx-table__pagination-status--long' },
+-  Te = { class: 'cdx-table__pagination-status--short' },
+-  ze = { key: 3, class: 'cdx-table__footer' }
++  ze = { class: 'cdx-table__pagination-status--long' },
++  Fe = { class: 'cdx-table__pagination-status--short' },
++  Te = { key: 3, class: 'cdx-table__footer' }
+ function Ae(t, n, s, i, v, u) {
+   const p = e.resolveComponent('cdx-table-pager'),
+     g = e.resolveComponent('cdx-checkbox'),
+     b = e.resolveComponent('cdx-icon'),
+@@ -807,15 +807,15 @@
+             {
+               default: e.withCtx(() => [
+                 e.createElementVNode(
+                   'span',
+-                  Fe,
++                  ze,
+                   e.toDisplayString(t.paginationStatusMessageLong),
+                   1,
+                 ),
+                 e.createElementVNode(
+                   'span',
+-                  Te,
++                  Fe,
+                   e.toDisplayString(t.paginationStatusMessageShort),
+                   1,
+                 ),
+               ]),
+@@ -835,11 +835,11 @@
+             ],
+           ))
+         : e.createCommentVNode('v-if', !0),
+       t.$slots.footer && t.$slots.footer().length > 0
+-        ? (e.openBlock(), e.createElementBlock('div', ze, [e.renderSlot(t.$slots, 'footer')]))
++        ? (e.openBlock(), e.createElementBlock('div', Te, [e.renderSlot(t.$slots, 'footer')]))
+         : e.createCommentVNode('v-if', !0),
+     ])
+   )
+ }
+-const Me = P._export_sfc(Se, [['render', Ae]])
+-module.exports = Me
++const qe = P._export_sfc(Se, [['render', Ae]])
++module.exports = qe

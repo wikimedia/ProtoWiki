@@ -1,0 +1,15 @@
+Index: dist/modules/CdxSelect.cjs
+===================================================================
+--- dist/modules/CdxSelect.cjs
++++ dist/modules/CdxSelect.cjs
+@@ -113,9 +113,9 @@
+           otherAttrsMinusId: x,
+           onClick: E,
+           onKeydown: L,
+           startIcon: f,
+-          cdxIconExpand: g.g7,
++          cdxIconExpand: g.I6,
+         }
+       )
+     },
+   }),

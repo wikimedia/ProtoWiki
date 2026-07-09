@@ -1,0 +1,145 @@
+Index: dist/modules/CdxAccordion.css
+===================================================================
+--- dist/modules/CdxAccordion.css
++++ dist/modules/CdxAccordion.css
+@@ -3,9 +3,9 @@
+   overflow: hidden;
+ }
+ .cdx-accordion + .cdx-accordion {
+   margin-top: -1px;
+-  border-top: 1px solid var(--border-color-subtle, #c8ccd1);
++  border-top: 1px solid var(--border-color-emphasized, #171717);
+ }
+ .cdx-accordion > summary {
+   background-color: var(--background-color-transparent, transparent);
+   list-style: none;
+@@ -14,30 +14,35 @@
+   border-radius: 0;
+   padding: 12px;
+   word-break: break-word;
+   white-space: normal;
+-  transition-property: background-color, color, border-color, box-shadow;
+-  transition-duration: 0.25s;
+-  transition-timing-function: ease;
+ }
+ .cdx-accordion > summary:hover {
+-  background-color: var(--background-color-interactive-subtle--hover, #eaecf0);
++  background-color: var(--background-color-transparent, transparent);
++  color: var(--color-progressive, #0052f5);
+   cursor: pointer;
+ }
++.cdx-accordion > summary:hover:before {
++  background-color: var(--color-progressive, #0052f5);
++}
+ .cdx-accordion > summary:active {
+-  background-color: var(--background-color-interactive-subtle--active, #dadde3);
++  background-color: var(--background-color-transparent, transparent);
++  color: var(--color-emphasized, #171717);
+ }
++.cdx-accordion > summary:active:before {
++  background-color: var(--color-emphasized, #171717);
++}
+ .cdx-accordion > summary:focus {
+   outline: 1px solid transparent;
+ }
+ .cdx-accordion > summary:focus-visible {
+-  border-color: var(--border-color-progressive--focus, #36c);
+-  box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--focus, #36c);
++  border-color: var(--border-color-progressive--focus, #0052f5);
++  box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
+ }
+ @supports not selector(:focus-visible) {
+   .cdx-accordion > summary:focus {
+-    border-color: var(--border-color-progressive--focus, #36c);
+-    box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--focus, #36c);
++    border-color: var(--border-color-progressive--focus, #0052f5);
++    box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
+   }
+ }
+ .cdx-accordion > summary::-webkit-details-marker {
+   display: none;
+@@ -55,9 +60,9 @@
+   display: block;
+   line-height: var(--line-height-small, 1.375rem);
+ }
+ .cdx-accordion .cdx-accordion__header__description {
+-  color: var(--color-subtle, #54595d);
++  color: var(--color-subtle, #595959);
+   display: block;
+   font-weight: 400;
+   line-height: var(--line-height-small, 1.375rem);
+   pointer-events: none;
+@@ -98,8 +103,9 @@
+ @supports not (((-webkit-mask-image: none) or (mask-image: none))) {
+   .cdx-accordion > summary:before {
+     background-position: center;
+     background-repeat: no-repeat;
++    background-size: var(--font-size-medium, 1rem);
+     background-size: max(var(--font-size-medium, 1rem), 10px);
+   }
+ }
+ @supports ((-webkit-mask-image: none) or (mask-image: none)) {
+@@ -107,8 +113,10 @@
+     -webkit-mask-position: center;
+     mask-position: center;
+     -webkit-mask-repeat: no-repeat;
+     mask-repeat: no-repeat;
++    -webkit-mask-size: var(--font-size-medium, 1rem);
++    mask-size: var(--font-size-medium, 1rem);
+     -webkit-mask-size: max(var(--font-size-medium, 1rem), 10px);
+     mask-size: max(var(--font-size-medium, 1rem), 10px);
+   }
+ }
+@@ -122,9 +130,9 @@
+ @supports ((-webkit-mask-image: none) or (mask-image: none)) {
+   .cdx-accordion > summary:before {
+     -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="m16.707 8.017-6 5.983H9.293l-6-5.983 1.414-1.414L10 11.896l5.293-5.293z"/></svg>');
+     mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="m16.707 8.017-6 5.983H9.293l-6-5.983 1.414-1.414L10 11.896l5.293-5.293z"/></svg>');
+-    background-color: var(--color-base, #202122);
++    background-color: var(--color-base, #171717);
+   }
+ }
+ .cdx-accordion[open] > summary:before {
+   transform: rotate(-180deg);
+@@ -135,37 +143,22 @@
+   border-top: 1px solid var(--border-color-transparent, transparent);
+ }
+ .cdx-accordion--separation-outline {
+   margin: 0;
+-  border: 1px solid var(--border-color-subtle, #c8ccd1);
+-  border-radius: 2px 2px 0 0;
++  border: 1px solid var(--border-color-emphasized, #171717);
++  border-radius: 4px 4px 0 0;
+ }
+ .cdx-accordion + .cdx-accordion--separation-outline {
+   border-radius: 0;
+ }
+ .cdx-accordion--separation-outline:not(:has(+ .cdx-accordion)),
+ .cdx-accordion + .cdx-accordion--separation-outline:last-child {
+-  border-bottom-left-radius: 2px;
+-  border-bottom-right-radius: 2px;
++  border-bottom-left-radius: 4px;
++  border-bottom-right-radius: 4px;
+ }
+ .cdx-accordion--separation-minimal > summary {
+   padding: 6px 0;
+ }
+-.cdx-accordion--separation-minimal > summary:hover {
+-  background-color: var(--background-color-transparent, transparent);
+-  color: var(--color-progressive--hover, #3056a9);
+-  cursor: pointer;
+-}
+-.cdx-accordion--separation-minimal > summary:hover:before {
+-  background-color: var(--color-progressive--hover, #3056a9);
+-}
+-.cdx-accordion--separation-minimal > summary:active {
+-  background-color: var(--background-color-transparent, transparent);
+-  color: var(--color-progressive--active, #233566);
+-}
+-.cdx-accordion--separation-minimal > summary:active:before {
+-  background-color: var(--color-progressive--active, #233566);
+-}
+ .cdx-accordion--separation-minimal .cdx-accordion__action.cdx-button {
+   padding-right: 6px;
+   padding-left: 6px;
+ }

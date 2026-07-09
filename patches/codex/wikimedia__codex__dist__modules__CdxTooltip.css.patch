@@ -1,0 +1,21 @@
+Index: dist/modules/CdxTooltip.css
+===================================================================
+--- dist/modules/CdxTooltip.css
++++ dist/modules/CdxTooltip.css
+@@ -1,14 +1,14 @@
+ .cdx-tooltip {
+-  background-color: var(--background-color-inverted, #101418);
++  background-color: var(--background-color-inverted, #171717);
+   color: var(--color-inverted, #fff);
+   display: none;
+   position: absolute;
+   z-index: 800;
+   width: -webkit-max-content;
+   width: max-content;
+   max-width: 16rem;
+-  border-radius: 2px;
++  border-radius: 0;
+   padding: 2px 6px;
+   font-family:
+     -apple-system,
+     BlinkMacSystemFont,

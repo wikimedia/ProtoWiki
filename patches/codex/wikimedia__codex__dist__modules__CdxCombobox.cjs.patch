@@ -1,0 +1,15 @@
+Index: dist/modules/CdxCombobox.cjs
+===================================================================
+--- dist/modules/CdxCombobox.cjs
++++ dist/modules/CdxCombobox.cjs
+@@ -89,9 +89,9 @@
+           onInputBlur: S,
+           onKeydown: $,
+           onButtonClick: h,
+           onButtonMousedown: V,
+-          cdxIconExpand: x.g7,
++          cdxIconExpand: x.I6,
+           rootClasses: y,
+           rootStyle: q,
+           otherAttrs: w,
+         }

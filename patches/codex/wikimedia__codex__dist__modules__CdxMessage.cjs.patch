@@ -1,0 +1,26 @@
+Index: dist/modules/CdxMessage.cjs
+===================================================================
+--- dist/modules/CdxMessage.cjs
++++ dist/modules/CdxMessage.cjs
+@@ -4,9 +4,9 @@
+   v = require('./CdxButton.cjs'),
+   p = require('./constants.js'),
+   g = require('./useI18nWithOverride.js'),
+   b = require('./_plugin-vue_export-helper.js'),
+-  C = { subtle: t.o6, notice: t.o6, progressive: t.o6, error: t.m7, warning: t.v3, success: t.p9 },
++  C = { subtle: t.v7, notice: t.v7, progressive: t.v7, error: t.u6, warning: t.e5, success: t.u9 },
+   y = s.defineComponent({
+     name: 'CdxMessage',
+     components: { CdxButton: v, CdxIcon: t.CdxIcon },
+     props: {
+@@ -85,9 +85,9 @@
+           leaveActiveClass: r,
+           computedIcon: a,
+           onDismiss: d,
+           onActionButtonClick: f,
+-          cdxIconClose: t._3,
++          cdxIconClose: t.h6,
+         }
+       )
+     },
+   }),

@@ -1,0 +1,161 @@
+Index: dist/modules/CdxToggleSwitch-bidi.css
+===================================================================
+--- dist/modules/CdxToggleSwitch-bidi.css
++++ dist/modules/CdxToggleSwitch-bidi.css
+@@ -48,12 +48,10 @@
+   transform: translateZ(0);
+   background-color: var(--background-color-base, #fff);
+   border-width: 1px;
+   border-style: solid;
+-  border-color: var(--border-color-interactive, #72777d);
++  border-color: var(--border-color-emphasized, #171717);
+   border-radius: 9999px;
+-  transition-property: background-color, color, border-color, box-shadow;
+-  transition-duration: 0.25s;
+ }
+ .cdx-toggle-switch__switch:before {
+   content: '';
+   display: block;
+@@ -66,10 +64,8 @@
+   right: 1px;
+   left: 1px;
+   border: 1px solid var(--border-color-transparent, transparent);
+   border-radius: 9999px;
+-  transition-property: background-color, color, border-color, box-shadow;
+-  transition-duration: 0.25s;
+ }
+ .cdx-toggle-switch__switch__grip {
+   position: absolute;
+   top: 50%;
+@@ -79,12 +75,10 @@
+   width: calc(var(--font-size-medium, 1rem) * 1.25);
+   height: calc(var(--font-size-medium, 1rem) * 1.25);
+ }
+ [dir] .cdx-toggle-switch__switch__grip {
+-  border: 1px solid var(--border-color-interactive, #72777d);
++  border: 1px solid var(--border-color-emphasized, #171717);
+   border-radius: 50%;
+-  transition-property: background-color, border-color, transform;
+-  transition-duration: 0.25s, 0.1s, 0.1s;
+ }
+ [dir='ltr'] .cdx-toggle-switch__switch__grip {
+   transform: translate(calc(var(--font-size-medium, 1rem) * 0.375), -50%);
+ }
+@@ -113,10 +107,10 @@
+ [dir]
+   .cdx-toggle-switch__input:checked
+   ~ .cdx-toggle-switch__switch
+   .cdx-toggle-switch__switch__grip {
+-  background-color: var(--background-color-base, #fff);
+-  border-color: var(--border-color-inverted, #fff);
++  background-color: var(--background-color-base-fixed, #fff);
++  border-color: var(--border-color-transparent, transparent);
+ }
+ [dir='ltr']
+   .cdx-toggle-switch__input:checked
+   ~ .cdx-toggle-switch__switch
+@@ -140,37 +134,20 @@
+   .cdx-toggle-switch__switch__grip {
+   background-color: var(--background-color-base, #fff);
+ }
+ [dir] .cdx-toggle-switch__input:enabled:hover ~ .cdx-toggle-switch__switch {
+-  background-color: var(--background-color-interactive-subtle--hover, #eaecf0);
+-  border-color: var(--border-color-interactive--hover, #27292d);
++  border-color: var(--border-color-progressive, #0052f5);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
+ }
+-[dir]
+-  .cdx-toggle-switch__input:enabled:hover
+-  ~ .cdx-toggle-switch__switch
+-  .cdx-toggle-switch__switch__grip {
+-  background-color: var(--background-color-base, #fff);
+-  border-color: var(--border-color-interactive--hover, #27292d);
+-}
+ [dir] .cdx-toggle-switch__input:enabled:active ~ .cdx-toggle-switch__switch {
+-  background-color: var(--background-color-interactive-subtle--active, #dadde3);
+-  border-color: var(--border-color-interactive--active, #202122);
++  box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
+ }
+-[dir]
+-  .cdx-toggle-switch__input:enabled:active
+-  ~ .cdx-toggle-switch__switch
+-  .cdx-toggle-switch__switch__grip {
+-  background-color: var(--background-color-base, #fff);
+-  border-color: var(--border-color-interactive--active, #202122);
+-}
+-.cdx-toggle-switch__input:enabled:focus:not(:active) ~ .cdx-toggle-switch__switch {
+-  outline: 1px solid transparent;
+-}
+ [dir] .cdx-toggle-switch__input:enabled:focus:not(:active) ~ .cdx-toggle-switch__switch {
+-  box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--focus, #36c);
++  border-color: var(--border-color-progressive, #0052f5);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
+ }
+ [dir] .cdx-toggle-switch__input:enabled:checked ~ .cdx-toggle-switch__switch {
+-  background-color: var(--background-color-progressive, #36c);
++  background-color: var(--background-color-progressive, #0052f5);
+   border-color: var(--border-color-transparent, transparent);
+ }
+ [dir]
+   .cdx-toggle-switch__input:enabled:checked
+@@ -179,27 +156,19 @@
+   background-color: var(--background-color-base-fixed, #fff);
+   border-color: var(--background-color-transparent, transparent);
+ }
+ [dir] .cdx-toggle-switch__input:enabled:checked:hover ~ .cdx-toggle-switch__switch {
+-  background-color: var(--background-color-progressive--hover, #3056a9);
++  background-color: var(--background-color-progressive--hover, #0049db);
+   border-color: var(--border-color-transparent, transparent);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-progressive--hover, #0049db);
+ }
+ [dir] .cdx-toggle-switch__input:enabled:checked:focus:not(:active) ~ .cdx-toggle-switch__switch {
+   border-color: var(--border-color-transparent, transparent);
+ }
+-[dir]
+-  .cdx-toggle-switch__input:enabled:checked:focus:not(:active)
+-  ~ .cdx-toggle-switch__switch:before,
+-[dir]
+-  .cdx-toggle-switch__input:enabled:checked:focus:not(:active)
+-  ~ .cdx-toggle-switch__switch
+-  .cdx-toggle-switch__switch__grip {
+-  border-color: var(--border-color-inverted, #fff);
+-}
+ [dir] .cdx-toggle-switch__input:enabled:checked:active ~ .cdx-toggle-switch__switch {
+-  background-color: var(--background-color-progressive--active, #233566);
++  background-color: var(--background-color-progressive--active, #002d87);
+   border-color: var(--border-color-transparent, transparent);
+-  box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--active, #233566);
++  box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--active, #002d87);
+ }
+ [dir] .cdx-toggle-switch__input:enabled:checked:active ~ .cdx-toggle-switch__switch:before {
+   border-color: var(--border-color-transparent, transparent);
+ }
+@@ -213,24 +182,19 @@
+ [dir] .cdx-toggle-switch__input:disabled {
+   cursor: default;
+ }
+ [dir] .cdx-toggle-switch__input:disabled ~ .cdx-toggle-switch__switch {
+-  background-color: var(--background-color-disabled-subtle, #eaecf0);
+-  border-color: var(--border-color-disabled, #c8ccd1);
++  border-color: var(--border-color-disabled, #cccccc);
+ }
+ [dir]
+   .cdx-toggle-switch__input:disabled
+   ~ .cdx-toggle-switch__switch
+   .cdx-toggle-switch__switch__grip {
+-  border-color: var(--border-color-disabled, #c8ccd1);
++  border-color: var(--border-color-disabled, #cccccc);
+ }
+-[dir] .cdx-toggle-switch__input:disabled:checked ~ .cdx-toggle-switch__switch {
+-  background-color: var(--background-color-disabled, #dadde3);
+-  border-color: var(--border-color-transparent, transparent);
+-}
+ [dir]
+   .cdx-toggle-switch__input:disabled:checked
+   ~ .cdx-toggle-switch__switch
+   .cdx-toggle-switch__switch__grip {
+-  background-color: var(--color-disabled-emphasized, #a2a9b1);
+-  border-color: var(--border-color-transparent, transparent);
++  background-color: var(--color-disabled-emphasized, #a8a8a8);
++  border-color: var(--border-color-inverted, #fff);
+ }

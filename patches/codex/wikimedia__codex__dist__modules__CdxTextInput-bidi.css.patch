@@ -1,0 +1,177 @@
+Index: dist/modules/CdxTextInput-bidi.css
+===================================================================
+--- dist/modules/CdxTextInput-bidi.css
++++ dist/modules/CdxTextInput-bidi.css
+@@ -1,12 +1,11 @@
+ .cdx-text-input {
+   position: relative;
+   box-sizing: border-box;
+   min-width: 256px;
+-  overflow: hidden;
+ }
+ [dir] .cdx-text-input {
+-  border-radius: 2px;
++  border-radius: 4px;
+ }
+ .cdx-text-input .cdx-text-input__start-icon {
+   position: absolute;
+   top: 50%;
+@@ -32,8 +31,11 @@
+   width: var(--font-size-medium, 1rem);
+   height: var(--font-size-medium, 1rem);
+ }
+ @supports not (((-webkit-mask-image: none) or (mask-image: none))) {
++  .cdx-text-input__icon.cdx-text-input__end-icon {
++    background-size: var(--font-size-medium, 1rem);
++  }
+   [dir] .cdx-text-input__icon.cdx-text-input__end-icon {
+     background-position: center;
+     background-repeat: no-repeat;
+     background-size: max(var(--font-size-medium, 1rem), 10px);
+@@ -44,8 +46,10 @@
+     -webkit-mask-position: center;
+     mask-position: center;
+     -webkit-mask-repeat: no-repeat;
+     mask-repeat: no-repeat;
++    -webkit-mask-size: var(--font-size-medium, 1rem);
++    mask-size: var(--font-size-medium, 1rem);
+     -webkit-mask-size: max(var(--font-size-medium, 1rem), 10px);
+     mask-size: max(var(--font-size-medium, 1rem), 10px);
+   }
+ }
+@@ -98,33 +102,31 @@
+   border-radius: inherit;
+   padding: 4px 8px;
+ }
+ .cdx-text-input__input:enabled {
+-  color: var(--color-base, #202122);
++  color: var(--color-base, #171717);
+ }
+ [dir] .cdx-text-input__input:enabled {
+   background-color: var(--background-color-base, #fff);
+-  border-color: var(--border-color-interactive, #72777d);
+-  box-shadow: inset 0 0 0 1px var(--box-shadow-color-transparent, transparent);
+-  transition-property: background-color, color, border-color, box-shadow;
+-  transition-duration: 0.25s;
++  border-color: var(--border-color-emphasized, #171717);
+ }
+ .cdx-text-input__input:enabled ~ .cdx-text-input__icon-vue {
+-  color: var(--color-placeholder, #72777d);
++  color: var(--color-placeholder, #787878);
+ }
+ .cdx-text-input__input:enabled ~ .cdx-text-input__icon {
+   opacity: var(--opacity-icon-placeholder, 0.51);
+ }
+ [dir] .cdx-text-input__input:enabled:hover {
+-  border-color: var(--border-color-interactive--hover, #27292d);
++  border-color: var(--border-color-progressive, #0052f5);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
+ }
+ .cdx-text-input__input:enabled:focus ~ .cdx-text-input__icon-vue,
+ .cdx-text-input__input:enabled.cdx-text-input__input--has-value ~ .cdx-text-input__icon-vue {
+-  color: var(--color-subtle, #54595d);
++  color: var(--color-subtle, #595959);
+ }
+ .cdx-text-input__input:enabled:focus ~ .cdx-text-input__clear-icon,
+ .cdx-text-input__input:enabled.cdx-text-input__input--has-value ~ .cdx-text-input__clear-icon {
+-  color: var(--color-base, #202122);
++  color: var(--color-base, #171717);
+ }
+ .cdx-text-input__input:enabled:focus ~ .cdx-text-input__icon,
+ .cdx-text-input__input:enabled.cdx-text-input__input--has-value ~ .cdx-text-input__icon {
+   opacity: 1;
+@@ -132,32 +134,38 @@
+ .cdx-text-input__input:enabled:focus {
+   outline: 1px solid transparent;
+ }
+ [dir] .cdx-text-input__input:enabled:focus {
+-  border-color: var(--border-color-progressive--focus, #36c);
+-  box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--focus, #36c);
++  border-color: var(--border-color-progressive--focus, #0052f5);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
+ }
++[dir] .cdx-text-input__input:enabled:active {
++  box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
++}
+ [dir] .cdx-text-input__input:enabled:read-only {
+-  background-color: var(--background-color-neutral-subtle, #f8f9fa);
+-  border-color: var(--border-color-base, #a2a9b1);
++  border-color: var(--border-color-base, #a8a8a8);
+ }
++[dir] .cdx-text-input__input:enabled:read-only:hover {
++  border-color: var(--border-color-base, #a8a8a8);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-transparent, transparent);
++}
+ .cdx-text-input__input:disabled {
+-  color: var(--color-disabled, #a2a9b1);
+-  -webkit-text-fill-color: var(--color-disabled, #a2a9b1);
++  color: var(--color-disabled, #a8a8a8);
++  -webkit-text-fill-color: var(--color-disabled, #a8a8a8);
+ }
+ [dir] .cdx-text-input__input:disabled {
+-  background-color: var(--background-color-disabled-subtle, #eaecf0);
+-  border-color: var(--border-color-disabled, #c8ccd1);
++  background-color: var(--background-color-disabled-subtle, #ebebeb);
++  border-color: var(--border-color-disabled, #cccccc);
+ }
+ .cdx-text-input__input:disabled ~ .cdx-text-input__icon-vue {
+-  color: var(--color-disabled, #a2a9b1);
++  color: var(--color-disabled, #a8a8a8);
+   pointer-events: none;
+ }
+ .cdx-text-input__input:disabled ~ .cdx-text-input__icon {
+   opacity: var(--opacity-icon-base--disabled, 0.51);
+ }
+ .cdx-text-input__input::placeholder {
+-  color: var(--color-placeholder, #72777d);
++  color: var(--color-placeholder, #787878);
+   opacity: 1;
+ }
+ .cdx-text-input__input[type='search'] {
+   -webkit-appearance: none;
+@@ -191,13 +199,12 @@
+     8px + calc(8px * 2 + var(--font-size-medium, 1rem)) + var(--font-size-medium, 1rem)
+   );
+ }
+ .cdx-text-input--status-error .cdx-text-input__input:enabled:not(:read-only):not(:focus) {
+-  color: var(--color-error, #bf3c2c);
++  color: var(--color-error, #c92200);
+ }
+ [dir] .cdx-text-input--status-error .cdx-text-input__input:enabled:not(:read-only):not(:focus) {
+-  background-color: var(--background-color-error-subtle, #ffe9e5);
+-  border-color: var(--border-color-error, #f54739);
++  border-color: var(--border-color-error, #c92200);
+ }
+ .cdx-text-input--status-error
+   .cdx-text-input__input:enabled:not(:read-only):not(:focus)::placeholder,
+ .cdx-text-input--status-error
+@@ -205,18 +212,15 @@
+   ~ .cdx-text-input__start-icon,
+ .cdx-text-input--status-error
+   .cdx-text-input__input:enabled:not(:read-only):not(:focus)
+   ~ .cdx-text-input__end-icon {
+-  color: var(--color-error, #bf3c2c);
++  color: var(--color-error, #c92200);
+ }
+-.cdx-text-input--status-error .cdx-text-input__input:enabled:not(:read-only):not(:focus):hover {
+-  color: var(--color-error--hover, #9f3526);
+-}
+ [dir]
+   .cdx-text-input--status-error
+   .cdx-text-input__input:enabled:not(:read-only):not(:focus):hover {
+-  background-color: var(--background-color-error-subtle--hover, #ffdad3);
+-  border-color: var(--border-color-error--hover, #9f3526);
++  border-color: var(--border-color-error, #c92200);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-destructive--focus, #c92200);
+ }
+ .cdx-text-input--status-error
+   .cdx-text-input__input:enabled:not(:read-only):not(:focus):hover::placeholder,
+ .cdx-text-input--status-error
+@@ -224,6 +228,6 @@
+   ~ .cdx-text-input__start-icon,
+ .cdx-text-input--status-error
+   .cdx-text-input__input:enabled:not(:read-only):not(:focus):hover
+   ~ .cdx-text-input__end-icon {
+-  color: var(--color-error--hover, #9f3526);
++  color: var(--color-error, #c92200);
+ }

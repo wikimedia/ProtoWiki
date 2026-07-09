@@ -1,0 +1,15 @@
+Index: dist/modules/CdxSearchInput.cjs
+===================================================================
+--- dist/modules/CdxSearchInput.cjs
++++ dist/modules/CdxSearchInput.cjs
+@@ -65,9 +65,9 @@
+         otherAttrs: n,
+         handleSubmit: () => {
+           o('submit-click', s.value)
+         },
+-        searchIcon: m.G8,
++        searchIcon: m.X8,
+         translatedSearchButtonLabel: p,
+         useButtonOrLabel: c,
+       }
+     },

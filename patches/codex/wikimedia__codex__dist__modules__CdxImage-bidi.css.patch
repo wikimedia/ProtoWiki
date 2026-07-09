@@ -1,0 +1,43 @@
+Index: dist/modules/CdxImage-bidi.css
+===================================================================
+--- dist/modules/CdxImage-bidi.css
++++ dist/modules/CdxImage-bidi.css
+@@ -21,10 +21,10 @@
+   font-size: var(--font-size-x-small, 0.75rem);
+ }
+ [dir] .cdx-image__image {
+   margin: 0;
+-  border: 1px solid var(--border-color-subtle, #c8ccd1);
+-  border-radius: 2px;
++  border: 1px solid var(--border-color-subtle, #cccccc);
++  border-radius: 4px;
+ }
+ .cdx-image__image--object-fit-fill {
+   object-fit: fill;
+ }
+@@ -71,11 +71,11 @@
+   justify-content: center;
+   width: 100%;
+ }
+ [dir] .cdx-image__placeholder {
+-  background-color: var(--background-color-interactive-subtle, #f8f9fa);
+-  border: 1px solid var(--border-color-subtle, #c8ccd1);
+-  border-radius: 2px;
++  background-color: var(--background-color-interactive-subtle, #f3f3f3);
++  border: 1px solid var(--border-color-subtle, #cccccc);
++  border-radius: 4px;
+ }
+ .cdx-image__placeholder__icon--size-smallest {
+   width: 0.75rem;
+   height: 0.75rem;
+@@ -92,9 +92,9 @@
+   width: 2.5rem;
+   height: 2.5rem;
+ }
+ .cdx-image__placeholder__icon svg {
+-  fill: var(--color-placeholder, #72777d);
++  fill: var(--color-placeholder, #787878);
+ }
+ .cdx-image__image + .cdx-image__placeholder {
+   position: absolute;
+ }

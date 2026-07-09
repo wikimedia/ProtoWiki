@@ -1,0 +1,47 @@
+Index: dist/modules/CdxImage-rtl.css
+===================================================================
+--- dist/modules/CdxImage-rtl.css
++++ dist/modules/CdxImage-rtl.css
+@@ -18,10 +18,10 @@
+   position: relative;
+   min-width: 24px;
+   min-height: 24px;
+   margin: 0;
+-  border: 1px solid var(--border-color-subtle, #c8ccd1);
+-  border-radius: 2px;
++  border: 1px solid var(--border-color-subtle, #cccccc);
++  border-radius: 4px;
+   font-size: var(--font-size-x-small, 0.75rem);
+ }
+ .cdx-image__image--object-fit-fill {
+   object-fit: fill;
+@@ -59,15 +59,15 @@
+ .cdx-image__image--is-loading {
+   visibility: hidden;
+ }
+ .cdx-image__placeholder {
+-  background-color: var(--background-color-interactive-subtle, #f8f9fa);
++  background-color: var(--background-color-interactive-subtle, #f3f3f3);
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   width: 100%;
+-  border: 1px solid var(--border-color-subtle, #c8ccd1);
+-  border-radius: 2px;
++  border: 1px solid var(--border-color-subtle, #cccccc);
++  border-radius: 4px;
+ }
+ .cdx-image__placeholder__icon--size-smallest {
+   width: 0.75rem;
+   height: 0.75rem;
+@@ -84,9 +84,9 @@
+   width: 2.5rem;
+   height: 2.5rem;
+ }
+ .cdx-image__placeholder__icon svg {
+-  fill: var(--color-placeholder, #72777d);
++  fill: var(--color-placeholder, #787878);
+ }
+ .cdx-image__image + .cdx-image__placeholder {
+   position: absolute;
+ }

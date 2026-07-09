@@ -1,0 +1,15 @@
+Index: dist/modules/CdxLookup-bidi.css
+===================================================================
+--- dist/modules/CdxLookup-bidi.css
++++ dist/modules/CdxLookup-bidi.css
+@@ -3,9 +3,9 @@
+   box-sizing: border-box;
+   vertical-align: middle;
+ }
+ [dir] .cdx-lookup--pending .cdx-text-input .cdx-text-input__input {
+-  background-color: var(--background-color-interactive, #eaecf0);
++  background-color: var(--background-color-interactive, #ebebeb);
+   background-size: calc(var(--font-size-medium, 1rem) + 4px)
+     calc(var(--font-size-medium, 1rem) + 4px);
+   animation-duration: 0.65s;
+   animation-timing-function: linear;

@@ -1,0 +1,47 @@
+Index: dist/modules/CdxTypeaheadSearch.cjs
+===================================================================
+--- dist/modules/CdxTypeaheadSearch.cjs
++++ dist/modules/CdxTypeaheadSearch.cjs
+@@ -84,16 +84,16 @@
+         { rootClasses: q, rootStyle: U, otherAttrs: $ } = X(o, T)
+       function K(a) {
+         return a
+       }
+-      const A = t.computed(() => ({
++      const x = t.computed(() => ({
+         visibleItemLimit: e.visibleItemLimit,
+         showThumbnail: e.showThumbnail,
+         boldLabel: !0,
+         hideDescriptionOverflow: !0,
+       }))
+       let b, f
+-      function x(a) {
++      function A(a) {
+         const n = a.target
+         S(n.value)
+       }
+       function S(a, n = !1) {
+@@ -224,10 +224,10 @@
+           showPending: v,
+           rootClasses: q,
+           rootStyle: U,
+           otherAttrs: $,
+-          menuConfig: A,
+-          onComposition: x,
++          menuConfig: x,
++          onComposition: A,
+           onUpdateInputValue: S,
+           onUpdateMenuSelection: L,
+           onFocus: _,
+           onBlur: D,
+@@ -236,9 +236,9 @@
+           onSearchFooterClick: z,
+           onSubmit: H,
+           onKeydown: O,
+           MenuFooterValue: m.MenuFooterValue,
+-          articleIcon: N.A3,
++          articleIcon: N.k5,
+           translatedSearchResultsLabel: w,
+         }
+       )
+     },

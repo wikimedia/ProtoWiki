@@ -1,0 +1,169 @@
+Index: dist/modules/CdxTextArea-rtl.css
+===================================================================
+--- dist/modules/CdxTextArea-rtl.css
++++ dist/modules/CdxTextArea-rtl.css
+@@ -27,8 +27,9 @@
+ @supports not (((-webkit-mask-image: none) or (mask-image: none))) {
+   .cdx-text-area__icon.cdx-text-area__start-icon {
+     background-position: center;
+     background-repeat: no-repeat;
++    background-size: calc(var(--font-size-medium, 1rem) + 4px);
+     background-size: max(calc(var(--font-size-medium, 1rem) + 4px), 10px);
+   }
+ }
+ @supports ((-webkit-mask-image: none) or (mask-image: none)) {
+@@ -36,8 +37,10 @@
+     -webkit-mask-position: center;
+     mask-position: center;
+     -webkit-mask-repeat: no-repeat;
+     mask-repeat: no-repeat;
++    -webkit-mask-size: calc(var(--font-size-medium, 1rem) + 4px);
++    mask-size: calc(var(--font-size-medium, 1rem) + 4px);
+     -webkit-mask-size: max(calc(var(--font-size-medium, 1rem) + 4px), 10px);
+     mask-size: max(calc(var(--font-size-medium, 1rem) + 4px), 10px);
+   }
+ }
+@@ -50,8 +53,9 @@
+ @supports not (((-webkit-mask-image: none) or (mask-image: none))) {
+   .cdx-text-area__icon.cdx-text-area__end-icon {
+     background-position: center;
+     background-repeat: no-repeat;
++    background-size: var(--font-size-medium, 1rem);
+     background-size: max(var(--font-size-medium, 1rem), 10px);
+   }
+ }
+ @supports ((-webkit-mask-image: none) or (mask-image: none)) {
+@@ -59,8 +63,10 @@
+     -webkit-mask-position: center;
+     mask-position: center;
+     -webkit-mask-repeat: no-repeat;
+     mask-repeat: no-repeat;
++    -webkit-mask-size: var(--font-size-medium, 1rem);
++    mask-size: var(--font-size-medium, 1rem);
+     -webkit-mask-size: max(var(--font-size-medium, 1rem), 10px);
+     mask-size: max(var(--font-size-medium, 1rem), 10px);
+   }
+ }
+@@ -70,9 +76,9 @@
+   min-height: 64px;
+   width: 100%;
+   border-width: 1px;
+   border-style: solid;
+-  border-radius: 2px;
++  border-radius: 4px;
+   padding: 4px 8px;
+   overflow: auto;
+   font-family: sans-serif;
+   font-size: var(--font-size-medium, 1rem);
+@@ -88,55 +94,59 @@
+   display: none;
+ }
+ .cdx-text-area__textarea:enabled {
+   background-color: var(--background-color-base, #fff);
+-  color: var(--color-base, #202122);
+-  border-color: var(--border-color-interactive, #72777d);
+-  box-shadow: inset 0 0 0 1px var(--box-shadow-color-transparent, transparent);
+-  transition-property: background-color, color, border-color, box-shadow;
+-  transition-duration: 0.25s;
++  color: var(--color-base, #171717);
++  border-color: var(--border-color-emphasized, #171717);
+ }
+ .cdx-text-area__textarea:enabled ~ .cdx-text-area__icon-vue.cdx-icon {
+-  color: var(--color-placeholder, #72777d);
++  color: var(--color-placeholder, #787878);
+ }
+ .cdx-text-area__textarea:enabled ~ .cdx-text-area__icon {
+   opacity: var(--opacity-icon-placeholder, 0.51);
+ }
+ .cdx-text-area__textarea:enabled:hover {
+-  border-color: var(--border-color-interactive--hover, #27292d);
++  border-color: var(--border-color-progressive, #0052f5);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
+ }
+ .cdx-text-area__textarea:enabled:focus ~ .cdx-text-area__icon-vue.cdx-icon,
+ .cdx-text-area__textarea:enabled.cdx-text-area__textarea--has-value
+   ~ .cdx-text-area__icon-vue.cdx-icon {
+-  color: var(--color-subtle, #54595d);
++  color: var(--color-subtle, #595959);
+ }
+ .cdx-text-area__textarea:enabled:focus ~ .cdx-text-area__icon,
+ .cdx-text-area__textarea:enabled.cdx-text-area__textarea--has-value ~ .cdx-text-area__icon {
+   opacity: 1;
+ }
+ .cdx-text-area__textarea:enabled:focus {
+-  border-color: var(--border-color-progressive--focus, #36c);
+-  box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--focus, #36c);
++  border-color: var(--border-color-progressive--focus, #0052f5);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
+   outline: 1px solid transparent;
+ }
++.cdx-text-area__textarea:enabled:active {
++  box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--focus, #0052f5);
++}
+ .cdx-text-area__textarea:enabled:read-only {
+-  background-color: var(--background-color-neutral-subtle, #f8f9fa);
+-  border-color: var(--border-color-base, #a2a9b1);
++  border-color: var(--border-color-base, #a8a8a8);
+ }
++.cdx-text-area__textarea:enabled:read-only:hover {
++  border-color: var(--border-color-base, #a8a8a8);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-transparent, transparent);
++}
+ .cdx-text-area__textarea:disabled {
+-  background-color: var(--background-color-disabled-subtle, #eaecf0);
+-  color: var(--color-disabled, #a2a9b1);
+-  -webkit-text-fill-color: var(--color-disabled, #a2a9b1);
+-  border-color: var(--border-color-disabled, #c8ccd1);
++  background-color: var(--background-color-disabled-subtle, #ebebeb);
++  color: var(--color-disabled, #a8a8a8);
++  -webkit-text-fill-color: var(--color-disabled, #a8a8a8);
++  border-color: var(--border-color-disabled, #cccccc);
+ }
+ .cdx-text-area__textarea:disabled ~ .cdx-text-area__icon-vue.cdx-icon {
+-  color: var(--color-disabled, #a2a9b1);
++  color: var(--color-disabled, #a8a8a8);
+ }
+ .cdx-text-area__textarea:disabled ~ .cdx-text-area__icon {
+   opacity: var(--opacity-icon-base--disabled, 0.51);
+ }
+ .cdx-text-area__textarea::placeholder {
+-  color: var(--color-placeholder, #72777d);
++  color: var(--color-placeholder, #787878);
+   opacity: 1;
+ }
+ .cdx-text-area--has-start-icon .cdx-text-area__textarea {
+   padding-right: calc(8px + 8px + calc(var(--font-size-medium, 1rem) + 4px));
+@@ -144,27 +154,25 @@
+ .cdx-text-area--has-end-icon .cdx-text-area__textarea {
+   padding-left: calc(8px + 8px + var(--font-size-medium, 1rem));
+ }
+ .cdx-text-area--status-error .cdx-text-area__textarea:enabled:not(:read-only):not(:focus) {
+-  background-color: var(--background-color-error-subtle, #ffe9e5);
+-  color: var(--color-error, #bf3c2c);
+-  border-color: var(--border-color-error, #f54739);
++  color: var(--color-error, #c92200);
++  border-color: var(--border-color-error, #c92200);
+ }
+ .cdx-text-area--status-error
+   .cdx-text-area__textarea:enabled:not(:read-only):not(:focus)::placeholder,
+ .cdx-text-area--status-error
+   .cdx-text-area__textarea:enabled:not(:read-only):not(:focus)
+   ~ .cdx-text-area__icon-vue.cdx-icon {
+-  color: var(--color-error, #bf3c2c);
++  color: var(--color-error, #c92200);
+ }
+ .cdx-text-area--status-error .cdx-text-area__textarea:enabled:not(:read-only):not(:focus):hover {
+-  background-color: var(--background-color-error-subtle--hover, #ffdad3);
+-  color: var(--color-error--hover, #9f3526);
+-  border-color: var(--border-color-error--hover, #9f3526);
++  border-color: var(--border-color-error, #c92200);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-destructive--focus, #c92200);
+ }
+ .cdx-text-area--status-error
+   .cdx-text-area__textarea:enabled:not(:read-only):not(:focus):hover::placeholder,
+ .cdx-text-area--status-error
+   .cdx-text-area__textarea:enabled:not(:read-only):not(:focus):hover
+   ~ .cdx-text-area__icon-vue.cdx-icon {
+-  color: var(--color-error--hover, #9f3526);
++  color: var(--color-error, #c92200);
+ }

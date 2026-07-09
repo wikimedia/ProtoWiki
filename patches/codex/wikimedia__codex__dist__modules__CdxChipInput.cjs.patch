@@ -1,0 +1,15 @@
+Index: dist/modules/CdxChipInput.cjs
+===================================================================
+--- dist/modules/CdxChipInput.cjs
++++ dist/modules/CdxChipInput.cjs
+@@ -66,9 +66,9 @@
+         rootElement: h,
+         rootClasses: C,
+         ariaDescription: p,
+         onKeydown: g,
+-        cdxIconClose: $._3,
++        cdxIconClose: $.h6,
+         tabIndex: v,
+         tooltipContent: u,
+         textElement: o,
+       }
