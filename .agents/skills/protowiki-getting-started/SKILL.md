@@ -70,6 +70,7 @@ read and that AI agents auto-discover.
 | If you want to… | Read… |
 | --- | --- |
 | Make a new prototype | [`protowiki-create-prototype`](../protowiki-create-prototype/SKILL.md) |
+| Customize home gallery listing | [`protowiki-create-prototype` → `gallery-meta.md`](../protowiki-create-prototype/references/gallery-meta.md) |
 | Look up a component (wrappers, article surfaces, search bar…) | [`protowiki-components`](../protowiki-components/SKILL.md) |
 | Use a Codex component, token, or icon | [`codex-usage`](../codex-usage/SKILL.md) |
 | Fetch real data from Wikipedia | [`wiki-apis`](../wiki-apis/SKILL.md) |
@@ -86,6 +87,9 @@ npm run dev      # http://localhost:5173 — use this for prototyping
 ```
 
 That's it — there's no registration step for new prototypes. Drop a folder
-under `src/prototypes/` and the route is live. CI runs `npm run build` when
+under `src/prototypes/` and the route is live. Gallery **title** and
+**description** must not be AI-generated — ask the author or omit; see
+[`protowiki-create-prototype`](../protowiki-create-prototype/SKILL.md). CI runs
+`npm run build` when
 you push or open a PR; you only need a local build to debug GitHub Pages
 issues — see [`protowiki-deploy`](../protowiki-deploy/SKILL.md).

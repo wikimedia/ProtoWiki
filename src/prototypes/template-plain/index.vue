@@ -3,8 +3,9 @@ import PlainWrapper from '@/components/PlainWrapper.vue'
 
 definePage({
   meta: {
-    title: 'Template: Plain',
+    title: 'Plain',
     description: 'Template for minimal prototypes.',
+    category: 'template',
   },
 })
 </script>

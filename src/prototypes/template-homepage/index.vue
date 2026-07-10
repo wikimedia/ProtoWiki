@@ -30,8 +30,9 @@ const showLoggedInModules = computed(() => user.value !== 'logged-out')
 
 definePage({
   meta: {
-    title: 'Template: Homepage',
+    title: 'Homepage',
     description: 'Template for prototyping the newcomer homepage.',
+    category: 'template',
   },
 })
 </script>

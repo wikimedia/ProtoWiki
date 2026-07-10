@@ -1,6 +1,6 @@
 ---
 name: protowiki-create-prototype
-description: How to add a new prototype to ProtoWiki via file-based routing — create a folder under src/prototypes/, register nothing, and the gallery picks it up automatically. Use when asked to "build a prototype", "add a new page", "make a demo", or any variant that creates a new prototype experience under src/prototypes/.
+description: How to add a new prototype to ProtoWiki via file-based routing — create a folder under src/prototypes/, register nothing, and the gallery picks it up from definePage meta (category, order, hidden, spotlight). Never AI-generate gallery title or description — ask the author or omit (title falls back to folder name). Use when asked to "build a prototype", "add a new page", "make a demo", or any variant that creates a new prototype experience under src/prototypes/.
 license: MIT
 ---
 
@@ -25,8 +25,8 @@ Then edit `src/prototypes/my-feature/index.vue`:
 <script setup lang="ts">
 definePage({
   meta: {
-    title: 'My feature prototype',
-    description: 'One-sentence pitch shown on the home gallery.',
+    // title + description: ask the author, or omit
+    category: 'prototype',
   },
 })
 
@@ -47,12 +47,13 @@ no other file needs to change.
 ## Conventions
 
 - **Folder naming by kind.** The folder name is the URL path (`src/prototypes/<name>/index.vue`):
-  - **Templates** (starters to copy): `template-<name>/` — e.g. `template-chrome`, `template-article-live`. Set `meta.title` to `Template: …` so the home gallery groups them below regular prototypes.
-  - **Examples** (worked demos): `example-<name>/` — e.g. `example-event-worklist`. Set `meta.title` to `Example: …`.
-  - **Feature prototypes** (real work in progress): unprefixed kebab-case — e.g. `edit-check`, `related-strip`. No `Template:` / `Example:` in the title.
+  - **Templates** (starters to copy): `template-<name>/` — e.g. `template-chrome`, `template-article-live`. Set `meta.category: 'template'` so the home gallery groups them below regular prototypes.
+  - **Examples** (worked demos): `example-<name>/` — e.g. `example-event-worklist`. Set `meta.category: 'example'`.
+  - **Feature prototypes** (real work in progress): unprefixed kebab-case — e.g. `edit-check`, `related-strip`. Omit `category` (defaults to `'prototype'`).
 - **One folder per prototype.** Keep names short and unique.
-- **Always set `definePage({ meta: { title, description } })`.** It powers
-  the gallery card. Without it, the gallery falls back to a humanized path.
+- **Gallery copy is human-written when present.** Set `meta.title` and
+  `meta.description` only from author-provided copy — ask the author or omit;
+  never AI-generate. See [Gallery copy (never AI-generated)](#gallery-copy-never-ai-generated).
 - **Co-locate prototype-specific assets** inside the folder
   (`my-feature/data.json`, `my-feature/HelpModule.vue`, `my-feature/dashpage-fixtures.ts`).
   Only **`index.vue`** files become routes — co-located `*.vue` modules are
@@ -64,6 +65,44 @@ no other file needs to change.
 - **Don't write per-prototype CSS for what Codex tokens already cover** —
   that's the [`codex-usage`](../codex-usage/SKILL.md) discipline that keeps
   prototypes looking like production.
+
+## Gallery copy (never AI-generated)
+
+`meta.title` and `meta.description` are **product copy** for the home gallery
+card — not implementation scaffolding.
+
+**Agents must not invent them.** Two options:
+
+- **Ask the author** for both strings before setting meta (preferred when the
+  card will be shared).
+- **Omit** them — the route still works; the gallery derives `title` from the
+  folder name via `deriveTitleFromPath`; `description` is blank.
+
+Use the author's exact wording when they provide it; only light copy-editing if
+they ask.
+
+**Never:**
+
+- AI-generate or guess title/description
+- Use generic agent placeholders ("My feature prototype", "One-sentence pitch…")
+- Keep a copied template's title/description on a new prototype without
+  confirmation
+
+## Home gallery
+
+Gallery cards are driven by flat `definePage` meta on each top-level
+`src/prototypes/<name>/index.vue`:
+
+- **`category`** — `'prototype'` (default), `'template'`, or `'example'`; controls
+  which block the card appears in (prototypes first, then a divider, then
+  templates+examples) and the gallery title prefix for templates and examples (`Template:` / `Example:`)
+- **`order`** — optional sort key within a block (lower first; default alphabetical)
+- **`hidden`** — omit from gallery while keeping the route live
+- **`spotlight`** — when any prototype is spotlighted, the gallery shows only
+  spotlighted entries (DAW-style solo)
+
+Full field reference, layout rules, and examples:
+[`references/gallery-meta.md`](references/gallery-meta.md).
 
 ## Common shapes
 
@@ -87,9 +126,9 @@ for more recipes.
 - **No router config.** `unplugin-vue-router` reads `src/prototypes/` and
   generates the route table. Only `**/index` files under `src/prototypes/` are
   routes; other co-located `.vue` files (e.g. `HelpModule.vue`) are normal imports.
-- **No gallery edit.** `src/prototypes/index.vue` iterates over the typed route
-  table at runtime; new top-level folders appear automatically. Only
-  `src/prototypes/<name>/index.vue` shows on the gallery — nested
+- **No gallery edit.** `src/prototypes/index.vue` reads route `meta` at runtime;
+  new top-level folders appear automatically when their `definePage` meta is set.
+  Only `src/prototypes/<name>/index.vue` shows on the gallery — nested
   `src/prototypes/<proto>/<sub>/index.vue` routes are registered but listed
   only when linked from inside a prototype (e.g. mobile drill-down pages).
 - **No skin/theme setup.** `<html data-skin>` / `<html data-theme>` are set

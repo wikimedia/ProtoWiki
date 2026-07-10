@@ -12,7 +12,7 @@ default body slot.
 </CdxCard>
 ```
 
-The home gallery (`src/prototypes/index.vue`) uses one `CdxCard` per prototype (`#title`, optional `#description` from route `meta`).
+The home gallery (`src/prototypes/index.vue`) uses one `CdxCard` per prototype (`#title`, optional `#description` from route `meta.title` / `meta.description`). For gallery ordering, category, hiding, and spotlight, see [`protowiki-create-prototype` → `gallery-meta.md`](../../protowiki-create-prototype/references/gallery-meta.md).
 
 | Prop / slot | Use |
 | --- | --- |

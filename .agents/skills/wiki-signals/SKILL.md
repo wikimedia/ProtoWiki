@@ -21,9 +21,8 @@ The six families:
   links, redirects, related articles.
 - [`references/curation.md`](references/curation.md) — Today's Featured
   Article, Picture of the Day, On This Day, Did You Know.
-- [`references/attribution.md`](references/attribution.md) — license,
-  brand marks, and source-wiki metadata for off-wiki surfaces, via
-  the Wikimedia Attribution API.
+- [`references/attribution.md`](references/attribution.md) — off-wiki attribution
+  (Attribution API beta). **Full framework docs:** [`wiki-attribution`](../wiki-attribution/SKILL.md).
 - [`edit-suggestions.md`](edit-suggestions.md) — VisualEditor "Edit Check"
   suggestions: which checks exist, how to mock the stream from fixtures /
   rules / Lift Wing, where the JSON lives. (ProtoWiki-only; not part of
@@ -59,7 +58,7 @@ that grounds product ideas in real signals.
 | Picture of the Day                                 | REST `/feed/featured/{date}`                                                   | `curation.md`    |
 | On This Day                                        | REST `/feed/onthisday/{type}/{mm}/{dd}`                                        | `curation.md`    |
 | Most-read articles                                 | REST `/feed/featured/{date}`                                                   | `curation.md`    |
-| Page attribution (license, brand marks)            | REST `/attribution/v0-beta/pages/{title}/signals`                              | `attribution.md` |
+| Page attribution (license, brand marks, trust, CTAs) | REST `/attribution/v0-beta/pages/{title}/signals` | [`wiki-attribution`](../wiki-attribution/SKILL.md) |
 | Tone / quality predictions                         | Lift Wing `edit-check:predict`                                                 | `edit-suggestions.md` |
 | Mocked Edit Check suggestion stream                | Static per-page JSON fixtures                                                  | `edit-suggestions.md` |
 
@@ -83,7 +82,7 @@ Examples of recent feature ideas grounded in two or more signals:
 | "Articles that link here" panel          | backlinks + summary + thumbnail                    |
 | "Featured today across languages"        | featured + interlanguage links                     |
 | "Did this fact change?"                  | revisions + parsed infobox shape                   |
-| Off-wiki answer card with proper credit  | summary + attribution (license + brand marks)      |
+| Off-wiki answer card with proper credit  | summary + attribution (license + brand marks + trust) | [`wiki-attribution`](../wiki-attribution/SKILL.md) |
 | "Coach my edit" overlay                  | suggestion stream + tone prediction + diff preview |
 
 The catalogue isn't a feature list — it's the raw material for one.
@@ -109,6 +108,7 @@ In the ProtoWiki repo:
 - For the per-component contract that consumes those fixtures (payload
   shape, `SuggestionCard`, dismiss state, "apply" semantics), see
   [`protowiki-components/references/edit-suggestions.md`](../protowiki-components/references/edit-suggestions.md).
-- The off-wiki "answer card with proper credit" idea is wired through
-  **`ArticleLive`** plus the attribution endpoint described in
-  [`references/attribution.md`](references/attribution.md).
+- The off-wiki attribution stack lives in **`src/components/attribution/`**
+  and **`example-attribution-search`**. See
+  [`wiki-attribution`](../wiki-attribution/SKILL.md) and
+  [`protowiki-components/references/attribution.md`](../protowiki-components/references/attribution.md).

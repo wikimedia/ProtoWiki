@@ -1,8 +1,9 @@
 <script setup lang="ts">
 definePage({
   meta: {
-    title: 'Template: Article (snapshot)',
+    title: 'Article (snapshot)',
     description: "Template for an article page that's loaded from a static snapshot.",
+    category: 'template',
   },
 })
 

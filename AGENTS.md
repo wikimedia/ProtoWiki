@@ -87,6 +87,7 @@ trailing **Inside ProtoWiki** section.
 | Skill                                                                        | What it covers                                                                                      |
 | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | [`wiki-apis`](.agents/skills/wiki-apis/SKILL.md)                             | REST API + Action API + etiquette                                                                   |
+| [`wiki-attribution`](.agents/skills/wiki-attribution/SKILL.md)               | Attribution Framework + Attribution API (beta): signals, scenarios, levels, fetch pathways          |
 | [`wiki-signals`](.agents/skills/wiki-signals/SKILL.md)                       | Catalog of signals (inference, analytics, links, curation, attribution, edit suggestions)           |
 | [`wiki-snapshot-data`](.agents/skills/wiki-snapshot-data/SKILL.md)           | Snapshotting article HTML and skin CSS — universal pattern                                          |
 | [`protowiki-snapshot-data`](.agents/skills/protowiki-snapshot-data/SKILL.md) | ProtoWiki integration: `public/snapshots/`, `src/styles/wiki-skins/`, `ArticleSnapshot` consumption |
@@ -112,6 +113,9 @@ mirrors [FakeMediaWiki `wiki-signals`](https://github.com/TodePond/FakeMediaWiki
   Skin/theme overrides via `[data-skin]` / `[data-theme]` selectors.
 - Codex first. If a Codex component / token / icon exists, use it.
 - Data fetching uses native `fetch` with `AbortController` for debouncing.
+- Prototype gallery **title** and **description** must not be AI-generated;
+  agents ask the author or omit — see
+  [`protowiki-create-prototype`](.agents/skills/protowiki-create-prototype/SKILL.md).
 - **Hand-authored article pages** (no `ArticleLive` / `ArticleSnapshot`): prefer **`ChromeWrapper` → `ArticleCustom`** (default slot = parser body); or compose **`ChromeWrapper` → `ArticleWrapper` → `ArticleRenderer`** when you need finer control. Put markup in the renderer slot; use **`section.hand-authored-lead`** when the lead includes an infobox so mobile matches enwiki order. See [`protowiki-components` → `article.md`](.agents/skills/protowiki-components/references/article.md) and **`src/prototypes/template-article-custom/`**.
 
 ## What this repo is not

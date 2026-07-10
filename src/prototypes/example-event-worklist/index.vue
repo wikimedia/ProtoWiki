@@ -17,8 +17,9 @@ import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 
 definePage({
   meta: {
-    title: 'Example: Event worklist',
+    title: 'Event worklist',
     description: 'Prototype for an event worklist page, intended for mobile.',
+    category: 'example',
   },
 })
 

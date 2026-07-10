@@ -1,8 +1,9 @@
 <script setup lang="ts">
 definePage({
   meta: {
-    title: 'Template: Article (live)',
+    title: 'Article (live)',
     description: "Template for an article page that's loaded from live data.",
+    category: 'template',
   },
 })
 

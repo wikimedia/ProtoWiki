@@ -1,6 +1,6 @@
 ---
 name: protowiki-components
-description: Catalog of every shipped component in src/components/ — the three single-concern layout wrappers (ChromeWrapper, SpecialPageWrapper, PlainWrapper), the chrome primitives (ChromeHeader, ChromeFooter), Article surfaces (`ArticleWrapper` + `ArticleRenderer`, ArticleLive, ArticleSnapshot, ArticleCustom, ArticleHeader), dashboard layout (`Dashboard`, `DashboardModule`), and Search — including hand-authored article HTML in `ArticleRenderer`'s default slot (see `src/prototypes/template-article-custom/`) and newcomer homepage templates (`template-dashboard`, `template-homepage`). Use when picking a wrapper, composing a page, looking up props/slots/events for any ProtoWiki component, or asking "what components does ProtoWiki ship?".
+description: Catalog of every shipped component in src/components/ — the three single-concern layout wrappers (ChromeWrapper, SpecialPageWrapper, PlainWrapper), the chrome primitives (ChromeHeader, ChromeFooter), Article surfaces (`ArticleWrapper` + `ArticleRenderer`, ArticleLive, ArticleSnapshot, ArticleCustom, ArticleHeader), dashboard layout (`Dashboard`, `DashboardModule`), attribution (`AttributionCard`, `useAttributionSignals`), and Search — including hand-authored article HTML in `ArticleRenderer`'s default slot (see `src/prototypes/template-article-custom/`) and newcomer homepage templates (`template-dashboard`, `template-homepage`). Use when picking a wrapper, composing a page, looking up props/slots/events for any ProtoWiki component, or asking "what components does ProtoWiki ship?".
 license: MIT
 ---
 
@@ -26,6 +26,7 @@ This skill is the cross-cutting guide. Per-component depth lives in
   Edit Check-style suggestion stream alongside **your** editing surface (payload
   shape, side-by-side layout, `SuggestionCard`, publish interception)
 - [`references/dashboard.md`](references/dashboard.md) — `Dashboard`, `DashboardModule`
+- [`references/attribution.md`](references/attribution.md) — `AttributionCard`, `useAttributionSignals`, off-wiki attribution fetch helpers
 - [`references/composition-recipes.md`](references/composition-recipes.md)
 
 ## The shape of the catalogue
@@ -47,6 +48,7 @@ This skill is the cross-cutting guide. Per-component depth lives in
 | `Search` | `CdxTypeaheadSearch` wired to opensearch (default in ChromeHeader) | n/a | n/a |
 | `Dashboard` | Newcomer homepage grid — `#banner`, `#mobile`, `#primary`, `#sidebar` slots | No | Yes (desktop) |
 | `DashboardModule` | Single module box — link card when `to` is set, static sidebar card otherwise | No | No |
+| `AttributionCard` | Off-wiki attribution card (essential + trust signals + optional CTAs); `variant` full / compact / inline | No | No |
 
 ## Defaults, props, and slots (shared contract)
 

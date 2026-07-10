@@ -25,6 +25,7 @@ usually wins on shape and caching.
 | Media in a page | REST | `/api/rest_v1/page/media-list/{title}` |
 | Related articles | REST | `/api/rest_v1/page/related/{title}` |
 | Page revision history | REST | `/api/rest_v1/page/history/{title}` |
+| Page attribution signals | Core REST | `/w/rest.php/attribution/v0-beta/pages/{title}/signals` |
 | Random page | REST | `/api/rest_v1/page/random/summary` |
 | Featured / On-this-day | REST | `/api/rest_v1/feed/featured/{date}` |
 | Pageviews | REST (Wikimedia metrics) | `https://wikimedia.org/api/rest_v1/metrics/pageviews/…` |
@@ -189,6 +190,9 @@ format of each file, and how to navigate them.
 
 ## See also
 
+- [`wiki-attribution`](../wiki-attribution/SKILL.md) — *what* attribution
+  signals to show and how to fetch them (Attribution API beta, framework
+  scenarios, levels).
 - [`wiki-signals`](../wiki-signals/SKILL.md) — *what* data is available
   (catalog of signals).
 - [`wiki-snapshot-data`](../wiki-snapshot-data/SKILL.md) — when to
@@ -199,6 +203,10 @@ format of each file, and how to navigate them.
 `ArticleLive` calls REST **`page/html/{title}`**; **`Search`** wraps Action **`opensearch`**
 (with debouncing and **`AbortController`** cancellation). **`ArticleSnapshot`** loads **`public/snapshots/`**
 HTML only (no **`page/html`** hit). Typical usage already covers UA etiquette and sane defaults.
+
+**Attribution API:** Core REST under `/w/rest.php/attribution/v0-beta/…` (not `/api/rest_v1/`).
+CORS `*` — browser-fetchable. Use `expand=trust_and_relevance,calls_to_action`. See
+[`wiki-attribution`](../wiki-attribution/SKILL.md) and `src/components/attribution/`.
 
 The committed schema snapshots live under
 `.agents/skills/wiki-apis/assets/snapshots/` and are refreshed via

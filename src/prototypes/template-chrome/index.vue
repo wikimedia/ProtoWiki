@@ -1,8 +1,9 @@
 <script setup lang="ts">
 definePage({
   meta: {
-    title: 'Template: Chrome',
+    title: 'Chrome',
     description: 'Template for prototypes with a Wikipedia header and footer.',
+    category: 'template',
   },
 })
 

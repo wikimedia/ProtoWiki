@@ -147,7 +147,10 @@ Minimal shell — a **centred column** (`max-width: 45rem`) with horizontal
 padding. **No Wikipedia chrome**, no article columns. Matches FakeMediaWiki’s
 **Component** wrapper (bare prototype surface).
 
-The **home gallery** (`src/prototypes/index.vue`) uses `PlainWrapper`.
+The **home gallery** (`src/prototypes/index.vue`) uses `PlainWrapper`. Each card
+is a `CdxCard` whose title and description come from route `meta` set in
+`definePage`. See [`protowiki-create-prototype` → `gallery-meta.md`](../../protowiki-create-prototype/references/gallery-meta.md)
+for `category`, `order`, `hidden`, `spotlight`, and the human-written copy rule.
 
 ### Props
 

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 definePage({
   meta: {
-    title: 'Template: Article (custom)',
+    title: 'Article (custom)',
     description:
       'Template for an article page where the article is written out within the template itself. Useful for when you want to directly change some part of the article.',
+    category: 'template',
   },
 })
 
