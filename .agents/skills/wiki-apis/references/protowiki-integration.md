@@ -21,8 +21,8 @@ work (UA, cancellation, error handling).
 
 ## User-Agent
 
-Canonical value: **`src/lib/api-user-agent.txt`** (imported in the app via
-`src/lib/apiUserAgent.ts` as `PROTOWIKI_API_USER_AGENT` /
+Canonical value: **`src/api-user-agent.txt`** (kept in sync with
+`PROTOWIKI_API_USER_AGENT` in `src/config.ts` /
 `wikimediaApiFetchHeaders()`). Bash scripts
 `source scripts/api-user-agent.sh` and set `UA="$PROTOWIKI_API_USER_AGENT"`.
 

@@ -12,7 +12,7 @@ visual properties. Layout is the [skin](../protowiki-skins/SKILL.md)'s job.
 
 ## How the global theme is resolved
 
-At boot, `src/lib/theming.ts` decides the global theme in this order:
+At boot, `src/theme.ts` decides the global theme in this order:
 
 1. `?theme=light` or `?theme=dark` URL param, if either is present.
 2. Otherwise, `window.matchMedia('(prefers-color-scheme: dark)').matches`
@@ -28,7 +28,7 @@ Codex ships two token files at `:root` selectors:
 `@wikimedia/codex-design-tokens/theme-wikimedia-ui.css` (light) and
 `theme-wikimedia-ui-mode-dark.css` (dark). Both target `:root`.
 
-`src/lib/theming.ts` reads both files via `?raw` imports at boot,
+`src/theme.ts` reads both files via `?raw` imports at boot,
 **rewrites `:root` to `[data-theme="light"]` / `[data-theme="dark"]`**,
 and injects them as `<style>` tags. After that:
 

@@ -132,7 +132,7 @@ recipe rather than hand-rolling those styles.
 ProtoWiki has Codex pre-wired: `@wikimedia/codex/dist/codex.style.css`
 is imported once in `src/main.ts`, and the design-token files are
 re-scoped at boot to `[data-theme="light"]` / `[data-theme="dark"]` by
-`src/lib/theming.ts`. You don't need to add `<link>` tags or import
+`src/theme.ts`. You don't need to add `<link>` tags or import
 token CSS yourself. See
 [`protowiki-getting-started`](../protowiki-getting-started/SKILL.md) for
 the bootstrap, [`protowiki-theme`](../protowiki-theme/SKILL.md) for the

@@ -10,8 +10,8 @@ just orients you.
   `src/prototypes/`. Single-concern layout wrappers, chrome primitives,
   data utilities, and reader-focused components — see
   [`protowiki-components`](.agents/skills/protowiki-components/SKILL.md)
-  for the catalogue. Composables in `src/composables/`. Theming logic
-  in `src/lib/`. Styles in `src/styles/`.
+  for the catalogue. Composables in `src/composables/`. Theming in
+  `src/theme.ts`, app config in `src/config.ts`. Styles in `src/styles/`.
 - **`.agents/skills/`** — the _single canonical home_ for non-code
   material: how to use Codex, how to fetch Wikipedia data, how the
   prototyping workflow works, how to deploy. Each skill is an

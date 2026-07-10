@@ -85,7 +85,7 @@ the upstream package.
 ## Inside ProtoWiki
 
 ProtoWiki bundles the Codex token files and re-scopes them at boot via
-`src/lib/theming.ts` so the same `var(--…)` rule cascades through
+`src/theme.ts` so the same `var(--…)` rule cascades through
 `[data-theme="light"]` / `[data-theme="dark"]`. See
 [`protowiki-theme`](../protowiki-theme/SKILL.md) for the boot-time
 resolution, the per-subtree `theme` prop, and the `useTheme()` hook.

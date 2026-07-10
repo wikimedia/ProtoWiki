@@ -6,7 +6,7 @@ import {
   buildGallerySections,
   isTopLevelPrototypePath,
   parseGalleryEntry,
-} from '@/lib/prototype-gallery'
+} from '@/prototype-gallery'
 
 export function usePrototypeGallery() {
   const router = useRouter()

@@ -17,7 +17,7 @@ font-sizes) but not colours — those are the
 
 ## How the global skin is resolved
 
-At boot, `src/lib/theming.ts` decides the global skin in this order:
+At boot, `src/theme.ts` decides the global skin in this order:
 
 1. `?skin=desktop` or `?skin=mobile` URL param, if either is present.
 2. Otherwise, viewport: `window.innerWidth >= 640` → `desktop`, else `mobile`.

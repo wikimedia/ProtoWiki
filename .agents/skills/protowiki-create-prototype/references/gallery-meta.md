@@ -31,7 +31,7 @@ AI-generate them.** Two valid paths:
    `definePage` meta.
 2. **Omit** them — the route still works. When `title` is omitted, the gallery
    derives one from the folder name via `deriveTitleFromPath` in
-   [`src/lib/prototype-gallery.ts`](../../../../src/lib/prototype-gallery.ts).
+   [`src/prototype-gallery.ts`](../../../../src/prototype-gallery.ts).
    `description` stays blank until a human adds one.
 
 | Avoid | Do instead |
@@ -57,7 +57,7 @@ See also [`protowiki-create-prototype` → Gallery copy](../SKILL.md#gallery-cop
 | `hideSecondary` | index only | boolean | Hide the template+example block |
 
 TypeScript types are augmented in [`src/route-meta.d.ts`](../../../../src/route-meta.d.ts).
-Gallery logic lives in [`src/lib/prototype-gallery.ts`](../../../../src/lib/prototype-gallery.ts)
+Gallery logic lives in [`src/prototype-gallery.ts`](../../../../src/prototype-gallery.ts)
 and [`src/composables/usePrototypeGallery.ts`](../../../../src/composables/usePrototypeGallery.ts).
 
 ## Layout

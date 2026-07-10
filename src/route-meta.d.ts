@@ -1,4 +1,4 @@
-import type { PageCategory } from '@/lib/prototype-gallery'
+import type { PageCategory } from '@/prototype-gallery'
 
 export {}
 
