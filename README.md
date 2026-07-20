@@ -98,3 +98,16 @@ This is great because it also creates a QR code that people can use to try the p
 - Helpers for accessing real data https://github.com/wikimedia/ProtoWiki/issues/21
 
 To see more planned work, check out the [issues](https://github.com/wikimedia/ProtoWiki/issues).
+
+## Examples
+
+### Prototypes
+
+Here are some examples of ProtoWiki's prototyping system in use:
+
+- [Codex playground](https://wikimedia.github.io/ProtoWiki/pr-preview/pr-49/example-codex-kitchen-sink): A kitchen sink for exploring all of Codex's features.
+- [Suggested edits feed](https://wikimedia.github.io/ProtoWiki/pr-preview/pr-11/no-distractions?title=Jade+Thirlwall&screen=home&username=NewEditor): A remix of the Newcomer Homepage that pulls edit suggestions from the Visual Editor's "Suggestion mode" and presents them as a feed.
+- [Experimental main page](https://wikimedia.github.io/ProtoWiki/pr-preview/pr-44/musical-group): A thought experiment that re-imagines the main page and how it can evolve as you save interests over time.
+- [Amin's onboarding flow](https://aminalhazwani.github.io/protowiki3/pr-preview/pr-1/no-distractions?title=Curlew+sandpiper&screen=welcome&username=TestUser): A streamlined re-imagining of the welcome survey and interest picker.
+- [Julieta's event worklist](https://julietafernandez23.github.io/worklists/worklist-event): A page for configuring a list of pages to edit as part of an event.
+- [Eduardo's recent edit highlight](https://medied.github.io/ProtoWiki/mock-article-section-highlight): An article with a highlighted paragraph, showcasing a recent edit.
