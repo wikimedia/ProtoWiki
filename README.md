@@ -133,29 +133,35 @@ import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 To force your prototype into a phone-sized view, even on desktop, use `MobileWrapper`.
 
 ```vue
-<MobileWrapper>
-  <ChromeWrapper>
-    <!-- Your prototype goes here -->
-  </ChromeWrapper>
-</MobileWrapper>
+<template>
+  <MobileWrapper>
+    <ChromeWrapper>
+      <!-- Your prototype goes here -->
+    </ChromeWrapper>
+  </MobileWrapper>
+</template>
 ```
 
 For minimal pages, use `PlainWrapper`.
 
 ```vue
-<PlainWrapper title="My prototype">
-  <p>This is a prototype.</p>
-</PlainWrapper>
+<template>
+  <PlainWrapper title="My prototype">
+    <p>This is a prototype.</p>
+  </PlainWrapper>
+</template>
 ```
 
 To simulate a special page, use `SpecialPageWrapper`.
 
 ```vue
-<ChromeWrapper>
-  <SpecialPageWrapper title="My special page">
-    <p>This is a special page</p>
-  </SpecialPageWrapper>
-</ChromeWrapper>
+<template>
+  <ChromeWrapper>
+    <SpecialPageWrapper title="My special page">
+      <p>This is a special page</p>
+    </SpecialPageWrapper>
+  </ChromeWrapper>
+</template>
 ```
 
 ### Using article components
@@ -163,41 +169,49 @@ To simulate a special page, use `SpecialPageWrapper`.
 For article-like prototypes, it's often best to use the `ArticleLive` component. By default it loads a random article from English Wikipedia.
 
 ```vue
-<ChromeWrapper>
-  <ArticleLive />
-</ChromeWrapper>
+<template>
+  <ChromeWrapper>
+    <ArticleLive />
+  </ChromeWrapper>
+</template>
 ```
 
 To load from different languages, use the `langs` prop.
 
 ```vue
-<ChromeWrapper>
-  <ArticleLive :langs="['en', 'fr', 'es']" />
-</ChromeWrapper>
+<template>
+  <ChromeWrapper>
+    <ArticleLive :langs="['en', 'fr', 'es']" />
+  </ChromeWrapper>
+</template>
 ```
 
 Alternatively, load a specific article by passing the article name to the `ArticleLive` component.
 
 ```vue
-<ChromeWrapper>
-  <ArticleLive article="Wet Leg" />
-</ChromeWrapper>
+<template>
+  <ChromeWrapper>
+    <ArticleLive article="Wet Leg" />
+  </ChromeWrapper>
+</template>
 ```
 
 To craft a static hand-written article page, use the `ArticleCustom` component.
 
 ```vue
-<ChromeWrapper>
-  <ArticleCustom title="My custom article">
-    <section>
-      <p>This is a custom article.</p>
-    </section>
-    <section>
-      <h2>Section title</h2>
-      <p>This is a section.</p>
-    </section>
-  </ArticleCustom>
-</ChromeWrapper>
+<template>
+  <ChromeWrapper>
+    <ArticleCustom title="My custom article">
+      <section>
+        <p>This is a custom article.</p>
+      </section>
+      <section>
+        <h2>Section title</h2>
+        <p>This is a section.</p>
+      </section>
+    </ArticleCustom>
+  </ChromeWrapper>
+</template>
 ```
 
 ### Using other components
