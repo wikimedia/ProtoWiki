@@ -116,7 +116,7 @@ mirrors [FakeMediaWiki `wiki-signals`](https://github.com/TodePond/FakeMediaWiki
 - Prototype gallery **title** and **description** must not be AI-generated;
   agents ask the author or omit — see
   [`protowiki-create-prototype`](.agents/skills/protowiki-create-prototype/SKILL.md).
-- **Hand-authored article pages** (no `ArticleLive` / `ArticleSnapshot`): prefer **`ChromeWrapper` → `ArticleCustom`** (default slot = parser body); or compose **`ChromeWrapper` → `ArticleWrapper` → `ArticleRenderer`** when you need finer control. Put markup in the renderer slot; use **`section.hand-authored-lead`** when the lead includes an infobox so mobile matches enwiki order. See [`protowiki-components` → `article.md`](.agents/skills/protowiki-components/references/article.md) and **`src/prototypes/template-article-custom/`**.
+- **Hand-authored article pages** (no `ArticleLive` / `ArticleSnapshot`): prefer **`ChromeWrapper` → `ArticleCustom`** (default slot = parser body); or compose **`ChromeWrapper` → `ArticleWrapper` → `ArticleRenderer`** when you need finer control. Put markup in the renderer slot. See [`protowiki-components` → `article.md`](.agents/skills/protowiki-components/references/article.md) and **`src/prototypes/template-article-custom/`**.
 
 ## What this repo is not
 

@@ -73,18 +73,19 @@ const chromeHeaderLabel = computed(() => {
 .article {
   min-width: 0;
   width: 100%;
-  padding: var(--spacing-150, 24px) 0;
+  padding-block: var(--spacing-150, 24px);
+  padding-inline: var(--spacing-100, 16px);
   text-align: start;
   background-color: var(--background-color-base);
 }
 
 .article[data-skin='desktop'] {
-  max-width: 984px;
+  /* 984px content column; padding-inline sits inside max-width (border-box). */
+  max-width: calc(984px + 2 * var(--spacing-100, 16px));
   margin-inline: auto;
 }
 
 .article[data-skin='mobile'] {
-  padding-inline: 0;
   padding-block-end: var(--spacing-100, 16px);
   padding-block-start: var(--spacing-150, 24px);
 }

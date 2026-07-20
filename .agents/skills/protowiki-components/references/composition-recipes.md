@@ -30,7 +30,7 @@ definePage({
   <ChromeWrapper>
     <ArticleWrapper title="Example band">
       <ArticleRenderer>
-        <section class="hand-authored-lead">
+        <section>
           <!-- table.infobox… + lead paragraphs -->
         </section>
         <section>
@@ -43,7 +43,7 @@ definePage({
 </template>
 ```
 
-**Reference implementation:** **`src/prototypes/template-article-custom/`** (Wet Leg intro + History, enwiki-shaped infobox). Infobox header colours, **`hand-authored-lead`**, and RL vs template styles are documented in [`article.md`](article.md#hand-authored-article-markup-no-fetch-no-snapshot).
+**Reference implementation:** **`src/prototypes/template-article-custom/`** (Wet Leg intro + History, enwiki-shaped infobox). Infobox header colours, lead markup order, and RL vs template styles are documented in [`article.md`](article.md#hand-authored-article-markup-no-fetch-no-snapshot).
 
 ## Article page with extra markup beside the parser output
 

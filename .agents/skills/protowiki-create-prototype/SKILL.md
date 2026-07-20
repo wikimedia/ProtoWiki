@@ -110,7 +110,7 @@ Full field reference, layout rules, and examples:
 | --- | --- |
 | Article-style page with chrome (live) | `<ChromeWrapper><ArticleLive article="…"/></ChromeWrapper>` |
 | Article-style page with committed snapshot fixture | `<ChromeWrapper><ArticleSnapshot article="…"/></ChromeWrapper>` |
-| Article-style page with **hand-written** body HTML (no REST, no snapshot file) | `<ChromeWrapper><ArticleCustom>…</ArticleCustom></ChromeWrapper>` — canonical: **`src/prototypes/template-article-custom/`**; see [`protowiki-components` → `article.md`](../protowiki-components/references/article.md) ( **`hand-authored-lead`**, infobox classes) |
+| Article-style page with **hand-written** body HTML (no REST, no snapshot file) | `<ChromeWrapper><ArticleCustom>…</ArticleCustom></ChromeWrapper>` — canonical: **`src/prototypes/template-article-custom/`**; see [`protowiki-components` → `article.md`](../protowiki-components/references/article.md) (infobox classes, lead markup order) |
 | Special-page-style page | `<ChromeWrapper><SpecialPageWrapper title="…">…</SpecialPageWrapper></ChromeWrapper>` |
 | Newcomer homepage / dashboard | `<ChromeWrapper :last-edited-notice="false"><SpecialPageWrapper title="Dashboard" help><Dashboard>…</Dashboard></SpecialPageWrapper></ChromeWrapper>` — starter: **`template-dashboard/`**; full modules: **`template-homepage/`** |
 | Bare canvas with chrome | `<ChromeWrapper>…</ChromeWrapper>` |

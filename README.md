@@ -111,3 +111,95 @@ Here are some examples of ProtoWiki's prototyping system in use:
 - [Amin's onboarding flow](https://aminalhazwani.github.io/protowiki3/pr-preview/pr-1/no-distractions?title=Curlew+sandpiper&screen=welcome&username=TestUser): A streamlined re-imagining of the welcome survey and interest picker.
 - [Julieta's event worklist](https://julietafernandez23.github.io/worklists/worklist-event): A page for configuring a list of pages to edit as part of an event.
 - [Eduardo's recent edit highlight](https://medied.github.io/ProtoWiki/mock-article-section-highlight): An article with a highlighted paragraph, showcasing a recent edit.
+
+### Using wrappers
+
+There are various wrappers that you can use within the prototyping system.
+
+It's common to wrap everything in a `ChromeWrapper` component, which adds the usual Wikipedia-ish chrome around the page.
+
+```vue
+<script setup>
+import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
+</script>
+
+<template>
+  <ChromeWrapper>
+    <!-- Your prototype goes here -->
+  </ChromeWrapper>
+</template>
+```
+
+To force your prototype into a phone-sized view, even on desktop, use `MobileWrapper`.
+
+```vue
+<MobileWrapper>
+  <ChromeWrapper>
+    <!-- Your prototype goes here -->
+  </ChromeWrapper>
+</MobileWrapper>
+```
+
+For minimal pages, use `PlainWrapper`.
+
+```vue
+<PlainWrapper title="My prototype">
+  <p>This is a prototype.</p>
+</PlainWrapper>
+```
+
+To simulate a special page, use `SpecialPageWrapper`.
+
+```vue
+<ChromeWrapper>
+  <SpecialPageWrapper title="My special page">
+    <p>This is a special page</p>
+  </SpecialPageWrapper>
+</ChromeWrapper>
+```
+
+### Using article components
+
+For article-like prototypes, it's often best to use the `ArticleLive` component. By default it loads a random article from English Wikipedia.
+
+```vue
+<ChromeWrapper>
+  <ArticleLive />
+</ChromeWrapper>
+```
+
+To load from different languages, use the `langs` prop.
+
+```vue
+<ChromeWrapper>
+  <ArticleLive :langs="['en', 'fr', 'es']" />
+</ChromeWrapper>
+```
+
+Alternatively, load a specific article by passing the article name to the `ArticleLive` component.
+
+```vue
+<ChromeWrapper>
+  <ArticleLive article="Wet Leg" />
+</ChromeWrapper>
+```
+
+To craft a static hand-written article page, use the `ArticleCustom` component.
+
+```vue
+<ChromeWrapper>
+  <ArticleCustom title="My custom article">
+    <section>
+      <p>This is a custom article.</p>
+    </section>
+    <section>
+      <h2>Section title</h2>
+      <p>This is a section.</p>
+    </section>
+  </ArticleCustom>
+</ChromeWrapper>
+```
+
+### Using other components
+
+There are other components that you can use within the prototyping system. Explore the `components` folder to discover them all.

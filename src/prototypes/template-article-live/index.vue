@@ -13,24 +13,16 @@ import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 
 <template>
   <ChromeWrapper>
-    <main>
-      <!-- No `article` prop → a random article loads on each visit. -->
-      <ArticleLive />
+    <!-- No `article` prop → a random article loads on each visit. -->
+    <ArticleLive />
 
-      <!-- Draw from Wikipedia's Vital articles instead of a purely random page: -->
-      <!-- <ArticleLive source="vital" /> -->
+    <!-- Draw from Wikipedia's Vital articles instead of a purely random page: -->
+    <!-- <ArticleLive source="vital" /> -->
 
-      <!-- Random across several languages (one chosen per load): -->
-      <!-- <ArticleLive :langs="['en', 'fr', 'es']" /> -->
+    <!-- Random across several languages (one chosen per load): -->
+    <!-- <ArticleLive :langs="['en', 'fr', 'es']" /> -->
 
-      <!-- Pin a specific article (fixed, not random): -->
-      <!-- <ArticleLive article="Wet Leg" /> -->
-    </main>
+    <!-- Pin a specific article (fixed, not random): -->
+    <!-- <ArticleLive article="Wet Leg" /> -->
   </ChromeWrapper>
 </template>
-
-<style scoped>
-main {
-  padding: 0 var(--spacing-100);
-}
-</style>

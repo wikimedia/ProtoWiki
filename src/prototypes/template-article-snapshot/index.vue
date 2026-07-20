@@ -13,14 +13,6 @@ import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 
 <template>
   <ChromeWrapper>
-    <main>
-      <ArticleSnapshot class="article" article="Wet Leg" />
-    </main>
+    <ArticleSnapshot class="article" article="Wet Leg" />
   </ChromeWrapper>
 </template>
-
-<style scoped>
-main {
-  padding: 0 var(--spacing-100);
-}
-</style>
