@@ -140,6 +140,23 @@ const homeRelatedLimit = 3
 
 const homeRelatedPreview = computed(() => homeRelatedItems.value.slice(0, homeRelatedLimit))
 
+const homeTabHasFeedContent = computed(
+  () =>
+    Boolean(featuredArticle.value) ||
+    homeTrendingPreview.value.length > 0 ||
+    (!hasSavedPages.value && homeDidYouKnowPreview.value.length > 0) ||
+    (!hasSavedPages.value && homeBornOnThisDayPreview.value.length > 0),
+)
+
+/** Default home tab: header/tabs paint first; show progress until feed previews arrive. */
+const homeTabInitialLoading = computed(
+  () =>
+    activeTab.value === 'home' &&
+    !hasSavedPages.value &&
+    (featuredTabLoading.value || trendingLoading.value) &&
+    !homeTabHasFeedContent.value,
+)
+
 const { related: savedHubRelatedFeed, loading: savedHubRelatedLoading } = useRelatedReadingFeed(
   savedSorted,
   savedHubActive,
@@ -386,6 +403,10 @@ watch(
       </template>
 
       <template v-else-if="activeTab === 'home'">
+        <div v-if="homeTabInitialLoading" class="musical-group-home__loading musical-group-home__loading--initial">
+          <CdxProgressBar inline aria-label="Loading home" />
+        </div>
+
         <WikitaHomeSection
           v-if="featuredArticle"
           title="Featured"
@@ -869,5 +890,11 @@ watch(
   display: flex;
   justify-content: center;
   padding-block: var(--spacing-50);
+}
+
+.musical-group-home__loading--initial {
+  min-height: var(--musical-group-tab-panel-min-height, 50vh);
+  align-items: flex-start;
+  padding-top: var(--spacing-250);
 }
 </style>

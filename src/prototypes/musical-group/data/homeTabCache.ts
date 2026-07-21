@@ -11,6 +11,9 @@ import { readVersionedStore, setVersionedEntry, writeVersionedStore } from './wi
 const STORAGE_KEY = 'musical-group-home-cache'
 const CACHE_VERSION = 1
 
+/** Daily home feeds (trending, etc.) stay valid for ~24h from fetch time. */
+export const HOME_TAB_FEED_CACHE_TTL_MS = 24 * 60 * 60 * 1000
+
 export type RelatedFeedTabId = 'home' | 'saved'
 
 export interface RelatedFeedSeedCursor {
@@ -163,17 +166,20 @@ export function clearCachedFeaturedTab(dependencyKey: string): void {
   writeEntries(entries)
 }
 
-export function getCachedTrendingFeed(dependencyKey: string): HomeTrending[] | null {
-  return getEntry<CachedTrendingEntry>('trending', dependencyKey)?.data ?? null
+export function getCachedTrendingFeed(_dependencyKey?: string): HomeTrending[] | null {
+  const entry = readEntries().trending as CachedTrendingEntry | undefined
+  if (!entry?.data?.length) return null
+  if (Date.now() - entry.fetchedAt > HOME_TAB_FEED_CACHE_TTL_MS) return null
+  return entry.data
 }
 
 export function setCachedTrendingFeed(dependencyKey: string, data: HomeTrending[]): void {
   setEntry('trending', { dependencyKey, data, fetchedAt: Date.now() })
 }
 
-export function clearCachedTrendingFeed(dependencyKey: string): void {
+export function clearCachedTrendingFeed(_dependencyKey?: string): void {
   const entries = readEntries()
-  if (entries.trending?.dependencyKey !== dependencyKey) return
+  if (!entries.trending) return
   delete entries.trending
   writeEntries(entries)
 }

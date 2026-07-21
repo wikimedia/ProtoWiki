@@ -302,12 +302,10 @@ export function useMusicalGroupHome() {
     }
 
     void (async () => {
-      if (!featuredCached) {
-        await loadFeatured(signal)
-      }
-      if (signal.aborted) return
-
-      await loadTrending(signal, { background: Boolean(trendingCached?.length) })
+      await Promise.all([
+        featuredCached ? Promise.resolve() : loadFeatured(signal),
+        loadTrending(signal, { background: Boolean(trendingCached?.length) }),
+      ])
       if (signal.aborted) return
 
       await reloadBookmarks()

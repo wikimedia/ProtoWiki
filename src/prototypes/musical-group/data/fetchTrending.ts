@@ -161,16 +161,14 @@ export async function refillIncompleteTrendingItems(
   return items.map((item) => byTitle.get(item.enwikiTitle.toLowerCase()) ?? item)
 }
 
-async function persistTrendingIfChanged(
-  dayKey: string,
-  before: HomeTrending[],
-  after: HomeTrending[],
-): Promise<HomeTrending[]> {
-  if (after.length) {
-    sessionCached = { day: dayKey, value: after }
-    if (trendingItemsChanged(before, after)) {
-      setCachedTrendingFeed(dayKey, after)
-    }
+async function persistTrendingFeed(dayKey: string, after: HomeTrending[]): Promise<HomeTrending[]> {
+  if (!after.length) return after
+
+  sessionCached = { day: dayKey, value: after }
+
+  const existing = getCachedTrendingFeed()
+  if (!existing?.length || trendingItemsChanged(existing, after)) {
+    setCachedTrendingFeed(dayKey, after)
   }
   return after
 }
@@ -186,12 +184,12 @@ export async function fetchTrendingFeed(signal?: AbortSignal): Promise<HomeTrend
   const stored = getCachedTrendingFeed(dayKey)
   if (stored?.length) {
     const refilled = await refillIncompleteTrendingItems(stored, signal)
-    return persistTrendingIfChanged(dayKey, stored, refilled)
+    return persistTrendingFeed(dayKey, refilled)
   }
 
   if (sessionCached && sessionCached.day === dayKey && sessionCached.value.length) {
     const refilled = await refillIncompleteTrendingItems(sessionCached.value, signal)
-    return persistTrendingIfChanged(dayKey, sessionCached.value, refilled)
+    return persistTrendingFeed(dayKey, refilled)
   }
 
   const { ok, json, status } = await fetchEnwikiFeaturedFeedDay(signal, 'musical-group-trending-feed')
@@ -224,5 +222,5 @@ export async function fetchTrendingFeed(signal?: AbortSignal): Promise<HomeTrend
     (item): item is HomeTrending => item !== null,
   )
   const refilled = await refillIncompleteTrendingItems(enriched, signal)
-  return persistTrendingIfChanged(dayKey, enriched, refilled)
+  return persistTrendingFeed(dayKey, refilled)
 }
