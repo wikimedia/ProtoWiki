@@ -21,7 +21,7 @@ import WikitaChromeHeader, {
 } from './components/WikitaChromeHeader.vue'
 import WikitaContributeTabPanel from './components/WikitaContributeTabPanel.vue'
 import WikitaHomeSection from './components/WikitaHomeSection.vue'
-import WikitaHomeTabs from './components/WikitaHomeTabs.vue'
+import WikitaHomeTabs, { type HomeTabId } from './components/WikitaHomeTabs.vue'
 import { useListCardThumbnails } from './composables/useListCardThumbnails'
 import { useWikitaSaveFeedback } from './composables/useWikitaSaveFeedback'
 import { isBookmarked } from './data/bookmarks'
@@ -71,7 +71,7 @@ const { activeHomeTab: activeTab, setHomeTab } = useMusicalGroupRoute()
 const { savePage, listsVersion } = useWikitaSaveFeedback()
 
 useMusicalGroupScrollStates()
-useMusicalGroupHomeTabScroll()
+const { scrollActiveHomeTabToTop } = useMusicalGroupHomeTabScroll()
 
 const {
   featuredArticle,
@@ -276,6 +276,12 @@ function editSuggestionRelatedToLabel(suggestion: HomeHelpWanted): string {
   return formatEditSuggestionRelatedToLabel(suggestion, savedSorted.value)
 }
 
+async function handleSetHomeTab(tab: HomeTabId, hash?: string) {
+  const sameTab = tab === activeTab.value
+  await setHomeTab(tab, hash)
+  if (sameTab && !hash) scrollActiveHomeTabToTop()
+}
+
 async function scrollToFeaturedSectionHash(rawHash: string): Promise<void> {
   await nextTick()
   requestAnimationFrame(() => {
@@ -322,7 +328,7 @@ watch(
     <WikitaHomeTabs
       :active-tab="activeTab"
       :has-saved-pages="hasSavedPages"
-      @update:active-tab="setHomeTab"
+      @update:active-tab="handleSetHomeTab"
     />
 
     <div class="musical-group-home__body">
@@ -411,7 +417,7 @@ watch(
           v-if="featuredArticle"
           title="Featured"
           to-tab="featured"
-          @title-navigate="setHomeTab"
+          @title-navigate="handleSetHomeTab"
         >
           <WikitaCardItem
             type="Article of the day"
@@ -432,7 +438,7 @@ watch(
           v-if="homeTrendingPreview.length"
           title="Trending"
           to-tab="trending"
-          @title-navigate="setHomeTab"
+          @title-navigate="handleSetHomeTab"
         >
           <WikitaCardItem
             v-for="item in homeTrendingPreview"
@@ -458,7 +464,7 @@ watch(
           title="Did you know"
           to-tab="featured"
           :to-hash="FEATURED_DYK_SECTION_ID"
-          @title-navigate="setHomeTab"
+          @title-navigate="handleSetHomeTab"
         >
           <WikitaCardItem
             v-for="(item, index) in homeDidYouKnowPreview"
@@ -482,7 +488,7 @@ watch(
           title="Born on this day"
           to-tab="featured"
           :to-hash="FEATURED_BORN_SECTION_ID"
-          @title-navigate="setHomeTab"
+          @title-navigate="handleSetHomeTab"
         >
           <WikitaCardItem
             v-for="item in homeBornOnThisDayPreview"
@@ -503,7 +509,7 @@ watch(
           v-if="hasSavedPages && (savedItemsLoading || recentlySaved.length)"
           title="Saved"
           to-tab="saved"
-          @title-navigate="setHomeTab"
+          @title-navigate="handleSetHomeTab"
         >
           <div v-if="savedItemsLoading" class="musical-group-home__loading">
             <CdxProgressBar inline aria-label="Loading saved pages" />
@@ -561,7 +567,7 @@ watch(
           "
           title="Help wanted"
           to-tab="contribute"
-          @title-navigate="setHomeTab"
+          @title-navigate="handleSetHomeTab"
         >
           <div v-if="helpWantedLoading" class="musical-group-home__loading">
             <CdxProgressBar inline aria-label="Loading edit suggestions" />
@@ -595,7 +601,7 @@ watch(
           "
           title="Recent changes"
           to-tab="activity"
-          @title-navigate="setHomeTab"
+          @title-navigate="handleSetHomeTab"
         >
           <WikitaCardItem
             v-for="change in recentChanges"
@@ -708,7 +714,7 @@ watch(
               title="Lists"
               to-tab="saved"
               :to-hash="SAVED_LISTS_HASH"
-              @title-navigate="setHomeTab"
+              @title-navigate="handleSetHomeTab"
             >
               <WikitaCardItem
                 v-for="{ list, thumbnailUrl } in savedTabListsPreview"
@@ -728,7 +734,7 @@ watch(
               title="Saved"
               to-tab="saved"
               :to-hash="SAVED_PAGES_HASH"
-              @title-navigate="setHomeTab"
+              @title-navigate="handleSetHomeTab"
             >
               <WikitaCardItem
                 v-for="item in savedTabSavedPreview"

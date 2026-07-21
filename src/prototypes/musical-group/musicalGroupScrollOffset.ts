@@ -138,6 +138,13 @@ export function measureMusicalGroupHomeTabContentTopScroll(page: HTMLElement): n
   return Math.max(stuckBaseline, bodyTopScroll)
 }
 
+/** Default scrollTop when opening a home tab (section title anchor or body top). */
+export function measureMusicalGroupHomeTabDefaultScroll(page: HTMLElement): number {
+  return hasMusicalGroupHomeTabBorderAnchor(page)
+    ? measureMusicalGroupHomeTabBorderScroll(page)
+    : measureMusicalGroupHomeTabContentTopScroll(page)
+}
+
 /** Space to leave above in-page scroll targets so sticky chrome + tabs do not cover them. */
 export function measureMusicalGroupStickyScrollOffset(page: Element): number {
   const styles = getComputedStyle(page)

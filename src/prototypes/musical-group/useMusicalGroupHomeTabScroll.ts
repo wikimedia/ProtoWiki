@@ -1,34 +1,23 @@
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import type { HomeTabId } from './components/WikitaHomeTabs.vue'
 import {
   getMusicalGroupScrollPage,
-  measureMusicalGroupHomeTabContentTopScroll,
+  measureMusicalGroupHomeTabDefaultScroll,
 } from './musicalGroupScrollOffset'
-import { parseHomeTabQuery, useMusicalGroupRoute } from './useMusicalGroupRoute'
+import { useMusicalGroupRoute } from './useMusicalGroupRoute'
 
-interface PendingSwitch {
-  from: HomeTabId
-  to: HomeTabId
-  scrollTop: number
-}
-
-/** Per-tab scroll memory for the home view; cleared when MusicalGroupHome unmounts. */
+/** Scroll home tabs to their content top on every open (no per-tab scroll memory). */
 export function useMusicalGroupHomeTabScroll() {
   const route = useRoute()
   const { activeHomeTab } = useMusicalGroupRoute()
 
-  const tabScrollTops = new Map<HomeTabId, number>()
-  const pendingSwitch = ref<PendingSwitch | null>(null)
-
   let scrollRoot: HTMLElement | null = null
-  let isRestoringScroll = false
   let panelResizeObserver: ResizeObserver | null = null
   let panelStableTimer: ReturnType<typeof setTimeout> | null = null
   let pendingScrollTarget: number | null = null
 
-  let previousTab = parseHomeTabQuery(route.query.tab)
+  let previousTab = activeHomeTab.value
 
   function disconnectPanelObserver() {
     panelResizeObserver?.disconnect()
@@ -64,76 +53,42 @@ export function useMusicalGroupHomeTabScroll() {
     panelResizeObserver.observe(panel)
   }
 
-  function applyScrollRestore(switchInfo: PendingSwitch) {
+  function shouldDeferToFeaturedHashScroll(): boolean {
+    return activeHomeTab.value === 'featured' && Boolean(route.hash)
+  }
+
+  function scrollActiveHomeTabToTop() {
+    if (shouldDeferToFeaturedHashScroll()) return
+
     const page = scrollRoot ?? getMusicalGroupScrollPage()
     if (!page) return
 
     disconnectPanelObserver()
 
-    tabScrollTops.set(switchInfo.from, switchInfo.scrollTop)
-
-    const target =
-      tabScrollTops.get(switchInfo.to) ?? measureMusicalGroupHomeTabContentTopScroll(page)
-
-    isRestoringScroll = true
+    const target = measureMusicalGroupHomeTabDefaultScroll(page)
     scrollPageTo(target)
     observePanelForScrollRestore(page, target)
-    requestAnimationFrame(() => {
-      isRestoringScroll = false
-    })
   }
 
-  function onScroll() {
-    const page = scrollRoot
-    if (!page) return
-    if (isRestoringScroll || pendingSwitch.value) return
-
-    const tab = parseHomeTabQuery(route.query.tab)
-    tabScrollTops.set(tab, page.scrollTop)
-  }
-
-  watch(
-    () => route.query.tab,
-    (tabRaw) => {
-      const to = parseHomeTabQuery(tabRaw)
-      const from = previousTab
-
-      if (from !== to) {
-        const page = getMusicalGroupScrollPage()
-        if (page) {
-          pendingSwitch.value = {
-            from,
-            to,
-            scrollTop: page.scrollTop,
-          }
-        }
-      }
-
-      previousTab = to
-    },
-    { flush: 'sync' },
-  )
-
-  watch(activeHomeTab, async () => {
-    const switchInfo = pendingSwitch.value
-    if (!switchInfo) return
-    pendingSwitch.value = null
-
-    if (route.hash) return
+  watch(activeHomeTab, async (tab) => {
+    if (tab === previousTab) return
+    previousTab = tab
 
     await nextTick()
     requestAnimationFrame(() => {
-      applyScrollRestore(switchInfo)
+      scrollActiveHomeTabToTop()
     })
   })
 
   onMounted(() => {
     scrollRoot = getMusicalGroupScrollPage()
-    scrollRoot?.addEventListener('scroll', onScroll, { passive: true })
   })
 
   onUnmounted(() => {
-    scrollRoot?.removeEventListener('scroll', onScroll)
     disconnectPanelObserver()
   })
+
+  return {
+    scrollActiveHomeTabToTop,
+  }
 }
