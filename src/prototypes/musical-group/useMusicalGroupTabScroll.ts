@@ -5,6 +5,7 @@ import type { TabId } from './data/types'
 import {
   getMusicalGroupScrollPage,
   isMusicalGroupTabsStuck,
+  measureMusicalGroupTabsStuckBaseline,
   measureMusicalGroupTabContentTopScroll,
 } from './musicalGroupScrollOffset'
 import { parseTabQuery, useMusicalGroupRoute } from './useMusicalGroupRoute'
@@ -16,13 +17,11 @@ interface PendingSwitch {
   tabsStuck: boolean
 }
 
-/** Per-tab scroll memory while tabs are stuck; preserves scroll when tabs are in document flow. */
+/** Item-page tab scroll: preserve scroll when tabs are in flow; snap to stuck baseline when stuck. */
 export function useMusicalGroupTabScroll() {
   const route = useRoute()
   const { activeTab } = useMusicalGroupRoute()
 
-  const tabScrollTops = new Map<TabId, number>()
-  const visitedTabs = new Set<TabId>()
   const pendingSwitch = ref<PendingSwitch | null>(null)
 
   let scrollRoot: HTMLElement | null = null
@@ -64,12 +63,29 @@ export function useMusicalGroupTabScroll() {
       if (panelStableTimer) clearTimeout(panelStableTimer)
       panelStableTimer = setTimeout(() => {
         disconnectPanelObserver()
-      }, 500)
+      }, 1500)
     })
     panelResizeObserver.observe(panel)
   }
 
-  function scrollToTabContent() {
+  function scrollActiveTabToTop() {
+    const apply = () => {
+      const page = scrollRoot ?? getMusicalGroupScrollPage()
+      if (!page) return
+
+      const target = measureMusicalGroupTabsStuckBaseline(page)
+      disconnectPanelObserver()
+      scrollPageTo(target)
+      observePanelForScrollRestore(page, target)
+    }
+
+    apply()
+    requestAnimationFrame(apply)
+    window.setTimeout(apply, 100)
+    window.setTimeout(apply, 400)
+  }
+
+  function scrollToTabContentWhenUnstuck() {
     const page = scrollRoot ?? getMusicalGroupScrollPage()
     if (!page) return
 
@@ -84,6 +100,18 @@ export function useMusicalGroupTabScroll() {
     })
   }
 
+  function scrollToTabContent() {
+    const page = scrollRoot ?? getMusicalGroupScrollPage()
+    if (!page) return
+
+    if (isMusicalGroupTabsStuck(page)) {
+      scrollActiveTabToTop()
+      return
+    }
+
+    scrollToTabContentWhenUnstuck()
+  }
+
   function requestScrollToTabContent() {
     forceScrollToContent = true
   }
@@ -96,28 +124,16 @@ export function useMusicalGroupTabScroll() {
 
     if (forceScrollToContent) {
       forceScrollToContent = false
-      visitedTabs.add(switchInfo.to)
-      tabScrollTops.set(switchInfo.to, measureMusicalGroupTabContentTopScroll(page))
-      scrollToTabContent()
+      if (switchInfo.tabsStuck) {
+        scrollActiveTabToTop()
+      } else {
+        scrollToTabContentWhenUnstuck()
+      }
       return
     }
 
     if (switchInfo.tabsStuck) {
-      visitedTabs.add(switchInfo.from)
-      tabScrollTops.set(switchInfo.from, switchInfo.scrollTop)
-
-      const isFirstVisit = !visitedTabs.has(switchInfo.to)
-      const target = isFirstVisit
-        ? measureMusicalGroupTabContentTopScroll(page)
-        : (tabScrollTops.get(switchInfo.to) ?? measureMusicalGroupTabContentTopScroll(page))
-
-      visitedTabs.add(switchInfo.to)
-      isRestoringScroll = true
-      scrollPageTo(target)
-      observePanelForScrollRestore(page, target)
-      requestAnimationFrame(() => {
-        isRestoringScroll = false
-      })
+      scrollActiveTabToTop()
       return
     }
 
@@ -128,24 +144,12 @@ export function useMusicalGroupTabScroll() {
     })
   }
 
-  function onScroll() {
-    const page = scrollRoot
-    if (!page || !isMusicalGroupTabsStuck(page)) return
-    if (isRestoringScroll || pendingSwitch.value) return
-
-    const tab = parseTabQuery(route.query.tab)
-    visitedTabs.add(tab)
-    tabScrollTops.set(tab, page.scrollTop)
-  }
-
   watch(
     () => [route.query.item, route.query.tab] as const,
     ([item, tabRaw]) => {
       const to = parseTabQuery(tabRaw)
 
       if (item !== previousItem) {
-        tabScrollTops.clear()
-        visitedTabs.clear()
         pendingSwitch.value = null
         disconnectPanelObserver()
         previousItem = item
@@ -185,16 +189,15 @@ export function useMusicalGroupTabScroll() {
 
   onMounted(() => {
     scrollRoot = getMusicalGroupScrollPage()
-    scrollRoot?.addEventListener('scroll', onScroll, { passive: true })
   })
 
   onUnmounted(() => {
-    scrollRoot?.removeEventListener('scroll', onScroll)
     disconnectPanelObserver()
   })
 
   return {
     requestScrollToTabContent,
     scrollToTabContent,
+    scrollActiveTabToTop,
   }
 }

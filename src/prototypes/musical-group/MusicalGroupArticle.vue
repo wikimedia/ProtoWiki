@@ -6,6 +6,7 @@ import { CdxProgressBar } from '@wikimedia/codex'
 import WikitaCardNotice from './components/WikitaCardNotice.vue'
 import WikitaCardScrollTable from './components/WikitaCardScrollTable.vue'
 import WikitaCardSidebar from './components/WikitaCardSidebar.vue'
+import { useWikitaUiSkin } from './composables/useWikitaUiSkin'
 import { fetchWikitaArticleHtml } from './data/fetchWikitaArticle'
 import { getCachedMusicalGroup } from './data/musicalGroupCache'
 import { parseWikitaArticleBlocks, type WikitaArticleBlock } from './data/parseWikitaArticle'
@@ -17,6 +18,8 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+const effectiveSkin = useWikitaUiSkin()
 
 const blocks = ref<WikitaArticleBlock[]>([])
 const loading = ref(false)
@@ -91,7 +94,17 @@ watch(
 
     <p v-else-if="!blocks.length" class="musical-group-article__empty">No article content available.</p>
 
-    <div v-else ref="articleRef" class="wikita-article" @click="onArticleClick">
+    <div
+      v-else
+      ref="articleRef"
+      class="wikita-article"
+      :class="{
+        'wikita-article--wikipedia': effectiveSkin === 'wikipedia',
+        'mw-parser-output': effectiveSkin === 'wikipedia',
+      }"
+      :data-skin="effectiveSkin === 'wikipedia' ? 'mobile' : undefined"
+      @click="onArticleClick"
+    >
       <template v-for="(block, index) in blocks" :key="index">
         <WikitaCardScrollTable
           v-if="block.type === 'table'"
@@ -128,6 +141,24 @@ watch(
   flex-direction: column;
   gap: var(--spacing-100);
   min-width: 0;
+}
+
+.wikita-article--wikipedia {
+  gap: var(--spacing-75);
+}
+
+.wikita-article--wikipedia .wikita-article__prose :deep(h2) {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-x-large);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-x-large);
+  border-bottom-color: var(--border-color-muted);
+}
+
+.wikita-article--wikipedia .wikita-article__prose :deep(.thumb),
+.wikita-article--wikipedia .wikita-article__prose :deep(figure) {
+  border-color: var(--border-color-base);
+  border-radius: var(--border-radius-base);
 }
 
 .wikita-article__prose {

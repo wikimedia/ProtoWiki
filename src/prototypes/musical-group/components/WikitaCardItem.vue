@@ -6,6 +6,7 @@ import { CdxIcon } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
 import { cdxIconBookmark, cdxIconBookmarkList, cdxIconBookmarkOutline } from '@wikimedia/codex-icons'
 
+import { useWikitaUiSkin, type WikitaUiSkin } from '../composables/useWikitaUiSkin'
 import WikitaButton from './WikitaButton.vue'
 import WikitaCardWrapper from './WikitaCardWrapper.vue'
 
@@ -49,6 +50,7 @@ interface Props {
   externalHref?: string
   /** Whole-card click (e.g. list picker); ignored when href/externalHref is set. */
   interactive?: boolean
+  skin?: WikitaUiSkin
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -83,6 +85,7 @@ const props = withDefaults(defineProps<Props>(), {
   href: undefined,
   externalHref: undefined,
   interactive: false,
+  skin: undefined,
 })
 
 const emit = defineEmits<{
@@ -91,6 +94,8 @@ const emit = defineEmits<{
 }>()
 
 const titleId = useId()
+
+const effectiveSkin = useWikitaUiSkin(() => props.skin)
 
 const allowNestedInteractive = computed(
   () => props.showAction && Boolean(props.href || props.externalHref),
@@ -166,8 +171,15 @@ const useCoverButton = computed(
     :allow-nested-interactive="allowNestedInteractive"
     :cover-link-labelled-by="allowNestedInteractive && showTitleLine ? titleId : undefined"
     :interactive="useCoverButton"
+    :skin="skin"
   >
-    <div class="wikita-card-item" :class="{ 'wikita-card-item--interactive': useCoverButton }">
+    <div
+      class="wikita-card-item"
+      :class="{
+        'wikita-card-item--interactive': useCoverButton,
+        'wikita-card-item--wikipedia': effectiveSkin === 'wikipedia',
+      }"
+    >
       <button
         v-if="useCoverButton"
         type="button"
@@ -221,6 +233,7 @@ const useCoverButton = computed(
         <div v-if="showThumb" class="wikita-card-item__thumb-wrap">
           <img
             class="wikita-card-item__thumb"
+            :class="{ 'wikita-card-item__thumb--wikipedia': effectiveSkin === 'wikipedia' }"
             :src="thumbnailUrl"
             :alt="thumbnailAlt"
             loading="lazy"
@@ -433,6 +446,11 @@ const useCoverButton = computed(
   border: 1px solid var(--color-base);
 }
 
+.wikita-card-item__thumb--wikipedia {
+  border-color: var(--border-color-subtle);
+  border-radius: var(--border-radius-base);
+}
+
 .wikita-card-item__footer {
   display: flex;
   align-items: flex-start;
@@ -463,5 +481,19 @@ const useCoverButton = computed(
 
 .wikita-card-item__footer-right--subtle {
   color: var(--color-subtle);
+}
+
+.wikita-card-item--wikipedia .wikita-card-item__title {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-medium);
+  line-height: var(--line-height-medium);
+}
+
+.wikita-card-item--wikipedia .wikita-card-item__thumb-wrap {
+  padding-left: 0;
+}
+
+.wikita-card-item--wikipedia .wikita-card-item__snippet :deep(.searchmatch) {
+  background-color: var(--background-color-warning-subtle);
 }
 </style>

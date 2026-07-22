@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { CdxIcon } from '@wikimedia/codex'
+import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
+
+import { useWikitaUiSkin, type WikitaUiSkin } from '../composables/useWikitaUiSkin'
 
 type WikitaIconFrame =
   | 'menu'
@@ -17,11 +19,21 @@ interface Props {
   icon: Icon
   frame: WikitaIconFrame
   size?: 18 | 20
+  skin?: WikitaUiSkin
+  ariaLabel?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   size: 20,
+  skin: undefined,
+  ariaLabel: undefined,
 })
+
+defineEmits<{
+  click: [event: MouseEvent]
+}>()
+
+const effectiveSkin = useWikitaUiSkin(() => props.skin)
 
 const frameClass = computed(() => `wikita-icon--${props.frame}`)
 
@@ -32,7 +44,18 @@ const sizeStyle = computed(() => ({
 </script>
 
 <template>
+  <CdxButton
+    v-if="effectiveSkin === 'wikipedia'"
+    weight="quiet"
+    :aria-label="ariaLabel"
+    class="wikita-icon-wikipedia"
+    @click="$emit('click', $event)"
+  >
+    <CdxIcon :icon="icon" />
+  </CdxButton>
+
   <span
+    v-else
     class="wikita-icon"
     :class="frameClass"
     :style="sizeStyle"
@@ -42,6 +65,11 @@ const sizeStyle = computed(() => ({
 </template>
 
 <style scoped>
+.wikita-icon-wikipedia {
+  min-width: 32px;
+  min-height: 32px;
+}
+
 .wikita-icon {
   position: relative;
   display: block;

@@ -1,13 +1,27 @@
 <script setup lang="ts">
+import { useWikitaUiSkin, type WikitaUiSkin } from '../composables/useWikitaUiSkin'
+
 interface Props {
   html: string
+  skin?: WikitaUiSkin
 }
 
-defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  skin: undefined,
+})
+
+const effectiveSkin = useWikitaUiSkin(() => props.skin)
 </script>
 
 <template>
-  <div class="wikita-sidebar">
+  <div
+    class="wikita-sidebar"
+    :class="{
+      'wikita-sidebar--wikipedia': effectiveSkin === 'wikipedia',
+      'mw-parser-output': effectiveSkin === 'wikipedia',
+    }"
+    :data-skin="effectiveSkin === 'wikipedia' ? 'mobile' : undefined"
+  >
     <!-- eslint-disable-next-line vue/no-v-html -->
     <div class="wikita-sidebar__inner" v-html="html" />
   </div>
@@ -17,6 +31,10 @@ defineProps<Props>()
 .wikita-sidebar {
   min-width: 0;
   margin-block: calc(-1 * var(--spacing-50));
+}
+
+.wikita-sidebar--wikipedia {
+  margin-block: 0;
 }
 
 .wikita-sidebar__inner :deep(table.sidebar) {
@@ -34,6 +52,10 @@ defineProps<Props>()
   text-align: center;
   color: var(--color-base);
   background-color: var(--background-color-neutral-subtle);
+}
+
+.wikita-sidebar--wikipedia .wikita-sidebar__inner :deep(table.sidebar) {
+  border-color: var(--border-color-base);
 }
 
 .wikita-sidebar__inner :deep(.sidebar td),

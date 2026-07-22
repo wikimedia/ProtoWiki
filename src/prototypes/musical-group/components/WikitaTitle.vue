@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconEdit, cdxIconHistory, cdxIconSpeechBubble } from '@wikimedia/codex-icons'
 
 import BookmarkIcon from '../BookmarkIcon.vue'
+import { useWikitaUiSkin, type WikitaUiSkin } from '../composables/useWikitaUiSkin'
 import WikitaIcon from './WikitaIcon.vue'
 
 interface Props {
@@ -16,6 +18,7 @@ interface Props {
   showEdit?: boolean
   showHistoryDot?: boolean
   showTalkDot?: boolean
+  skin?: WikitaUiSkin
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -27,6 +30,7 @@ const props = withDefaults(defineProps<Props>(), {
   showEdit: true,
   showHistoryDot: false,
   showTalkDot: false,
+  skin: undefined,
 })
 
 const emit = defineEmits<{
@@ -36,17 +40,28 @@ const emit = defineEmits<{
   'edit-click': []
 }>()
 
+const effectiveSkin = useWikitaUiSkin(() => props.skin)
+
 const hasActions = computed(
   () => props.showHistory || props.showTalk || props.showEdit,
 )
 </script>
 
 <template>
-  <div class="wikita-title">
+  <div class="wikita-title" :class="{ 'wikita-title--wikipedia': effectiveSkin === 'wikipedia' }">
     <div class="wikita-title__header">
       <div class="wikita-title__lead">
+        <CdxButton
+          v-if="showBookmark && effectiveSkin === 'wikipedia'"
+          weight="quiet"
+          class="wikita-title__icon-btn wikita-title__icon-btn--wikipedia"
+          :aria-label="inList ? 'In list' : bookmarked ? 'Saved' : 'Bookmark'"
+          @click="emit('bookmark-click')"
+        >
+          <BookmarkIcon :filled="bookmarked && !inList" :in-list="inList" />
+        </CdxButton>
         <button
-          v-if="showBookmark"
+          v-else-if="showBookmark"
           type="button"
           class="wikita-title__icon-btn"
           :aria-label="inList ? 'In list' : bookmarked ? 'Saved' : 'Bookmark'"
@@ -59,37 +74,73 @@ const hasActions = computed(
       </div>
 
       <div v-if="hasActions" class="wikita-title__actions">
-        <button
-          v-if="showHistory"
-          type="button"
-          class="wikita-title__icon-btn"
-          aria-label="History"
-          @click="emit('history-click')"
-        >
-          <WikitaIcon :icon="cdxIconHistory" frame="history" />
-          <span v-if="showHistoryDot" class="wikita-title__dot" aria-hidden="true" />
-        </button>
+        <template v-if="effectiveSkin === 'wikipedia'">
+          <CdxButton
+            v-if="showHistory"
+            weight="quiet"
+            class="wikita-title__icon-btn wikita-title__icon-btn--wikipedia"
+            aria-label="History"
+            @click="emit('history-click')"
+          >
+            <CdxIcon :icon="cdxIconHistory" />
+            <span v-if="showHistoryDot" class="wikita-title__dot" aria-hidden="true" />
+          </CdxButton>
 
-        <button
-          v-if="showTalk"
-          type="button"
-          class="wikita-title__icon-btn"
-          aria-label="Talk"
-          @click="emit('talk-click')"
-        >
-          <WikitaIcon :icon="cdxIconSpeechBubble" frame="talk" />
-          <span v-if="showTalkDot" class="wikita-title__dot" aria-hidden="true" />
-        </button>
+          <CdxButton
+            v-if="showTalk"
+            weight="quiet"
+            class="wikita-title__icon-btn wikita-title__icon-btn--wikipedia"
+            aria-label="Talk"
+            @click="emit('talk-click')"
+          >
+            <CdxIcon :icon="cdxIconSpeechBubble" />
+            <span v-if="showTalkDot" class="wikita-title__dot" aria-hidden="true" />
+          </CdxButton>
 
-        <button
-          v-if="showEdit"
-          type="button"
-          class="wikita-title__icon-btn"
-          aria-label="Edit"
-          @click="emit('edit-click')"
-        >
-          <WikitaIcon :icon="cdxIconEdit" frame="edit" />
-        </button>
+          <CdxButton
+            v-if="showEdit"
+            weight="quiet"
+            class="wikita-title__icon-btn wikita-title__icon-btn--wikipedia"
+            aria-label="Edit"
+            @click="emit('edit-click')"
+          >
+            <CdxIcon :icon="cdxIconEdit" />
+          </CdxButton>
+        </template>
+
+        <template v-else>
+          <button
+            v-if="showHistory"
+            type="button"
+            class="wikita-title__icon-btn"
+            aria-label="History"
+            @click="emit('history-click')"
+          >
+            <WikitaIcon :icon="cdxIconHistory" frame="history" />
+            <span v-if="showHistoryDot" class="wikita-title__dot" aria-hidden="true" />
+          </button>
+
+          <button
+            v-if="showTalk"
+            type="button"
+            class="wikita-title__icon-btn"
+            aria-label="Talk"
+            @click="emit('talk-click')"
+          >
+            <WikitaIcon :icon="cdxIconSpeechBubble" frame="talk" />
+            <span v-if="showTalkDot" class="wikita-title__dot" aria-hidden="true" />
+          </button>
+
+          <button
+            v-if="showEdit"
+            type="button"
+            class="wikita-title__icon-btn"
+            aria-label="Edit"
+            @click="emit('edit-click')"
+          >
+            <WikitaIcon :icon="cdxIconEdit" frame="edit" />
+          </button>
+        </template>
       </div>
     </div>
   </div>
@@ -122,6 +173,10 @@ const hasActions = computed(
     right 25ms linear;
 }
 
+.wikita-title--wikipedia .wikita-title__header::after {
+  background-color: var(--border-color-muted);
+}
+
 .wikita-title__lead {
   display: flex;
   align-items: flex-start;
@@ -130,8 +185,11 @@ const hasActions = computed(
 }
 
 .wikita-title__lead .wikita-title__icon-btn {
-  /* Optically center 20px bookmark with the first line’s line box (xxx-large / xx-large). */
   margin-top: calc((var(--line-height-xx-large) - 20px) / 2);
+}
+
+.wikita-title--wikipedia .wikita-title__lead .wikita-title__icon-btn {
+  margin-top: calc((var(--line-height-x-large) - 32px) / 2);
 }
 
 .wikita-title__title {
@@ -148,11 +206,22 @@ const hasActions = computed(
   overflow: hidden;
 }
 
+.wikita-title--wikipedia .wikita-title__title {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-x-large);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-x-large);
+}
+
 .wikita-title__actions {
   display: flex;
   flex-shrink: 0;
   align-items: center;
   gap: 12px;
+}
+
+.wikita-title--wikipedia .wikita-title__actions {
+  gap: var(--spacing-25);
 }
 
 .wikita-title__icon-btn {
@@ -168,6 +237,13 @@ const hasActions = computed(
   background: transparent;
   color: inherit;
   cursor: pointer;
+}
+
+.wikita-title__icon-btn--wikipedia {
+  width: auto;
+  height: auto;
+  min-width: 32px;
+  min-height: 32px;
 }
 
 .wikita-title__dot {

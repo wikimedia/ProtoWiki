@@ -1,15 +1,33 @@
 <script setup lang="ts">
+import { CdxMessage } from '@wikimedia/codex'
+
+import { useWikitaUiSkin, type WikitaUiSkin } from '../composables/useWikitaUiSkin'
 import WikitaCardWrapper from './WikitaCardWrapper.vue'
 
 interface Props {
   html: string
+  skin?: WikitaUiSkin
 }
 
-defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  skin: undefined,
+})
+
+const effectiveSkin = useWikitaUiSkin(() => props.skin)
 </script>
 
 <template>
-  <div class="wikita-article-notice">
+  <CdxMessage
+    v-if="effectiveSkin === 'wikipedia'"
+    type="notice"
+    :allow-user-dismiss="false"
+    class="wikita-card-notice-wikipedia"
+  >
+    <!-- eslint-disable-next-line vue/no-v-html -->
+    <div class="wikita-card-notice-wikipedia__inner" v-html="html" />
+  </CdxMessage>
+
+  <div v-else class="wikita-article-notice">
     <WikitaCardWrapper>
       <div class="wikita-card-notice">
         <!-- eslint-disable-next-line vue/no-v-html -->
@@ -61,5 +79,20 @@ defineProps<Props>()
 
 .wikita-card-notice :deep(.date-container) {
   color: var(--color-subtle);
+}
+
+.wikita-card-notice-wikipedia__inner {
+  min-width: 0;
+  font-size: var(--font-size-medium);
+  line-height: var(--line-height-medium);
+}
+
+.wikita-card-notice-wikipedia__inner :deep(a) {
+  color: var(--color-progressive);
+  text-decoration: none;
+}
+
+.wikita-card-notice-wikipedia__inner :deep(a:hover) {
+  text-decoration: underline;
 }
 </style>

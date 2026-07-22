@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { CdxIcon } from '@wikimedia/codex'
+import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconNext } from '@wikimedia/codex-icons'
 
+import { useWikitaUiSkin, type WikitaUiSkin } from '../composables/useWikitaUiSkin'
 import type { HomeTabId } from './WikitaHomeTabs.vue'
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
   toHash?: string
   /** Element id for in-page scroll targets on full tab views. */
   sectionId?: string
+  skin?: WikitaUiSkin
 }
 
 const props = defineProps<Props>()
@@ -19,6 +21,8 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   'title-navigate': [tab: HomeTabId, hash?: string]
 }>()
+
+const effectiveSkin = useWikitaUiSkin(() => props.skin)
 
 function onTitleClick() {
   if (props.toTab) {
@@ -33,11 +37,22 @@ function onTitleClick() {
     :class="[
       'wikita-home-section',
       title ? 'wikita-home-section--has-title' : 'wikita-home-section--no-title',
+      { 'wikita-home-section--wikipedia': effectiveSkin === 'wikipedia' },
     ]"
   >
     <h2 v-if="title && !toTab" class="wikita-home-section__title">{{ title }}</h2>
     <h2 v-if="title && toTab" class="wikita-home-section__title">
+      <CdxButton
+        v-if="effectiveSkin === 'wikipedia'"
+        weight="quiet"
+        class="wikita-home-section__title-link wikita-home-section__title-link--wikipedia"
+        @click="onTitleClick"
+      >
+        <span class="wikita-home-section__title-text">{{ title }}</span>
+        <CdxIcon :icon="cdxIconNext" class="wikita-home-section__title-arrow" />
+      </CdxButton>
       <button
+        v-else
         type="button"
         class="wikita-home-section__title-link"
         @click="onTitleClick"
@@ -98,5 +113,16 @@ function onTitleClick() {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-50);
+}
+
+.wikita-home-section--wikipedia .wikita-home-section__title {
+  font-size: var(--font-size-large);
+  line-height: var(--line-height-large);
+}
+
+.wikita-home-section__title-link--wikipedia {
+  height: auto;
+  min-height: 0;
+  padding: 0;
 }
 </style>

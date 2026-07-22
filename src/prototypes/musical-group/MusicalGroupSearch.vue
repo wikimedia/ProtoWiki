@@ -10,6 +10,7 @@ import WikitaTitle from './components/WikitaTitle.vue'
 import WikitaChromeHeader, {
   type WikitaChromeHeaderVariant,
 } from './components/WikitaChromeHeader.vue'
+import type { WikitaUiSkin } from './data/wikitaUiSkinPreference'
 import { parseQidInput, searchWikidataItems } from './data/wikidataApi'
 import type { MusicalGroupSearchResult } from './data/types'
 
@@ -22,6 +23,8 @@ defineProps<Props>()
 const headerVariant = defineModel<WikitaChromeHeaderVariant>('headerVariant', {
   default: 'black',
 })
+
+const uiSkin = defineModel<WikitaUiSkin>('uiSkin', { default: 'wikita' })
 
 const emit = defineEmits<{
   navigate: [id: string]
@@ -100,6 +103,7 @@ onMounted(() => {
     <div class="musical-group-chrome-stack">
       <WikitaChromeHeader
         v-model:variant="headerVariant"
+        v-model:ui-skin="uiSkin"
         @toggle-search="emit('toggle-search')"
         @reset-stored-data="emit('reset-stored-data')"
         @go-home="emit('go-home')"

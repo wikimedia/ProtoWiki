@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
+import { CdxTab, CdxTabs } from '@wikimedia/codex'
+
 import { scrollTabIntoTrackView } from '../scrollTabIntoTrackView'
+import { useWikitaUiSkin, type WikitaUiSkin } from '../composables/useWikitaUiSkin'
 import WikitaButton from './WikitaButton.vue'
 
 export type HomeTabId = 'home' | 'featured' | 'trending' | 'activity' | 'contribute' | 'saved'
@@ -15,9 +18,12 @@ const allTabs: { id: HomeTabId; label: string }[] = [
   { id: 'contribute', label: 'Contribute' },
 ]
 
-const { hasSavedPages = true } = defineProps<{
+const { hasSavedPages = true, skin: skinProp } = defineProps<{
   hasSavedPages?: boolean
+  skin?: WikitaUiSkin
 }>()
+
+const effectiveSkin = useWikitaUiSkin(() => skinProp)
 
 const visibleTabs = computed(() =>
   hasSavedPages
@@ -33,8 +39,19 @@ const visibleTabs = computed(() =>
 const activeTab = defineModel<HomeTabId>('activeTab', { default: 'home' })
 
 const trackRef = ref<HTMLElement | null>(null)
+const tabsRef = ref<HTMLElement | null>(null)
 
 function scrollActiveTabIntoView() {
+  if (effectiveSkin.value === 'wikipedia') {
+    const tabsEl = tabsRef.value
+    if (!tabsEl) return
+
+    const track = tabsEl.querySelector<HTMLElement>('[role="tablist"]')
+    const button = tabsEl.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')
+    if (button && track) scrollTabIntoTrackView(button, track)
+    return
+  }
+
   const track = trackRef.value
   if (!track) return
 
@@ -58,6 +75,11 @@ watch(visibleTabs, async () => {
   scrollActiveTabIntoView()
 })
 
+watch(effectiveSkin, async () => {
+  await nextTick()
+  scrollActiveTabIntoView()
+})
+
 onMounted(() => {
   scrollActiveTabIntoView()
 })
@@ -65,7 +87,25 @@ onMounted(() => {
 
 <template>
   <div class="musical-group-tabs-sticky">
-    <nav class="musical-group-tabs" aria-label="Home sections">
+    <div
+      v-if="effectiveSkin === 'wikipedia'"
+      ref="tabsRef"
+      class="musical-group-tabs musical-group-tabs--wikipedia"
+    >
+      <CdxTabs
+        v-model:active="activeTab"
+        aria-label="Home sections"
+      >
+        <CdxTab
+          v-for="tab in visibleTabs"
+          :key="tab.id"
+          :name="tab.id"
+          :label="tab.label"
+        />
+      </CdxTabs>
+    </div>
+
+    <nav v-else class="musical-group-tabs" aria-label="Home sections">
       <div ref="trackRef" class="musical-group-tabs__track">
         <WikitaButton
           v-for="tab in visibleTabs"
@@ -134,6 +174,42 @@ onMounted(() => {
 }
 
 .musical-group-tabs__track::-webkit-scrollbar {
+  display: none;
+}
+
+.musical-group-tabs--wikipedia {
+  margin-inline: var(--spacing-50);
+  padding-inline: 0;
+  padding-top: var(--spacing-50);
+  padding-bottom: 0;
+}
+
+.musical-group-tabs--wikipedia::before,
+.musical-group-tabs--wikipedia::after {
+  display: none;
+}
+
+.musical-group-tabs--wikipedia :deep(.cdx-tabs) {
+  display: inline-block;
+  width: auto;
+  max-width: 100%;
+}
+
+.musical-group-tabs--wikipedia :deep(.cdx-tabs__header) {
+  margin-inline: 0;
+  border-bottom: none;
+  width: auto;
+  max-width: 100%;
+}
+
+.musical-group-tabs--wikipedia :deep(.cdx-tabs__list) {
+  width: fit-content;
+  max-width: 100%;
+  border-bottom: 1px solid var(--border-color-base);
+  box-sizing: border-box;
+}
+
+.musical-group-tabs--wikipedia :deep(.cdx-tabs__content) {
   display: none;
 }
 

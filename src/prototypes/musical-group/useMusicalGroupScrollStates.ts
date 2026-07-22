@@ -13,7 +13,8 @@ function syncStickyLayout(page: Element) {
 
   const gap = parseFloat(getComputedStyle(page).getPropertyValue('--spacing-50')) || 8
   const stackHeight = stack.getBoundingClientRect().height
-  const tabsTop = stackHeight + gap
+  const isWikipediaSkin = page.getAttribute('data-wikita-ui-skin') === 'wikipedia'
+  const tabsTop = isWikipediaSkin ? stackHeight : stackHeight + gap
 
   page.style.setProperty('--musical-group-chrome-stack-height', `${stackHeight}px`)
   page.style.setProperty('--musical-group-tabs-sticky-top', `${tabsTop}px`)
@@ -87,7 +88,11 @@ export function useMusicalGroupScrollStates() {
       wantTitleCollapsed = false
     } else if (scrollTop > lastScrollTop) {
       wantTitleCollapsed = true
-    } else if (scrollTop < lastScrollTop && !tabsAtStickyPosition) {
+    } else if (
+      scrollTop < lastScrollTop &&
+      !tabsAtStickyPosition &&
+      !scrollRoot.hasAttribute('data-tabs-stuck')
+    ) {
       // Stay collapsed while tabs remain stuck — tab switches that restore scroll
       // upward would otherwise expand the title and open a gap under the rule.
       wantTitleCollapsed = false
@@ -97,15 +102,12 @@ export function useMusicalGroupScrollStates() {
 
     scrollRoot.toggleAttribute('data-scrolled', wantTitleCollapsed)
 
-    // Threshold is layout-stable only while tabs are in document flow; once sticky,
-    // getBoundingClientRect-based measurement tracks scrollTop and never exceeds it.
-    if (!tabsStuck) {
-      tabContentScrollThreshold = hasPageTitle
-        ? measureMusicalGroupTabContentTopScroll(scrollEl)
-        : hasHomeSectionTitle
-          ? measureMusicalGroupHomeTabBorderScroll(scrollEl)
-          : 0
-    }
+    // Layout-based thresholds stay stable while tabs are stuck (unlike getBoundingClientRect).
+    tabContentScrollThreshold = hasPageTitle
+      ? measureMusicalGroupTabContentTopScroll(scrollEl)
+      : hasHomeSectionTitle
+        ? measureMusicalGroupHomeTabBorderScroll(scrollEl)
+        : 0
 
     scrollRoot.toggleAttribute(
       'data-page-scrolled',
@@ -123,7 +125,9 @@ export function useMusicalGroupScrollStates() {
         titleCollapseDelta = measureTitleCollapseDelta(scrollRoot, stack)
         remeasureCollapseDelta = false
       }
-      expandedTabsTopPx = stack.getBoundingClientRect().height + gap
+      const isWikipediaSkin = scrollRoot.getAttribute('data-wikita-ui-skin') === 'wikipedia'
+      const stackHeight = stack.getBoundingClientRect().height
+      expandedTabsTopPx = isWikipediaSkin ? stackHeight : stackHeight + gap
     }
 
     titleCollapsed = wantTitleCollapsed

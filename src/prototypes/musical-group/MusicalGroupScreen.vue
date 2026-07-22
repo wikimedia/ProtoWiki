@@ -19,8 +19,9 @@ import {
   loadImagesTabOpenedPreference,
   saveImagesTabOpenedPreference,
 } from './data/imagesTabPreference'
-import type { HomeSavedItem, MusicalGroupData, MusicalGroupOverviewData, WikidataExternalLink } from './data/types'
+import type { HomeSavedItem, MusicalGroupData, MusicalGroupOverviewData, TabId, WikidataExternalLink } from './data/types'
 import { hasImagesTab, showImageCarouselFor } from './data/types'
+import { getMusicalGroupScrollPage, isMusicalGroupTabsStuck } from './musicalGroupScrollOffset'
 import { useMusicalGroupRoute } from './useMusicalGroupRoute'
 import { useMusicalGroupScrollStates } from './useMusicalGroupScrollStates'
 import { useMusicalGroupTabScroll } from './useMusicalGroupTabScroll'
@@ -45,7 +46,18 @@ const props = withDefaults(defineProps<Props>(), {
 const { activeTab, setTab } = useMusicalGroupRoute()
 
 useMusicalGroupScrollStates()
-const { requestScrollToTabContent, scrollToTabContent } = useMusicalGroupTabScroll()
+const { requestScrollToTabContent, scrollToTabContent, scrollActiveTabToTop } =
+  useMusicalGroupTabScroll()
+
+async function handleSetTab(tab: TabId) {
+  const sameTab = tab === activeTab.value
+  await setTab(tab)
+  if (!sameTab) return
+  const page = getMusicalGroupScrollPage()
+  if (page && isMusicalGroupTabsStuck(page)) {
+    scrollActiveTabToTop()
+  }
+}
 
 const showRichIntro = computed(
   () => props.data.isMusicPerformer || props.data.isLocation || props.data.isPerson,
@@ -179,7 +191,7 @@ watch(
           :show-links-tab="showLinksTab"
           :show-activity-tab="showActivityTab"
           :show-contribute-tab="showContributeTab"
-          @update:active-tab="setTab"
+          @update:active-tab="handleSetTab"
         />
         <div class="musical-group-screen__panel">
           <MusicalGroupOverview

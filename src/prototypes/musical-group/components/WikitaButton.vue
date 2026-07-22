@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import { CdxIcon } from '@wikimedia/codex'
+import { computed } from 'vue'
+
+import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
+
+import { useWikitaUiSkin, type WikitaUiSkin } from '../composables/useWikitaUiSkin'
 
 export type WikitaButtonVariant = 'subtle' | 'outlined' | 'filled'
 
@@ -10,14 +14,16 @@ interface Props {
   ariaPressed?: boolean
   disabled?: boolean
   compact?: boolean
+  skin?: WikitaUiSkin
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   variant: 'outlined',
   icon: undefined,
   ariaPressed: undefined,
   disabled: false,
   compact: false,
+  skin: undefined,
 })
 
 defineEmits<{
@@ -27,10 +33,32 @@ defineEmits<{
 defineOptions({
   inheritAttrs: false,
 })
+
+const effectiveSkin = useWikitaUiSkin(() => props.skin)
+
+const cdxWeight = computed(() => (props.variant === 'subtle' ? 'quiet' : 'normal'))
+
+const cdxAction = computed(() => (props.variant === 'filled' ? 'progressive' : 'default'))
 </script>
 
 <template>
+  <CdxButton
+    v-if="effectiveSkin === 'wikipedia'"
+    type="button"
+    :weight="cdxWeight"
+    :action="cdxAction"
+    :aria-pressed="ariaPressed"
+    :disabled="disabled"
+    :class="{ 'wikita-button--compact': compact, 'wikita-button--has-icon': icon }"
+    v-bind="$attrs"
+    @click="$emit('click', $event)"
+  >
+    <CdxIcon v-if="icon" :icon="icon" />
+    <slot />
+  </CdxButton>
+
   <button
+    v-else
     type="button"
     class="wikita-button"
     :class="[
@@ -94,7 +122,6 @@ defineOptions({
   text-overflow: ellipsis;
 }
 
-/* Subtle */
 .wikita-button--subtle {
   border-color: var(--border-color-muted);
 }
@@ -104,13 +131,11 @@ defineOptions({
   background-color: var(--background-color-interactive-subtle);
 }
 
-/* Outlined — default styling on .wikita-button */
 .wikita-button--outlined:not(:disabled):hover,
 .wikita-button--outlined:not(:disabled):focus-visible {
   background-color: var(--background-color-interactive-subtle);
 }
 
-/* Filled — matches former .musical-group-tabs__tab--active */
 .wikita-button--filled {
   border-color: var(--background-color-inverted);
   background-color: var(--background-color-inverted);

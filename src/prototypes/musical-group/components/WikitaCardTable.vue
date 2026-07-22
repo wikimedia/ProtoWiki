@@ -5,6 +5,7 @@ import { CdxIcon } from '@wikimedia/codex'
 import { cdxIconLinkExternal } from '@wikimedia/codex-icons'
 
 import WikitaCardWrapper from './WikitaCardWrapper.vue'
+import { useWikitaUiSkin, type WikitaUiSkin } from '../composables/useWikitaUiSkin'
 
 export interface WikitaCardTableValue {
   text: string
@@ -28,6 +29,7 @@ interface Props {
   infoRight?: string
   showFooter?: boolean
   emptyText?: string
+  skin?: WikitaUiSkin
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -36,7 +38,10 @@ const props = withDefaults(defineProps<Props>(), {
   infoRight: '',
   showFooter: true,
   emptyText: 'No infobox available.',
+  skin: undefined,
 })
+
+const effectiveSkin = useWikitaUiSkin(() => props.skin)
 
 const hasRows = computed(() => props.rows.length > 0)
 
@@ -77,12 +82,12 @@ const showFooterRow = computed(
 </script>
 
 <template>
-  <div class="wikita-card-table">
-    <WikitaCardWrapper v-if="!hasRows">
+  <div class="wikita-card-table" :class="{ 'wikita-card-table--wikipedia': effectiveSkin === 'wikipedia' }">
+    <WikitaCardWrapper v-if="!hasRows" :skin="skin">
       <p class="wikita-card-table__empty">{{ emptyText }}</p>
     </WikitaCardWrapper>
 
-    <WikitaCardWrapper v-for="(section, sectionIndex) in sections" v-else :key="`${section.title ?? 'section'}-${sectionIndex}`">
+    <WikitaCardWrapper v-for="(section, sectionIndex) in sections" v-else :key="`${section.title ?? 'section'}-${sectionIndex}`" :skin="skin">
       <div class="wikita-card-table__section">
         <h4 v-if="section.title" class="wikita-card-table__title">{{ section.title }}</h4>
 

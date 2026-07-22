@@ -15,6 +15,10 @@ import {
   type WikitaChromeHeaderVariant,
 } from '../data/headerVariantPreference'
 import {
+  WIKITA_UI_SKIN_MENU_ITEMS,
+  type WikitaUiSkin,
+} from '../data/wikitaUiSkinPreference'
+import {
   WIKITA_CHROME_HEADER_BOLD_HOVER_BG,
   WIKITA_CHROME_HEADER_LIGHT_HOVER_BG,
   WIKITA_CHROME_HEADER_VARIANT_STYLES,
@@ -22,6 +26,7 @@ import {
 } from '../data/wikitaChromeHeaderVariants'
 
 export type { WikitaChromeHeaderVariant }
+export type { WikitaUiSkin }
 
 interface Props {
   showBell?: boolean
@@ -34,6 +39,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const variant = defineModel<WikitaChromeHeaderVariant>('variant', { default: 'black' })
+const uiSkin = defineModel<WikitaUiSkin>('uiSkin', { default: 'wikita' })
 
 const emit = defineEmits<{
   'toggle-search': []
@@ -77,7 +83,7 @@ function clearVariantPreview(): void {
 
 function variantFromMenuOption(option: Element): WikitaChromeHeaderVariant | null {
   const listbox = option.closest('[role="listbox"]')
-  if (!listbox || !userPanelRef.value?.contains(listbox)) return null
+  if (!listbox?.closest('.wikita-chrome-header__variant-select')) return null
 
   const options = Array.from(listbox.querySelectorAll('[role="option"]'))
   const index = options.indexOf(option as HTMLElement)
@@ -94,7 +100,9 @@ function setVariantPreviewFromOption(option: Element | null): void {
 }
 
 function syncPreviewFromActiveDescendant(): void {
-  const handle = userPanelRef.value?.querySelector('.cdx-select-vue__handle')
+  const handle = userPanelRef.value?.querySelector(
+    '.wikita-chrome-header__variant-select .cdx-select-vue__handle',
+  )
   if (!handle) return
 
   if (handle.getAttribute('aria-expanded') !== 'true') {
@@ -110,7 +118,7 @@ function syncPreviewFromActiveDescendant(): void {
 
 function onVariantMenuPointerOver(event: PointerEvent): void {
   const option = (event.target as HTMLElement).closest('[role="option"]')
-  if (!option) return
+  if (!option?.closest('.wikita-chrome-header__variant-select')) return
   setVariantPreviewFromOption(option)
 }
 
@@ -122,7 +130,9 @@ function stopActiveDescendantObserver(): void {
 function startActiveDescendantObserver(): void {
   stopActiveDescendantObserver()
 
-  const handle = userPanelRef.value?.querySelector('.cdx-select-vue__handle')
+  const handle = userPanelRef.value?.querySelector(
+    '.wikita-chrome-header__variant-select .cdx-select-vue__handle',
+  )
   if (!handle) return
 
   activeDescendantObserver = new MutationObserver(syncPreviewFromActiveDescendant)
@@ -234,6 +244,14 @@ onBeforeUnmount(() => {
             @click.stop
             @pointerover="onVariantMenuPointerOver"
           >
+            <label class="wikita-chrome-header__user-field">
+              <span class="wikita-chrome-header__user-label">Interface</span>
+              <CdxSelect
+                v-model:selected="uiSkin"
+                :menu-items="WIKITA_UI_SKIN_MENU_ITEMS"
+                default-label="Wikita"
+              />
+            </label>
             <label class="wikita-chrome-header__user-field">
               <span class="wikita-chrome-header__user-label">Header color</span>
               <CdxSelect

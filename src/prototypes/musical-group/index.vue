@@ -8,6 +8,12 @@ import {
   loadHeaderVariantPreference,
   saveHeaderVariantPreference,
 } from './data/headerVariantPreference'
+import {
+  loadWikitaUiSkinPreference,
+  saveWikitaUiSkinPreference,
+  type WikitaUiSkin,
+} from './data/wikitaUiSkinPreference'
+import { provideWikitaUiSkin } from './composables/useWikitaUiSkin'
 import { loadMusicalGroup } from './data/loadMusicalGroup'
 import { loadMusicalGroupOverview, isCachedOverviewUsable } from './data/loadMusicalGroupOverview'
 import { getCachedMusicalGroup } from './data/musicalGroupCache'
@@ -50,16 +56,22 @@ const overviewExtrasLoading = ref(false)
 const fetchError = ref<string | null>(null)
 const searchOpen = ref(false)
 const headerVariant = ref<WikitaChromeHeaderVariant>(loadHeaderVariantPreference())
+const uiSkin = ref<WikitaUiSkin>(loadWikitaUiSkinPreference())
 
 const { activeTab, activeHomeTab, goToHomeTab, goToContribute } = useMusicalGroupRoute()
 
 provideWikitaSaveFeedback()
+provideWikitaUiSkin(uiSkin)
 
 const { links: externalLinks, loading: linksLoading, error: linksError } =
   useEntityExternalLinks(itemId)
 
 watch(headerVariant, (variant) => {
   saveHeaderVariantPreference(variant)
+})
+
+watch(uiSkin, (skin) => {
+  saveWikitaUiSkinPreference(skin)
 })
 
 let fetchAbort: AbortController | null = null
@@ -278,10 +290,11 @@ async function onFloatingGoContribute() {
 <template>
   <div class="musical-group-shell">
     <WikitaToastContainer />
-    <div class="musical-group-page">
+    <div class="musical-group-page" :data-wikita-ui-skin="uiSkin">
       <MusicalGroupSearch
         v-if="showSearch"
         v-model:header-variant="headerVariant"
+        v-model:ui-skin="uiSkin"
         :error="fetchError"
         @navigate="onNavigate"
         @toggle-search="onToggleSearch"
@@ -292,6 +305,7 @@ async function onFloatingGoContribute() {
       <MusicalGroupHome
         v-else-if="showHome"
         v-model:header-variant="headerVariant"
+        v-model:ui-skin="uiSkin"
         @toggle-search="onToggleSearch"
         @reset-stored-data="onResetStoredData"
         @go-home="onGoHome"
@@ -301,6 +315,7 @@ async function onFloatingGoContribute() {
         <div v-if="showEntityChrome" class="musical-group-chrome-stack">
           <WikitaChromeHeader
             v-model:variant="headerVariant"
+            v-model:ui-skin="uiSkin"
             @toggle-search="onToggleSearch"
             @reset-stored-data="onResetStoredData"
             @go-home="onGoHome"
@@ -382,6 +397,7 @@ async function onFloatingGoContribute() {
   padding-bottom: var(--musical-group-floating-nav-clearance);
   overflow-x: hidden;
   overflow-y: auto;
+  overflow-anchor: none;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
   background-color: var(--background-color-base);
@@ -441,16 +457,20 @@ async function onFloatingGoContribute() {
   padding-top: calc(var(--spacing-50) + var(--musical-group-title-collapse-padding, 0px));
 }
 
-.musical-group-page[data-tabs-stuck] .musical-group-tabs::before {
+.musical-group-page[data-tabs-stuck] .musical-group-tabs:not(.musical-group-tabs--wikipedia)::before {
   bottom: calc(100% - 1px);
   height: calc(var(--spacing-50) + 1px);
 }
 
-.musical-group-page[data-page-scrolled] .musical-group-tabs::after {
+.musical-group-page[data-page-scrolled] .musical-group-tabs:not(.musical-group-tabs--wikipedia)::after {
   transform: scaleY(1);
 }
 
 .musical-group-page :is([id^='cite_note-'], [id^='cite_ref-']) {
   scroll-margin-top: var(--musical-group-scroll-margin-top);
+}
+
+.musical-group-page[data-wikita-ui-skin='wikipedia'] .musical-group-screen__panel {
+  margin-top: var(--spacing-50);
 }
 </style>

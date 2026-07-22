@@ -1,9 +1,22 @@
 <script setup lang="ts">
-import { CdxToast } from '@wikimedia/codex'
+import { computed } from 'vue'
+
+import { CdxButton, CdxToast } from '@wikimedia/codex'
 
 import BookmarkIcon from '../BookmarkIcon.vue'
 import { useWikitaSaveFeedback } from '../composables/useWikitaSaveFeedback'
+import { useWikitaUiSkin, type WikitaUiSkin } from '../composables/useWikitaUiSkin'
 import WikitaButton from './WikitaButton.vue'
+
+const props = withDefaults(
+  defineProps<{
+    skin?: WikitaUiSkin
+  }>(),
+  { skin: undefined },
+)
+
+const effectiveSkin = useWikitaUiSkin(() => props.skin)
+const isWikipediaSkin = computed(() => effectiveSkin.value === 'wikipedia')
 
 const { toastOpen, toastPageTitle, dismissToast, openListsSheet } = useWikitaSaveFeedback()
 
@@ -22,7 +35,7 @@ function onAddToListClick(event: MouseEvent): void {
   <CdxToast
     v-if="toastOpen"
     type="notice"
-    class="wikita-toast"
+    :class="['wikita-toast', { 'wikita-toast--wikipedia': isWikipediaSkin }]"
     standalone
     target="#wikita-overlay-root"
     prevent-user-dismiss
@@ -35,7 +48,15 @@ function onAddToListClick(event: MouseEvent): void {
       <p class="wikita-toast__message">
         <strong class="wikita-toast__title">{{ toastPageTitle }}</strong><span class="wikita-toast__suffix">&nbsp;saved</span>
       </p>
+      <CdxButton
+        v-if="isWikipediaSkin"
+        class="wikita-toast__action"
+        @click="onAddToListClick"
+      >
+        Add to list
+      </CdxButton>
       <WikitaButton
+        v-else
         variant="outlined"
         class="wikita-toast__action"
         @click="onAddToListClick"
@@ -93,10 +114,10 @@ function onAddToListClick(event: MouseEvent): void {
 }
 </style>
 
-<!-- Teleported toast: override Codex defaults to match Wikita Figma. -->
+<!-- Teleported toast: Wikita Figma styling (wikita skin only). -->
 <style>
-#wikita-overlay-root .wikita-toast.cdx-toast,
-.musical-group-shell .wikita-toast.cdx-toast {
+#wikita-overlay-root .wikita-toast.cdx-toast:not(.wikita-toast--wikipedia),
+.musical-group-shell .wikita-toast.cdx-toast:not(.wikita-toast--wikipedia) {
   position: absolute !important;
   bottom: var(--wikita-toast-bottom, var(--spacing-100, 16px));
   left: 50%;
@@ -108,8 +129,8 @@ function onAddToListClick(event: MouseEvent): void {
   pointer-events: auto;
 }
 
-#wikita-overlay-root .wikita-toast.cdx-toast .cdx-toast__message,
-.musical-group-shell .wikita-toast.cdx-toast .cdx-toast__message {
+#wikita-overlay-root .wikita-toast.cdx-toast:not(.wikita-toast--wikipedia) .cdx-toast__message,
+.musical-group-shell .wikita-toast.cdx-toast:not(.wikita-toast--wikipedia) .cdx-toast__message {
   align-items: center;
   padding: var(--spacing-50);
   border: 1px solid var(--border-color-muted);
@@ -121,37 +142,50 @@ function onAddToListClick(event: MouseEvent): void {
   box-shadow: none;
 }
 
-#wikita-overlay-root .wikita-toast.cdx-toast .cdx-message__dismiss-button,
-.musical-group-shell .wikita-toast.cdx-toast .cdx-message__dismiss-button {
+#wikita-overlay-root .wikita-toast.cdx-toast:not(.wikita-toast--wikipedia) .cdx-message__dismiss-button,
+.musical-group-shell .wikita-toast.cdx-toast:not(.wikita-toast--wikipedia) .cdx-message__dismiss-button {
   display: none !important;
 }
 
-#wikita-overlay-root .wikita-toast.cdx-toast .cdx-message__icon,
-#wikita-overlay-root .wikita-toast.cdx-toast .cdx-message__icon--vue,
-.musical-group-shell .wikita-toast.cdx-toast .cdx-message__icon,
-.musical-group-shell .wikita-toast.cdx-toast .cdx-message__icon--vue {
+#wikita-overlay-root .wikita-toast.cdx-toast:not(.wikita-toast--wikipedia) .cdx-message__icon,
+#wikita-overlay-root .wikita-toast.cdx-toast:not(.wikita-toast--wikipedia) .cdx-message__icon--vue,
+.musical-group-shell .wikita-toast.cdx-toast:not(.wikita-toast--wikipedia) .cdx-message__icon,
+.musical-group-shell .wikita-toast.cdx-toast:not(.wikita-toast--wikipedia) .cdx-message__icon--vue {
   display: none !important;
 }
 
-#wikita-overlay-root .wikita-toast.cdx-toast .cdx-message__content,
-.musical-group-shell .wikita-toast.cdx-toast .cdx-message__content {
+#wikita-overlay-root .wikita-toast.cdx-toast:not(.wikita-toast--wikipedia) .cdx-message__content,
+.musical-group-shell .wikita-toast.cdx-toast:not(.wikita-toast--wikipedia) .cdx-message__content {
   flex: 1 1 auto;
   min-width: 0;
   padding: 0;
   color: inherit;
 }
 
-#wikita-overlay-root .wikita-toast.cdx-toast.cdx-toast-enter-from,
-#wikita-overlay-root .wikita-toast.cdx-toast.cdx-toast-leave-to,
-.musical-group-shell .wikita-toast.cdx-toast.cdx-toast-enter-from,
-.musical-group-shell .wikita-toast.cdx-toast.cdx-toast-leave-to {
+#wikita-overlay-root .wikita-toast.cdx-toast:not(.wikita-toast--wikipedia).cdx-toast-enter-from,
+#wikita-overlay-root .wikita-toast.cdx-toast:not(.wikita-toast--wikipedia).cdx-toast-leave-to,
+.musical-group-shell .wikita-toast.cdx-toast:not(.wikita-toast--wikipedia).cdx-toast-enter-from,
+.musical-group-shell .wikita-toast.cdx-toast:not(.wikita-toast--wikipedia).cdx-toast-leave-to {
   transform: translateX(-50%) translateY(20px);
 }
 
-#wikita-overlay-root .wikita-toast.cdx-toast.cdx-toast-leave-active-system.cdx-toast-leave-to,
-#wikita-overlay-root .wikita-toast.cdx-toast.cdx-toast-leave-active-user.cdx-toast-leave-to,
-.musical-group-shell .wikita-toast.cdx-toast.cdx-toast-leave-active-system.cdx-toast-leave-to,
-.musical-group-shell .wikita-toast.cdx-toast.cdx-toast-leave-active-user.cdx-toast-leave-to {
+#wikita-overlay-root .wikita-toast.cdx-toast:not(.wikita-toast--wikipedia).cdx-toast-leave-active-system.cdx-toast-leave-to,
+#wikita-overlay-root .wikita-toast.cdx-toast:not(.wikita-toast--wikipedia).cdx-toast-leave-active-user.cdx-toast-leave-to,
+.musical-group-shell .wikita-toast.cdx-toast:not(.wikita-toast--wikipedia).cdx-toast-leave-active-system.cdx-toast-leave-to,
+.musical-group-shell .wikita-toast.cdx-toast:not(.wikita-toast--wikipedia).cdx-toast-leave-active-user.cdx-toast-leave-to {
   transform: translateX(-50%);
+}
+
+#wikita-overlay-root .wikita-toast--wikipedia.cdx-toast,
+.musical-group-shell .wikita-toast--wikipedia.cdx-toast {
+  position: absolute !important;
+  bottom: var(--wikita-toast-bottom, var(--spacing-100, 16px));
+  left: 50%;
+  right: auto;
+  width: calc(100% - var(--spacing-100));
+  max-width: calc(100% - var(--spacing-100));
+  min-width: 0;
+  transform: translateX(-50%);
+  pointer-events: auto;
 }
 </style>

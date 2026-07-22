@@ -3,7 +3,7 @@ import { useRoute } from 'vue-router'
 
 import {
   getMusicalGroupScrollPage,
-  measureMusicalGroupHomeTabDefaultScroll,
+  scrollMusicalGroupPageToTop,
 } from './musicalGroupScrollOffset'
 import { useMusicalGroupRoute } from './useMusicalGroupRoute'
 
@@ -48,7 +48,7 @@ export function useMusicalGroupHomeTabScroll() {
       if (panelStableTimer) clearTimeout(panelStableTimer)
       panelStableTimer = setTimeout(() => {
         disconnectPanelObserver()
-      }, 500)
+      }, 1500)
     })
     panelResizeObserver.observe(panel)
   }
@@ -60,14 +60,20 @@ export function useMusicalGroupHomeTabScroll() {
   function scrollActiveHomeTabToTop() {
     if (shouldDeferToFeaturedHashScroll()) return
 
-    const page = scrollRoot ?? getMusicalGroupScrollPage()
-    if (!page) return
+    const apply = () => {
+      const page = scrollRoot ?? getMusicalGroupScrollPage()
+      if (!page) return
 
-    disconnectPanelObserver()
+      disconnectPanelObserver()
+      scrollMusicalGroupPageToTop()
+      observePanelForScrollRestore(page, 0)
+    }
 
-    const target = measureMusicalGroupHomeTabDefaultScroll(page)
-    scrollPageTo(target)
-    observePanelForScrollRestore(page, target)
+    apply()
+    requestAnimationFrame(apply)
+    // Contribute / Activity load cards asynchronously after the tab panel mounts.
+    window.setTimeout(apply, 100)
+    window.setTimeout(apply, 400)
   }
 
   watch(activeHomeTab, async (tab) => {

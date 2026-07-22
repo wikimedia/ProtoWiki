@@ -19,6 +19,7 @@ import WikitaCardItem, { type WikitaCardItemTypeColor } from './components/Wikit
 import WikitaChromeHeader, {
   type WikitaChromeHeaderVariant,
 } from './components/WikitaChromeHeader.vue'
+import type { WikitaUiSkin } from './data/wikitaUiSkinPreference'
 import WikitaContributeTabPanel from './components/WikitaContributeTabPanel.vue'
 import WikitaHomeSection from './components/WikitaHomeSection.vue'
 import WikitaHomeTabs, { type HomeTabId } from './components/WikitaHomeTabs.vue'
@@ -59,6 +60,8 @@ import { useRelatedReadingFeed } from './useRelatedReadingFeed'
 const headerVariant = defineModel<WikitaChromeHeaderVariant>('headerVariant', {
   default: 'black',
 })
+
+const uiSkin = defineModel<WikitaUiSkin>('uiSkin', { default: 'wikita' })
 
 const emit = defineEmits<{
   'toggle-search': []
@@ -277,9 +280,8 @@ function editSuggestionRelatedToLabel(suggestion: HomeHelpWanted): string {
 }
 
 async function handleSetHomeTab(tab: HomeTabId, hash?: string) {
-  const sameTab = tab === activeTab.value
   await setHomeTab(tab, hash)
-  if (sameTab && !hash) scrollActiveHomeTabToTop()
+  if (!hash) scrollActiveHomeTabToTop()
 }
 
 async function scrollToFeaturedSectionHash(rawHash: string): Promise<void> {
@@ -319,6 +321,7 @@ watch(
     <div class="musical-group-chrome-stack">
       <WikitaChromeHeader
         v-model:variant="headerVariant"
+        v-model:ui-skin="uiSkin"
         @toggle-search="emit('toggle-search')"
         @reset-stored-data="emit('reset-stored-data')"
         @go-home="emit('go-home')"
@@ -331,7 +334,10 @@ watch(
       @update:active-tab="handleSetHomeTab"
     />
 
-    <div class="musical-group-home__body">
+    <div
+      class="musical-group-home__body"
+      :class="{ 'musical-group-home__body--wikipedia': uiSkin === 'wikipedia' }"
+    >
       <template v-if="showFeaturedFeed">
         <CdxProgressBar v-if="featuredTabLoading" inline aria-label="Loading featured" />
 
@@ -862,6 +868,18 @@ watch(
 .musical-group-home__body > .wikita-home-section--no-title:first-child,
 .musical-group-home__saved-tab > .wikita-home-section--no-title:first-child {
   margin-top: calc(var(--spacing-50) + 0px);
+}
+
+.musical-group-home__body > .wikita-contribute-tab-panel,
+.musical-group-home__body > .wikita-activity-tab-panel {
+  margin-top: calc(var(--spacing-50) + 0px);
+}
+
+.musical-group-home__body--wikipedia > .wikita-home-section--no-title:first-child,
+.musical-group-home__body--wikipedia
+  > .musical-group-home__saved-tab
+  > .wikita-home-section--no-title:first-child {
+  margin-top: var(--spacing-50);
 }
 
 .musical-group-home__empty {

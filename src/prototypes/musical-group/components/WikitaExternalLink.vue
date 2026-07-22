@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import { CdxIcon } from '@wikimedia/codex'
 import { cdxIconLinkExternal } from '@wikimedia/codex-icons'
 
+import { useWikitaUiSkin, type WikitaUiSkin } from '../composables/useWikitaUiSkin'
 import { externalLinkLabel, websiteHost } from '../data/wikidataApi'
 
 interface Props {
@@ -13,24 +14,34 @@ interface Props {
   hostOnly?: boolean
   /** When true, truncate long labels with an ellipsis on one line. */
   truncate?: boolean
+  skin?: WikitaUiSkin
 }
 
 const props = withDefaults(defineProps<Props>(), {
   hostOnly: false,
   truncate: false,
+  skin: undefined,
 })
+
+const effectiveSkin = useWikitaUiSkin(() => props.skin)
 
 const displayLabel = computed(() => {
   if (props.label) return props.label
   return props.hostOnly ? websiteHost(props.href) : externalLinkLabel(props.href)
 })
+
+const linkClass = computed(() => ({
+  'wikita-external-link': effectiveSkin.value === 'wikita',
+  'wikita-external-link--truncate': truncate,
+  'wikita-external-link-wikipedia': effectiveSkin.value === 'wikipedia',
+  'wikita-external-link-wikipedia--truncate': truncate && effectiveSkin.value === 'wikipedia',
+}))
 </script>
 
 <template>
   <a
     :href="href"
-    class="wikita-external-link"
-    :class="{ 'wikita-external-link--truncate': truncate }"
+    :class="linkClass"
     target="_blank"
     rel="noopener noreferrer"
   >
@@ -45,7 +56,8 @@ const displayLabel = computed(() => {
 </template>
 
 <style scoped>
-.wikita-external-link {
+.wikita-external-link,
+.wikita-external-link-wikipedia {
   display: inline-flex;
   align-items: flex-start;
   gap: var(--spacing-25);
@@ -55,7 +67,8 @@ const displayLabel = computed(() => {
   text-decoration: none;
 }
 
-.wikita-external-link--truncate {
+.wikita-external-link--truncate,
+.wikita-external-link-wikipedia--truncate {
   position: relative;
   display: inline-block;
   max-width: 100%;
@@ -63,7 +76,8 @@ const displayLabel = computed(() => {
   padding-right: calc(1.0625em + var(--spacing-25));
 }
 
-.wikita-external-link:hover .wikita-external-link__text {
+.wikita-external-link:hover .wikita-external-link__text,
+.wikita-external-link-wikipedia:hover .wikita-external-link__text {
   text-decoration: underline;
 }
 
@@ -86,7 +100,8 @@ const displayLabel = computed(() => {
   color: var(--color-progressive);
 }
 
-.wikita-external-link--truncate .wikita-external-link__icon {
+.wikita-external-link--truncate .wikita-external-link__icon,
+.wikita-external-link-wikipedia--truncate .wikita-external-link__icon {
   position: absolute;
   top: 50%;
   right: 0;

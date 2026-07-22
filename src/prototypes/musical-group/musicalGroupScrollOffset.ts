@@ -32,6 +32,32 @@ function getScrollContentOffsetTop(el: Element, scrollPage: HTMLElement): number
   return scrollPage.scrollTop + (elRect.top - pageRect.top)
 }
 
+/** Document-layout offset within the scroll page (immune to sticky visual position). */
+function getLayoutScrollOffsetTop(el: Element, scrollPage: HTMLElement): number {
+  let offset = 0
+  let node: Element | null = el
+
+  while (node && node !== scrollPage) {
+    const parent = node.parentElement
+    if (!parent) break
+
+    for (const sibling of parent.children) {
+      if (sibling === node) break
+      offset += (sibling as HTMLElement).offsetHeight
+    }
+
+    node = parent
+  }
+
+  return offset
+}
+
+function measureMusicalGroupTabsStuckMinScroll(page: HTMLElement): number {
+  const hasPageTitle = Boolean(page.querySelector('.musical-group-chrome-stack .wikita-title'))
+  const hasHomeSectionTitle = hasMusicalGroupHomeTabBorderAnchor(page)
+  return hasPageTitle || hasHomeSectionTitle ? 2 : 1
+}
+
 /** ScrollTop at which the tab bar first pins below the chrome stack. */
 export function measureMusicalGroupTabsStuckBaseline(page: HTMLElement): number {
   const tabsEl = page.querySelector('.musical-group-tabs-sticky')
@@ -39,9 +65,12 @@ export function measureMusicalGroupTabsStuckBaseline(page: HTMLElement): number 
 
   const stickyTop =
     parseFloat(getComputedStyle(page).getPropertyValue('--musical-group-tabs-sticky-top')) || 0
-  const tabsOffsetTop = getScrollContentOffsetTop(tabsEl, page)
+  const tabsLayoutTop = getLayoutScrollOffsetTop(tabsEl, page)
+  const layoutBaseline = tabsLayoutTop - stickyTop
 
-  return Math.max(0, tabsOffsetTop - stickyTop)
+  // Never snap to 0 while stuck — that drops tabs out of the sticky band and
+  // lets body content bleed into the gap above the tab bar (Wikipedia skin).
+  return Math.max(measureMusicalGroupTabsStuckMinScroll(page), layoutBaseline)
 }
 
 /** Viewport inset for the top of tab panel content (sticky chrome + tab bar). */
@@ -73,8 +102,8 @@ export function measureMusicalGroupTabContentTopScroll(page: HTMLElement): numbe
   const stuckBaseline = measureMusicalGroupTabsStuckBaseline(page)
   if (!panel) return stuckBaseline
 
-  const panelOffsetTop = getScrollContentOffsetTop(panel, page)
-  const panelTopScroll = Math.max(0, panelOffsetTop - measureMusicalGroupTabPanelTopInset(page))
+  const panelLayoutTop = getLayoutScrollOffsetTop(panel, page)
+  const panelTopScroll = Math.max(0, panelLayoutTop - measureMusicalGroupTabPanelTopInset(page))
 
   return Math.max(stuckBaseline, panelTopScroll)
 }
@@ -111,7 +140,7 @@ export function hasMusicalGroupHomeTabBorderAnchor(page: HTMLElement): boolean {
   return Boolean(body && getHomeTabBorderAnchor(body))
 }
 
-/** ScrollTop at which the first home-section title reaches the bottom of the sticky tabs. */
+/** ScrollTop at which the first home-section title sits below the sticky tabs with breathing room. */
 export function measureMusicalGroupHomeTabBorderScroll(page: HTMLElement): number {
   const stuckBaseline = measureMusicalGroupTabsStuckBaseline(page)
   const body = page.querySelector('.musical-group-home__body')
@@ -120,8 +149,15 @@ export function measureMusicalGroupHomeTabBorderScroll(page: HTMLElement): numbe
   const anchor = getHomeTabBorderAnchor(body)
   if (!anchor) return stuckBaseline
 
-  const anchorOffsetTop = getScrollContentOffsetTop(anchor, page)
-  const anchorTopScroll = Math.max(0, anchorOffsetTop - measureMusicalGroupTabPanelTopInset(page))
+  const firstSection = getFirstHomeTabSection(body)
+  const sectionMarginTop = firstSection
+    ? parseFloat(getComputedStyle(firstSection).marginTop) || 0
+    : 0
+  const anchorLayoutTop = getLayoutScrollOffsetTop(anchor, page)
+  const anchorTopScroll = Math.max(
+    0,
+    anchorLayoutTop - measureMusicalGroupTabPanelTopInset(page) - sectionMarginTop,
+  )
 
   return Math.max(stuckBaseline, anchorTopScroll)
 }
@@ -132,8 +168,8 @@ export function measureMusicalGroupHomeTabContentTopScroll(page: HTMLElement): n
   const stuckBaseline = measureMusicalGroupTabsStuckBaseline(page)
   if (!body) return stuckBaseline
 
-  const bodyOffsetTop = getScrollContentOffsetTop(body, page)
-  const bodyTopScroll = Math.max(0, bodyOffsetTop - measureMusicalGroupTabPanelTopInset(page))
+  const bodyLayoutTop = getLayoutScrollOffsetTop(body, page)
+  const bodyTopScroll = Math.max(0, bodyLayoutTop - measureMusicalGroupTabPanelTopInset(page))
 
   return Math.max(stuckBaseline, bodyTopScroll)
 }

@@ -1,18 +1,33 @@
 <script setup lang="ts">
+import { useWikitaUiSkin, type WikitaUiSkin } from '../composables/useWikitaUiSkin'
+
 interface Props {
   html: string
   caption?: string
+  skin?: WikitaUiSkin
 }
 
-defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  caption: undefined,
+  skin: undefined,
+})
+
+const effectiveSkin = useWikitaUiSkin(() => props.skin)
 </script>
 
 <template>
-  <div class="wikita-scroll-table">
+  <div
+    class="wikita-scroll-table"
+    :class="{ 'wikita-scroll-table--wikipedia': effectiveSkin === 'wikipedia' }"
+  >
     <!-- eslint-disable-next-line vue/no-v-html -->
     <div v-if="caption" class="wikita-scroll-table__title" v-html="caption" />
 
-    <div class="wikita-scroll-table__track">
+    <div
+      class="wikita-scroll-table__track"
+      :class="{ 'mw-parser-output': effectiveSkin === 'wikipedia' }"
+      :data-skin="effectiveSkin === 'wikipedia' ? 'mobile' : undefined"
+    >
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div class="wikita-scroll-table__table" v-html="html" />
     </div>
@@ -56,6 +71,10 @@ defineProps<Props>()
   scrollbar-width: none;
 }
 
+.wikita-scroll-table--wikipedia .wikita-scroll-table__track {
+  margin-inline: 0;
+}
+
 .wikita-scroll-table__track::-webkit-scrollbar {
   display: none;
 }
@@ -72,6 +91,10 @@ defineProps<Props>()
   font-size: var(--font-size-medium);
   line-height: var(--line-height-small);
   color: var(--color-base);
+}
+
+.wikita-scroll-table--wikipedia .wikita-scroll-table__table :deep(table) {
+  margin: 0;
 }
 
 .wikita-scroll-table__table :deep(caption) {
@@ -91,7 +114,6 @@ defineProps<Props>()
   background-color: var(--background-color-interactive-subtle);
 }
 
-/* Succession nav tables (e.g. {{s-start}} … {{s-end}}) — full width, not horizontally scrolled. */
 .wikita-scroll-table:has(.wikita-scroll-table__table table.succession-box) .wikita-scroll-table__track {
   margin-inline: 0;
   overflow-x: visible;

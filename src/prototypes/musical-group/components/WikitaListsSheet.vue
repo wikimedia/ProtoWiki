@@ -1,14 +1,24 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { CdxButton, CdxIcon } from '@wikimedia/codex'
+import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex'
 import { cdxIconClose } from '@wikimedia/codex-icons'
 
 import { useListCardThumbnails } from '../composables/useListCardThumbnails'
 import { useWikitaSaveFeedback } from '../composables/useWikitaSaveFeedback'
+import { useWikitaUiSkin, type WikitaUiSkin } from '../composables/useWikitaUiSkin'
 import { formatListItemCount, listUserLists, type UserList } from '../data/lists'
 import WikitaButton from './WikitaButton.vue'
 import WikitaCardItem from './WikitaCardItem.vue'
+
+const props = withDefaults(
+  defineProps<{
+    skin?: WikitaUiSkin
+  }>(),
+  { skin: undefined },
+)
+
+const effectiveSkin = useWikitaUiSkin(() => props.skin)
 
 const {
   listsSheetOpen,
@@ -52,8 +62,37 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <CdxDialog
+    v-if="effectiveSkin === 'wikipedia'"
+    :open="listsSheetOpen"
+    title="Add to list"
+    class="wikita-lists-dialog"
+    dismissable
+    @update:open="(open) => { if (!open) closeListsSheet() }"
+  >
+    <div class="wikita-lists-sheet__body">
+      <WikitaCardItem
+        v-for="{ list, thumbnailUrl } in listCards"
+        :key="list.id"
+        interactive
+        :show-type="false"
+        :show-snippet="false"
+        :show-info="false"
+        :title="list.name"
+        :body="formatListItemCount(list.itemIds.length)"
+        :thumbnail-url="thumbnailUrl"
+        :thumbnail-alt="list.name"
+        @click="addToList(list.id)"
+      />
+
+      <CdxButton class="wikita-lists-sheet__create" @click="createListAndAdd">
+        Create new list
+      </CdxButton>
+    </div>
+  </CdxDialog>
+
   <div
-    v-if="listsSheetOpen"
+    v-else-if="listsSheetOpen"
     class="wikita-lists-sheet"
     role="presentation"
     @click.self="onBackdropClick"
@@ -160,5 +199,12 @@ onUnmounted(() => {
 
 .wikita-lists-sheet__create {
   width: 100%;
+}
+</style>
+
+<!-- Wikipedia lists dialog teleported inside overlay root -->
+<style>
+#wikita-overlay-root .wikita-lists-dialog.cdx-dialog {
+  pointer-events: auto;
 }
 </style>
