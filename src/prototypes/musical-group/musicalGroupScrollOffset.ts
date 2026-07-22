@@ -34,16 +34,26 @@ function getScrollContentOffsetTop(el: Element, scrollPage: HTMLElement): number
 
 /** Document-layout offset within the scroll page (immune to sticky visual position). */
 function getLayoutScrollOffsetTop(el: Element, scrollPage: HTMLElement): number {
-  let offset = 0
+  let offset = parseFloat(getComputedStyle(el).marginTop) || 0
   let node: Element | null = el
 
   while (node && node !== scrollPage) {
     const parent = node.parentElement
     if (!parent) break
 
+    const parentStyles = getComputedStyle(parent)
+    offset += parseFloat(parentStyles.paddingTop) || 0
+
+    let siblingsBefore = 0
     for (const sibling of parent.children) {
       if (sibling === node) break
       offset += (sibling as HTMLElement).offsetHeight
+      siblingsBefore++
+    }
+
+    const rowGap = parseFloat(parentStyles.rowGap || parentStyles.gap) || 0
+    if (rowGap > 0 && siblingsBefore > 0) {
+      offset += rowGap * siblingsBefore
     }
 
     node = parent
@@ -106,6 +116,21 @@ export function measureMusicalGroupTabContentTopScroll(page: HTMLElement): numbe
   const panelTopScroll = Math.max(0, panelLayoutTop - measureMusicalGroupTabPanelTopInset(page))
 
   return Math.max(stuckBaseline, panelTopScroll)
+}
+
+/**
+ * ScrollTop at which sticky tab-panel content reaches the tab bar — the same
+ * threshold that drives data-page-scrolled (entity panel top or home title).
+ */
+export function measureMusicalGroupTabBorderScrollThreshold(page: HTMLElement): number {
+  const hasPageTitle = Boolean(page.querySelector('.musical-group-chrome-stack .wikita-title'))
+  if (hasPageTitle) {
+    return measureMusicalGroupTabContentTopScroll(page)
+  }
+  if (hasMusicalGroupHomeTabBorderAnchor(page)) {
+    return measureMusicalGroupHomeTabBorderScroll(page)
+  }
+  return 0
 }
 
 /** First home-section in the active tab body, skipping chrome like loaders/errors. */

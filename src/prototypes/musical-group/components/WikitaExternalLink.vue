@@ -32,9 +32,10 @@ const displayLabel = computed(() => {
 
 const linkClass = computed(() => ({
   'wikita-external-link': effectiveSkin.value === 'wikita',
-  'wikita-external-link--truncate': truncate,
+  'wikita-external-link--truncate': props.truncate,
   'wikita-external-link-wikipedia': effectiveSkin.value === 'wikipedia',
-  'wikita-external-link-wikipedia--truncate': truncate && effectiveSkin.value === 'wikipedia',
+  'wikita-external-link-wikipedia--truncate':
+    props.truncate && effectiveSkin.value === 'wikipedia',
 }))
 </script>
 

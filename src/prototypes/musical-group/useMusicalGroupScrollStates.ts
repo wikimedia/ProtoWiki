@@ -2,9 +2,8 @@ import { onMounted, onUnmounted } from 'vue'
 
 import {
   hasMusicalGroupHomeTabBorderAnchor,
-  measureMusicalGroupHomeTabBorderScroll,
+  measureMusicalGroupTabBorderScrollThreshold,
   measureMusicalGroupStickyScrollOffset,
-  measureMusicalGroupTabContentTopScroll,
 } from './musicalGroupScrollOffset'
 
 function syncStickyLayout(page: Element) {
@@ -103,11 +102,7 @@ export function useMusicalGroupScrollStates() {
     scrollRoot.toggleAttribute('data-scrolled', wantTitleCollapsed)
 
     // Layout-based thresholds stay stable while tabs are stuck (unlike getBoundingClientRect).
-    tabContentScrollThreshold = hasPageTitle
-      ? measureMusicalGroupTabContentTopScroll(scrollEl)
-      : hasHomeSectionTitle
-        ? measureMusicalGroupHomeTabBorderScroll(scrollEl)
-        : 0
+    tabContentScrollThreshold = measureMusicalGroupTabBorderScrollThreshold(scrollEl)
 
     scrollRoot.toggleAttribute(
       'data-page-scrolled',

@@ -5,7 +5,6 @@ import type { TabId } from './data/types'
 import {
   getMusicalGroupScrollPage,
   isMusicalGroupTabsStuck,
-  measureMusicalGroupTabsStuckBaseline,
   measureMusicalGroupTabContentTopScroll,
 } from './musicalGroupScrollOffset'
 import { parseTabQuery, useMusicalGroupRoute } from './useMusicalGroupRoute'
@@ -17,7 +16,7 @@ interface PendingSwitch {
   tabsStuck: boolean
 }
 
-/** Item-page tab scroll: preserve scroll when tabs are in flow; snap to stuck baseline when stuck. */
+/** Item-page tab scroll: preserve scroll when tabs are in flow; pin tabs + align content when stuck. */
 export function useMusicalGroupTabScroll() {
   const route = useRoute()
   const { activeTab } = useMusicalGroupRoute()
@@ -73,7 +72,7 @@ export function useMusicalGroupTabScroll() {
       const page = scrollRoot ?? getMusicalGroupScrollPage()
       if (!page) return
 
-      const target = measureMusicalGroupTabsStuckBaseline(page)
+      const target = measureMusicalGroupTabContentTopScroll(page)
       disconnectPanelObserver()
       scrollPageTo(target)
       observePanelForScrollRestore(page, target)
