@@ -1,4 +1,6 @@
 export type ConfigTheme = 'light' | 'dark' | 'system'
+export type ConfigDevice = 'web' | 'app'
+export type ConfigWebSkin = 'auto' | 'desktop' | 'mobile'
 export type ConfigUser = 'logged-out' | 'new' | 'experienced' | 'real'
 
 export type PageListKey = 'watchlist' | 'readingList' | 'editedPages'
@@ -13,6 +15,9 @@ export interface UserPageLists {
 
 export interface Config {
   theme: ConfigTheme
+  device: ConfigDevice
+  /** Vector / Minerva skin preference when `device` is `'web'`. */
+  webSkin: ConfigWebSkin
   user: ConfigUser
   /** Wikipedia username when `user` is `'real'`. */
   realUsername: string
@@ -64,6 +69,8 @@ export const DEFAULT_USER_PAGE_LISTS: Record<ConfigUser, UserPageLists> = {
 
 export const DEFAULT_CONFIG: Config = {
   theme: 'light',
+  device: 'web',
+  webSkin: 'auto',
   user: 'new',
   realUsername: '',
   userPageLists: cloneUserPageListsMap(DEFAULT_USER_PAGE_LISTS),
@@ -87,9 +94,20 @@ export const CONFIG_USER_MENU_ITEMS: { value: ConfigUser; label: string }[] = [
 ]
 
 export const CONFIG_THEME_MENU_ITEMS: { value: ConfigTheme; label: string }[] = [
+  { value: 'system', label: 'System' },
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
-  { value: 'system', label: 'System' },
+]
+
+export const CONFIG_DEVICE_MENU_ITEMS: { value: ConfigDevice; label: string }[] = [
+  { value: 'web', label: 'Web' },
+  { value: 'app', label: 'App' },
+]
+
+export const CONFIG_WEB_SKIN_MENU_ITEMS: { value: ConfigWebSkin; label: string }[] = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'desktop', label: 'Desktop (Vector)' },
+  { value: 'mobile', label: 'Mobile (Minerva)' },
 ]
 
 /** Normalize a Wikipedia username for API calls and cache keys. */
@@ -174,11 +192,21 @@ export function wikimediaApiFetchHeaders(purpose?: string, apiContact?: string):
 const STORAGE_KEY = 'protowiki-prototype-user-config'
 
 const VALID_THEMES: ConfigTheme[] = ['light', 'dark', 'system']
+const VALID_DEVICES: ConfigDevice[] = ['web', 'app']
+const VALID_WEB_SKINS: ConfigWebSkin[] = ['auto', 'desktop', 'mobile']
 const VALID_USERS: ConfigUser[] = ['logged-out', 'new', 'experienced', 'real']
 const PAGE_LIST_KEYS: PageListKey[] = ['watchlist', 'readingList', 'editedPages']
 
 function isConfigTheme(value: unknown): value is ConfigTheme {
   return typeof value === 'string' && VALID_THEMES.includes(value as ConfigTheme)
+}
+
+function isConfigDevice(value: unknown): value is ConfigDevice {
+  return typeof value === 'string' && VALID_DEVICES.includes(value as ConfigDevice)
+}
+
+function isConfigWebSkin(value: unknown): value is ConfigWebSkin {
+  return typeof value === 'string' && VALID_WEB_SKINS.includes(value as ConfigWebSkin)
 }
 
 function isConfigUser(value: unknown): value is ConfigUser {
@@ -267,6 +295,8 @@ export function normalizeConfig(input: unknown): Config {
 
   return {
     theme: isConfigTheme(record.theme) ? record.theme : DEFAULT_CONFIG.theme,
+    device: isConfigDevice(record.device) ? record.device : DEFAULT_CONFIG.device,
+    webSkin: isConfigWebSkin(record.webSkin) ? record.webSkin : DEFAULT_CONFIG.webSkin,
     user: isConfigUser(record.user) ? record.user : DEFAULT_CONFIG.user,
     realUsername,
     userPageLists,
@@ -315,6 +345,8 @@ export function loadConfig(): Config {
 function cloneConfig(config: Config): Config {
   return {
     theme: config.theme,
+    device: config.device,
+    webSkin: config.webSkin,
     user: config.user,
     realUsername: config.realUsername,
     userPageLists: cloneUserPageListsMap(config.userPageLists),

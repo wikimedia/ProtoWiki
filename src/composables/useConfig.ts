@@ -8,12 +8,14 @@ import {
   resetUserPageListField,
   saveConfig,
   type Config,
+  type ConfigDevice,
   type ConfigTheme,
+  type ConfigWebSkin,
   type ConfigUser,
   type PageListKey,
   type UserPageLists,
 } from '@/config'
-import { applyThemePreference } from '@/theme'
+import { applyThemePreference, applyWebSkinPreference } from '@/theme'
 
 const config = ref<Config>(loadConfig())
 
@@ -32,9 +34,18 @@ watch(
   },
 )
 
+watch(
+  () => [config.value.webSkin, config.value.device] as const,
+  ([webSkin, device]) => {
+    applyWebSkinPreference(webSkin, device)
+  },
+)
+
 export function useConfig(): {
   config: DeepReadonly<Ref<Config>>
   theme: Ref<ConfigTheme>
+  device: Ref<ConfigDevice>
+  webSkin: Ref<ConfigWebSkin>
   user: Ref<ConfigUser>
   realUsername: Ref<string>
   lang: Ref<string>
@@ -49,6 +60,20 @@ export function useConfig(): {
     get: () => config.value.theme,
     set: (value: ConfigTheme) => {
       config.value = { ...config.value, theme: value }
+    },
+  })
+
+  const device = computed({
+    get: () => config.value.device,
+    set: (value: ConfigDevice) => {
+      config.value = { ...config.value, device: value }
+    },
+  })
+
+  const webSkin = computed({
+    get: () => config.value.webSkin,
+    set: (value: ConfigWebSkin) => {
+      config.value = { ...config.value, webSkin: value }
     },
   })
 
@@ -127,6 +152,8 @@ export function useConfig(): {
   return {
     config: readonly(config),
     theme,
+    device,
+    webSkin,
     user,
     realUsername,
     lang,

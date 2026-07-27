@@ -3,7 +3,7 @@ import { ref, type ComputedRef, type InjectionKey, type Ref } from 'vue'
 import lightTokensRaw from '@wikimedia/codex-design-tokens/theme-wikimedia-ui.css?raw'
 import darkTokensRaw from '@wikimedia/codex-design-tokens/theme-wikimedia-ui-mode-dark.css?raw'
 
-import { loadConfig, type ConfigTheme } from '@/config'
+import { loadConfig, type ConfigDevice, type ConfigTheme, type ConfigWebSkin } from '@/config'
 
 export type Skin = 'desktop' | 'mobile'
 export type Theme = 'light' | 'dark'
@@ -71,9 +71,14 @@ export const globalSkin: Ref<Skin> = ref<Skin>('desktop')
 export const globalTheme: Ref<Theme> = ref<Theme>('light')
 
 let themeUrlPinned = false
+let skinUrlPinned = false
 let themePreference: ConfigTheme = 'light'
+let webSkinPreference: ConfigWebSkin = 'auto'
+let platformDevice: ConfigDevice = 'web'
 let colorSchemeMql: MediaQueryList | null = null
 let onColorSchemeChange: ((event: MediaQueryListEvent) => void) | null = null
+let viewportMql: MediaQueryList | null = null
+let onViewportChange: ((event: MediaQueryListEvent) => void) | null = null
 
 function readUrlParam(name: string): string | null {
   if (typeof window === 'undefined') return null
@@ -135,6 +140,65 @@ function applyGlobalTheme(theme: Theme): void {
   syncWikiSkinNightClass(theme)
 }
 
+function applyGlobalSkin(skin: Skin): void {
+  globalSkin.value = skin
+  setHtmlAttribute('data-skin', skin)
+}
+
+function teardownViewportListener(): void {
+  if (viewportMql && onViewportChange) {
+    viewportMql.removeEventListener('change', onViewportChange)
+  }
+  viewportMql = null
+  onViewportChange = null
+}
+
+function setupViewportListener(): void {
+  if (typeof window === 'undefined' || !window.matchMedia) return
+
+  teardownViewportListener()
+
+  viewportMql = window.matchMedia(`(min-width: ${DESKTOP_MIN_WIDTH}px)`)
+  onViewportChange = (event: MediaQueryListEvent) => {
+    if (skinUrlPinned || platformDevice !== 'web' || webSkinPreference !== 'auto') return
+    const next: Skin = event.matches ? 'desktop' : 'mobile'
+    if (next !== globalSkin.value) {
+      applyGlobalSkin(next)
+    }
+  }
+  viewportMql.addEventListener('change', onViewportChange)
+}
+
+function resolveEffectiveSkin(preference: ConfigWebSkin): Skin {
+  if (preference === 'desktop' || preference === 'mobile') return preference
+  return resolveSkinFromViewport()
+}
+
+/**
+ * Apply stored web skin preference (auto / desktop / mobile) when platform is
+ * web. URL `?skin=` still wins when present.
+ */
+export function applyWebSkinPreference(
+  webSkin: ConfigWebSkin,
+  device: ConfigDevice = platformDevice,
+): void {
+  webSkinPreference = webSkin
+  platformDevice = device
+
+  if (skinUrlPinned || device !== 'web') {
+    teardownViewportListener()
+    return
+  }
+
+  applyGlobalSkin(resolveEffectiveSkin(webSkin))
+
+  if (webSkin === 'auto') {
+    setupViewportListener()
+  } else {
+    teardownViewportListener()
+  }
+}
+
 function teardownColorSchemeListener(): void {
   if (colorSchemeMql && onColorSchemeChange) {
     colorSchemeMql.removeEventListener('change', onColorSchemeChange)
@@ -193,23 +257,19 @@ export function initTheming(): void {
   const skinParam = readUrlParam('skin')
   const themeParam = readUrlParam('theme')
 
-  const skinPinned = isSkin(skinParam)
+  skinUrlPinned = isSkin(skinParam)
   themeUrlPinned = isTheme(themeParam)
 
-  globalSkin.value = skinPinned ? (skinParam as Skin) : resolveSkinFromViewport()
-  setHtmlAttribute('data-skin', globalSkin.value)
+  const storedConfig = loadConfig()
+  platformDevice = storedConfig.device
+  webSkinPreference = storedConfig.webSkin
 
-  applyThemePreference(loadConfig().theme)
-
-  if (!skinPinned) {
-    const breakpoint = window.matchMedia(`(min-width: ${DESKTOP_MIN_WIDTH}px)`)
-    const onBreakpointChange = (event: MediaQueryListEvent | MediaQueryList) => {
-      const next: Skin = event.matches ? 'desktop' : 'mobile'
-      if (next !== globalSkin.value) {
-        globalSkin.value = next
-        setHtmlAttribute('data-skin', next)
-      }
-    }
-    breakpoint.addEventListener('change', onBreakpointChange)
+  if (skinUrlPinned) {
+    applyGlobalSkin(skinParam as Skin)
+    teardownViewportListener()
+  } else {
+    applyWebSkinPreference(storedConfig.webSkin, storedConfig.device)
   }
+
+  applyThemePreference(storedConfig.theme)
 }
