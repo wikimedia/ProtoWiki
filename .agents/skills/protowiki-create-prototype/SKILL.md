@@ -97,9 +97,8 @@ Gallery cards are driven by flat `definePage` meta on each top-level
 - **`category`** — `'prototype'` (default), `'template'`, or `'example'`; controls
   which block the card appears in (prototypes first, then a divider, then
   templates+examples) and the gallery title prefix for templates and examples (`Template:` / `Example:`)
-- **`platform`** — `'web'` (default) or `'app'`; which Platform setting shows this
-  card on the home gallery (symmetric filter — Web shows only web prototypes, App
-  only app prototypes)
+- **`platform`** — `'web'` (default) or `'app'`; shown as a chip on the gallery
+  card (Web / App)
 - **`order`** — optional sort key within a block (lower first; default alphabetical)
 - **`hidden`** — omit from gallery while keeping the route live
 - **`spotlight`** — when any prototype is spotlighted, the gallery shows only
@@ -118,6 +117,7 @@ Full field reference, layout rules, and examples:
 | Special-page-style page | `<ChromeWrapper><SpecialPageWrapper title="…">…</SpecialPageWrapper></ChromeWrapper>` |
 | Newcomer homepage / dashboard | `<ChromeWrapper :last-edited-notice="false"><SpecialPageWrapper title="Dashboard" help><Dashboard>…</Dashboard></SpecialPageWrapper></ChromeWrapper>` — starter: **`template-dashboard/`**; full modules: **`template-homepage/`** |
 | Bare canvas with chrome | `<ChromeWrapper>…</ChromeWrapper>` |
+| App shell with header + bottom nav | `<AppChromeWrapper>…</AppChromeWrapper>` — starter: **`template-app-chrome/`** |
 | A/B preview, two themes side by side | Two `<ChromeWrapper>`s, one `theme="light"`, one `theme="dark"` |
 | Mobile preview embedded in a desktop page | `<MobileWrapper><ChromeWrapper skin="mobile">…</ChromeWrapper></MobileWrapper>` |
 

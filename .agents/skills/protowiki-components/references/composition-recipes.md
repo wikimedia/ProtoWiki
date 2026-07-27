@@ -11,6 +11,28 @@ A page is one or more wrappers + the components inside. There is no
 </ChromeWrapper>
 ```
 
+## App shell with header + bottom nav
+
+For **`platform: 'app'`** prototypes — mobile app chrome (wordmark header,
+icon bottom nav). No Vector/Minerva skin.
+
+```vue
+<script setup lang="ts">
+import AppChromeWrapper from '@/components/app/AppChromeWrapper.vue'
+
+definePage({ meta: { platform: 'app' } })
+</script>
+
+<template>
+  <AppChromeWrapper>
+    <p>App body content.</p>
+  </AppChromeWrapper>
+</template>
+```
+
+**Reference implementation:** **`src/prototypes/template-app-chrome/`**. See
+[`app-chrome.md`](app-chrome.md) for props, slots, and primitive APIs.
+
 ## Hand-authored article (no live fetch or snapshot)
 
 Use when the prototype needs **Vue-authored** article markup (infobox + sections) without **`page/html`** or **`public/snapshots/`**. Content goes in **`ArticleRenderer`** so **`.mw-parser-output`** and skin CSS apply.

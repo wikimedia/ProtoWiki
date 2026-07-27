@@ -1,47 +1,46 @@
 import { onMounted, ref, watch, type Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { useConfig } from '@/composables/useConfig'
 import type { GalleryTab } from '@/prototype-gallery'
 
-function tabFromQuery(platform: unknown): GalleryTab | null {
-  if (platform === 'app') return 'app'
-  if (platform === 'web') return 'web'
-  return null
+function tabFromQuery(category: unknown): GalleryTab {
+  if (category === 'prototype') return 'prototype'
+  if (category === 'template') return 'template'
+  if (category === 'example') return 'example'
+  return 'home'
 }
 
 /**
- * Active gallery tab — each value is a filtered view over the full entry list.
- * Synced to `?platform=` (web / app); omitted query means All.
+ * Active gallery tab — Home shows all sections; other tabs filter by category.
+ * Synced to `?category=` (prototype / template / example); omitted query means Home.
  */
 export function useGalleryTab(): { galleryTab: Ref<GalleryTab> } {
   const route = useRoute()
   const router = useRouter()
-  const { device } = useConfig()
-  const galleryTab = ref<GalleryTab>('all')
+  const galleryTab = ref<GalleryTab>('home')
 
   function applyQueryToTab(): void {
-    const fromQuery = tabFromQuery(route.query.platform)
-    if (fromQuery !== null && galleryTab.value !== fromQuery) {
+    const fromQuery = tabFromQuery(route.query.category)
+    if (galleryTab.value !== fromQuery) {
       galleryTab.value = fromQuery
     }
   }
 
   function syncTabToQuery(): void {
     const query = { ...route.query }
-    delete query.platform
     delete query.category
+    delete query.platform
 
-    if (galleryTab.value === 'app') {
-      query.platform = 'app'
+    if (galleryTab.value !== 'home') {
+      query.category = galleryTab.value
     }
 
-    const platformUnchanged =
-      route.query.platform === query.platform ||
-      (!route.query.platform && !query.platform)
-    const hadCategory = route.query.category !== undefined
+    const categoryUnchanged =
+      route.query.category === query.category ||
+      (!route.query.category && !query.category)
+    const hadPlatform = route.query.platform !== undefined
 
-    if (platformUnchanged && !hadCategory) return
+    if (categoryUnchanged && !hadPlatform) return
 
     router.replace({ query })
   }
@@ -51,11 +50,8 @@ export function useGalleryTab(): { galleryTab: Ref<GalleryTab> } {
     syncTabToQuery()
   })
 
-  watch(() => route.query.platform, applyQueryToTab)
-  watch(galleryTab, (tab) => {
-    if (tab === 'web' || tab === 'app') {
-      device.value = tab
-    }
+  watch(() => route.query.category, applyQueryToTab)
+  watch(galleryTab, () => {
     syncTabToQuery()
   })
 

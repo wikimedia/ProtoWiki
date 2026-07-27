@@ -37,7 +37,7 @@ export function usePrototypeGallery(galleryTab: Ref<GalleryTab>) {
     return applySpotlightFilter(visibleEntries)
   })
 
-  const filteredEntries = computed(() => {
+  const entries = computed(() => {
     const hidePrimary = route.meta.hidePrimary === true
     const hideSecondary = route.meta.hideSecondary === true
 
@@ -47,20 +47,21 @@ export function usePrototypeGallery(galleryTab: Ref<GalleryTab>) {
   })
 
   const primaryEntries = computed(() =>
-    filteredEntries.value.filter((entry) => entry.category === 'prototype'),
+    entries.value.filter((entry) => entry.category === 'prototype'),
   )
 
   const templateEntries = computed(() =>
-    filteredEntries.value.filter((entry) => entry.category === 'template'),
+    entries.value.filter((entry) => entry.category === 'template'),
   )
 
   const exampleEntries = computed(() =>
-    filteredEntries.value.filter((entry) => entry.category === 'example'),
+    entries.value.filter((entry) => entry.category === 'example'),
   )
 
   const spotlightActive = computed(() => galleryState.value.spotlightActive)
 
   return {
+    entries,
     primaryEntries,
     templateEntries,
     exampleEntries,

@@ -1,6 +1,6 @@
 ---
 name: protowiki-components
-description: Catalog of every shipped component in src/components/ — the three single-concern layout wrappers (ChromeWrapper, SpecialPageWrapper, PlainWrapper), the chrome primitives (ChromeHeader, ChromeFooter), Article surfaces (`ArticleWrapper` + `ArticleRenderer`, ArticleLive, ArticleSnapshot, ArticleCustom, ArticleHeader), dashboard layout (`Dashboard`, `DashboardModule`), attribution (`AttributionCard`, `useAttributionSignals`), and Search — including hand-authored article HTML in `ArticleRenderer`'s default slot (see `src/prototypes/template-article-custom/`) and newcomer homepage templates (`template-dashboard`, `template-homepage`). Use when picking a wrapper, composing a page, looking up props/slots/events for any ProtoWiki component, or asking "what components does ProtoWiki ship?".
+description: Catalog of every shipped component in src/components/ — the three single-concern layout wrappers (ChromeWrapper, SpecialPageWrapper, PlainWrapper), web chrome primitives (ChromeHeader, ChromeFooter), app chrome (AppChromeWrapper, AppChromeHeader, AppBottomMenu), Article surfaces (`ArticleWrapper` + `ArticleRenderer`, ArticleLive, ArticleSnapshot, ArticleCustom, ArticleHeader), dashboard layout (`Dashboard`, `DashboardModule`), attribution (`AttributionCard`, `useAttributionSignals`), and Search — including hand-authored article HTML in `ArticleRenderer`'s default slot (see `src/prototypes/template-article-custom/`) and newcomer homepage templates (`template-dashboard`, `template-homepage`). Use when picking a wrapper, composing a page, looking up props/slots/events for any ProtoWiki component, or asking "what components does ProtoWiki ship?".
 license: MIT
 ---
 
@@ -17,6 +17,8 @@ This skill is the cross-cutting guide. Per-component depth lives in
   `SpecialPageWrapper`, `PlainWrapper`, `MobileWrapper`
 - [`references/chrome-primitives.md`](references/chrome-primitives.md) —
   `ChromeHeader`, `ChromeFooter`
+- [`references/app-chrome.md`](references/app-chrome.md) —
+  `AppChromeWrapper`, `AppChromeHeader`, `AppBottomMenu`
 - [`references/article.md`](references/article.md) — `ArticleWrapper`, `ArticleRenderer`,
   `ArticleLive`, `ArticleSnapshot`, `ArticleCustom`, `ArticleHeader`
 - [`references/search.md`](references/search.md)
@@ -34,11 +36,14 @@ This skill is the cross-cutting guide. Per-component depth lives in
 | Component | Concern | Renders chrome? | Renders columns? |
 | --- | --- | --- | --- |
 | `ChromeWrapper` | Wikipedia chrome (header + footer) around a slot | Yes | No |
+| `AppChromeWrapper` | App chrome (header + bottom nav) around a slot | Yes | No |
 | `SpecialPageWrapper` | Special-page shell — title row + optional help/actions + content | No | No (full-width) |
 | `PlainWrapper` | Centred narrow column — no chrome (gallery / Component-style demos) | No | No |
 | `MobileWrapper` | Phone-frame preview — full width below 480px; centred column + neutral Codex gutters when clamped | No | No |
 | `ChromeHeader` | Vector-style chrome when `skin=desktop`, Minerva-style when `skin=mobile` — wordmarks, search cluster, user tools (via ChromeWrapper) | n/a | n/a |
 | `ChromeFooter` | Footer chrome (via ChromeWrapper): **desktop** Vector strip with optional mock last-edited + CC lines, or **mobile** Minerva well + optional strip | n/a | n/a |
+| `AppChromeHeader` | App top bar — wordmark, tabs + notifications (via AppChromeWrapper) | n/a | n/a |
+| `AppBottomMenu` | App bottom icon nav — home, saved, search, history, menu (via AppChromeWrapper) | n/a | n/a |
 | `ArticleWrapper` | Reader outer **`<article>`**: always **`ArticleHeader`** + **default slot** (**main column** — usually **`ArticleRenderer`**) — no **`v-html`** by itself | No | No |
 | `ArticleRenderer` | Parser column (**`.article-content`**, **`.mw-parser-output`**, **`#default`** only); mobile **`section > h2`** on mobile skin — title chrome lives elsewhere | No | No |
 | `ArticleLive` | **`ArticleWrapper`** + nested **`ArticleRenderer`** for REST **`page/html`** (+ cache); progress/errors in **default slot** before **`ArticleRenderer`**. **Omit `article` → random article each load** (**`source`** = `'random'` \| `'vital'`, **`langs`**) | No | No |
@@ -114,6 +119,9 @@ All components live at `@/components/<Name>.vue`:
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 import ChromeHeader from '@/components/chrome/ChromeHeader.vue'
 import ChromeFooter from '@/components/chrome/ChromeFooter.vue'
+import AppChromeWrapper from '@/components/app/AppChromeWrapper.vue'
+import AppChromeHeader from '@/components/app/AppChromeHeader.vue'
+import AppBottomMenu from '@/components/app/AppBottomMenu.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 import PlainWrapper from '@/components/PlainWrapper.vue'
 import MobileWrapper from '@/components/MobileWrapper.vue'
@@ -135,11 +143,14 @@ The `@/` prefix resolves to `src/`.
 | Component | Key props | Notable slots |
 | --- | --- | --- |
 | `ChromeWrapper` | `lang?`, `dir?`, `skin?`, `theme?`, **`lastEditedNotice?`**, **`username?`**, **`wordmarkSrc?`**, **`taglineSrc?`**, **`mobileWordmarkSrc?`**, **`navTools?`** (`ChromeNavTool[]`, forwarded to default header) | default, `#header`, `#footer` |
+| `AppChromeWrapper` | `lang?`, `dir?`, `theme?`, **`showBottomMenu?`**, **`wordmarkSrc?`**, **`headerTools?`**, **`bottomNavItems?`**, **`activeNavItem?`** | default, `#header`, `#bottomMenu` |
 | `SpecialPageWrapper` | `title?`, **`help?`** (**`boolean`**), **`actions?`**, `lang?`, `dir?`, `skin?`, `theme?` | default, **`#header`**, **`#title`**, `#help`, `#actions` |
 | `PlainWrapper` | `heading?`, `lang?`, `dir?` | default, `#heading` |
 | `MobileWrapper` | `maxWidth?` (default `360px`), `lang?`, `dir?` | default |
 | `ChromeHeader` | `skin?`, `theme?`, **`username?`**, **`wordmarkSrc?`**, **`taglineSrc?`**, **`mobileWordmarkSrc?`**, **`navTools?`** | `#logo`, `#username`, `#nav` |
 | `ChromeFooter` | `skin?`, `theme?`, **`lastEditedNotice?`**, **`username?`** | default |
+| `AppChromeHeader` | `theme?`, **`wordmarkSrc?`**, **`headerTools?`** | `#logo`, `#actions` |
+| `AppBottomMenu` | `theme?`, **`items?`**, **`activeItem?`** | default, `#item-{id}` |
 | `ArticleWrapper` | **`title?`**, **`header?`**, **`languagesCount?`**, **`lang`**, **`dir`**, **`skin`**, **`theme`** | **default** |
 | `ArticleRenderer` | **`lang`/`dir`/`skin`/`theme`** | **default** — parser subtree ( **`ArticleLive`** / **`ArticleSnapshot`** use **`v-html`** here unless **`#default`** is forwarded ) |
 | `ArticleLive` | Same **`ArticleWrapper`** chrome **`+`** **`article`** (**`page/html`** title; **omit for random**) **`+`** **`host`** **`+`** random-mode **`source?`** (`'random'`\|`'vital'`) / **`langs?`** / **`vitalLevel?`** (`source="vital"`) | **default** → **`ArticleRenderer`** (**`ArticleLive`** injects **`Cdx`** progress/errors before **`ArticleRenderer`**) |

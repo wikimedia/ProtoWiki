@@ -4,12 +4,13 @@ import type { ConfigDevice, PrototypePlatform } from '@/config'
 
 export type PageCategory = 'prototype' | 'template' | 'example'
 
-export type GalleryTab = 'all' | PrototypePlatform
+export type GalleryTab = 'home' | PageCategory
 
 export const GALLERY_TABS: { value: GalleryTab; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'web', label: 'Web' },
-  { value: 'app', label: 'App' },
+  { value: 'home', label: 'Home' },
+  { value: 'prototype', label: 'Prototypes' },
+  { value: 'template', label: 'Templates' },
+  { value: 'example', label: 'Examples' },
 ]
 
 export const DEFAULT_PROTOTYPE_PLATFORM: PrototypePlatform = 'web'
@@ -142,13 +143,10 @@ export function filterGalleryEntriesByTab(
   entries: GalleryEntry[],
   tab: GalleryTab,
 ): GalleryEntry[] {
-  return entries
-    .filter((entry) => {
-      if (tab === 'all') return true
-      if (tab === 'web' || tab === 'app') return entry.platform === tab
-      return entry.category === tab
-    })
-    .sort(compareGalleryEntriesByCategory)
+  if (tab === 'home') {
+    return [...entries].sort(compareGalleryEntriesByCategory)
+  }
+  return entries.filter((entry) => entry.category === tab).sort(compareGalleryEntries)
 }
 
 export function filterGalleryEntriesByCategory(

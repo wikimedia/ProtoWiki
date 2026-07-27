@@ -79,6 +79,7 @@ export const DEFAULT_CONFIG: Config = {
 
 export const PROTOWIKI_API_USER_AGENT = 'ProtoWiki/0.3'
 export const PROTOWIKI_API_PROJECT_URL = 'https://github.com/wikimedia/ProtoWiki'
+export const PROTOWIKI_LICENSE_URL = `${PROTOWIKI_API_PROJECT_URL}/blob/main/LICENSE`
 export const DEFAULT_API_CONTACT = 'lwilson-ctr@wikimedia.org'
 
 export const CONFIG_USER_DISPLAY_NAMES: Partial<Record<ConfigUser, string>> = {
@@ -103,12 +104,6 @@ export const CONFIG_THEME_MENU_ITEMS: { value: ConfigTheme; label: string }[] = 
 export const CONFIG_DEVICE_MENU_ITEMS: { value: ConfigDevice; label: string }[] = [
   { value: 'web', label: 'Web' },
   { value: 'app', label: 'App' },
-]
-
-export const CONFIG_WEB_SKIN_MENU_ITEMS: { value: ConfigWebSkin; label: string }[] = [
-  { value: 'auto', label: 'Auto' },
-  { value: 'desktop', label: 'Desktop (Vector)' },
-  { value: 'mobile', label: 'Mobile (Minerva)' },
 ]
 
 /** Normalize a Wikipedia username for API calls and cache keys. */
