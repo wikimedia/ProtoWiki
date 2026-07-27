@@ -3,8 +3,6 @@ import { ref } from 'vue'
 
 import { CdxPopover } from '@wikimedia/codex'
 
-import UserSettingsPanel from './UserSettingsPanel.vue'
-
 const open = ref(false)
 const anchor = ref<HTMLElement | null>(null)
 
@@ -14,35 +12,37 @@ function toggle(): void {
 </script>
 
 <template>
-  <div class="user-settings-popover">
-    <span ref="anchor" class="user-settings-popover__trigger">
+  <div class="settings-popover">
+    <span ref="anchor" class="settings-popover__trigger">
       <slot :open="open" :toggle="toggle" />
     </span>
     <CdxPopover
       v-model:open="open"
       :anchor="anchor"
       placement="bottom-end"
-      class="user-settings-popover__overlay"
+      class="settings-popover__overlay"
     >
-      <UserSettingsPanel @click.stop />
+      <div @click.stop>
+        <slot name="panel" />
+      </div>
     </CdxPopover>
   </div>
 </template>
 
 <style scoped>
-.user-settings-popover {
+.settings-popover {
   display: inline-flex;
   flex-shrink: 0;
 }
 
-.user-settings-popover__trigger {
+.settings-popover__trigger {
   display: inline-flex;
 }
 </style>
 
 <!-- Teleported popover: allow the select menu to extend past the scrollable body. -->
 <style>
-.user-settings-popover__overlay .cdx-popover__body {
+.settings-popover__overlay .cdx-popover__body {
   overflow: visible;
 }
 </style>

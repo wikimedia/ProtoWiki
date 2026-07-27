@@ -37,7 +37,6 @@ export function useConfig(): {
   theme: Ref<ConfigTheme>
   user: Ref<ConfigUser>
   realUsername: Ref<string>
-  apiContact: Ref<string>
   lang: Ref<string>
   realLang: ComputedRef<string>
   displayName: ComputedRef<string>
@@ -64,13 +63,6 @@ export function useConfig(): {
     get: () => config.value.realUsername,
     set: (value: string) => {
       config.value = { ...config.value, realUsername: value }
-    },
-  })
-
-  const apiContact = computed({
-    get: () => config.value.apiContact,
-    set: (value: string) => {
-      config.value = { ...config.value, apiContact: value }
     },
   })
 
@@ -137,7 +129,6 @@ export function useConfig(): {
     theme,
     user,
     realUsername,
-    apiContact,
     lang,
     realLang,
     displayName,

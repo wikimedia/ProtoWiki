@@ -16,8 +16,6 @@ export interface Config {
   user: ConfigUser
   /** Wikipedia username when `user` is `'real'`. */
   realUsername: string
-  /** Contact detail for Wikimedia API etiquette (email/URL), appended to user agent. */
-  apiContact: string
   userPageLists: Record<ConfigUser, UserPageLists>
 }
 
@@ -68,7 +66,6 @@ export const DEFAULT_CONFIG: Config = {
   theme: 'light',
   user: 'new',
   realUsername: '',
-  apiContact: '',
   userPageLists: cloneUserPageListsMap(DEFAULT_USER_PAGE_LISTS),
 }
 
@@ -83,7 +80,7 @@ export const CONFIG_USER_DISPLAY_NAMES: Partial<Record<ConfigUser, string>> = {
 }
 
 export const CONFIG_USER_MENU_ITEMS: { value: ConfigUser; label: string }[] = [
-  { value: 'logged-out', label: 'Logged out' },
+  { value: 'logged-out', label: 'Logged out user' },
   { value: 'new', label: 'New editor' },
   { value: 'experienced', label: 'Experienced editor' },
   { value: 'real', label: 'Real user' },
@@ -169,7 +166,7 @@ function resolveApiContact(rawContact: string): string {
 /** `fetch` headers for Wikimedia API requests (`Api-User-Agent`). */
 export function wikimediaApiFetchHeaders(purpose?: string, apiContact?: string): HeadersInit {
   const tag = purpose?.trim()
-  const contact = resolveApiContact(apiContact ?? loadConfig().apiContact)
+  const contact = resolveApiContact(apiContact ?? DEFAULT_API_CONTACT)
   const base = `${PROTOWIKI_API_USER_AGENT} (${PROTOWIKI_API_PROJECT_URL}; ${contact})`
   return { 'Api-User-Agent': tag ? `${base} ${tag}` : base }
 }
@@ -259,8 +256,6 @@ export function normalizeConfig(input: unknown): Config {
   const record = input as Record<string, unknown>
   const realUsername =
     typeof record.realUsername === 'string' ? record.realUsername : DEFAULT_CONFIG.realUsername
-  const apiContact =
-    typeof record.apiContact === 'string' ? record.apiContact : DEFAULT_CONFIG.apiContact
   const userPageLists = mergeUserPageListsMap(record.userPageLists)
 
   if (typeof record.realWiki === 'string') {
@@ -274,7 +269,6 @@ export function normalizeConfig(input: unknown): Config {
     theme: isConfigTheme(record.theme) ? record.theme : DEFAULT_CONFIG.theme,
     user: isConfigUser(record.user) ? record.user : DEFAULT_CONFIG.user,
     realUsername,
-    apiContact,
     userPageLists,
   }
 }
@@ -323,7 +317,6 @@ function cloneConfig(config: Config): Config {
     theme: config.theme,
     user: config.user,
     realUsername: config.realUsername,
-    apiContact: config.apiContact,
     userPageLists: cloneUserPageListsMap(config.userPageLists),
   }
 }

@@ -9,10 +9,12 @@ definePage({
 import { useRouter } from 'vue-router'
 
 import { CdxButton, CdxCard, CdxIcon } from '@wikimedia/codex'
-import { cdxIconConfigure } from '@wikimedia/codex-icons'
+import { cdxIconAppearance, cdxIconUserAvatar } from '@wikimedia/codex-icons'
 
 import PlainWrapper from '@/components/PlainWrapper.vue'
-import UserSettingsPopover from '@/components/settings/UserSettingsPopover.vue'
+import AppearanceSettingsPanel from '@/components/settings/AppearanceSettingsPanel.vue'
+import SettingsPopover from '@/components/settings/SettingsPopover.vue'
+import UserSettingsPanel from '@/components/settings/UserSettingsPanel.vue'
 import { usePrototypeGallery } from '@/composables/usePrototypeGallery'
 
 const router = useRouter()
@@ -22,17 +24,40 @@ const { primaryEntries, secondaryEntries, showDivider } = usePrototypeGallery()
 <template>
   <PlainWrapper heading="ProtoWiki">
     <template #actions>
-      <UserSettingsPopover v-slot="{ toggle, open }">
-        <CdxButton
-          weight="quiet"
-          :icon-only="true"
-          aria-label="Settings"
-          :aria-expanded="open"
-          @click="toggle"
-        >
-          <CdxIcon :icon="cdxIconConfigure" />
-        </CdxButton>
-      </UserSettingsPopover>
+      <div class="prototype-index__settings-toolbar">
+        <SettingsPopover>
+          <template #default="{ toggle, open }">
+            <CdxButton
+              weight="quiet"
+              :icon-only="true"
+              aria-label="Appearance"
+              :aria-expanded="open"
+              @click="toggle"
+            >
+              <CdxIcon :icon="cdxIconAppearance" />
+            </CdxButton>
+          </template>
+          <template #panel>
+            <AppearanceSettingsPanel />
+          </template>
+        </SettingsPopover>
+        <SettingsPopover>
+          <template #default="{ toggle, open }">
+            <CdxButton
+              weight="quiet"
+              :icon-only="true"
+              aria-label="Account"
+              :aria-expanded="open"
+              @click="toggle"
+            >
+              <CdxIcon :icon="cdxIconUserAvatar" />
+            </CdxButton>
+          </template>
+          <template #panel>
+            <UserSettingsPanel />
+          </template>
+        </SettingsPopover>
+      </div>
     </template>
     <div class="prototype-index">
       <div class="prototype-index__list">
@@ -57,6 +82,12 @@ const { primaryEntries, secondaryEntries, showDivider } = usePrototypeGallery()
 </template>
 
 <style scoped>
+.prototype-index__settings-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-25);
+}
+
 .prototype-index__list {
   display: flex;
   flex-direction: column;

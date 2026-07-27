@@ -18,7 +18,8 @@ import { useConfig } from '@/composables/useConfig'
 import { DEFAULT_CHROME_NAV_TOOLS, type ChromeNavTool } from './headerNavTools'
 import { globalSkin, globalTheme } from '@/theme'
 import type { Skin, Theme } from '@/theme'
-import UserSettingsPopover from '../settings/UserSettingsPopover.vue'
+import AppearanceSettingsPanel from '../settings/AppearanceSettingsPanel.vue'
+import SettingsPopover from '../settings/SettingsPopover.vue'
 import Search from '../Search.vue'
 
 const { user } = useConfig()
@@ -159,17 +160,13 @@ function navHas(tool: ChromeNavTool): boolean {
             >
               Donate
             </a>
-            <UserSettingsPopover v-slot="{ toggle, open }">
-              <button
-                type="button"
-                class="chrome-header__text-link chrome-header__text-link--button"
-                aria-label="Prototype user"
-                :aria-expanded="open"
-                @click="toggle"
-              >
-                Create account
-              </button>
-            </UserSettingsPopover>
+            <a
+              class="chrome-header__text-link"
+              href="https://en.wikipedia.org/w/index.php?title=Special:CreateAccount"
+              rel="noopener noreferrer"
+            >
+              Create account
+            </a>
             <a
               class="chrome-header__text-link"
               href="https://en.wikipedia.org/w/index.php?title=Special:UserLogin"
@@ -188,9 +185,21 @@ function navHas(tool: ChromeNavTool): boolean {
           </a>
         </slot>
         <slot v-if="!isLoggedOut" name="nav">
-          <CdxButton v-if="navHas('appearance')" weight="quiet" aria-label="Appearance">
-            <CdxIcon :icon="cdxIconAppearance" />
-          </CdxButton>
+          <SettingsPopover v-if="navHas('appearance')">
+            <template #default="{ toggle, open }">
+              <CdxButton
+                weight="quiet"
+                aria-label="Appearance"
+                :aria-expanded="open"
+                @click="toggle"
+              >
+                <CdxIcon :icon="cdxIconAppearance" />
+              </CdxButton>
+            </template>
+            <template #panel>
+              <AppearanceSettingsPanel />
+            </template>
+          </SettingsPopover>
           <CdxButton
             v-if="navHas('notifications')"
             weight="quiet"
@@ -209,18 +218,9 @@ function navHas(tool: ChromeNavTool): boolean {
           >
             <CdxIcon :icon="cdxIconWatchlist" />
           </CdxButton>
-          <UserSettingsPopover v-if="navHas('user')" v-slot="{ toggle, open }">
-            <CdxButton
-              class="chrome-header__user-btn"
-              weight="quiet"
-              aria-label="Prototype user"
-              :aria-expanded="open"
-              @click="toggle"
-            >
-              <CdxIcon :icon="cdxIconUserAvatar" />
-              <span class="chrome-header__dropdown-chevron" aria-hidden="true" />
-            </CdxButton>
-          </UserSettingsPopover>
+          <CdxButton v-if="navHas('user')" weight="quiet" aria-label="User menu">
+            <CdxIcon :icon="cdxIconUserAvatar" />
+          </CdxButton>
         </slot>
       </div>
     </nav>
@@ -260,18 +260,14 @@ function navHas(tool: ChromeNavTool): boolean {
         >
           <CdxIcon :icon="cdxIconBellOutline" />
         </CdxButton>
-        <UserSettingsPopover v-slot="{ toggle, open }">
-          <CdxButton
-            class="chrome-header__mobile-user-btn"
-            weight="quiet"
-            size="large"
-            aria-label="Prototype user"
-            :aria-expanded="open"
-            @click="toggle"
-          >
-            <CdxIcon :icon="cdxIconUserAvatarOutline" size="medium" />
-          </CdxButton>
-        </UserSettingsPopover>
+        <CdxButton
+          class="chrome-header__mobile-user-btn"
+          weight="quiet"
+          size="large"
+          aria-label="User menu"
+        >
+          <CdxIcon :icon="cdxIconUserAvatarOutline" size="medium" />
+        </CdxButton>
       </div>
     </nav>
   </header>
@@ -425,17 +421,8 @@ function navHas(tool: ChromeNavTool): boolean {
   text-decoration: none;
 }
 
-.chrome-header[data-skin='desktop'] a.chrome-header__text-link:hover,
-.chrome-header[data-skin='desktop'] button.chrome-header__text-link--button:hover {
+.chrome-header[data-skin='desktop'] a.chrome-header__text-link:hover {
   text-decoration: underline;
-}
-
-.chrome-header[data-skin='desktop'] button.chrome-header__text-link--button {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  font: inherit;
 }
 
 .chrome-header[data-skin='desktop'] .chrome-header__username-display {
@@ -448,25 +435,6 @@ function navHas(tool: ChromeNavTool): boolean {
   padding: 0.5rem 0.4rem;
 }
 
-.chrome-header[data-skin='desktop'] .chrome-header__dropdown-chevron {
-  display: inline-block;
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  transform: scale(0.5);
-  background-color: var(--color-base, #202122);
-  mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23000"><path d="m17.5 4.75-7.5 7.5-7.5-7.5L1 6.25l9 9 9-9z"/></svg>');
-  mask-repeat: no-repeat;
-  mask-position: center;
-}
-
-.chrome-header[data-skin='desktop'] .chrome-header__user-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-25, 4px);
-  overflow: visible;
-}
-
 @media (max-width: 1120px) {
   .chrome-header[data-skin='desktop'] .chrome-header__inline-search {
     display: none;
@@ -476,22 +444,11 @@ function navHas(tool: ChromeNavTool): boolean {
     display: inline-flex;
   }
 
-  /* Icon-only tools stay square; user menu needs width for avatar + chevron (FM parity). */
-  .chrome-header[data-skin='desktop']
-    .chrome-header__desktop-end
-    .cdx-button:not(.chrome-header__user-btn) {
+  .chrome-header[data-skin='desktop'] .chrome-header__desktop-end .cdx-button {
     height: var(--size-icon-large, 40px);
     width: var(--size-icon-large, 40px);
     padding: 0.7rem;
   }
-
-  .chrome-header[data-skin='desktop'] .chrome-header__desktop-end .chrome-header__user-btn {
-    width: auto;
-    min-width: var(--size-icon-large, 40px);
-    height: var(--size-icon-large, 40px);
-    padding: 0.45rem 0.5rem;
-  }
-
 }
 
 @media (max-width: 768px) {
@@ -572,12 +529,4 @@ function navHas(tool: ChromeNavTool): boolean {
   justify-content: center;
 }
 
-.chrome-header[data-skin='mobile'] .prototype-user-settings-popover {
-  width: var(--size-icon-large, 40px);
-}
-
-.chrome-header[data-skin='mobile'] .prototype-user-settings-popover__trigger {
-  width: 100%;
-  justify-content: center;
-}
 </style>

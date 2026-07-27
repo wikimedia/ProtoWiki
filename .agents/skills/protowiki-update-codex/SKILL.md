@@ -193,7 +193,7 @@ npm run lint
 Then `npm run dev` and smoke-test the surfaces most exposed to Codex
 changes:
 
-- Popovers: settings gear (`UserSettingsPopover`) and the article
+- Popovers: settings panels (`SettingsPopover`) and the article
   language menu (`ArticleHeader`).
 - Search: `Search` (`CdxTypeaheadSearch`).
 - Loading: `ArticleLive` / `ArticleSnapshot` (`CdxProgressBar`).
