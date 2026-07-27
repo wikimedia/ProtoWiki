@@ -17,16 +17,16 @@ A modal dialog with title, body, and actions.
 </CdxDialog>
 ```
 
-| Prop | Values |
-| --- | --- |
-| `open` | controlled via `v-model:open` |
-| `title` | required string |
-| `subtitle` | optional |
-| `hideTitle` | hide the title visually |
-| `primaryAction` | `{ label, actionType?: 'progressive' \| 'destructive', disabled? }` |
-| `defaultAction` | `{ label, disabled? }` |
-| `closeButtonLabel` | aria-label for ✕ |
-| `dismissable` | allow esc / overlay click to close |
+| Prop               | Values                                                              |
+| ------------------ | ------------------------------------------------------------------- |
+| `open`             | controlled via `v-model:open`                                       |
+| `title`            | required string                                                     |
+| `subtitle`         | optional                                                            |
+| `hideTitle`        | hide the title visually                                             |
+| `primaryAction`    | `{ label, actionType?: 'progressive' \| 'destructive', disabled? }` |
+| `defaultAction`    | `{ label, disabled? }`                                              |
+| `closeButtonLabel` | aria-label for ✕                                                    |
+| `dismissable`      | allow esc / overlay click to close                                  |
 
 Slots:
 
@@ -39,7 +39,7 @@ Emits `primary`, `default`, `update:open`.
 ## CdxTooltip
 
 Render a tooltip when hovering / focusing a child. Codex provides this
-as a directive *and* as a component, but the most common form is the
+as a directive _and_ as a component, but the most common form is the
 component:
 
 ```vue
@@ -61,11 +61,7 @@ Or as a directive:
 A floating menu — typically anchored to a trigger.
 
 ```vue
-<CdxMenu
-  v-model:expanded="open"
-  v-model:selected="selected"
-  :menu-items="items"
-/>
+<CdxMenu v-model:expanded="open" v-model:selected="selected" :menu-items="items" />
 ```
 
 For most cases you want a button that opens a menu — use:
@@ -120,11 +116,7 @@ cards, etc. — anything beyond a flat list of options.
 ## Pattern — overflow menu
 
 ```vue
-<CdxMenuButton
-  v-model:selected="action"
-  :menu-items="overflowItems"
-  aria-label="More actions"
->
+<CdxMenuButton v-model:selected="action" :menu-items="overflowItems" aria-label="More actions">
   <CdxIcon :icon="cdxIconEllipsis" />
 </CdxMenuButton>
 ```

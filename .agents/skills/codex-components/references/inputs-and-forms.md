@@ -32,12 +32,12 @@ Single-line text input.
 <CdxTextInput v-model="value" :placeholder="'Search'" />
 ```
 
-| Prop | Values | Default |
-| --- | --- | --- |
-| `inputType` | `text` / `search` / `number` / `email` / `password` / `tel` / `url` / `week` / `month` / `date` / `datetime-local` / `time` / `color` | `text` |
-| `disabled`, `readonly` | boolean | `false` |
-| `clearable` | boolean — show ✕ to clear | `false` |
-| `startIcon`, `endIcon` | icon descriptor | — |
+| Prop                   | Values                                                                                                                                | Default |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `inputType`            | `text` / `search` / `number` / `email` / `password` / `tel` / `url` / `week` / `month` / `date` / `datetime-local` / `time` / `color` | `text`  |
+| `disabled`, `readonly` | boolean                                                                                                                               | `false` |
+| `clearable`            | boolean — show ✕ to clear                                                                                                             | `false` |
+| `startIcon`, `endIcon` | icon descriptor                                                                                                                       | —       |
 
 ## CdxTextArea
 
@@ -88,15 +88,12 @@ Free-form input with a fixed list of suggestions. Value can be the user's
 free text or a chosen suggestion.
 
 ```vue
-<CdxCombobox
-  v-model:selected="value"
-  :menu-items="suggestions"
-/>
+<CdxCombobox v-model:selected="value" :menu-items="suggestions" />
 ```
 
 ## CdxLookup
 
-Free-form input with a *dynamic* list of suggestions, typically fetched
+Free-form input with a _dynamic_ list of suggestions, typically fetched
 from an API.
 
 ```vue
@@ -148,7 +145,7 @@ lookup). Pay attention to which target you bind.
 
 ## Designing the form (style guide)
 
-For *how to construct a form well* — usability rules, layout & width,
+For _how to construct a form well_ — usability rules, layout & width,
 fieldsets/modules, validation timing, readonly vs disabled, spacing
 tokens, and which field type to pick — see
 [`codex-style-guide` → constructing forms](../../codex-style-guide/references/constructing-forms.md).

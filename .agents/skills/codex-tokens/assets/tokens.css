@@ -1,8 +1,8 @@
-/* Copied from @wikimedia/codex-design-tokens/theme-wikimedia-ui.css on 15th Jun 2026 */
+/* Copied from @wikimedia/codex-design-tokens/theme-wikimedia-ui.css on 2026-07-27 */
 /* Night block re-scoped from theme-wikimedia-ui-mode-dark.css (:root -> html.skin-theme-clientpref-night). */
 
 /**
- * Codex Design Tokens v2.6.0
+ * Codex Design Tokens v2.6.2
  * Design System for Wikimedia
  * See https://doc.wikimedia.org/codex/latest/design-tokens/overview.html
  */
@@ -118,9 +118,15 @@
   --size-double: 200%;
   --size-search-figure: 2.5rem; /* Alias for use in TypeaheadSearch and Thumbnail components for the same purpose and for better code readability. */
   --max-width-base: none;
-  --max-width-breakpoint-mobile: calc( 640px - var( --size-absolute-1 ) ); /* A mobile device's maximum available screen width. Many older feature phones have screens smaller than this value. */
-  --max-width-breakpoint-tablet: calc( 1120px - var( --size-absolute-1 ) ); /* A tablet device's maximum available screen width. Note, the size chosen is eager to be re-evaluated with Web team and Product Analytics. */
-  --max-width-breakpoint-desktop: calc( 1680px - var( --size-absolute-1 ) ); /* A desktop device's maximum available screen width. */
+  --max-width-breakpoint-mobile: calc(
+    640px - var(--size-absolute-1)
+  ); /* A mobile device's maximum available screen width. Many older feature phones have screens smaller than this value. */
+  --max-width-breakpoint-tablet: calc(
+    1120px - var(--size-absolute-1)
+  ); /* A tablet device's maximum available screen width. Note, the size chosen is eager to be re-evaluated with Web team and Product Analytics. */
+  --max-width-breakpoint-desktop: calc(
+    1680px - var(--size-absolute-1)
+  ); /* A desktop device's maximum available screen width. */
   --max-width-button: 28rem; /* Note, that this is a slight amendment from WikimediaUI Base from `28.75em` = `460px` to `448px` – `dimension.2800` */
   --border-style-base: solid;
   --border-style-dashed: dashed;
@@ -143,16 +149,20 @@
   --box-shadow-color-progressive-selected--active: #233566;
   --box-shadow-color-destructive--focus: #36c;
   --box-shadow-color-inverted: #fff;
-  --box-shadow-color-alpha-base: rgba( 0, 0, 0, 0.06 );
+  --box-shadow-color-alpha-base: rgba(0, 0, 0, 0.06);
   --box-shadow-color-transparent: transparent;
   --font-family-base: sans-serif; /* Reference Vector's default fallback sans instead of the deprecated value `font-family-sans` in WikimediaUI Base. */
-  --font-family-system-sans: -apple-system, 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Inter', 'Helvetica', 'Arial', sans-serif;
+  --font-family-system-sans:
+    -apple-system, 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Inter', 'Helvetica', 'Arial',
+    sans-serif;
   --font-family-sans--fallback: sans-serif;
   --font-family-serif: 'Linux Libertine', 'Georgia', 'Times', 'Source Serif 4', serif;
   --font-family-serif--fallback: serif;
-  --font-family-monospace: 'Menlo', 'Consolas', 'Liberation Mono', 'Fira Code', 'Courier New', monospace;
+  --font-family-monospace:
+    'Menlo', 'Consolas', 'Liberation Mono', 'Fira Code', 'Courier New', monospace;
   --font-family-monospace--fallback: monospace, monospace;
-  --font-family-heading-main: 'Linux Libertine', 'Georgia', 'Times', 'Source Serif 4', serif; /* Legacy value from WikimediaUI Base. Use for first heading special treatment. */
+  --font-family-heading-main:
+    'Linux Libertine', 'Georgia', 'Times', 'Source Serif 4', serif; /* Legacy value from WikimediaUI Base. Use for first heading special treatment. */
   --font-size-x-small: 0.75rem; /* `x` stands for extra. In this case extra small. */
   --font-size-small: 0.875rem;
   --font-size-medium: 1rem;
@@ -179,9 +189,9 @@
   --text-overflow-clip: clip;
   --text-overflow-ellipsis: ellipsis;
   --tab-size-base: 4;
-  --transform-checkbox-tick--checked: rotate( 45deg );
-  --transform-progress-indicator-spinner-start: rotate( -45deg );
-  --transform-progress-indicator-spinner-end: rotate( 315deg );
+  --transform-checkbox-tick--checked: rotate(45deg);
+  --transform-progress-indicator-spinner-start: rotate(-45deg);
+  --transform-progress-indicator-spinner-end: rotate(315deg);
   --transition-duration-base: 100ms;
   --transition-duration-medium: 250ms;
   --transition-property-base: background-color, color, border-color, box-shadow;
@@ -265,13 +275,18 @@
   --background-color-option-pink: #f5ebf2;
   --background-color-option-maroon: #f6ebeb;
   --background-color-transparent: transparent;
-  --background-color-backdrop-light: rgba( 255, 255, 255, 0.65 ); /* Backdrop is the term used by CSS Fullscreen API and is used to dim the background when a modal Dialog is open. Also known as overlay mask. */
-  --background-color-backdrop-dark: rgba( 0, 0, 0, 0.65 );
-  --background-color-button-quiet--hover: rgba( 0, 24, 73, 0.027 );
-  --background-color-button-quiet--active: rgba( 0, 24, 73, 0.082 );
+  --background-color-backdrop-light: rgba(
+    255,
+    255,
+    255,
+    0.65
+  ); /* Backdrop is the term used by CSS Fullscreen API and is used to dim the background when a modal Dialog is open. Also known as overlay mask. */
+  --background-color-backdrop-dark: rgba(0, 0, 0, 0.65);
+  --background-color-button-quiet--hover: rgba(0, 24, 73, 0.027);
+  --background-color-button-quiet--active: rgba(0, 24, 73, 0.082);
   --background-color-input-binary--checked: #36c;
-  --background-color-tab-list-item-framed--hover: rgba( 255, 255, 255, 0.3 );
-  --background-color-tab-list-item-framed--active: rgba( 255, 255, 255, 0.65 );
+  --background-color-tab-list-item-framed--hover: rgba(255, 255, 255, 0.3);
+  --background-color-tab-list-item-framed--active: rgba(255, 255, 255, 0.65);
   --opacity-icon-base: 0.87;
   --opacity-icon-base--hover: 0.74;
   --opacity-icon-base--selected: 1;
@@ -363,72 +378,91 @@
   --min-height-table-footer: 40px;
   --min-height-toggle-switch: 28px;
   --max-height-chip: 1.375rem;
-  --color-link: var( --color-progressive ); /* Default Link color and states */
-  --color-link--hover: var( --color-progressive--hover );
-  --color-link--active: var( --color-progressive--active );
-  --color-link--focus: var( --color-progressive--focus );
-  --color-link--visited: var( --color-visited );
-  --color-link--visited--hover: var( --color-visited--hover );
-  --color-link--visited--active: var( --color-visited--active );
-  --color-link-red: var( --color-destructive ); /* Red ('new') Link color and states */
-  --color-link-red--hover: var( --color-destructive--hover );
-  --color-link-red--active: var( --color-destructive--active );
-  --color-link-red--focus: var( --color-destructive--focus );
-  --color-link-red--visited: var( --color-destructive--visited );
-  --color-link-red--visited--hover: var( --color-destructive--visited--hover );
-  --color-link-red--visited--active: var( --color-destructive--visited--active );
-  --size-icon-x-small: calc( var( --font-size-medium ) - 4px );
-  --size-icon-small: var( --font-size-medium );
-  --size-icon-medium: calc( var( --font-size-medium ) + 4px );
-  --size-toggle-switch-grip: calc( var( --font-size-medium ) * 1.25 );
-  --box-shadow-small: var( --box-shadow-outset-small ) var( --box-shadow-color-base );
-  --box-shadow-small-top: var( --box-shadow-outset-small-top ) var( --box-shadow-color-base );
-  --box-shadow-small-bottom: var( --box-shadow-outset-small-bottom ) var( --box-shadow-color-base );
-  --box-shadow-medium: var( --box-shadow-outset-medium-below ) var( --box-shadow-color-alpha-base ), var( --box-shadow-outset-medium-around ) var( --box-shadow-color-alpha-base );
-  --box-shadow-large: var( --box-shadow-outset-large-below ) var( --box-shadow-color-alpha-base ), var( --box-shadow-outset-large-around ) var( --box-shadow-color-alpha-base );
+  --color-link: var(--color-progressive); /* Default Link color and states */
+  --color-link--hover: var(--color-progressive--hover);
+  --color-link--active: var(--color-progressive--active);
+  --color-link--focus: var(--color-progressive--focus);
+  --color-link--visited: var(--color-visited);
+  --color-link--visited--hover: var(--color-visited--hover);
+  --color-link--visited--active: var(--color-visited--active);
+  --color-link-red: var(--color-destructive); /* Red ('new') Link color and states */
+  --color-link-red--hover: var(--color-destructive--hover);
+  --color-link-red--active: var(--color-destructive--active);
+  --color-link-red--focus: var(--color-destructive--focus);
+  --color-link-red--visited: var(--color-destructive--visited);
+  --color-link-red--visited--hover: var(--color-destructive--visited--hover);
+  --color-link-red--visited--active: var(--color-destructive--visited--active);
+  --size-icon-x-small: calc(var(--font-size-medium) - 4px);
+  --size-icon-small: var(--font-size-medium);
+  --size-icon-medium: calc(var(--font-size-medium) + 4px);
+  --size-toggle-switch-grip: calc(var(--font-size-medium) * 1.25);
+  --box-shadow-small: var(--box-shadow-outset-small) var(--box-shadow-color-base);
+  --box-shadow-small-top: var(--box-shadow-outset-small-top) var(--box-shadow-color-base);
+  --box-shadow-small-bottom: var(--box-shadow-outset-small-bottom) var(--box-shadow-color-base);
+  --box-shadow-medium:
+    var(--box-shadow-outset-medium-below) var(--box-shadow-color-alpha-base),
+    var(--box-shadow-outset-medium-around) var(--box-shadow-color-alpha-base);
+  --box-shadow-large:
+    var(--box-shadow-outset-large-below) var(--box-shadow-color-alpha-base),
+    var(--box-shadow-outset-large-around) var(--box-shadow-color-alpha-base);
   --accent-color-base: #36c;
-  --position-offset-border-width-base: -var( --border-width-base );
-  --spacing-horizontal-button: var( --spacing-75 ) - var( --border-width-base ); /* Padding should equal 12px of spacing minus the width of the border */
-  --spacing-horizontal-button-icon-only: var( --spacing-35 ) - var( --border-width-base ); /* Padding should equal 6px of spacing minus the width of the border */
-  --spacing-horizontal-button-small-icon-only: var( --spacing-12 ) - var( --border-width-base ); /* Padding should equal 2px of spacing minus the width of the border */
-  --spacing-horizontal-button-small: var( --spacing-35 ) - var( --border-width-base ); /* Padding should equal 6px of spacing minus the width of the border */
-  --spacing-horizontal-button-large: var( --spacing-100 ) - var( --border-width-base ); /* Padding should equal 16px of spacing minus the width of the border */
-  --spacing-horizontal-input-text-two-end-icons: calc( var( --spacing-50 ) * 2 + var( --size-icon-small ) ); /* Rely on `calc()` to make token output usable in all formats. When there are two end icons, (i.e. a clear icon and an end icon), we need to double the horizontal padding and account for the size of the extra icon. This token can be used to calculate the horizontal position of the clear icon and the padding-end of the text input. */
-  --spacing-start-typeahead-search-figure: var( --spacing-75 ); /* The amount of space between the TypeaheadSearch figure's parent component and the TypeaheadSearch figure (input icon container, search result thumbnail, and footer icon container). We want this space to be uniform so that the figures vertically line up nicely. We use the same horizontal padding as the MenuItem. */
-  --spacing-toggle-switch-grip-start: calc( var( --font-size-medium ) * 0.375 );
-  --spacing-toggle-switch-grip-end: calc( var( --font-size-medium ) * 1.25 );
-  --border-color-input--hover: var( --border-color-interactive );
-  --border-color-input-binary: var( --border-color-interactive );
-  --border-color-input-binary--hover: var( --border-color-progressive--hover );
-  --border-color-input-binary--active: var( --border-color-progressive--active );
-  --border-color-input-binary--focus: var( --border-color-progressive--focus );
-  --border-color-input-binary--checked: var( --border-color-progressive );
-  --border-base: var( --border-width-base ) var( --border-style-base ) var( --border-color-base );
-  --border-subtle: var( --border-width-base ) var( --border-style-base ) var( --border-color-subtle );
-  --border-progressive: var( --border-width-base ) var( --border-style-base ) var( --border-color-progressive );
-  --border-destructive: var( --border-width-base ) var( --border-style-base ) var( --border-color-destructive );
-  --border-transparent: var( --border-width-base ) var( --border-style-base ) var( --border-color-transparent );
-  --outline-base--focus: var( --border-width-base ) solid transparent; /* Enable Windows high contrast mode on certain widgets, that have default outlines overridden. */
-  --width-toggle-switch: calc( var( --font-size-medium ) * 3 );
-  --height-toggle-switch: calc( var( --font-size-medium ) * 2 );
-  --spacing-start-typeahead-search-icon: calc( var( --spacing-start-typeahead-search-figure ) + ( var( --min-size-search-figure ) - var( --min-size-icon-medium ) ) / 2 ); /* The padding required for the icon to center align with the menu item thumbnail. We calculate the difference in size and add it to the expected spacing. */
-  --spacing-typeahead-search-focus-addition: calc( ( var( --spacing-start-typeahead-search-figure ) + var( --min-size-search-figure ) ) - ( var( --min-size-icon-medium ) + var( --spacing-50 ) ) ); /* The amount the width of the input increases when it is focused to allow for the extra spacing around the search figures. The caret position should remain static. This calculates the padding-left of the input when expanded minus the padding-left of the input when not expanded. (Note that both padding values actually include `@spacing-50` as well, but it was left out of the calculation for simplicity's sake.) */
+  --position-offset-border-width-base: -var(--border-width-base);
+  --spacing-horizontal-button: var(--spacing-75) - var(--border-width-base); /* Padding should equal 12px of spacing minus the width of the border */
+  --spacing-horizontal-button-icon-only: var(--spacing-35) - var(--border-width-base); /* Padding should equal 6px of spacing minus the width of the border */
+  --spacing-horizontal-button-small-icon-only: var(--spacing-12) - var(--border-width-base); /* Padding should equal 2px of spacing minus the width of the border */
+  --spacing-horizontal-button-small: var(--spacing-35) - var(--border-width-base); /* Padding should equal 6px of spacing minus the width of the border */
+  --spacing-horizontal-button-large: var(--spacing-100) - var(--border-width-base); /* Padding should equal 16px of spacing minus the width of the border */
+  --spacing-horizontal-input-text-two-end-icons: calc(
+    var(--spacing-50) * 2 + var(--size-icon-small)
+  ); /* Rely on `calc()` to make token output usable in all formats. When there are two end icons, (i.e. a clear icon and an end icon), we need to double the horizontal padding and account for the size of the extra icon. This token can be used to calculate the horizontal position of the clear icon and the padding-end of the text input. */
+  --spacing-start-typeahead-search-figure: var(
+    --spacing-75
+  ); /* The amount of space between the TypeaheadSearch figure's parent component and the TypeaheadSearch figure (input icon container, search result thumbnail, and footer icon container). We want this space to be uniform so that the figures vertically line up nicely. We use the same horizontal padding as the MenuItem. */
+  --spacing-toggle-switch-grip-start: calc(var(--font-size-medium) * 0.375);
+  --spacing-toggle-switch-grip-end: calc(var(--font-size-medium) * 1.25);
+  --border-color-input--hover: var(--border-color-interactive);
+  --border-color-input-binary: var(--border-color-interactive);
+  --border-color-input-binary--hover: var(--border-color-progressive--hover);
+  --border-color-input-binary--active: var(--border-color-progressive--active);
+  --border-color-input-binary--focus: var(--border-color-progressive--focus);
+  --border-color-input-binary--checked: var(--border-color-progressive);
+  --border-base: var(--border-width-base) var(--border-style-base) var(--border-color-base);
+  --border-subtle: var(--border-width-base) var(--border-style-base) var(--border-color-subtle);
+  --border-progressive: var(--border-width-base) var(--border-style-base)
+    var(--border-color-progressive);
+  --border-destructive: var(--border-width-base) var(--border-style-base)
+    var(--border-color-destructive);
+  --border-transparent: var(--border-width-base) var(--border-style-base)
+    var(--border-color-transparent);
+  --outline-base--focus: var(--border-width-base) solid transparent; /* Enable Windows high contrast mode on certain widgets, that have default outlines overridden. */
+  --width-toggle-switch: calc(var(--font-size-medium) * 3);
+  --height-toggle-switch: calc(var(--font-size-medium) * 2);
+  --spacing-start-typeahead-search-icon: calc(
+    var(--spacing-start-typeahead-search-figure) +
+      (var(--min-size-search-figure) - var(--min-size-icon-medium)) / 2
+  ); /* The padding required for the icon to center align with the menu item thumbnail. We calculate the difference in size and add it to the expected spacing. */
+  --spacing-typeahead-search-focus-addition: calc(
+    (var(--spacing-start-typeahead-search-figure) + var(--min-size-search-figure)) -
+      (var(--min-size-icon-medium) + var(--spacing-50))
+  ); /* The amount the width of the input increases when it is focused to allow for the extra spacing around the search figures. The caret position should remain static. This calculates the padding-left of the input when expanded minus the padding-left of the input when not expanded. (Note that both padding values actually include `@spacing-50` as well, but it was left out of the calculation for simplicity's sake.) */
 
-/* DEPRECATED TOKENS */
-/* Warning: the following token name is deprecated (Use `color-subtle` instead. Note, that `color-subtle` is using `color.gray600` instead of `color.gray500` now.) */
+  /* DEPRECATED TOKENS */
+  /* Warning: the following token name is deprecated (Use `color-subtle` instead. Note, that `color-subtle` is using `color.gray600` instead of `color.gray500` now.) */
   --color-base--subtle: #54595d;
-/* Warning: the following token name is deprecated (For elements which previously used `xx-large`, consider using `large` instead, or referring to the guidance above to best choose the appropriate shadow.) */
-  --box-shadow-drop-xx-large: 0 20px 48px 0 rgba( 0, 0, 0, 0.2 );
-/* Warning: the following token name is deprecated (Use `font-family-sans--fallback` instead. See T247166.) */
+  /* Warning: the following token name is deprecated (For elements which previously used `xx-large`, consider using `large` instead, or referring to the guidance above to best choose the appropriate shadow.) */
+  --box-shadow-drop-xx-large: 0 20px 48px 0 rgba(0, 0, 0, 0.2);
+  /* Warning: the following token name is deprecated (Use `font-family-sans--fallback` instead. See T247166.) */
   --font-family-sans: 'Helvetica Neue', 'Helvetica', 'Liberation Sans', 'Arial', sans-serif;
-/* Warning: the following token name is deprecated (Use `line-height-x-small` instead. Deprecated, part of old font-size/line-height system) */
+  /* Warning: the following token name is deprecated (Use `line-height-x-small` instead. Deprecated, part of old font-size/line-height system) */
   --line-height-xxx-small: 1.4285714rem;
-/* Warning: the following token name is deprecated (Use `line-height-small` instead. Deprecated, part of old font-size/line-height system) */
+  /* Warning: the following token name is deprecated (Use `line-height-small` instead. Deprecated, part of old font-size/line-height system) */
   --line-height-xx-small: 1.5714285rem;
-/* Warning: the following token name is deprecated (Shadow shorthands should be used in place of `drop` shadows.) */
-  --box-shadow-drop-small: var( --box-shadow-outset-small ) var( --box-shadow-color-base );
-/* Warning: the following token name is deprecated (Shadow shorthands should be used in place of `drop` shadows.) */
-  --box-shadow-drop-medium: var( --box-shadow-outset-medium-below ) var( --box-shadow-color-alpha-base ), var( --box-shadow-outset-medium-around ) var( --box-shadow-color-alpha-base );
+  /* Warning: the following token name is deprecated (Shadow shorthands should be used in place of `drop` shadows.) */
+  --box-shadow-drop-small: var(--box-shadow-outset-small) var(--box-shadow-color-base);
+  /* Warning: the following token name is deprecated (Shadow shorthands should be used in place of `drop` shadows.) */
+  --box-shadow-drop-medium:
+    var(--box-shadow-outset-medium-below) var(--box-shadow-color-alpha-base),
+    var(--box-shadow-outset-medium-around) var(--box-shadow-color-alpha-base);
 }
 
 html.skin-theme-clientpref-night {
@@ -479,7 +513,7 @@ html.skin-theme-clientpref-night {
   --box-shadow-color-progressive-selected--active: #b6d4fb;
   --box-shadow-color-destructive--focus: #6485d1;
   --box-shadow-color-inverted: #000;
-  --box-shadow-color-alpha-base: rgba( 0, 0, 0, 0.87 );
+  --box-shadow-color-alpha-base: rgba(0, 0, 0, 0.87);
   --mix-blend-mode-blend: screen;
   --background-color-base: #101418; /* Background Colors for static elements (for page layout, sections, etc.) from here on. */
   --background-color-neutral: #27292d;
@@ -519,8 +553,13 @@ html.skin-theme-clientpref-night {
   --background-color-option-purple: #353262;
   --background-color-option-pink: #4e2c40;
   --background-color-option-maroon: #512e2e;
-  --background-color-backdrop-light: rgba( 0, 0, 0, 0.65 ); /* Backdrop is the term used by CSS Fullscreen API and is used to dim the background when a modal Dialog is open. Also known as overlay mask. */
-  --background-color-backdrop-dark: rgba( 255, 255, 255, 0.65 );
+  --background-color-backdrop-light: rgba(
+    0,
+    0,
+    0,
+    0.65
+  ); /* Backdrop is the term used by CSS Fullscreen API and is used to dim the background when a modal Dialog is open. Also known as overlay mask. */
+  --background-color-backdrop-dark: rgba(255, 255, 255, 0.65);
   --border-color-base: #72777d;
   --border-color-emphasized: #eaecf0;
   --border-color-subtle: #54595d;

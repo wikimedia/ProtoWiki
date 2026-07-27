@@ -60,6 +60,7 @@ importing it.
 | `bold` | `cdxIconBold` |
 | `bold-x` | `cdxIconBoldX` (langCodeMap-aware) |
 | `arrow-next` | `cdxIconArrowNext` (bidi-aware) |
+| `draggable-vertical` | `cdxIconDraggableVertical` (`cdxIconDraggable` is a deprecated alias) |
 | `reference` | `cdxIconReference` |
 
 ## Accessibility

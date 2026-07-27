@@ -1,7 +1,7 @@
 # All Codex icons
 
 The complete catalogue of importable icon constants from
-`@wikimedia/codex-icons` (286 icons). Import any of these and
+`@wikimedia/codex-icons` (291 icons). Import any of these and
 render through `CdxIcon` — see [`../SKILL.md`](../SKILL.md) for usage,
 accessibility, and direction/lang handling.
 
@@ -91,6 +91,9 @@ after a Codex upgrade) see the
 | Download | `cdxIconDownload` |  |
 | Down Triangle | `cdxIconDownTriangle` |  |
 | Draggable | `cdxIconDraggable` |  |
+| Draggable Horizontal | `cdxIconDraggableHorizontal` |  |
+| Draggable Vertical | `cdxIconDraggableVertical` |  |
+| Draggable XY | `cdxIconDraggableXY` |  |
 
 ## E
 
@@ -137,6 +140,7 @@ after a Codex upgrade) see the
 | Heart Outline | `cdxIconHeartOutline` |  |
 | Help | `cdxIconHelp` | flips in RTL |
 | Help Notice | `cdxIconHelpNotice` | flips in RTL |
+| Help Notice Filled | `cdxIconHelpNoticeFilled` | flips in RTL |
 | Hieroglyph | `cdxIconHieroglyph` |  |
 | Highlight | `cdxIconHighlight` |  |
 | History | `cdxIconHistory` |  |
@@ -234,6 +238,7 @@ after a Codex upgrade) see the
 | Menu | `cdxIconMenu` |  |
 | Merge | `cdxIconMerge` | flips in RTL |
 | Message | `cdxIconMessage` |  |
+| Microphone | `cdxIconMicrophone` |  |
 | Moon | `cdxIconMoon` |  |
 | Move | `cdxIconMove` |  |
 | Move First | `cdxIconMoveFirst` | flips in RTL |
@@ -386,7 +391,7 @@ after a Codex upgrade) see the
 | User Contributions | `cdxIconUserContributions` | flips in RTL |
 | User Group | `cdxIconUserGroup` | flips in RTL |
 | User Mentor | `cdxIconUserMentor` | flips in RTL |
-| User Pages | `cdxIconUserPages` | distinct LTR/RTL glyphs |
+| User Pages | `cdxIconUserPages` | flips in RTL |
 | User Rights | `cdxIconUserRights` | flips in RTL |
 | User Talk | `cdxIconUserTalk` | flips in RTL |
 | User Temporary | `cdxIconUserTemporary` | flips in RTL |
