@@ -15,6 +15,7 @@ definePage({
     title: 'Attribution (search)',
     description: 'Using the Attribution API in a search scenario.',
     category: 'example',
+    platform: 'web',
   },
 })
 

@@ -4,6 +4,7 @@ definePage({
     title: 'Chrome',
     description: 'Template for prototypes with a Wikipedia header and footer.',
     category: 'template',
+    platform: 'web',
   },
 })
 

@@ -4,6 +4,7 @@ definePage({
     title: 'Article (live)',
     description: "Template for an article page that's loaded from live data.",
     category: 'template',
+    platform: 'web',
   },
 })
 

@@ -1,5 +1,6 @@
 export type ConfigTheme = 'light' | 'dark' | 'system'
-export type ConfigDevice = 'web' | 'app'
+export type PrototypePlatform = 'web' | 'app'
+export type ConfigDevice = PrototypePlatform
 export type ConfigWebSkin = 'auto' | 'desktop' | 'mobile'
 export type ConfigUser = 'logged-out' | 'new' | 'experienced' | 'real'
 

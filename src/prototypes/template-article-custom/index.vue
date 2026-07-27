@@ -5,6 +5,7 @@ definePage({
     description:
       'Template for an article page where the article is written out within the template itself. Useful for when you want to directly change some part of the article.',
     category: 'template',
+    platform: 'web',
   },
 })
 

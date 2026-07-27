@@ -20,6 +20,7 @@ definePage({
     title: 'Event worklist',
     description: 'Prototype for an event worklist page, intended for mobile.',
     category: 'example',
+    platform: 'web',
   },
 })
 

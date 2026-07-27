@@ -4,6 +4,7 @@ definePage({
     title: 'Article (snapshot)',
     description: "Template for an article page that's loaded from a static snapshot.",
     category: 'template',
+    platform: 'web',
   },
 })
 

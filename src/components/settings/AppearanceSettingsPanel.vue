@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { CdxRadio, CdxSelect } from '@wikimedia/codex'
+import { CdxRadio } from '@wikimedia/codex'
 
 import { useConfig } from '@/composables/useConfig'
-import { CONFIG_DEVICE_MENU_ITEMS, CONFIG_THEME_MENU_ITEMS, CONFIG_WEB_SKIN_MENU_ITEMS } from '@/config'
+import { CONFIG_THEME_MENU_ITEMS, CONFIG_WEB_SKIN_MENU_ITEMS } from '@/config'
 
 import './settingsPanel.css'
 
@@ -11,14 +11,6 @@ const { theme, device, webSkin } = useConfig()
 
 <template>
   <div class="settings-panel appearance-settings-panel">
-    <label class="settings-panel__field">
-      <span class="settings-panel__label">Platform</span>
-      <CdxSelect
-        v-model:selected="device"
-        :menu-items="CONFIG_DEVICE_MENU_ITEMS"
-        default-label="Web"
-      />
-    </label>
     <div class="settings-panel__field appearance-settings-panel__color">
       <span id="protowiki-color-label" class="settings-panel__label">Color</span>
       <div
@@ -37,7 +29,7 @@ const { theme, device, webSkin } = useConfig()
         </CdxRadio>
       </div>
     </div>
-    <div v-if="device === 'web'" class="settings-panel__field appearance-settings-panel__web-skin">
+    <div v-if="device !== 'app'" class="settings-panel__field appearance-settings-panel__web-skin">
       <span id="protowiki-web-skin-label" class="settings-panel__label">Skin</span>
       <div
         class="appearance-settings-panel__options"
@@ -64,10 +56,6 @@ const { theme, device, webSkin } = useConfig()
   align-items: stretch;
   width: auto;
   min-width: var(--size-1600);
-}
-
-.appearance-settings-panel :deep(.cdx-select) {
-  width: 100%;
 }
 
 .appearance-settings-panel__color,

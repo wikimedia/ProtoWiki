@@ -160,7 +160,7 @@ function setupViewportListener(): void {
 
   viewportMql = window.matchMedia(`(min-width: ${DESKTOP_MIN_WIDTH}px)`)
   onViewportChange = (event: MediaQueryListEvent) => {
-    if (skinUrlPinned || platformDevice !== 'web' || webSkinPreference !== 'auto') return
+    if (skinUrlPinned || platformDevice === 'app' || webSkinPreference !== 'auto') return
     const next: Skin = event.matches ? 'desktop' : 'mobile'
     if (next !== globalSkin.value) {
       applyGlobalSkin(next)
@@ -185,7 +185,7 @@ export function applyWebSkinPreference(
   webSkinPreference = webSkin
   platformDevice = device
 
-  if (skinUrlPinned || device !== 'web') {
+  if (skinUrlPinned || device === 'app') {
     teardownViewportListener()
     return
   }

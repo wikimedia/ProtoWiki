@@ -27,6 +27,7 @@ definePage({
   meta: {
     // title + description: ask the author, or omit
     category: 'prototype',
+    platform: 'web',
   },
 })
 
@@ -96,6 +97,9 @@ Gallery cards are driven by flat `definePage` meta on each top-level
 - **`category`** — `'prototype'` (default), `'template'`, or `'example'`; controls
   which block the card appears in (prototypes first, then a divider, then
   templates+examples) and the gallery title prefix for templates and examples (`Template:` / `Example:`)
+- **`platform`** — `'web'` (default) or `'app'`; which Platform setting shows this
+  card on the home gallery (symmetric filter — Web shows only web prototypes, App
+  only app prototypes)
 - **`order`** — optional sort key within a block (lower first; default alphabetical)
 - **`hidden`** — omit from gallery while keeping the route live
 - **`spotlight`** — when any prototype is spotlighted, the gallery shows only

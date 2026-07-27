@@ -1,18 +1,32 @@
-import { computed } from 'vue'
+import { computed, type Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import {
   applySpotlightFilter,
-  buildGallerySections,
+  filterGalleryEntriesByTab,
   isTopLevelPrototypePath,
   parseGalleryEntry,
+  type GalleryEntry,
+  type GalleryTab,
 } from '@/prototype-gallery'
 
-export function usePrototypeGallery() {
+function isEntryAllowedByLayout(
+  entry: GalleryEntry,
+  hidePrimary: boolean,
+  hideSecondary: boolean,
+): boolean {
+  if (entry.category === 'prototype' && hidePrimary) return false
+  if ((entry.category === 'template' || entry.category === 'example') && hideSecondary) {
+    return false
+  }
+  return true
+}
+
+export function usePrototypeGallery(galleryTab: Ref<GalleryTab>) {
   const router = useRouter()
   const route = useRoute()
 
-  const sections = computed(() => {
+  const galleryState = computed(() => {
     const visibleEntries = router
       .getRoutes()
       .filter((r) => r.path !== '/' && r.path !== '/:catchAll(.*)')
@@ -20,27 +34,36 @@ export function usePrototypeGallery() {
       .filter((r) => r.meta.hidden !== true)
       .map((r) => parseGalleryEntry(r.meta, r.path))
 
-    const { entries, spotlightActive } = applySpotlightFilter(visibleEntries)
+    return applySpotlightFilter(visibleEntries)
+  })
 
-    return buildGallerySections(
-      entries,
-      {
-        hidePrimary: route.meta.hidePrimary === true,
-        hideSecondary: route.meta.hideSecondary === true,
-      },
-      spotlightActive,
+  const filteredEntries = computed(() => {
+    const hidePrimary = route.meta.hidePrimary === true
+    const hideSecondary = route.meta.hideSecondary === true
+
+    return filterGalleryEntriesByTab(galleryState.value.entries, galleryTab.value).filter(
+      (entry) => isEntryAllowedByLayout(entry, hidePrimary, hideSecondary),
     )
   })
 
-  const primaryEntries = computed(() => sections.value.primary)
-  const secondaryEntries = computed(() => sections.value.secondary)
-  const showDivider = computed(() => sections.value.showDivider)
-  const spotlightActive = computed(() => sections.value.spotlightActive)
+  const primaryEntries = computed(() =>
+    filteredEntries.value.filter((entry) => entry.category === 'prototype'),
+  )
+
+  const templateEntries = computed(() =>
+    filteredEntries.value.filter((entry) => entry.category === 'template'),
+  )
+
+  const exampleEntries = computed(() =>
+    filteredEntries.value.filter((entry) => entry.category === 'example'),
+  )
+
+  const spotlightActive = computed(() => galleryState.value.spotlightActive)
 
   return {
     primaryEntries,
-    secondaryEntries,
-    showDivider,
+    templateEntries,
+    exampleEntries,
     spotlightActive,
   }
 }

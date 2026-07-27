@@ -50,6 +50,7 @@ See also [`protowiki-create-prototype` → Gallery copy](../SKILL.md#gallery-cop
 | `title` | prototype | string | Short name; omitted titles fall back to `deriveTitleFromPath`; `template` / `example` categories get a `Template:` / `Example:` prefix on the card |
 | `description` | prototype | string | Card subtitle |
 | `category` | prototype | `prototype` \| `template` \| `example` (default `prototype`) | Primary block vs secondary block (below divider) |
+| `platform` | prototype | `web` \| `app` (default `web`) | Which Platform setting shows this card; symmetric filter |
 | `order` | prototype | number (default: alphabetical) | Sort within block; lower first |
 | `hidden` | prototype | boolean (default `false`) | Omit from gallery; route still works |
 | `spotlight` | prototype | boolean (default `false`) | When any prototype is spotlighted, gallery shows only spotlighted entries |
