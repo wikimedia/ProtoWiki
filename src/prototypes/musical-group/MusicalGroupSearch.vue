@@ -7,9 +7,9 @@ import { cdxIconSearch } from '@wikimedia/codex-icons'
 
 import WikitaCardItem from './components/WikitaCardItem.vue'
 import WikitaTitle from './components/WikitaTitle.vue'
-import WikitaChromeHeader, {
+import MusicalGroupChromeHeader, {
   type WikitaChromeHeaderVariant,
-} from './components/WikitaChromeHeader.vue'
+} from './components/MusicalGroupChromeHeader.vue'
 import type { WikitaUiSkin } from './data/wikitaUiSkinPreference'
 import { parseQidInput, searchWikidataItems } from './data/wikidataApi'
 import type { MusicalGroupSearchResult } from './data/types'
@@ -101,7 +101,7 @@ onMounted(() => {
 <template>
   <div class="musical-group-search">
     <div class="musical-group-chrome-stack">
-      <WikitaChromeHeader
+      <MusicalGroupChromeHeader
         v-model:variant="headerVariant"
         v-model:ui-skin="uiSkin"
         @toggle-search="emit('toggle-search')"

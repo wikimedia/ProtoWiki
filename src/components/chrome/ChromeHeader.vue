@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, type RouteLocationRaw } from 'vue-router'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import {
   cdxIconAppearance,
@@ -50,6 +50,10 @@ interface Props {
    * **`#nav`** replaces the whole cluster regardless.
    */
   navTools?: ChromeNavTool[]
+  /** Router target when **`homeAction`** is **`navigate`**. Default `/`. */
+  homeTo?: RouteLocationRaw | string
+  /** Wordmark behavior: route with **`homeTo`**, or emit **`homeClick`**. */
+  homeAction?: 'navigate' | 'emit'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -60,7 +64,13 @@ const props = withDefaults(defineProps<Props>(), {
   taglineSrc: undefined,
   mobileWordmarkSrc: undefined,
   navTools: undefined,
+  homeTo: '/',
+  homeAction: 'navigate',
 })
+
+const emit = defineEmits<{
+  homeClick: []
+}>()
 
 const effectiveSkin = computed<Skin>(() => props.skin ?? globalSkin.value)
 const effectiveTheme = computed<Theme>(() => props.theme ?? globalTheme.value)
@@ -105,7 +115,12 @@ function navHas(tool: ChromeNavTool): boolean {
           </span>
         </slot>
 
-        <RouterLink class="chrome-header__brand-link" to="/" aria-label="Visit the main page">
+        <RouterLink
+          v-if="homeAction === 'navigate'"
+          class="chrome-header__brand-link"
+          :to="homeTo"
+          aria-label="Visit the main page"
+        >
           <slot name="logo">
             <span class="chrome-header__wordmarks">
               <img
@@ -125,6 +140,32 @@ function navHas(tool: ChromeNavTool): boolean {
             </span>
           </slot>
         </RouterLink>
+        <button
+          v-else
+          type="button"
+          class="chrome-header__brand-link"
+          aria-label="Visit the main page"
+          @click="emit('homeClick')"
+        >
+          <slot name="logo">
+            <span class="chrome-header__wordmarks">
+              <img
+                class="chrome-header__wordmark-img"
+                :src="desktopWordmarkSrc"
+                width="120"
+                height="18"
+                alt="Wikipedia"
+              />
+              <img
+                class="chrome-header__tagline-img"
+                :src="desktopTaglineSrc"
+                width="120"
+                height="14"
+                alt=""
+              />
+            </span>
+          </slot>
+        </button>
       </div>
 
       <div class="chrome-header__inline-search">
@@ -233,45 +274,69 @@ function navHas(tool: ChromeNavTool): boolean {
         </CdxButton>
       </slot>
 
-      <RouterLink class="chrome-header__mobile-brand" to="/" aria-label="Visit the main page">
-        <slot name="logo">
-          <img
-            class="chrome-header__mobile-wordmark-img"
-            :src="mobileWordmarkResolved"
-            alt="Wikipedia"
-          />
-        </slot>
-      </RouterLink>
+      <slot name="mobile-brand">
+        <RouterLink
+          v-if="homeAction === 'navigate'"
+          class="chrome-header__mobile-brand"
+          :to="homeTo"
+          aria-label="Visit the main page"
+        >
+          <slot name="logo">
+            <img
+              class="chrome-header__mobile-wordmark-img"
+              :src="mobileWordmarkResolved"
+              alt="Wikipedia"
+            />
+          </slot>
+        </RouterLink>
+        <button
+          v-else
+          type="button"
+          class="chrome-header__mobile-brand"
+          aria-label="Visit the main page"
+          @click="emit('homeClick')"
+        >
+          <slot name="logo">
+            <img
+              class="chrome-header__mobile-wordmark-img"
+              :src="mobileWordmarkResolved"
+              alt="Wikipedia"
+            />
+          </slot>
+        </button>
+      </slot>
 
       <div class="chrome-header__mobile-actions">
-        <CdxButton
-          weight="quiet"
-          size="large"
-          aria-label="Search"
-          tag="a"
-          href="https://en.wikipedia.org/wiki/Special:Search"
-        >
-          <CdxIcon :icon="cdxIconSearch" />
-        </CdxButton>
-        <CdxButton
-          weight="quiet"
-          size="large"
-          aria-label="Notifications"
-        >
-          <CdxIcon :icon="cdxIconBellOutline" />
-        </CdxButton>
-        <UserSettingsPopover v-slot="{ toggle, open }">
+        <slot name="mobile-actions">
           <CdxButton
-            class="chrome-header__mobile-user-btn"
             weight="quiet"
             size="large"
-            aria-label="Prototype user"
-            :aria-expanded="open"
-            @click="toggle"
+            aria-label="Search"
+            tag="a"
+            href="https://en.wikipedia.org/wiki/Special:Search"
           >
-            <CdxIcon :icon="cdxIconUserAvatarOutline" size="medium" />
+            <CdxIcon :icon="cdxIconSearch" />
           </CdxButton>
-        </UserSettingsPopover>
+          <CdxButton
+            weight="quiet"
+            size="large"
+            aria-label="Notifications"
+          >
+            <CdxIcon :icon="cdxIconBellOutline" />
+          </CdxButton>
+          <UserSettingsPopover v-slot="{ toggle, open }">
+            <CdxButton
+              class="chrome-header__mobile-user-btn"
+              weight="quiet"
+              size="large"
+              aria-label="Prototype user"
+              :aria-expanded="open"
+              @click="toggle"
+            >
+              <CdxIcon :icon="cdxIconUserAvatarOutline" size="medium" />
+            </CdxButton>
+          </UserSettingsPopover>
+        </slot>
       </div>
     </nav>
   </header>
@@ -362,6 +427,14 @@ function navHas(tool: ChromeNavTool): boolean {
 .chrome-header[data-skin='desktop'] .chrome-header__brand-link:hover {
   text-decoration: none;
   color: inherit;
+}
+
+.chrome-header[data-skin='desktop'] button.chrome-header__brand-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
 }
 
 .chrome-header[data-skin='desktop'] .chrome-header__wordmarks {
@@ -527,6 +600,14 @@ function navHas(tool: ChromeNavTool): boolean {
   overflow: hidden;
   text-decoration: none;
   color: inherit;
+}
+
+.chrome-header[data-skin='mobile'] button.chrome-header__mobile-brand {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
 }
 
 .chrome-header[data-skin='mobile'] .chrome-header__mobile-brand:hover {

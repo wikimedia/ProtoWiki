@@ -1,29 +1,22 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
-import { CdxButton, CdxIcon, CdxMenuButton, CdxPopover, CdxSelect } from '@wikimedia/codex'
+import { CdxButton, CdxIcon, CdxMenuButton } from '@wikimedia/codex'
 import type { MenuItemValue } from '@wikimedia/codex'
-import {
-  cdxIconBellOutline,
-  cdxIconMenu,
-  cdxIconSearch,
-  cdxIconUserAvatar,
-} from '@wikimedia/codex-icons'
+import { cdxIconBellOutline, cdxIconMenu, cdxIconSearch } from '@wikimedia/codex-icons'
 
 import {
-  WIKITA_CHROME_HEADER_VARIANT_MENU_ITEMS,
   type WikitaChromeHeaderVariant,
 } from '../data/headerVariantPreference'
 import {
-  WIKITA_UI_SKIN_MENU_ITEMS,
   type WikitaUiSkin,
 } from '../data/wikitaUiSkinPreference'
 import {
   WIKITA_CHROME_HEADER_BOLD_HOVER_BG,
   WIKITA_CHROME_HEADER_LIGHT_HOVER_BG,
   WIKITA_CHROME_HEADER_VARIANT_STYLES,
-  headerVariantMenuItemStyle,
 } from '../data/wikitaChromeHeaderVariants'
+import WikitaUserMenuPopover from './WikitaUserMenuPopover.vue'
 
 export type { WikitaChromeHeaderVariant }
 export type { WikitaUiSkin }
@@ -48,12 +41,7 @@ const emit = defineEmits<{
 }>()
 
 const menuSelected = ref<MenuItemValue | null>(null)
-const userMenuOpen = ref(false)
-const userMenuAnchor = ref<HTMLElement | null>(null)
-const userPanelRef = ref<HTMLElement | null>(null)
 const previewVariant = ref<WikitaChromeHeaderVariant | null>(null)
-
-let activeDescendantObserver: MutationObserver | null = null
 
 const menuItems = [{ value: 'reset', label: 'Reset stored data' }]
 
@@ -73,105 +61,13 @@ const headerStyle = computed(() => {
   }
 })
 
-function toggleUserMenu(): void {
-  userMenuOpen.value = !userMenuOpen.value
-}
-
-function clearVariantPreview(): void {
-  previewVariant.value = null
-}
-
-function variantFromMenuOption(option: Element): WikitaChromeHeaderVariant | null {
-  const listbox = option.closest('[role="listbox"]')
-  if (!listbox?.closest('.wikita-chrome-header__variant-select')) return null
-
-  const options = Array.from(listbox.querySelectorAll('[role="option"]'))
-  const index = options.indexOf(option as HTMLElement)
-  if (index < 0) return null
-
-  return WIKITA_CHROME_HEADER_VARIANT_MENU_ITEMS[index]?.value ?? null
-}
-
-function setVariantPreviewFromOption(option: Element | null): void {
-  if (!option) return
-
-  const value = variantFromMenuOption(option)
-  if (value) previewVariant.value = value
-}
-
-function syncPreviewFromActiveDescendant(): void {
-  const handle = userPanelRef.value?.querySelector(
-    '.wikita-chrome-header__variant-select .cdx-select-vue__handle',
-  )
-  if (!handle) return
-
-  if (handle.getAttribute('aria-expanded') !== 'true') {
-    clearVariantPreview()
-    return
-  }
-
-  const id = handle.getAttribute('aria-activedescendant')
-  if (!id) return
-
-  setVariantPreviewFromOption(document.getElementById(id))
-}
-
-function onVariantMenuPointerOver(event: PointerEvent): void {
-  const option = (event.target as HTMLElement).closest('[role="option"]')
-  if (!option?.closest('.wikita-chrome-header__variant-select')) return
-  setVariantPreviewFromOption(option)
-}
-
-function stopActiveDescendantObserver(): void {
-  activeDescendantObserver?.disconnect()
-  activeDescendantObserver = null
-}
-
-function startActiveDescendantObserver(): void {
-  stopActiveDescendantObserver()
-
-  const handle = userPanelRef.value?.querySelector(
-    '.wikita-chrome-header__variant-select .cdx-select-vue__handle',
-  )
-  if (!handle) return
-
-  activeDescendantObserver = new MutationObserver(syncPreviewFromActiveDescendant)
-  activeDescendantObserver.observe(handle, {
-    attributes: true,
-    attributeFilter: ['aria-activedescendant', 'aria-expanded'],
-  })
-}
-
 function onResetMenuItem(): void {
   emit('reset-stored-data')
   menuSelected.value = null
 }
 
-function getVariantMenuItemStyles(value: MenuItemValue) {
-  return headerVariantMenuItemStyle(value as WikitaChromeHeaderVariant)
-}
-
 watch(menuSelected, (value) => {
   if (value === 'reset') onResetMenuItem()
-})
-
-watch(userMenuOpen, async (open) => {
-  if (!open) {
-    clearVariantPreview()
-    stopActiveDescendantObserver()
-    return
-  }
-
-  await nextTick()
-  startActiveDescendantObserver()
-})
-
-watch(variant, () => {
-  clearVariantPreview()
-})
-
-onBeforeUnmount(() => {
-  stopActiveDescendantObserver()
 })
 </script>
 
@@ -223,60 +119,13 @@ onBeforeUnmount(() => {
       <CdxButton v-if="showBell" weight="quiet" aria-label="Notifications">
         <CdxIcon :icon="cdxIconBellOutline" />
       </CdxButton>
-      <span v-if="showUser" ref="userMenuAnchor" class="wikita-chrome-header__user-menu">
-        <CdxButton
-          weight="quiet"
-          aria-label="User menu"
-          :aria-expanded="userMenuOpen"
-          @click="toggleUserMenu"
-        >
-          <CdxIcon :icon="cdxIconUserAvatar" />
-        </CdxButton>
-        <CdxPopover
-          v-model:open="userMenuOpen"
-          :anchor="userMenuAnchor"
-          placement="bottom-end"
-          class="wikita-chrome-header__user-popover"
-        >
-          <div
-            ref="userPanelRef"
-            class="wikita-chrome-header__user-panel"
-            @click.stop
-            @pointerover="onVariantMenuPointerOver"
-          >
-            <label class="wikita-chrome-header__user-field">
-              <span class="wikita-chrome-header__user-label">Interface</span>
-              <CdxSelect
-                v-model:selected="uiSkin"
-                :menu-items="WIKITA_UI_SKIN_MENU_ITEMS"
-                default-label="Wikita"
-              />
-            </label>
-            <label class="wikita-chrome-header__user-field">
-              <span class="wikita-chrome-header__user-label">Header color</span>
-              <CdxSelect
-                v-model:selected="variant"
-                class="wikita-chrome-header__variant-select"
-                :menu-items="WIKITA_CHROME_HEADER_VARIANT_MENU_ITEMS"
-                default-label="Black"
-              >
-                <template #menu-item="{ menuItem }">
-                  <span
-                    class="wikita-header-variant-option"
-                    :class="{
-                      'wikita-header-variant-option--light-hover':
-                        getVariantMenuItemStyles(menuItem.value).lightHover,
-                    }"
-                    :style="getVariantMenuItemStyles(menuItem.value).style"
-                  >
-                    {{ menuItem.label }}
-                  </span>
-                </template>
-              </CdxSelect>
-            </label>
-          </div>
-        </CdxPopover>
-      </span>
+      <WikitaUserMenuPopover
+        v-if="showUser"
+        v-model:variant="variant"
+        v-model:ui-skin="uiSkin"
+        v-model:preview-variant="previewVariant"
+        class="wikita-chrome-header__user-menu"
+      />
     </div>
   </header>
 </template>
@@ -330,25 +179,6 @@ onBeforeUnmount(() => {
 .wikita-chrome-header__user-menu {
   display: inline-flex;
   flex-shrink: 0;
-}
-
-.wikita-chrome-header__user-panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-100);
-  min-width: 14rem;
-}
-
-.wikita-chrome-header__user-field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-25);
-}
-
-.wikita-chrome-header__user-label {
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-subtle);
 }
 </style>
 
@@ -444,59 +274,5 @@ onBeforeUnmount(() => {
 .wikita-chrome-header .cdx-menu-button .cdx-button:focus-visible .cdx-icon,
 .wikita-chrome-header .cdx-menu-button .cdx-button.cdx-button--is-active .cdx-icon {
   color: var(--wikita-chrome-header-fg, var(--color-inverted-fixed)) !important;
-}
-
-.wikita-chrome-header__user-popover .cdx-popover__body {
-  overflow: visible;
-}
-
-.wikita-chrome-header__variant-select .cdx-menu-item:has(.wikita-header-variant-option) {
-  padding: 0;
-  background: transparent;
-}
-
-.wikita-chrome-header__variant-select
-  .cdx-menu-item:has(.wikita-header-variant-option)
-  .cdx-menu-item__content {
-  padding: 0;
-}
-
-.wikita-header-variant-option {
-  display: block;
-  box-sizing: border-box;
-  width: 100%;
-  padding: var(--spacing-75) var(--spacing-100);
-  font-size: var(--font-size-medium);
-  line-height: var(--line-height-medium);
-}
-
-.wikita-chrome-header__variant-select
-  .cdx-menu-item--highlighted:has(.wikita-header-variant-option),
-.wikita-chrome-header__variant-select
-  .cdx-menu-item:has(.wikita-header-variant-option):hover {
-  background: transparent;
-}
-
-.wikita-chrome-header__variant-select
-  .cdx-menu-item--highlighted
-  .wikita-header-variant-option,
-.wikita-chrome-header__variant-select
-  .cdx-menu-item:hover
-  .wikita-header-variant-option {
-  box-shadow: inset 0 0 0 9999px rgba(255, 255, 255, 0.12);
-}
-
-.wikita-chrome-header__variant-select
-  .cdx-menu-item--highlighted
-  .wikita-header-variant-option--light-hover,
-.wikita-chrome-header__variant-select
-  .cdx-menu-item:hover
-  .wikita-header-variant-option--light-hover {
-  box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.08);
-}
-
-.wikita-chrome-header__variant-select
-  .cdx-menu-item--selected:has(.wikita-header-variant-option) {
-  background: transparent;
 }
 </style>

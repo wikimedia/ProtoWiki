@@ -42,6 +42,8 @@ const emit = defineEmits<{
 
 const effectiveSkin = useWikitaUiSkin(() => props.skin)
 
+const titleTag = computed(() => (effectiveSkin.value === 'wikipedia' ? 'h2' : 'h1'))
+
 const hasActions = computed(
   () => props.showHistory || props.showTalk || props.showEdit,
 )
@@ -70,7 +72,7 @@ const hasActions = computed(
           <BookmarkIcon :filled="bookmarked && !inList" :in-list="inList" />
         </button>
 
-        <h1 class="wikita-title__title">{{ title }}</h1>
+        <component :is="titleTag" class="wikita-title__title">{{ title }}</component>
       </div>
 
       <div v-if="hasActions" class="wikita-title__actions">
@@ -173,8 +175,40 @@ const hasActions = computed(
     right 25ms linear;
 }
 
+.wikita-title--wikipedia .wikita-title__header {
+  align-items: flex-start;
+  padding-top: var(--spacing-75);
+  padding-bottom: var(--spacing-50);
+}
+
 .wikita-title--wikipedia .wikita-title__header::after {
   background-color: var(--border-color-muted);
+}
+
+.wikita-title--wikipedia .wikita-title__lead {
+  align-items: center;
+  gap: var(--spacing-25);
+}
+
+.wikita-title--wikipedia .wikita-title__lead .wikita-title__icon-btn {
+  margin-top: 0;
+}
+
+.wikita-title__title {
+  margin: 0;
+  color: var(--color-base);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.wikita-title:not(.wikita-title--wikipedia) .wikita-title__title {
+  font-family: var(--font-family-serif);
+  font-size: var(--font-size-xxx-large);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-xx-large);
 }
 
 .wikita-title__lead {
@@ -186,31 +220,6 @@ const hasActions = computed(
 
 .wikita-title__lead .wikita-title__icon-btn {
   margin-top: calc((var(--line-height-xx-large) - 20px) / 2);
-}
-
-.wikita-title--wikipedia .wikita-title__lead .wikita-title__icon-btn {
-  margin-top: calc((var(--line-height-x-large) - 32px) / 2);
-}
-
-.wikita-title__title {
-  margin: 0;
-  font-family: var(--font-family-serif);
-  font-size: var(--font-size-xxx-large);
-  font-weight: var(--font-weight-normal);
-  line-height: var(--line-height-xx-large);
-  color: var(--color-base);
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
-}
-
-.wikita-title--wikipedia .wikita-title__title {
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-x-large);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-x-large);
 }
 
 .wikita-title__actions {

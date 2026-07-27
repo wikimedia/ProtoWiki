@@ -13,7 +13,7 @@ import type { WikitaUiSkin } from '../data/wikitaUiSkinPreference'
 
 export type { WikitaUiSkin }
 
-const WIKITA_UI_SKIN_KEY: InjectionKey<Ref<WikitaUiSkin>> = Symbol('wikitaUiSkin')
+export const WIKITA_UI_SKIN_KEY: InjectionKey<Ref<WikitaUiSkin>> = Symbol('wikitaUiSkin')
 
 export function provideWikitaUiSkin(skin: Ref<WikitaUiSkin>): void {
   provide(WIKITA_UI_SKIN_KEY, skin)

@@ -16,9 +16,9 @@ import {
 
 import WikitaActivityTabPanel from './components/WikitaActivityTabPanel.vue'
 import WikitaCardItem, { type WikitaCardItemTypeColor } from './components/WikitaCardItem.vue'
-import WikitaChromeHeader, {
+import MusicalGroupChromeHeader, {
   type WikitaChromeHeaderVariant,
-} from './components/WikitaChromeHeader.vue'
+} from './components/MusicalGroupChromeHeader.vue'
 import type { WikitaUiSkin } from './data/wikitaUiSkinPreference'
 import WikitaContributeTabPanel from './components/WikitaContributeTabPanel.vue'
 import WikitaHomeSection from './components/WikitaHomeSection.vue'
@@ -319,7 +319,7 @@ watch(
 <template>
   <div class="musical-group-home">
     <div class="musical-group-chrome-stack">
-      <WikitaChromeHeader
+      <MusicalGroupChromeHeader
         v-model:variant="headerVariant"
         v-model:ui-skin="uiSkin"
         @toggle-search="emit('toggle-search')"
@@ -875,10 +875,22 @@ watch(
   margin-top: calc(var(--spacing-50) + 0px);
 }
 
+.musical-group-home__body--wikipedia > .wikita-home-section--has-title:first-child,
+.musical-group-home__body--wikipedia
+  > .musical-group-home__saved-tab
+  > .wikita-home-section--has-title:first-child {
+  margin-top: var(--spacing-50);
+}
+
 .musical-group-home__body--wikipedia > .wikita-home-section--no-title:first-child,
 .musical-group-home__body--wikipedia
   > .musical-group-home__saved-tab
   > .wikita-home-section--no-title:first-child {
+  margin-top: var(--spacing-50);
+}
+
+.musical-group-home__body--wikipedia > .wikita-contribute-tab-panel,
+.musical-group-home__body--wikipedia > .wikita-activity-tab-panel {
   margin-top: var(--spacing-50);
 }
 

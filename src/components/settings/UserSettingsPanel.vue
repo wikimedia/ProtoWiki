@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 
 import { CdxButton, CdxSelect, CdxTextInput } from '@wikimedia/codex'
 
 import { useConfig } from '@/composables/useConfig'
 import { CONFIG_THEME_MENU_ITEMS, CONFIG_USER_MENU_ITEMS, formatPageList, parsePageList } from '@/config'
+import {
+  WIKITA_UI_SKIN_KEY,
+  type WikitaUiSkin,
+} from '@/prototypes/musical-group/composables/useWikitaUiSkin'
+import { WIKITA_UI_SKIN_MENU_ITEMS } from '@/prototypes/musical-group/data/wikitaUiSkinPreference'
 
 const {
   theme,
@@ -16,6 +21,17 @@ const {
   setCurrentUserPageList,
   resetCurrentUserPageListField,
 } = useConfig()
+
+const wikitaUiSkin = inject(WIKITA_UI_SKIN_KEY, null)
+
+const wikitaUiSkinModel = computed({
+  get: () => wikitaUiSkin?.value ?? 'wikita',
+  set: (value: WikitaUiSkin) => {
+    if (wikitaUiSkin) wikitaUiSkin.value = value
+  },
+})
+
+const isWikipediaUiSkin = computed(() => wikitaUiSkin?.value === 'wikipedia')
 
 const watchlistText = computed({
   get: () => formatPageList(currentUserPageLists.value.watchlist),
@@ -35,6 +51,14 @@ const editedPagesText = computed({
 
 <template>
   <div class="user-settings-panel">
+    <label v-if="wikitaUiSkin" class="user-settings-panel__field">
+      <span class="user-settings-panel__label">Interface</span>
+      <CdxSelect
+        v-model:selected="wikitaUiSkinModel"
+        :menu-items="WIKITA_UI_SKIN_MENU_ITEMS"
+        default-label="Wikita"
+      />
+    </label>
     <label class="user-settings-panel__field">
       <span class="user-settings-panel__label">Theme</span>
       <CdxSelect
@@ -43,7 +67,7 @@ const editedPagesText = computed({
         default-label="Light"
       />
     </label>
-    <label class="user-settings-panel__field">
+    <label v-if="!isWikipediaUiSkin" class="user-settings-panel__field">
       <span class="user-settings-panel__label">User</span>
       <CdxSelect
         v-model:selected="user"
@@ -51,15 +75,15 @@ const editedPagesText = computed({
         default-label="New editor"
       />
     </label>
-    <label class="user-settings-panel__field">
+    <label v-if="!isWikipediaUiSkin" class="user-settings-panel__field">
       <span class="user-settings-panel__label">Lang</span>
       <CdxTextInput v-model="lang" class="user-settings-panel__input" />
     </label>
-    <label v-if="user === 'real'" class="user-settings-panel__field">
+    <label v-if="user === 'real' && !isWikipediaUiSkin" class="user-settings-panel__field">
       <span class="user-settings-panel__label">Username</span>
       <CdxTextInput v-model="realUsername" class="user-settings-panel__input" />
     </label>
-    <template v-if="user !== 'real'">
+    <template v-if="user !== 'real' && !isWikipediaUiSkin">
       <label class="user-settings-panel__field">
         <span class="user-settings-panel__label">Watchlist</span>
         <div class="user-settings-panel__row">
@@ -89,9 +113,9 @@ const editedPagesText = computed({
       </label>
     </template>
 
-    <hr class="user-settings-panel__divider" />
+    <hr v-if="!isWikipediaUiSkin" class="user-settings-panel__divider" />
 
-    <label class="user-settings-panel__field">
+    <label v-if="!isWikipediaUiSkin" class="user-settings-panel__field">
       <span class="user-settings-panel__label">API contact</span>
       <CdxTextInput
         v-model="apiContact"

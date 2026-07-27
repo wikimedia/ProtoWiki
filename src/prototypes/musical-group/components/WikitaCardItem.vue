@@ -250,6 +250,7 @@ const useCoverButton = computed(
         v-if="showAction"
         variant="outlined"
         class="wikita-card-item__action"
+        :size="effectiveSkin === 'wikipedia' ? 'large' : 'medium'"
         :icon="resolvedActionIcon"
         :aria-pressed="actionActive"
         @click.stop.prevent="emit('action-click')"

@@ -14,6 +14,8 @@ interface Props {
   ariaPressed?: boolean
   disabled?: boolean
   compact?: boolean
+  /** Forwarded to Codex **`CdxButton`** in Wikipedia skin mode. */
+  size?: 'medium' | 'large'
   skin?: WikitaUiSkin
 }
 
@@ -23,6 +25,7 @@ const props = withDefaults(defineProps<Props>(), {
   ariaPressed: undefined,
   disabled: false,
   compact: false,
+  size: 'medium',
   skin: undefined,
 })
 
@@ -45,6 +48,7 @@ const cdxAction = computed(() => (props.variant === 'filled' ? 'progressive' : '
   <CdxButton
     v-if="effectiveSkin === 'wikipedia'"
     type="button"
+    :size="size"
     :weight="cdxWeight"
     :action="cdxAction"
     :aria-pressed="ariaPressed"

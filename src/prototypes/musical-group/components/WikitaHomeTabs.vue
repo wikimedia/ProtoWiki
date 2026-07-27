@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
-import { CdxTab, CdxTabs } from '@wikimedia/codex'
+import { CdxToggleButton } from '@wikimedia/codex'
 
 import { scrollTabIntoTrackView } from '../scrollTabIntoTrackView'
 import { useWikitaUiSkin, type WikitaUiSkin } from '../composables/useWikitaUiSkin'
@@ -39,19 +39,8 @@ const visibleTabs = computed(() =>
 const activeTab = defineModel<HomeTabId>('activeTab', { default: 'home' })
 
 const trackRef = ref<HTMLElement | null>(null)
-const tabsRef = ref<HTMLElement | null>(null)
 
 function scrollActiveTabIntoView() {
-  if (effectiveSkin.value === 'wikipedia') {
-    const tabsEl = tabsRef.value
-    if (!tabsEl) return
-
-    const track = tabsEl.querySelector<HTMLElement>('[role="tablist"]')
-    const button = tabsEl.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')
-    if (button && track) scrollTabIntoTrackView(button, track)
-    return
-  }
-
   const track = trackRef.value
   if (!track) return
 
@@ -63,6 +52,10 @@ function scrollActiveTabIntoView() {
 
 function onTabClick(tabId: HomeTabId) {
   activeTab.value = tabId
+}
+
+function onToggleTab(tabId: HomeTabId, selected: boolean) {
+  if (selected) onTabClick(tabId)
 }
 
 watch(activeTab, async () => {
@@ -87,36 +80,41 @@ onMounted(() => {
 
 <template>
   <div class="musical-group-tabs-sticky">
-    <div
-      v-if="effectiveSkin === 'wikipedia'"
-      ref="tabsRef"
-      class="musical-group-tabs musical-group-tabs--wikipedia"
+    <nav
+      class="musical-group-tabs"
+      :class="{ 'musical-group-tabs--wikipedia': effectiveSkin === 'wikipedia' }"
+      aria-label="Home sections"
     >
-      <CdxTabs
-        v-model:active="activeTab"
-        aria-label="Home sections"
-      >
-        <CdxTab
-          v-for="tab in visibleTabs"
-          :key="tab.id"
-          :name="tab.id"
-          :label="tab.label"
-        />
-      </CdxTabs>
-    </div>
-
-    <nav v-else class="musical-group-tabs" aria-label="Home sections">
       <div ref="trackRef" class="musical-group-tabs__track">
-        <WikitaButton
-          v-for="tab in visibleTabs"
-          :key="tab.id"
-          :data-tab-id="tab.id"
-          :variant="activeTab === tab.id ? 'filled' : 'subtle'"
-          :aria-pressed="activeTab === tab.id"
-          @click="onTabClick(tab.id)"
-        >
-          {{ tab.label }}
-        </WikitaButton>
+        <template v-if="effectiveSkin === 'wikipedia'">
+          <div
+            v-for="tab in visibleTabs"
+            :key="tab.id"
+            class="musical-group-tabs__tab-wrap"
+            :data-tab-id="tab.id"
+          >
+            <CdxToggleButton
+              size="large"
+              :model-value="activeTab === tab.id"
+              @update:model-value="onToggleTab(tab.id, $event)"
+            >
+              {{ tab.label }}
+            </CdxToggleButton>
+          </div>
+        </template>
+
+        <template v-else>
+          <WikitaButton
+            v-for="tab in visibleTabs"
+            :key="tab.id"
+            :data-tab-id="tab.id"
+            :variant="activeTab === tab.id ? 'filled' : 'subtle'"
+            :aria-pressed="activeTab === tab.id"
+            @click="onTabClick(tab.id)"
+          >
+            {{ tab.label }}
+          </WikitaButton>
+        </template>
       </div>
     </nav>
   </div>
@@ -178,39 +176,19 @@ onMounted(() => {
 }
 
 .musical-group-tabs--wikipedia {
-  margin-inline: var(--spacing-50);
+  margin-inline: 0;
   padding-inline: 0;
   padding-top: var(--spacing-50);
-  padding-bottom: 0;
+  padding-bottom: calc(var(--spacing-50) + 1px);
 }
 
-.musical-group-tabs--wikipedia::before,
-.musical-group-tabs--wikipedia::after {
+.musical-group-tabs--wikipedia::before {
   display: none;
 }
 
-.musical-group-tabs--wikipedia :deep(.cdx-tabs) {
-  display: inline-block;
-  width: auto;
-  max-width: 100%;
-}
-
-.musical-group-tabs--wikipedia :deep(.cdx-tabs__header) {
-  margin-inline: 0;
-  border-bottom: none;
-  width: auto;
-  max-width: 100%;
-}
-
-.musical-group-tabs--wikipedia :deep(.cdx-tabs__list) {
-  width: fit-content;
-  max-width: 100%;
-  border-bottom: 1px solid var(--border-color-base);
-  box-sizing: border-box;
-}
-
-.musical-group-tabs--wikipedia :deep(.cdx-tabs__content) {
-  display: none;
+.musical-group-tabs--wikipedia .musical-group-tabs__track {
+  align-items: center;
+  padding-inline: var(--spacing-50);
 }
 
 @media (prefers-reduced-motion: reduce) {

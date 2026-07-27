@@ -19,9 +19,9 @@ import { loadMusicalGroupOverview, isCachedOverviewUsable } from './data/loadMus
 import { getCachedMusicalGroup } from './data/musicalGroupCache'
 import type { MusicalGroupData, MusicalGroupOverviewData } from './data/types'
 import { normalizeQid } from './data/wikidataApi'
-import WikitaChromeHeader, {
+import MusicalGroupChromeHeader, {
   type WikitaChromeHeaderVariant,
-} from './components/WikitaChromeHeader.vue'
+} from './components/MusicalGroupChromeHeader.vue'
 import WikitaFloatingNav from './components/WikitaFloatingNav.vue'
 import MusicalGroupHome from './MusicalGroupHome.vue'
 import MusicalGroupScreen from './MusicalGroupScreen.vue'
@@ -313,7 +313,7 @@ async function onFloatingGoContribute() {
 
       <template v-else>
         <div v-if="showEntityChrome" class="musical-group-chrome-stack">
-          <WikitaChromeHeader
+          <MusicalGroupChromeHeader
             v-model:variant="headerVariant"
             v-model:ui-skin="uiSkin"
             @toggle-search="onToggleSearch"
@@ -426,6 +426,11 @@ async function onFloatingGoContribute() {
   container-type: scroll-state;
   container-name: musical-group-chrome-stack;
 }
+
+.musical-group-page[data-wikita-ui-skin='wikipedia'] .musical-group-chrome-stack {
+  gap: 0;
+  background-color: transparent;
+}
 </style>
 
 <!-- Title rule expands only while sticky chrome overlaps the carousel track; retracts when tabs stick -->
@@ -462,7 +467,8 @@ async function onFloatingGoContribute() {
   height: calc(var(--spacing-50) + 1px);
 }
 
-.musical-group-page[data-page-scrolled] .musical-group-tabs:not(.musical-group-tabs--wikipedia)::after {
+.musical-group-page[data-page-scrolled] .musical-group-tabs::after,
+.musical-group-page[data-page-scrolled] .musical-group-tabs-sticky--wikipedia::after {
   transform: scaleY(1);
 }
 
@@ -470,7 +476,20 @@ async function onFloatingGoContribute() {
   scroll-margin-top: var(--musical-group-scroll-margin-top);
 }
 
-.musical-group-page[data-wikita-ui-skin='wikipedia'] .musical-group-screen__panel {
+.musical-group-page[data-wikita-ui-skin='wikipedia'] .musical-group-screen {
+  gap: 0;
+}
+
+.musical-group-page[data-wikita-ui-skin='wikipedia'] .musical-group-screen__intro {
   margin-top: var(--spacing-50);
+}
+
+.musical-group-page[data-wikita-ui-skin='wikipedia']
+  .musical-group-facts:has(.musical-group-facts__summary:not(:empty)) {
+  margin-top: var(--spacing-50);
+}
+
+.musical-group-page[data-wikita-ui-skin='wikipedia'] .musical-group-screen__details {
+  margin-top: 0;
 }
 </style>
