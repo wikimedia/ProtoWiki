@@ -1,0 +1,1 @@
+import{P as o}from"./PlainWrapper-DHCJrHsF.js";import{d as a,q as r,o as t,w as l,a as n}from"./index-fiKSiae1.js";import"./_plugin-vue_export-helper-DlAUqK2U.js";const _=a({__name:"index",setup(p){return(s,e)=>(t(),r(o,{heading:"Hello world"},{default:l(()=>[...e[0]||(e[0]=[n("p",null,"Hello, world!",-1)])]),_:1}))}});export{_ as default};
