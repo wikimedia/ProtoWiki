@@ -1,0 +1,179 @@
+<script setup lang="ts">
+import { CdxIcon } from '@wikimedia/codex'
+import { cdxIconImageGallery } from '@wikimedia/codex-icons'
+
+import { carouselSlideWidth, CAROUSEL_SLIDE_HEIGHT } from './data/carouselLayout'
+import type { CarouselImage } from './data/types'
+
+interface Props {
+  images: CarouselImage[]
+  loading?: boolean
+  showMoreImages?: boolean
+  moreCountLabel?: string
+}
+
+withDefaults(defineProps<Props>(), {
+  showMoreImages: false,
+})
+
+const emit = defineEmits<{
+  'view-all-images': []
+}>()
+
+/** Placeholder slide widths (px) shown while Commons images stream in. */
+const SKELETON_SLIDE_WIDTHS = [200, 150, 230, 170]
+
+function slideStyle(image: CarouselImage) {
+  return { width: `${carouselSlideWidth(image)}px` }
+}
+</script>
+
+<template>
+  <div class="image-carousel">
+    <div v-if="!loading" class="image-carousel__track">
+      <template v-if="images.length">
+        <div
+          v-for="(image, index) in images"
+          :key="`${image.url}-${index}`"
+          class="image-carousel__slide"
+          :style="slideStyle(image)"
+        >
+          <img :src="image.url" :alt="''" loading="lazy" draggable="false" />
+        </div>
+
+        <button
+          v-if="showMoreImages && moreCountLabel"
+          type="button"
+          class="image-carousel__more"
+          @click="emit('view-all-images')"
+        >
+          <CdxIcon :icon="cdxIconImageGallery" class="image-carousel__more-icon" />
+          <span class="image-carousel__more-count">{{ moreCountLabel }}</span>
+        </button>
+      </template>
+
+      <p v-else class="image-carousel__empty">No images available</p>
+    </div>
+
+    <div v-else class="image-carousel__track" aria-hidden="true">
+      <div
+        v-for="(width, index) in SKELETON_SLIDE_WIDTHS"
+        :key="`skeleton-${index}`"
+        class="image-carousel__slide image-carousel__slide--skeleton"
+        :style="{ width: `${width}px` }"
+      />
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.image-carousel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-50);
+}
+
+.image-carousel__track {
+  display: flex;
+  gap: 10px;
+  height: v-bind('`${CAROUSEL_SLIDE_HEIGHT}px`');
+  margin-inline: calc(-1 * var(--spacing-50));
+  overflow-x: auto;
+  overscroll-behavior-x: none;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.image-carousel__track::-webkit-scrollbar {
+  display: none;
+}
+
+.image-carousel__slide {
+  flex: 0 0 auto;
+  height: v-bind('`${CAROUSEL_SLIDE_HEIGHT}px`');
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: var(--background-color-interactive-subtle);
+}
+
+.image-carousel__slide--skeleton {
+  animation: image-carousel-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes image-carousel-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image-carousel__slide--skeleton {
+    animation: none;
+  }
+}
+
+.image-carousel__slide:first-child {
+  margin-inline-start: var(--spacing-50);
+}
+
+.image-carousel__track:not(:has(.image-carousel__more)) .image-carousel__slide:last-child {
+  margin-inline-end: var(--spacing-50);
+}
+
+.image-carousel__slide img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+}
+
+.image-carousel__more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-25);
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: v-bind('`${CAROUSEL_SLIDE_HEIGHT}px`');
+  height: v-bind('`${CAROUSEL_SLIDE_HEIGHT}px`');
+  margin-inline-end: var(--spacing-50);
+  padding: var(--spacing-50);
+  border: none;
+  border-radius: 4px;
+  background-color: var(--background-color-neutral);
+  color: var(--color-subtle);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-small);
+  cursor: pointer;
+}
+
+.image-carousel__more-count {
+  display: block;
+}
+
+.image-carousel__more-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--color-subtle);
+}
+
+.image-carousel__more-icon :deep(svg),
+.image-carousel__more-icon :deep(svg path) {
+  fill: currentColor;
+}
+
+.image-carousel__empty {
+  margin: 0;
+  color: var(--color-subtle);
+}
+</style>

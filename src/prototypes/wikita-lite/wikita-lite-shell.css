@@ -1,0 +1,24 @@
+/* Shared horizontal inset for all Wikita-lite routes (home + drill-downs). */
+.special-page-wrapper.wikita-lite-shell {
+  padding-inline: var(--spacing-50, 8px);
+}
+
+.special-page-wrapper.wikita-lite-shell[data-skin='mobile'] {
+  padding-inline: var(--spacing-50, 8px);
+}
+
+/* Codex Heading 1 — serif page greeting (overrides SpecialPageWrapper mobile sans title). */
+.special-page-wrapper.wikita-lite-shell .special-page-wrapper__title {
+  font-family: var(--font-family-serif);
+  font-size: var(--font-size-xxx-large);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-xxx-large);
+  color: var(--color-base);
+}
+
+.special-page-wrapper.wikita-lite-shell[data-skin='mobile'] .special-page-wrapper__title {
+  font-family: var(--font-family-serif);
+  font-size: var(--font-size-xxx-large);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-xxx-large);
+}
