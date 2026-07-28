@@ -58,12 +58,22 @@ export function usePrototypeGallery(galleryTab: Ref<GalleryTab>) {
     entries.value.filter((entry) => entry.category === 'example'),
   )
 
+  const appTemplateEntries = computed(() =>
+    templateEntries.value.filter((entry) => entry.platform === 'app'),
+  )
+
+  const webTemplateEntries = computed(() =>
+    templateEntries.value.filter((entry) => entry.platform === 'web'),
+  )
+
   const spotlightActive = computed(() => galleryState.value.spotlightActive)
 
   return {
     entries,
     primaryEntries,
     templateEntries,
+    appTemplateEntries,
+    webTemplateEntries,
     exampleEntries,
     spotlightActive,
   }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePage({
   meta: {
+    title: 'Chrome',
     category: 'template',
     platform: 'app',
     order: 0,

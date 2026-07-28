@@ -22,7 +22,8 @@ import { GALLERY_TABS } from '@/prototype-gallery'
 
 const router = useRouter()
 const { galleryTab } = useGalleryTab()
-const { entries, primaryEntries, templateEntries, exampleEntries } = usePrototypeGallery(galleryTab)
+const { entries, primaryEntries, templateEntries, appTemplateEntries, webTemplateEntries, exampleEntries } =
+  usePrototypeGallery(galleryTab)
 
 /** Mask for the Home tab icon (CdxTab labels are plain text only). */
 const homeTabIconMask = `url("data:image/svg+xml,${encodeURIComponent(
@@ -76,11 +77,7 @@ const homeTabIconMask = `url("data:image/svg+xml,${encodeURIComponent(
               <h3 v-if="primaryEntries.length" class="prototype-index__section-heading">
                 Prototypes
               </h3>
-              <div
-                v-for="entry in primaryEntries"
-                :key="entry.path"
-                class="prototype-index__card"
-              >
+              <div v-for="entry in primaryEntries" :key="entry.path" class="prototype-index__card">
                 <CdxCard :url="router.resolve({ path: entry.path }).href">
                   <template #title>{{ entry.title }}</template>
                   <template v-if="entry.description" #description>{{ entry.description }}</template>
@@ -98,11 +95,7 @@ const homeTabIconMask = `url("data:image/svg+xml,${encodeURIComponent(
               <h3 v-if="templateEntries.length" class="prototype-index__section-heading">
                 Templates
               </h3>
-              <div
-                v-for="entry in templateEntries"
-                :key="entry.path"
-                class="prototype-index__card"
-              >
+              <div v-for="entry in templateEntries" :key="entry.path" class="prototype-index__card">
                 <CdxCard :url="router.resolve({ path: entry.path }).href">
                   <template #title>{{ entry.title }}</template>
                   <template v-if="entry.description" #description>{{ entry.description }}</template>
@@ -121,6 +114,52 @@ const homeTabIconMask = `url("data:image/svg+xml,${encodeURIComponent(
                 Examples
               </h3>
               <div v-for="entry in exampleEntries" :key="entry.path" class="prototype-index__card">
+                <CdxCard :url="router.resolve({ path: entry.path }).href">
+                  <template #title>{{ entry.title }}</template>
+                  <template v-if="entry.description" #description>{{ entry.description }}</template>
+                  <template #supporting-text>
+                    <div class="prototype-index__chips">
+                      <CdxInfoChip status="subtle">{{ entry.platformLabel }}</CdxInfoChip>
+                      <CdxInfoChip v-if="entry.supportingText" status="subtle">{{
+                        entry.supportingText
+                      }}</CdxInfoChip>
+                    </div>
+                  </template>
+                </CdxCard>
+              </div>
+            </template>
+
+            <template v-else-if="tab.value === 'template'">
+              <h3 v-if="appTemplateEntries.length" class="prototype-index__section-heading">
+                App templates
+              </h3>
+              <div
+                v-for="entry in appTemplateEntries"
+                :key="entry.path"
+                class="prototype-index__card"
+              >
+                <CdxCard :url="router.resolve({ path: entry.path }).href">
+                  <template #title>{{ entry.title }}</template>
+                  <template v-if="entry.description" #description>{{ entry.description }}</template>
+                  <template #supporting-text>
+                    <div class="prototype-index__chips">
+                      <CdxInfoChip status="subtle">{{ entry.platformLabel }}</CdxInfoChip>
+                      <CdxInfoChip v-if="entry.supportingText" status="subtle">{{
+                        entry.supportingText
+                      }}</CdxInfoChip>
+                    </div>
+                  </template>
+                </CdxCard>
+              </div>
+
+              <h3 v-if="webTemplateEntries.length" class="prototype-index__section-heading">
+                Web templates
+              </h3>
+              <div
+                v-for="entry in webTemplateEntries"
+                :key="entry.path"
+                class="prototype-index__card"
+              >
                 <CdxCard :url="router.resolve({ path: entry.path }).href">
                   <template #title>{{ entry.title }}</template>
                   <template v-if="entry.description" #description>{{ entry.description }}</template>

@@ -64,6 +64,7 @@ function hasItemSlot(item: AppBottomNavItem): boolean {
       class="app-bottom-menu__item"
       :class="{ 'app-bottom-menu__item--active': props.activeItem === item }"
       weight="quiet"
+      size="large"
       :aria-label="APP_BOTTOM_NAV_ITEM_META[item].ariaLabel"
       :aria-current="props.activeItem === item ? 'page' : undefined"
       @click="onItemClick(item)"
@@ -87,11 +88,6 @@ function hasItemSlot(item: AppBottomNavItem): boolean {
   padding-inline: var(--spacing-150, 24px);
   border-top: 1px solid var(--border-color-subtle, #c8ccd1);
   background-color: var(--background-color-base, #fff);
-}
-
-.app-bottom-menu__item {
-  min-width: var(--min-size-interactive-pointer, 32px);
-  min-height: var(--min-size-interactive-pointer, 32px);
 }
 
 .app-bottom-menu__item--active {
