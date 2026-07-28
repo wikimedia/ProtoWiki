@@ -19,11 +19,12 @@ import {
   CdxTab,
   CdxTabs,
 } from '@wikimedia/codex'
-import { cdxIconTrash } from '@wikimedia/codex-icons'
+import { cdxIconClose, cdxIconTrash } from '@wikimedia/codex-icons'
 
 import AppChromeHeader from '@/components/app/AppChromeHeader.vue'
 import type { AppHeaderItem } from '@/components/app/AppChromeHeader.vue'
 import MobileWrapper from '@/components/MobileWrapper.vue'
+import { useIsIos } from '@/composables/useAppPlatform'
 
 import {
   DEFAULT_SEARCH_LANGUAGES,
@@ -34,6 +35,7 @@ import { searchWiki, type WikiSearchResult } from './searchWiki'
 import { useRecentSearches } from './useRecentSearches'
 
 const router = useRouter()
+const isIos = useIsIos()
 
 const query = ref('')
 const langTabs = ref<SearchLanguageOption[]>([...DEFAULT_SEARCH_LANGUAGES])
@@ -149,7 +151,7 @@ function selectResult(result: WikiSearchResult): void {
 <template>
   <MobileWrapper>
     <div class="template-app-search-shell">
-      <AppChromeHeader :left="searchHeaderLeft" :right="[]" />
+      <AppChromeHeader v-if="!isIos" :left="searchHeaderLeft" :right="[]" />
 
       <div class="template-app-search">
         <div class="template-app-search__lang-row">
@@ -245,6 +247,13 @@ function selectResult(result: WikiSearchResult): void {
           </template>
         </template>
       </div>
+
+      <div v-if="isIos" class="template-app-search__bottom-bar">
+        <SearchInputField />
+        <CdxButton weight="quiet" aria-label="Close" @click="goBack">
+          <CdxIcon :icon="cdxIconClose" />
+        </CdxButton>
+      </div>
     </div>
   </MobileWrapper>
 </template>
@@ -266,7 +275,21 @@ function selectResult(result: WikiSearchResult): void {
 
 .template-app-search {
   flex: 1 1 auto;
+  overflow-y: auto;
   padding: var(--spacing-100, 16px) var(--spacing-150, 24px);
+}
+
+.template-app-search__bottom-bar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--spacing-50, 8px);
+  padding: var(--spacing-50, 8px) var(--spacing-150, 24px);
+}
+
+.template-app-search__bottom-bar .template-app-search__input {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .template-app-search__lang-row {

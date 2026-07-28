@@ -5,77 +5,62 @@ import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import {
   cdxIconAppearance,
   cdxIconBell,
-  cdxIconBellOutline,
   cdxIconMenu,
   cdxIconSearch,
   cdxIconTray,
   cdxIconUserAvatar,
-  cdxIconUserAvatarOutline,
   cdxIconWatchlist,
 } from '@wikimedia/codex-icons'
 
 import { useConfig } from '@/composables/useConfig'
 import { DEFAULT_CHROME_NAV_TOOLS, type ChromeNavTool } from './headerNavTools'
-import { globalSkin, globalTheme } from '@/theme'
-import type { Skin, Theme } from '@/theme'
+import { globalTheme } from '@/theme'
+import type { Theme } from '@/theme'
 import AppearanceSettingsPanel from '../settings/AppearanceSettingsPanel.vue'
 import SettingsPopover from '../settings/SettingsPopover.vue'
 import Search from '../Search.vue'
 
 const { user } = useConfig()
 
-/** Fallback EN CDN SVGs — override via **`wordmarkSrc`** / **`taglineSrc`** / **`mobileWordmarkSrc`**. */
+/** Fallback EN CDN SVGs — override via **`wordmarkSrc`** / **`taglineSrc`**. */
 const WIKIPEDIA_WORDMARK_EN =
   'https://en.wikipedia.org/static/images/mobile/copyright/wikipedia-wordmark-en-25.svg'
 const WIKIPEDIA_TAGLINE_EN =
   'https://en.wikipedia.org/static/images/mobile/copyright/wikipedia-tagline-en-25.svg'
 
 interface Props {
-  /** Local skin override. Sets `data-skin` on the root. */
-  skin?: Skin
   /** Local theme override. Sets `data-theme` on the root. */
   theme?: Theme
   /**
-   * Desktop chrome: Meta link mock before tool icons (`chrome-header__username-link`);
-   * trim; empty hides unless **`#username`** overrides.
+   * Meta link mock before tool icons; trim; empty hides unless **`#username`** overrides.
    */
   username?: string
-  /** Desktop stacked wordmark image URL (`#logo` replaces both lines). */
+  /** Stacked wordmark image URL (`#logo` replaces both lines). */
   wordmarkSrc?: string
-  /** Desktop tagline image URL beneath the wordmark. */
+  /** Tagline image URL beneath the wordmark. */
   taglineSrc?: string
-  /** Minerva wordmark (`#logo` replaces on mobile path). Defaults to **`wordmarkSrc`** then EN constant. */
-  mobileWordmarkSrc?: string
   /**
-   * Subset/order of mocked Vector tool icons (**desktop only** — mobile bar ignores this).
+   * Subset/order of mocked Vector tool icons.
    * **`#nav`** replaces the whole cluster regardless.
    */
   navTools?: ChromeNavTool[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  skin: undefined,
   theme: undefined,
   username: undefined,
   wordmarkSrc: undefined,
   taglineSrc: undefined,
-  mobileWordmarkSrc: undefined,
   navTools: undefined,
 })
 
-const effectiveSkin = computed<Skin>(() => props.skin ?? globalSkin.value)
 const effectiveTheme = computed<Theme>(() => props.theme ?? globalTheme.value)
-const isDesktop = computed(() => effectiveSkin.value === 'desktop')
-const isMobile = computed(() => effectiveSkin.value === 'mobile')
 const trimmedUsername = computed(() => (props.username ?? '').trim())
 const showChromeUsernameLink = computed(() => trimmedUsername.value.length > 0)
 const isLoggedOut = computed(() => user.value === 'logged-out')
 
 const desktopWordmarkSrc = computed(() => props.wordmarkSrc ?? WIKIPEDIA_WORDMARK_EN)
 const desktopTaglineSrc = computed(() => props.taglineSrc ?? WIKIPEDIA_TAGLINE_EN)
-const mobileWordmarkResolved = computed(
-  () => props.mobileWordmarkSrc ?? props.wordmarkSrc ?? WIKIPEDIA_WORDMARK_EN,
-)
 
 const effectiveNavTools = computed(() =>
   props.navTools?.length ? props.navTools : DEFAULT_CHROME_NAV_TOOLS,
@@ -87,37 +72,28 @@ function navHas(tool: ChromeNavTool): boolean {
 </script>
 
 <template>
-  <header
-    class="chrome-header"
-    :class="{
-      'chrome-header--desktop': isDesktop,
-      'chrome-header--mobile': isMobile,
-    }"
-    :data-skin="effectiveSkin"
-    :data-theme="effectiveTheme"
-  >
-    <!-- Vector 2022–style chrome (desktop skin) -->
-    <nav v-if="isDesktop" class="chrome-header__nav-desktop" aria-label="Site">
-      <div class="chrome-header__desktop-start">
+  <header class="vector-chrome-header" data-skin="desktop" :data-theme="effectiveTheme">
+    <nav class="vector-chrome-header__nav" aria-label="Site">
+      <div class="vector-chrome-header__start">
         <slot name="menu">
           <!-- Mock only — not interactive (FakeMediaWiki uses bare chrome / icon affordances). -->
-          <span class="chrome-header__menu-icon" aria-hidden="true">
+          <span class="vector-chrome-header__menu-icon" aria-hidden="true">
             <CdxIcon :icon="cdxIconMenu" />
           </span>
         </slot>
 
-        <RouterLink class="chrome-header__brand-link" to="/" aria-label="Visit the main page">
+        <RouterLink class="vector-chrome-header__brand-link" to="/" aria-label="Visit the main page">
           <slot name="logo">
-            <span class="chrome-header__wordmarks">
+            <span class="vector-chrome-header__wordmarks">
               <img
-                class="chrome-header__wordmark-img"
+                class="vector-chrome-header__wordmark-img"
                 :src="desktopWordmarkSrc"
                 width="120"
                 height="18"
                 alt="Wikipedia"
               />
               <img
-                class="chrome-header__tagline-img"
+                class="vector-chrome-header__tagline-img"
                 :src="desktopTaglineSrc"
                 width="120"
                 height="14"
@@ -128,12 +104,12 @@ function navHas(tool: ChromeNavTool): boolean {
         </RouterLink>
       </div>
 
-      <div class="chrome-header__inline-search">
-        <div class="chrome-header__search">
+      <div class="vector-chrome-header__inline-search">
+        <div class="vector-chrome-header__search">
           <Search />
         </div>
         <CdxButton
-          class="chrome-header__search-submit"
+          class="vector-chrome-header__search-submit"
           tag="a"
           href="https://en.wikipedia.org/wiki/Special:Search"
         >
@@ -141,9 +117,9 @@ function navHas(tool: ChromeNavTool): boolean {
         </CdxButton>
       </div>
 
-      <div class="chrome-header__desktop-end">
+      <div class="vector-chrome-header__end">
         <CdxButton
-          class="chrome-header__search-icon-toggle"
+          class="vector-chrome-header__search-icon-toggle"
           weight="quiet"
           aria-label="Search"
           tag="a"
@@ -152,23 +128,23 @@ function navHas(tool: ChromeNavTool): boolean {
           <CdxIcon :icon="cdxIconSearch" />
         </CdxButton>
         <slot name="username">
-          <div v-if="isLoggedOut" class="chrome-header__logged-out-toolbar">
+          <div v-if="isLoggedOut" class="vector-chrome-header__logged-out-toolbar">
             <a
-              class="chrome-header__text-link"
+              class="vector-chrome-header__text-link"
               href="https://donate.wikimedia.org/"
               rel="noopener noreferrer"
             >
               Donate
             </a>
             <a
-              class="chrome-header__text-link"
+              class="vector-chrome-header__text-link"
               href="https://en.wikipedia.org/w/index.php?title=Special:CreateAccount"
               rel="noopener noreferrer"
             >
               Create account
             </a>
             <a
-              class="chrome-header__text-link"
+              class="vector-chrome-header__text-link"
               href="https://en.wikipedia.org/w/index.php?title=Special:UserLogin"
               rel="noopener noreferrer"
             >
@@ -177,7 +153,7 @@ function navHas(tool: ChromeNavTool): boolean {
           </div>
           <a
             v-else-if="showChromeUsernameLink"
-            class="chrome-header__text-link chrome-header__username-display"
+            class="vector-chrome-header__text-link vector-chrome-header__username-display"
             href="#"
             @click.prevent
           >
@@ -213,7 +189,7 @@ function navHas(tool: ChromeNavTool): boolean {
           <CdxButton
             v-if="navHas('watchlist')"
             weight="quiet"
-            class="chrome-header__hide-narrow"
+            class="vector-chrome-header__hide-narrow"
             aria-label="Watchlist"
           >
             <CdxIcon :icon="cdxIconWatchlist" />
@@ -224,77 +200,25 @@ function navHas(tool: ChromeNavTool): boolean {
         </slot>
       </div>
     </nav>
-
-    <!-- Minerva-style chrome (mobile skin) -->
-    <nav v-else class="chrome-header__nav-mobile" aria-label="Site">
-      <slot name="menu">
-        <CdxButton weight="quiet" size="large" aria-label="Main menu">
-          <CdxIcon :icon="cdxIconMenu" />
-        </CdxButton>
-      </slot>
-
-      <RouterLink class="chrome-header__mobile-brand" to="/" aria-label="Visit the main page">
-        <slot name="logo">
-          <img
-            class="chrome-header__mobile-wordmark-img"
-            :src="mobileWordmarkResolved"
-            alt="Wikipedia"
-          />
-        </slot>
-      </RouterLink>
-
-      <div class="chrome-header__mobile-actions">
-        <CdxButton
-          weight="quiet"
-          size="large"
-          aria-label="Search"
-          tag="a"
-          href="https://en.wikipedia.org/wiki/Special:Search"
-        >
-          <CdxIcon :icon="cdxIconSearch" />
-        </CdxButton>
-        <CdxButton
-          weight="quiet"
-          size="large"
-          aria-label="Notifications"
-        >
-          <CdxIcon :icon="cdxIconBellOutline" />
-        </CdxButton>
-        <CdxButton
-          class="chrome-header__mobile-user-btn"
-          weight="quiet"
-          size="large"
-          aria-label="User menu"
-        >
-          <CdxIcon :icon="cdxIconUserAvatarOutline" size="medium" />
-        </CdxButton>
-      </div>
-    </nav>
   </header>
 </template>
 
 <style scoped>
-.chrome-header {
+.vector-chrome-header {
   background-color: var(--background-color-base, #fff);
 }
 
-/* Minerva bar separates from content; Vector desktop chrome stays flush (no bottom rule). */
-.chrome-header[data-skin='mobile'] {
-  border-bottom: 1px solid var(--border-color-subtle, #c8ccd1);
-}
-
-.chrome-header__search {
+.vector-chrome-header__search {
   min-width: 0;
 }
 
-.chrome-header__wordmark-img,
-.chrome-header__tagline-img {
+.vector-chrome-header__wordmark-img,
+.vector-chrome-header__tagline-img {
   display: block;
   width: auto;
   max-width: 100%;
 }
 
-/* ---------- Desktop (Vector) ---------- */
 /*
  * Breakpoint parity with FakeMediaWiki `src/views/SpecialView/style.css`:
  * - max-width 1120px — collapse inline search → icon (nav-item-search / nav-button-search).
@@ -302,7 +226,7 @@ function navHas(tool: ChromeNavTool): boolean {
  * Skin swap (nav-desktop vs nav-mobile) stays at 640px via src/theme.ts.
  */
 
-.chrome-header[data-skin='desktop'] .chrome-header__nav-desktop {
+.vector-chrome-header__nav {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -311,13 +235,13 @@ function navHas(tool: ChromeNavTool): boolean {
   padding: var(--spacing-50, 8px) var(--spacing-100, 16px);
 }
 
-.chrome-header[data-skin='desktop'] .chrome-header__desktop-start {
+.vector-chrome-header__start {
   display: flex;
   align-items: center;
   gap: var(--spacing-50, 8px);
 }
 
-.chrome-header[data-skin='desktop'] .chrome-header__menu-icon {
+.vector-chrome-header__menu-icon {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -335,7 +259,7 @@ function navHas(tool: ChromeNavTool): boolean {
   pointer-events: none;
 }
 
-.chrome-header[data-skin='desktop'] :slotted(.chrome-header__menu-btn) {
+.vector-chrome-header :slotted(.chrome-header__menu-btn) {
   flex-shrink: 0;
   min-width: var(--size-icon-medium, 32px);
   height: var(--size-icon-medium, 32px);
@@ -344,23 +268,23 @@ function navHas(tool: ChromeNavTool): boolean {
   padding-inline-start: var(--spacing-50, 8px);
 }
 
-.chrome-header[data-skin='desktop'] .chrome-header__menu-icon :deep(svg) {
+.vector-chrome-header__menu-icon :deep(svg) {
   display: block;
 }
 
-.chrome-header[data-skin='desktop'] .chrome-header__brand-link {
+.vector-chrome-header__brand-link {
   display: flex;
   align-items: center;
   text-decoration: none;
   color: inherit;
 }
 
-.chrome-header[data-skin='desktop'] .chrome-header__brand-link:hover {
+.vector-chrome-header__brand-link:hover {
   text-decoration: none;
   color: inherit;
 }
 
-.chrome-header[data-skin='desktop'] .chrome-header__wordmarks {
+.vector-chrome-header__wordmarks {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -372,7 +296,7 @@ function navHas(tool: ChromeNavTool): boolean {
   min-height: 44px;
 }
 
-.chrome-header[data-skin='desktop'] .chrome-header__inline-search {
+.vector-chrome-header__inline-search {
   display: flex;
   flex: 1 1 auto;
   align-items: stretch;
@@ -381,23 +305,23 @@ function navHas(tool: ChromeNavTool): boolean {
   padding-inline-start: var(--spacing-150, 24px);
 }
 
-.chrome-header[data-skin='desktop'] .chrome-header__inline-search .chrome-header__search {
+.vector-chrome-header__inline-search .vector-chrome-header__search {
   flex: 1;
   min-width: 0;
   max-width: 32rem;
 }
 
-.chrome-header[data-skin='desktop'] .chrome-header__search-submit.cdx-button {
+.vector-chrome-header__search-submit.cdx-button {
   align-self: stretch;
   border-radius: 0 var(--border-radius-base, 2px) var(--border-radius-base, 2px) 0;
   margin-inline-start: -1px;
 }
 
-.chrome-header[data-skin='desktop'] .chrome-header__search-icon-toggle {
+.vector-chrome-header__search-icon-toggle {
   display: none;
 }
 
-.chrome-header[data-skin='desktop'] .chrome-header__desktop-end {
+.vector-chrome-header__end {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -405,7 +329,7 @@ function navHas(tool: ChromeNavTool): boolean {
   margin-inline-start: auto;
 }
 
-.chrome-header[data-skin='desktop'] .chrome-header__logged-out-toolbar {
+.vector-chrome-header__logged-out-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -413,7 +337,7 @@ function navHas(tool: ChromeNavTool): boolean {
   margin-inline: var(--spacing-8, 8px);
 }
 
-.chrome-header[data-skin='desktop'] .chrome-header__text-link {
+.vector-chrome-header__text-link {
   color: var(--color-progressive, #36c);
   font-size: var(--font-size-medium, 1rem);
   font-weight: normal;
@@ -421,30 +345,35 @@ function navHas(tool: ChromeNavTool): boolean {
   text-decoration: none;
 }
 
-.chrome-header[data-skin='desktop'] a.chrome-header__text-link:hover {
+a.vector-chrome-header__text-link:hover {
   text-decoration: underline;
 }
 
-.chrome-header[data-skin='desktop'] .chrome-header__username-display {
+.vector-chrome-header__username-display {
   margin-inline: var(--spacing-8, 8px);
 }
 
-.chrome-header[data-skin='desktop'] .chrome-header__desktop-end .cdx-button {
+.vector-chrome-header__end .cdx-button {
   min-width: var(--size-icon-medium, 32px);
   height: var(--size-icon-medium, 32px);
   padding: 0.5rem 0.4rem;
 }
 
+.vector-chrome-header[data-theme='dark'] .vector-chrome-header__wordmark-img,
+.vector-chrome-header[data-theme='dark'] .vector-chrome-header__tagline-img {
+  opacity: 0;
+}
+
 @media (max-width: 1120px) {
-  .chrome-header[data-skin='desktop'] .chrome-header__inline-search {
+  .vector-chrome-header__inline-search {
     display: none;
   }
 
-  .chrome-header[data-skin='desktop'] .chrome-header__search-icon-toggle {
+  .vector-chrome-header__search-icon-toggle {
     display: inline-flex;
   }
 
-  .chrome-header[data-skin='desktop'] .chrome-header__desktop-end .cdx-button {
+  .vector-chrome-header__end .cdx-button {
     height: var(--size-icon-large, 40px);
     width: var(--size-icon-large, 40px);
     padding: 0.7rem;
@@ -452,81 +381,8 @@ function navHas(tool: ChromeNavTool): boolean {
 }
 
 @media (max-width: 768px) {
-  .chrome-header[data-skin='desktop'] .chrome-header__hide-narrow {
+  .vector-chrome-header__hide-narrow {
     display: none !important;
   }
 }
-
-/* ---------- Mobile (Minerva-style bar) ---------- */
-
-.chrome-header[data-skin='mobile'] .chrome-header__nav-mobile {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-50, 8px);
-  min-height: 3.375em;
-  padding: 0 var(--spacing-50, 8px) 0 var(--spacing-25, 4px);
-  background-color: var(--background-color-interactive, #eaecf0);
-  box-shadow: inset 0 -1px 3px 0 rgba(0, 0, 0, 0.08);
-}
-
-.chrome-header[data-skin='mobile'] .chrome-header__nav-mobile > :first-child {
-  flex-shrink: 0;
-}
-
-.chrome-header[data-skin='mobile'] .prototype-chrome-menu-popover {
-  flex-shrink: 0;
-}
-
-.chrome-header[data-skin='mobile'] .chrome-header__mobile-brand {
-  flex: 0 1 auto;
-  max-width: fit-content;
-  min-width: 0;
-  overflow: hidden;
-  text-decoration: none;
-  color: inherit;
-}
-
-.chrome-header[data-skin='mobile'] .chrome-header__mobile-brand:hover {
-  text-decoration: none;
-  color: inherit;
-}
-
-.chrome-header[data-skin='mobile'] .chrome-header__mobile-wordmark-img {
-  display: block;
-  height: 21px;
-  width: auto;
-  opacity: 0.67;
-}
-
-.chrome-header[data-theme='dark'] .chrome-header__wordmark-img,
-.chrome-header[data-theme='dark'] .chrome-header__tagline-img,
-.chrome-header[data-theme='dark'][data-skin='mobile'] .chrome-header__mobile-wordmark-img {
-  opacity: 0;
-}
-
-.chrome-header[data-skin='mobile'] .chrome-header__mobile-actions {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: var(--spacing-25, 4px);
-  margin-inline-start: auto;
-}
-
-/* Equal square touch targets for search, notifications, and user (Minerva parity). */
-.chrome-header[data-skin='mobile'] .chrome-header__mobile-actions .cdx-button,
-.chrome-header[data-skin='mobile'] .chrome-header__mobile-user-btn {
-  box-sizing: border-box;
-  flex-shrink: 0;
-  width: var(--size-icon-large, 40px);
-  min-width: var(--size-icon-large, 40px);
-  max-width: var(--size-icon-large, 40px);
-  height: var(--size-icon-large, 40px);
-  min-height: var(--size-icon-large, 40px);
-  padding: 0;
-  color: var(--color-subtle, #54595d);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
 </style>

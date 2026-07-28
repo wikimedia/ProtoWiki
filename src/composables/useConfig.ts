@@ -7,6 +7,7 @@ import {
   loadConfig,
   resetUserPageListField,
   saveConfig,
+  type AppPlatform,
   type Config,
   type ConfigDevice,
   type ConfigTheme,
@@ -15,6 +16,7 @@ import {
   type PageListKey,
   type UserPageLists,
 } from '@/config'
+import { applyAppPlatform } from '@/app-platform'
 import { applyThemePreference, applyWebSkinPreference } from '@/theme'
 
 const config = ref<Config>(loadConfig())
@@ -41,10 +43,18 @@ watch(
   },
 )
 
+watch(
+  () => config.value.appPlatform,
+  (platform) => {
+    applyAppPlatform(platform)
+  },
+)
+
 export function useConfig(): {
   config: DeepReadonly<Ref<Config>>
   theme: Ref<ConfigTheme>
   device: Ref<ConfigDevice>
+  appPlatform: Ref<AppPlatform>
   webSkin: Ref<ConfigWebSkin>
   user: Ref<ConfigUser>
   realUsername: Ref<string>
@@ -67,6 +77,13 @@ export function useConfig(): {
     get: () => config.value.device,
     set: (value: ConfigDevice) => {
       config.value = { ...config.value, device: value }
+    },
+  })
+
+  const appPlatform = computed({
+    get: () => config.value.appPlatform,
+    set: (value: AppPlatform) => {
+      config.value = { ...config.value, appPlatform: value }
     },
   })
 
@@ -153,6 +170,7 @@ export function useConfig(): {
     config: readonly(config),
     theme,
     device,
+    appPlatform,
     webSkin,
     user,
     realUsername,

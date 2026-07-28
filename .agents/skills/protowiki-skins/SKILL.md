@@ -34,12 +34,12 @@ when the URL forces a value).
 ## How CSS skins work
 
 Skin affects layout via **`data-skin="desktop"`** vs **`data-skin="mobile"`**
-on component roots (`ChromeWrapper`, `ArticleLive`, `ArticleSnapshot`, `ArticleCustom`, `ChromeHeader`, etc.).
+on component roots (`ChromeWrapper`, `ArticleLive`, `ArticleSnapshot`, `ArticleCustom`, `WebChromeHeader`, etc.).
 Desktop vs mobile rules live **next to those components** in scoped `<style>`
 blocks (e.g. `.article[data-skin='mobile'] { … }` for tighter article padding).
 
 Vector chrome additionally uses **`@media (max-width: 1120px)`** inside
-`ChromeHeader.vue` to hide inline search and show the search icon — same idea as
+`VectorChromeHeader.vue` to hide inline search and show the search icon — same idea as
 FakeMediaWiki’s `.nav-item-search` / `.nav-button-search` toggle — and
 **`@media (max-width: 768px)`** to hide desktop-only tools such as the watchlist mock
 (FakeMediaWiki’s `.nav-button-desktop`). Those are **layout** breakpoints inside desktop

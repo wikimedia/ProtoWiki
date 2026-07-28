@@ -1,7 +1,7 @@
 # `Search`
 
 Wikipedia typeahead search — `CdxTypeaheadSearch` wired to the MediaWiki
-**opensearch** Action API. Default search component used by `ChromeHeader`.
+**opensearch** Action API. Default search component used by **`VectorChromeHeader`**.
 
 ## Usage
 
@@ -49,13 +49,13 @@ function onSubmit(query: string) {
   fall back to a real Wikipedia search by hitting Enter when offline-
   rendering this prototype.
 
-## Inside `ChromeHeader`
+## Inside `VectorChromeHeader`
 
-Desktop Vector chrome always mounts **`<Search />`** in the inline search cluster (no `#search` slot). Most prototypes never import **`Search`** — they use **`ChromeWrapper`**, which renders the default **`ChromeHeader`**.
+Desktop Vector chrome always mounts **`<Search />`** in the inline search cluster (no `#search` slot). Most prototypes never import **`Search`** — they use **`ChromeWrapper`**, which renders the default **`WebChromeHeader`**.
 
-The chrome user link (**`chrome-header__username-link` → Meta**) is **`ChromeHeader`’s **`username`** prop (**`ChromeWrapper`** forwards the same prop when you use the default header). **`username=""`** hides that link.
+The chrome user link is **`WebChromeHeader`'s **`username`** prop (**`ChromeWrapper`** forwards the same prop when you use the default header). **`username=""`** hides that link.
 
-For a different search surface, replace **`ChromeWrapper`'s `#header`** with a custom **`ChromeHeader`** (fork the template) or your own header markup.
+For a different search surface, replace **`ChromeWrapper`'s `#header`** with a custom **`WebChromeHeader`** (fork the template) or your own header markup.
 
 ## Etiquette
 

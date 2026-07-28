@@ -5,7 +5,7 @@ import { useConfig } from '@/composables/useConfig'
 import type { ChromeNavTool } from './headerNavTools'
 import { globalSkin, globalTheme, PROTOWIKI_CHROME_SKIN, PROTOWIKI_CHROME_THEME } from '@/theme'
 import type { Skin, Theme } from '@/theme'
-import ChromeHeader from './ChromeHeader.vue'
+import WebChromeHeader from './WebChromeHeader.vue'
 import ChromeFooter from './ChromeFooter.vue'
 
 interface Props {
@@ -34,15 +34,15 @@ interface Props {
   lastEditedNotice?: boolean
   /** When **`false`**, omit the default **`ChromeFooter`** (header-only chrome). */
   showFooter?: boolean
-  /** Forwarded to **`ChromeHeader`** / **`ChromeFooter`** (Meta label; mobile footer line). */
+  /** Forwarded to **`WebChromeHeader`** / **`ChromeFooter`** (Meta label; mobile footer line). */
   username?: string
-  /** Forwarded to **`ChromeHeader`**. */
+  /** Forwarded to **`WebChromeHeader`**. */
   wordmarkSrc?: string
-  /** Forwarded to **`ChromeHeader`**. */
+  /** Forwarded to **`WebChromeHeader`**. */
   taglineSrc?: string
-  /** Forwarded to **`ChromeHeader`**. */
+  /** Forwarded to **`WebChromeHeader`**. */
   mobileWordmarkSrc?: string
-  /** Forwarded to **`ChromeHeader`** (desktop tools only). */
+  /** Forwarded to **`WebChromeHeader`** (desktop tools only). */
   navTools?: ChromeNavTool[]
 }
 
@@ -79,7 +79,7 @@ provide(PROTOWIKI_CHROME_THEME, effectiveTheme)
     :dir="props.dir"
   >
     <slot name="header">
-      <ChromeHeader
+      <WebChromeHeader
         :skin="effectiveSkin"
         :theme="effectiveTheme"
         :username="effectiveUsername"
@@ -91,7 +91,7 @@ provide(PROTOWIKI_CHROME_THEME, effectiveTheme)
         <template v-if="$slots.menu" #menu>
           <slot name="menu" />
         </template>
-      </ChromeHeader>
+      </WebChromeHeader>
     </slot>
 
     <main class="chrome-wrapper__content">

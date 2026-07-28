@@ -1,5 +1,6 @@
 export type ConfigTheme = 'light' | 'dark' | 'system'
 export type PrototypePlatform = 'web' | 'app'
+export type AppPlatform = 'ios' | 'android'
 export type ConfigDevice = PrototypePlatform
 export type ConfigWebSkin = 'auto' | 'desktop' | 'mobile'
 export type ConfigUser = 'logged-out' | 'new' | 'experienced' | 'real'
@@ -17,6 +18,8 @@ export interface UserPageLists {
 export interface Config {
   theme: ConfigTheme
   device: ConfigDevice
+  /** Native app OS mode for `platform: 'app'` prototypes. */
+  appPlatform: AppPlatform
   /** Vector / Minerva skin preference when `device` is `'web'`. */
   webSkin: ConfigWebSkin
   user: ConfigUser
@@ -71,6 +74,7 @@ export const DEFAULT_USER_PAGE_LISTS: Record<ConfigUser, UserPageLists> = {
 export const DEFAULT_CONFIG: Config = {
   theme: 'light',
   device: 'web',
+  appPlatform: 'android',
   webSkin: 'auto',
   user: 'new',
   realUsername: '',
@@ -104,6 +108,11 @@ export const CONFIG_THEME_MENU_ITEMS: { value: ConfigTheme; label: string }[] = 
 export const CONFIG_DEVICE_MENU_ITEMS: { value: ConfigDevice; label: string }[] = [
   { value: 'web', label: 'Web' },
   { value: 'app', label: 'App' },
+]
+
+export const CONFIG_APP_PLATFORM_MENU_ITEMS: { value: AppPlatform; label: string }[] = [
+  { value: 'android', label: 'Android' },
+  { value: 'ios', label: 'iOS' },
 ]
 
 /** Normalize a Wikipedia username for API calls and cache keys. */
@@ -189,6 +198,7 @@ const STORAGE_KEY = 'protowiki-prototype-user-config'
 
 const VALID_THEMES: ConfigTheme[] = ['light', 'dark', 'system']
 const VALID_DEVICES: ConfigDevice[] = ['web', 'app']
+const VALID_APP_PLATFORMS: AppPlatform[] = ['ios', 'android']
 const VALID_WEB_SKINS: ConfigWebSkin[] = ['auto', 'desktop', 'mobile']
 const VALID_USERS: ConfigUser[] = ['logged-out', 'new', 'experienced', 'real']
 const PAGE_LIST_KEYS: PageListKey[] = ['watchlist', 'readingList', 'editedPages']
@@ -199,6 +209,10 @@ function isConfigTheme(value: unknown): value is ConfigTheme {
 
 function isConfigDevice(value: unknown): value is ConfigDevice {
   return typeof value === 'string' && VALID_DEVICES.includes(value as ConfigDevice)
+}
+
+function isAppPlatform(value: unknown): value is AppPlatform {
+  return typeof value === 'string' && VALID_APP_PLATFORMS.includes(value as AppPlatform)
 }
 
 function isConfigWebSkin(value: unknown): value is ConfigWebSkin {
@@ -292,6 +306,9 @@ export function normalizeConfig(input: unknown): Config {
   return {
     theme: isConfigTheme(record.theme) ? record.theme : DEFAULT_CONFIG.theme,
     device: isConfigDevice(record.device) ? record.device : DEFAULT_CONFIG.device,
+    appPlatform: isAppPlatform(record.appPlatform)
+      ? record.appPlatform
+      : DEFAULT_CONFIG.appPlatform,
     webSkin: isConfigWebSkin(record.webSkin) ? record.webSkin : DEFAULT_CONFIG.webSkin,
     user: isConfigUser(record.user) ? record.user : DEFAULT_CONFIG.user,
     realUsername,
@@ -342,6 +359,7 @@ function cloneConfig(config: Config): Config {
   return {
     theme: config.theme,
     device: config.device,
+    appPlatform: config.appPlatform,
     webSkin: config.webSkin,
     user: config.user,
     realUsername: config.realUsername,

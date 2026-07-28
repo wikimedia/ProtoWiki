@@ -8,19 +8,33 @@ definePage({
 
 import { useRouter } from 'vue-router'
 
-import { CdxButton, CdxCard, CdxIcon, CdxInfoChip, CdxTab, CdxTabs } from '@wikimedia/codex'
+import {
+  CdxButton,
+  CdxCard,
+  CdxIcon,
+  CdxInfoChip,
+  CdxRadio,
+  CdxTab,
+  CdxTabs,
+} from '@wikimedia/codex'
 import { cdxIconAppearance, cdxIconUserAvatar } from '@wikimedia/codex-icons'
 
 import PlainWrapper from '@/components/PlainWrapper.vue'
 import AppearanceSettingsPanel from '@/components/settings/AppearanceSettingsPanel.vue'
 import SettingsPopover from '@/components/settings/SettingsPopover.vue'
 import UserSettingsPanel from '@/components/settings/UserSettingsPanel.vue'
+import { useConfig } from '@/composables/useConfig'
 import { useGalleryTab } from '@/composables/useGalleryTab'
 import { usePrototypeGallery } from '@/composables/usePrototypeGallery'
-import { PROTOWIKI_API_PROJECT_URL, PROTOWIKI_LICENSE_URL } from '@/config'
+import {
+  CONFIG_APP_PLATFORM_MENU_ITEMS,
+  PROTOWIKI_API_PROJECT_URL,
+  PROTOWIKI_LICENSE_URL,
+} from '@/config'
 import { GALLERY_TABS } from '@/prototype-gallery'
 
 const router = useRouter()
+const { appPlatform } = useConfig()
 const { galleryTab } = useGalleryTab()
 const { entries, appTemplateEntries, webTemplateEntries } = usePrototypeGallery(galleryTab)
 
@@ -66,6 +80,27 @@ const docsUrl = `${PROTOWIKI_API_PROJECT_URL}#prototyping-system`
       </div>
     </template>
     <div class="prototype-index">
+      <div class="prototype-index__debug-platform">
+        <span id="protowiki-app-platform-label" class="prototype-index__debug-platform-label">
+          App OS (here for temporary debug reasons do not panic derek)
+        </span>
+        <div
+          class="prototype-index__debug-platform-options"
+          role="radiogroup"
+          aria-labelledby="protowiki-app-platform-label"
+        >
+          <CdxRadio
+            v-for="item in CONFIG_APP_PLATFORM_MENU_ITEMS"
+            :key="item.value"
+            v-model="appPlatform"
+            name="protowiki-app-platform"
+            :input-value="item.value"
+          >
+            {{ item.label }}
+          </CdxRadio>
+        </div>
+      </div>
+
       <CdxTabs v-model:active="galleryTab" class="prototype-index__tabs">
         <CdxTab v-for="tab in GALLERY_TABS" :key="tab.value" :name="tab.value" :label="tab.label">
           <div v-if="galleryTab === tab.value" class="prototype-index__list">
@@ -158,6 +193,24 @@ const docsUrl = `${PROTOWIKI_API_PROJECT_URL}#prototyping-system`
   display: flex;
   align-items: center;
   gap: var(--spacing-25);
+}
+
+.prototype-index__debug-platform {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-50);
+  margin-top: var(--spacing-50);
+  color: var(--color-subtle);
+  font-size: var(--font-size-small);
+  padding-bottom: var(--spacing-200);
+}
+
+.prototype-index__debug-platform-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-75);
 }
 
 .prototype-index__tabs {

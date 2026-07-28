@@ -1,6 +1,6 @@
 ---
 name: protowiki-components
-description: Catalog of every shipped component in src/components/ — the three single-concern layout wrappers (ChromeWrapper, SpecialPageWrapper, PlainWrapper), web chrome primitives (ChromeHeader, ChromeFooter), app chrome (AppChromeWrapper, AppChromeHeader, AppBottomMenu), Article surfaces (`ArticleWrapper` + `ArticleRenderer`, ArticleLive, ArticleSnapshot, ArticleCustom, ArticleHeader), dashboard layout (`Dashboard`, `DashboardModule`), attribution (`AttributionCard`, `useAttributionSignals`), and Search — including hand-authored article HTML in `ArticleRenderer`'s default slot (see `src/prototypes/template-article-custom/`) and newcomer homepage templates (`template-dashboard`, `template-homepage`). Use when picking a wrapper, composing a page, looking up props/slots/events for any ProtoWiki component, or asking "what components does ProtoWiki ship?".
+description: Catalog of every shipped component in src/components/ — the three single-concern layout wrappers (ChromeWrapper, SpecialPageWrapper, PlainWrapper), web chrome primitives (WebChromeHeader, VectorChromeHeader, MinervaChromeHeader, ChromeFooter), app chrome (AppChromeWrapper, AppChromeHeader, AppBottomMenu), Article surfaces (`ArticleWrapper` + `ArticleRenderer`, ArticleLive, ArticleSnapshot, ArticleCustom, ArticleHeader), dashboard layout (`Dashboard`, `DashboardModule`), attribution (`AttributionCard`, `useAttributionSignals`), and Search — including hand-authored article HTML in `ArticleRenderer`'s default slot (see `src/prototypes/template-article-custom/`) and newcomer homepage templates (`template-dashboard`, `template-homepage`). Use when picking a wrapper, composing a page, looking up props/slots/events for any ProtoWiki component, or asking "what components does ProtoWiki ship?".
 license: MIT
 ---
 
@@ -16,7 +16,7 @@ This skill is the cross-cutting guide. Per-component depth lives in
 - [`references/wrappers.md`](references/wrappers.md) — `ChromeWrapper`,
   `SpecialPageWrapper`, `PlainWrapper`, `MobileWrapper`
 - [`references/chrome-primitives.md`](references/chrome-primitives.md) —
-  `ChromeHeader`, `ChromeFooter`
+  `WebChromeHeader`, `VectorChromeHeader`, `MinervaChromeHeader`, `ChromeFooter`
 - [`references/app-chrome.md`](references/app-chrome.md) —
   `AppChromeWrapper`, `AppChromeHeader`, `AppBottomMenu`
 - [`references/article.md`](references/article.md) — `ArticleWrapper`, `ArticleRenderer`,
@@ -40,7 +40,9 @@ This skill is the cross-cutting guide. Per-component depth lives in
 | `SpecialPageWrapper` | Special-page shell — title row + optional help/actions + content | No | No (full-width) |
 | `PlainWrapper` | Centred narrow column — no chrome (gallery / Component-style demos) | No | No |
 | `MobileWrapper` | Phone-frame preview — full width below 480px; centred column + neutral Codex gutters when clamped | No | No |
-| `ChromeHeader` | Vector-style chrome when `skin=desktop`, Minerva-style when `skin=mobile` — wordmarks, search cluster, user tools (via ChromeWrapper) | n/a | n/a |
+| `WebChromeHeader` | Skin-aware web header — Vector (desktop) or Minerva (mobile); wordmarks, search cluster, user tools | n/a | n/a |
+| `VectorChromeHeader` | Force desktop Vector 2022 chrome — wordmarks, inline search, nav tools | n/a | n/a |
+| `MinervaChromeHeader` | Force mobile Minerva bar — `left` / `middle` / `right` item arrays | n/a | n/a |
 | `ChromeFooter` | Footer chrome (via ChromeWrapper): **desktop** Vector strip with optional mock last-edited + CC lines, or **mobile** Minerva well + optional strip | n/a | n/a |
 | `AppChromeHeader` | App top bar — `left` / `middle` / `right` item arrays (via AppChromeWrapper) | n/a | n/a |
 | `AppBottomMenu` | App bottom icon nav — home, saved, search, history, menu (via AppChromeWrapper) | n/a | n/a |
@@ -50,7 +52,7 @@ This skill is the cross-cutting guide. Per-component depth lives in
 | `ArticleSnapshot` | **`ArticleWrapper`** + **`ArticleRenderer`** (omitted until snapshot load succeeds or **`#default`**) + **`public/snapshots/`** | No | No |
 | `ArticleCustom` | **`ArticleWrapper`** + **`ArticleRenderer`**: **`#default`** is the parser body — no **`page/html`**, no snapshot file | No | No |
 | `ArticleHeader` | Title row, tabs, read/edit/history, tools (**used inside **`ArticleWrapper`**) | No | No |
-| `Search` | `CdxTypeaheadSearch` wired to opensearch (default in ChromeHeader) | n/a | n/a |
+| `Search` | `CdxTypeaheadSearch` wired to opensearch (default in VectorChromeHeader) | n/a | n/a |
 | `Dashboard` | Newcomer homepage grid — `#banner`, `#mobile`, `#primary`, `#sidebar` slots | No | Yes (desktop) |
 | `DashboardModule` | Single module box — link card when `to` is set, static sidebar card otherwise | No | No |
 | `AttributionCard` | Off-wiki attribution card (essential + trust signals + optional CTAs); `variant` full / compact / inline | No | No |
@@ -63,7 +65,7 @@ Most regions follow the same pattern:
 2. **Prop** — tweak with the **same base name** as the paired slot where it fits (e.g. **`title`** / **`#title`**, **`help`** / **`#help`**). Boolean toggles such as **`actions`** stay plain nouns — no `show*` prefix.
 3. **Named slot `#x`** — replaces the default **inner** content for that region; when the slot is supplied, it wins over the prop-fed default.
 
-Examples: `title` / `#title` / `#header` (**`SpecialPageWrapper`** cluster), **`help`** (**`boolean`** or **`#help`**), **`actions`** (**`boolean`** or **`#actions`**), **`username`** / **`#username`**, `ChromeHeader` **`navTools`** vs **`#nav`**.
+Examples: `title` / `#title` / `#header` (**`SpecialPageWrapper`** cluster), **`help`** (**`boolean`** or **`#help`**), **`actions`** (**`boolean`** or **`#actions`**), **`username`** / **`#username`**, `WebChromeHeader` **`navTools`** vs **`#nav`**.
 
 ## The two ideas you need
 
@@ -117,7 +119,9 @@ All components live at `@/components/<Name>.vue`:
 
 ```ts
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
-import ChromeHeader from '@/components/chrome/ChromeHeader.vue'
+import WebChromeHeader from '@/components/chrome/WebChromeHeader.vue'
+import VectorChromeHeader from '@/components/chrome/VectorChromeHeader.vue'
+import MinervaChromeHeader from '@/components/chrome/MinervaChromeHeader.vue'
 import ChromeFooter from '@/components/chrome/ChromeFooter.vue'
 import AppChromeWrapper from '@/components/app/AppChromeWrapper.vue'
 import AppChromeHeader from '@/components/app/AppChromeHeader.vue'
@@ -147,7 +151,9 @@ The `@/` prefix resolves to `src/`.
 | `SpecialPageWrapper` | `title?`, **`help?`** (**`boolean`**), **`actions?`**, `lang?`, `dir?`, `skin?`, `theme?` | default, **`#header`**, **`#title`**, `#help`, `#actions` |
 | `PlainWrapper` | `heading?`, `lang?`, `dir?` | default, `#heading` |
 | `MobileWrapper` | `maxWidth?` (default `360px`), `lang?`, `dir?` | default |
-| `ChromeHeader` | `skin?`, `theme?`, **`username?`**, **`wordmarkSrc?`**, **`taglineSrc?`**, **`mobileWordmarkSrc?`**, **`navTools?`** | `#logo`, `#username`, `#nav` |
+| `WebChromeHeader` | `skin?`, `theme?`, **`username?`**, **`wordmarkSrc?`**, **`taglineSrc?`**, **`mobileWordmarkSrc?`**, **`navTools?`**, **`left?`**, **`middle?`**, **`right?`** (mobile) | `#menu`, `#logo`, `#username`, `#nav` |
+| `VectorChromeHeader` | `theme?`, **`username?`**, **`wordmarkSrc?`**, **`taglineSrc?`**, **`navTools?`** | `#menu`, `#logo`, `#username`, `#nav` |
+| `MinervaChromeHeader` | `theme?`, **`left?`**, **`middle?`**, **`right?`**, **`wordmarkSrc?`**, **`mobileWordmarkSrc?`** | — |
 | `ChromeFooter` | `skin?`, `theme?`, **`lastEditedNotice?`**, **`username?`** | default |
 | `AppChromeHeader` | `theme?`, **`left?`**, **`middle?`**, **`right?`** | — |
 | `AppBottomMenu` | `theme?`, **`items?`**, **`activeItem?`** | default, `#item-{id}` |

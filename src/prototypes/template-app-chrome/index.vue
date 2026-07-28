@@ -2,6 +2,7 @@
 definePage({
   meta: {
     title: 'Chrome',
+    description: 'A blank-ish template for app prototypes with a chrome header and footer',
     category: 'template',
     platform: 'app',
     order: 0,

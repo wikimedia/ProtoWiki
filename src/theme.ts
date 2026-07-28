@@ -24,7 +24,7 @@ export const PROTOWIKI_CHROME_THEME: InjectionKey<ComputedRef<Theme>> =
  * Matches FakeMediaWiki `SpecialView/style.css`: `.nav-desktop` vs `.nav-mobile`
  * swap at **640px** — desktop chrome stays until the viewport is phone-sized.
  *
- * **1120px** is a separate concern: `ChromeHeader.vue` still hides inline search
+ * **1120px** is a separate concern: `VectorChromeHeader.vue` still hides inline search
  * below that width while remaining on desktop skin (same as FakeMediaWiki’s
  * `.nav-item-search` / `.nav-button-search` toggle).
  */

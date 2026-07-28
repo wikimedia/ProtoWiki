@@ -225,14 +225,14 @@ See also the **Newcomer homepage / dashboard** recipe above for the full page st
 
 ```vue
 <script setup lang="ts">
-import ChromeHeader from '@/components/chrome/ChromeHeader.vue'
+import WebChromeHeader from '@/components/chrome/WebChromeHeader.vue'
 import ChromeFooter from '@/components/chrome/ChromeFooter.vue'
 import ArticleLive from '@/components/article/ArticleLive.vue'
 </script>
 
 <template>
   <div class="custom-shell">
-    <ChromeHeader />
+    <WebChromeHeader />
     <main>
       <ArticleLive article="Albert Einstein" />
     </main>
