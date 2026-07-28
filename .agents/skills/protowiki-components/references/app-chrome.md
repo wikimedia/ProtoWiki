@@ -15,11 +15,11 @@ Starter templates: **`src/prototypes/template-app-chrome/`**, **`src/prototypes/
 Prop-driven top bar. Three regions — **`left`**, **`middle`**, **`right`** — each
 an array of items. No slots. Layout is inferred from which regions have content:
 
-| Regions present | Behaviour |
-| --- | --- |
-| left + middle + right | Grid — middle centered between flanks |
-| left + right (no middle) | Flex — flanks at edges |
-| left only (e.g. search field) | Flex — left grows |
+| Regions present               | Behaviour                             |
+| ----------------------------- | ------------------------------------- |
+| left + middle + right         | Grid — middle centered between flanks |
+| left + right (no middle)      | Flex — flanks at edges                |
+| left only (e.g. search field) | Flex — left grows                     |
 
 **`middle`** only renders when **both** **`left`** and **`right`** are present;
 otherwise it is ignored (dev console warning).
@@ -30,11 +30,15 @@ default to the explore preset when omitted.
 ```ts
 /** Exported from AppChromeHeader.vue */
 type AppHeaderItem =
-  | { type: 'link'; icon: Icon; label: string; href?: string }
-  | { type: 'button'; icon: Icon; label: string; onClick?: () => void }
+  | { type: 'link'; icon: string; label: string; href?: string }
+  | { type: 'button'; icon: string; label: string; onClick?: () => void }
   | { type: 'component'; component: Component }
   | { type: 'title'; text: string }
 ```
+
+**`icon`** on **`link`** / **`button`** items is a Codex icon name in
+kebab-case (e.g. `'arrow-previous'`, `'bell-outline'`). Resolved internally
+to `@wikimedia/codex-icons` — see [`codex-icons`](../../codex-icons/SKILL.md).
 
 - **`link`** — icon glyph; optional **`href`** (`RouterLink`, **`<a>`**, or plain span)
 - **`button`** — quiet **`CdxButton`**; optional **`onClick`**
@@ -45,12 +49,12 @@ Flanking regions (**`left`** / **`right`**) are capped at **4** items.
 
 ### Props
 
-| Prop | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `theme` | `'light' \| 'dark'` | global | Sets `data-theme` on root |
-| `left` | `AppHeaderItem[]` | explore preset | Max **4**; **`[]`** hides |
-| `middle` | `AppHeaderItem[]` | — | Requires left **and** right |
-| `right` | `AppHeaderItem[]` | explore preset | Max **4**; **`[]`** hides |
+| Prop     | Type                | Default        | Notes                       |
+| -------- | ------------------- | -------------- | --------------------------- |
+| `theme`  | `'light' \| 'dark'` | global         | Sets `data-theme` on root   |
+| `left`   | `AppHeaderItem[]`   | explore preset | Max **4**; **`[]`** hides   |
+| `middle` | `AppHeaderItem[]`   | —              | Requires left **and** right |
+| `right`  | `AppHeaderItem[]`   | explore preset | Max **4**; **`[]`** hides   |
 
 ### Examples
 
@@ -67,14 +71,14 @@ Flanking regions (**`left`** / **`right`**) are capped at **4** items.
 ```vue
 <AppChromeHeader
   :left="[
-    { type: 'button', icon: cdxIconArrowPrevious, label: 'Back' },
-    { type: 'button', icon: cdxIconSearch, label: 'Search' },
+    { type: 'button', icon: 'arrow-previous', label: 'Back' },
+    { type: 'button', icon: 'search', label: 'Search' },
   ]"
-  :middle="[{ type: 'link', icon: cdxIconLogoWikipedia, label: 'Wikipedia' }]"
+  :middle="[{ type: 'link', icon: 'logo-wikipedia', label: 'Wikipedia' }]"
   :right="[
-    { type: 'button', icon: cdxIconTabs, label: 'Tabs' },
-    { type: 'button', icon: cdxIconBellOutline, label: 'Notifications' },
-    { type: 'button', icon: cdxIconVerticalEllipsis, label: 'Menu' },
+    { type: 'button', icon: 'tabs', label: 'Tabs' },
+    { type: 'button', icon: 'bell-outline', label: 'Notifications' },
+    { type: 'button', icon: 'vertical-ellipsis', label: 'Menu' },
   ]"
 />
 ```
@@ -85,9 +89,9 @@ Flanking regions (**`left`** / **`right`**) are capped at **4** items.
 <AppChromeHeader
   :left="[{ type: 'title', text: 'Activity' }]"
   :right="[
-    { type: 'button', icon: cdxIconTabs, label: 'Tabs' },
-    { type: 'button', icon: cdxIconBellOutline, label: 'Notifications' },
-    { type: 'button', icon: cdxIconVerticalEllipsis, label: 'Menu' },
+    { type: 'button', icon: 'tabs', label: 'Tabs' },
+    { type: 'button', icon: 'bell-outline', label: 'Notifications' },
+    { type: 'button', icon: 'vertical-ellipsis', label: 'Menu' },
   ]"
 />
 ```
@@ -98,7 +102,6 @@ Flanking regions (**`left`** / **`right`**) are capped at **4** items.
 <script setup lang="ts">
 import { defineComponent, h, ref } from 'vue'
 import { CdxSearchInput } from '@wikimedia/codex'
-import { cdxIconArrowPrevious } from '@wikimedia/codex-icons'
 import AppChromeHeader from '@/components/app/AppChromeHeader.vue'
 import type { AppHeaderItem } from '@/components/app/AppChromeHeader.vue'
 
@@ -109,14 +112,16 @@ const SearchField = defineComponent({
     return () =>
       h(CdxSearchInput, {
         modelValue: query.value,
-        'onUpdate:modelValue': (v: string) => { query.value = v },
+        'onUpdate:modelValue': (v: string) => {
+          query.value = v
+        },
         placeholder: 'Search Wikipedia…',
       })
   },
 })
 
 const left: AppHeaderItem[] = [
-  { type: 'button', icon: cdxIconArrowPrevious, label: 'Back', onClick: () => router.back() },
+  { type: 'button', icon: 'arrow-previous', label: 'Back', onClick: () => router.back() },
   { type: 'component', component: SearchField },
 ]
 </script>
@@ -133,28 +138,28 @@ Menu) with top border and even spacing.
 
 ### Props
 
-| Prop | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `theme` | `'light' \| 'dark'` | global | Sets `data-theme` on root |
-| `items` | `AppBottomNavItem[]` | all five | Subset/order |
-| `activeItem` | `AppBottomNavItem` | — | Optional selected item |
+| Prop         | Type                 | Default  | Notes                     |
+| ------------ | -------------------- | -------- | ------------------------- |
+| `theme`      | `'light' \| 'dark'`  | global   | Sets `data-theme` on root |
+| `items`      | `AppBottomNavItem[]` | all five | Subset/order              |
+| `activeItem` | `AppBottomNavItem`   | —        | Optional selected item    |
 
 `AppBottomNavItem` literals: `'home' \| 'bookmarks' \| 'search' \| 'history' \| 'menu'`
 (see `src/components/app/appBottomNavItems.ts`).
 
 ### Slots
 
-| Slot | Default | Use for |
-| --- | --- | --- |
-| default | Five icon buttons in `<nav>` | Replace entire bottom bar |
-| `#item-{id}` | Codex icon for that item | Per-item override (e.g. `#item-search`) |
+| Slot         | Default                      | Use for                                 |
+| ------------ | ---------------------------- | --------------------------------------- |
+| default      | Five icon buttons in `<nav>` | Replace entire bottom bar               |
+| `#item-{id}` | Codex icon for that item     | Per-item override (e.g. `#item-search`) |
 
 ### Events
 
-| Event | Payload | Notes |
-| --- | --- | --- |
+| Event               | Payload            | Notes           |
+| ------------------- | ------------------ | --------------- |
 | `update:activeItem` | `AppBottomNavItem` | v-model support |
-| `navigate` | `AppBottomNavItem` | Fired on tap |
+| `navigate`          | `AppBottomNavItem` | Fired on tap    |
 
 ### Example
 
@@ -169,25 +174,25 @@ Vector/Minerva skin switching.
 
 ### Props
 
-| Prop | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `lang` | `string` | — | BCP-47; sets `lang` on root |
-| `dir` | `'ltr' \| 'rtl'` | — | Sets `dir` on root |
-| `theme` | `'light' \| 'dark'` | global | Forwarded to header + bottom menu |
-| `showBottomMenu` | `boolean` | `true` | Omit bottom nav when `false` |
-| `left` | `AppHeaderItem[]` | — | Forwarded |
-| `middle` | `AppHeaderItem[]` | — | Forwarded; **`[]`** hides |
-| `right` | `AppHeaderItem[]` | — | Forwarded; **`[]`** hides |
-| `bottomNavItems` | `AppBottomNavItem[]` | all five | Forwarded to **`AppBottomMenu`** |
-| `activeNavItem` | `AppBottomNavItem` | — | Forwarded to **`AppBottomMenu`** |
+| Prop             | Type                 | Default  | Notes                             |
+| ---------------- | -------------------- | -------- | --------------------------------- |
+| `lang`           | `string`             | —        | BCP-47; sets `lang` on root       |
+| `dir`            | `'ltr' \| 'rtl'`     | —        | Sets `dir` on root                |
+| `theme`          | `'light' \| 'dark'`  | global   | Forwarded to header + bottom menu |
+| `showBottomMenu` | `boolean`            | `true`   | Omit bottom nav when `false`      |
+| `left`           | `AppHeaderItem[]`    | —        | Forwarded                         |
+| `middle`         | `AppHeaderItem[]`    | —        | Forwarded; **`[]`** hides         |
+| `right`          | `AppHeaderItem[]`    | —        | Forwarded; **`[]`** hides         |
+| `bottomNavItems` | `AppBottomNavItem[]` | all five | Forwarded to **`AppBottomMenu`**  |
+| `activeNavItem`  | `AppBottomNavItem`   | —        | Forwarded to **`AppBottomMenu`**  |
 
 ### Slots
 
-| Slot | Default content | Use for |
-| --- | --- | --- |
-| default | (your prototype) | Scrollable body between header and bottom nav |
-| `#header` | `<AppChromeHeader>` | Replace entire header |
-| `#bottomMenu` | `<AppBottomMenu>` | Replace entire bottom nav |
+| Slot          | Default content     | Use for                                       |
+| ------------- | ------------------- | --------------------------------------------- |
+| default       | (your prototype)    | Scrollable body between header and bottom nav |
+| `#header`     | `<AppChromeHeader>` | Replace entire header                         |
+| `#bottomMenu` | `<AppBottomMenu>`   | Replace entire bottom nav                     |
 
 ### Events
 
@@ -246,9 +251,9 @@ import AppChromeHeader from '@/components/app/AppChromeHeader.vue'
 
 ## Web vs app chrome
 
-| | Web (`ChromeWrapper`) | App (`AppChromeWrapper`) |
-| --- | --- | --- |
-| Header | Vector / Minerva | App top bar (inferred from regions) |
-| Footer / nav | Wikipedia footer strip | Bottom icon nav |
-| Skin | `desktop` / `mobile` via `data-skin` | No skin — app device mode |
-| Gallery meta | `platform: 'web'` (default) | `platform: 'app'` |
+|              | Web (`ChromeWrapper`)                | App (`AppChromeWrapper`)            |
+| ------------ | ------------------------------------ | ----------------------------------- |
+| Header       | Vector / Minerva                     | App top bar (inferred from regions) |
+| Footer / nav | Wikipedia footer strip               | Bottom icon nav                     |
+| Skin         | `desktop` / `mobile` via `data-skin` | No skin — app device mode           |
+| Gallery meta | `platform: 'web'` (default)          | `platform: 'app'`                   |

@@ -3,29 +3,21 @@ import { computed, watch } from 'vue'
 import type { Component } from 'vue'
 import { RouterLink } from 'vue-router'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
-import {
-  cdxIconArrowPrevious,
-  cdxIconBellOutline,
-  cdxIconLogoWikipedia,
-  cdxIconSearch,
-  cdxIconTabs,
-  cdxIconVerticalEllipsis,
-  type Icon,
-} from '@wikimedia/codex-icons'
 
+import { resolveAppHeaderIcon, type AppHeaderIconName } from './appHeaderIcons'
 import { globalTheme } from '@/theme'
 import type { Theme } from '@/theme'
 
 export interface AppHeaderLinkItem {
   type: 'link'
-  icon: Icon
+  icon: AppHeaderIconName
   label: string
   href?: string
 }
 
 export interface AppHeaderButtonItem {
   type: 'button'
-  icon: Icon
+  icon: AppHeaderIconName
   label: string
   onClick?: () => void
 }
@@ -50,13 +42,11 @@ export type AppHeaderItem =
 const MAX_FLANK_ITEMS = 4
 
 /** Explore feed — [Figma 1:702](https://www.figma.com/design/8qeEyA6LT4bzpQLin1Gx43/protowiki-apps?node-id=1-702). */
-const DEFAULT_LEFT: AppHeaderItem[] = [
-  { type: 'link', icon: cdxIconLogoWikipedia, label: 'Wikipedia' },
-]
+const DEFAULT_LEFT: AppHeaderItem[] = [{ type: 'link', icon: 'logo-wikipedia', label: 'Wikipedia' }]
 
 const DEFAULT_RIGHT: AppHeaderItem[] = [
-  { type: 'button', icon: cdxIconTabs, label: 'Tabs' },
-  { type: 'button', icon: cdxIconBellOutline, label: 'Notifications' },
+  { type: 'button', icon: 'tabs', label: 'Tabs' },
+  { type: 'button', icon: 'bell-outline', label: 'Notifications' },
 ]
 
 interface Props {
@@ -102,9 +92,7 @@ if (import.meta.env.DEV) {
     () => [props.middle?.length ?? 0, hasLeft.value, hasRight.value] as const,
     ([middleCount, left, right]) => {
       if (middleCount > 0 && !(left && right)) {
-        console.warn(
-          '[AppChromeHeader] middle is ignored unless both left and right are present.',
-        )
+        console.warn('[AppChromeHeader] middle is ignored unless both left and right are present.')
       }
     },
     { immediate: true },
@@ -154,7 +142,7 @@ function isExternalHref(href: string): boolean {
             :to="item.href"
             :aria-label="item.label"
           >
-            <CdxIcon :icon="item.icon" />
+            <CdxIcon :icon="resolveAppHeaderIcon(item.icon)!" />
           </RouterLink>
           <a
             v-else-if="item.type === 'link' && item.href && isExternalHref(item.href)"
@@ -162,7 +150,7 @@ function isExternalHref(href: string): boolean {
             :href="item.href"
             :aria-label="item.label"
           >
-            <CdxIcon :icon="item.icon" />
+            <CdxIcon :icon="resolveAppHeaderIcon(item.icon)!" />
           </a>
           <span
             v-else-if="item.type === 'link'"
@@ -171,7 +159,7 @@ function isExternalHref(href: string): boolean {
           >
             <CdxIcon
               class="app-chrome-header__logo-icon"
-              :icon="item.icon"
+              :icon="resolveAppHeaderIcon(item.icon)!"
               :icon-label="item.label"
             />
           </span>
@@ -182,7 +170,7 @@ function isExternalHref(href: string): boolean {
             :aria-label="item.label"
             @click="item.onClick?.()"
           >
-            <CdxIcon :icon="item.icon" />
+            <CdxIcon :icon="resolveAppHeaderIcon(item.icon)!" />
           </CdxButton>
         </template>
       </div>
@@ -203,7 +191,10 @@ function isExternalHref(href: string): boolean {
             :to="item.href"
             :aria-label="item.label"
           >
-            <CdxIcon class="app-chrome-header__middle-icon" :icon="item.icon" />
+            <CdxIcon
+              class="app-chrome-header__middle-icon"
+              :icon="resolveAppHeaderIcon(item.icon)!"
+            />
           </RouterLink>
           <a
             v-else-if="item.type === 'link' && item.href && isExternalHref(item.href)"
@@ -211,7 +202,10 @@ function isExternalHref(href: string): boolean {
             :href="item.href"
             :aria-label="item.label"
           >
-            <CdxIcon class="app-chrome-header__middle-icon" :icon="item.icon" />
+            <CdxIcon
+              class="app-chrome-header__middle-icon"
+              :icon="resolveAppHeaderIcon(item.icon)!"
+            />
           </a>
           <span
             v-else-if="item.type === 'link'"
@@ -220,7 +214,7 @@ function isExternalHref(href: string): boolean {
           >
             <CdxIcon
               class="app-chrome-header__middle-icon"
-              :icon="item.icon"
+              :icon="resolveAppHeaderIcon(item.icon)!"
               :icon-label="item.label"
             />
           </span>
@@ -231,7 +225,7 @@ function isExternalHref(href: string): boolean {
             :aria-label="item.label"
             @click="item.onClick?.()"
           >
-            <CdxIcon :icon="item.icon" />
+            <CdxIcon :icon="resolveAppHeaderIcon(item.icon)!" />
           </CdxButton>
         </template>
       </div>
@@ -256,7 +250,7 @@ function isExternalHref(href: string): boolean {
             :to="item.href"
             :aria-label="item.label"
           >
-            <CdxIcon :icon="item.icon" />
+            <CdxIcon :icon="resolveAppHeaderIcon(item.icon)!" />
           </RouterLink>
           <a
             v-else-if="item.type === 'link' && item.href && isExternalHref(item.href)"
@@ -264,14 +258,14 @@ function isExternalHref(href: string): boolean {
             :href="item.href"
             :aria-label="item.label"
           >
-            <CdxIcon :icon="item.icon" />
+            <CdxIcon :icon="resolveAppHeaderIcon(item.icon)!" />
           </a>
           <span
             v-else-if="item.type === 'link'"
             class="app-chrome-header__link"
             :aria-label="item.label"
           >
-            <CdxIcon :icon="item.icon" :icon-label="item.label" />
+            <CdxIcon :icon="resolveAppHeaderIcon(item.icon)!" :icon-label="item.label" />
           </span>
           <CdxButton
             v-else-if="item.type === 'button'"
@@ -280,7 +274,7 @@ function isExternalHref(href: string): boolean {
             :aria-label="item.label"
             @click="item.onClick?.()"
           >
-            <CdxIcon :icon="item.icon" />
+            <CdxIcon :icon="resolveAppHeaderIcon(item.icon)!" />
           </CdxButton>
         </template>
       </div>

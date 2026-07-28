@@ -10,15 +10,6 @@ definePage({
 
 import { computed, defineComponent, h, ref } from 'vue'
 import { CdxRadio, CdxSearchInput } from '@wikimedia/codex'
-import {
-  cdxIconArrowPrevious,
-  cdxIconBellOutline,
-  cdxIconFilter,
-  cdxIconLogoWikipedia,
-  cdxIconSearch,
-  cdxIconTabs,
-  cdxIconVerticalEllipsis,
-} from '@wikimedia/codex-icons'
 
 import AppChromeWrapper from '@/components/app/AppChromeWrapper.vue'
 import type { AppHeaderItem } from '@/components/app/AppChromeHeader.vue'
@@ -53,38 +44,38 @@ const DemoSearchField = defineComponent({
 })
 
 const SEARCH_LEFT: AppHeaderItem[] = [
-  { type: 'button', icon: cdxIconArrowPrevious, label: 'Back' },
+  { type: 'button', icon: 'arrow-previous', label: 'Back' },
   { type: 'component', component: DemoSearchField },
 ]
 
 const ACTIVITY_LEFT: AppHeaderItem[] = [{ type: 'title', text: 'Activity' }]
 const ACTIVITY_RIGHT: AppHeaderItem[] = [
-  { type: 'button', icon: cdxIconTabs, label: 'Tabs' },
-  { type: 'button', icon: cdxIconBellOutline, label: 'Notifications' },
-  { type: 'button', icon: cdxIconVerticalEllipsis, label: 'Menu' },
+  { type: 'button', icon: 'tabs', label: 'Tabs' },
+  { type: 'button', icon: 'bell-outline', label: 'Notifications' },
+  { type: 'button', icon: 'vertical-ellipsis', label: 'Menu' },
 ]
 
 const SAVED_LEFT: AppHeaderItem[] = [{ type: 'title', text: 'Saved' }]
 const SAVED_RIGHT: AppHeaderItem[] = [
-  { type: 'button', icon: cdxIconFilter, label: 'Filter' },
-  { type: 'button', icon: cdxIconSearch, label: 'Search' },
-  { type: 'button', icon: cdxIconBellOutline, label: 'Notifications' },
-  { type: 'button', icon: cdxIconVerticalEllipsis, label: 'Menu' },
+  { type: 'button', icon: 'filter', label: 'Filter' },
+  { type: 'button', icon: 'search', label: 'Search' },
+  { type: 'button', icon: 'bell-outline', label: 'Notifications' },
+  { type: 'button', icon: 'vertical-ellipsis', label: 'Menu' },
 ]
 
 const ARTICLE_LEFT: AppHeaderItem[] = [
-  { type: 'button', icon: cdxIconArrowPrevious, label: 'Back' },
-  { type: 'button', icon: cdxIconSearch, label: 'Search' },
+  { type: 'button', icon: 'arrow-previous', label: 'Back' },
+  { type: 'button', icon: 'search', label: 'Search' },
 ]
 
 const ARTICLE_MIDDLE: AppHeaderItem[] = [
-  { type: 'link', icon: cdxIconLogoWikipedia, label: 'Wikipedia' },
+  { type: 'link', icon: 'logo-wikipedia', label: 'Wikipedia' },
 ]
 
 const ARTICLE_RIGHT: AppHeaderItem[] = [
-  { type: 'button', icon: cdxIconTabs, label: 'Tabs' },
-  { type: 'button', icon: cdxIconBellOutline, label: 'Notifications' },
-  { type: 'button', icon: cdxIconVerticalEllipsis, label: 'Menu' },
+  { type: 'button', icon: 'tabs', label: 'Tabs' },
+  { type: 'button', icon: 'bell-outline', label: 'Notifications' },
+  { type: 'button', icon: 'vertical-ellipsis', label: 'Menu' },
 ]
 
 const headerLeft = computed((): AppHeaderItem[] | undefined => {
