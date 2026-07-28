@@ -8,40 +8,122 @@ from web Wikipedia chrome (`ChromeWrapper` / Vector / Minerva).
 
 Design reference: [protowiki-apps Figma](https://www.figma.com/design/8qeEyA6LT4bzpQLin1Gx43/protowiki-apps?node-id=1-695).
 
-Starter template: **`src/prototypes/template-app-chrome/`**.
+Starter templates: **`src/prototypes/template-app-chrome/`**, **`src/prototypes/template-app-search/`**.
 
 ## AppChromeHeader
 
-Top bar: Wikipedia stylized **W** lettermark (32×32) left; quiet icon-only **`CdxButton`**s
-right (Tabs, Notifications).
+Prop-driven top bar. Three regions — **`left`**, **`middle`**, **`right`** — each
+an array of items. No slots. Layout is inferred from which regions have content:
+
+| Regions present | Behaviour |
+| --- | --- |
+| left + middle + right | Grid — middle centered between flanks |
+| left + right (no middle) | Flex — flanks at edges |
+| left only (e.g. search field) | Flex — left grows |
+
+**`middle`** only renders when **both** **`left`** and **`right`** are present;
+otherwise it is ignored (dev console warning).
+
+Omit a prop (or pass **`[]`**) to hide that region. **`left`** / **`right`**
+default to the explore preset when omitted.
+
+```ts
+/** Exported from AppChromeHeader.vue */
+type AppHeaderItem =
+  | { type: 'link'; icon: Icon; label: string; href?: string }
+  | { type: 'button'; icon: Icon; label: string; onClick?: () => void }
+  | { type: 'component'; component: Component }
+  | { type: 'title'; text: string }
+```
+
+- **`link`** — icon glyph; optional **`href`** (`RouterLink`, **`<a>`**, or plain span)
+- **`button`** — quiet **`CdxButton`**; optional **`onClick`**
+- **`component`** — Vue component (search field, custom UI)
+- **`title`** — screen title; Codex **Heading 3** (`h3`)
+
+Flanking regions (**`left`** / **`right`**) are capped at **4** items.
 
 ### Props
 
 | Prop | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `theme` | `'light' \| 'dark'` | global | Sets `data-theme` on root |
-| `wordmarkSrc` | `string` | EN W lettermark SVG | `#logo` replaces |
-| `headerTools` | `AppHeaderTool[]` | `['tabs', 'notifications']` | `#actions` replaces cluster |
+| `left` | `AppHeaderItem[]` | explore preset | Max **4**; **`[]`** hides |
+| `middle` | `AppHeaderItem[]` | — | Requires left **and** right |
+| `right` | `AppHeaderItem[]` | explore preset | Max **4**; **`[]`** hides |
 
-`AppHeaderTool` literals: `'tabs' \| 'notifications'` (see `src/components/app/appHeaderTools.ts`).
+### Examples
 
-### Slots
-
-| Slot | Default | Use for |
-| --- | --- | --- |
-| `#logo` | EN Wikipedia stylized W `<img>` | Replace lettermark |
-| `#actions` | Tabs + Notifications buttons | Replace entire right cluster |
-
-### Events
-
-| Event | Payload | Notes |
-| --- | --- | --- |
-| `toolClick` | `AppHeaderTool` | Mock — wire in prototype as needed |
-
-### Example
+**Home (wrapper default — explore preset):**
 
 ```vue
-<AppChromeHeader @tool-click="(tool) => console.log(tool)" />
+<AppChromeWrapper>
+  <p>Body.</p>
+</AppChromeWrapper>
+```
+
+**Article reader (balanced — middle W):**
+
+```vue
+<AppChromeHeader
+  :left="[
+    { type: 'button', icon: cdxIconArrowPrevious, label: 'Back' },
+    { type: 'button', icon: cdxIconSearch, label: 'Search' },
+  ]"
+  :middle="[{ type: 'link', icon: cdxIconLogoWikipedia, label: 'Wikipedia' }]"
+  :right="[
+    { type: 'button', icon: cdxIconTabs, label: 'Tabs' },
+    { type: 'button', icon: cdxIconBellOutline, label: 'Notifications' },
+    { type: 'button', icon: cdxIconVerticalEllipsis, label: 'Menu' },
+  ]"
+/>
+```
+
+**Activity / Saved (title + actions):**
+
+```vue
+<AppChromeHeader
+  :left="[{ type: 'title', text: 'Activity' }]"
+  :right="[
+    { type: 'button', icon: cdxIconTabs, label: 'Tabs' },
+    { type: 'button', icon: cdxIconBellOutline, label: 'Notifications' },
+    { type: 'button', icon: cdxIconVerticalEllipsis, label: 'Menu' },
+  ]"
+/>
+```
+
+**Search screen:**
+
+```vue
+<script setup lang="ts">
+import { defineComponent, h, ref } from 'vue'
+import { CdxSearchInput } from '@wikimedia/codex'
+import { cdxIconArrowPrevious } from '@wikimedia/codex-icons'
+import AppChromeHeader from '@/components/app/AppChromeHeader.vue'
+import type { AppHeaderItem } from '@/components/app/AppChromeHeader.vue'
+
+const query = ref('')
+
+const SearchField = defineComponent({
+  setup() {
+    return () =>
+      h(CdxSearchInput, {
+        modelValue: query.value,
+        'onUpdate:modelValue': (v: string) => { query.value = v },
+        placeholder: 'Search Wikipedia…',
+      })
+  },
+})
+
+const left: AppHeaderItem[] = [
+  { type: 'button', icon: cdxIconArrowPrevious, label: 'Back', onClick: () => router.back() },
+  { type: 'component', component: SearchField },
+]
+</script>
+
+<template>
+  <AppChromeHeader :left="left" :right="[]" />
+</template>
 ```
 
 ## AppBottomMenu
@@ -93,8 +175,9 @@ Vector/Minerva skin switching.
 | `dir` | `'ltr' \| 'rtl'` | — | Sets `dir` on root |
 | `theme` | `'light' \| 'dark'` | global | Forwarded to header + bottom menu |
 | `showBottomMenu` | `boolean` | `true` | Omit bottom nav when `false` |
-| `wordmarkSrc` | `string` | — | Forwarded to **`AppChromeHeader`** |
-| `headerTools` | `AppHeaderTool[]` | full set | Forwarded to **`AppChromeHeader`** |
+| `left` | `AppHeaderItem[]` | — | Forwarded |
+| `middle` | `AppHeaderItem[]` | — | Forwarded; **`[]`** hides |
+| `right` | `AppHeaderItem[]` | — | Forwarded; **`[]`** hides |
 | `bottomNavItems` | `AppBottomNavItem[]` | all five | Forwarded to **`AppBottomMenu`** |
 | `activeNavItem` | `AppBottomNavItem` | — | Forwarded to **`AppBottomMenu`** |
 
@@ -108,7 +191,7 @@ Vector/Minerva skin switching.
 
 ### Events
 
-Forwarded from primitives: `toolClick`, `update:activeNavItem`, `navigate`.
+Forwarded from **`AppBottomMenu`**: `update:activeNavItem`, `navigate`.
 
 ### Theme inheritance
 
@@ -118,9 +201,9 @@ Forwarded from primitives: `toolClick`, `update:activeNavItem`, `navigate`.
 ### Layout
 
 Header, main content, and bottom nav share **`--spacing-150` (24px)** horizontal
-inset. Bottom nav keeps **`--spacing-200` (32px)** vertical padding for the
-84px bar height. Main content scrolls between header and bottom nav; don't add
-extra outer padding in templates unless the prototype needs it.
+inset. Bottom nav uses the same **24px** padding on all sides. Main content
+scrolls between header and bottom nav; don't add extra outer padding in templates
+unless the prototype needs it.
 
 ### Example
 
@@ -165,7 +248,7 @@ import AppChromeHeader from '@/components/app/AppChromeHeader.vue'
 
 | | Web (`ChromeWrapper`) | App (`AppChromeWrapper`) |
 | --- | --- | --- |
-| Header | Vector / Minerva | App top bar (wordmark + tabs + bell) |
+| Header | Vector / Minerva | App top bar (inferred from regions) |
 | Footer / nav | Wikipedia footer strip | Bottom icon nav |
 | Skin | `desktop` / `mobile` via `data-skin` | No skin — app device mode |
 | Gallery meta | `platform: 'web'` (default) | `platform: 'app'` |

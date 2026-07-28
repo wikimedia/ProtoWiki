@@ -4,10 +4,9 @@ import type { ConfigDevice, PrototypePlatform } from '@/config'
 
 export type PageCategory = 'prototype' | 'template' | 'example'
 
-export type GalleryTab = 'home' | PageCategory
+export type GalleryTab = PageCategory
 
 export const GALLERY_TABS: { value: GalleryTab; label: string }[] = [
-  { value: 'home', label: 'Home' },
   { value: 'prototype', label: 'Prototypes' },
   { value: 'template', label: 'Templates' },
   { value: 'example', label: 'Examples' },
@@ -143,9 +142,6 @@ export function filterGalleryEntriesByTab(
   entries: GalleryEntry[],
   tab: GalleryTab,
 ): GalleryEntry[] {
-  if (tab === 'home') {
-    return [...entries].sort(compareGalleryEntriesByCategory)
-  }
   return entries.filter((entry) => entry.category === tab).sort(compareGalleryEntries)
 }
 

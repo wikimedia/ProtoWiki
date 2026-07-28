@@ -84,8 +84,7 @@ function hasItemSlot(item: AppBottomNavItem): boolean {
   justify-content: space-between;
   box-sizing: border-box;
   min-height: 84px;
-  padding-block: var(--spacing-200, 32px);
-  padding-inline: var(--spacing-150, 24px);
+  padding: var(--spacing-150, 24px);
   border-top: 1px solid var(--border-color-subtle, #c8ccd1);
   background-color: var(--background-color-base, #fff);
 }

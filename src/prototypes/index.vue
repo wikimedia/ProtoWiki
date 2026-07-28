@@ -9,7 +9,7 @@ definePage({
 import { useRouter } from 'vue-router'
 
 import { CdxButton, CdxCard, CdxIcon, CdxInfoChip, CdxTab, CdxTabs } from '@wikimedia/codex'
-import { cdxIconAppearance, cdxIconHome, cdxIconUserAvatar } from '@wikimedia/codex-icons'
+import { cdxIconAppearance, cdxIconUserAvatar } from '@wikimedia/codex-icons'
 
 import PlainWrapper from '@/components/PlainWrapper.vue'
 import AppearanceSettingsPanel from '@/components/settings/AppearanceSettingsPanel.vue'
@@ -22,13 +22,9 @@ import { GALLERY_TABS } from '@/prototype-gallery'
 
 const router = useRouter()
 const { galleryTab } = useGalleryTab()
-const { entries, primaryEntries, templateEntries, appTemplateEntries, webTemplateEntries, exampleEntries } =
-  usePrototypeGallery(galleryTab)
+const { entries, appTemplateEntries, webTemplateEntries } = usePrototypeGallery(galleryTab)
 
-/** Mask for the Home tab icon (CdxTab labels are plain text only). */
-const homeTabIconMask = `url("data:image/svg+xml,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">${cdxIconHome}</svg>`,
-)}")`
+const docsUrl = `${PROTOWIKI_API_PROJECT_URL}#prototyping-system`
 </script>
 
 <template>
@@ -73,63 +69,7 @@ const homeTabIconMask = `url("data:image/svg+xml,${encodeURIComponent(
       <CdxTabs v-model:active="galleryTab" class="prototype-index__tabs">
         <CdxTab v-for="tab in GALLERY_TABS" :key="tab.value" :name="tab.value" :label="tab.label">
           <div v-if="galleryTab === tab.value" class="prototype-index__list">
-            <template v-if="tab.value === 'home'">
-              <h3 v-if="primaryEntries.length" class="prototype-index__section-heading">
-                Prototypes
-              </h3>
-              <div v-for="entry in primaryEntries" :key="entry.path" class="prototype-index__card">
-                <CdxCard :url="router.resolve({ path: entry.path }).href">
-                  <template #title>{{ entry.title }}</template>
-                  <template v-if="entry.description" #description>{{ entry.description }}</template>
-                  <template #supporting-text>
-                    <div class="prototype-index__chips">
-                      <CdxInfoChip status="subtle">{{ entry.platformLabel }}</CdxInfoChip>
-                      <CdxInfoChip v-if="entry.supportingText" status="subtle">{{
-                        entry.supportingText
-                      }}</CdxInfoChip>
-                    </div>
-                  </template>
-                </CdxCard>
-              </div>
-
-              <h3 v-if="templateEntries.length" class="prototype-index__section-heading">
-                Templates
-              </h3>
-              <div v-for="entry in templateEntries" :key="entry.path" class="prototype-index__card">
-                <CdxCard :url="router.resolve({ path: entry.path }).href">
-                  <template #title>{{ entry.title }}</template>
-                  <template v-if="entry.description" #description>{{ entry.description }}</template>
-                  <template #supporting-text>
-                    <div class="prototype-index__chips">
-                      <CdxInfoChip status="subtle">{{ entry.platformLabel }}</CdxInfoChip>
-                      <CdxInfoChip v-if="entry.supportingText" status="subtle">{{
-                        entry.supportingText
-                      }}</CdxInfoChip>
-                    </div>
-                  </template>
-                </CdxCard>
-              </div>
-
-              <h3 v-if="exampleEntries.length" class="prototype-index__section-heading">
-                Examples
-              </h3>
-              <div v-for="entry in exampleEntries" :key="entry.path" class="prototype-index__card">
-                <CdxCard :url="router.resolve({ path: entry.path }).href">
-                  <template #title>{{ entry.title }}</template>
-                  <template v-if="entry.description" #description>{{ entry.description }}</template>
-                  <template #supporting-text>
-                    <div class="prototype-index__chips">
-                      <CdxInfoChip status="subtle">{{ entry.platformLabel }}</CdxInfoChip>
-                      <CdxInfoChip v-if="entry.supportingText" status="subtle">{{
-                        entry.supportingText
-                      }}</CdxInfoChip>
-                    </div>
-                  </template>
-                </CdxCard>
-              </div>
-            </template>
-
-            <template v-else-if="tab.value === 'template'">
+            <template v-if="tab.value === 'template'">
               <h3 v-if="appTemplateEntries.length" class="prototype-index__section-heading">
                 App templates
               </h3>
@@ -176,6 +116,13 @@ const homeTabIconMask = `url("data:image/svg+xml,${encodeURIComponent(
             </template>
 
             <template v-else>
+              <p v-if="tab.value === 'prototype' && !entries.length" class="prototype-index__empty">
+                This is where your prototype(s) will appear when you make one. For information on
+                how to get started, check out the
+                <a :href="docsUrl" target="_blank" rel="noopener noreferrer">docs</a>. Or browse the
+                <RouterLink :to="{ query: { category: 'template' } }">templates</RouterLink> to pick
+                a good starting point.
+              </p>
               <div v-for="entry in entries" :key="entry.path" class="prototype-index__card">
                 <CdxCard :url="router.resolve({ path: entry.path }).href">
                   <template #title>{{ entry.title }}</template>
@@ -215,43 +162,6 @@ const homeTabIconMask = `url("data:image/svg+xml,${encodeURIComponent(
 
 .prototype-index__tabs {
   margin-top: var(--spacing-50);
-  --prototype-index-home-tab-icon-mask: v-bind(homeTabIconMask);
-}
-
-/* Home tab: icon only; "Home" label stays in the DOM for screen readers. */
-.prototype-index__tabs :deep(.cdx-tabs__list__item:first-child) {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: var(--min-size-interactive-pointer, 32px);
-}
-
-.prototype-index__tabs :deep(.cdx-tabs__list__item:first-child span) {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.prototype-index__tabs :deep(.cdx-tabs__list__item:first-child)::after {
-  content: '';
-  display: block;
-  width: var(--size-icon-medium, 20px);
-  height: var(--size-icon-medium, 20px);
-  background-color: currentColor;
-  mask-image: var(--prototype-index-home-tab-icon-mask);
-  mask-repeat: no-repeat;
-  mask-position: center;
-  mask-size: contain;
-  -webkit-mask-image: var(--prototype-index-home-tab-icon-mask);
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  -webkit-mask-size: contain;
 }
 
 .prototype-index__list {
@@ -272,6 +182,10 @@ const homeTabIconMask = `url("data:image/svg+xml,${encodeURIComponent(
 }
 
 .prototype-index__section-heading {
+  margin: var(--spacing-100) 0 0;
+}
+
+.prototype-index__empty {
   margin: var(--spacing-100) 0 0;
 }
 

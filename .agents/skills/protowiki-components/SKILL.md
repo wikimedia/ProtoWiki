@@ -42,7 +42,7 @@ This skill is the cross-cutting guide. Per-component depth lives in
 | `MobileWrapper` | Phone-frame preview — full width below 480px; centred column + neutral Codex gutters when clamped | No | No |
 | `ChromeHeader` | Vector-style chrome when `skin=desktop`, Minerva-style when `skin=mobile` — wordmarks, search cluster, user tools (via ChromeWrapper) | n/a | n/a |
 | `ChromeFooter` | Footer chrome (via ChromeWrapper): **desktop** Vector strip with optional mock last-edited + CC lines, or **mobile** Minerva well + optional strip | n/a | n/a |
-| `AppChromeHeader` | App top bar — wordmark, tabs + notifications (via AppChromeWrapper) | n/a | n/a |
+| `AppChromeHeader` | App top bar — `left` / `middle` / `right` item arrays (via AppChromeWrapper) | n/a | n/a |
 | `AppBottomMenu` | App bottom icon nav — home, saved, search, history, menu (via AppChromeWrapper) | n/a | n/a |
 | `ArticleWrapper` | Reader outer **`<article>`**: always **`ArticleHeader`** + **default slot** (**main column** — usually **`ArticleRenderer`**) — no **`v-html`** by itself | No | No |
 | `ArticleRenderer` | Parser column (**`.article-content`**, **`.mw-parser-output`**, **`#default`** only); mobile **`section > h2`** on mobile skin — title chrome lives elsewhere | No | No |
@@ -143,13 +143,13 @@ The `@/` prefix resolves to `src/`.
 | Component | Key props | Notable slots |
 | --- | --- | --- |
 | `ChromeWrapper` | `lang?`, `dir?`, `skin?`, `theme?`, **`lastEditedNotice?`**, **`username?`**, **`wordmarkSrc?`**, **`taglineSrc?`**, **`mobileWordmarkSrc?`**, **`navTools?`** (`ChromeNavTool[]`, forwarded to default header) | default, `#header`, `#footer` |
-| `AppChromeWrapper` | `lang?`, `dir?`, `theme?`, **`showBottomMenu?`**, **`wordmarkSrc?`**, **`headerTools?`**, **`bottomNavItems?`**, **`activeNavItem?`** | default, `#header`, `#bottomMenu` |
+| `AppChromeWrapper` | `lang?`, `dir?`, `theme?`, **`showBottomMenu?`**, **`left?`**, **`middle?`**, **`right?`**, **`bottomNavItems?`**, **`activeNavItem?`** | default, `#header`, `#bottomMenu` |
 | `SpecialPageWrapper` | `title?`, **`help?`** (**`boolean`**), **`actions?`**, `lang?`, `dir?`, `skin?`, `theme?` | default, **`#header`**, **`#title`**, `#help`, `#actions` |
 | `PlainWrapper` | `heading?`, `lang?`, `dir?` | default, `#heading` |
 | `MobileWrapper` | `maxWidth?` (default `360px`), `lang?`, `dir?` | default |
 | `ChromeHeader` | `skin?`, `theme?`, **`username?`**, **`wordmarkSrc?`**, **`taglineSrc?`**, **`mobileWordmarkSrc?`**, **`navTools?`** | `#logo`, `#username`, `#nav` |
 | `ChromeFooter` | `skin?`, `theme?`, **`lastEditedNotice?`**, **`username?`** | default |
-| `AppChromeHeader` | `theme?`, **`wordmarkSrc?`**, **`headerTools?`** | `#logo`, `#actions` |
+| `AppChromeHeader` | `theme?`, **`left?`**, **`middle?`**, **`right?`** | — |
 | `AppBottomMenu` | `theme?`, **`items?`**, **`activeItem?`** | default, `#item-{id}` |
 | `ArticleWrapper` | **`title?`**, **`header?`**, **`languagesCount?`**, **`lang`**, **`dir`**, **`skin`**, **`theme`** | **default** |
 | `ArticleRenderer` | **`lang`/`dir`/`skin`/`theme`** | **default** — parser subtree ( **`ArticleLive`** / **`ArticleSnapshot`** use **`v-html`** here unless **`#default`** is forwarded ) |

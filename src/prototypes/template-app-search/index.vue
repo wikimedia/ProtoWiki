@@ -8,12 +8,14 @@ definePage({
   },
 })
 
-import { computed, ref, watch } from 'vue'
+import { computed, defineComponent, h, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { CdxButton, CdxIcon, CdxMenuButton, CdxMessage, CdxSearchInput, CdxTab, CdxTabs } from '@wikimedia/codex'
 import { cdxIconArrowPrevious, cdxIconTrash } from '@wikimedia/codex-icons'
 
-import AppChromeWrapper from '@/components/app/AppChromeWrapper.vue'
+import AppChromeHeader from '@/components/app/AppChromeHeader.vue'
+import type { AppHeaderItem } from '@/components/app/AppChromeHeader.vue'
+import MobileWrapper from '@/components/MobileWrapper.vue'
 
 import { DEFAULT_SEARCH_LANGUAGES, MORE_SEARCH_LANGUAGES, type SearchLanguageOption } from './searchLanguages'
 import { searchWiki, type WikiSearchResult } from './searchWiki'
@@ -45,6 +47,28 @@ const moreLanguageMenuItems = computed(() =>
 function goBack(): void {
   router.back()
 }
+
+const SearchInputField = defineComponent({
+  name: 'TemplateAppSearchInput',
+  setup() {
+    return () =>
+      h(CdxSearchInput, {
+        class: 'template-app-search__input',
+        modelValue: query.value,
+        'onUpdate:modelValue': (value: string) => {
+          query.value = value
+        },
+        placeholder: 'Search Wikipedia…',
+        clearable: true,
+        onSubmitClick: onSubmit,
+      })
+  },
+})
+
+const searchHeaderLeft: AppHeaderItem[] = [
+  { type: 'button', icon: cdxIconArrowPrevious, label: 'Back', onClick: goBack },
+  { type: 'component', component: SearchInputField },
+]
 
 function onAddLanguage(value: string | number | null): void {
   if (typeof value !== 'string') return
@@ -111,23 +135,11 @@ function selectResult(result: WikiSearchResult): void {
 </script>
 
 <template>
-  <AppChromeWrapper :show-bottom-menu="false">
-    <template #header>
-      <header class="template-app-search__header">
-        <CdxButton weight="quiet" size="large" aria-label="Back" @click="goBack">
-          <CdxIcon :icon="cdxIconArrowPrevious" />
-        </CdxButton>
-        <CdxSearchInput
-          v-model="query"
-          class="template-app-search__input"
-          placeholder="Search Wikipedia…"
-          clearable
-          @submit-click="onSubmit"
-        />
-      </header>
-    </template>
+  <MobileWrapper>
+    <div class="template-app-search-shell">
+      <AppChromeHeader :left="searchHeaderLeft" :right="[]" />
 
-    <div class="template-app-search">
+      <div class="template-app-search">
       <div class="template-app-search__lang-row">
         <CdxTabs v-model:active="activeLang" class="template-app-search__tabs">
           <CdxTab
@@ -220,25 +232,29 @@ function selectResult(result: WikiSearchResult): void {
           </ul>
         </template>
       </template>
+      </div>
     </div>
-  </AppChromeWrapper>
+  </MobileWrapper>
 </template>
 
 <style scoped>
-.template-app-search__header {
+.template-app-search-shell {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-50, 8px);
-  padding: var(--spacing-50, 8px) var(--spacing-150, 24px);
+  flex-direction: column;
+  min-height: 100dvh;
+  background-color: var(--background-color-base, #fff);
+  color: var(--color-base, #202122);
 }
 
 .template-app-search__input {
   flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
 }
 
 .template-app-search {
-  padding-block: var(--spacing-100, 16px);
+  flex: 1 1 auto;
+  padding: var(--spacing-100, 16px) var(--spacing-150, 24px);
 }
 
 .template-app-search__lang-row {

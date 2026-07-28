@@ -4,20 +4,19 @@ import { useRoute, useRouter } from 'vue-router'
 import type { GalleryTab } from '@/prototype-gallery'
 
 function tabFromQuery(category: unknown): GalleryTab {
-  if (category === 'prototype') return 'prototype'
   if (category === 'template') return 'template'
   if (category === 'example') return 'example'
-  return 'home'
+  return 'prototype'
 }
 
 /**
- * Active gallery tab — Home shows all sections; other tabs filter by category.
- * Synced to `?category=` (prototype / template / example); omitted query means Home.
+ * Active gallery tab — filters by category.
+ * Synced to `?category=` (template / example); omitted query means Prototypes.
  */
 export function useGalleryTab(): { galleryTab: Ref<GalleryTab> } {
   const route = useRoute()
   const router = useRouter()
-  const galleryTab = ref<GalleryTab>('home')
+  const galleryTab = ref<GalleryTab>('prototype')
 
   function applyQueryToTab(): void {
     const fromQuery = tabFromQuery(route.query.category)
@@ -31,7 +30,7 @@ export function useGalleryTab(): { galleryTab: Ref<GalleryTab> } {
     delete query.category
     delete query.platform
 
-    if (galleryTab.value !== 'home') {
+    if (galleryTab.value !== 'prototype') {
       query.category = galleryTab.value
     }
 
