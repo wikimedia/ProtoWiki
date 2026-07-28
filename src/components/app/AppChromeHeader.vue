@@ -172,10 +172,7 @@ function isExternalHref(href: string): boolean {
             :to="item.href"
             :aria-label="item.label"
           >
-            <CdxIcon
-              class="app-chrome-header__middle-icon"
-              :icon="resolveHeaderIcon(item.icon)!"
-            />
+            <CdxIcon class="app-chrome-header__middle-icon" :icon="resolveHeaderIcon(item.icon)!" />
           </RouterLink>
           <a
             v-else-if="item.type === 'link' && item.href && isExternalHref(item.href)"
@@ -183,10 +180,7 @@ function isExternalHref(href: string): boolean {
             :href="item.href"
             :aria-label="item.label"
           >
-            <CdxIcon
-              class="app-chrome-header__middle-icon"
-              :icon="resolveHeaderIcon(item.icon)!"
-            />
+            <CdxIcon class="app-chrome-header__middle-icon" :icon="resolveHeaderIcon(item.icon)!" />
           </a>
           <span
             v-else-if="item.type === 'link'"
