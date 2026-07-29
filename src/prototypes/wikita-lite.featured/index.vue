@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
-import MobileWrapper from '@/components/MobileWrapper.vue'
-import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 import { provideWikitaSaveFeedback } from '../musical-group/composables/useWikitaSaveFeedback'
-import { useMusicalGroupHome } from '../musical-group/useMusicalGroupHome'
+import { useWikitaLiteHome } from '../wikita-lite/composables/useWikitaLiteHome'
 import MobileSubpageHeader from '../wikita-lite/components/MobileSubpageHeader.vue'
 import WikitaLiteModule from '../wikita-lite/components/WikitaLiteModule.vue'
+import WikitaLiteShell from '../wikita-lite/components/WikitaLiteShell.vue'
 import BornOnThisDayModule from '../wikita-lite/modules/BornOnThisDayModule.vue'
 import DidYouKnowModule from '../wikita-lite/modules/DidYouKnowModule.vue'
 import FeaturedModule from '../wikita-lite/modules/FeaturedModule.vue'
@@ -13,9 +11,7 @@ import {
   BORN_ON_THIS_DAY_PAGE,
   DID_YOU_KNOW_PAGE,
   MODULE_TITLES,
-  WIKITA_LITE_HOME,
 } from '../wikita-lite/routes'
-import '../wikita-lite/wikita-lite-shell.css'
 
 definePage({
   meta: {
@@ -35,57 +31,49 @@ const {
   featuredTabLoading,
   featuredTabError,
   retryFeaturedFeed,
-} = useMusicalGroupHome()
+} = useWikitaLiteHome()
 </script>
 
 <template>
-  <MobileWrapper>
-    <ChromeWrapper skin="mobile" :last-edited-notice="false">
-      <SpecialPageWrapper :title="null" class="wikita-lite-shell">
-        <MobileSubpageHeader
-          :title="MODULE_TITLES.featured"
-          :back-to="WIKITA_LITE_HOME"
-          back-label="Back to Wikita-lite"
-        />
-        <div class="wikita-lite-featured-page">
-          <FeaturedModule
-            standalone
-            :featured-article="featuredArticle"
-            :loading="featuredTabLoading"
-            :error="featuredTabError"
+  <WikitaLiteShell :title="null">
+    <MobileSubpageHeader :title="MODULE_TITLES.featured" />
+    <div class="wikita-lite-featured-page">
+      <FeaturedModule
+        standalone
+        :featured-article="featuredArticle"
+        :loading="featuredTabLoading"
+        :error="featuredTabError"
+        :lists-version="listsVersion"
+        @retry="retryFeaturedFeed"
+      />
+
+      <template v-if="!featuredTabLoading && !featuredTabError">
+        <WikitaLiteModule
+          v-if="didYouKnow.length"
+          :title="MODULE_TITLES.didYouKnow"
+          :to="DID_YOU_KNOW_PAGE"
+        >
+          <DidYouKnowModule
+            :items="didYouKnow"
+            :preview-limit="FEATURED_PREVIEW_LIMIT"
             :lists-version="listsVersion"
-            @retry="retryFeaturedFeed"
           />
+        </WikitaLiteModule>
 
-          <template v-if="!featuredTabLoading && !featuredTabError">
-            <WikitaLiteModule
-              v-if="didYouKnow.length"
-              :title="MODULE_TITLES.didYouKnow"
-              :to="DID_YOU_KNOW_PAGE"
-            >
-              <DidYouKnowModule
-                :items="didYouKnow"
-                :preview-limit="FEATURED_PREVIEW_LIMIT"
-                :lists-version="listsVersion"
-              />
-            </WikitaLiteModule>
-
-            <WikitaLiteModule
-              v-if="bornOnThisDay.length"
-              :title="MODULE_TITLES.bornOnThisDay"
-              :to="BORN_ON_THIS_DAY_PAGE"
-            >
-              <BornOnThisDayModule
-                :items="bornOnThisDay"
-                :preview-limit="FEATURED_PREVIEW_LIMIT"
-                :lists-version="listsVersion"
-              />
-            </WikitaLiteModule>
-          </template>
-        </div>
-      </SpecialPageWrapper>
-    </ChromeWrapper>
-  </MobileWrapper>
+        <WikitaLiteModule
+          v-if="bornOnThisDay.length"
+          :title="MODULE_TITLES.bornOnThisDay"
+          :to="BORN_ON_THIS_DAY_PAGE"
+        >
+          <BornOnThisDayModule
+            :items="bornOnThisDay"
+            :preview-limit="FEATURED_PREVIEW_LIMIT"
+            :lists-version="listsVersion"
+          />
+        </WikitaLiteModule>
+      </template>
+    </div>
+  </WikitaLiteShell>
 </template>
 
 <style scoped>

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { CdxCard, CdxIcon, CdxProgressBar } from '@wikimedia/codex'
+import { CdxCard, CdxProgressBar } from '@wikimedia/codex'
 import { cdxIconBookmark } from '@wikimedia/codex-icons'
 
 import type { HomeSavedItem } from '../../musical-group/data/types'
 import { savedItemHref } from '../composables/useWikitaLiteCardActions'
+import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
 
 interface Props {
   standalone?: boolean
@@ -67,8 +68,9 @@ function formatSavedLabel(savedAt: number): string {
           {{ item.description }}
         </template>
         <template #supporting-text>
-          <CdxIcon :icon="cdxIconBookmark" size="small" />
-          {{ formatSavedLabel(item.savedAt) }}
+          <WikitaLiteSupportingRow :icon="cdxIconBookmark">
+            {{ formatSavedLabel(item.savedAt) }}
+          </WikitaLiteSupportingRow>
         </template>
       </CdxCard>
 

@@ -3,6 +3,15 @@
   padding-inline: var(--spacing-50, 8px);
 }
 
+/* Bottom clearance for the four-button floating nav. */
+.special-page-wrapper.wikita-lite-shell--with-nav {
+  --wikita-lite-floating-nav-clearance: calc(
+    20px + env(safe-area-inset-bottom, 0px) + 44px + var(--spacing-25) + var(--spacing-25) +
+      var(--spacing-100)
+  );
+  padding-bottom: var(--wikita-lite-floating-nav-clearance);
+}
+
 .special-page-wrapper.wikita-lite-shell[data-skin='mobile'] {
   padding-inline: var(--spacing-50, 8px);
 }
@@ -23,12 +32,33 @@
   line-height: var(--line-height-xxx-large);
 }
 
-/* Icon + caption rows — vertically center the icon with supporting text. */
-.wikita-lite-shell .cdx-card__text__supporting-text,
-.wikita-lite-shell .wikita-lite-card-with-action__supporting,
-.wikita-lite-shell .wikita-lite-card-with-chip .cdx-card__text__supporting-text,
-.wikita-lite-shell .wikita-lite-card-portrait .cdx-card__text__supporting-text {
+/* Icon + caption rows — SupportingRow is the single flex container. */
+.wikita-lite-shell .wikita-lite-supporting-row {
   display: flex;
   gap: var(--spacing-25, 4px);
-  align-items: center;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.wikita-lite-shell .wikita-lite-supporting-row .cdx-icon {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.wikita-lite-shell .wikita-lite-supporting-row__text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Card text column should consume space beside the thumbnail. */
+.wikita-lite-shell .cdx-card__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.wikita-lite-shell .cdx-card__text__supporting-text,
+.wikita-lite-shell .wikita-lite-card-portrait .cdx-card__text__supporting-text {
+  display: block;
+  width: 100%;
+  align-self: stretch;
 }

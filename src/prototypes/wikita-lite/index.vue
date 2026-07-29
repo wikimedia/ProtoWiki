@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
-import MobileWrapper from '@/components/MobileWrapper.vue'
-import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 import { useConfig } from '@/composables/useConfig'
 import { provideWikitaSaveFeedback } from '../musical-group/composables/useWikitaSaveFeedback'
+import WikitaLiteShell from './components/WikitaLiteShell.vue'
 import WikitaLiteHome from './WikitaLiteHome.vue'
-import './wikita-lite-shell.css'
 
 definePage({
   meta: {
@@ -19,11 +16,7 @@ provideWikitaSaveFeedback()
 </script>
 
 <template>
-  <MobileWrapper>
-    <ChromeWrapper skin="mobile" :last-edited-notice="false">
-      <SpecialPageWrapper :title="pageTitle" help class="wikita-lite-shell">
-        <WikitaLiteHome />
-      </SpecialPageWrapper>
-    </ChromeWrapper>
-  </MobileWrapper>
+  <WikitaLiteShell :title="pageTitle">
+    <WikitaLiteHome />
+  </WikitaLiteShell>
 </template>

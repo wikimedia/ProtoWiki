@@ -8,7 +8,7 @@ import { fetchMorelikeTitles, resolveRelatedSummary } from './fetchRelatedReadin
 import { getCachedHelpWanted, setCachedHelpWanted } from './homeTabCache'
 import type { HomeHelpWanted, HomeSavedItem } from './types'
 
-const HOME_HELP_WANTED_LIMIT = 2
+const DEFAULT_HELP_WANTED_LIMIT = 2
 
 async function fetchUnsavedSuggestion(
   items: HomeSavedItem[],
@@ -68,22 +68,23 @@ async function fetchUnsavedSuggestion(
   return null
 }
 
-/** Up to two edit suggestions for the home Help wanted preview. */
+/** Edit suggestions for saved pages and related articles. */
 export async function fetchHelpWanted(
   items: HomeSavedItem[],
   signal?: AbortSignal,
+  limit = DEFAULT_HELP_WANTED_LIMIT,
 ): Promise<HomeHelpWanted[]> {
   const dependencyKey = bookmarksKey()
   const cached = getCachedHelpWanted(dependencyKey)
-  if (cached?.length >= HOME_HELP_WANTED_LIMIT) {
-    return cached.slice(0, HOME_HELP_WANTED_LIMIT)
+  if (cached?.length >= limit) {
+    return cached.slice(0, limit)
   }
 
   const suggestions: HomeHelpWanted[] = []
   const savedCandidates = items.filter((item) => item.enwikiTitle)
 
   for (const item of savedCandidates) {
-    if (suggestions.length >= HOME_HELP_WANTED_LIMIT) break
+    if (suggestions.length >= limit) break
     const suggestion = await fetchEditSuggestionForSavedItem(
       item,
       signal,
@@ -92,7 +93,7 @@ export async function fetchHelpWanted(
     if (suggestion) suggestions.push(suggestion)
   }
 
-  while (suggestions.length < HOME_HELP_WANTED_LIMIT) {
+  while (suggestions.length < limit) {
     const unsavedSuggestion = await fetchUnsavedSuggestion(items, signal, suggestions)
     if (!unsavedSuggestion) break
     suggestions.push(unsavedSuggestion)

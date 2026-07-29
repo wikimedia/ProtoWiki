@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { CdxCard, CdxIcon, CdxProgressBar } from '@wikimedia/codex'
+import { CdxCard, CdxProgressBar } from '@wikimedia/codex'
 import { cdxIconCalendar } from '@wikimedia/codex-icons'
 
 import type { HomeBornOnThisDay } from '../../musical-group/data/types'
@@ -10,6 +10,7 @@ import {
   bornOnThisDayYearLabel,
 } from '../composables/bornOnThisDayDescription'
 import { externalArticleHref } from '../composables/useWikitaLiteCardActions'
+import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
 
 interface Props {
   standalone?: boolean
@@ -62,8 +63,9 @@ function cardThumbnail(url?: string) {
           {{ description }}
         </template>
         <template #supporting-text>
-          <CdxIcon :icon="cdxIconCalendar" size="small" />
-          {{ bornOnThisDayYearLabel(item.year) }}
+          <WikitaLiteSupportingRow :icon="cdxIconCalendar">
+            {{ bornOnThisDayYearLabel(item.year) }}
+          </WikitaLiteSupportingRow>
         </template>
       </CdxCard>
 

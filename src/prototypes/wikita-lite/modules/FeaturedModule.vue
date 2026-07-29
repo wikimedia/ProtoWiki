@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { CdxButton, CdxCard, CdxIcon, CdxProgressBar } from '@wikimedia/codex'
+import { CdxButton, CdxCard, CdxProgressBar } from '@wikimedia/codex'
 import {
   cdxIconBookmark,
   cdxIconBookmarkList,
@@ -15,6 +15,7 @@ import {
   useWikitaLiteSaveActions,
 } from '../composables/useWikitaLiteCardActions'
 import WikitaLiteCardWithAction from '../components/WikitaLiteCardWithAction.vue'
+import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
 
 interface Props {
   standalone?: boolean
@@ -102,8 +103,7 @@ function cardThumbnail(url?: string) {
           {{ featuredArticle.description }}
         </template>
         <template #supporting-text>
-          <CdxIcon :icon="cdxIconStar" size="small" />
-          Article of the day
+          <WikitaLiteSupportingRow :icon="cdxIconStar">Article of the day</WikitaLiteSupportingRow>
         </template>
       </CdxCard>
 

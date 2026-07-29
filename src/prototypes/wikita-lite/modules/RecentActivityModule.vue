@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, toRef } from 'vue'
 
-import { CdxButton, CdxCard, CdxIcon, CdxProgressBar } from '@wikimedia/codex'
+import { CdxButton, CdxCard, CdxProgressBar } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
 import {
   cdxIconAlert,
@@ -21,6 +21,7 @@ import { useCommonsPhotosInfiniteScroll } from '../../musical-group/useCommonsPh
 import WikitaLiteCardWithChip, {
   type WikitaLiteChipStatus,
 } from '../components/WikitaLiteCardWithChip.vue'
+import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
 
 interface Props {
   standalone?: boolean
@@ -156,8 +157,9 @@ function cardThumbnail(url?: string) {
           {{ change.editSummary }}
         </template>
         <template #supporting-text>
-          <CdxIcon :icon="cdxIconUserAvatar" size="small" />
-          {{ change.editedLabel }}
+          <WikitaLiteSupportingRow :icon="cdxIconUserAvatar">
+            {{ change.editedLabel }}
+          </WikitaLiteSupportingRow>
         </template>
       </CdxCard>
     </template>

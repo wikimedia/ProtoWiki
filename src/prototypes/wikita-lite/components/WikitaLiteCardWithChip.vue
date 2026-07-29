@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue'
 
-import { CdxCard, CdxIcon, CdxInfoChip } from '@wikimedia/codex'
+import { CdxCard, CdxInfoChip } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
+
+import WikitaLiteSupportingRow from './WikitaLiteSupportingRow.vue'
 
 export type WikitaLiteChipStatus = 'notice' | 'warning' | 'error' | 'success'
 
@@ -76,8 +78,9 @@ const showSupporting = computed(
         </template>
 
         <template v-if="showSupporting" #supporting-text>
-          <CdxIcon v-if="supportingIcon" :icon="supportingIcon" size="small" />
-          <span v-if="supportingText">{{ supportingText }}</span>
+          <WikitaLiteSupportingRow :icon="supportingIcon">
+            {{ supportingText }}
+          </WikitaLiteSupportingRow>
         </template>
       </CdxCard>
     </div>

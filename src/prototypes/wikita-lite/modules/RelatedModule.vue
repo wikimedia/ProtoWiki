@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { CdxCard, CdxIcon, CdxProgressBar } from '@wikimedia/codex'
+import { CdxCard, CdxProgressBar } from '@wikimedia/codex'
 import {
   cdxIconBookmark,
   cdxIconBookmarkList,
@@ -19,6 +19,7 @@ import {
   useWikitaLiteSaveActions,
 } from '../composables/useWikitaLiteCardActions'
 import WikitaLiteCardWithAction from '../components/WikitaLiteCardWithAction.vue'
+import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
 
 interface Props {
   standalone?: boolean
@@ -89,8 +90,9 @@ function saveLabel(itemId: string): string {
           {{ item.description }}
         </template>
         <template #supporting-text>
-          <CdxIcon :icon="cdxIconLink" size="small" />
-          {{ relatedLabel(item.relatedToTitle) }}
+          <WikitaLiteSupportingRow :icon="cdxIconLink">
+            {{ relatedLabel(item.relatedToTitle) }}
+          </WikitaLiteSupportingRow>
         </template>
       </CdxCard>
     </template>

@@ -1,39 +1,28 @@
 <script setup lang="ts">
-import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
-import MobileWrapper from '@/components/MobileWrapper.vue'
-import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 import { provideWikitaSaveFeedback } from '../musical-group/composables/useWikitaSaveFeedback'
-import { useMusicalGroupHome } from '../musical-group/useMusicalGroupHome'
+import { useWikitaLiteHome } from '../wikita-lite/composables/useWikitaLiteHome'
 import MobileSubpageHeader from '../wikita-lite/components/MobileSubpageHeader.vue'
+import WikitaLiteShell from '../wikita-lite/components/WikitaLiteShell.vue'
 import HelpWantedModule from '../wikita-lite/modules/HelpWantedModule.vue'
-import { MODULE_TITLES, WIKITA_LITE_HOME } from '../wikita-lite/routes'
-import '../wikita-lite/wikita-lite-shell.css'
+import { MODULE_TITLES } from '../wikita-lite/routes'
 
 definePage({
   meta: {
-    title: 'Wikita-lite — Help wanted',
+    title: 'Wikita-lite — Suggested edits',
     description: 'Edit suggestions in Wikita-lite.',
   },
 })
 
 provideWikitaSaveFeedback()
 
-const { helpWanted, helpWantedLoading } = useMusicalGroupHome()
+const { helpWanted, helpWantedLoading } = useWikitaLiteHome()
 </script>
 
 <template>
-  <MobileWrapper>
-    <ChromeWrapper skin="mobile" :last-edited-notice="false">
-      <SpecialPageWrapper :title="null" class="wikita-lite-shell">
-        <MobileSubpageHeader
-          :title="MODULE_TITLES.helpWanted"
-          :back-to="WIKITA_LITE_HOME"
-          back-label="Back to Wikita-lite"
-        />
-        <HelpWantedModule standalone :items="helpWanted" :loading="helpWantedLoading" />
-      </SpecialPageWrapper>
-    </ChromeWrapper>
-  </MobileWrapper>
+  <WikitaLiteShell :title="null">
+    <MobileSubpageHeader :title="MODULE_TITLES.suggestedEdits" />
+    <HelpWantedModule standalone :items="helpWanted" :loading="helpWantedLoading" />
+  </WikitaLiteShell>
 </template>
 
 <style scoped>

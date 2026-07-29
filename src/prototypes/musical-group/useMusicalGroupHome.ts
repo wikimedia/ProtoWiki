@@ -44,7 +44,8 @@ function isAbort(err: unknown): boolean {
   return (err as Error)?.name === 'AbortError'
 }
 
-export function useMusicalGroupHome() {
+export function useMusicalGroupHome(options: { helpWantedLimit?: number } = {}) {
+  const helpWantedLimit = options.helpWantedLimit ?? 2
   const route = useRoute()
   const featuredTab = ref<HomeFeaturedTab>(EMPTY_FEATURED_TAB)
   const featuredTabLoading = ref(true)
@@ -172,7 +173,7 @@ export function useMusicalGroupHome() {
       helpWantedLoading.value = true
     }
     try {
-      helpWanted.value = await fetchHelpWanted(items, signal)
+      helpWanted.value = await fetchHelpWanted(items, signal, helpWantedLimit)
       if (signal.aborted) return
     } catch (err) {
       if (isAbort(err)) return

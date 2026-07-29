@@ -5,6 +5,8 @@ import { CdxCard, CdxIcon } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
 import { cdxIconPlay } from '@wikimedia/codex-icons'
 
+import WikitaLiteSupportingRow from './WikitaLiteSupportingRow.vue'
+
 interface Props {
   url?: string
   mediaUrl: string
@@ -13,6 +15,7 @@ interface Props {
   description?: string
   supportingText?: string
   supportingIcon?: Icon
+  showPlayOverlay?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -21,6 +24,7 @@ const props = withDefaults(defineProps<Props>(), {
   description: undefined,
   supportingText: undefined,
   supportingIcon: undefined,
+  showPlayOverlay: true,
 })
 
 const titleId = useId()
@@ -48,15 +52,17 @@ const showSupporting = computed(
 
     <div class="wikita-lite-card-portrait__shell">
       <div class="wikita-lite-card-portrait__media">
-        <img
-          class="wikita-lite-card-portrait__image"
-          :src="mediaUrl"
-          :alt="mediaAlt || title"
-          loading="lazy"
-        />
-        <span class="wikita-lite-card-portrait__play" aria-hidden="true">
-          <CdxIcon :icon="cdxIconPlay" />
-        </span>
+        <div class="wikita-lite-card-portrait__image-frame">
+          <img
+            class="wikita-lite-card-portrait__image"
+            :src="mediaUrl"
+            :alt="mediaAlt || title"
+            loading="lazy"
+          />
+          <span v-if="showPlayOverlay" class="wikita-lite-card-portrait__play" aria-hidden="true">
+            <CdxIcon :icon="cdxIconPlay" />
+          </span>
+        </div>
       </div>
 
       <CdxCard class="wikita-lite-card-portrait__card">
@@ -69,8 +75,9 @@ const showSupporting = computed(
         </template>
 
         <template v-if="showSupporting" #supporting-text>
-          <CdxIcon v-if="supportingIcon" :icon="supportingIcon" size="small" />
-          <span v-if="supportingText">{{ supportingText }}</span>
+          <WikitaLiteSupportingRow :icon="supportingIcon">
+            {{ supportingText }}
+          </WikitaLiteSupportingRow>
         </template>
       </CdxCard>
     </div>
@@ -117,11 +124,18 @@ const showSupporting = computed(
 }
 
 .wikita-lite-card-portrait__media {
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--spacing-75, 12px) var(--spacing-75, 12px) 0;
+}
+
+.wikita-lite-card-portrait__image-frame {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  border-bottom: 1px solid var(--border-color-subtle, #c8ccd1);
+  border: 1px solid var(--border-color-subtle, #c8ccd1);
+  border-radius: var(--border-radius-base, 2px);
 }
 
 .wikita-lite-card-portrait__image {

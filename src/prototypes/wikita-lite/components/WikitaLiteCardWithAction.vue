@@ -4,6 +4,8 @@ import { computed, useId } from 'vue'
 import { CdxButton, CdxCard, CdxIcon } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
 
+import WikitaLiteSupportingRow from './WikitaLiteSupportingRow.vue'
+
 interface Props {
   url?: string
   title: string
@@ -77,10 +79,13 @@ function onActionClick(event: MouseEvent) {
 
       <template v-if="showSupporting || actionLabel" #supporting-text>
         <div class="wikita-lite-card-with-action__footer">
-          <div v-if="showSupporting" class="wikita-lite-card-with-action__supporting">
-            <CdxIcon v-if="supportingIcon" :icon="supportingIcon" size="small" />
-            <span v-if="supportingText">{{ supportingText }}</span>
-          </div>
+          <WikitaLiteSupportingRow
+            v-if="showSupporting"
+            class="wikita-lite-card-with-action__supporting"
+            :icon="supportingIcon"
+          >
+            {{ supportingText }}
+          </WikitaLiteSupportingRow>
           <CdxButton
             class="wikita-lite-card-with-action__action"
             weight="normal"
@@ -130,18 +135,17 @@ function onActionClick(event: MouseEvent) {
 .wikita-lite-card-with-action__footer {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   width: 100%;
 }
 
 .wikita-lite-card-with-action__supporting {
-  display: flex;
-  gap: var(--spacing-25, 4px);
-  align-items: center;
+  width: 100%;
 }
 
 .wikita-lite-card-with-action__action {
   pointer-events: auto;
+  align-self: flex-start;
   margin-top: var(--spacing-50, 8px);
 }
 

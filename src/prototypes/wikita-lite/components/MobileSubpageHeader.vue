@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import type { RouteLocationRaw } from 'vue-router'
-import { RouterLink } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconArrowNext } from '@wikimedia/codex-icons'
 
 interface Props {
   title: string
-  backTo: RouteLocationRaw
   backLabel?: string
   bleed?: boolean
 }
@@ -15,19 +13,25 @@ withDefaults(defineProps<Props>(), {
   backLabel: 'Back',
   bleed: true,
 })
+
+const router = useRouter()
+
+function goBack() {
+  router.back()
+}
 </script>
 
 <template>
   <header class="mobile-subpage-header" :class="{ 'mobile-subpage-header--bleed': bleed }">
-    <RouterLink
-      :to="backTo"
+    <CdxButton
       class="mobile-subpage-header__back"
+      weight="quiet"
+      :icon-only="true"
       :aria-label="backLabel"
+      @click="goBack"
     >
-      <CdxButton weight="quiet" :icon-only="true" tabindex="-1">
-        <CdxIcon :icon="cdxIconArrowNext" dir="rtl" />
-      </CdxButton>
-    </RouterLink>
+      <CdxIcon :icon="cdxIconArrowNext" dir="rtl" />
+    </CdxButton>
     <h1 class="mobile-subpage-header__title">{{ title }}</h1>
     <div class="mobile-subpage-header__actions">
       <slot name="actions">
@@ -61,8 +65,6 @@ withDefaults(defineProps<Props>(), {
 .mobile-subpage-header__back {
   flex-shrink: 0;
   width: 2.75rem;
-  color: inherit;
-  text-decoration: none;
 }
 
 .mobile-subpage-header__title {
