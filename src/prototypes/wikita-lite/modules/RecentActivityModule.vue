@@ -1,28 +1,26 @@
 <script setup lang="ts">
 import { computed, ref, toRef } from 'vue'
 
-import { CdxButton, CdxProgressBar } from '@wikimedia/codex'
+import { CdxButton, CdxCard, CdxIcon, CdxProgressBar } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
 import {
   cdxIconAlert,
   cdxIconError,
-  cdxIconHeart,
-  cdxIconHeartOutline,
   cdxIconReference,
   cdxIconUserAdd,
+  cdxIconUserAvatar,
 } from '@wikimedia/codex-icons'
 
-import { formatEditStatusLabel } from '../../musical-group/data/fetchRecentChanges'
 import {
-  isThankableEditFlag,
   type HomeRecentChange,
   type HomeRecentChangeFlag,
   type HomeSavedItem,
 } from '../../musical-group/data/types'
 import { useActivityFeed } from '../../musical-group/useActivityFeed'
 import { useCommonsPhotosInfiniteScroll } from '../../musical-group/useCommonsPhotosFeed'
-import { useWikitaLiteThankActions } from '../composables/useWikitaLiteCardActions'
-import WikitaLiteCard, { type WikitaLiteCardFlagColor } from '../components/WikitaLiteCard.vue'
+import WikitaLiteCardWithChip, {
+  type WikitaLiteChipStatus,
+} from '../components/WikitaLiteCardWithChip.vue'
 
 interface Props {
   standalone?: boolean
@@ -67,8 +65,6 @@ useCommonsPhotosInfiniteScroll({
   loadMore: loadMoreActivity,
 })
 
-const { editThanked, onToggleEditThank } = useWikitaLiteThankActions()
-
 const previewItems = computed(() => props.items.slice(0, props.previewLimit))
 
 const displayItems = computed(() => (props.standalone ? activityChanges.value : previewItems.value))
@@ -82,25 +78,27 @@ const itemsWithEnwiki = computed(() =>
 interface FlagPresentation {
   label: string
   icon?: Icon
-  color: WikitaLiteCardFlagColor
+  status: WikitaLiteChipStatus
 }
 
-const FLAG_PRESENTATION: Record<Exclude<HomeRecentChangeFlag, 'none'>, FlagPresentation> = {
-  'first-edit': { label: "User's first edit", icon: cdxIconUserAdd, color: 'success' },
-  'new-editor': { label: 'New editor', icon: cdxIconUserAdd, color: 'success' },
-  'good-faith': { label: 'Good faith', icon: cdxIconHeartOutline, color: 'success' },
-  'needs-reference': { label: 'Needs a reference check', icon: cdxIconReference, color: 'progressive' },
-  'tone-issue': { label: 'Tone issue', icon: cdxIconAlert, color: 'warning' },
-  'high-revert-risk': { label: 'High revert risk', icon: cdxIconError, color: 'error' },
+const FLAG_PRESENTATION: Record<
+  Exclude<HomeRecentChangeFlag, 'none' | 'good-faith'>,
+  FlagPresentation
+> = {
+  'first-edit': { label: "User's first edit", icon: cdxIconUserAdd, status: 'success' },
+  'new-editor': { label: 'New editor', icon: cdxIconUserAdd, status: 'success' },
+  'needs-reference': { label: 'Needs a reference check', icon: cdxIconReference, status: 'notice' },
+  'tone-issue': { label: 'Tone issue', icon: cdxIconAlert, status: 'warning' },
+  'high-revert-risk': { label: 'High revert risk', icon: cdxIconError, status: 'error' },
 }
 
 function flagPresentation(flag: HomeRecentChangeFlag): FlagPresentation | null {
-  if (flag === 'none') return null
+  if (flag === 'none' || flag === 'good-faith') return null
   return FLAG_PRESENTATION[flag]
 }
 
-function editCardStatusLabel(change: HomeRecentChange): string {
-  return formatEditStatusLabel(change.reverted, change.isLatest)
+function cardThumbnail(url?: string) {
+  return url?.trim() ? { url: url.trim() } : null
 }
 </script>
 
@@ -130,28 +128,39 @@ function editCardStatusLabel(change: HomeRecentChange): string {
       </p>
     </template>
 
-    <WikitaLiteCard
-      v-for="change in displayItems"
-      :key="`${change.enwikiTitle}-${change.revid}`"
-      :show-flag="flagPresentation(change.flag) !== null"
-      :flag="flagPresentation(change.flag)?.label"
-      :flag-icon="flagPresentation(change.flag)?.icon"
-      :flag-color="flagPresentation(change.flag)?.color ?? 'base'"
-      :title="change.title"
-      :subtitle="change.editSummary"
-      :show-subtitle="Boolean(change.editSummary)"
-      show-info
-      :info-left="change.editedLabel"
-      :info-right="editCardStatusLabel(change)"
-      :show-thumbnail="Boolean(change.thumbnailUrl)"
-      :thumbnail-url="change.thumbnailUrl"
-      :thumbnail-alt="change.title"
-      :external-href="change.diffUrl"
-      :show-bottom-action="isThankableEditFlag(change.flag)"
-      :bottom-action-label="editThanked(change.revid) ? 'Thanked' : 'Thank'"
-      :bottom-action-icon="editThanked(change.revid) ? cdxIconHeart : cdxIconHeartOutline"
-      @bottom-action-click="onToggleEditThank(change.revid)"
-    />
+    <template v-for="change in displayItems" :key="`${change.enwikiTitle}-${change.revid}`">
+      <WikitaLiteCardWithChip
+        v-if="flagPresentation(change.flag)"
+        :url="change.diffUrl"
+        :chip-label="flagPresentation(change.flag)!.label"
+        :chip-icon="flagPresentation(change.flag)!.icon"
+        :chip-status="flagPresentation(change.flag)!.status"
+        :title="change.title"
+        :description="change.editSummary"
+        :supporting-text="change.editedLabel"
+        :supporting-icon="cdxIconUserAvatar"
+        :thumbnail-url="change.thumbnailUrl"
+        :force-thumbnail="true"
+      />
+
+      <CdxCard
+        v-else
+        :url="change.diffUrl"
+        :thumbnail="cardThumbnail(change.thumbnailUrl)"
+        :force-thumbnail="true"
+      >
+        <template #title>
+          {{ change.title }}
+        </template>
+        <template v-if="change.editSummary" #description>
+          {{ change.editSummary }}
+        </template>
+        <template #supporting-text>
+          <CdxIcon :icon="cdxIconUserAvatar" size="small" />
+          {{ change.editedLabel }}
+        </template>
+      </CdxCard>
+    </template>
 
     <CdxProgressBar v-if="standalone && activityLoading" inline aria-label="Loading activity" />
 

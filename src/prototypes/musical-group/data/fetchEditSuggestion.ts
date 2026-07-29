@@ -8,6 +8,7 @@ import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 import { normalizeEnwikiTitle } from './enwikiTitle'
 import { isExcludedEditOpportunityNeed, resolveEditOpportunityCopy } from './editOpportunityCopy'
 import { fetchWithTimeout } from './fetchWithTimeout'
+import { fetchPageSummary } from './pageSummary'
 import type { HomeHelpWanted, HomeSavedItem } from './types'
 
 const MICROTASK_QUALITY_CHECK_URL = 'https://microtask-generator.toolforge.org/quality-check'
@@ -28,6 +29,7 @@ export interface EditSuggestionPage {
   itemId?: string
   title: string
   enwikiTitle: string
+  description?: string
   thumbnailUrl?: string
 }
 
@@ -74,10 +76,18 @@ export async function fetchEditSuggestionForPage(
     if (!top) return null
 
     const copy = resolveEditOpportunityCopy(top.need)
+
+    let description = page.description?.trim() ?? ''
+    if (!description) {
+      const summary = await fetchPageSummary(page.enwikiTitle, signal, userAgentSuffix)
+      description = summary?.description?.trim() ?? ''
+    }
+
     return {
       itemId: stableSuggestionItemId(page.itemId, page.enwikiTitle),
       suggestionLabel: copy.title,
       title: page.title,
+      description: description || undefined,
       body: copy.body,
       need: top.need,
       enwikiTitle: page.enwikiTitle,
@@ -102,6 +112,7 @@ export async function fetchEditSuggestionForSavedItem(
       itemId: item.id,
       title: item.title,
       enwikiTitle: item.enwikiTitle,
+      description: item.description,
       thumbnailUrl: item.thumbnailUrl,
     },
     item.title,

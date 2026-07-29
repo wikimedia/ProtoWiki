@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { CdxProgressBar } from '@wikimedia/codex'
+import { CdxCard, CdxIcon, CdxProgressBar } from '@wikimedia/codex'
 import {
   cdxIconBookmark,
   cdxIconBookmarkList,
   cdxIconBookmarkOutline,
+  cdxIconLink,
 } from '@wikimedia/codex-icons'
 
 import {
@@ -17,7 +18,7 @@ import {
   externalArticleHref,
   useWikitaLiteSaveActions,
 } from '../composables/useWikitaLiteCardActions'
-import WikitaLiteCard from '../components/WikitaLiteCard.vue'
+import WikitaLiteCardWithAction from '../components/WikitaLiteCardWithAction.vue'
 
 interface Props {
   standalone?: boolean
@@ -60,25 +61,39 @@ function saveLabel(itemId: string): string {
 
 <template>
   <div class="related-module">
-    <WikitaLiteCard
-      v-for="item in displayItems"
-      :key="`${item.relatedToTitle}-${item.title}`"
-      :title="item.title"
-      :subtitle="item.description"
-      :show-subtitle="Boolean(item.description)"
-      show-info
-      :info-left="relatedLabel(item.relatedToTitle)"
-      :show-thumbnail="Boolean(item.thumbnailUrl)"
-      :thumbnail-url="item.thumbnailUrl"
-      :thumbnail-alt="item.title"
-      :external-href="externalArticleHref(item)"
-      :show-top-action="Boolean(item.itemId)"
-      :top-action-label="item.itemId ? saveLabel(item.itemId) : ''"
-      :top-action-icon="item.itemId ? saveIcon(item.itemId) : undefined"
-      @top-action-click="
-        () => item.itemId && onRelatedReadingSave(item.itemId, item.title, item.thumbnailUrl)
-      "
-    />
+    <template v-for="item in displayItems" :key="`${item.relatedToTitle}-${item.title}`">
+      <WikitaLiteCardWithAction
+        v-if="item.itemId"
+        :url="externalArticleHref(item)"
+        :title="item.title"
+        :description="item.description"
+        :supporting-text="relatedLabel(item.relatedToTitle)"
+        :supporting-icon="cdxIconLink"
+        :thumbnail-url="item.thumbnailUrl"
+        :force-thumbnail="true"
+        :action-label="saveLabel(item.itemId)"
+        :action-icon="saveIcon(item.itemId)"
+        @action-click="onRelatedReadingSave(item.itemId, item.title, item.thumbnailUrl)"
+      />
+
+      <CdxCard
+        v-else
+        :url="externalArticleHref(item)"
+        :thumbnail="item.thumbnailUrl?.trim() ? { url: item.thumbnailUrl.trim() } : null"
+        :force-thumbnail="true"
+      >
+        <template #title>
+          {{ item.title }}
+        </template>
+        <template v-if="item.description" #description>
+          {{ item.description }}
+        </template>
+        <template #supporting-text>
+          <CdxIcon :icon="cdxIconLink" size="small" />
+          {{ relatedLabel(item.relatedToTitle) }}
+        </template>
+      </CdxCard>
+    </template>
 
     <CdxProgressBar v-if="loading" inline aria-label="Loading further reading" />
 

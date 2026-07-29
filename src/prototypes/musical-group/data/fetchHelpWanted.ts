@@ -54,6 +54,7 @@ async function fetchUnsavedSuggestion(
           itemId: summary.itemId,
           title: summary.title,
           enwikiTitle: title,
+          description: summary.description,
           thumbnailUrl: summary.thumbnailUrl,
         },
         seed.title,

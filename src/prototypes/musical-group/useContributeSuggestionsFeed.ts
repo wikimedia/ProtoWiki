@@ -199,6 +199,7 @@ export function useContributeSuggestionsFeed(
         itemId: summary.itemId,
         title: summary.title,
         enwikiTitle: title,
+        description: summary.description,
         thumbnailUrl: summary.thumbnailUrl,
       },
       relatedToTitle,

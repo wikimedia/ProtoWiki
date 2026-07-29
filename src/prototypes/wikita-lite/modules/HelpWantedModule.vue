@@ -1,16 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { CdxProgressBar } from '@wikimedia/codex'
+import { CdxCard, CdxIcon, CdxProgressBar } from '@wikimedia/codex'
 
 import { resolveEditOpportunityIcon } from '../../musical-group/data/editOpportunityIcons'
-import {
-  formatEditSuggestionRelatedToLabel,
-  getCachedSavedPagesForLabels,
-} from '../../musical-group/data/relatedToLabel'
 import type { HomeHelpWanted } from '../../musical-group/data/types'
 import { helpWantedHref } from '../composables/useWikitaLiteCardActions'
-import WikitaLiteCard from '../components/WikitaLiteCard.vue'
 
 interface Props {
   standalone?: boolean
@@ -30,8 +25,8 @@ const displayItems = computed(() =>
   props.standalone ? props.items : props.items.slice(0, props.previewLimit),
 )
 
-function editSuggestionRelatedToLabel(suggestion: HomeHelpWanted): string {
-  return formatEditSuggestionRelatedToLabel(suggestion, getCachedSavedPagesForLabels())
+function cardThumbnail(url?: string) {
+  return url?.trim() ? { url: url.trim() } : null
 }
 </script>
 
@@ -40,22 +35,24 @@ function editSuggestionRelatedToLabel(suggestion: HomeHelpWanted): string {
     <CdxProgressBar v-if="loading" inline aria-label="Loading edit suggestions" />
 
     <template v-else>
-      <WikitaLiteCard
+      <CdxCard
         v-for="suggestion in displayItems"
         :key="suggestion.itemId"
-        show-flag
-        :flag="suggestion.suggestionLabel"
-        :flag-icon="resolveEditOpportunityIcon(suggestion.need)"
-        flag-color="progressive"
-        :title="suggestion.title"
-        :subtitle="suggestion.body"
-        show-info
-        :info-left="editSuggestionRelatedToLabel(suggestion)"
-        :show-thumbnail="Boolean(suggestion.thumbnailUrl)"
-        :thumbnail-url="suggestion.thumbnailUrl"
-        :thumbnail-alt="suggestion.title"
-        :external-href="helpWantedHref(suggestion)"
-      />
+        :url="helpWantedHref(suggestion)"
+        :thumbnail="cardThumbnail(suggestion.thumbnailUrl)"
+        :force-thumbnail="true"
+      >
+        <template #title>
+          {{ suggestion.title }}
+        </template>
+        <template v-if="suggestion.description" #description>
+          {{ suggestion.description }}
+        </template>
+        <template #supporting-text>
+          <CdxIcon :icon="resolveEditOpportunityIcon(suggestion.need)" size="small" />
+          {{ suggestion.suggestionLabel }}
+        </template>
+      </CdxCard>
 
       <p v-if="standalone && !displayItems.length && !loading" class="help-wanted-module__empty">
         No edit suggestions right now.

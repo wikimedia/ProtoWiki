@@ -244,6 +244,8 @@ export interface HomeBornOnThisDay {
   year: number
   text: string
   title: string
+  /** Wikipedia short description for the person. */
+  description?: string
   enwikiTitle: string
   thumbnailUrl?: string
   articleUrl: string
@@ -273,6 +275,8 @@ export interface HomeHelpWanted {
   suggestionLabel: string
   /** Article/page label. */
   title: string
+  /** Wikipedia short description for the article. */
+  description?: string
   /** Suggestion copy. */
   body: string
   need: string
@@ -332,7 +336,7 @@ export interface HomeRecentChange {
   /** True when this revision is still the current tip of the article. */
   isLatest: boolean
   editedTimestamp: string
-  /** e.g. "2 hours ago by SomeUser" */
+  /** e.g. "SomeUser, 13 mins ago" */
   editedLabel: string
 }
 

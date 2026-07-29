@@ -2,7 +2,7 @@
 import type { RouteLocationRaw } from 'vue-router'
 import { RouterLink } from 'vue-router'
 
-import { CdxIcon } from '@wikimedia/codex'
+import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconNext } from '@wikimedia/codex-icons'
 
 interface Props {
@@ -27,13 +27,15 @@ withDefaults(defineProps<Props>(), {
       :to="to"
       class="wikita-lite-module__title-link"
     >
-      <h2 class="wikita-lite-module__title">{{ title }}</h2>
-      <CdxIcon :icon="cdxIconNext" class="wikita-lite-module__arrow" />
+      <h3 class="wikita-lite-module__title">{{ title }}</h3>
+      <CdxButton weight="quiet" class="wikita-lite-module__arrow-button" :aria-hidden="true" tabindex="-1">
+        <CdxIcon :icon="cdxIconNext" />
+      </CdxButton>
     </RouterLink>
 
-    <h2 v-else-if="standalone" class="wikita-lite-module__title wikita-lite-module__title--static">
+    <h3 v-else-if="standalone" class="wikita-lite-module__title wikita-lite-module__title--static">
       {{ title }}
-    </h2>
+    </h3>
 
     <div class="wikita-lite-module__cards">
       <slot />
@@ -60,21 +62,15 @@ withDefaults(defineProps<Props>(), {
 
 .wikita-lite-module__title {
   margin: 0;
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-x-large, 1.25rem);
-  font-weight: var(--font-weight-bold, 700);
-  line-height: var(--line-height-x-large, 1.875);
-  color: var(--color-base, #202122);
 }
 
 .wikita-lite-module__title--static {
   padding: 0;
 }
 
-.wikita-lite-module__arrow {
+.wikita-lite-module__arrow-button {
   flex-shrink: 0;
-  width: 1.125rem;
-  height: 1.125rem;
+  pointer-events: none;
 }
 
 .wikita-lite-module__cards {

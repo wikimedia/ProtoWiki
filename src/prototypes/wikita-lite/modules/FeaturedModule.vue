@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { CdxButton, CdxProgressBar } from '@wikimedia/codex'
+import { CdxButton, CdxCard, CdxIcon, CdxProgressBar } from '@wikimedia/codex'
 import {
   cdxIconBookmark,
   cdxIconBookmarkList,
@@ -14,7 +14,7 @@ import {
   externalArticleHref,
   useWikitaLiteSaveActions,
 } from '../composables/useWikitaLiteCardActions'
-import WikitaLiteCard from '../components/WikitaLiteCard.vue'
+import WikitaLiteCardWithAction from '../components/WikitaLiteCardWithAction.vue'
 
 interface Props {
   standalone?: boolean
@@ -51,6 +51,10 @@ function saveIcon(itemId: string) {
 function saveLabel(itemId: string): string {
   return relatedReadingSaved(itemId) ? 'Saved' : 'Save'
 }
+
+function cardThumbnail(url?: string) {
+  return url?.trim() ? { url: url.trim() } : null
+}
 </script>
 
 <template>
@@ -65,32 +69,43 @@ function saveLabel(itemId: string): string {
     </template>
 
     <template v-else>
-      <WikitaLiteCard
-        v-if="featuredArticle"
-        show-flag
-        flag="Article of the day"
-        :flag-icon="cdxIconStar"
-        flag-color="success"
+      <WikitaLiteCardWithAction
+        v-if="featuredArticle?.itemId"
+        :url="externalArticleHref(featuredArticle)"
         :title="featuredArticle.title"
-        :subtitle="featuredArticle.description"
-        :show-subtitle="Boolean(featuredArticle.description)"
-        :show-thumbnail="Boolean(featuredArticle.thumbnailUrl)"
+        :description="featuredArticle.description"
+        supporting-text="Article of the day"
+        :supporting-icon="cdxIconStar"
         :thumbnail-url="featuredArticle.thumbnailUrl"
-        :thumbnail-alt="featuredArticle.title"
-        :external-href="externalArticleHref(featuredArticle)"
-        :show-top-action="Boolean(featuredArticle.itemId)"
-        :top-action-label="featuredArticle.itemId ? saveLabel(featuredArticle.itemId) : ''"
-        :top-action-icon="featuredArticle.itemId ? saveIcon(featuredArticle.itemId) : undefined"
-        @top-action-click="
-          () =>
-            featuredArticle.itemId &&
-            onRelatedReadingSave(
-              featuredArticle.itemId,
-              featuredArticle.title,
-              featuredArticle.thumbnailUrl,
-            )
+        :force-thumbnail="true"
+        :action-label="saveLabel(featuredArticle.itemId)"
+        :action-icon="saveIcon(featuredArticle.itemId)"
+        @action-click="
+          onRelatedReadingSave(
+            featuredArticle.itemId,
+            featuredArticle.title,
+            featuredArticle.thumbnailUrl,
+          )
         "
       />
+
+      <CdxCard
+        v-else-if="featuredArticle"
+        :url="externalArticleHref(featuredArticle)"
+        :thumbnail="cardThumbnail(featuredArticle.thumbnailUrl)"
+        :force-thumbnail="true"
+      >
+        <template #title>
+          {{ featuredArticle.title }}
+        </template>
+        <template v-if="featuredArticle.description" #description>
+          {{ featuredArticle.description }}
+        </template>
+        <template #supporting-text>
+          <CdxIcon :icon="cdxIconStar" size="small" />
+          Article of the day
+        </template>
+      </CdxCard>
 
       <p v-else-if="standalone" class="featured-module__empty">
         No featured article is available right now.

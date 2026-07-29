@@ -109,7 +109,7 @@ function formatRelativeTime(isoTimestamp: string): string {
   const days = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
   if (minutes < 1) return 'just now'
-  if (minutes < 60) return minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`
+  if (minutes < 60) return minutes === 1 ? '1 min ago' : `${minutes} mins ago`
   if (hours < 24) return hours === 1 ? '1 hour ago' : `${hours} hours ago`
   if (days === 1) return '1 day ago'
   if (days < 30) return `${days} days ago`
@@ -121,7 +121,7 @@ function formatRelativeTime(isoTimestamp: string): string {
 export function formatEditMetaLabel(timestamp: string, user: string): string {
   const relative = formatRelativeTime(timestamp)
   const editor = user.trim() || 'Anonymous'
-  return `${relative} by ${editor}`
+  return `${editor}, ${relative}`
 }
 
 /** Footer status for activity cards. */

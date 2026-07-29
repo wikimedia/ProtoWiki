@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { CdxButton, CdxProgressBar } from '@wikimedia/codex'
+import { CdxButton, CdxCard, CdxIcon, CdxProgressBar } from '@wikimedia/codex'
 import {
   cdxIconBookmark,
   cdxIconBookmarkList,
   cdxIconBookmarkOutline,
+  cdxIconChart,
 } from '@wikimedia/codex-icons'
 
 import type { HomeTrending } from '../../musical-group/data/types'
@@ -13,7 +14,7 @@ import {
   externalArticleHref,
   useWikitaLiteSaveActions,
 } from '../composables/useWikitaLiteCardActions'
-import WikitaLiteCard from '../components/WikitaLiteCard.vue'
+import WikitaLiteCardWithAction from '../components/WikitaLiteCardWithAction.vue'
 
 interface Props {
   standalone?: boolean
@@ -54,6 +55,10 @@ function saveIcon(itemId: string) {
 function saveLabel(itemId: string): string {
   return relatedReadingSaved(itemId) ? 'Saved' : 'Save'
 }
+
+function cardThumbnail(url?: string) {
+  return url?.trim() ? { url: url.trim() } : null
+}
 </script>
 
 <template>
@@ -68,26 +73,39 @@ function saveLabel(itemId: string): string {
     </template>
 
     <template v-else>
-      <WikitaLiteCard
-        v-for="item in displayItems"
-        :key="item.enwikiTitle"
-        :title="item.title"
-        :subtitle="item.description"
-        :show-subtitle="Boolean(item.description)"
-        show-info
-        :info-left="item.lastEditedLabel"
-        :info-right="item.viewsLabel"
-        :show-thumbnail="Boolean(item.thumbnailUrl)"
-        :thumbnail-url="item.thumbnailUrl"
-        :thumbnail-alt="item.title"
-        :external-href="externalArticleHref(item)"
-        :show-top-action="Boolean(item.itemId)"
-        :top-action-label="item.itemId ? saveLabel(item.itemId) : ''"
-        :top-action-icon="item.itemId ? saveIcon(item.itemId) : undefined"
-        @top-action-click="
-          () => item.itemId && onRelatedReadingSave(item.itemId, item.title, item.thumbnailUrl)
-        "
-      />
+      <template v-for="item in displayItems" :key="item.enwikiTitle">
+        <WikitaLiteCardWithAction
+          v-if="item.itemId"
+          :url="externalArticleHref(item)"
+          :title="item.title"
+          :description="item.description"
+          :supporting-text="item.viewsLabel"
+          :supporting-icon="cdxIconChart"
+          :thumbnail-url="item.thumbnailUrl"
+          :force-thumbnail="true"
+          :action-label="saveLabel(item.itemId)"
+          :action-icon="saveIcon(item.itemId)"
+          @action-click="onRelatedReadingSave(item.itemId, item.title, item.thumbnailUrl)"
+        />
+
+        <CdxCard
+          v-else
+          :url="externalArticleHref(item)"
+          :thumbnail="cardThumbnail(item.thumbnailUrl)"
+          :force-thumbnail="true"
+        >
+          <template #title>
+            {{ item.title }}
+          </template>
+          <template v-if="item.description" #description>
+            {{ item.description }}
+          </template>
+          <template v-if="item.viewsLabel" #supporting-text>
+            <CdxIcon :icon="cdxIconChart" size="small" />
+            {{ item.viewsLabel }}
+          </template>
+        </CdxCard>
+      </template>
 
       <p v-if="standalone && !displayItems.length" class="trending-module__empty">
         No trending articles are available right now.

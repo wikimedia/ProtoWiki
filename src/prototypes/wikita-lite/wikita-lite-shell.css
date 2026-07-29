@@ -22,3 +22,13 @@
   font-weight: var(--font-weight-normal);
   line-height: var(--line-height-xxx-large);
 }
+
+/* Icon + caption rows — vertically center the icon with supporting text. */
+.wikita-lite-shell .cdx-card__text__supporting-text,
+.wikita-lite-shell .wikita-lite-card-with-action__supporting,
+.wikita-lite-shell .wikita-lite-card-with-chip .cdx-card__text__supporting-text,
+.wikita-lite-shell .wikita-lite-card-portrait .cdx-card__text__supporting-text {
+  display: flex;
+  gap: var(--spacing-25, 4px);
+  align-items: center;
+}

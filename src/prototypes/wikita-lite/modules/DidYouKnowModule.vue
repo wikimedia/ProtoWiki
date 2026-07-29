@@ -1,19 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { CdxProgressBar } from '@wikimedia/codex'
-import {
-  cdxIconBookmark,
-  cdxIconBookmarkList,
-  cdxIconBookmarkOutline,
-} from '@wikimedia/codex-icons'
+import { CdxCard, CdxProgressBar } from '@wikimedia/codex'
 
 import type { HomeDidYouKnow } from '../../musical-group/data/types'
-import {
-  externalArticleHref,
-  useWikitaLiteSaveActions,
-} from '../composables/useWikitaLiteCardActions'
-import WikitaLiteCard from '../components/WikitaLiteCard.vue'
+import { externalArticleHref } from '../composables/useWikitaLiteCardActions'
+import { splitTitleEmphasis } from '../composables/splitTitleEmphasis'
 
 interface Props {
   standalone?: boolean
@@ -31,26 +23,16 @@ const props = withDefaults(defineProps<Props>(), {
   listsVersion: 0,
 })
 
-const listsVersionRef = computed(() => props.listsVersion)
-
-const { relatedReadingSaved, relatedReadingInList, onRelatedReadingSave } =
-  useWikitaLiteSaveActions(listsVersionRef)
-
 const displayItems = computed(() =>
   props.standalone ? props.items : props.items.slice(0, props.previewLimit),
 )
 
-function saveIcon(itemId: string) {
-  if (relatedReadingInList(itemId)) return cdxIconBookmarkList
-  return relatedReadingSaved(itemId) ? cdxIconBookmark : cdxIconBookmarkOutline
+function cardThumbnail(url?: string) {
+  return url?.trim() ? { url: url.trim() } : null
 }
 
-function saveLabel(itemId: string): string {
-  return relatedReadingSaved(itemId) ? 'Saved' : 'Save'
-}
-
-function saveTitle(item: HomeDidYouKnow): string {
-  return item.title ?? item.emphasis ?? 'Did you know'
+function titleSegments(item: HomeDidYouKnow) {
+  return splitTitleEmphasis(item.text, item.emphasis)
 }
 </script>
 
@@ -59,23 +41,23 @@ function saveTitle(item: HomeDidYouKnow): string {
     <CdxProgressBar v-if="loading" inline aria-label="Loading Did you know" />
 
     <template v-else>
-      <WikitaLiteCard
+      <CdxCard
         v-for="(item, index) in displayItems"
         :key="`dyk-${index}`"
-        :title="item.text"
-        :title-emphasis="item.emphasis"
-        :show-subtitle="false"
-        :show-thumbnail="Boolean(item.thumbnailUrl)"
-        :thumbnail-url="item.thumbnailUrl"
-        :thumbnail-alt="item.title ?? 'Did you know'"
-        :external-href="externalArticleHref(item)"
-        :show-top-action="Boolean(item.itemId)"
-        :top-action-label="item.itemId ? saveLabel(item.itemId) : ''"
-        :top-action-icon="item.itemId ? saveIcon(item.itemId) : undefined"
-        @top-action-click="
-          () => item.itemId && onRelatedReadingSave(item.itemId, saveTitle(item), item.thumbnailUrl)
-        "
-      />
+        :url="externalArticleHref(item)"
+        :thumbnail="cardThumbnail(item.thumbnailUrl)"
+        :force-thumbnail="true"
+      >
+        <template #title>
+          <template v-if="titleSegments(item)">
+            <template v-for="(segment, segmentIndex) in titleSegments(item)" :key="segmentIndex">
+              <strong v-if="segment.bold">{{ segment.text }}</strong>
+              <template v-else>{{ segment.text }}</template>
+            </template>
+          </template>
+          <template v-else>{{ item.text }}</template>
+        </template>
+      </CdxCard>
 
       <p v-if="standalone && !displayItems.length" class="did-you-know-module__empty">
         No Did you know hooks are available right now.
@@ -90,6 +72,18 @@ function saveTitle(item: HomeDidYouKnow): string {
   flex-direction: column;
   gap: var(--spacing-50, 8px);
   width: 100%;
+}
+
+.did-you-know-module :deep(.cdx-card--title-only) {
+  align-items: flex-start;
+}
+
+.did-you-know-module :deep(.cdx-card__text__title) {
+  font-weight: var(--font-weight-normal, 400);
+}
+
+.did-you-know-module :deep(.cdx-card__text__title strong) {
+  font-weight: var(--font-weight-bold, 700);
 }
 
 .did-you-know-module__empty {

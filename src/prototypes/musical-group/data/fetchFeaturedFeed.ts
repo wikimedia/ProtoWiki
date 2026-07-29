@@ -73,14 +73,17 @@ async function pageCardFields(
   signal?: AbortSignal,
 ): Promise<{
   title: string
+  description?: string
   thumbnailUrl?: string
   articleUrl: string
   itemId?: string
 }> {
   const summary = await fetchPageSummary(enwikiTitle, signal, 'musical-group-featured-feed')
   const title = (summary?.normalizedtitle ?? summary?.title ?? enwikiTitle).replace(/_/g, ' ')
+  const description = summary?.description?.trim()
   return {
     title,
+    description: description || undefined,
     thumbnailUrl: summary?.thumbnail?.source,
     articleUrl: summary?.content_urls?.desktop?.page ?? enwikiArticleUrl(enwikiTitle),
     itemId: normalizeQid(summary?.wikibase_item) ?? undefined,
@@ -204,6 +207,7 @@ async function parseBornOnThisDay(
         year: item.year!,
         text: item.text!.trim(),
         title: fields.title,
+        description: fields.description,
         enwikiTitle: pageTitle.replace(/_/g, ' '),
         thumbnailUrl: fields.thumbnailUrl,
         articleUrl: fields.articleUrl,
