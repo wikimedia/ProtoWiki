@@ -47,6 +47,36 @@ const router = createRouter({
   routes,
 })
 
+/** PR previews replace hashed lazy chunks on each push; recover from a cached entry bundle. */
+const CHUNK_RELOAD_KEY = 'protowiki-chunk-reload'
+
+function isStaleLazyChunkError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error)
+  return (
+    msg.includes('Failed to fetch dynamically imported module') ||
+    msg.includes('Importing a module script failed') ||
+    msg.includes('error loading dynamically imported module')
+  )
+}
+
+router.onError((error, to) => {
+  if (!isStaleLazyChunkError(error)) {
+    throw error
+  }
+
+  const target = router.resolve(to).href
+  if (sessionStorage.getItem(CHUNK_RELOAD_KEY) === target) {
+    throw error
+  }
+
+  sessionStorage.setItem(CHUNK_RELOAD_KEY, target)
+  window.location.assign(target)
+})
+
+router.afterEach(() => {
+  sessionStorage.removeItem(CHUNK_RELOAD_KEY)
+})
+
 syncGithubPagesPreviewRoute(router)
 
 if (import.meta.hot) {
