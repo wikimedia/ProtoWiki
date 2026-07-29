@@ -97,7 +97,7 @@ function saveLabel(itemId: string): string {
       </CdxCard>
     </template>
 
-    <CdxProgressBar v-if="loading" inline aria-label="Loading further reading" />
+    <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading further reading" />
 
     <p v-if="standalone && !displayItems.length && !loading" class="related-module__empty">
       No further reading suggestions yet.

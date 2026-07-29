@@ -33,7 +33,7 @@ function cardThumbnail(url?: string) {
 
 <template>
   <div class="help-wanted-module">
-    <CdxProgressBar v-if="loading" inline aria-label="Loading edit suggestions" />
+    <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading edit suggestions" />
 
     <template v-else>
       <CdxCard

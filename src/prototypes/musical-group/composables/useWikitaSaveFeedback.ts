@@ -19,7 +19,7 @@ export interface WikitaSaveFeedbackContext {
   createListAndAdd: () => void
 }
 
-const WIKITA_SAVE_FEEDBACK_KEY: InjectionKey<WikitaSaveFeedbackContext> =
+export const WIKITA_SAVE_FEEDBACK_KEY: InjectionKey<WikitaSaveFeedbackContext> =
   Symbol('wikitaSaveFeedback')
 
 export function provideWikitaSaveFeedback(): WikitaSaveFeedbackContext {
@@ -47,9 +47,10 @@ export function provideWikitaSaveFeedback(): WikitaSaveFeedbackContext {
       toastPageTitle.value = pageTitle
       toastPageThumbnailUrl.value = thumbnailUrl ?? null
       toastOpen.value = true
-    } else if (removePageFromAllLists(pageId)) {
-      listsVersion.value += 1
+    } else {
+      removePageFromAllLists(pageId)
     }
+    listsVersion.value += 1
     return saved
   }
 

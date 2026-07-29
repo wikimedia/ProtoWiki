@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { provideWikitaSaveFeedback } from '../musical-group/composables/useWikitaSaveFeedback'
-import { useWikitaLiteHome } from '../wikita-lite/composables/useWikitaLiteHome'
+import { useWikitaLiteHome, WIKITA_LITE_HELP_WANTED_STANDALONE_LIMIT } from '../wikita-lite/composables/useWikitaLiteHome'
 import MobileSubpageHeader from '../wikita-lite/components/MobileSubpageHeader.vue'
 import WikitaLiteShell from '../wikita-lite/components/WikitaLiteShell.vue'
 import HelpWantedModule from '../wikita-lite/modules/HelpWantedModule.vue'
@@ -15,7 +15,9 @@ definePage({
 
 provideWikitaSaveFeedback()
 
-const { helpWanted, helpWantedLoading } = useWikitaLiteHome()
+const { helpWanted, helpWantedLoading } = useWikitaLiteHome({
+  helpWantedLimit: WIKITA_LITE_HELP_WANTED_STANDALONE_LIMIT,
+})
 </script>
 
 <template>

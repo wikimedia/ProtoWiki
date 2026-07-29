@@ -51,7 +51,7 @@ function formatSavedLabel(savedAt: number): string {
 
 <template>
   <div class="saved-module">
-    <CdxProgressBar v-if="loading" inline aria-label="Loading saved pages" />
+    <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading saved pages" />
 
     <template v-else>
       <CdxCard

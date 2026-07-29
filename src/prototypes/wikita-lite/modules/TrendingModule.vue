@@ -64,7 +64,7 @@ function cardThumbnail(url?: string) {
 
 <template>
   <div class="trending-module">
-    <CdxProgressBar v-if="loading" inline aria-label="Loading trending" />
+    <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading trending" />
 
     <template v-else-if="error">
       <div class="trending-module__error">

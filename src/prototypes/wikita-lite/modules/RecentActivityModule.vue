@@ -70,7 +70,7 @@ const previewItems = computed(() => props.items.slice(0, props.previewLimit))
 
 const displayItems = computed(() => (props.standalone ? activityChanges.value : previewItems.value))
 
-const showPreviewLoading = computed(() => !props.standalone && props.loading)
+const showPreviewLoading = computed(() => props.standalone && props.loading)
 
 const itemsWithEnwiki = computed(() =>
   props.savedItems.filter((item) => item.enwikiTitle),
@@ -172,13 +172,6 @@ function cardThumbnail(url?: string) {
       class="recent-activity-module__sentinel"
       aria-hidden="true"
     />
-
-    <p
-      v-if="!standalone && !showPreviewLoading && !displayItems.length"
-      class="recent-activity-module__empty"
-    >
-      No recent activity on your saved pages.
-    </p>
   </div>
 </template>
 

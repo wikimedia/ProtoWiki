@@ -1,6 +1,7 @@
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { WIKITA_SAVE_FEEDBACK_KEY } from './composables/useWikitaSaveFeedback'
 import { listBookmarks } from './data/bookmarks'
 import { bookmarksKey, utcDayKey } from './data/cacheKeys'
 import { fetchFeaturedTabContent, isUsableFeaturedTab } from './data/fetchFeaturedFeed'
@@ -44,9 +45,20 @@ function isAbort(err: unknown): boolean {
   return (err as Error)?.name === 'AbortError'
 }
 
-export function useMusicalGroupHome(options: { helpWantedLimit?: number } = {}) {
+export type PersonalizedFeedId = 'related' | 'helpWanted' | 'recentChanges'
+
+export interface ReloadBookmarksOptions {
+  /** Personalized feeds to leave as-is (saved summaries still refresh). */
+  skipFeeds?: PersonalizedFeedId[]
+}
+
+export function useMusicalGroupHome(options: {
+  helpWantedLimit?: number
+  getBookmarkChangeSkipFeeds?: () => PersonalizedFeedId[]
+} = {}) {
   const helpWantedLimit = options.helpWantedLimit ?? 2
   const route = useRoute()
+  const saveFeedback = inject(WIKITA_SAVE_FEEDBACK_KEY, null)
   const featuredTab = ref<HomeFeaturedTab>(EMPTY_FEATURED_TAB)
   const featuredTabLoading = ref(true)
   const featuredTabError = ref<string | null>(null)
@@ -112,10 +124,11 @@ export function useMusicalGroupHome(options: { helpWantedLimit?: number } = {}) 
     recentChangesLoading.value = false
   }
 
-  async function reloadBookmarks(): Promise<void> {
+  async function reloadBookmarks(reloadOptions: ReloadBookmarksOptions = {}): Promise<void> {
     bookmarkAbort?.abort()
     bookmarkAbort = new AbortController()
     const { signal } = bookmarkAbort
+    const skipFeeds = new Set(reloadOptions.skipFeeds ?? [])
 
     const entries = listBookmarks()
     hasSavedPages.value = entries.length > 0
@@ -151,46 +164,69 @@ export function useMusicalGroupHome(options: { helpWantedLimit?: number } = {}) 
       return
     }
 
-    if (!getCachedRelatedFeed('home', dependencyKey)) {
-      homeRelatedLoading.value = true
-    }
-    try {
-      homeRelatedItems.value = await loadRelatedFeedInitialBatch(
-        'home',
-        items,
-        dependencyKey,
-        signal,
-      )
-      if (signal.aborted) return
-    } catch (err) {
-      if (isAbort(err)) return
-      homeRelatedItems.value = []
-    } finally {
-      homeRelatedLoading.value = false
-    }
+    const cachedHelp = getCachedHelpWanted(dependencyKey)
+    const needsRelatedFetch =
+      !skipFeeds.has('related') && !getCachedRelatedFeed('home', dependencyKey)
+    const needsHelpFetch =
+      !skipFeeds.has('helpWanted') &&
+      (!cachedHelp || cachedHelp.length < helpWantedLimit)
+    const needsRecentFetch =
+      !skipFeeds.has('recentChanges') && !getCachedRecentChangesPreview(dependencyKey)
 
-    if (!getCachedHelpWanted(dependencyKey)) {
+    if (needsRelatedFetch) homeRelatedLoading.value = true
+    if (needsHelpFetch) {
       helpWantedLoading.value = true
+      if (!cachedHelp?.length) helpWanted.value = []
     }
-    try {
-      helpWanted.value = await fetchHelpWanted(items, signal, helpWantedLimit)
-      if (signal.aborted) return
-    } catch (err) {
-      if (isAbort(err)) return
-    } finally {
-      helpWantedLoading.value = false
+    if (needsRecentFetch) recentChangesLoading.value = true
+
+    const appendHelpWanted = (suggestion: HomeHelpWanted): void => {
+      if (helpWanted.value.some((entry) => entry.itemId === suggestion.itemId)) return
+      helpWanted.value = [...helpWanted.value, suggestion]
     }
 
-    if (!getCachedRecentChangesPreview(dependencyKey)) {
-      recentChangesLoading.value = true
-    }
-    try {
-      recentChanges.value = await fetchRecentChanges(items, signal)
-    } catch (err) {
-      if (isAbort(err)) return
-    } finally {
-      recentChangesLoading.value = false
-    }
+    await Promise.all([
+      (async () => {
+        if (!needsRelatedFetch) return
+        try {
+          homeRelatedItems.value = await loadRelatedFeedInitialBatch(
+            'home',
+            items,
+            dependencyKey,
+            signal,
+          )
+        } catch (err) {
+          if (isAbort(err)) return
+          homeRelatedItems.value = []
+        } finally {
+          homeRelatedLoading.value = false
+        }
+      })(),
+      (async () => {
+        if (!needsHelpFetch) return
+        try {
+          helpWanted.value = await fetchHelpWanted(items, signal, helpWantedLimit, {
+            onEach: appendHelpWanted,
+          })
+        } catch (err) {
+          if (isAbort(err)) return
+        } finally {
+          helpWantedLoading.value = false
+        }
+      })(),
+      (async () => {
+        if (!needsRecentFetch) return
+        try {
+          recentChanges.value = await fetchRecentChanges(items, signal)
+        } catch (err) {
+          if (isAbort(err)) return
+        } finally {
+          recentChangesLoading.value = false
+        }
+      })(),
+    ])
+
+    if (signal.aborted) return
   }
 
   async function loadFeatured(signal: AbortSignal): Promise<void> {
@@ -325,6 +361,15 @@ export function useMusicalGroupHome(options: { helpWantedLimit?: number } = {}) 
     () => [route.query.item, route.query.tab] as const,
     () => {
       void reloadBookmarks()
+    },
+  )
+
+  watch(
+    () => saveFeedback?.listsVersion.value,
+    () => {
+      void reloadBookmarks({
+        skipFeeds: options.getBookmarkChangeSkipFeeds?.() ?? [],
+      })
     },
   )
 

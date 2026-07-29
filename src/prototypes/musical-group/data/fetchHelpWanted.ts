@@ -73,6 +73,7 @@ export async function fetchHelpWanted(
   items: HomeSavedItem[],
   signal?: AbortSignal,
   limit = DEFAULT_HELP_WANTED_LIMIT,
+  options?: { onEach?: (suggestion: HomeHelpWanted) => void },
 ): Promise<HomeHelpWanted[]> {
   const dependencyKey = bookmarksKey()
   const cached = getCachedHelpWanted(dependencyKey)
@@ -90,13 +91,17 @@ export async function fetchHelpWanted(
       signal,
       'musical-group-help-wanted',
     )
-    if (suggestion) suggestions.push(suggestion)
+    if (suggestion) {
+      suggestions.push(suggestion)
+      options?.onEach?.(suggestion)
+    }
   }
 
   while (suggestions.length < limit) {
     const unsavedSuggestion = await fetchUnsavedSuggestion(items, signal, suggestions)
     if (!unsavedSuggestion) break
     suggestions.push(unsavedSuggestion)
+    options?.onEach?.(unsavedSuggestion)
   }
 
   if (suggestions.length) {
