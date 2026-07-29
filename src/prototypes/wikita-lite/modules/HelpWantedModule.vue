@@ -12,6 +12,7 @@ interface Props {
   standalone?: boolean
   items?: HomeHelpWanted[]
   loading?: boolean
+  loadingMore?: boolean
   previewLimit?: number
 }
 
@@ -19,6 +20,7 @@ const props = withDefaults(defineProps<Props>(), {
   standalone: false,
   items: () => [],
   loading: false,
+  loadingMore: false,
   previewLimit: 3,
 })
 
@@ -33,33 +35,41 @@ function cardThumbnail(url?: string) {
 
 <template>
   <div class="help-wanted-module">
-    <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading edit suggestions" />
+    <CdxCard
+      v-for="suggestion in displayItems"
+      :key="suggestion.itemId"
+      :url="helpWantedHref(suggestion)"
+      :thumbnail="cardThumbnail(suggestion.thumbnailUrl)"
+      :force-thumbnail="true"
+    >
+      <template #title>
+        {{ suggestion.title }}
+      </template>
+      <template v-if="suggestion.description" #description>
+        {{ suggestion.description }}
+      </template>
+      <template #supporting-text>
+        <WikitaLiteSupportingRow :icon="resolveEditOpportunityIcon(suggestion.need)">
+          {{ suggestion.suggestionLabel }}
+        </WikitaLiteSupportingRow>
+      </template>
+    </CdxCard>
 
-    <template v-else>
-      <CdxCard
-        v-for="suggestion in displayItems"
-        :key="suggestion.itemId"
-        :url="helpWantedHref(suggestion)"
-        :thumbnail="cardThumbnail(suggestion.thumbnailUrl)"
-        :force-thumbnail="true"
-      >
-        <template #title>
-          {{ suggestion.title }}
-        </template>
-        <template v-if="suggestion.description" #description>
-          {{ suggestion.description }}
-        </template>
-        <template #supporting-text>
-          <WikitaLiteSupportingRow :icon="resolveEditOpportunityIcon(suggestion.need)">
-            {{ suggestion.suggestionLabel }}
-          </WikitaLiteSupportingRow>
-        </template>
-      </CdxCard>
+    <CdxProgressBar
+      v-if="standalone && loading && !displayItems.length"
+      inline
+      aria-label="Loading edit suggestions"
+    />
 
-      <p v-if="standalone && !displayItems.length && !loading" class="help-wanted-module__empty">
-        No edit suggestions right now.
-      </p>
-    </template>
+    <CdxProgressBar
+      v-if="standalone && loadingMore"
+      inline
+      aria-label="Loading more edit suggestions"
+    />
+
+    <p v-if="standalone && !displayItems.length && !loading && !loadingMore" class="help-wanted-module__empty">
+      No edit suggestions right now.
+    </p>
   </div>
 </template>
 

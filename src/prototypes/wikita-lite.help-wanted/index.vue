@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { provideWikitaSaveFeedback } from '../musical-group/composables/useWikitaSaveFeedback'
-import { useWikitaLiteHome, WIKITA_LITE_HELP_WANTED_STANDALONE_LIMIT } from '../wikita-lite/composables/useWikitaLiteHome'
+import { useWikitaLiteHelpWantedPage } from '../wikita-lite/composables/useWikitaLiteHelpWantedPage'
 import MobileSubpageHeader from '../wikita-lite/components/MobileSubpageHeader.vue'
 import WikitaLiteShell from '../wikita-lite/components/WikitaLiteShell.vue'
 import HelpWantedModule from '../wikita-lite/modules/HelpWantedModule.vue'
@@ -15,20 +15,30 @@ definePage({
 
 provideWikitaSaveFeedback()
 
-const { helpWanted, helpWantedLoading } = useWikitaLiteHome({
-  helpWantedLimit: WIKITA_LITE_HELP_WANTED_STANDALONE_LIMIT,
-})
+const { helpWanted, helpWantedLoading, helpWantedLoadingMore, loadSentinel } =
+  useWikitaLiteHelpWantedPage()
 </script>
 
 <template>
   <WikitaLiteShell :title="null">
     <MobileSubpageHeader :title="MODULE_TITLES.suggestedEdits" />
-    <HelpWantedModule standalone :items="helpWanted" :loading="helpWantedLoading" />
+    <HelpWantedModule
+      standalone
+      :items="helpWanted"
+      :loading="helpWantedLoading"
+      :loading-more="helpWantedLoadingMore"
+    />
+    <div ref="loadSentinel" class="wikita-lite-help-wanted__sentinel" aria-hidden="true" />
   </WikitaLiteShell>
 </template>
 
 <style scoped>
 :deep(.wikita-lite-shell[data-skin='mobile']) {
   padding-top: var(--spacing-100, 16px);
+}
+
+.wikita-lite-help-wanted__sentinel {
+  height: 1px;
+  flex-shrink: 0;
 }
 </style>
