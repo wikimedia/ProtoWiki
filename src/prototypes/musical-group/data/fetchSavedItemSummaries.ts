@@ -2,7 +2,7 @@ import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 
 import type { BookmarkEntry } from './bookmarks'
 import { bookmarksKey } from './cacheKeys'
-import { sentenceCase } from './formatLabel'
+import { entityDisplayLabel, sentenceCase } from './formatLabel'
 import {
   getCachedSavedSummaries,
   setCachedSavedSummaries,
@@ -29,6 +29,13 @@ async function resolveSavedThumbnailUrl(
   return summary?.thumbnail?.source
 }
 
+function normalizeSavedItemTitle(item: HomeSavedItem): HomeSavedItem {
+  return {
+    ...item,
+    title: entityDisplayLabel(item.title, item.enwikiTitle),
+  }
+}
+
 async function resolveSavedItem(
   entry: BookmarkEntry,
   signal?: AbortSignal,
@@ -44,7 +51,7 @@ async function resolveSavedItem(
     )
     return {
       id: entry.id,
-      title: data.label,
+      title: entityDisplayLabel(data.label, data.enwikiTitle),
       enwikiTitle: data.enwikiTitle,
       description: data.description ? sentenceCase(data.description) : '',
       thumbnailUrl,
@@ -61,7 +68,7 @@ async function resolveSavedItem(
     )
     return {
       id: entry.id,
-      title: claims.label,
+      title: entityDisplayLabel(claims.label, claims.enwikiTitle),
       enwikiTitle: claims.enwikiTitle,
       description: claims.description ?? '',
       thumbnailUrl,
@@ -80,7 +87,9 @@ export async function fetchSavedItemSummaries(
 ): Promise<HomeSavedItem[]> {
   const dependencyKey = bookmarksKey()
   const cached = getCachedSavedSummaries(dependencyKey)
-  if (cached && !savedSummariesNeedRefresh(cached)) return cached
+  if (cached && !savedSummariesNeedRefresh(cached)) {
+    return cached.map(normalizeSavedItemTitle)
+  }
 
   const resolved = await mapWithConcurrency(
     entries,
@@ -88,7 +97,9 @@ export async function fetchSavedItemSummaries(
     (entry) => resolveSavedItem(entry, signal),
     signal,
   )
-  const items = resolved.filter((item): item is HomeSavedItem => item !== null)
+  const items = resolved
+    .filter((item): item is HomeSavedItem => item !== null)
+    .map(normalizeSavedItemTitle)
   setCachedSavedSummaries(dependencyKey, items)
   return items
 }
