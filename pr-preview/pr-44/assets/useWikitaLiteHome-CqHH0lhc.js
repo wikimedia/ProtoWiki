@@ -1,0 +1,1 @@
+import{u as a}from"./useMusicalGroupHome-x65ee4jU.js";const m=3;function u(e){return a({helpWantedLimit:(e==null?void 0:e.helpWantedLimit)??m,getBookmarkChangeSkipFeeds:e==null?void 0:e.getBookmarkChangeSkipFeeds})}export{u};
