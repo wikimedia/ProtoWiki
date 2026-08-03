@@ -45,7 +45,6 @@ const pendingMoreSelection = ref<string | null>(null)
 const results = ref<WikiSearchResult[]>([])
 const searchLoading = ref(false)
 const searchError = ref<string | null>(null)
-const selectedTitle = ref<string | null>(null)
 
 const { recentSearches, addRecentSearch, clearRecentSearches } = useRecentSearches()
 
@@ -125,7 +124,6 @@ async function runSearch(): Promise<void> {
 }
 
 watch([query, activeLang], () => {
-  selectedTitle.value = null
   if (debounceHandle) clearTimeout(debounceHandle)
   debounceHandle = setTimeout(() => {
     void runSearch()
@@ -144,7 +142,10 @@ function selectRecentSearch(term: string): void {
 
 function selectResult(result: WikiSearchResult): void {
   addRecentSearch(query.value)
-  selectedTitle.value = result.title
+  router.push({
+    path: '/template-app-article',
+    query: { article: result.title, lang: activeLang.value },
+  })
 }
 </script>
 
@@ -215,10 +216,6 @@ function selectResult(result: WikiSearchResult): void {
           </p>
 
           <template v-else>
-            <CdxMessage v-if="selectedTitle" type="success" allow-user-dismiss>
-              Selected "{{ selectedTitle }}".
-            </CdxMessage>
-
             <ul class="template-app-search__results">
               <li v-for="result in results" :key="result.pageid">
                 <button
