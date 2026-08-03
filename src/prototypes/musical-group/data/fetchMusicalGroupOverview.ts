@@ -346,10 +346,55 @@ function stripHtmlTags(html: string): string {
   return html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
 }
 
+function normalizeSnippetMatchText(text: string): string {
+  return text.replace(/[\u2010-\u2015−]/g, '-').replace(/\s+/g, ' ').trim()
+}
+
+function unwrapSearchMatches(html: string): string {
+  return html.replace(/<span class="searchmatch">([\s\S]*?)<\/span>/g, '$1')
+}
+
+/** Join `<span class="searchmatch">` blocks split across punctuation or spaces. */
+function mergeAdjacentSearchMatchSpans(html: string): string {
+  let result = html
+  let previous = ''
+  while (previous !== result) {
+    previous = result
+    result = result.replace(
+      /<\/span>([\s\-–—−:,;]*?)<span class="searchmatch">/gi,
+      '$1',
+    )
+  }
+  return result
+}
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** Highlight the full saved-page title when the API only marks part of it. */
+function wrapSearchTermInSnippet(html: string, searchTerm: string): string {
+  const term = searchTerm.trim()
+  if (!term) return html
+
+  const unwrapped = unwrapSearchMatches(html)
+  const termPattern = escapeRegExp(normalizeSnippetMatchText(term))
+    .replace(/\s+/g, '\\s+')
+    .replace(/\\-/g, '[\\-\\u2010-\\u2015−]')
+
+  const match = new RegExp(termPattern, 'i').exec(unwrapped)
+  if (!match) return html
+
+  return (
+    unwrapped.slice(0, match.index) +
+    `<span class="searchmatch">${match[0]}</span>` +
+    unwrapped.slice(match.index + match[0].length)
+  )
+}
+
 /** Trim a search snippet so the highlighted match is visible, not buried after ellipses. */
 function focusSnippetOnSearchMatch(html: string): string {
-  const flattened = html
-    .replace(/<\/span>([^\S\r\n]+)<span class="searchmatch">/g, ' ')
+  const flattened = mergeAdjacentSearchMatchSpans(html)
     .replace(/\s*[\r\n]+\s*/g, ' ')
     .trim()
 
@@ -375,13 +420,15 @@ function focusSnippetOnSearchMatch(html: string): string {
   return [beforeSlice, matchSpan, afterSlice].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim()
 }
 
-function formatSnippetHtml(html: string): string {
-  if (html.includes('searchmatch')) {
-    return focusSnippetOnSearchMatch(html)
+function formatSnippetHtml(html: string, searchTerm?: string): string {
+  let processed = searchTerm ? wrapSearchTermInSnippet(html, searchTerm) : html
+  processed = mergeAdjacentSearchMatchSpans(processed)
+
+  if (processed.includes('searchmatch')) {
+    return focusSnippetOnSearchMatch(processed)
   }
 
-  const formatted = html
-    .replace(/<\/span>([^\S\r\n]+)<span class="searchmatch">/g, '$1')
+  const formatted = processed
     .replace(/\s*[\r\n]+\s*/g, ' … ')
     .trim()
   if (!formatted) return formatted
@@ -470,7 +517,7 @@ export async function fetchSnippetMentions(
       id: wikibaseId,
       title: resolvedTitle,
       description: summary?.description ?? '',
-      snippetHtml: formatSnippetHtml(candidate.snippet),
+      snippetHtml: formatSnippetHtml(candidate.snippet, searchTerm),
       thumbnailUrl: summary?.thumbnail?.source,
       articleUrl:
         summary?.content_urls?.desktop?.page ??

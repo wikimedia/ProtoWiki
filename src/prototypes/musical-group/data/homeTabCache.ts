@@ -6,6 +6,7 @@ import type {
   HomeRecentChange,
   HomeRelated,
   HomeSavedItem,
+  HomeTranslationSuggestion,
   HomeTrending,
 } from './types'
 import { readVersionedStore, setVersionedEntry, writeVersionedStore } from './wikitaCache'
@@ -109,6 +110,12 @@ interface CachedActiveDiscussionsEntry {
   fetchedAt: number
 }
 
+interface CachedTranslationSuggestionsEntry {
+  dependencyKey: string
+  data: HomeTranslationSuggestion[]
+  fetchedAt: number
+}
+
 interface CachedSavedSummariesEntry {
   dependencyKey: string
   data: HomeSavedItem[]
@@ -137,6 +144,7 @@ type HomeCacheEntry =
   | CachedFeaturedEntry
   | CachedTrendingEntry
   | CachedActiveDiscussionsEntry
+  | CachedTranslationSuggestionsEntry
   | CachedSavedSummariesEntry
   | CachedHelpWantedEntry
   | CachedRecentChangesEntry
@@ -218,6 +226,31 @@ export function clearCachedActiveDiscussions(_dependencyKey?: string): void {
   const entries = readEntries()
   if (!entries.activeDiscussions) return
   delete entries.activeDiscussions
+  writeEntries(entries)
+}
+
+export function getCachedTranslationSuggestions(
+  dependencyKey: string,
+): HomeTranslationSuggestion[] | null {
+  const entry = readEntries().translationSuggestions as
+    | CachedTranslationSuggestionsEntry
+    | undefined
+  if (!entry?.data?.length || entry.dependencyKey !== dependencyKey) return null
+  if (Date.now() - entry.fetchedAt > HOME_TAB_FEED_CACHE_TTL_MS) return null
+  return entry.data
+}
+
+export function setCachedTranslationSuggestions(
+  dependencyKey: string,
+  data: HomeTranslationSuggestion[],
+): void {
+  setEntry('translationSuggestions', { dependencyKey, data, fetchedAt: Date.now() })
+}
+
+export function clearCachedTranslationSuggestions(_dependencyKey?: string): void {
+  const entries = readEntries()
+  if (!entries.translationSuggestions) return
+  delete entries.translationSuggestions
   writeEntries(entries)
 }
 

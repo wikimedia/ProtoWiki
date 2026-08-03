@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import { computed, provide } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 import { RouterLink } from 'vue-router'
 
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconNext } from '@wikimedia/codex-icons'
 
-import type { WikitaLiteCardSeparation } from '../wikita-lite-card'
+import { WIKITA_LITE_CARD_SEPARATION, type WikitaLiteCardSeparation } from '../wikita-lite-card'
 
 interface Props {
   title: string
@@ -14,11 +15,13 @@ interface Props {
   cardSeparation?: WikitaLiteCardSeparation
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   to: undefined,
   standalone: false,
   cardSeparation: 'outline',
 })
+
+provide(WIKITA_LITE_CARD_SEPARATION, computed(() => props.cardSeparation))
 </script>
 
 <template>
@@ -37,14 +40,11 @@ withDefaults(defineProps<Props>(), {
       </CdxButton>
     </RouterLink>
 
-    <h3 v-else-if="standalone" class="wikita-lite-module__title wikita-lite-module__title--static">
+    <h3 v-else class="wikita-lite-module__title wikita-lite-module__title--static">
       {{ title }}
     </h3>
 
-    <div
-      class="wikita-lite-module__cards"
-      :class="{ 'wikita-lite-card-group--divider': cardSeparation === 'divider' }"
-    >
+    <div class="wikita-lite-module__cards">
       <slot />
     </div>
   </section>

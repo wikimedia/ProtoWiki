@@ -10,6 +10,8 @@ import {
   bornOnThisDayYearLabel,
 } from '../composables/bornOnThisDayDescription'
 import { externalArticleHref } from '../composables/useWikitaLiteCardActions'
+import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
+import { WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE } from '../wikita-lite-card'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
 
 interface Props {
@@ -42,6 +44,8 @@ const displayCards = computed(() =>
 function cardThumbnail(url?: string) {
   return url?.trim() ? { url: url.trim() } : null
 }
+
+const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
 </script>
 
 <template>
@@ -49,10 +53,11 @@ function cardThumbnail(url?: string) {
     <CdxProgressBar v-if="loading" inline aria-label="Loading Born on this day" />
 
     <template v-else>
-      <CdxCard
-        v-for="{ item, description } in displayCards"
-        :key="item.enwikiTitle"
-        class="wikita-lite-card--thumbnail-large"
+      <div :class="['born-on-this-day-module__cards', groupClass]">
+        <CdxCard
+          v-for="{ item, description } in displayCards"
+          :key="item.enwikiTitle"
+          :class="[WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE, cardClass]"
         :url="externalArticleHref(item)"
         :thumbnail="cardThumbnail(item.thumbnailUrl)"
         :force-thumbnail="true"
@@ -68,7 +73,8 @@ function cardThumbnail(url?: string) {
             {{ bornOnThisDayYearLabel(item.year) }}
           </WikitaLiteSupportingRow>
         </template>
-      </CdxCard>
+        </CdxCard>
+      </div>
 
       <p v-if="standalone && !displayItems.length" class="born-on-this-day-module__empty">
         No birthdays are available right now.
@@ -82,6 +88,12 @@ function cardThumbnail(url?: string) {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-50, 8px);
+  width: 100%;
+}
+
+.born-on-this-day-module__cards {
+  display: flex;
+  flex-direction: column;
   width: 100%;
 }
 

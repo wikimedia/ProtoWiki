@@ -3,8 +3,10 @@ import { computed, readonly, ref, watch, type ComputedRef, type DeepReadonly, ty
 import {
   configUserDisplayName,
   configUserPageTitle,
+  formatLangList,
   langForUser,
   loadConfig,
+  parseLangList,
   resetUserPageListField,
   saveConfig,
   type Config,
@@ -38,6 +40,8 @@ export function useConfig(): {
   user: Ref<ConfigUser>
   realUsername: Ref<string>
   apiContact: Ref<string>
+  knownLanguages: Ref<string[]>
+  knownLanguagesText: Ref<string>
   lang: Ref<string>
   realLang: ComputedRef<string>
   displayName: ComputedRef<string>
@@ -71,6 +75,20 @@ export function useConfig(): {
     get: () => config.value.apiContact,
     set: (value: string) => {
       config.value = { ...config.value, apiContact: value }
+    },
+  })
+
+  const knownLanguages = computed({
+    get: () => config.value.knownLanguages,
+    set: (value: string[]) => {
+      config.value = { ...config.value, knownLanguages: [...value] }
+    },
+  })
+
+  const knownLanguagesText = computed({
+    get: () => formatLangList(config.value.knownLanguages),
+    set: (value: string) => {
+      config.value = { ...config.value, knownLanguages: parseLangList(value) }
     },
   })
 
@@ -138,6 +156,8 @@ export function useConfig(): {
     user,
     realUsername,
     apiContact,
+    knownLanguages,
+    knownLanguagesText,
     lang,
     realLang,
     displayName,

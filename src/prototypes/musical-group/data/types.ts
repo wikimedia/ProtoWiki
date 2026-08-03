@@ -326,6 +326,19 @@ export interface HomeActiveDiscussion {
   latestCommentUrl: string
 }
 
+/** A recommended article to translate from enwiki into another language. */
+export interface HomeTranslationSuggestion {
+  id: string
+  title: string
+  description: string
+  thumbnailUrl?: string
+  enwikiTitle: string
+  sourceLang: string
+  targetLang: string
+  targetLanguageLabel: string
+  translationUrl: string
+}
+
 /** A most-read article from the daily featured feed. */
 export interface HomeTrending {
   title: string

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { CdxButton, CdxCard, CdxProgressBar } from '@wikimedia/codex'
+import { CdxButton, CdxCard, CdxIcon, CdxProgressBar } from '@wikimedia/codex'
 import { cdxIconSpeechBubble } from '@wikimedia/codex-icons'
 
 import type { HomeActiveDiscussion } from '../../musical-group/data/types'
-import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
+import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
 
 interface Props {
   standalone?: boolean
@@ -30,15 +30,15 @@ defineEmits<{
 const displayItems = computed(() =>
   props.standalone ? props.items : props.items.slice(0, props.previewLimit),
 )
+
+const { groupClass, cardClass } = useWikitaLiteCardListClasses({
+  standalone: () => props.standalone,
+})
 </script>
 
 <template>
   <div class="active-discussions-module">
-    <CdxProgressBar
-      v-if="standalone && loading"
-      inline
-      aria-label="Loading active discussions"
-    />
+    <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading active discussions" />
 
     <template v-else-if="error">
       <div class="active-discussions-module__error">
@@ -48,23 +48,31 @@ const displayItems = computed(() =>
     </template>
 
     <template v-else>
-      <CdxCard
-        v-for="discussion in displayItems"
-        :key="discussion.id"
-        :url="discussion.discussionUrl"
-      >
-        <template #title>
-          {{ discussion.noticeboardTitle }}
-        </template>
-        <template #description>
-          {{ discussion.title }}
-        </template>
-        <template #supporting-text>
-          <WikitaLiteSupportingRow :icon="cdxIconSpeechBubble">
-            {{ discussion.latestCommentLabel }}
-          </WikitaLiteSupportingRow>
-        </template>
-      </CdxCard>
+      <div :class="['active-discussions-module__cards', groupClass]">
+        <CdxCard
+          v-for="discussion in displayItems"
+          :key="discussion.id"
+          :class="cardClass"
+          :url="discussion.discussionUrl"
+        >
+          <template #title>
+            {{ discussion.title }}
+          </template>
+          <template #description>
+            {{ discussion.noticeboardTitle }}
+          </template>
+          <template #supporting-text>
+            <div class="active-discussions-module__meta wikita-lite-supporting-row">
+              <span class="active-discussions-module__stat">
+                <CdxIcon :icon="cdxIconSpeechBubble" size="small" />
+                {{ discussion.commentCount }}
+                {{ discussion.commentCount === 1 ? 'comment' : 'comments' }},
+                {{ discussion.latestCommentLabel }}
+              </span>
+            </div>
+          </template>
+        </CdxCard>
+      </div>
 
       <p v-if="standalone && !displayItems.length" class="active-discussions-module__empty">
         No active discussions right now.
@@ -78,6 +86,12 @@ const displayItems = computed(() =>
   display: flex;
   flex-direction: column;
   gap: var(--spacing-50, 8px);
+  width: 100%;
+}
+
+.active-discussions-module__cards {
+  display: flex;
+  flex-direction: column;
   width: 100%;
 }
 
@@ -95,5 +109,16 @@ const displayItems = computed(() =>
   flex-direction: column;
   align-items: flex-start;
   gap: var(--spacing-50, 8px);
+}
+
+.active-discussions-module__meta {
+  flex-wrap: wrap;
+  gap: var(--spacing-50, 8px);
+}
+
+.active-discussions-module__stat {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-25, 4px);
 }
 </style>

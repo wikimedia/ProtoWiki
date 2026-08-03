@@ -2,7 +2,7 @@
 import { CdxIcon } from '@wikimedia/codex'
 import {
   cdxIconBook,
-  cdxIconGlobe,
+  cdxIconEdit,
   cdxIconHome,
 } from '@wikimedia/codex-icons'
 import type { Icon } from '@wikimedia/codex-icons'
@@ -12,8 +12,8 @@ import { SHOW_WIKITA_LITE_FLOATING_NAV, VIEW_TAB_LABELS } from '../routes'
 
 const NAV_ITEMS: { id: WikitaLiteView; label: string; icon: Icon }[] = [
   { id: 'edit', label: VIEW_TAB_LABELS.edit, icon: cdxIconHome },
-  { id: 'community', label: VIEW_TAB_LABELS.community, icon: cdxIconGlobe },
   { id: 'read', label: VIEW_TAB_LABELS.read, icon: cdxIconBook },
+  { id: 'contribute', label: VIEW_TAB_LABELS.contribute, icon: cdxIconEdit },
 ]
 
 defineProps<{

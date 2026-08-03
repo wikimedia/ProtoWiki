@@ -15,6 +15,8 @@ import {
 } from '../../musical-group/data/relatedToLabel'
 import type { HomeMention } from '../../musical-group/data/types'
 import { useWikitaLiteSaveActions } from '../composables/useWikitaLiteCardActions'
+import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
+import { WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE } from '../wikita-lite-card'
 import WikitaLiteCardWithAction from '../components/WikitaLiteCardWithAction.vue'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
 
@@ -59,11 +61,14 @@ function saveIcon(itemId: string) {
 function saveLabel(itemId: string): string {
   return relatedReadingSaved(itemId) ? 'Saved' : 'Save'
 }
+
+const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
 </script>
 
 <template>
   <div class="mentions-module">
-    <template v-for="item in displayItems" :key="`${item.mentionedInTitle}-${item.title}`">
+    <div :class="['mentions-module__cards', groupClass]">
+      <template v-for="item in displayItems" :key="`${item.mentionedInTitle}-${item.title}`">
       <WikitaLiteCardWithAction
         v-if="item.itemId"
         :url="item.articleUrl"
@@ -81,7 +86,7 @@ function saveLabel(itemId: string): string {
 
       <CdxCard
         v-else
-        class="wikita-lite-card--thumbnail-large"
+        :class="[WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE, cardClass]"
         :url="item.articleUrl"
         :thumbnail="cardThumbnail(item.thumbnailUrl)"
         :force-thumbnail="true"
@@ -99,7 +104,8 @@ function saveLabel(itemId: string): string {
           </WikitaLiteSupportingRow>
         </template>
       </CdxCard>
-    </template>
+      </template>
+    </div>
 
     <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading mentions" />
 
@@ -114,6 +120,12 @@ function saveLabel(itemId: string): string {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-50, 8px);
+  width: 100%;
+}
+
+.mentions-module__cards {
+  display: flex;
+  flex-direction: column;
   width: 100%;
 }
 

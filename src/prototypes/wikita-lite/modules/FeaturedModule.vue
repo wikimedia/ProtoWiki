@@ -1,10 +1,16 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import { CdxButton, CdxCard, CdxProgressBar } from '@wikimedia/codex'
 import { cdxIconStar } from '@wikimedia/codex-icons'
 
 import type { HomeFeatured } from '../../musical-group/data/types'
 import { externalArticleHref } from '../composables/useWikitaLiteCardActions'
-import WikitaLiteCardPortrait from '../components/WikitaLiteCardPortrait.vue'
+import {
+  WIKITA_LITE_CARD_CLASS_THUMBNAIL_POSITION_TOP,
+  WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE,
+} from '../wikita-lite-card'
+import { MODULE_TITLES } from '../routes'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
 
 interface Props {
@@ -14,15 +20,18 @@ interface Props {
   error?: string | null
   previewLimit?: number
   listsVersion?: number
+  /** `large`: thumbnail beside text; `portrait` (default): full-width image on top. */
+  thumbnailLayout?: 'large' | 'portrait'
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   standalone: false,
   featuredArticle: undefined,
   loading: false,
   error: null,
   previewLimit: 3,
   listsVersion: 0,
+  thumbnailLayout: 'portrait',
 })
 
 defineEmits<{
@@ -32,6 +41,12 @@ defineEmits<{
 function cardThumbnail(url?: string) {
   return url?.trim() ? { url: url.trim() } : null
 }
+
+const thumbnailClass = computed(() => {
+  if (!props.featuredArticle?.thumbnailUrl) return ''
+  if (props.thumbnailLayout === 'large') return WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE
+  return WIKITA_LITE_CARD_CLASS_THUMBNAIL_POSITION_TOP
+})
 </script>
 
 <template>
@@ -46,20 +61,9 @@ function cardThumbnail(url?: string) {
     </template>
 
     <template v-else>
-      <WikitaLiteCardPortrait
-        v-if="featuredArticle?.thumbnailUrl"
-        :url="externalArticleHref(featuredArticle)"
-        :media-url="featuredArticle.thumbnailUrl"
-        :media-alt="featuredArticle.title"
-        :title="featuredArticle.title"
-        :description="featuredArticle.description"
-        supporting-text="Article of the day"
-        :supporting-icon="cdxIconStar"
-        :show-play-overlay="false"
-      />
-
       <CdxCard
-        v-else-if="featuredArticle"
+        v-if="featuredArticle"
+        :class="thumbnailClass"
         :url="externalArticleHref(featuredArticle)"
         :thumbnail="cardThumbnail(featuredArticle.thumbnailUrl)"
         :force-thumbnail="true"
@@ -71,7 +75,9 @@ function cardThumbnail(url?: string) {
           {{ featuredArticle.description }}
         </template>
         <template #supporting-text>
-          <WikitaLiteSupportingRow :icon="cdxIconStar">Article of the day</WikitaLiteSupportingRow>
+          <WikitaLiteSupportingRow :icon="cdxIconStar">
+            {{ MODULE_TITLES.articleOfTheDay }}
+          </WikitaLiteSupportingRow>
         </template>
       </CdxCard>
 

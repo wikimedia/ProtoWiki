@@ -3,11 +3,13 @@ import { computed } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 import { RouterLink } from 'vue-router'
 
-import { CdxButton, CdxCard, CdxProgressBar } from '@wikimedia/codex'
+import { CdxCard, CdxProgressBar } from '@wikimedia/codex'
 import { cdxIconLightbulb } from '@wikimedia/codex-icons'
 
 import type { HomeHelpWanted } from '../../musical-group/data/types'
+import { resolveEditOpportunityIcon } from '../../musical-group/data/editOpportunityIcons'
 import { helpWantedHref } from '../composables/useWikitaLiteCardActions'
+import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
 
 interface Props {
@@ -39,13 +41,23 @@ const showMoreLink = computed(
 function cardThumbnail(url?: string) {
   return url?.trim() ? { url: url.trim() } : null
 }
+
+const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
+
+function suggestionIcon(suggestion: HomeHelpWanted) {
+  return props.standalone
+    ? resolveEditOpportunityIcon(suggestion.need)
+    : cdxIconLightbulb
+}
 </script>
 
 <template>
   <div class="help-wanted-module">
-    <CdxCard
-      v-for="suggestion in displayItems"
-      :key="suggestion.itemId"
+    <div :class="['help-wanted-module__cards', groupClass]">
+      <CdxCard
+        v-for="suggestion in displayItems"
+        :key="suggestion.itemId"
+        :class="cardClass"
       :url="helpWantedHref(suggestion)"
       :thumbnail="cardThumbnail(suggestion.thumbnailUrl)"
       :force-thumbnail="true"
@@ -57,21 +69,19 @@ function cardThumbnail(url?: string) {
         {{ suggestion.description }}
       </template>
       <template #supporting-text>
-        <WikitaLiteSupportingRow :icon="cdxIconLightbulb">
+        <WikitaLiteSupportingRow :icon="suggestionIcon(suggestion)">
           {{ suggestion.suggestionLabel }}
         </WikitaLiteSupportingRow>
       </template>
-    </CdxCard>
+      </CdxCard>
+    </div>
 
-    <RouterLink v-if="showMoreLink && moreTo" :to="moreTo" class="help-wanted-module__more-link">
-      <CdxButton
-        action="progressive"
-        weight="primary"
-        class="help-wanted-module__more-button"
-        tabindex="-1"
-      >
-        Show more suggestions
-      </CdxButton>
+    <RouterLink
+      v-if="showMoreLink && moreTo"
+      :to="moreTo"
+      class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled wikita-lite-button-link"
+    >
+      Show more suggestions
     </RouterLink>
 
     <CdxProgressBar
@@ -103,22 +113,17 @@ function cardThumbnail(url?: string) {
   width: 100%;
 }
 
+.help-wanted-module__cards {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
 .help-wanted-module__empty {
   margin: 0;
   font-family: var(--font-family-base);
   font-size: var(--font-size-medium, 1rem);
   line-height: var(--line-height-small, 1.375);
   color: var(--color-subtle, #54595d);
-}
-
-.help-wanted-module__more-link {
-  display: block;
-  width: 100%;
-  margin-bottom: var(--spacing-50);
-  text-decoration: none;
-}
-
-.help-wanted-module__more-button {
-  width: 100%;
 }
 </style>

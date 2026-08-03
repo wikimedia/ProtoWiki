@@ -6,6 +6,8 @@ import { cdxIconBookmark } from '@wikimedia/codex-icons'
 
 import type { HomeSavedItem } from '../../musical-group/data/types'
 import { savedItemHref } from '../composables/useWikitaLiteCardActions'
+import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
+import { WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE } from '../wikita-lite-card'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
 
 interface Props {
@@ -47,6 +49,8 @@ function formatSavedLabel(savedAt: number): string {
   const days = Math.floor(hours / 24)
   return days === 1 ? 'Saved 1 day ago' : `Saved ${days} days ago`
 }
+
+const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
 </script>
 
 <template>
@@ -54,10 +58,11 @@ function formatSavedLabel(savedAt: number): string {
     <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading saved pages" />
 
     <template v-else>
-      <CdxCard
-        v-for="item in displayItems"
-        :key="item.id"
-        class="wikita-lite-card--thumbnail-large"
+      <div :class="['saved-module__cards', groupClass]">
+        <CdxCard
+          v-for="item in displayItems"
+          :key="item.id"
+          :class="[WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE, cardClass]"
         :url="savedItemHref(item)"
         :thumbnail="cardThumbnail(item.thumbnailUrl)"
         :force-thumbnail="true"
@@ -73,7 +78,8 @@ function formatSavedLabel(savedAt: number): string {
             {{ formatSavedLabel(item.savedAt) }}
           </WikitaLiteSupportingRow>
         </template>
-      </CdxCard>
+        </CdxCard>
+      </div>
 
       <p v-if="standalone && !displayItems.length && !loading" class="saved-module__empty">
         You have not saved any pages yet.
@@ -87,6 +93,12 @@ function formatSavedLabel(savedAt: number): string {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-50, 8px);
+  width: 100%;
+}
+
+.saved-module__cards {
+  display: flex;
+  flex-direction: column;
   width: 100%;
 }
 

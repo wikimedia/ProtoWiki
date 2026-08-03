@@ -6,6 +6,8 @@ import { CdxCard, CdxProgressBar } from '@wikimedia/codex'
 import type { HomeDidYouKnow } from '../../musical-group/data/types'
 import { externalArticleHref } from '../composables/useWikitaLiteCardActions'
 import { splitTitleEmphasis } from '../composables/splitTitleEmphasis'
+import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
+import { WIKITA_LITE_CARD_CLASS_THUMBNAIL_POSITION_END } from '../wikita-lite-card'
 
 interface Props {
   standalone?: boolean
@@ -34,6 +36,8 @@ function cardThumbnail(url?: string) {
 function titleSegments(item: HomeDidYouKnow) {
   return splitTitleEmphasis(item.text, item.emphasis)
 }
+
+const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
 </script>
 
 <template>
@@ -41,10 +45,11 @@ function titleSegments(item: HomeDidYouKnow) {
     <CdxProgressBar v-if="loading" inline aria-label="Loading Did you know" />
 
     <template v-else>
-      <CdxCard
-        v-for="(item, index) in displayItems"
-        :key="`dyk-${index}`"
-        class="did-you-know-module__card"
+      <div :class="['did-you-know-module__cards', groupClass]">
+        <CdxCard
+          v-for="(item, index) in displayItems"
+          :key="`dyk-${index}`"
+          :class="[cardClass, WIKITA_LITE_CARD_CLASS_THUMBNAIL_POSITION_END]"
         :url="externalArticleHref(item)"
         :thumbnail="cardThumbnail(item.thumbnailUrl)"
         :force-thumbnail="true"
@@ -58,7 +63,8 @@ function titleSegments(item: HomeDidYouKnow) {
           </template>
           <template v-else>{{ item.text }}</template>
         </template>
-      </CdxCard>
+        </CdxCard>
+      </div>
 
       <p v-if="standalone && !displayItems.length" class="did-you-know-module__empty">
         No Did you know hooks are available right now.
@@ -75,17 +81,14 @@ function titleSegments(item: HomeDidYouKnow) {
   width: 100%;
 }
 
+.did-you-know-module__cards {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
 .did-you-know-module :deep(.cdx-card--title-only) {
   align-items: flex-start;
-}
-
-.did-you-know-module :deep(.did-you-know-module__card) {
-  flex-direction: row-reverse;
-}
-
-.did-you-know-module :deep(.did-you-know-module__card .cdx-card__thumbnail.cdx-thumbnail) {
-  margin-right: 0;
-  margin-left: var(--spacing-75, 12px);
 }
 
 .did-you-know-module :deep(.cdx-card__text__title) {

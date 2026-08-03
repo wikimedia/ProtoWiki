@@ -16,6 +16,7 @@ const {
   user,
   realUsername,
   apiContact,
+  knownLanguagesText,
   lang,
   currentUserPageLists,
   setCurrentUserPageList,
@@ -73,6 +74,14 @@ const editedPagesText = computed({
         v-model:selected="user"
         :menu-items="CONFIG_USER_MENU_ITEMS"
         default-label="New editor"
+      />
+    </label>
+    <label v-if="!isWikipediaUiSkin" class="user-settings-panel__field">
+      <span class="user-settings-panel__label">Known languages</span>
+      <CdxTextInput
+        v-model="knownLanguagesText"
+        class="user-settings-panel__input"
+        placeholder="fr, de, es"
       />
     </label>
     <label v-if="!isWikipediaUiSkin" class="user-settings-panel__field">

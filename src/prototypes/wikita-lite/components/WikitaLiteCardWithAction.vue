@@ -1,11 +1,17 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, inject, useId } from 'vue'
 
 import { CdxButton, CdxCard, CdxIcon } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
 
 import WikitaLiteSupportingRow from './WikitaLiteSupportingRow.vue'
-import type { WikitaLiteCardSeparation } from '../wikita-lite-card'
+import {
+  WIKITA_LITE_CARD_CLASS_SEPARATION_DIVIDER,
+  WIKITA_LITE_CARD_CLASS_SEPARATION_NONE,
+  WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE,
+  WIKITA_LITE_CARD_SEPARATION,
+  type WikitaLiteCardSeparation,
+} from '../wikita-lite-card'
 
 interface Props {
   url?: string
@@ -31,8 +37,19 @@ const props = withDefaults(defineProps<Props>(), {
   thumbnailUrl: undefined,
   thumbnailSize: 'default',
   forceThumbnail: true,
-  separation: 'outline',
   actionIcon: undefined,
+})
+
+const injectedSeparation = inject(WIKITA_LITE_CARD_SEPARATION, null)
+
+const resolvedSeparation = computed(
+  (): WikitaLiteCardSeparation => props.separation ?? injectedSeparation?.value ?? 'outline',
+)
+
+const separationClass = computed(() => {
+  if (resolvedSeparation.value === 'divider') return WIKITA_LITE_CARD_CLASS_SEPARATION_DIVIDER
+  if (resolvedSeparation.value === 'none') return WIKITA_LITE_CARD_CLASS_SEPARATION_NONE
+  return ''
 })
 
 defineEmits<{
@@ -77,10 +94,10 @@ function onActionClick(event: MouseEvent) {
 
     <CdxCard
       class="wikita-lite-card-with-action__card"
-      :class="{
-        'wikita-lite-card--thumbnail-large': thumbnailSize === 'large',
-        'wikita-lite-card--separation-divider': separation === 'divider',
-      }"
+      :class="[
+        separationClass,
+        { [WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE]: thumbnailSize === 'large' },
+      ]"
       :thumbnail="thumbnail"
       :force-thumbnail="forceThumbnail"
     >

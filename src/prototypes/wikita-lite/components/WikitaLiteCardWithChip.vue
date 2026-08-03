@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, inject, useId } from 'vue'
 
 import { CdxCard, CdxInfoChip } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
 
 import WikitaLiteSupportingRow from './WikitaLiteSupportingRow.vue'
-import type { WikitaLiteCardSeparation } from '../wikita-lite-card'
+import {
+  WIKITA_LITE_CARD_CLASS_SEPARATION_DIVIDER,
+  WIKITA_LITE_CARD_CLASS_SEPARATION_NONE,
+  WIKITA_LITE_CARD_SEPARATION,
+  type WikitaLiteCardSeparation,
+} from '../wikita-lite-card'
 
 export type WikitaLiteChipStatus = 'notice' | 'warning' | 'error' | 'success'
 
@@ -32,7 +37,24 @@ const props = withDefaults(defineProps<Props>(), {
   supportingIcon: undefined,
   thumbnailUrl: undefined,
   forceThumbnail: true,
-  separation: 'outline',
+})
+
+const injectedSeparation = inject(WIKITA_LITE_CARD_SEPARATION, null)
+
+const resolvedSeparation = computed(
+  (): WikitaLiteCardSeparation => props.separation ?? injectedSeparation?.value ?? 'outline',
+)
+
+const shellSeparationClass = computed(() => {
+  if (resolvedSeparation.value === 'divider') return 'wikita-lite-card-with-chip--separation-divider'
+  if (resolvedSeparation.value === 'none') return 'wikita-lite-card-with-chip--separation-none'
+  return ''
+})
+
+const cardSeparationClass = computed(() => {
+  if (resolvedSeparation.value === 'divider') return WIKITA_LITE_CARD_CLASS_SEPARATION_DIVIDER
+  if (resolvedSeparation.value === 'none') return WIKITA_LITE_CARD_CLASS_SEPARATION_NONE
+  return ''
 })
 
 const titleId = useId()
@@ -51,10 +73,12 @@ const showSupporting = computed(
 <template>
   <article
     class="wikita-lite-card-with-chip"
-    :class="{
-      'wikita-lite-card-with-chip--linked': hasLink,
-      'wikita-lite-card-with-chip--separation-divider': separation === 'divider',
-    }"
+    :class="[
+      {
+        'wikita-lite-card-with-chip--linked': hasLink,
+      },
+      shellSeparationClass,
+    ]"
   >
     <a
       v-if="hasLink"
@@ -72,7 +96,7 @@ const showSupporting = computed(
 
       <CdxCard
         class="wikita-lite-card-with-chip__card"
-        :class="{ 'wikita-lite-card--separation-divider': separation === 'divider' }"
+        :class="cardSeparationClass"
         :thumbnail="thumbnail"
         :force-thumbnail="forceThumbnail"
       >

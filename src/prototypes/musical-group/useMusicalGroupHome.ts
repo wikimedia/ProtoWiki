@@ -1,6 +1,8 @@
 import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { useConfig } from '@/composables/useConfig'
+
 import { WIKITA_SAVE_FEEDBACK_KEY } from './composables/useWikitaSaveFeedback'
 import { listBookmarks } from './data/bookmarks'
 import { bookmarksKey, utcDayKey } from './data/cacheKeys'
@@ -15,8 +17,14 @@ import { clearFeaturedFeedSessionCache } from './data/fetchEnwikiFeaturedFeedDay
 import { clearFeaturedTabSessionCache } from './data/fetchFeaturedFeed'
 import { clearTrendingSessionCache } from './data/fetchTrending'
 import {
+  clearTranslationSuggestionsSessionCache,
+  fetchTranslationSuggestions,
+  translationSuggestionsCacheKey,
+} from './data/fetchTranslationSuggestions'
+import {
   clearCachedActiveDiscussions,
   clearCachedFeaturedTab,
+  clearCachedTranslationSuggestions,
   clearCachedTrendingFeed,
   getCachedActiveDiscussions,
   getCachedFeaturedTab,
@@ -25,6 +33,7 @@ import {
   getCachedRecentChangesPreview,
   getCachedRelatedFeed,
   getCachedSavedSummaries,
+  getCachedTranslationSuggestions,
   getCachedTrendingFeed,
 } from './data/homeTabCache'
 import { loadRelatedFeedInitialBatch } from './loadRelatedFeedInitialBatch'
@@ -36,6 +45,7 @@ import type {
   HomeRecentChange,
   HomeRelated,
   HomeSavedItem,
+  HomeTranslationSuggestion,
   HomeTrending,
 } from './data/types'
 
@@ -61,10 +71,14 @@ export interface ReloadBookmarksOptions {
 
 export function useMusicalGroupHome(options: {
   helpWantedLimit?: number
+  translationCountPerLanguage?: number
+  translationLanguages?: () => string[]
   getBookmarkChangeSkipFeeds?: () => PersonalizedFeedId[]
 } = {}) {
   const helpWantedLimit = options.helpWantedLimit ?? 2
+  const translationCountPerLanguage = options.translationCountPerLanguage ?? 2
   const route = useRoute()
+  const { knownLanguages } = useConfig()
   const saveFeedback = inject(WIKITA_SAVE_FEEDBACK_KEY, null)
   const featuredTab = ref<HomeFeaturedTab>(EMPTY_FEATURED_TAB)
   const featuredTabLoading = ref(true)
@@ -75,6 +89,9 @@ export function useMusicalGroupHome(options: {
   const activeDiscussions = ref<HomeActiveDiscussion[]>([])
   const activeDiscussionsLoading = ref(true)
   const activeDiscussionsError = ref<string | null>(null)
+  const translationSuggestions = ref<HomeTranslationSuggestion[]>([])
+  const translationLoading = ref(true)
+  const translationError = ref<string | null>(null)
   const hasSavedPages = ref(listBookmarks().length > 0)
   const savedItems = ref<HomeSavedItem[]>([])
   const savedItemsLoading = ref(false)
@@ -106,6 +123,12 @@ export function useMusicalGroupHome(options: {
   const homeMentions = computed(() =>
     filterMentionsExcludingRelated(homeMentionsRaw.value, homeRelatedItems.value),
   )
+
+  const translationTargetLangs = computed(() => {
+    const override = options.translationLanguages?.()
+    if (override?.length) return override
+    return knownLanguages.value
+  })
 
   let abort: AbortController | null = null
   let bookmarkAbort: AbortController | null = null
@@ -341,6 +364,41 @@ export function useMusicalGroupHome(options: {
     }
   }
 
+  async function loadTranslationSuggestions(
+    signal: AbortSignal,
+    options?: { background?: boolean },
+  ): Promise<void> {
+    translationError.value = null
+    const targetLangs = translationTargetLangs.value
+
+    if (!targetLangs.length) {
+      translationSuggestions.value = []
+      translationLoading.value = false
+      return
+    }
+
+    if (!options?.background && !translationSuggestions.value.length) {
+      translationLoading.value = true
+    }
+
+    try {
+      translationSuggestions.value = await fetchTranslationSuggestions(
+        targetLangs,
+        signal,
+        translationCountPerLanguage,
+      )
+    } catch (err) {
+      if (isAbort(err)) return
+      if (!translationSuggestions.value.length) {
+        translationSuggestions.value = []
+      }
+      translationError.value =
+        err instanceof Error ? err.message : 'Could not load translation suggestions.'
+    } finally {
+      translationLoading.value = false
+    }
+  }
+
   async function retryActiveDiscussionsFeed(): Promise<void> {
     const dayKey = utcDayKey()
     clearActiveDiscussionsSessionCache()
@@ -349,6 +407,16 @@ export function useMusicalGroupHome(options: {
     abort?.abort()
     abort = new AbortController()
     await loadActiveDiscussions(abort.signal)
+  }
+
+  async function retryTranslationFeed(): Promise<void> {
+    const cacheKey = translationSuggestionsCacheKey(translationTargetLangs.value)
+    clearTranslationSuggestionsSessionCache()
+    clearCachedTranslationSuggestions(cacheKey)
+
+    abort?.abort()
+    abort = new AbortController()
+    await loadTranslationSuggestions(abort.signal)
   }
 
   async function refreshIncompleteTrending(signal?: AbortSignal): Promise<void> {
@@ -395,6 +463,8 @@ export function useMusicalGroupHome(options: {
     const featuredCached = getCachedFeaturedTab(dayKey)
     const trendingCached = getCachedTrendingFeed(dayKey)
     const activeDiscussionsCached = getCachedActiveDiscussions(dayKey)
+    const translationCacheKey = translationSuggestionsCacheKey(translationTargetLangs.value)
+    const translationCached = getCachedTranslationSuggestions(translationCacheKey)
 
     if (featuredCached && isUsableFeaturedTab(featuredCached)) {
       featuredTab.value = featuredCached
@@ -420,11 +490,23 @@ export function useMusicalGroupHome(options: {
       activeDiscussionsLoading.value = true
     }
 
+    if (translationCached?.length) {
+      translationSuggestions.value = translationCached
+      translationLoading.value = false
+    } else if (!translationTargetLangs.value.length) {
+      translationSuggestions.value = []
+      translationLoading.value = false
+    } else {
+      translationSuggestions.value = []
+      translationLoading.value = true
+    }
+
     void (async () => {
       await Promise.all([
         featuredCached ? Promise.resolve() : loadFeatured(signal),
         loadTrending(signal, { background: Boolean(trendingCached?.length) }),
         loadActiveDiscussions(signal, { background: Boolean(activeDiscussionsCached?.length) }),
+        loadTranslationSuggestions(signal, { background: Boolean(translationCached?.length) }),
       ])
       if (signal.aborted) return
 
@@ -456,6 +538,16 @@ export function useMusicalGroupHome(options: {
     },
   )
 
+  watch(
+    translationTargetLangs,
+    () => {
+      abort?.abort()
+      abort = new AbortController()
+      void loadTranslationSuggestions(abort.signal)
+    },
+    { deep: true },
+  )
+
   onMounted(load)
   onBeforeUnmount(() => {
     abort?.abort()
@@ -477,6 +569,10 @@ export function useMusicalGroupHome(options: {
     activeDiscussionsLoading,
     activeDiscussionsError,
     retryActiveDiscussionsFeed,
+    translationSuggestions,
+    translationLoading,
+    translationError,
+    retryTranslationFeed,
     hasSavedPages,
     savedSorted,
     recentlySaved,

@@ -23,6 +23,7 @@ import { useCommonsPhotosInfiniteScroll } from '../../musical-group/useCommonsPh
 import WikitaLiteCardWithChip, {
   type WikitaLiteChipStatus,
 } from '../components/WikitaLiteCardWithChip.vue'
+import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
 
 interface Props {
@@ -109,6 +110,8 @@ function flagPresentation(flag: HomeRecentChangeFlag): FlagPresentation | null {
 function cardThumbnail(url?: string) {
   return url?.trim() ? { url: url.trim() } : null
 }
+
+const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
 </script>
 
 <template>
@@ -137,53 +140,50 @@ function cardThumbnail(url?: string) {
       </p>
     </template>
 
-    <template v-for="change in displayItems" :key="`${change.enwikiTitle}-${change.revid}`">
-      <WikitaLiteCardWithChip
-        v-if="flagPresentation(change.flag)"
-        :url="change.diffUrl"
-        :chip-label="flagPresentation(change.flag)!.label"
-        :chip-icon="flagPresentation(change.flag)!.icon"
-        :chip-status="flagPresentation(change.flag)!.status"
-        :title="change.title"
-        :description="change.editSummary"
-        :supporting-text="change.editedLabel"
-        :supporting-icon="cdxIconUserAvatar"
-        :thumbnail-url="change.thumbnailUrl"
-        :force-thumbnail="true"
-      />
+    <div v-if="displayItems.length" :class="['recent-activity-module__cards', groupClass]">
+      <template v-for="change in displayItems" :key="`${change.enwikiTitle}-${change.revid}`">
+        <WikitaLiteCardWithChip
+          v-if="flagPresentation(change.flag)"
+          :url="change.diffUrl"
+          :chip-label="flagPresentation(change.flag)!.label"
+          :chip-icon="flagPresentation(change.flag)!.icon"
+          :chip-status="flagPresentation(change.flag)!.status"
+          :title="change.title"
+          :description="change.editSummary"
+          :supporting-text="change.editedLabel"
+          :supporting-icon="cdxIconUserAvatar"
+          :thumbnail-url="change.thumbnailUrl"
+          :force-thumbnail="true"
+        />
 
-      <CdxCard
-        v-else
-        :url="change.diffUrl"
-        :thumbnail="cardThumbnail(change.thumbnailUrl)"
-        :force-thumbnail="true"
-      >
-        <template #title>
-          {{ change.title }}
-        </template>
-        <template v-if="change.editSummary" #description>
-          {{ change.editSummary }}
-        </template>
-        <template #supporting-text>
-          <WikitaLiteSupportingRow :icon="cdxIconUserAvatar">
-            {{ change.editedLabel }}
-          </WikitaLiteSupportingRow>
-        </template>
-      </CdxCard>
-    </template>
+        <CdxCard
+          v-else
+          :class="cardClass"
+          :url="change.diffUrl"
+          :thumbnail="cardThumbnail(change.thumbnailUrl)"
+          :force-thumbnail="true"
+        >
+          <template #title>
+            {{ change.title }}
+          </template>
+          <template v-if="change.editSummary" #description>
+            {{ change.editSummary }}
+          </template>
+          <template #supporting-text>
+            <WikitaLiteSupportingRow :icon="cdxIconUserAvatar">
+              {{ change.editedLabel }}
+            </WikitaLiteSupportingRow>
+          </template>
+        </CdxCard>
+      </template>
+    </div>
 
     <RouterLink
       v-if="showMoreLink && moreTo"
       :to="moreTo"
-      class="recent-activity-module__more-link"
+      class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled wikita-lite-button-link"
     >
-      <CdxButton
-        weight="primary"
-        class="recent-activity-module__more-button"
-        tabindex="-1"
-      >
-        Review more changes
-      </CdxButton>
+      Review more changes
     </RouterLink>
 
     <CdxProgressBar v-if="standalone && activityLoading" inline aria-label="Loading activity" />
@@ -202,6 +202,12 @@ function cardThumbnail(url?: string) {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-50, 8px);
+  width: 100%;
+}
+
+.recent-activity-module__cards {
+  display: flex;
+  flex-direction: column;
   width: 100%;
 }
 
@@ -231,16 +237,5 @@ function cardThumbnail(url?: string) {
 .recent-activity-module__sentinel {
   height: 1px;
   flex-shrink: 0;
-}
-
-.recent-activity-module__more-link {
-  display: block;
-  width: 100%;
-  margin-bottom: var(--spacing-50);
-  text-decoration: none;
-}
-
-.recent-activity-module__more-button {
-  width: 100%;
 }
 </style>

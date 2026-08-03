@@ -18,6 +18,8 @@ import {
   externalArticleHref,
   useWikitaLiteSaveActions,
 } from '../composables/useWikitaLiteCardActions'
+import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
+import { WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE } from '../wikita-lite-card'
 import WikitaLiteCardWithAction from '../components/WikitaLiteCardWithAction.vue'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
 
@@ -58,11 +60,14 @@ function saveIcon(itemId: string) {
 function saveLabel(itemId: string): string {
   return relatedReadingSaved(itemId) ? 'Saved' : 'Save'
 }
+
+const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
 </script>
 
 <template>
   <div class="related-module">
-    <template v-for="item in displayItems" :key="`${item.relatedToTitle}-${item.title}`">
+    <div :class="['related-module__cards', groupClass]">
+      <template v-for="item in displayItems" :key="`${item.relatedToTitle}-${item.title}`">
       <WikitaLiteCardWithAction
         v-if="item.itemId"
         :url="externalArticleHref(item)"
@@ -80,7 +85,7 @@ function saveLabel(itemId: string): string {
 
       <CdxCard
         v-else
-        class="wikita-lite-card--thumbnail-large"
+        :class="[WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE, cardClass]"
         :url="externalArticleHref(item)"
         :thumbnail="item.thumbnailUrl?.trim() ? { url: item.thumbnailUrl.trim() } : null"
         :force-thumbnail="true"
@@ -97,7 +102,8 @@ function saveLabel(itemId: string): string {
           </WikitaLiteSupportingRow>
         </template>
       </CdxCard>
-    </template>
+      </template>
+    </div>
 
     <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading further reading" />
 
@@ -112,6 +118,12 @@ function saveLabel(itemId: string): string {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-50, 8px);
+  width: 100%;
+}
+
+.related-module__cards {
+  display: flex;
+  flex-direction: column;
   width: 100%;
 }
 
