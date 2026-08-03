@@ -78,6 +78,7 @@ function cardThumbnail(url?: string) {
         supporting-text="Article of the day"
         :supporting-icon="cdxIconStar"
         :thumbnail-url="featuredArticle.thumbnailUrl"
+        thumbnail-size="large"
         :force-thumbnail="true"
         :action-label="saveLabel(featuredArticle.itemId)"
         :action-icon="saveIcon(featuredArticle.itemId)"
@@ -92,6 +93,7 @@ function cardThumbnail(url?: string) {
 
       <CdxCard
         v-else-if="featuredArticle"
+        class="wikita-lite-card--thumbnail-large"
         :url="externalArticleHref(featuredArticle)"
         :thumbnail="cardThumbnail(featuredArticle.thumbnailUrl)"
         :force-thumbnail="true"

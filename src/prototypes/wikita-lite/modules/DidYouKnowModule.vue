@@ -44,6 +44,7 @@ function titleSegments(item: HomeDidYouKnow) {
       <CdxCard
         v-for="(item, index) in displayItems"
         :key="`dyk-${index}`"
+        class="did-you-know-module__card"
         :url="externalArticleHref(item)"
         :thumbnail="cardThumbnail(item.thumbnailUrl)"
         :force-thumbnail="true"
@@ -76,6 +77,15 @@ function titleSegments(item: HomeDidYouKnow) {
 
 .did-you-know-module :deep(.cdx-card--title-only) {
   align-items: flex-start;
+}
+
+.did-you-know-module :deep(.did-you-know-module__card) {
+  flex-direction: row-reverse;
+}
+
+.did-you-know-module :deep(.did-you-know-module__card .cdx-card__thumbnail.cdx-thumbnail) {
+  margin-right: 0;
+  margin-left: var(--spacing-75, 12px);
 }
 
 .did-you-know-module :deep(.cdx-card__text__title) {

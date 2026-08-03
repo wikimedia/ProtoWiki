@@ -2,8 +2,8 @@
 import { computed } from 'vue'
 
 import { CdxCard, CdxProgressBar } from '@wikimedia/codex'
+import { cdxIconLightbulb } from '@wikimedia/codex-icons'
 
-import { resolveEditOpportunityIcon } from '../../musical-group/data/editOpportunityIcons'
 import type { HomeHelpWanted } from '../../musical-group/data/types'
 import { helpWantedHref } from '../composables/useWikitaLiteCardActions'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
@@ -49,7 +49,7 @@ function cardThumbnail(url?: string) {
         {{ suggestion.description }}
       </template>
       <template #supporting-text>
-        <WikitaLiteSupportingRow :icon="resolveEditOpportunityIcon(suggestion.need)">
+        <WikitaLiteSupportingRow :icon="cdxIconLightbulb">
           {{ suggestion.suggestionLabel }}
         </WikitaLiteSupportingRow>
       </template>

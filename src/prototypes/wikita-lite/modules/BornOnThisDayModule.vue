@@ -52,6 +52,7 @@ function cardThumbnail(url?: string) {
       <CdxCard
         v-for="{ item, description } in displayCards"
         :key="item.enwikiTitle"
+        class="wikita-lite-card--thumbnail-large"
         :url="externalArticleHref(item)"
         :thumbnail="cardThumbnail(item.thumbnailUrl)"
         :force-thumbnail="true"

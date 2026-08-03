@@ -62,3 +62,10 @@
   width: 100%;
   align-self: stretch;
 }
+
+/* Article of the day, Further reading, Trending, Recently saved, and Born on this day — 96×96px thumbnails. */
+.wikita-lite-shell .cdx-card.wikita-lite-card--thumbnail-large .cdx-card__thumbnail.cdx-thumbnail .cdx-thumbnail__placeholder,
+.wikita-lite-shell .cdx-card.wikita-lite-card--thumbnail-large .cdx-card__thumbnail.cdx-thumbnail .cdx-thumbnail__image {
+  width: 96px;
+  height: 96px;
+}

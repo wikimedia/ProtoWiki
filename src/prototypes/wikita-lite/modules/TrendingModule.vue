@@ -83,6 +83,7 @@ function cardThumbnail(url?: string) {
           :supporting-text="item.viewsLabel"
           :supporting-icon="cdxIconChart"
           :thumbnail-url="item.thumbnailUrl"
+          thumbnail-size="large"
           :force-thumbnail="true"
           :action-label="saveLabel(item.itemId)"
           :action-icon="saveIcon(item.itemId)"
@@ -91,6 +92,7 @@ function cardThumbnail(url?: string) {
 
         <CdxCard
           v-else
+          class="wikita-lite-card--thumbnail-large"
           :url="externalArticleHref(item)"
           :thumbnail="cardThumbnail(item.thumbnailUrl)"
           :force-thumbnail="true"

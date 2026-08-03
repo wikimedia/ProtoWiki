@@ -57,6 +57,7 @@ function formatSavedLabel(savedAt: number): string {
       <CdxCard
         v-for="item in displayItems"
         :key="item.id"
+        class="wikita-lite-card--thumbnail-large"
         :url="savedItemHref(item)"
         :thumbnail="cardThumbnail(item.thumbnailUrl)"
         :force-thumbnail="true"

@@ -71,6 +71,7 @@ function saveLabel(itemId: string): string {
         :supporting-text="relatedLabel(item.relatedToTitle)"
         :supporting-icon="cdxIconLink"
         :thumbnail-url="item.thumbnailUrl"
+        thumbnail-size="large"
         :force-thumbnail="true"
         :action-label="saveLabel(item.itemId)"
         :action-icon="saveIcon(item.itemId)"
@@ -79,6 +80,7 @@ function saveLabel(itemId: string): string {
 
       <CdxCard
         v-else
+        class="wikita-lite-card--thumbnail-large"
         :url="externalArticleHref(item)"
         :thumbnail="item.thumbnailUrl?.trim() ? { url: item.thumbnailUrl.trim() } : null"
         :force-thumbnail="true"

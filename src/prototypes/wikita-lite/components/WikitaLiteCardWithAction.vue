@@ -13,6 +13,7 @@ interface Props {
   supportingText?: string
   supportingIcon?: Icon
   thumbnailUrl?: string
+  thumbnailSize?: 'default' | 'large'
   forceThumbnail?: boolean
   actionLabel: string
   actionIcon?: Icon
@@ -24,6 +25,7 @@ const props = withDefaults(defineProps<Props>(), {
   supportingText: undefined,
   supportingIcon: undefined,
   thumbnailUrl: undefined,
+  thumbnailSize: 'default',
   forceThumbnail: true,
   actionIcon: undefined,
 })
@@ -66,6 +68,7 @@ function onActionClick(event: MouseEvent) {
 
     <CdxCard
       class="wikita-lite-card-with-action__card"
+      :class="{ 'wikita-lite-card--thumbnail-large': thumbnailSize === 'large' }"
       :thumbnail="thumbnail"
       :force-thumbnail="forceThumbnail"
     >
