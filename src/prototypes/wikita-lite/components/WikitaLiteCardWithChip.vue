@@ -5,6 +5,7 @@ import { CdxCard, CdxInfoChip } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
 
 import WikitaLiteSupportingRow from './WikitaLiteSupportingRow.vue'
+import type { WikitaLiteCardSeparation } from '../wikita-lite-card'
 
 export type WikitaLiteChipStatus = 'notice' | 'warning' | 'error' | 'success'
 
@@ -19,6 +20,7 @@ interface Props {
   supportingIcon?: Icon
   thumbnailUrl?: string
   forceThumbnail?: boolean
+  separation?: WikitaLiteCardSeparation
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -30,6 +32,7 @@ const props = withDefaults(defineProps<Props>(), {
   supportingIcon: undefined,
   thumbnailUrl: undefined,
   forceThumbnail: true,
+  separation: 'outline',
 })
 
 const titleId = useId()
@@ -48,7 +51,10 @@ const showSupporting = computed(
 <template>
   <article
     class="wikita-lite-card-with-chip"
-    :class="{ 'wikita-lite-card-with-chip--linked': hasLink }"
+    :class="{
+      'wikita-lite-card-with-chip--linked': hasLink,
+      'wikita-lite-card-with-chip--separation-divider': separation === 'divider',
+    }"
   >
     <a
       v-if="hasLink"
@@ -66,6 +72,7 @@ const showSupporting = computed(
 
       <CdxCard
         class="wikita-lite-card-with-chip__card"
+        :class="{ 'wikita-lite-card--separation-divider': separation === 'divider' }"
         :thumbnail="thumbnail"
         :force-thumbnail="forceThumbnail"
       >

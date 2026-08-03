@@ -63,9 +63,44 @@
   align-self: stretch;
 }
 
-/* Article of the day, Further reading, Trending, Recently saved, and Born on this day — 96×96px thumbnails. */
+/* Article of the day, Further reading, Trending, Recently saved, and Born on this day — large thumbnails. */
 .wikita-lite-shell .cdx-card.wikita-lite-card--thumbnail-large .cdx-card__thumbnail.cdx-thumbnail .cdx-thumbnail__placeholder,
 .wikita-lite-shell .cdx-card.wikita-lite-card--thumbnail-large .cdx-card__thumbnail.cdx-thumbnail .cdx-thumbnail__image {
-  width: 96px;
-  height: 96px;
+  width: var(--size-600, 6rem);
+  height: var(--size-600, 6rem);
+}
+
+/* Opt-in divider card groups — mirrors upstream CdxCard separation="divider" (Gerrit 1319153). */
+.wikita-lite-shell .wikita-lite-card-group--divider {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.wikita-lite-shell .wikita-lite-card--separation-divider.cdx-card {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+
+.wikita-lite-shell .wikita-lite-card--separation-divider.cdx-card + .wikita-lite-card--separation-divider.cdx-card {
+  border-top: var(--border-base, 1px solid var(--border-color-base));
+  padding-top: var(--spacing-75, 12px);
+}
+
+/* Wrapper articles (action / chip cards) in a divider group. */
+.wikita-lite-shell .wikita-lite-card-group--divider > * + * {
+  border-top: var(--border-base, 1px solid var(--border-color-base));
+  padding-top: var(--spacing-75, 12px);
+}
+
+.wikita-lite-shell .wikita-lite-card-with-chip--separation-divider .wikita-lite-card-with-chip__shell {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background-color: transparent;
+}
+
+.wikita-lite-shell .wikita-lite-card-with-chip--linked.wikita-lite-card-with-chip--separation-divider .wikita-lite-card-with-chip__shell:hover {
+  border-color: transparent;
 }

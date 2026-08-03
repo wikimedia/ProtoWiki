@@ -19,5 +19,6 @@ export function bornOnThisDayDescription(item: HomeBornOnThisDay): string | unde
 }
 
 export function bornOnThisDayYearLabel(year: number): string {
-  return `Born ${year}`
+  const age = new Date().getFullYear() - year
+  return age === 1 ? '1 year old' : `${age} years old`
 }

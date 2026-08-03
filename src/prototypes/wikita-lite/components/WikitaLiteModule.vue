@@ -5,15 +5,19 @@ import { RouterLink } from 'vue-router'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconNext } from '@wikimedia/codex-icons'
 
+import type { WikitaLiteCardSeparation } from '../wikita-lite-card'
+
 interface Props {
   title: string
   to?: RouteLocationRaw
   standalone?: boolean
+  cardSeparation?: WikitaLiteCardSeparation
 }
 
 withDefaults(defineProps<Props>(), {
   to: undefined,
   standalone: false,
+  cardSeparation: 'outline',
 })
 </script>
 
@@ -37,7 +41,10 @@ withDefaults(defineProps<Props>(), {
       {{ title }}
     </h3>
 
-    <div class="wikita-lite-module__cards">
+    <div
+      class="wikita-lite-module__cards"
+      :class="{ 'wikita-lite-card-group--divider': cardSeparation === 'divider' }"
+    >
       <slot />
     </div>
   </section>

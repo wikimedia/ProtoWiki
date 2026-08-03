@@ -5,6 +5,8 @@ import darkTokensRaw from '@wikimedia/codex-design-tokens/theme-wikimedia-ui-mod
 
 import { loadConfig, type ConfigTheme } from '@/config'
 
+import codexTokenExtensions from '@/styles/codex-token-extensions.css?inline'
+
 export type Skin = 'desktop' | 'mobile'
 export type Theme = 'light' | 'dark'
 
@@ -62,6 +64,13 @@ function injectThemedTokens(): void {
 
   inject(lightTokensRaw, '[data-theme="dark"]', 'protowiki-tokens-dark-base')
   inject(darkTokensRaw, '[data-theme="dark"]', 'protowiki-tokens-dark-palette')
+
+  if (!document.getElementById('protowiki-tokens-extensions')) {
+    const style = document.createElement('style')
+    style.id = 'protowiki-tokens-extensions'
+    style.textContent = codexTokenExtensions
+    document.head.appendChild(style)
+  }
 }
 
 // Module-level reactive refs that mirror the data-skin / data-theme

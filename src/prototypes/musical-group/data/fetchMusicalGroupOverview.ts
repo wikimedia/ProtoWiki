@@ -342,7 +342,44 @@ function isLowValueMentionTitle(title: string): boolean {
   )
 }
 
+function stripHtmlTags(html: string): string {
+  return html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+}
+
+/** Trim a search snippet so the highlighted match is visible, not buried after ellipses. */
+function focusSnippetOnSearchMatch(html: string): string {
+  const flattened = html
+    .replace(/<\/span>([^\S\r\n]+)<span class="searchmatch">/g, ' ')
+    .replace(/\s*[\r\n]+\s*/g, ' ')
+    .trim()
+
+  const matchRegex = /<span class="searchmatch">([\s\S]*?)<\/span>/
+  const matchResult = matchRegex.exec(flattened)
+  if (!matchResult || matchResult.index === undefined) {
+    return flattened.startsWith('…') ? flattened : `… ${flattened}`
+  }
+
+  const matchSpan = matchResult[0]
+  const matchIndex = matchResult.index
+  const beforeText = stripHtmlTags(flattened.slice(0, matchIndex))
+  const afterText = stripHtmlTags(flattened.slice(matchIndex + matchSpan.length))
+
+  const maxBefore = 45
+  const maxAfter = 55
+
+  const beforeSlice =
+    beforeText.length > maxBefore ? `… ${beforeText.slice(-maxBefore).trim()}` : beforeText
+  const afterSlice =
+    afterText.length > maxAfter ? `${afterText.slice(0, maxAfter).trim()} …` : afterText
+
+  return [beforeSlice, matchSpan, afterSlice].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim()
+}
+
 function formatSnippetHtml(html: string): string {
+  if (html.includes('searchmatch')) {
+    return focusSnippetOnSearchMatch(html)
+  }
+
   const formatted = html
     .replace(/<\/span>([^\S\r\n]+)<span class="searchmatch">/g, '$1')
     .replace(/\s*[\r\n]+\s*/g, ' … ')
@@ -368,7 +405,7 @@ async function isUsableMentionTitle(
 /** How many "Mentioned" cards to surface per overview feed. */
 const MAX_SNIPPET_MENTIONS = 3
 
-async function fetchSnippetMentions(
+export async function fetchSnippetMentions(
   searchTerm: string,
   ownTitle: string,
   excludeItemId: string | undefined,
@@ -389,8 +426,8 @@ async function fetchSnippetMentions(
     }
   }
 
-  // Order candidates by morelike relevance first, then remaining raw mention hits,
-  // deduping by title so the same page isn't considered twice.
+  // Only surface pages that are morelike-related to the seed article and contain
+  // a mention snippet for the search term — skip raw search hits with no morelike link.
   const orderedCandidates: { title: string; snippet: string }[] = []
   const seenTitles = new Set<string>()
   const pushCandidate = (title: string | undefined, snippet: string | undefined): void => {
@@ -404,9 +441,6 @@ async function fetchSnippetMentions(
   for (const candidate of morelikeHits) {
     if (!candidate.title) continue
     pushCandidate(candidate.title, snippetByTitle.get(normalizeTitle(candidate.title)))
-  }
-  for (const candidate of mentionHits) {
-    pushCandidate(candidate.title, candidate.snippet)
   }
 
   const mentions: MusicalGroupOverviewSnippet[] = []

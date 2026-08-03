@@ -1,20 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import { CdxButton, CdxCard, CdxProgressBar } from '@wikimedia/codex'
-import {
-  cdxIconBookmark,
-  cdxIconBookmarkList,
-  cdxIconBookmarkOutline,
-  cdxIconStar,
-} from '@wikimedia/codex-icons'
+import { cdxIconStar } from '@wikimedia/codex-icons'
 
 import type { HomeFeatured } from '../../musical-group/data/types'
-import {
-  externalArticleHref,
-  useWikitaLiteSaveActions,
-} from '../composables/useWikitaLiteCardActions'
-import WikitaLiteCardWithAction from '../components/WikitaLiteCardWithAction.vue'
+import { externalArticleHref } from '../composables/useWikitaLiteCardActions'
+import WikitaLiteCardPortrait from '../components/WikitaLiteCardPortrait.vue'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
 
 interface Props {
@@ -26,7 +16,7 @@ interface Props {
   listsVersion?: number
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   standalone: false,
   featuredArticle: undefined,
   loading: false,
@@ -38,20 +28,6 @@ const props = withDefaults(defineProps<Props>(), {
 defineEmits<{
   retry: []
 }>()
-
-const listsVersionRef = computed(() => props.listsVersion)
-
-const { relatedReadingSaved, relatedReadingInList, onRelatedReadingSave } =
-  useWikitaLiteSaveActions(listsVersionRef)
-
-function saveIcon(itemId: string) {
-  if (relatedReadingInList(itemId)) return cdxIconBookmarkList
-  return relatedReadingSaved(itemId) ? cdxIconBookmark : cdxIconBookmarkOutline
-}
-
-function saveLabel(itemId: string): string {
-  return relatedReadingSaved(itemId) ? 'Saved' : 'Save'
-}
 
 function cardThumbnail(url?: string) {
   return url?.trim() ? { url: url.trim() } : null
@@ -70,30 +46,20 @@ function cardThumbnail(url?: string) {
     </template>
 
     <template v-else>
-      <WikitaLiteCardWithAction
-        v-if="featuredArticle?.itemId"
+      <WikitaLiteCardPortrait
+        v-if="featuredArticle?.thumbnailUrl"
         :url="externalArticleHref(featuredArticle)"
+        :media-url="featuredArticle.thumbnailUrl"
+        :media-alt="featuredArticle.title"
         :title="featuredArticle.title"
         :description="featuredArticle.description"
         supporting-text="Article of the day"
         :supporting-icon="cdxIconStar"
-        :thumbnail-url="featuredArticle.thumbnailUrl"
-        thumbnail-size="large"
-        :force-thumbnail="true"
-        :action-label="saveLabel(featuredArticle.itemId)"
-        :action-icon="saveIcon(featuredArticle.itemId)"
-        @action-click="
-          onRelatedReadingSave(
-            featuredArticle.itemId,
-            featuredArticle.title,
-            featuredArticle.thumbnailUrl,
-          )
-        "
+        :show-play-overlay="false"
       />
 
       <CdxCard
         v-else-if="featuredArticle"
-        class="wikita-lite-card--thumbnail-large"
         :url="externalArticleHref(featuredArticle)"
         :thumbnail="cardThumbnail(featuredArticle.thumbnailUrl)"
         :force-thumbnail="true"

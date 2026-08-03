@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, toRef } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
+import { RouterLink } from 'vue-router'
 
 import { CdxButton, CdxCard, CdxProgressBar } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
@@ -31,6 +33,7 @@ interface Props {
   savedItemsLoading?: boolean
   loading?: boolean
   previewLimit?: number
+  moreTo?: RouteLocationRaw
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -40,6 +43,7 @@ const props = withDefaults(defineProps<Props>(), {
   savedItemsLoading: false,
   loading: false,
   previewLimit: 3,
+  moreTo: undefined,
 })
 
 const activeRef = computed(() => props.standalone)
@@ -69,6 +73,10 @@ useCommonsPhotosInfiniteScroll({
 const previewItems = computed(() => props.items.slice(0, props.previewLimit))
 
 const displayItems = computed(() => (props.standalone ? activityChanges.value : previewItems.value))
+
+const showMoreLink = computed(
+  () => !props.standalone && Boolean(props.moreTo) && displayItems.value.length > 0,
+)
 
 const showPreviewLoading = computed(() => props.standalone && props.loading)
 
@@ -164,6 +172,20 @@ function cardThumbnail(url?: string) {
       </CdxCard>
     </template>
 
+    <RouterLink
+      v-if="showMoreLink && moreTo"
+      :to="moreTo"
+      class="recent-activity-module__more-link"
+    >
+      <CdxButton
+        weight="primary"
+        class="recent-activity-module__more-button"
+        tabindex="-1"
+      >
+        Review more changes
+      </CdxButton>
+    </RouterLink>
+
     <CdxProgressBar v-if="standalone && activityLoading" inline aria-label="Loading activity" />
 
     <div
@@ -209,5 +231,16 @@ function cardThumbnail(url?: string) {
 .recent-activity-module__sentinel {
   height: 1px;
   flex-shrink: 0;
+}
+
+.recent-activity-module__more-link {
+  display: block;
+  width: 100%;
+  margin-bottom: var(--spacing-50);
+  text-decoration: none;
+}
+
+.recent-activity-module__more-button {
+  width: 100%;
 }
 </style>

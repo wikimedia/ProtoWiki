@@ -299,6 +299,33 @@ export interface HomeRelated {
   relatedToListId?: string
 }
 
+/** An article that mentions a saved page, with the highlighted search snippet. */
+export interface HomeMention {
+  title: string
+  description: string
+  snippetHtml: string
+  thumbnailUrl?: string
+  articleUrl: string
+  itemId?: string
+  /** Display title of the saved page this mention is about. */
+  mentionedInTitle: string
+}
+
+/** An active discussion thread from a configured noticeboard. */
+export interface HomeActiveDiscussion {
+  id: string
+  title: string
+  noticeboardTitle: string
+  noticeboardPage: string
+  commentCount: number
+  participantCount: number
+  latestReplyTimestamp: string
+  /** Relative time of the latest reply, e.g. "3 mins ago". */
+  latestCommentLabel: string
+  discussionUrl: string
+  latestCommentUrl: string
+}
+
 /** A most-read article from the daily featured feed. */
 export interface HomeTrending {
   title: string

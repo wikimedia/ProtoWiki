@@ -2,19 +2,18 @@
 import { CdxIcon } from '@wikimedia/codex'
 import {
   cdxIconBook,
-  cdxIconEdit,
   cdxIconGlobe,
   cdxIconHome,
 } from '@wikimedia/codex-icons'
 import type { Icon } from '@wikimedia/codex-icons'
 
 import type { WikitaLiteView } from '../routes'
+import { SHOW_WIKITA_LITE_FLOATING_NAV, VIEW_TAB_LABELS } from '../routes'
 
 const NAV_ITEMS: { id: WikitaLiteView; label: string; icon: Icon }[] = [
-  { id: 'all', label: 'All', icon: cdxIconHome },
-  { id: 'community', label: 'Community', icon: cdxIconGlobe },
-  { id: 'read', label: 'Read', icon: cdxIconBook },
-  { id: 'edit', label: 'Edit', icon: cdxIconEdit },
+  { id: 'edit', label: VIEW_TAB_LABELS.edit, icon: cdxIconHome },
+  { id: 'community', label: VIEW_TAB_LABELS.community, icon: cdxIconGlobe },
+  { id: 'read', label: VIEW_TAB_LABELS.read, icon: cdxIconBook },
 ]
 
 defineProps<{
@@ -27,7 +26,12 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="wikita-lite-floating-nav" role="navigation" aria-label="Quick navigation">
+  <div
+    v-show="SHOW_WIKITA_LITE_FLOATING_NAV"
+    class="wikita-lite-floating-nav"
+    role="navigation"
+    aria-label="Quick navigation"
+  >
     <button
       v-for="item in NAV_ITEMS"
       :key="item.id"

@@ -1,6 +1,8 @@
 import type {
+  HomeActiveDiscussion,
   HomeFeaturedTab,
   HomeHelpWanted,
+  HomeMention,
   HomeRecentChange,
   HomeRelated,
   HomeSavedItem,
@@ -101,6 +103,12 @@ interface CachedTrendingEntry {
   fetchedAt: number
 }
 
+interface CachedActiveDiscussionsEntry {
+  dependencyKey: string
+  data: HomeActiveDiscussion[]
+  fetchedAt: number
+}
+
 interface CachedSavedSummariesEntry {
   dependencyKey: string
   data: HomeSavedItem[]
@@ -119,12 +127,20 @@ interface CachedRecentChangesEntry {
   fetchedAt: number
 }
 
+interface CachedHomeMentionsEntry {
+  dependencyKey: string
+  data: HomeMention[]
+  fetchedAt: number
+}
+
 type HomeCacheEntry =
   | CachedFeaturedEntry
   | CachedTrendingEntry
+  | CachedActiveDiscussionsEntry
   | CachedSavedSummariesEntry
   | CachedHelpWantedEntry
   | CachedRecentChangesEntry
+  | CachedHomeMentionsEntry
   | CachedRelatedFeedState
   | CachedActivityFeedState
   | CachedContributeFeedState
@@ -184,6 +200,27 @@ export function clearCachedTrendingFeed(_dependencyKey?: string): void {
   writeEntries(entries)
 }
 
+export function getCachedActiveDiscussions(dependencyKey: string): HomeActiveDiscussion[] | null {
+  const entry = readEntries().activeDiscussions as CachedActiveDiscussionsEntry | undefined
+  if (!entry?.data?.length || entry.dependencyKey !== dependencyKey) return null
+  if (Date.now() - entry.fetchedAt > HOME_TAB_FEED_CACHE_TTL_MS) return null
+  return entry.data
+}
+
+export function setCachedActiveDiscussions(
+  dependencyKey: string,
+  data: HomeActiveDiscussion[],
+): void {
+  setEntry('activeDiscussions', { dependencyKey, data, fetchedAt: Date.now() })
+}
+
+export function clearCachedActiveDiscussions(_dependencyKey?: string): void {
+  const entries = readEntries()
+  if (!entries.activeDiscussions) return
+  delete entries.activeDiscussions
+  writeEntries(entries)
+}
+
 export function getCachedSavedSummaries(dependencyKey: string): HomeSavedItem[] | null {
   return getEntry<CachedSavedSummariesEntry>('savedSummaries', dependencyKey)?.data ?? null
 }
@@ -210,6 +247,16 @@ export function getCachedRecentChangesPreview(dependencyKey: string): HomeRecent
 
 export function setCachedRecentChangesPreview(dependencyKey: string, data: HomeRecentChange[]): void {
   setEntry('recentChanges', { dependencyKey, data, fetchedAt: Date.now() })
+}
+
+export function getCachedHomeMentions(dependencyKey: string): HomeMention[] | null {
+  const data = getEntry<CachedHomeMentionsEntry>('homeMentions', dependencyKey)?.data
+  if (!data?.length) return null
+  return data
+}
+
+export function setCachedHomeMentions(dependencyKey: string, data: HomeMention[]): void {
+  setEntry('homeMentions', { dependencyKey, data, fetchedAt: Date.now() })
 }
 
 export function relatedFeedCacheKey(tab: RelatedFeedTabId, dependencyKey: string): string {

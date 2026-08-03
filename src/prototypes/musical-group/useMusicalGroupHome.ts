@@ -4,8 +4,10 @@ import { useRoute } from 'vue-router'
 import { WIKITA_SAVE_FEEDBACK_KEY } from './composables/useWikitaSaveFeedback'
 import { listBookmarks } from './data/bookmarks'
 import { bookmarksKey, utcDayKey } from './data/cacheKeys'
+import { fetchActiveDiscussions, clearActiveDiscussionsSessionCache } from './data/fetchActiveDiscussions'
 import { fetchFeaturedTabContent, isUsableFeaturedTab } from './data/fetchFeaturedFeed'
 import { fetchHelpWanted } from './data/fetchHelpWanted'
+import { fetchHomeMentions, filterMentionsExcludingRelated } from './data/fetchHomeMentions'
 import { fetchRecentChanges } from './data/fetchRecentChanges'
 import { fetchSavedItemSummaries } from './data/fetchSavedItemSummaries'
 import { fetchTrendingFeed, isTrendingSummaryIncomplete } from './data/fetchTrending'
@@ -13,10 +15,13 @@ import { clearFeaturedFeedSessionCache } from './data/fetchEnwikiFeaturedFeedDay
 import { clearFeaturedTabSessionCache } from './data/fetchFeaturedFeed'
 import { clearTrendingSessionCache } from './data/fetchTrending'
 import {
+  clearCachedActiveDiscussions,
   clearCachedFeaturedTab,
   clearCachedTrendingFeed,
+  getCachedActiveDiscussions,
   getCachedFeaturedTab,
   getCachedHelpWanted,
+  getCachedHomeMentions,
   getCachedRecentChangesPreview,
   getCachedRelatedFeed,
   getCachedSavedSummaries,
@@ -24,8 +29,10 @@ import {
 } from './data/homeTabCache'
 import { loadRelatedFeedInitialBatch } from './loadRelatedFeedInitialBatch'
 import type {
+  HomeActiveDiscussion,
   HomeFeaturedTab,
   HomeHelpWanted,
+  HomeMention,
   HomeRecentChange,
   HomeRelated,
   HomeSavedItem,
@@ -45,7 +52,7 @@ function isAbort(err: unknown): boolean {
   return (err as Error)?.name === 'AbortError'
 }
 
-export type PersonalizedFeedId = 'related' | 'helpWanted' | 'recentChanges'
+export type PersonalizedFeedId = 'related' | 'mentions' | 'helpWanted' | 'recentChanges'
 
 export interface ReloadBookmarksOptions {
   /** Personalized feeds to leave as-is (saved summaries still refresh). */
@@ -65,11 +72,16 @@ export function useMusicalGroupHome(options: {
   const trendingItems = ref<HomeTrending[]>([])
   const trendingLoading = ref(true)
   const trendingTabError = ref<string | null>(null)
+  const activeDiscussions = ref<HomeActiveDiscussion[]>([])
+  const activeDiscussionsLoading = ref(true)
+  const activeDiscussionsError = ref<string | null>(null)
   const hasSavedPages = ref(listBookmarks().length > 0)
   const savedItems = ref<HomeSavedItem[]>([])
   const savedItemsLoading = ref(false)
   const homeRelatedItems = ref<HomeRelated[]>([])
   const homeRelatedLoading = ref(false)
+  const homeMentionsRaw = ref<HomeMention[]>([])
+  const homeMentionsLoading = ref(false)
   const helpWanted = ref<HomeHelpWanted[]>([])
   const recentChanges = ref<HomeRecentChange[]>([])
   const helpWantedLoading = ref(false)
@@ -91,6 +103,10 @@ export function useMusicalGroupHome(options: {
     return savedSorted.value.slice(0, count)
   })
 
+  const homeMentions = computed(() =>
+    filterMentionsExcludingRelated(homeMentionsRaw.value, homeRelatedItems.value),
+  )
+
   let abort: AbortController | null = null
   let bookmarkAbort: AbortController | null = null
 
@@ -106,6 +122,11 @@ export function useMusicalGroupHome(options: {
       homeRelatedItems.value = cachedRelated.items
     }
 
+    const cachedMentions = getCachedHomeMentions(dependencyKey)
+    if (cachedMentions) {
+      homeMentionsRaw.value = cachedMentions
+    }
+
     const cachedHelp = getCachedHelpWanted(dependencyKey)
     if (cachedHelp) helpWanted.value = cachedHelp
 
@@ -116,10 +137,12 @@ export function useMusicalGroupHome(options: {
   function clearPersonalizedFeeds(): void {
     savedItems.value = []
     homeRelatedItems.value = []
+    homeMentionsRaw.value = []
     helpWanted.value = []
     recentChanges.value = []
     savedItemsLoading.value = false
     homeRelatedLoading.value = false
+    homeMentionsLoading.value = false
     helpWantedLoading.value = false
     recentChangesLoading.value = false
   }
@@ -159,6 +182,7 @@ export function useMusicalGroupHome(options: {
 
     if (!items.length) {
       homeRelatedItems.value = []
+      homeMentionsRaw.value = []
       helpWanted.value = []
       recentChanges.value = []
       return
@@ -167,6 +191,8 @@ export function useMusicalGroupHome(options: {
     const cachedHelp = getCachedHelpWanted(dependencyKey)
     const needsRelatedFetch =
       !skipFeeds.has('related') && !getCachedRelatedFeed('home', dependencyKey)
+    const needsMentionsFetch =
+      !skipFeeds.has('mentions') && !getCachedHomeMentions(dependencyKey)
     const needsHelpFetch =
       !skipFeeds.has('helpWanted') &&
       (!cachedHelp || cachedHelp.length < helpWantedLimit)
@@ -174,6 +200,7 @@ export function useMusicalGroupHome(options: {
       !skipFeeds.has('recentChanges') && !getCachedRecentChangesPreview(dependencyKey)
 
     if (needsRelatedFetch) homeRelatedLoading.value = true
+    if (needsMentionsFetch) homeMentionsLoading.value = true
     if (needsHelpFetch) {
       helpWantedLoading.value = true
       if (!cachedHelp?.length) helpWanted.value = []
@@ -200,6 +227,18 @@ export function useMusicalGroupHome(options: {
           homeRelatedItems.value = []
         } finally {
           homeRelatedLoading.value = false
+        }
+      })(),
+      (async () => {
+        if (!needsMentionsFetch) return
+        try {
+          const excludeRelated = getCachedRelatedFeed('home', dependencyKey)?.items ?? []
+          homeMentionsRaw.value = await fetchHomeMentions(items, signal, undefined, excludeRelated)
+        } catch (err) {
+          if (isAbort(err)) return
+          homeMentionsRaw.value = []
+        } finally {
+          homeMentionsLoading.value = false
         }
       })(),
       (async () => {
@@ -278,6 +317,40 @@ export function useMusicalGroupHome(options: {
     }
   }
 
+  async function loadActiveDiscussions(
+    signal: AbortSignal,
+    options?: { background?: boolean },
+  ): Promise<void> {
+    activeDiscussionsError.value = null
+
+    if (!options?.background && !activeDiscussions.value.length) {
+      activeDiscussionsLoading.value = true
+    }
+
+    try {
+      activeDiscussions.value = await fetchActiveDiscussions(signal)
+    } catch (err) {
+      if (isAbort(err)) return
+      if (!activeDiscussions.value.length) {
+        activeDiscussions.value = []
+      }
+      activeDiscussionsError.value =
+        err instanceof Error ? err.message : 'Could not load active discussions.'
+    } finally {
+      activeDiscussionsLoading.value = false
+    }
+  }
+
+  async function retryActiveDiscussionsFeed(): Promise<void> {
+    const dayKey = utcDayKey()
+    clearActiveDiscussionsSessionCache()
+    clearCachedActiveDiscussions(dayKey)
+
+    abort?.abort()
+    abort = new AbortController()
+    await loadActiveDiscussions(abort.signal)
+  }
+
   async function refreshIncompleteTrending(signal?: AbortSignal): Promise<void> {
     if (!trendingItems.value.some(isTrendingSummaryIncomplete)) return
     if (!signal) {
@@ -321,6 +394,7 @@ export function useMusicalGroupHome(options: {
     const dayKey = utcDayKey()
     const featuredCached = getCachedFeaturedTab(dayKey)
     const trendingCached = getCachedTrendingFeed(dayKey)
+    const activeDiscussionsCached = getCachedActiveDiscussions(dayKey)
 
     if (featuredCached && isUsableFeaturedTab(featuredCached)) {
       featuredTab.value = featuredCached
@@ -338,10 +412,19 @@ export function useMusicalGroupHome(options: {
       trendingLoading.value = true
     }
 
+    if (activeDiscussionsCached?.length) {
+      activeDiscussions.value = activeDiscussionsCached
+      activeDiscussionsLoading.value = false
+    } else {
+      activeDiscussions.value = []
+      activeDiscussionsLoading.value = true
+    }
+
     void (async () => {
       await Promise.all([
         featuredCached ? Promise.resolve() : loadFeatured(signal),
         loadTrending(signal, { background: Boolean(trendingCached?.length) }),
+        loadActiveDiscussions(signal, { background: Boolean(activeDiscussionsCached?.length) }),
       ])
       if (signal.aborted) return
 
@@ -390,12 +473,18 @@ export function useMusicalGroupHome(options: {
     trendingLoading,
     trendingTabError,
     retryTrendingFeed,
+    activeDiscussions,
+    activeDiscussionsLoading,
+    activeDiscussionsError,
+    retryActiveDiscussionsFeed,
     hasSavedPages,
     savedSorted,
     recentlySaved,
     savedItemsLoading,
     homeRelatedItems,
     homeRelatedLoading,
+    homeMentions,
+    homeMentionsLoading,
     helpWanted,
     recentChanges,
     helpWantedLoading,

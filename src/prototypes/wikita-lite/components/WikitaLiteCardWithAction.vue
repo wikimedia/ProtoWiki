@@ -5,16 +5,19 @@ import { CdxButton, CdxCard, CdxIcon } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
 
 import WikitaLiteSupportingRow from './WikitaLiteSupportingRow.vue'
+import type { WikitaLiteCardSeparation } from '../wikita-lite-card'
 
 interface Props {
   url?: string
   title: string
   description?: string
+  descriptionHtml?: string
   supportingText?: string
   supportingIcon?: Icon
   thumbnailUrl?: string
   thumbnailSize?: 'default' | 'large'
   forceThumbnail?: boolean
+  separation?: WikitaLiteCardSeparation
   actionLabel: string
   actionIcon?: Icon
 }
@@ -22,11 +25,13 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   url: undefined,
   description: undefined,
+  descriptionHtml: undefined,
   supportingText: undefined,
   supportingIcon: undefined,
   thumbnailUrl: undefined,
   thumbnailSize: 'default',
   forceThumbnail: true,
+  separation: 'outline',
   actionIcon: undefined,
 })
 
@@ -40,6 +45,10 @@ const hasLink = computed(() => Boolean(props.url?.trim()))
 
 const thumbnail = computed(() =>
   props.thumbnailUrl?.trim() ? { url: props.thumbnailUrl.trim() } : null,
+)
+
+const showDescription = computed(
+  () => Boolean(props.description?.trim() || props.descriptionHtml?.trim()),
 )
 
 const showSupporting = computed(
@@ -68,7 +77,10 @@ function onActionClick(event: MouseEvent) {
 
     <CdxCard
       class="wikita-lite-card-with-action__card"
-      :class="{ 'wikita-lite-card--thumbnail-large': thumbnailSize === 'large' }"
+      :class="{
+        'wikita-lite-card--thumbnail-large': thumbnailSize === 'large',
+        'wikita-lite-card--separation-divider': separation === 'divider',
+      }"
       :thumbnail="thumbnail"
       :force-thumbnail="forceThumbnail"
     >
@@ -76,8 +88,14 @@ function onActionClick(event: MouseEvent) {
         <span :id="titleId">{{ title }}</span>
       </template>
 
-      <template v-if="description" #description>
-        <span class="wikita-lite-card-with-action__description">{{ description }}</span>
+      <template v-if="showDescription" #description>
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <span
+          v-if="descriptionHtml"
+          class="wikita-lite-card-with-action__description wikita-lite-card-with-action__description--html"
+          v-html="descriptionHtml"
+        />
+        <span v-else class="wikita-lite-card-with-action__description">{{ description }}</span>
       </template>
 
       <template v-if="showSupporting || actionLabel" #supporting-text>
@@ -132,7 +150,25 @@ function onActionClick(event: MouseEvent) {
 }
 
 .wikita-lite-card-with-action__description {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+.wikita-lite-card-with-action__description--html {
   display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+}
+
+.wikita-lite-card-with-action__description :deep(.searchmatch) {
+  padding: 0 1px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-base);
+  background-color: #ffe49c;
 }
 
 .wikita-lite-card-with-action__footer {

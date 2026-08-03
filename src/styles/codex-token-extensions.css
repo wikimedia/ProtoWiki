@@ -1,0 +1,9 @@
+/**
+ * Codex tokens not yet published in @wikimedia/codex-design-tokens.
+ * Mirrors design/codex Gerrit 1319153 (Card amendments, T407399).
+ * Remove when upstream ships --size-600 in a Codex release.
+ */
+[data-theme='light'],
+[data-theme='dark'] {
+  --size-600: 6rem;
+}

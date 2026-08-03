@@ -78,7 +78,7 @@ export const DEFAULT_API_CONTACT = 'lwilson-ctr@wikimedia.org'
 
 export const CONFIG_USER_DISPLAY_NAMES: Partial<Record<ConfigUser, string>> = {
   'logged-out': 'LoggedOut',
-  new: 'NewEditor',
+  new: '$Username',
   experienced: 'ExperiencedEditor',
 }
 
