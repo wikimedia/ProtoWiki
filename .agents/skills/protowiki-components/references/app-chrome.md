@@ -166,8 +166,9 @@ Pass a preset via **`AppChromeWrapper`** **`bottomNavItems`**, or set
 
 **`template-app-chrome`** exposes radio pickers for both header and bottom bar
 layouts so you can preview any combination independently. Bottom bar **Main**
-and **Article** presets follow the global app platform preference (iOS vs
-Android); only **Hidden** is platform-agnostic.
+and **Article** presets follow the global app OS preference (**Auto**, **iOS**,
+or **Android**); only **Hidden** is platform-agnostic. **Auto** detects iOS vs
+Android from the current device; on desktop browsers it falls back to Android.
 
 ### Slots
 

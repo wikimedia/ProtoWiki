@@ -1,6 +1,7 @@
 export type ConfigTheme = 'light' | 'dark' | 'system'
 export type PrototypePlatform = 'web' | 'app'
 export type AppPlatform = 'ios' | 'android'
+export type ConfigAppPlatform = 'auto' | AppPlatform
 export type ConfigDevice = PrototypePlatform
 export type ConfigWebSkin = 'auto' | 'desktop' | 'mobile'
 export type ConfigUser = 'logged-out' | 'new' | 'experienced' | 'real'
@@ -18,8 +19,8 @@ export interface UserPageLists {
 export interface Config {
   theme: ConfigTheme
   device: ConfigDevice
-  /** Native app OS mode for `platform: 'app'` prototypes. */
-  appPlatform: AppPlatform
+  /** Native app OS preference for `platform: 'app'` prototypes. */
+  appPlatform: ConfigAppPlatform
   /** Vector / Minerva skin preference when `device` is `'web'`. */
   webSkin: ConfigWebSkin
   user: ConfigUser
@@ -74,7 +75,7 @@ export const DEFAULT_USER_PAGE_LISTS: Record<ConfigUser, UserPageLists> = {
 export const DEFAULT_CONFIG: Config = {
   theme: 'light',
   device: 'web',
-  appPlatform: 'android',
+  appPlatform: 'auto',
   webSkin: 'auto',
   user: 'new',
   realUsername: '',
@@ -110,7 +111,8 @@ export const CONFIG_DEVICE_MENU_ITEMS: { value: ConfigDevice; label: string }[] 
   { value: 'app', label: 'App' },
 ]
 
-export const CONFIG_APP_PLATFORM_MENU_ITEMS: { value: AppPlatform; label: string }[] = [
+export const CONFIG_APP_PLATFORM_MENU_ITEMS: { value: ConfigAppPlatform; label: string }[] = [
+  { value: 'auto', label: 'Auto' },
   { value: 'android', label: 'Android' },
   { value: 'ios', label: 'iOS' },
 ]
@@ -198,7 +200,7 @@ const STORAGE_KEY = 'protowiki-prototype-user-config'
 
 const VALID_THEMES: ConfigTheme[] = ['light', 'dark', 'system']
 const VALID_DEVICES: ConfigDevice[] = ['web', 'app']
-const VALID_APP_PLATFORMS: AppPlatform[] = ['ios', 'android']
+const VALID_CONFIG_APP_PLATFORMS: ConfigAppPlatform[] = ['auto', 'ios', 'android']
 const VALID_WEB_SKINS: ConfigWebSkin[] = ['auto', 'desktop', 'mobile']
 const VALID_USERS: ConfigUser[] = ['logged-out', 'new', 'experienced', 'real']
 const PAGE_LIST_KEYS: PageListKey[] = ['watchlist', 'readingList', 'editedPages']
@@ -211,8 +213,11 @@ function isConfigDevice(value: unknown): value is ConfigDevice {
   return typeof value === 'string' && VALID_DEVICES.includes(value as ConfigDevice)
 }
 
-function isAppPlatform(value: unknown): value is AppPlatform {
-  return typeof value === 'string' && VALID_APP_PLATFORMS.includes(value as AppPlatform)
+function isConfigAppPlatform(value: unknown): value is ConfigAppPlatform {
+  return (
+    typeof value === 'string' &&
+    VALID_CONFIG_APP_PLATFORMS.includes(value as ConfigAppPlatform)
+  )
 }
 
 function isConfigWebSkin(value: unknown): value is ConfigWebSkin {
@@ -306,7 +311,7 @@ export function normalizeConfig(input: unknown): Config {
   return {
     theme: isConfigTheme(record.theme) ? record.theme : DEFAULT_CONFIG.theme,
     device: isConfigDevice(record.device) ? record.device : DEFAULT_CONFIG.device,
-    appPlatform: isAppPlatform(record.appPlatform)
+    appPlatform: isConfigAppPlatform(record.appPlatform)
       ? record.appPlatform
       : DEFAULT_CONFIG.appPlatform,
     webSkin: isConfigWebSkin(record.webSkin) ? record.webSkin : DEFAULT_CONFIG.webSkin,

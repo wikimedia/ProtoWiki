@@ -7,7 +7,7 @@ import {
   loadConfig,
   resetUserPageListField,
   saveConfig,
-  type AppPlatform,
+  type ConfigAppPlatform,
   type Config,
   type ConfigDevice,
   type ConfigTheme,
@@ -54,7 +54,7 @@ export function useConfig(): {
   config: DeepReadonly<Ref<Config>>
   theme: Ref<ConfigTheme>
   device: Ref<ConfigDevice>
-  appPlatform: Ref<AppPlatform>
+  appPlatform: Ref<ConfigAppPlatform>
   webSkin: Ref<ConfigWebSkin>
   user: Ref<ConfigUser>
   realUsername: Ref<string>
@@ -82,7 +82,7 @@ export function useConfig(): {
 
   const appPlatform = computed({
     get: () => config.value.appPlatform,
-    set: (value: AppPlatform) => {
+    set: (value: ConfigAppPlatform) => {
       config.value = { ...config.value, appPlatform: value }
     },
   })

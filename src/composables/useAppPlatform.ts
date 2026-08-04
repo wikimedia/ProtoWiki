@@ -4,8 +4,8 @@ import { globalAppPlatform } from '@/app-platform'
 import type { AppPlatform } from '@/config'
 
 /**
- * Read-only access to the GLOBAL app platform (the value on <html>, persisted
- * in prototype config).
+ * Read-only access to the effective app platform (resolved `ios` / `android`
+ * on `<html>`; a stored `auto` preference is resolved before this ref is set).
  *
  * Use this when a prototype needs structural differences between iOS and
  * Android. For visual-only differences, prefer [data-app-platform] selectors
