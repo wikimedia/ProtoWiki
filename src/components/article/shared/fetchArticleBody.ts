@@ -1,12 +1,25 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 
+import {
+  PCS_SCRIPT_URL,
+  prepareMobileArticleDocument,
+  type MobileArticleDocument,
+} from './prepareMobileArticleDocument'
+
 export type ArticleBody = { html: string; liveTitle: string }
 
+/** Prepared PCS payload from REST `page/mobile-html`. */
+export type MobileArticleBody = ArticleBody & MobileArticleDocument
+
 const articleBodyCache = new Map<string, ArticleBody>()
+const mobileArticleBodyCache = new Map<string, MobileArticleBody>()
 const inFlightFetches = new Map<string, Promise<ArticleBody>>()
+const inFlightMobileFetches = new Map<string, Promise<MobileArticleBody>>()
 
 const STORAGE_PREFIX = 'protowiki:articleBody:v1:'
+const MOBILE_STORAGE_PREFIX = 'protowiki:mobileArticleBody:v1:'
 const LOG_PREFIX = '[ProtoWiki][fetchArticleBody]'
+const MOBILE_LOG_PREFIX = '[ProtoWiki][fetchMobileArticleBody]'
 
 function getLocalStorage(): Storage | null {
   try {
@@ -23,47 +36,102 @@ function normalizeArticleBody(value: unknown): ArticleBody | null {
   return { html: record.html, liveTitle: record.liveTitle }
 }
 
-function storageKeyForArticle(key: string): string {
-  return STORAGE_PREFIX + key
+function normalizeMobileArticleBody(value: unknown): MobileArticleBody | null {
+  if (typeof value !== 'object' || value === null) return null
+  const record = value as Record<string, unknown>
+  const base = normalizeArticleBody(value)
+  if (!base) return null
+  if (!Array.isArray(record.stylesheetHrefs)) return null
+  if (!record.stylesheetHrefs.every((href) => typeof href === 'string')) return null
+  return {
+    ...base,
+    pcsHtml: base.html,
+    stylesheetHrefs: record.stylesheetHrefs as string[],
+    html: base.html,
+  }
 }
 
-function removeFromStorage(key: string): void {
+function storageKeyForArticle(prefix: string, key: string): string {
+  return prefix + key
+}
+
+function removeFromStorage(prefix: string, key: string): void {
   const store = getLocalStorage()
   if (!store) return
   try {
-    store.removeItem(storageKeyForArticle(key))
+    store.removeItem(storageKeyForArticle(prefix, key))
   } catch {
     // Private mode or blocked storage — ignore.
   }
 }
 
-function loadFromStorage(key: string): ArticleBody | null {
+function loadFromStorage(prefix: string, key: string): ArticleBody | null {
   const store = getLocalStorage()
   if (!store) return null
   try {
-    const raw = store.getItem(storageKeyForArticle(key))
+    const raw = store.getItem(storageKeyForArticle(prefix, key))
     if (!raw) return null
     const normalized = normalizeArticleBody(JSON.parse(raw))
     if (!normalized) {
-      removeFromStorage(key)
+      removeFromStorage(prefix, key)
       return null
     }
     return normalized
   } catch {
-    removeFromStorage(key)
+    removeFromStorage(prefix, key)
     return null
   }
 }
 
-function saveToStorage(key: string, body: ArticleBody): void {
+function loadMobileFromStorage(key: string): MobileArticleBody | null {
+  const store = getLocalStorage()
+  if (!store) return null
+  try {
+    const raw = store.getItem(storageKeyForArticle(MOBILE_STORAGE_PREFIX, key))
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Record<string, unknown>
+    const normalized = normalizeMobileArticleBody({
+      html: parsed.pcsHtml ?? parsed.html,
+      liveTitle: parsed.liveTitle,
+      stylesheetHrefs: parsed.stylesheetHrefs,
+    })
+    if (!normalized) {
+      removeFromStorage(MOBILE_STORAGE_PREFIX, key)
+      return null
+    }
+    return normalized
+  } catch {
+    removeFromStorage(MOBILE_STORAGE_PREFIX, key)
+    return null
+  }
+}
+
+function saveToStorage(prefix: string, key: string, body: ArticleBody): void {
   const store = getLocalStorage()
   if (!store) return
   const normalized = normalizeArticleBody(body)
   if (!normalized) return
   try {
-    store.setItem(storageKeyForArticle(key), JSON.stringify(normalized))
+    store.setItem(storageKeyForArticle(prefix, key), JSON.stringify(normalized))
   } catch {
     // Most likely a QuotaExceededError. The in-memory cache still works.
+  }
+}
+
+function saveMobileToStorage(key: string, body: MobileArticleBody): void {
+  const store = getLocalStorage()
+  if (!store) return
+  try {
+    store.setItem(
+      storageKeyForArticle(MOBILE_STORAGE_PREFIX, key),
+      JSON.stringify({
+        pcsHtml: body.pcsHtml,
+        liveTitle: body.liveTitle,
+        stylesheetHrefs: body.stylesheetHrefs,
+      }),
+    )
+  } catch {
+    // QuotaExceededError — in-memory cache still works.
   }
 }
 
@@ -86,9 +154,8 @@ export interface FetchArticleBodyOptions {
 }
 
 /**
- * Fetches parsed article HTML via REST `page/html` — shared by `ArticleLive`
- * and `AppArticleLive`. Uses memory + localStorage cache and coalesces
- * in-flight requests per host + title.
+ * Fetches parsed article HTML via REST `page/html` — shared by `ArticleLive`.
+ * Uses memory + localStorage cache and coalesces in-flight requests per host + title.
  */
 export async function fetchArticleBody(
   title: string,
@@ -104,7 +171,7 @@ export async function fetchArticleBody(
   let cached = articleBodyCache.get(key)
   let cacheSource: 'memory' | 'localStorage' | null = cached ? 'memory' : null
   if (!cached) {
-    const stored = loadFromStorage(key)
+    const stored = loadFromStorage(STORAGE_PREFIX, key)
     if (stored) {
       articleBodyCache.set(key, stored)
       cached = stored
@@ -144,7 +211,7 @@ export async function fetchArticleBody(
       const liveTitleResolved = trimmed.replace(/_/g, ' ')
       const body: ArticleBody = { html, liveTitle: liveTitleResolved }
       articleBodyCache.set(key, body)
-      saveToStorage(key, body)
+      saveToStorage(STORAGE_PREFIX, key, body)
       console.info(`${LOG_PREFIX} fetch OK (cached)`, {
         host,
         title: trimmed,
@@ -157,6 +224,91 @@ export async function fetchArticleBody(
     inFlightFetches.set(key, bodyPromise)
   } else {
     console.info(`${LOG_PREFIX} coalesced with in-flight fetch`, {
+      host,
+      title: trimmed,
+    })
+  }
+
+  return bodyPromise
+}
+
+/**
+ * Fetches mobile-optimized article HTML via REST `page/mobile-html` for
+ * {@link AppArticleLive}. Returns prepared `#pcs` markup + PCS stylesheet URLs.
+ */
+export async function fetchMobileArticleBody(
+  title: string,
+  host: string,
+  options: FetchArticleBodyOptions = {},
+): Promise<MobileArticleBody> {
+  const trimmed = title.trim()
+  if (!trimmed.length) {
+    throw new Error('No article title given.')
+  }
+
+  const key = articleCacheKey(host, trimmed)
+  let cached = mobileArticleBodyCache.get(key)
+  let cacheSource: 'memory' | 'localStorage' | null = cached ? 'memory' : null
+  if (!cached) {
+    const stored = loadMobileFromStorage(key)
+    if (stored) {
+      mobileArticleBodyCache.set(key, stored)
+      cached = stored
+      cacheSource = 'localStorage'
+    }
+  }
+  if (cached) {
+    console.info(`${MOBILE_LOG_PREFIX} load from cache`, {
+      host,
+      title: trimmed,
+      source: cacheSource,
+    })
+    return cached
+  }
+
+  let bodyPromise = inFlightMobileFetches.get(key)
+  if (!bodyPromise) {
+    bodyPromise = (async (): Promise<MobileArticleBody> => {
+      const url = `https://${host}/api/rest_v1/page/mobile-html/${encodeURIComponent(trimmed)}`
+      console.info(`${MOBILE_LOG_PREFIX} fetching from network`, {
+        host,
+        title: trimmed,
+        url,
+      })
+      const response = await fetch(url, {
+        signal: options.signal,
+        headers: {
+          Accept: 'text/html; charset=utf-8',
+          ...wikimediaApiFetchHeaders('page-mobile-html'),
+        },
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status} ${response.statusText}`)
+      }
+      const text = await response.text()
+      const prepared = prepareMobileArticleDocument(text, host)
+      const liveTitleResolved = trimmed.replace(/_/g, ' ')
+      const body: MobileArticleBody = {
+        html: prepared.pcsHtml,
+        pcsHtml: prepared.pcsHtml,
+        liveTitle: liveTitleResolved,
+        stylesheetHrefs: prepared.stylesheetHrefs,
+      }
+      mobileArticleBodyCache.set(key, body)
+      saveMobileToStorage(key, body)
+      console.info(`${MOBILE_LOG_PREFIX} fetch OK (cached)`, {
+        host,
+        title: trimmed,
+        htmlChars: body.pcsHtml.length,
+        stylesheets: body.stylesheetHrefs.length,
+      })
+      return body
+    })().finally(() => {
+      inFlightMobileFetches.delete(key)
+    })
+    inFlightMobileFetches.set(key, bodyPromise)
+  } else {
+    console.info(`${MOBILE_LOG_PREFIX} coalesced with in-flight fetch`, {
       host,
       title: trimmed,
     })

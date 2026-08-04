@@ -1,4 +1,4 @@
-# Article surface — `ArticleWrapper`, `ArticleRenderer`, `ArticleLive`, `ArticleSnapshot`, `ArticleCustom`, `ArticleHeader`
+# Article surface — `ArticleWrapper`, `ArticleRenderer`, `ArticleLive`, `AppArticleLive`, `ArticleSnapshot`, `ArticleCustom`, `ArticleHeader`
 
 ## Composition model
 
@@ -123,6 +123,35 @@ Selection only resolves a **title** (a lightweight, title-only request for the r
 | --- | --- |
 | default | Forwarded inside **`ArticleRenderer`** when passed — replaces the **`v-html`** wrapper **`ArticleLive`** / **`ArticleSnapshot`** emit for **`page/html`** / snapshot bundles. |
 
+## `AppArticleLive`
+
+In-app article reader for **`AppChromeWrapper`** prototypes. Mirrors the native Wikipedia iOS/Android pipeline instead of **`ArticleRenderer`** + **`page/html`**.
+
+| Concern | Notes |
+| --- | --- |
+| Fetch | REST **`page/mobile-html/{title}`** via **`fetchMobileArticleBody()`** (separate cache prefix **`protowiki:mobileArticleBody:v1:`**) |
+| Prepare | **`prepareMobileArticleDocument()`** extracts **`#pcs`** inner HTML, strips duplicate PCS **`<header>`**, collects PCS stylesheet URLs from **`<head>`** |
+| Render | **`AppArticlePcsRenderer`** mounts **`#pcs`** with pagelib classes, injects PCS CSS, loads pagelib JS from **`meta.wikimedia.org`**, calls **`pcs.c1.Page.onBodyStart()`** then **`onBodyEnd()`** (required to reveal hidden sections) |
+| Chrome | Lead image, title, and description from **`fetchArticleView()`** (REST **`page/summary`**) — not from PCS header |
+
+**Do not** route app articles through **`ArticleRenderer`**. Its mobile section / infobox DOM enhancements conflict with PCS section expand and collapse-table UI.
+
+**`mobile-wiki-overrides.css`** float fallbacks are scoped away from **`.app-article-pcs`** — PCS sets **`skin--responsive`** and owns image layout.
+
+### Example
+
+```vue
+<AppChromeWrapper …>
+  <AppArticleLive article="Baltimore" lang="en" />
+</AppChromeWrapper>
+```
+
+### Props (`AppArticleLive`)
+
+**`article`** (required), **`lang?`**, **`host?`**, **`dir?`**, **`theme?`**. Emits **`parserReady`** with the **`#pcs`** root after PCS init (for optional app-specific polish).
+
+Reference: **`src/prototypes/template-app-article/`**.
+
 ## `ArticleSnapshot`
 
 Loads **`public/snapshots/{slug}.html`** where **`slug`** comes from **`articleSnapshotSlug(article)`** (see **`src/components/article/shared/articleSnapshotSlug.ts`**). **`404`** shows **`CdxMessage`** pull instructions — no REST round-trip.
@@ -164,6 +193,7 @@ Fixed copy: desktop tagline **“From Wikipedia, the free encyclopedia”**; Art
 
 - Prefer **`<ArticleCustom>`** for hand-authored / fixture-free article body HTML (**`ChromeWrapper` → `ArticleCustom`**).
 - Prefer **`<ArticleLive>`** inside **`ChromeWrapper`** for live read-mode demos.
+- Prefer **`<AppArticleLive>`** inside **`AppChromeWrapper`** for in-app live articles (**`page/mobile-html`** + PCS).
 - Prefer **`<ArticleSnapshot>`** for committed HTML snapshots.
 - Compose **`ArticleWrapper`** + **`ArticleRenderer`** manually when **`ArticleLive`** / **`ArticleSnapshot`** / **`ArticleCustom`** are too opinionated — including **fully hand-authored** **`#default`** (see **Hand-authored article markup** above; reference **`src/prototypes/template-article-custom/`**).
 - REST / CORS: **`/api/rest_v1/`** remains **`origin=*`**-friendly.

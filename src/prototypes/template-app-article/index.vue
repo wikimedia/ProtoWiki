@@ -21,8 +21,6 @@ import type { AppHeaderItem } from '@/components/app/AppChromeHeader.vue'
 import AppArticleLive from '@/components/article/AppArticleLive.vue'
 import { useIsIos } from '@/composables/useAppPlatform'
 
-import { enhanceCollapsibleTables, enhanceWideTableBleed } from './collapsibleTables'
-
 const route = useRoute()
 const router = useRouter()
 const isIos = useIsIos()
@@ -38,11 +36,6 @@ const lang = computed(() => {
   const value = route.query.lang
   return typeof value === 'string' && value.trim().length ? value : 'en'
 })
-
-function onParserReady(root: HTMLElement): void {
-  enhanceCollapsibleTables(root)
-  enhanceWideTableBleed(root)
-}
 
 function goBack(): void {
   router.back()
@@ -87,121 +80,6 @@ const bottomNavItems = computed(() =>
     :bottom-nav-items="bottomNavItems"
     @navigate="onBottomNav"
   >
-    <AppArticleLive :article="article" :lang="lang" @parser-ready="onParserReady" />
+    <AppArticleLive :article="article" :lang="lang" />
   </AppChromeWrapper>
 </template>
-
-<!--
-  Targets DOM built by ./collapsibleTables.ts (raw nodes inserted into v-html
-  content, not compiled by this SFC) — must stay unscoped to match.
--->
-<style>
-.pw-collapsible-table {
-  min-width: 0;
-  margin: var(--spacing-100, 16px) 0;
-  border: var(--border-width-base, 1px) solid var(--border-color-base, #a2a9b1);
-  border-radius: var(--border-radius-base, 2px);
-  background-color: var(--background-color-neutral-subtle, #f8f9fa);
-  overflow: visible;
-}
-
-.pw-collapsible-table__summary {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-50, 8px);
-  width: 100%;
-  padding: var(--spacing-75, 12px) var(--spacing-100, 16px);
-  border: 0;
-  background: none;
-  text-align: start;
-  color: var(--color-base, #202122);
-  font: inherit;
-  cursor: pointer;
-}
-
-.pw-collapsible-table__label {
-  flex-shrink: 0;
-  font-weight: var(--font-weight-bold, 700);
-}
-
-.pw-collapsible-table__preview {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  color: var(--color-subtle, #54595d);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pw-collapsible-table__chevron {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 1.25rem;
-  height: 1.25rem;
-  opacity: 0.7;
-}
-
-.pw-collapsible-table__chevron svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.pw-collapsible-table__panel {
-  border-top: var(--border-width-base, 1px) solid var(--border-color-base, #a2a9b1);
-  padding: 0;
-}
-
-.pw-collapsible-table__scroll,
-.pw-scroll-bleed {
-  margin-inline: calc(-1 * var(--app-article-bleed-inline, var(--spacing-150, 24px)));
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.app-article-live__reader.article[data-skin='mobile'] .mw-parser-output .pw-collapsible-table__scroll > table,
-.app-article-live__reader.article[data-skin='mobile'] .mw-parser-output .pw-scroll-bleed > table {
-  display: table !important;
-  width: max-content !important;
-  max-width: none !important;
-  margin: 0 !important;
-  overflow: visible !important;
-}
-
-.pw-collapsible-table__scroll > table {
-  border: none !important;
-}
-
-.pw-collapsible-table__panel--collapsed {
-  display: none;
-}
-
-.pw-collapsible-table__panel > table {
-  margin: 0 !important;
-  border: none !important;
-}
-
-/* Infobox panel — drop the first row’s top edge; scroll-wrapped tables keep their borders. */
-.pw-collapsible-table__panel > table > tbody > tr:first-child > :is(th, td),
-.pw-collapsible-table__panel > table > tr:first-child > :is(th, td) {
-  border-top: none !important;
-}
-
-.pw-collapsible-table__close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-50, 8px);
-  width: 100%;
-  margin-top: 0;
-  padding: var(--spacing-75, 12px) var(--spacing-100, 16px);
-  border: 0;
-  border-top: var(--border-width-base, 1px) solid var(--border-color-subtle, #c8ccd1);
-  background: none;
-  color: var(--color-subtle, #54595d);
-  font: inherit;
-  cursor: pointer;
-}
-</style>

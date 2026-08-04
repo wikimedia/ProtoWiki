@@ -42,6 +42,9 @@ which complements this skill rather than replacing it.
 | --- | --- |
 | `page/html/{title}` | Full rendered article HTML (the same HTML you'd see on the page, minus chrome) |
 | `page/html/{title}/{revision}` | HTML at a specific revision |
+| `page/mobile-html/{title}` | **Experimental.** Full HTML document for mobile apps: `#pcs` root, PCS stylesheet URLs in `<head>`, section collapse / lazy images / table collapse handled by pagelib JS after load |
+| `page/mobile-html/{title}/{revision}` | Mobile HTML at a specific revision |
+| `page/mobile-html-offline-resources/{title}` | Bundled offline PCS assets for a title (apps) |
 | `page/summary/{title}` | JSON: title, lead extract, thumbnail, description |
 | `page/media-list/{title}` | JSON: images, videos, audio in the article |
 | `page/related/{title}` | JSON: related-articles strip (4 cards) |
@@ -119,6 +122,14 @@ async function fetchHtml(title: string, lang = 'en'): Promise<string> {
   const slug = encodeURIComponent(title.replace(/ /g, '_'))
   const res = await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/html/${slug}`)
   if (!res.ok) throw new Error(`HTML ${res.status}`)
+  return res.text()
+}
+
+/** Mobile app pipeline: full document with #pcs + PCS CSS URLs in head. */
+async function fetchMobileHtml(title: string, lang = 'en'): Promise<string> {
+  const slug = encodeURIComponent(title.replace(/ /g, '_'))
+  const res = await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/mobile-html/${slug}`)
+  if (!res.ok) throw new Error(`mobile-html ${res.status}`)
   return res.text()
 }
 ```

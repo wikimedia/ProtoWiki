@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { CdxMessage, CdxProgressBar } from '@wikimedia/codex'
 
-import ArticleRenderer from './ArticleRenderer.vue'
-import { fetchArticleBody } from './shared/fetchArticleBody'
+import AppArticlePcsRenderer from './AppArticlePcsRenderer.vue'
+import { fetchMobileArticleBody, type MobileArticleBody } from './shared/fetchArticleBody'
 import { fetchArticleView, type ArticleView } from './shared/fetchArticleView'
 import { wikiHostFromLang } from '@/config'
 import type { Theme } from '@/theme'
@@ -28,12 +28,16 @@ const emit = defineEmits<{
 }>()
 
 const view = ref<ArticleView | null>(null)
-const articleHtml = ref<string | null>(null)
+const mobileBody = ref<MobileArticleBody | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
-const bodyRef = ref<InstanceType<typeof ArticleRenderer> | null>(null)
+const pcsError = ref<string | null>(null)
 
 const resolvedHost = computed(() => props.host ?? wikiHostFromLang(props.lang ?? 'en'))
+
+const articleKey = computed(
+  () => `${resolvedHost.value}:${props.lang ?? 'en'}:${props.article.trim()}`,
+)
 
 let loadAbort: AbortController | null = null
 
@@ -44,20 +48,21 @@ async function load(): Promise<void> {
 
   loading.value = true
   error.value = null
+  pcsError.value = null
 
   try {
     const [foundView, foundBody] = await Promise.all([
       fetchArticleView(props.article, { signal, lang: props.lang }),
-      fetchArticleBody(props.article, resolvedHost.value, { signal }),
+      fetchMobileArticleBody(props.article, resolvedHost.value, { signal }),
     ])
     if (signal.aborted) return
     view.value = foundView
-    articleHtml.value = foundBody.html
+    mobileBody.value = foundBody
   } catch (err) {
     if (signal.aborted) return
     error.value = err instanceof Error ? err.message : 'Failed to load article.'
     view.value = null
-    articleHtml.value = null
+    mobileBody.value = null
   } finally {
     if (!signal.aborted) loading.value = false
   }
@@ -71,12 +76,13 @@ watch(
   { immediate: true },
 )
 
-watch(articleHtml, async (html) => {
-  if (!html) return
-  await nextTick()
-  const root = bodyRef.value?.$el as HTMLElement | undefined
-  if (root) emit('parserReady', root)
-})
+function onParserReady(root: HTMLElement): void {
+  emit('parserReady', root)
+}
+
+function onPcsError(message: string): void {
+  pcsError.value = message
+}
 </script>
 
 <template>
@@ -85,7 +91,7 @@ watch(articleHtml, async (html) => {
 
     <CdxMessage v-else-if="error" type="error">{{ error }}</CdxMessage>
 
-    <template v-else-if="view">
+    <template v-else-if="view && mobileBody">
       <div class="app-article-live__lead-image">
         <img
           v-if="view.thumbnailUrl"
@@ -100,11 +106,19 @@ watch(articleHtml, async (html) => {
         {{ view.description }}
       </p>
 
-      <div v-if="articleHtml" class="article app-article-live__reader" data-skin="mobile">
-        <ArticleRenderer ref="bodyRef" :dir="props.dir" skin="mobile" :theme="props.theme">
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <div v-html="articleHtml" />
-        </ArticleRenderer>
+      <CdxMessage v-if="pcsError" type="warning">{{ pcsError }}</CdxMessage>
+
+      <div class="article app-article-live__reader" data-skin="mobile">
+        <AppArticlePcsRenderer
+          :pcs-html="mobileBody.pcsHtml"
+          :stylesheet-hrefs="mobileBody.stylesheetHrefs"
+          :article-key="articleKey"
+          :lang="props.lang"
+          :dir="props.dir"
+          :theme="props.theme"
+          @parser-ready="onParserReady"
+          @pcs-error="onPcsError"
+        />
       </div>
     </template>
   </div>
