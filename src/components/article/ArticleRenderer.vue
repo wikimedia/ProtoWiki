@@ -210,6 +210,16 @@ onUpdated(() => {
   max-width: 100%;
 }
 
+/*
+ * Mobile / app: wide wikitables & navboxes scroll inside the table, not the screen.
+ * Omit `width: fit-content` — with global border-box, it can shrink the reading column.
+ */
+.article[data-skin='mobile'] .mw-parser-output table:not(.infobox) {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 .article[data-skin='mobile'] .mw-parser-output .protowiki-mobile-h2 {
   display: flex;
   align-items: center;

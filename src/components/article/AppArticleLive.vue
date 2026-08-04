@@ -112,12 +112,13 @@ watch(articleHtml, async (html) => {
 
 <style scoped>
 .app-article-live {
+  --app-article-bleed-inline: var(--spacing-150, 24px);
   padding-bottom: var(--spacing-150, 24px);
 }
 
 .app-article-live__lead-image {
   aspect-ratio: 16 / 9;
-  margin-inline: calc(-1 * var(--spacing-150, 24px));
+  margin-inline: calc(-1 * var(--app-article-bleed-inline, var(--spacing-150, 24px)));
   background-color: var(--background-color-neutral, #eaecf0);
 }
 
@@ -145,8 +146,8 @@ watch(articleHtml, async (html) => {
 }
 
 .app-article-live__reader {
-  margin-inline: calc(-1 * var(--spacing-150, 24px));
-  padding-inline: var(--spacing-150, 24px);
+  margin-inline: calc(-1 * var(--app-article-bleed-inline));
+  padding-inline: var(--app-article-bleed-inline);
 }
 
 /* Space between title/description chrome and first parser block (lead hatnote). */

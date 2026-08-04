@@ -11,7 +11,7 @@ function buildPreviewText(labels: string[]): string {
 
 function wrapCollapsibleTable(
   table: HTMLTableElement,
-  options: { label: string; preview: string },
+  options: { label: string; preview: string; wideScroll?: boolean },
 ): void {
   const wrapper = document.createElement('div')
   wrapper.className = WRAPPER_CLASS
@@ -49,7 +49,16 @@ function wrapCollapsibleTable(
   closeBtn.append(document.createTextNode('Close'), closeChevron)
 
   table.replaceWith(wrapper)
-  panel.append(table, closeBtn)
+
+  if (options.wideScroll) {
+    const scroll = document.createElement('div')
+    scroll.className = `${WRAPPER_CLASS}__scroll`
+    scroll.append(table)
+    panel.append(scroll, closeBtn)
+  } else {
+    panel.append(table, closeBtn)
+  }
+
   wrapper.append(summary, panel)
 
   function toggle(): void {
@@ -80,6 +89,24 @@ export function enhanceCollapsibleTables(root: HTMLElement): void {
     const headers = Array.from(table.querySelectorAll('tr:first-child th')).map(
       (th) => th.textContent?.trim() ?? '',
     )
-    wrapCollapsibleTable(table, { label: 'More information', preview: buildPreviewText(headers) })
+    wrapCollapsibleTable(table, {
+      label: 'More information',
+      preview: buildPreviewText(headers),
+      wideScroll: true,
+    })
+  })
+}
+
+const SCROLL_BLEED_CLASS = 'pw-scroll-bleed'
+
+/** Wide tables outside collapsibles (e.g. navboxes) — edge-bleed scroll track. */
+export function enhanceWideTableBleed(root: HTMLElement): void {
+  root.querySelectorAll<HTMLTableElement>('table:not(.infobox)').forEach((table) => {
+    if (table.closest(`.${WRAPPER_CLASS}`)) return
+
+    const scroll = document.createElement('div')
+    scroll.className = SCROLL_BLEED_CLASS
+    table.replaceWith(scroll)
+    scroll.append(table)
   })
 }

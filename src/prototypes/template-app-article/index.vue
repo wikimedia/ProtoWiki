@@ -21,7 +21,7 @@ import type { AppHeaderItem } from '@/components/app/AppChromeHeader.vue'
 import AppArticleLive from '@/components/article/AppArticleLive.vue'
 import { useIsIos } from '@/composables/useAppPlatform'
 
-import { enhanceCollapsibleTables } from './collapsibleTables'
+import { enhanceCollapsibleTables, enhanceWideTableBleed } from './collapsibleTables'
 
 const route = useRoute()
 const router = useRouter()
@@ -41,6 +41,7 @@ const lang = computed(() => {
 
 function onParserReady(root: HTMLElement): void {
   enhanceCollapsibleTables(root)
+  enhanceWideTableBleed(root)
 }
 
 function goBack(): void {
@@ -96,10 +97,12 @@ const bottomNavItems = computed(() =>
 -->
 <style>
 .pw-collapsible-table {
+  min-width: 0;
   margin: var(--spacing-100, 16px) 0;
   border: var(--border-width-base, 1px) solid var(--border-color-base, #a2a9b1);
   border-radius: var(--border-radius-base, 2px);
   background-color: var(--background-color-neutral-subtle, #f8f9fa);
+  overflow: visible;
 }
 
 .pw-collapsible-table__summary {
@@ -151,18 +154,38 @@ const bottomNavItems = computed(() =>
   padding: 0;
 }
 
+.pw-collapsible-table__scroll,
+.pw-scroll-bleed {
+  margin-inline: calc(-1 * var(--app-article-bleed-inline, var(--spacing-150, 24px)));
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-article-live__reader.article[data-skin='mobile'] .mw-parser-output .pw-collapsible-table__scroll > table,
+.app-article-live__reader.article[data-skin='mobile'] .mw-parser-output .pw-scroll-bleed > table {
+  display: table !important;
+  width: max-content !important;
+  max-width: none !important;
+  margin: 0 !important;
+  overflow: visible !important;
+}
+
+.pw-collapsible-table__scroll > table {
+  border: none !important;
+}
+
 .pw-collapsible-table__panel--collapsed {
   display: none;
 }
 
-.pw-collapsible-table__panel table {
+.pw-collapsible-table__panel > table {
   margin: 0 !important;
   border: none !important;
 }
 
-/* Panel border-top is the sole divider above the infobox — drop the first row’s top edge. */
-.pw-collapsible-table__panel table > tbody > tr:first-child > :is(th, td),
-.pw-collapsible-table__panel table > tr:first-child > :is(th, td) {
+/* Infobox panel — drop the first row’s top edge; scroll-wrapped tables keep their borders. */
+.pw-collapsible-table__panel > table > tbody > tr:first-child > :is(th, td),
+.pw-collapsible-table__panel > table > tr:first-child > :is(th, td) {
   border-top: none !important;
 }
 

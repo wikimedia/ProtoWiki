@@ -76,6 +76,7 @@ function onNavigate(item: AppBottomNavItem): void {
 .app-chrome-wrapper {
   display: flex;
   flex-direction: column;
+  width: 100%;
   height: 100vh;
   max-height: 100vh;
   overflow: hidden;
@@ -86,7 +87,9 @@ function onNavigate(item: AppBottomNavItem): void {
 .app-chrome-wrapper__content {
   flex: 1 1 auto;
   min-height: 0;
+  min-width: 0;
   width: 100%;
+  overflow-x: clip;
   overflow-y: auto;
   padding-inline: var(--spacing-150, 24px);
 }
