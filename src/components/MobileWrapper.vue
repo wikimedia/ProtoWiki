@@ -42,9 +42,11 @@ const props = withDefaults(defineProps<Props>(), {
 }
 
 .mobile-wrapper__column {
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
   width: 100%;
-  min-height: 100%;
+  min-height: 100vh;
 }
 
 /* Wider than a typical phone column — show frame + gutters (below global skin 640px). */

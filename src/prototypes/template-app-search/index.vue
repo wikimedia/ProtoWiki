@@ -43,7 +43,6 @@ const activeLang = ref(langTabs.value[0].code)
 const pendingMoreSelection = ref<string | null>(null)
 
 const results = ref<WikiSearchResult[]>([])
-const searchLoading = ref(false)
 const searchError = ref<string | null>(null)
 
 const { recentSearches, addRecentSearch, clearRecentSearches } = useRecentSearches()
@@ -99,7 +98,6 @@ async function runSearch(): Promise<void> {
   if (!trimmed.length) {
     results.value = []
     searchError.value = null
-    searchLoading.value = false
     return
   }
 
@@ -107,7 +105,6 @@ async function runSearch(): Promise<void> {
   searchAbort = new AbortController()
   const { signal } = searchAbort
 
-  searchLoading.value = true
   searchError.value = null
 
   try {
@@ -118,8 +115,6 @@ async function runSearch(): Promise<void> {
     if (signal.aborted) return
     searchError.value = err instanceof Error ? err.message : 'Search failed.'
     results.value = []
-  } finally {
-    if (!signal.aborted) searchLoading.value = false
   }
 }
 
@@ -207,41 +202,31 @@ function selectResult(result: WikiSearchResult): void {
         <template v-else>
           <CdxMessage v-if="searchError" type="warning">{{ searchError }}</CdxMessage>
 
-          <p v-else-if="searchLoading && !results.length" class="template-app-search__status">
-            Searching…
-          </p>
-
-          <p v-else-if="!results.length" class="template-app-search__status">
-            No results for "{{ query }}".
-          </p>
-
-          <template v-else>
-            <ul class="template-app-search__results">
-              <li v-for="result in results" :key="result.pageid">
-                <button
-                  type="button"
-                  class="template-app-search__result"
-                  @click="selectResult(result)"
-                >
-                  <span class="template-app-search__result-text">
-                    <!-- eslint-disable-next-line vue/no-v-html -->
-                    <span class="template-app-search__result-title" v-html="result.titleHtml" />
-                    <span v-if="result.description" class="template-app-search__result-snippet">
-                      {{ result.description }}
-                    </span>
+          <ul v-if="results.length" class="template-app-search__results">
+            <li v-for="result in results" :key="result.pageid">
+              <button
+                type="button"
+                class="template-app-search__result"
+                @click="selectResult(result)"
+              >
+                <span class="template-app-search__result-text">
+                  <!-- eslint-disable-next-line vue/no-v-html -->
+                  <span class="template-app-search__result-title" v-html="result.titleHtml" />
+                  <span v-if="result.description" class="template-app-search__result-snippet">
+                    {{ result.description }}
                   </span>
-                  <img
-                    v-if="result.thumbnailUrl"
-                    class="template-app-search__result-thumb"
-                    :src="result.thumbnailUrl"
-                    alt=""
-                    width="64"
-                    height="64"
-                  />
-                </button>
-              </li>
-            </ul>
-          </template>
+                </span>
+                <img
+                  v-if="result.thumbnailUrl"
+                  class="template-app-search__result-thumb"
+                  :src="result.thumbnailUrl"
+                  alt=""
+                  width="64"
+                  height="64"
+                />
+              </button>
+            </li>
+          </ul>
         </template>
       </div>
 
@@ -322,6 +307,7 @@ function selectResult(result: WikiSearchResult): void {
 }
 
 .template-app-search__status {
+  margin-top: var(--spacing-100, 16px);
   color: var(--color-subtle, #54595d);
 }
 
@@ -332,16 +318,24 @@ function selectResult(result: WikiSearchResult): void {
   padding: 0;
 }
 
+.template-app-search__recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-100, 16px);
+  margin-top: var(--spacing-100, 16px);
+}
+
 .template-app-search__recent-item {
   display: block;
   width: 100%;
-  padding: var(--spacing-75, 12px) 0;
+  padding: 0;
   border: 0;
-  border-bottom: var(--border-width-base, 1px) solid var(--border-color-subtle, #c8ccd1);
   background: none;
   text-align: left;
   color: var(--color-base, #202122);
-  font: inherit;
+  font-size: var(--font-size-medium, 1rem);
+  line-height: var(--line-height-medium, 1.625);
+  font-weight: var(--font-weight-normal, 400);
   cursor: pointer;
 }
 

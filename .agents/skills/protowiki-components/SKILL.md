@@ -147,7 +147,7 @@ The `@/` prefix resolves to `src/`.
 | Component | Key props | Notable slots |
 | --- | --- | --- |
 | `ChromeWrapper` | `lang?`, `dir?`, `skin?`, `theme?`, **`lastEditedNotice?`**, **`username?`**, **`wordmarkSrc?`**, **`taglineSrc?`**, **`mobileWordmarkSrc?`**, **`navTools?`** (`ChromeNavTool[]`, forwarded to default header) | default, `#header`, `#footer` |
-| `AppChromeWrapper` | `lang?`, `dir?`, `theme?`, **`showBottomMenu?`**, **`left?`**, **`middle?`**, **`right?`**, **`bottomNavItems?`**, **`activeNavItem?`** | default, `#header`, `#bottomMenu` |
+| `AppChromeWrapper` | `lang?`, `dir?`, `theme?`, **`showBottomMenu?`**, **`left?`**, **`middle?`**, **`right?`**, **`bottomNavItems?`** | default, `#header`, `#bottomMenu` |
 | `SpecialPageWrapper` | `title?`, **`help?`** (**`boolean`**), **`actions?`**, `lang?`, `dir?`, `skin?`, `theme?` | default, **`#header`**, **`#title`**, `#help`, `#actions` |
 | `PlainWrapper` | `heading?`, `lang?`, `dir?` | default, `#heading` |
 | `MobileWrapper` | `maxWidth?` (default `360px`), `lang?`, `dir?` | default |
@@ -156,7 +156,7 @@ The `@/` prefix resolves to `src/`.
 | `MinervaChromeHeader` | `theme?`, **`left?`**, **`middle?`**, **`right?`**, **`wordmarkSrc?`**, **`mobileWordmarkSrc?`** | — |
 | `ChromeFooter` | `skin?`, `theme?`, **`lastEditedNotice?`**, **`username?`** | default |
 | `AppChromeHeader` | `theme?`, **`left?`**, **`middle?`**, **`right?`** | — |
-| `AppBottomMenu` | `theme?`, **`items?`**, **`activeItem?`** | default, `#item-{id}` |
+| `AppBottomMenu` | `theme?`, **`items?`** | default, `#item-{id}` |
 | `ArticleWrapper` | **`title?`**, **`header?`**, **`languagesCount?`**, **`lang`**, **`dir`**, **`skin`**, **`theme`** | **default** |
 | `ArticleRenderer` | **`lang`/`dir`/`skin`/`theme`** | **default** — parser subtree ( **`ArticleLive`** / **`ArticleSnapshot`** use **`v-html`** here unless **`#default`** is forwarded ) |
 | `ArticleLive` | Same **`ArticleWrapper`** chrome **`+`** **`article`** (**`page/html`** title; **omit for random**) **`+`** **`host`** **`+`** random-mode **`source?`** (`'random'`\|`'vital'`) / **`langs?`** / **`vitalLevel?`** (`source="vital"`) | **default** → **`ArticleRenderer`** (**`ArticleLive`** injects **`Cdx`** progress/errors before **`ArticleRenderer`**) |

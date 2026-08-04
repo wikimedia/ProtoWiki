@@ -15,18 +15,14 @@ interface Props {
   theme?: Theme
   /** Subset/order of bottom nav items; default slot replaces the whole bar. */
   items?: AppBottomNavItem[]
-  /** Currently selected nav item (optional). */
-  activeItem?: AppBottomNavItem
 }
 
 const props = withDefaults(defineProps<Props>(), {
   theme: undefined,
   items: undefined,
-  activeItem: undefined,
 })
 
 const emit = defineEmits<{
-  'update:activeItem': [item: AppBottomNavItem]
   navigate: [item: AppBottomNavItem]
 }>()
 
@@ -38,7 +34,6 @@ const effectiveItems = computed(() =>
 )
 
 function onItemClick(item: AppBottomNavItem): void {
-  emit('update:activeItem', item)
   emit('navigate', item)
 }
 
@@ -62,11 +57,9 @@ function hasItemSlot(item: AppBottomNavItem): boolean {
       v-for="item in effectiveItems"
       :key="item"
       class="app-bottom-menu__item"
-      :class="{ 'app-bottom-menu__item--active': props.activeItem === item }"
       weight="quiet"
       size="large"
       :aria-label="APP_BOTTOM_NAV_ITEM_META[item].ariaLabel"
-      :aria-current="props.activeItem === item ? 'page' : undefined"
       @click="onItemClick(item)"
     >
       <slot v-if="hasItemSlot(item)" :name="itemSlotName(item)" />
@@ -83,13 +76,9 @@ function hasItemSlot(item: AppBottomNavItem): boolean {
   align-items: center;
   justify-content: space-between;
   box-sizing: border-box;
-  min-height: 84px;
-  padding: var(--spacing-150, 24px);
+  height: 84px;
+  padding-inline: var(--spacing-150, 24px);
   border-top: 1px solid var(--border-color-subtle, #c8ccd1);
   background-color: var(--background-color-base, #fff);
-}
-
-.app-bottom-menu__item--active {
-  color: var(--color-progressive, #36c);
 }
 </style>

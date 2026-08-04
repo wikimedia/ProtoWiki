@@ -41,85 +41,9 @@ import { CdxMessage, CdxProgressBar } from '@wikimedia/codex'
 
 import ArticleRenderer from './ArticleRenderer.vue'
 import ArticleWrapper from './ArticleWrapper.vue'
+import { fetchArticleBody } from './shared/fetchArticleBody'
 import { DEFAULT_RANDOM_SOURCE, selectRandomArticle } from './shared/selectRandomArticle'
-import { wikiHostFromLang, wikimediaApiFetchHeaders } from '@/config'
-// `RandomArticleSource`, `Skin`, and `Theme` types come from the companion
-// `<script>` block above (merged into this module's scope).
-/** Cache of successfully fetched live article HTML (key: host + title). */
-type CachedArticleBody = { html: string; liveTitle: string }
-const articleBodyCache = new Map<string, CachedArticleBody>()
-const inFlightFetches = new Map<string, Promise<CachedArticleBody>>()
-
-const STORAGE_PREFIX = 'protowiki:articleBody:v1:'
-
-function getLocalStorage(): Storage | null {
-  try {
-    return typeof window !== 'undefined' ? window.localStorage : null
-  } catch {
-    return null
-  }
-}
-
-function normalizeArticleBody(value: unknown): CachedArticleBody | null {
-  if (typeof value !== 'object' || value === null) return null
-  const record = value as Record<string, unknown>
-  if (typeof record.html !== 'string' || typeof record.liveTitle !== 'string') return null
-  return { html: record.html, liveTitle: record.liveTitle }
-}
-
-function storageKeyForArticle(key: string): string {
-  return STORAGE_PREFIX + key
-}
-
-function removeFromStorage(key: string): void {
-  const store = getLocalStorage()
-  if (!store) return
-  try {
-    store.removeItem(storageKeyForArticle(key))
-  } catch {
-    // Private mode or blocked storage — ignore.
-  }
-}
-
-function loadFromStorage(key: string): CachedArticleBody | null {
-  const store = getLocalStorage()
-  if (!store) return null
-  try {
-    const raw = store.getItem(storageKeyForArticle(key))
-    if (!raw) return null
-    const normalized = normalizeArticleBody(JSON.parse(raw))
-    if (!normalized) {
-      removeFromStorage(key)
-      return null
-    }
-    return normalized
-  } catch {
-    removeFromStorage(key)
-    return null
-  }
-}
-
-function saveToStorage(key: string, body: CachedArticleBody) {
-  const store = getLocalStorage()
-  if (!store) return
-  const normalized = normalizeArticleBody(body)
-  if (!normalized) return
-  try {
-    store.setItem(storageKeyForArticle(key), JSON.stringify(normalized))
-  } catch {
-    // Most likely a QuotaExceededError. The in-memory cache still works.
-  }
-}
-
-function normalizeTitleForCache(title: string) {
-  return title.trim().replace(/_/g, ' ').replace(/\s+/g, ' ')
-}
-
-function articleCacheKey(host: string, title: string) {
-  return `${host}\0${normalizeTitleForCache(title)}`
-}
-
-const LOG_PREFIX = '[ProtoWiki][ArticleLive]'
+import { wikiHostFromLang } from '@/config'
 
 interface Props {
   lang?: string
@@ -178,90 +102,16 @@ const resolvedTitle = ref<string | null>(props.article ?? null)
 /** Host actually being read — `host` prop, or derived from the random language. */
 const resolvedHost = ref(props.host)
 
-function extractParserOutput(raw: string): string {
-  const bodyMatch = raw.match(/<body[^>]*>([\s\S]*?)<\/body>/i)
-  if (bodyMatch) return bodyMatch[1]
-  return raw
-}
-
 async function fetchArticle(title: string, host: string) {
   if (!title) return
 
-  const key = articleCacheKey(host, title)
-  let cached = articleBodyCache.get(key)
-  let cacheSource: 'memory' | 'localStorage' | null = cached ? 'memory' : null
-  if (!cached) {
-    const stored = loadFromStorage(key)
-    if (stored) {
-      articleBodyCache.set(key, stored)
-      cached = stored
-      cacheSource = 'localStorage'
-    }
-  }
-  if (cached) {
-    console.info(`${LOG_PREFIX} load from cache`, {
-      host,
-      title: title.trim(),
-      source: cacheSource,
-    })
-    error.value = null
-    liveHtml.value = cached.html
-    liveTitle.value = cached.liveTitle
-    loading.value = false
-    return
-  }
-
-  let bodyPromise = inFlightFetches.get(key)
-  const isFollower = Boolean(bodyPromise)
-  if (!bodyPromise) {
-    bodyPromise = (async (): Promise<CachedArticleBody> => {
-      const url = `https://${host}/api/rest_v1/page/html/${encodeURIComponent(title)}`
-      console.info(`${LOG_PREFIX} fetching from network`, {
-        host,
-        title: title.trim(),
-        url,
-      })
-      const response = await fetch(url, {
-        headers: {
-          Accept: 'text/html; charset=utf-8',
-          ...wikimediaApiFetchHeaders('page-html'),
-        },
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status} ${response.statusText}`)
-      }
-      const text = await response.text()
-      const html = extractParserOutput(text)
-      const liveTitleResolved = title.replace(/_/g, ' ')
-      const body: CachedArticleBody = { html, liveTitle: liveTitleResolved }
-      articleBodyCache.set(key, body)
-      saveToStorage(key, body)
-      console.info(`${LOG_PREFIX} fetch OK (cached)`, {
-        host,
-        title: title.trim(),
-        htmlChars: html.length,
-      })
-      return body
-    })().finally(() => {
-      inFlightFetches.delete(key)
-    })
-    inFlightFetches.set(key, bodyPromise)
-  } else {
-    console.info(`${LOG_PREFIX} coalesced with in-flight fetch`, {
-      host,
-      title: title.trim(),
-    })
-  }
-
-  if (!isFollower) {
-    loading.value = true
-    error.value = null
-    liveHtml.value = null
-    liveTitle.value = null
-  }
+  loading.value = true
+  error.value = null
+  liveHtml.value = null
+  liveTitle.value = null
 
   try {
-    const body = await bodyPromise
+    const body = await fetchArticleBody(title, host)
     liveHtml.value = body.html
     liveTitle.value = body.liveTitle
     error.value = null

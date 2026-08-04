@@ -133,19 +133,41 @@ const left: AppHeaderItem[] = [
 
 ## AppBottomMenu
 
-Fixed bottom navigation: five icon-only items (Home, Saved, Search, History,
-Menu) with top border and even spacing.
+Fixed bottom navigation: icon-only items with top border and even spacing.
+Default preset is five Android main-nav icons; article and iOS presets use
+different subsets (see presets below).
 
 ### Props
 
-| Prop         | Type                 | Default  | Notes                     |
-| ------------ | -------------------- | -------- | ------------------------- |
-| `theme`      | `'light' \| 'dark'`  | global   | Sets `data-theme` on root |
-| `items`      | `AppBottomNavItem[]` | all five | Subset/order              |
-| `activeItem` | `AppBottomNavItem`   | —        | Optional selected item    |
+| Prop    | Type                 | Default  | Notes                     |
+| ------- | -------------------- | -------- | ------------------------- |
+| `theme` | `'light' \| 'dark'`  | global   | Sets `data-theme` on root |
+| `items` | `AppBottomNavItem[]` | all five | Subset/order              |
 
-`AppBottomNavItem` literals: `'home' \| 'bookmarks' \| 'search' \| 'history' \| 'menu'`
-(see `src/components/app/appBottomNavItems.ts`).
+Icons are action buttons — none are shown as selected/highlighted.
+
+`AppBottomNavItem` literals (see `src/components/app/appBottomNavItems.ts`):
+
+`'home' | 'globe' | 'map-pin' | 'bookmarks' | 'search' | 'history' | 'menu' | 'language' | 'article-search' | 'search-case-sensitive' | 'list-bullet' | 'ellipsis'`
+
+### Presets
+
+Named item arrays exported from `appBottomNavItems.ts`:
+
+| Constant                         | Layout                                                                 |
+| -------------------------------- | ---------------------------------------------------------------------- |
+| `ANDROID_MAIN_BOTTOM_NAV_ITEMS`  | home · saved · search · history · menu (same as default)               |
+| `IOS_MAIN_BOTTOM_NAV_ITEMS`      | explore · places · saved · history · search                            |
+| `ANDROID_ARTICLE_BOTTOM_NAV_ITEMS` | saved · language · find-in-page · case-sensitive · contents          |
+| `IOS_ARTICLE_BOTTOM_NAV_ITEMS`   | contents · language · saved · find-in-page · case-sensitive · more     |
+
+Pass a preset via **`AppChromeWrapper`** **`bottomNavItems`**, or set
+**`showBottomMenu={false}`** to hide the bar (e.g. search screens with keyboard).
+
+**`template-app-chrome`** exposes radio pickers for both header and bottom bar
+layouts so you can preview any combination independently. Bottom bar **Main**
+and **Article** presets follow the global app platform preference (iOS vs
+Android); only **Hidden** is platform-agnostic.
 
 ### Slots
 
@@ -156,15 +178,14 @@ Menu) with top border and even spacing.
 
 ### Events
 
-| Event               | Payload            | Notes           |
-| ------------------- | ------------------ | --------------- |
-| `update:activeItem` | `AppBottomNavItem` | v-model support |
-| `navigate`          | `AppBottomNavItem` | Fired on tap    |
+| Event      | Payload            | Notes        |
+| ---------- | ------------------ | ------------ |
+| `navigate` | `AppBottomNavItem` | Fired on tap |
 
 ### Example
 
 ```vue
-<AppBottomMenu v-model:active-item="activeTab" @navigate="onNav" />
+<AppBottomMenu @navigate="onNav" />
 ```
 
 ## AppChromeWrapper
@@ -184,7 +205,6 @@ Vector/Minerva skin switching.
 | `middle`         | `AppHeaderItem[]`    | —        | Forwarded; **`[]`** hides         |
 | `right`          | `AppHeaderItem[]`    | —        | Forwarded; **`[]`** hides         |
 | `bottomNavItems` | `AppBottomNavItem[]` | all five | Forwarded to **`AppBottomMenu`**  |
-| `activeNavItem`  | `AppBottomNavItem`   | —        | Forwarded to **`AppBottomMenu`**  |
 
 ### Slots
 
@@ -196,7 +216,7 @@ Vector/Minerva skin switching.
 
 ### Events
 
-Forwarded from **`AppBottomMenu`**: `update:activeNavItem`, `navigate`.
+Forwarded from **`AppBottomMenu`**: `navigate`.
 
 ### Theme inheritance
 

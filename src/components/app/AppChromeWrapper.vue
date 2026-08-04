@@ -18,7 +18,6 @@ interface Props {
   middle?: AppHeaderItem[]
   right?: AppHeaderItem[]
   bottomNavItems?: AppBottomNavItem[]
-  activeNavItem?: AppBottomNavItem
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -30,21 +29,15 @@ const props = withDefaults(defineProps<Props>(), {
   middle: undefined,
   right: undefined,
   bottomNavItems: undefined,
-  activeNavItem: undefined,
 })
 
 const emit = defineEmits<{
-  'update:activeNavItem': [item: AppBottomNavItem]
   navigate: [item: AppBottomNavItem]
 }>()
 
 const effectiveTheme = computed<Theme>(() => props.theme ?? globalTheme.value)
 
 provide(PROTOWIKI_CHROME_THEME, effectiveTheme)
-
-function onActiveNavItemUpdate(item: AppBottomNavItem): void {
-  emit('update:activeNavItem', item)
-}
 
 function onNavigate(item: AppBottomNavItem): void {
   emit('navigate', item)
@@ -72,8 +65,6 @@ function onNavigate(item: AppBottomNavItem): void {
           v-if="props.showBottomMenu"
           :theme="effectiveTheme"
           :items="props.bottomNavItems"
-          :active-item="props.activeNavItem"
-          @update:active-item="onActiveNavItemUpdate"
           @navigate="onNavigate"
         />
       </slot>
@@ -85,13 +76,16 @@ function onNavigate(item: AppBottomNavItem): void {
 .app-chrome-wrapper {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
   background-color: var(--background-color-base, #fff);
   color: var(--color-base, #202122);
 }
 
 .app-chrome-wrapper__content {
   flex: 1 1 auto;
+  min-height: 0;
   width: 100%;
   overflow-y: auto;
   padding-inline: var(--spacing-150, 24px);

@@ -13,7 +13,16 @@ import { computed, defineComponent, h, ref } from 'vue'
 import { CdxRadio, CdxSearchInput } from '@wikimedia/codex'
 
 import AppChromeWrapper from '@/components/app/AppChromeWrapper.vue'
+import {
+  ANDROID_ARTICLE_BOTTOM_NAV_ITEMS,
+  ANDROID_MAIN_BOTTOM_NAV_ITEMS,
+  APP_BOTTOM_NAV_ITEM_META,
+  IOS_ARTICLE_BOTTOM_NAV_ITEMS,
+  IOS_MAIN_BOTTOM_NAV_ITEMS,
+  type AppBottomNavItem,
+} from '@/components/app/appBottomNavItems'
 import type { AppHeaderItem } from '@/components/app/AppChromeHeader.vue'
+import { useIsIos } from '@/composables/useAppPlatform'
 
 type HeaderVariant = 'explore' | 'search' | 'activity' | 'saved' | 'article'
 
@@ -25,7 +34,18 @@ const HEADER_VARIANTS: { value: HeaderVariant; label: string }[] = [
   { value: 'article', label: 'Article — back · search · logo · actions' },
 ]
 
+type BottomBarVariant = 'main' | 'article' | 'hidden'
+
+const isIos = useIsIos()
+
+function formatBottomBarLabel(variant: 'main' | 'article', items: AppBottomNavItem[]): string {
+  const names = items.map((id) => APP_BOTTOM_NAV_ITEM_META[id].ariaLabel.toLowerCase()).join(' · ')
+  const prefix = variant === 'main' ? 'Main' : 'Article'
+  return `${prefix} — ${names}`
+}
+
 const headerVariant = ref<HeaderVariant>('explore')
+const bottomBarVariant = ref<BottomBarVariant>('main')
 const searchQuery = ref('')
 
 const DemoSearchField = defineComponent({
@@ -113,10 +133,40 @@ const headerRight = computed((): AppHeaderItem[] | undefined => {
       return ARTICLE_RIGHT
   }
 })
+
+const showBottomMenu = computed(() => bottomBarVariant.value !== 'hidden')
+
+const bottomNavItems = computed((): AppBottomNavItem[] | undefined => {
+  switch (bottomBarVariant.value) {
+    case 'main':
+      return isIos.value ? IOS_MAIN_BOTTOM_NAV_ITEMS : ANDROID_MAIN_BOTTOM_NAV_ITEMS
+    case 'article':
+      return isIos.value ? IOS_ARTICLE_BOTTOM_NAV_ITEMS : ANDROID_ARTICLE_BOTTOM_NAV_ITEMS
+    case 'hidden':
+      return undefined
+  }
+})
+
+const bottomBarVariantOptions = computed(() => {
+  const mainItems = isIos.value ? IOS_MAIN_BOTTOM_NAV_ITEMS : ANDROID_MAIN_BOTTOM_NAV_ITEMS
+  const articleItems = isIos.value ? IOS_ARTICLE_BOTTOM_NAV_ITEMS : ANDROID_ARTICLE_BOTTOM_NAV_ITEMS
+  return [
+    { value: 'main' as const, label: formatBottomBarLabel('main', mainItems) },
+    { value: 'article' as const, label: formatBottomBarLabel('article', articleItems) },
+    { value: 'hidden' as const, label: 'Hidden — search / keyboard' },
+  ]
+})
+
 </script>
 
 <template>
-  <AppChromeWrapper :left="headerLeft" :middle="headerMiddle" :right="headerRight">
+  <AppChromeWrapper
+    :left="headerLeft"
+    :middle="headerMiddle"
+    :right="headerRight"
+    :show-bottom-menu="showBottomMenu"
+    :bottom-nav-items="bottomNavItems"
+  >
     <div class="template-app-chrome">
       <fieldset class="template-app-chrome__fieldset">
         <legend class="template-app-chrome__legend">Header type</legend>
@@ -126,6 +176,21 @@ const headerRight = computed((): AppHeaderItem[] | undefined => {
             :key="option.value"
             v-model="headerVariant"
             name="template-app-chrome-header"
+            :input-value="option.value"
+          >
+            {{ option.label }}
+          </CdxRadio>
+        </div>
+      </fieldset>
+
+      <fieldset class="template-app-chrome__fieldset template-app-chrome__fieldset--spaced">
+        <legend class="template-app-chrome__legend">Bottom bar type</legend>
+        <div class="template-app-chrome__options" role="radiogroup" aria-label="Bottom bar type">
+          <CdxRadio
+            v-for="option in bottomBarVariantOptions"
+            :key="option.value"
+            v-model="bottomBarVariant"
+            name="template-app-chrome-bottom-bar"
             :input-value="option.value"
           >
             {{ option.label }}
@@ -145,6 +210,10 @@ const headerRight = computed((): AppHeaderItem[] | undefined => {
   margin: 0;
   padding: 0;
   border: 0;
+}
+
+.template-app-chrome__fieldset--spaced {
+  margin-top: var(--spacing-200, 32px);
 }
 
 .template-app-chrome__legend {
