@@ -1,0 +1,1 @@
+import{a8 as t}from"./codex-icons-D03wGrV4.js";function r(o){return o.startsWith("cdxIcon")?o:`cdxIcon${o.split("-").map(c=>c.charAt(0).toUpperCase()+c.slice(1)).join("")}`}function e(o){const n=r(o);return t[n]}export{e as r};
