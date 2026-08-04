@@ -5,7 +5,11 @@ import type { AppPlatform } from '@/config'
 
 /**
  * Read-only access to the effective app platform (resolved `ios` / `android`
- * on `<html>`; a stored `auto` preference is resolved before this ref is set).
+ * on `<html>`).
+ *
+ * Resolution order: `?os=auto|ios|android` URL param (masks stored preference,
+ * never writes to localStorage) → stored preference → device detection when
+ * effective preference is `auto`.
  *
  * Use this when a prototype needs structural differences between iOS and
  * Android. For visual-only differences, prefer [data-app-platform] selectors

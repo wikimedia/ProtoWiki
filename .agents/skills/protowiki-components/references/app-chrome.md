@@ -169,6 +169,8 @@ layouts so you can preview any combination independently. Bottom bar **Main**
 and **Article** presets follow the global app OS preference (**Auto**, **iOS**,
 or **Android**); only **Hidden** is platform-agnostic. **Auto** detects iOS vs
 Android from the current device; on desktop browsers it falls back to Android.
+**`?os=auto|ios|android`** on any route masks the saved preference for that page
+load without changing it.
 
 ### Slots
 

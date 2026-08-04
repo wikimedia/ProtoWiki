@@ -4,6 +4,15 @@ import type { AppPlatform, ConfigAppPlatform } from '@/config'
 
 export const globalAppPlatform: Ref<AppPlatform> = ref<AppPlatform>('android')
 
+function readUrlParam(name: string): string | null {
+  if (typeof window === 'undefined') return null
+  return new URLSearchParams(window.location.search).get(name)
+}
+
+function isConfigAppPlatform(value: unknown): value is ConfigAppPlatform {
+  return value === 'auto' || value === 'ios' || value === 'android'
+}
+
 function resolveAppPlatformFromDevice(): AppPlatform {
   if (typeof navigator === 'undefined') return 'android'
 
@@ -16,8 +25,17 @@ function resolveAppPlatformFromDevice(): AppPlatform {
   return 'android'
 }
 
+function resolvePreferenceWithUrlMask(stored: ConfigAppPlatform): ConfigAppPlatform {
+  const osParam = readUrlParam('os')
+  if (isConfigAppPlatform(osParam)) return osParam
+  return stored
+}
+
 function resolveEffectiveAppPlatform(preference: ConfigAppPlatform): AppPlatform {
-  if (preference === 'ios' || preference === 'android') return preference
+  const effectivePreference = resolvePreferenceWithUrlMask(preference)
+  if (effectivePreference === 'ios' || effectivePreference === 'android') {
+    return effectivePreference
+  }
   return resolveAppPlatformFromDevice()
 }
 

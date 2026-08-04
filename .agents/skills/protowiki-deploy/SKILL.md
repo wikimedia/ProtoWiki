@@ -254,10 +254,14 @@ https://<org>.github.io/ProtoWiki/                         ← gallery
 https://<org>.github.io/ProtoWiki/template-chrome          ← prototype
 https://<org>.github.io/ProtoWiki/template-chrome?theme=dark
 https://<org>.github.io/ProtoWiki/template-chrome?skin=mobile
+https://<org>.github.io/ProtoWiki/template-app-article?os=ios
+https://<org>.github.io/ProtoWiki/template-app-chrome?os=android&theme=dark
+https://<org>.github.io/ProtoWiki/template-app-article?os=auto
 ```
 
-The `?skin=` and `?theme=` URL params are handled at boot — paste them
-into review tickets to pin a specific preview.
+The `?skin=`, `?theme=`, and `?os=` URL params are handled at boot — paste them
+into review tickets to pin a specific preview. `?os=auto|ios|android` masks the
+saved App OS preference without changing it.
 
 ## Troubleshooting
 
