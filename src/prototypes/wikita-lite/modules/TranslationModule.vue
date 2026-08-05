@@ -12,6 +12,7 @@ interface Props {
   standalone?: boolean
   items?: HomeTranslationSuggestion[]
   loading?: boolean
+  loadingMore?: boolean
   error?: string | null
   previewLimit?: number
 }
@@ -20,6 +21,7 @@ const props = withDefaults(defineProps<Props>(), {
   standalone: false,
   items: () => [],
   loading: false,
+  loadingMore: false,
   error: null,
   previewLimit: 2,
 })
@@ -43,43 +45,46 @@ function cardThumbnail(url?: string) {
 
 <template>
   <div class="translation-module">
-    <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading translation suggestions" />
+    <div v-if="standalone && error && !displayItems.length" class="translation-module__error">
+      <p>{{ error }}</p>
+      <CdxButton weight="quiet" @click="$emit('retry')">Try again</CdxButton>
+    </div>
 
-    <template v-else-if="error">
-      <div class="translation-module__error">
-        <p>{{ error }}</p>
-        <CdxButton weight="quiet" @click="$emit('retry')">Try again</CdxButton>
-      </div>
-    </template>
+    <div v-if="displayItems.length" :class="['translation-module__cards', groupClass]">
+      <CdxCard
+        v-for="suggestion in displayItems"
+        :key="suggestion.id"
+        :class="cardClass"
+        :url="suggestion.translationUrl"
+        :thumbnail="cardThumbnail(suggestion.thumbnailUrl)"
+        :force-thumbnail="true"
+      >
+        <template #title>
+          {{ suggestion.title }}
+        </template>
+        <template v-if="suggestion.description" #description>
+          {{ suggestion.description }}
+        </template>
+        <template #supporting-text>
+          <WikitaLiteSupportingRow :icon="cdxIconLanguage">
+            Translate to {{ suggestion.targetLanguageLabel }}
+          </WikitaLiteSupportingRow>
+        </template>
+      </CdxCard>
+    </div>
 
-    <template v-else>
-      <div :class="['translation-module__cards', groupClass]">
-        <CdxCard
-          v-for="suggestion in displayItems"
-          :key="suggestion.id"
-          :class="cardClass"
-          :url="suggestion.translationUrl"
-          :thumbnail="cardThumbnail(suggestion.thumbnailUrl)"
-          :force-thumbnail="true"
-        >
-          <template #title>
-            {{ suggestion.title }}
-          </template>
-          <template v-if="suggestion.description" #description>
-            {{ suggestion.description }}
-          </template>
-          <template #supporting-text>
-            <WikitaLiteSupportingRow :icon="cdxIconLanguage">
-              Translate to {{ suggestion.targetLanguageLabel }}
-            </WikitaLiteSupportingRow>
-          </template>
-        </CdxCard>
-      </div>
+    <CdxProgressBar
+      v-if="standalone && (loading || loadingMore)"
+      inline
+      aria-label="Loading translation suggestions"
+    />
 
-      <p v-if="standalone && !displayItems.length" class="translation-module__empty">
-        No translation suggestions right now.
-      </p>
-    </template>
+    <p
+      v-if="standalone && !displayItems.length && !loading && !loadingMore && !error"
+      class="translation-module__empty"
+    >
+      No translation suggestions right now.
+    </p>
   </div>
 </template>
 

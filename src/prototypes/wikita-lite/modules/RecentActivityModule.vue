@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, toRef } from 'vue'
+import { computed, nextTick, ref, toRef, watch } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 import { RouterLink } from 'vue-router'
 
@@ -7,8 +7,10 @@ import { CdxButton, CdxCard, CdxProgressBar } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
 import {
   cdxIconAlert,
-  cdxIconError,
+  cdxIconClock,
   cdxIconReference,
+  cdxIconEditUndo,
+  cdxIconInfo,
   cdxIconUserAdd,
   cdxIconUserAvatar,
 } from '@wikimedia/codex-icons'
@@ -19,11 +21,15 @@ import {
   type HomeSavedItem,
 } from '../../musical-group/data/types'
 import { useActivityFeed } from '../../musical-group/useActivityFeed'
-import { useCommonsPhotosInfiniteScroll } from '../../musical-group/useCommonsPhotosFeed'
 import WikitaLiteCardWithChip, {
+  type WikitaLiteChip,
   type WikitaLiteChipStatus,
 } from '../components/WikitaLiteCardWithChip.vue'
 import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
+import {
+  isSentinelNearViewport,
+  useViewportInfiniteScroll,
+} from '../composables/useViewportInfiniteScroll'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
 
 interface Props {
@@ -54,35 +60,82 @@ const feedMode = computed(() => (props.standalone ? 'full' : 'latest'))
 const {
   changes: activityChanges,
   loading: activityLoading,
+  loadingMore: activityLoadingMore,
   hasMore: activityHasMore,
   queueReady: activityQueueReady,
   revisionLookupFailed,
   loadMore: loadMoreActivity,
   retry: retryActivity,
-} = useActivityFeed(savedItemsRef, activeRef, feedMode)
+} = useActivityFeed(savedItemsRef, activeRef, feedMode, {
+  eagerClassify: true,
+  reviewFeed: true,
+})
 
 const activitySentinel = ref<HTMLElement | null>(null)
+const pageActive = computed(() => props.standalone)
 
-useCommonsPhotosInfiniteScroll({
+const activityFeedLoading = computed(
+  () => activityLoading.value || activityLoadingMore.value,
+)
+
+let fillingViewport = false
+
+async function loadNextChange(): Promise<boolean> {
+  if (!props.standalone || activityFeedLoading.value || !activityHasMore.value) return false
+  return loadMoreActivity()
+}
+
+async function fillViewport(): Promise<void> {
+  if (fillingViewport) return
+  fillingViewport = true
+  try {
+    while (pageActive.value && activityHasMore.value && !activityFeedLoading.value) {
+      const added = await loadNextChange()
+      if (!added) break
+      await nextTick()
+      if (!isSentinelNearViewport(activitySentinel.value)) break
+    }
+  } finally {
+    fillingViewport = false
+  }
+}
+
+watch(
+  () =>
+    [props.standalone, props.savedItemsLoading, activityQueueReady.value] as const,
+  ([standalone, savedLoading, ready]) => {
+    if (!standalone || savedLoading || !ready) return
+    void fillViewport()
+  },
+)
+
+useViewportInfiniteScroll({
   sentinel: activitySentinel,
-  active: computed(() => props.standalone),
+  active: pageActive,
   hasMore: activityHasMore,
-  loading: activityLoading,
-  loadMore: loadMoreActivity,
+  loading: activityFeedLoading,
+  loadMore: loadNextChange,
 })
 
 const previewItems = computed(() => props.items.slice(0, props.previewLimit))
 
 const displayItems = computed(() => (props.standalone ? activityChanges.value : previewItems.value))
 
+const displayCards = computed(() =>
+  displayItems.value.map((change) => ({
+    change,
+    chips: changeChips(change),
+  })),
+)
+
 const showMoreLink = computed(
   () => !props.standalone && Boolean(props.moreTo) && displayItems.value.length > 0,
 )
 
-const showPreviewLoading = computed(() => props.standalone && props.loading)
-
-const itemsWithEnwiki = computed(() =>
-  props.savedItems.filter((item) => item.enwikiTitle),
+const showStandaloneLoading = computed(
+  () =>
+    props.standalone &&
+    (props.savedItemsLoading || props.loading || activityFeedLoading.value),
 )
 
 interface FlagPresentation {
@@ -99,12 +152,43 @@ const FLAG_PRESENTATION: Record<
   'new-editor': { label: 'New editor', icon: cdxIconUserAdd, status: 'success' },
   'needs-reference': { label: 'Needs a reference check', icon: cdxIconReference, status: 'notice' },
   'tone-issue': { label: 'Tone issue', icon: cdxIconAlert, status: 'warning' },
-  'high-revert-risk': { label: 'High revert risk', icon: cdxIconError, status: 'error' },
+  'high-revert-risk': { label: 'High revert risk', icon: cdxIconAlert, status: 'warning' },
 }
 
 function flagPresentation(flag: HomeRecentChangeFlag): FlagPresentation | null {
   if (flag === 'none' || flag === 'good-faith') return null
   return FLAG_PRESENTATION[flag]
+}
+
+function changeChips(change: HomeRecentChange): WikitaLiteChip[] {
+  const chips: WikitaLiteChip[] = []
+
+  if (props.standalone && change.isLatest) {
+    chips.push({ label: 'Latest', icon: cdxIconClock, status: 'notice' })
+  }
+  if (change.reverted) {
+    chips.push({ label: 'Reverted', icon: cdxIconEditUndo, status: 'notice' })
+  }
+
+  const flag = flagPresentation(change.flag)
+  const showHighRevertRisk =
+    flag &&
+    change.flag === 'high-revert-risk' &&
+    !change.flagPending &&
+    !change.reverted
+  if (showHighRevertRisk) {
+    chips.push({ label: flag.label, icon: flag.icon, status: flag.status })
+  }
+
+  if (change.majorChange && !change.flagPending) {
+    chips.push({ label: 'Major change', icon: cdxIconInfo, status: 'notice' })
+  }
+
+  if (flag && !change.flagPending && change.flag !== 'high-revert-risk') {
+    chips.push({ label: flag.label, icon: flag.icon, status: flag.status })
+  }
+
+  return chips
 }
 
 function cardThumbnail(url?: string) {
@@ -116,38 +200,26 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
 
 <template>
   <div class="recent-activity-module">
-    <CdxProgressBar v-if="showPreviewLoading || (standalone && savedItemsLoading)" inline aria-label="Loading recent activity" />
+    <div
+      v-if="
+        standalone &&
+        activityQueueReady &&
+        revisionLookupFailed &&
+        !activityChanges.length &&
+        !activityFeedLoading
+      "
+      class="recent-activity-module__error"
+    >
+      <p>Could not load recent activity.</p>
+      <CdxButton weight="quiet" @click="retryActivity">Try again</CdxButton>
+    </div>
 
-    <template v-else-if="standalone && !savedItemsLoading">
-      <p v-if="!savedItems.length" class="recent-activity-module__empty">
-        You have not saved any pages yet.
-      </p>
-      <p v-else-if="!itemsWithEnwiki.length" class="recent-activity-module__empty">
-        None of your saved pages have English Wikipedia articles.
-      </p>
-      <div
-        v-else-if="activityQueueReady && revisionLookupFailed && !activityChanges.length && !activityLoading"
-        class="recent-activity-module__error"
-      >
-        <p>Could not load recent edits on your saved pages.</p>
-        <CdxButton weight="quiet" @click="retryActivity">Try again</CdxButton>
-      </div>
-      <p
-        v-else-if="activityQueueReady && !activityChanges.length && !activityLoading"
-        class="recent-activity-module__empty"
-      >
-        No recent edits on your saved pages.
-      </p>
-    </template>
-
-    <div v-if="displayItems.length" :class="['recent-activity-module__cards', groupClass]">
-      <template v-for="change in displayItems" :key="`${change.enwikiTitle}-${change.revid}`">
+    <div v-if="displayCards.length" :class="['recent-activity-module__cards', groupClass]">
+      <template v-for="{ change, chips } in displayCards" :key="`${change.enwikiTitle}-${change.revid}`">
         <WikitaLiteCardWithChip
-          v-if="flagPresentation(change.flag)"
+          v-if="standalone"
           :url="change.diffUrl"
-          :chip-label="flagPresentation(change.flag)!.label"
-          :chip-icon="flagPresentation(change.flag)!.icon"
-          :chip-status="flagPresentation(change.flag)!.status"
+          :chips="chips"
           :title="change.title"
           :description="change.editSummary"
           :supporting-text="change.editedLabel"
@@ -156,25 +228,39 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
           :force-thumbnail="true"
         />
 
-        <CdxCard
-          v-else
-          :class="cardClass"
-          :url="change.diffUrl"
-          :thumbnail="cardThumbnail(change.thumbnailUrl)"
-          :force-thumbnail="true"
-        >
-          <template #title>
-            {{ change.title }}
-          </template>
-          <template v-if="change.editSummary" #description>
-            {{ change.editSummary }}
-          </template>
-          <template #supporting-text>
-            <WikitaLiteSupportingRow :icon="cdxIconUserAvatar">
-              {{ change.editedLabel }}
-            </WikitaLiteSupportingRow>
-          </template>
-        </CdxCard>
+        <template v-else>
+          <WikitaLiteCardWithChip
+            v-if="chips.length"
+            :url="change.diffUrl"
+            :chips="chips"
+            :title="change.title"
+            :description="change.editSummary"
+            :supporting-text="change.editedLabel"
+            :supporting-icon="cdxIconUserAvatar"
+            :thumbnail-url="change.thumbnailUrl"
+            :force-thumbnail="true"
+          />
+
+          <CdxCard
+            v-else
+            :class="cardClass"
+            :url="change.diffUrl"
+            :thumbnail="cardThumbnail(change.thumbnailUrl)"
+            :force-thumbnail="true"
+          >
+            <template #title>
+              {{ change.title }}
+            </template>
+            <template v-if="change.editSummary" #description>
+              {{ change.editSummary }}
+            </template>
+            <template #supporting-text>
+              <WikitaLiteSupportingRow :icon="cdxIconUserAvatar">
+                {{ change.editedLabel }}
+              </WikitaLiteSupportingRow>
+            </template>
+          </CdxCard>
+        </template>
       </template>
     </div>
 
@@ -186,7 +272,7 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
       Review more changes
     </RouterLink>
 
-    <CdxProgressBar v-if="standalone && activityLoading" inline aria-label="Loading activity" />
+    <CdxProgressBar v-if="showStandaloneLoading" inline aria-label="Loading recent activity" />
 
     <div
       v-if="standalone"
@@ -209,14 +295,6 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
   display: flex;
   flex-direction: column;
   width: 100%;
-}
-
-.recent-activity-module__empty {
-  margin: 0;
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-medium, 1rem);
-  line-height: var(--line-height-small, 1.375);
-  color: var(--color-subtle, #54595d);
 }
 
 .recent-activity-module__error {

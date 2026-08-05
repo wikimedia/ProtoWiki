@@ -85,15 +85,9 @@ function suggestionIcon(suggestion: HomeHelpWanted) {
     </RouterLink>
 
     <CdxProgressBar
-      v-if="standalone && loading && !displayItems.length"
+      v-if="standalone && (loading || loadingMore)"
       inline
       aria-label="Loading edit suggestions"
-    />
-
-    <CdxProgressBar
-      v-if="standalone && loadingMore"
-      inline
-      aria-label="Loading more edit suggestions"
     />
 
     <p

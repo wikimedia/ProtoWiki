@@ -7,7 +7,7 @@ import type { HomeDidYouKnow } from '../../musical-group/data/types'
 import { externalArticleHref } from '../composables/useWikitaLiteCardActions'
 import { splitTitleEmphasis } from '../composables/splitTitleEmphasis'
 import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
-import { WIKITA_LITE_CARD_CLASS_THUMBNAIL_POSITION_END } from '../wikita-lite-card'
+import { WIKITA_LITE_CARD_CLASS_THUMBNAIL_POSITION_END, WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE } from '../wikita-lite-card'
 
 interface Props {
   standalone?: boolean
@@ -49,7 +49,7 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
         <CdxCard
           v-for="(item, index) in displayItems"
           :key="`dyk-${index}`"
-          :class="[cardClass, WIKITA_LITE_CARD_CLASS_THUMBNAIL_POSITION_END]"
+          :class="[cardClass, WIKITA_LITE_CARD_CLASS_THUMBNAIL_POSITION_END, WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE]"
         :url="externalArticleHref(item)"
         :thumbnail="cardThumbnail(item.thumbnailUrl)"
         :force-thumbnail="true"

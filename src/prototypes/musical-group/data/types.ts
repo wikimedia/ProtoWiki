@@ -372,6 +372,10 @@ export interface HomeRecentChange {
   diffUrl: string
   revid: number
   flag: HomeRecentChangeFlag
+  /** True while review flags (revert risk, etc.) are still resolving. */
+  flagPending?: boolean
+  /** Large diff by visible added + removed wikitext volume. */
+  majorChange?: boolean
   reverted: boolean
   /** True when this revision is still the current tip of the article. */
   isLatest: boolean

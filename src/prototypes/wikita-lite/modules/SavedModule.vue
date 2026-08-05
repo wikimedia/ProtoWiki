@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { CdxCard, CdxProgressBar } from '@wikimedia/codex'
-import { cdxIconBookmark } from '@wikimedia/codex-icons'
+import { CdxCard, CdxIcon, CdxProgressBar } from '@wikimedia/codex'
+import { cdxIconBookmark, cdxIconBookmarkOutline } from '@wikimedia/codex-icons'
 
 import type { HomeSavedItem } from '../../musical-group/data/types'
 import { savedItemHref } from '../composables/useWikitaLiteCardActions'
@@ -58,7 +58,7 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
     <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading saved pages" />
 
     <template v-else>
-      <div :class="['saved-module__cards', groupClass]">
+      <div v-if="displayItems.length" :class="['saved-module__cards', groupClass]">
         <CdxCard
           v-for="item in displayItems"
           :key="item.id"
@@ -81,8 +81,10 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
         </CdxCard>
       </div>
 
-      <p v-if="standalone && !displayItems.length && !loading" class="saved-module__empty">
-        You have not saved any pages yet.
+      <p v-else class="saved-module__empty">
+        Use the save icon
+        <CdxIcon :icon="cdxIconBookmarkOutline" class="saved-module__empty-icon" />
+        on any page to add items.
       </p>
     </template>
   </div>
@@ -104,9 +106,15 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
 
 .saved-module__empty {
   margin: 0;
+  padding-bottom: var(--spacing-50, 8px);
   font-family: var(--font-family-base);
   font-size: var(--font-size-medium, 1rem);
   line-height: var(--line-height-small, 1.375);
   color: var(--color-subtle, #54595d);
+}
+
+.saved-module__empty-icon {
+  display: inline-block;
+  vertical-align: text-bottom;
 }
 </style>

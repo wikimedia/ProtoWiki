@@ -154,12 +154,18 @@
 .wikita-lite-shell .wikita-lite-card-group--divider {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-75, 12px);
+  gap: 0;
+}
+
+.wikita-lite-shell .wikita-lite-card-group--divider > * {
+  padding-bottom: var(--spacing-75, 12px);
 }
 
 .wikita-lite-shell .wikita-lite-card--separation-divider.cdx-card,
 .wikita-lite-shell .wikita-lite-card--separation-none.cdx-card {
-  border: 0;
+  border-left-width: 0;
+  border-right-width: 0;
+  border-bottom-width: 0;
   border-radius: 0;
   padding: 0;
 }

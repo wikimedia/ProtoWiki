@@ -1,61 +1,21 @@
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { listBookmarks } from '../../musical-group/data/bookmarks'
+import { bookmarksKey } from '../../musical-group/data/cacheKeys'
 import { fetchSavedItemSummaries } from '../../musical-group/data/fetchSavedItemSummaries'
+import { getCachedSavedSummaries } from '../../musical-group/data/homeTabCache'
 import type { HomeSavedItem } from '../../musical-group/data/types'
 import { useContributeSuggestionsFeed } from '../../musical-group/useContributeSuggestionsFeed'
-
-function useViewportInfiniteScroll(options: {
-  sentinel: { value: HTMLElement | null }
-  active: { value: boolean }
-  hasMore: { value: boolean }
-  loading: { value: boolean }
-  loadMore: () => void | Promise<void>
-}): void {
-  let observer: IntersectionObserver | null = null
-
-  function disconnect(): void {
-    observer?.disconnect()
-    observer = null
-  }
-
-  function connect(): void {
-    disconnect()
-    const target = options.sentinel.value
-    if (!target || !options.active.value) return
-
-    observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) return
-        if (!options.active.value || options.loading.value || !options.hasMore.value) return
-        void options.loadMore()
-      },
-      { rootMargin: '120px' },
-    )
-    observer.observe(target)
-  }
-
-  watch(
-    () => [options.sentinel.value, options.active.value] as const,
-    () => connect(),
-    { flush: 'post' },
-  )
-
-  watch(
-    () => options.loading.value,
-    (isLoading, wasLoading) => {
-      if (!wasLoading || isLoading) return
-      requestAnimationFrame(() => connect())
-    },
-  )
-
-  onUnmounted(disconnect)
-}
+import { useViewportInfiniteScroll } from './useViewportInfiniteScroll'
 
 export function useWikitaLiteHelpWantedPage() {
-  const savedItems = ref<HomeSavedItem[]>([])
-  const savedItemsLoading = ref(true)
-  const pageActive = ref(false)
+  const bookmarkEntries = listBookmarks()
+  const dependencyKey = bookmarksKey()
+  const cachedSummaries = getCachedSavedSummaries(dependencyKey)
+
+  const savedItems = ref<HomeSavedItem[]>(cachedSummaries ?? [])
+  const savedItemsLoading = ref(Boolean(bookmarkEntries.length && !cachedSummaries?.length))
+  const pageActive = ref(!bookmarkEntries.length || Boolean(cachedSummaries?.length))
   const loadSentinel = ref<HTMLElement | null>(null)
 
   const {
@@ -76,12 +36,11 @@ export function useWikitaLiteHelpWantedPage() {
   })
 
   onMounted(async () => {
-    const entries = listBookmarks()
-    if (entries.length) {
+    if (bookmarkEntries.length) {
       try {
-        savedItems.value = await fetchSavedItemSummaries(entries)
+        savedItems.value = await fetchSavedItemSummaries(bookmarkEntries)
       } catch {
-        savedItems.value = []
+        if (!savedItems.value.length) savedItems.value = []
       }
     }
     savedItemsLoading.value = false

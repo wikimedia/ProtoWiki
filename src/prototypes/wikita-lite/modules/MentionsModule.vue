@@ -108,10 +108,6 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
     </div>
 
     <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading mentions" />
-
-    <p v-if="standalone && !displayItems.length && !loading" class="mentions-module__empty">
-      No mentions on your saved pages yet.
-    </p>
   </div>
 </template>
 
@@ -138,13 +134,5 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
   font-weight: var(--font-weight-bold);
   color: var(--color-base);
   background-color: #ffe49c;
-}
-
-.mentions-module__empty {
-  margin: 0;
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-medium, 1rem);
-  line-height: var(--line-height-small, 1.375);
-  color: var(--color-subtle, #54595d);
 }
 </style>

@@ -1,10 +1,10 @@
 import { onUnmounted, ref, watch, type Ref } from 'vue'
 
-import { savedPagesListKey } from './data/cacheKeys'
+import { bookmarksKey, savedPagesListKey } from './data/cacheKeys'
 import { normalizeEnwikiTitle } from './data/enwikiTitle'
 import { fetchAllSavedSuggestions, fetchEditSuggestionForPage } from './data/fetchEditSuggestion'
 import { fetchMorelikeTitles, resolveRelatedSummary } from './data/fetchRelatedReading'
-import { getCachedContributeFeed, setCachedContributeFeed } from './data/homeTabCache'
+import { getCachedContributeFeed, getCachedHelpWanted, setCachedContributeFeed } from './data/homeTabCache'
 import type { HomeHelpWanted, HomeSavedItem } from './data/types'
 
 /** How many related suggestions to resolve per loadMore call. */
@@ -101,6 +101,53 @@ export function useContributeSuggestionsFeed(
     relatedLoading.value = false
     error.value = null
     savedLoadedForKey = key
+    return true
+  }
+
+  /** Home preview caches suggestions separately; seed the full-page feed from that cache. */
+  function restoreFromHelpWantedCache(key: string): boolean {
+    const helpCached = getCachedHelpWanted(bookmarksKey())
+    if (!helpCached?.length) return false
+
+    resetRelatedState()
+
+    const savedIdSet = new Set(savedItems.value.map((item) => item.id))
+    const savedEnwikiSet = new Set(
+      savedItems.value
+        .filter((item) => item.enwikiTitle)
+        .map((item) => normalizeEnwikiTitle(item.enwikiTitle as string).toLowerCase()),
+    )
+
+    const saved: HomeHelpWanted[] = []
+    const related: HomeHelpWanted[] = []
+
+    for (const suggestion of helpCached) {
+      const isSaved =
+        savedIdSet.has(suggestion.itemId) ||
+        Boolean(
+          suggestion.enwikiTitle &&
+            savedEnwikiSet.has(normalizeEnwikiTitle(suggestion.enwikiTitle).toLowerCase()),
+        )
+
+      if (isSaved) {
+        saved.push(suggestion)
+      } else {
+        related.push(suggestion)
+      }
+
+      excludedIds.add(suggestion.itemId)
+      if (suggestion.enwikiTitle) {
+        seenTitles.add(normalizeEnwikiTitle(suggestion.enwikiTitle).toLowerCase())
+      }
+    }
+
+    savedSuggestions.value = saved
+    relatedSuggestions.value = related
+    savedLoading.value = false
+    relatedLoading.value = false
+    error.value = null
+    savedLoadedForKey = key
+    persistState()
     return true
   }
 
@@ -304,6 +351,7 @@ export function useContributeSuggestionsFeed(
 
       loadedForKey = key
       if (restoreFromCache(key)) return
+      if (restoreFromHelpWantedCache(key)) return
 
       resetRelatedState()
 

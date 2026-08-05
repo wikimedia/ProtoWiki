@@ -3,12 +3,16 @@ import { onUnmounted, ref, watch, type Ref } from 'vue'
 import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 
 import {
+  buildRecentChangeShell,
+  classifyRecentChange,
   fetchLatestRecentChanges,
   fetchLatestRevisionsForTitles,
   fetchNextActivityCandidates,
   fetchRecentChangeForItem,
   initPageActivityStates,
   type ActivityCandidate,
+  type ChangeClassification,
+  type ClassifyChangeOptions,
   type LatestRevision,
   type PageActivityState,
 } from './data/fetchRecentChanges'
@@ -16,10 +20,19 @@ import { getCachedActivityFeed, setCachedActivityFeed } from './data/homeTabCach
 import { savedPagesListKey } from './data/cacheKeys'
 import type { HomeRecentChange, HomeSavedItem } from './data/types'
 
-/** How many classified change cards to resolve per loadMore call. */
-const PAGE_SIZE = 3
+/** Classified change cards resolved per loadMore call (full feed loads one at a time). */
+const FULL_FEED_PAGE_SIZE = 1
+/** Home preview resolves latest edits in one batch. */
+const LATEST_FEED_PAGE_SIZE = 3
 
 export type ActivityFeedMode = 'latest' | 'full'
+
+export interface ActivityFeedOptions {
+  /** Show revision metadata immediately; resolve flags in the background. */
+  eagerClassify?: boolean
+  /** Review changes: review flags + registered first edit (no good-faith). */
+  reviewFeed?: boolean
+}
 
 /**
  * Activity feed for saved pages. `latest` returns one classified edit per page;
@@ -29,9 +42,11 @@ export function useActivityFeed(
   savedItems: Ref<HomeSavedItem[]>,
   active: Ref<boolean>,
   mode: Ref<ActivityFeedMode> = ref('full'),
+  options: ActivityFeedOptions = {},
 ) {
   const changes = ref<HomeRecentChange[]>([])
   const loading = ref(false)
+  const loadingMore = ref(false)
   const hasMore = ref(true)
   const error = ref<string | null>(null)
   const queueReady = ref(false)
@@ -56,6 +71,7 @@ export function useActivityFeed(
   function resetState() {
     changes.value = []
     loading.value = false
+    loadingMore.value = false
     error.value = null
     queueReady.value = false
     itemIdsWithoutRevisions.value = []
@@ -188,20 +204,71 @@ export function useActivityFeed(
     persistState()
   }
 
-  async function loadMore() {
-    if (!active.value || loading.value || !hasMore.value) return
+  function classifyOptions(): ClassifyChangeOptions {
+    return {
+      reviewFeed: options.reviewFeed,
+      skipThankable: options.reviewFeed,
+    }
+  }
 
-    fetchAbort?.abort()
-    fetchAbort = new AbortController()
+  function applyChangeClassification(revid: number, result: ChangeClassification): void {
+    const index = changes.value.findIndex((change) => change.revid === revid)
+    if (index < 0) return
+    changes.value[index] = {
+      ...changes.value[index],
+      flag: result.flag,
+      majorChange: result.majorChange,
+      flagPending: false,
+    }
+    persistState()
+  }
+
+  function classifyChangeInBackground(
+    item: HomeSavedItem,
+    revision: LatestRevision,
+    signal: AbortSignal,
+  ): void {
+    if (!item.enwikiTitle) return
+
+    void classifyRecentChange(revision, item.enwikiTitle, signal, classifyOptions())
+      .then((result) => {
+        if (signal.aborted) return
+        applyChangeClassification(revision.revid, result)
+      })
+      .catch((err) => {
+        if ((err as Error).name === 'AbortError') return
+        applyChangeClassification(revision.revid, { flag: 'none', majorChange: false })
+      })
+  }
+
+  function pageSize(): number {
+    return mode.value === 'full' ? FULL_FEED_PAGE_SIZE : LATEST_FEED_PAGE_SIZE
+  }
+
+  async function loadMore(): Promise<boolean> {
+    if (!active.value || loading.value || loadingMore.value || !hasMore.value) return false
+
+    if (!fetchAbort) {
+      fetchAbort = new AbortController()
+    }
     const { signal } = fetchAbort
 
-    loading.value = true
+    const isInitial = mode.value === 'full' && changes.value.length === 0
+    if (isInitial) {
+      loading.value = true
+    } else if (mode.value === 'full') {
+      loadingMore.value = true
+    } else {
+      loading.value = true
+    }
     error.value = null
+
+    const countBefore = changes.value.length
 
     try {
       if (mode.value === 'latest') {
         await loadLatest(signal)
-        return
+        return changes.value.length > 0
       }
 
       await ensureQueue(signal)
@@ -209,41 +276,61 @@ export function useActivityFeed(
       if (!queue.length) {
         hasMore.value = false
         persistState()
-        return
+        return false
       }
 
-      const batch = queue.splice(0, PAGE_SIZE)
+      const batch = queue.splice(0, pageSize())
       if (batch.length) {
-        const resolved = await mapWithConcurrency(
-          batch,
-          PAGE_SIZE,
-          ({ item, revision }) =>
-            fetchRecentChangeForItem(item, signal, revision, latestRevidByTitle).catch((err) => {
-              if ((err as Error).name === 'AbortError') throw err
-              return null
-            }),
-          signal,
-        )
-        const fresh = resolved.filter((change): change is HomeRecentChange => change !== null)
-        if (fresh.length) {
-          changes.value = [...changes.value, ...fresh]
+        if (options.eagerClassify) {
+          for (const { item, revision } of batch) {
+            const shell = buildRecentChangeShell(item, revision, latestRevidByTitle, {
+              flagPending: true,
+            })
+            if (!shell) continue
+            changes.value = [...changes.value, shell]
+            classifyChangeInBackground(item, revision, signal)
+          }
+        } else {
+          const resolved = await mapWithConcurrency(
+            batch,
+            pageSize(),
+            ({ item, revision }) =>
+              fetchRecentChangeForItem(item, signal, revision, latestRevidByTitle, classifyOptions()).catch(
+                (err) => {
+                  if ((err as Error).name === 'AbortError') throw err
+                  return null
+                },
+              ),
+            signal,
+          )
+          const fresh = resolved.filter((change): change is HomeRecentChange => change !== null)
+          if (fresh.length) {
+            changes.value = [...changes.value, ...fresh]
+          }
         }
       }
 
       updateHasMore()
       persistState()
+      if (!batch.length) return false
+      if (options.eagerClassify) return true
+      return changes.value.length > countBefore || hasMore.value
     } catch (err) {
-      if ((err as Error).name === 'AbortError') return
+      if ((err as Error).name === 'AbortError') return false
       error.value = 'Could not load activity.'
       hasMore.value = false
+      return false
     } finally {
       loading.value = false
+      loadingMore.value = false
     }
   }
 
   function retry() {
     if (!active.value) return
     loadedForKey = null
+    fetchAbort?.abort()
+    fetchAbort = null
     resetState()
     void loadMore()
   }
@@ -262,6 +349,7 @@ export function useActivityFeed(
         fetchAbort?.abort()
         fetchAbort = null
         loading.value = false
+        loadingMore.value = false
         return
       }
 
@@ -287,6 +375,7 @@ export function useActivityFeed(
   return {
     changes,
     loading,
+    loadingMore,
     hasMore,
     error,
     queueReady,

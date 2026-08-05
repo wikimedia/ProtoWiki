@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { useConfig } from '@/composables/useConfig'
-
-import { useWikitaLiteHome } from '../wikita-lite/composables/useWikitaLiteHome'
+import { useWikitaLiteTranslationPage } from '../wikita-lite/composables/useWikitaLiteTranslationPage'
 import MobileSubpageHeader from '../wikita-lite/components/MobileSubpageHeader.vue'
 import WikitaLiteShell from '../wikita-lite/components/WikitaLiteShell.vue'
 import TranslationModule from '../wikita-lite/modules/TranslationModule.vue'
@@ -14,17 +12,14 @@ definePage({
   },
 })
 
-const { knownLanguages } = useConfig()
-
 const {
   translationSuggestions,
   translationLoading,
+  translationLoadingMore,
   translationError,
   retryTranslationFeed,
-} = useWikitaLiteHome({
-  translationLanguages: () => knownLanguages.value,
-  translationCountPerLanguage: 6,
-})
+  loadSentinel,
+} = useWikitaLiteTranslationPage()
 </script>
 
 <template>
@@ -34,14 +29,21 @@ const {
       standalone
       :items="translationSuggestions"
       :loading="translationLoading"
+      :loading-more="translationLoadingMore"
       :error="translationError"
       @retry="retryTranslationFeed"
     />
+    <div ref="loadSentinel" class="wikita-lite-translations__sentinel" aria-hidden="true" />
   </WikitaLiteShell>
 </template>
 
 <style scoped>
 :deep(.wikita-lite-shell[data-skin='mobile']) {
   padding-top: var(--spacing-100, 16px);
+}
+
+.wikita-lite-translations__sentinel {
+  height: 1px;
+  flex-shrink: 0;
 }
 </style>

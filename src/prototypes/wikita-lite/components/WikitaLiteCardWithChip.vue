@@ -14,11 +14,15 @@ import {
 
 export type WikitaLiteChipStatus = 'notice' | 'warning' | 'error' | 'success'
 
+export interface WikitaLiteChip {
+  label: string
+  icon?: Icon
+  status?: WikitaLiteChipStatus
+}
+
 interface Props {
   url?: string
-  chipLabel: string
-  chipIcon?: Icon
-  chipStatus?: WikitaLiteChipStatus
+  chips: WikitaLiteChip[]
   title: string
   description?: string
   supportingText?: string
@@ -30,8 +34,6 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   url: undefined,
-  chipIcon: undefined,
-  chipStatus: 'notice',
   description: undefined,
   supportingText: undefined,
   supportingIcon: undefined,
@@ -90,9 +92,17 @@ const showSupporting = computed(
     />
 
     <div class="wikita-lite-card-with-chip__shell">
-      <CdxInfoChip class="wikita-lite-card-with-chip__chip" :status="chipStatus" :icon="chipIcon">
-        {{ chipLabel }}
-      </CdxInfoChip>
+      <div v-if="chips.length" class="wikita-lite-card-with-chip__chips">
+        <CdxInfoChip
+          v-for="(chip, index) in chips"
+          :key="`${chip.label}-${index}`"
+          class="wikita-lite-card-with-chip__chip"
+          :status="chip.status ?? 'notice'"
+          :icon="chip.icon"
+        >
+          {{ chip.label }}
+        </CdxInfoChip>
+      </div>
 
       <CdxCard
         class="wikita-lite-card-with-chip__card"
@@ -158,8 +168,15 @@ const showSupporting = computed(
   border-color: var(--border-color-interactive--hover, #27292d);
 }
 
-.wikita-lite-card-with-chip__chip {
+.wikita-lite-card-with-chip__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-50, 8px);
   align-self: flex-start;
+}
+
+.wikita-lite-card-with-chip__chip {
+  flex-shrink: 0;
 }
 
 .wikita-lite-card-with-chip__shell :deep(.cdx-card) {

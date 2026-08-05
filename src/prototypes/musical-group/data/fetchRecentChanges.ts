@@ -21,6 +21,8 @@ const REVERT_RISK_THRESHOLD = 0.7
 const REFERENCE_NEED_DELTA_THRESHOLD = 0.05
 /** Edit Check addReference minimum net new visible text length. */
 const UNSOURCED_ADDITION_MIN_CHARS = 50
+/** Total visible wikitext added + removed that qualifies as a major change. */
+const MAJOR_CHANGE_MIN_CHARS = 500
 /** Edit count below which a registered editor is treated as a newcomer. */
 const NEW_EDITOR_MAX_EDITS = 10
 const DIFF_TEXT_LIMIT = 2000
@@ -415,6 +417,17 @@ async function fetchRevisionDiff(
   }
 }
 
+function diffChangeVolume(diff: RevisionDiff): number {
+  return (
+    visibleWikitextLength(diff.addedWikitext) + visibleWikitextLength(diff.removedWikitext)
+  )
+}
+
+function isMajorChange(diff: RevisionDiff | undefined): boolean {
+  if (!diff) return false
+  return diffChangeVolume(diff) >= MAJOR_CHANGE_MIN_CHARS
+}
+
 function diffNetGrowth(diff: RevisionDiff): number {
   return (
     visibleWikitextLength(diff.addedWikitext) - visibleWikitextLength(diff.removedWikitext)
@@ -449,6 +462,15 @@ async function needsReferenceFlag(
   return false
 }
 
+async function firstEditFlag(
+  revision: LatestRevision,
+  signal?: AbortSignal,
+): Promise<'first-edit' | 'none'> {
+  if (revision.anon || revision.userid <= 0 || isTemporaryUser(revision.user)) return 'none'
+  const editCount = await fetchEditorEditCount(revision.user, signal)
+  return editCount === 1 ? 'first-edit' : 'none'
+}
+
 async function thankableFlag(
   revision: LatestRevision,
   signal?: AbortSignal,
@@ -465,34 +487,101 @@ async function thankableFlag(
   return 'good-faith'
 }
 
+export interface ClassifyChangeOptions {
+  /** Review changes feed: review flags + registered first edit only (no good-faith). */
+  reviewFeed?: boolean
+  /** Skip the thankable path entirely (good-faith, first-edit, new-editor). */
+  skipThankable?: boolean
+}
+
+export interface ChangeClassification {
+  flag: HomeRecentChangeFlag
+  majorChange: boolean
+}
+
 async function classifyChange(
   revision: LatestRevision,
   title: string,
   signal?: AbortSignal,
-): Promise<HomeRecentChangeFlag> {
-  const diff = revision.parentid
-    ? await fetchRevisionDiff(revision.parentid, revision.revid, signal)
-    : undefined
+  options?: ClassifyChangeOptions,
+): Promise<ChangeClassification> {
+  const diffPromise = revision.parentid
+    ? fetchRevisionDiff(revision.parentid, revision.revid, signal)
+    : Promise.resolve(undefined)
+  const revertRiskPromise = predictRevertRisk(revision.revid, signal)
 
-  if (await needsReferenceFlag(revision, diff, signal)) return 'needs-reference'
+  const [diff, risk] = await Promise.all([diffPromise, revertRiskPromise])
+  const majorChange = isMajorChange(diff)
 
-  if (diff?.addedPlain.trim()) {
-    const tone = await predictTone(
-      title,
-      diff.removedPlain || diff.addedPlain,
-      diff.addedPlain,
-      signal,
-    )
-    if (tone?.prediction && tone.probability >= TONE_THRESHOLD) return 'tone-issue'
+  const [needsRef, tone] = await Promise.all([
+    needsReferenceFlag(revision, diff, signal),
+    diff?.addedPlain.trim()
+      ? predictTone(title, diff.removedPlain || diff.addedPlain, diff.addedPlain, signal)
+      : Promise.resolve(null),
+  ])
+
+  if (needsRef) return { flag: 'needs-reference', majorChange }
+  if (tone?.prediction && tone.probability >= TONE_THRESHOLD) {
+    return { flag: 'tone-issue', majorChange }
+  }
+  if (risk?.prediction && risk.probability >= REVERT_RISK_THRESHOLD) {
+    return { flag: 'high-revert-risk', majorChange }
   }
 
-  const risk = await predictRevertRisk(revision.revid, signal)
-  if (risk?.prediction && risk.probability >= REVERT_RISK_THRESHOLD) return 'high-revert-risk'
+  if (options?.reviewFeed) {
+    const flag = await firstEditFlag(revision, signal)
+    return { flag, majorChange }
+  }
 
-  const thankable = await thankableFlag(revision, signal)
-  if (thankable !== 'none') return thankable
+  if (!options?.skipThankable) {
+    const thankable = await thankableFlag(revision, signal)
+    if (thankable !== 'none') return { flag: thankable, majorChange }
+  }
 
-  return 'none'
+  return { flag: 'none', majorChange }
+}
+
+/** Build a change card from revision metadata — flag defaults to none. */
+export function buildRecentChangeShell(
+  item: HomeSavedItem,
+  revision: LatestRevision,
+  latestRevidByTitle?: Map<string, number>,
+  options?: { flagPending?: boolean },
+): HomeRecentChange | null {
+  if (!item.enwikiTitle) return null
+
+  const summary = formatEditSummaryDisplay(revision.parsedComment, revision.comment)
+  const wikiLatestRevid = latestRevidByTitle?.get(titleKey(item.enwikiTitle))
+  const isLatest =
+    latestRevidByTitle != null
+      ? wikiLatestRevid != null && revision.revid === wikiLatestRevid
+      : true
+
+  return {
+    enwikiTitle: item.enwikiTitle,
+    title: item.title,
+    editSummary: summary,
+    thumbnailUrl: item.thumbnailUrl,
+    diffUrl: diffUrl(item.enwikiTitle, revision.revid),
+    revid: revision.revid,
+    flag: 'none',
+    flagPending: options?.flagPending,
+    majorChange: false,
+    reverted: revision.reverted,
+    isLatest,
+    editedTimestamp: revision.timestamp,
+    editedLabel: formatEditMetaLabel(revision.timestamp, revision.user),
+  }
+}
+
+/** Resolve review / thankable flags for a revision (after the shell is shown). */
+export async function classifyRecentChange(
+  revision: LatestRevision,
+  title: string,
+  signal?: AbortSignal,
+  options?: ClassifyChangeOptions,
+): Promise<ChangeClassification> {
+  return classifyChange(revision, title, signal, options)
 }
 
 /** Classify the latest edit on a saved page; optional pre-fetched revision skips the revision query. */
@@ -501,6 +590,7 @@ export async function fetchRecentChangeForItem(
   signal?: AbortSignal,
   revision?: LatestRevision,
   latestRevidByTitle?: Map<string, number>,
+  options?: ClassifyChangeOptions,
 ): Promise<HomeRecentChange | null> {
   if (!item.enwikiTitle) return null
 
@@ -508,25 +598,16 @@ export async function fetchRecentChangeForItem(
     revision ?? (await fetchLatestRevision(item.enwikiTitle, signal))
   if (!latest) return null
 
-  const flag = await classifyChange(latest, item.enwikiTitle, signal)
-  const summary = formatEditSummaryDisplay(latest.parsedComment, latest.comment)
-  const wikiLatestRevid = latestRevidByTitle?.get(titleKey(item.enwikiTitle))
-  const isLatest = revision
-    ? wikiLatestRevid != null && latest.revid === wikiLatestRevid
-    : true
+  const shell = buildRecentChangeShell(item, latest, latestRevidByTitle)
+  if (!shell) return null
+
+  const { flag, majorChange } = await classifyChange(latest, item.enwikiTitle, signal, options)
 
   return {
-    enwikiTitle: item.enwikiTitle,
-    title: item.title,
-    editSummary: summary,
-    thumbnailUrl: item.thumbnailUrl,
-    diffUrl: diffUrl(item.enwikiTitle, latest.revid),
-    revid: latest.revid,
+    ...shell,
     flag,
-    reverted: latest.reverted,
-    isLatest,
-    editedTimestamp: latest.timestamp,
-    editedLabel: formatEditMetaLabel(latest.timestamp, latest.user),
+    majorChange,
+    flagPending: false,
   }
 }
 

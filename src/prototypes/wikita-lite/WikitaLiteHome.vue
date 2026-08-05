@@ -10,6 +10,7 @@ import { useWikitaLiteHome, type PersonalizedFeedId } from './composables/useWik
 import { useWikitaLiteView } from './composables/useWikitaLiteView'
 import WikitaLiteModule from './components/WikitaLiteModule.vue'
 import ActiveDiscussionsModule from './modules/ActiveDiscussionsModule.vue'
+import DidYouKnowModule from './modules/DidYouKnowModule.vue'
 import FeaturedModule from './modules/FeaturedModule.vue'
 import HelpWantedModule from './modules/HelpWantedModule.vue'
 import LearnModule from './modules/LearnModule.vue'
@@ -21,6 +22,7 @@ import TranslationModule from './modules/TranslationModule.vue'
 import TrendingModule from './modules/TrendingModule.vue'
 import {
   ACTIVE_DISCUSSIONS_PAGE,
+  DID_YOU_KNOW_PAGE,
   FEATURED_PAGE,
   FURTHER_READING_PAGE,
   HELP_WANTED_PAGE,
@@ -38,6 +40,7 @@ import {
 
 const HOME_FEATURED_PREVIEW_LIMIT = 3
 const HOME_TRENDING_PREVIEW_LIMIT = 2
+const HOME_DYK_PREVIEW_LIMIT = 3
 const HOME_SAVED_PREVIEW_LIMIT = 5
 const HOME_MENTIONS_PREVIEW_LIMIT = 3
 const HOME_FURTHER_READING_PREVIEW_LIMIT = 3
@@ -62,6 +65,7 @@ const {
   trendingLoading,
   trendingTabError,
   retryTrendingFeed,
+  didYouKnow,
   hasSavedPages,
   recentlySaved,
   savedItemsLoading,
@@ -111,6 +115,10 @@ const translationPreview = computed(() =>
   translationSuggestions.value.slice(0, HOME_TRANSLATION_PREVIEW_LIMIT),
 )
 
+const homeDidYouKnowPreview = computed(() =>
+  didYouKnow.value.slice(0, HOME_DYK_PREVIEW_LIMIT),
+)
+
 const showTranslationModule = computed(() => knownLanguages.value.length > 0)
 
 const recentActivityTitle = computed(() => recentActivityTitleForView(activeView.value))
@@ -123,8 +131,57 @@ const readFeedLoading = computed(
   () => savedItemsLoading.value || homeMentionsLoading.value || homeRelatedLoading.value,
 )
 
+const exploreEmptyFeedLoading = computed(
+  () => trendingLoading.value || featuredTabLoading.value,
+)
+
 const editFeedLoading = computed(
   () => helpWantedLoading.value || recentChangesLoading.value,
+)
+
+function isRecentActivityVisible(): boolean {
+  return recentActivityPreview.value.length > 0 && !recentChangesLoading.value
+}
+
+const showRecentActivityModule = computed(
+  () => hasSavedPages.value && isRecentActivityVisible(),
+)
+
+const showActiveDiscussionsModule = computed(
+  () =>
+    showRecentActivityModule.value &&
+    (activeDiscussionsPreview.value.length > 0 || Boolean(activeDiscussionsError.value)),
+)
+
+const activeDiscussionsPending = computed(
+  () =>
+    showRecentActivityModule.value &&
+    activeDiscussionsLoading.value &&
+    !activeDiscussionsPreview.value.length &&
+    !activeDiscussionsError.value,
+)
+
+const translationPending = computed(
+  () =>
+    showTranslationModule.value &&
+    translationLoading.value &&
+    !translationPreview.value.length &&
+    !translationError.value,
+)
+
+const editTabLoading = computed(
+  () =>
+    homeFeedLoading.value ||
+    (hasSavedPages.value && editFeedLoading.value) ||
+    activeDiscussionsPending.value ||
+    translationPending.value,
+)
+
+const contributeTabLoading = computed(
+  () =>
+    (hasSavedPages.value && editFeedLoading.value) ||
+    activeDiscussionsPending.value ||
+    translationPending.value,
 )
 
 function isFurtherReadingVisible(): boolean {
@@ -141,10 +198,6 @@ function isMentionsVisible(): boolean {
 
 function isSuggestedEditsVisible(): boolean {
   return helpWantedPreview.value.length > 0 && !helpWantedLoading.value
-}
-
-function isRecentActivityVisible(): boolean {
-  return recentActivityPreview.value.length > 0 && !recentChangesLoading.value
 }
 
 function onSelectView(view: string) {
@@ -230,13 +283,6 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
           />
         </WikitaLiteModule>
 
-        <div
-          v-if="homeFeedLoading"
-          class="wikita-lite-home__loading"
-        >
-          <CdxProgressBar inline aria-label="Loading featured and trending" />
-        </div>
-
         <template v-if="hasSavedPages">
           <WikitaLiteModule
             v-if="helpWantedPreview.length"
@@ -249,9 +295,24 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
               :more-to="HELP_WANTED_PAGE"
             />
           </WikitaLiteModule>
+        </template>
 
+        <WikitaLiteModule
+          v-if="showTranslationModule && (translationPreview.length || translationError)"
+          :title="MODULE_TITLES.translateArticles"
+          :to="TRANSLATIONS_PAGE"
+        >
+          <TranslationModule
+            :items="translationSuggestions"
+            :error="translationError"
+            :preview-limit="HOME_TRANSLATION_PREVIEW_LIMIT"
+            @retry="retryTranslationFeed"
+          />
+        </WikitaLiteModule>
+
+        <template v-if="hasSavedPages">
           <WikitaLiteModule
-            v-if="!recentChangesLoading && recentActivityPreview.length"
+            v-if="showRecentActivityModule"
             :title="recentActivityTitle"
             :to="RECENT_ACTIVITY_PAGE"
           >
@@ -261,21 +322,10 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
               :more-to="RECENT_ACTIVITY_PAGE"
             />
           </WikitaLiteModule>
-
-          <div
-            v-if="editFeedLoading"
-            class="wikita-lite-home__loading"
-          >
-            <CdxProgressBar inline aria-label="Loading edit feeds" />
-          </div>
         </template>
 
-        <p v-else class="wikita-lite-home__empty">
-          Save pages to see edit suggestions and recent changes.
-        </p>
-
         <WikitaLiteModule
-          v-if="activeDiscussionsPreview.length || activeDiscussionsError"
+          v-if="showActiveDiscussionsModule"
           :title="MODULE_TITLES.activeDiscussions"
           :to="ACTIVE_DISCUSSIONS_PAGE"
         >
@@ -287,42 +337,16 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
           />
         </WikitaLiteModule>
 
-        <div
-          v-else-if="activeDiscussionsLoading"
-          class="wikita-lite-home__loading"
-        >
-          <CdxProgressBar inline aria-label="Loading active discussions" />
-        </div>
-
-        <template v-if="showTranslationModule">
-          <WikitaLiteModule
-            v-if="translationPreview.length || translationError"
-            :title="MODULE_TITLES.translateArticles"
-            :to="TRANSLATIONS_PAGE"
-          >
-            <TranslationModule
-              :items="translationSuggestions"
-              :error="translationError"
-              :preview-limit="HOME_TRANSLATION_PREVIEW_LIMIT"
-              @retry="retryTranslationFeed"
-            />
-          </WikitaLiteModule>
-
-          <div
-            v-else-if="translationLoading"
-            class="wikita-lite-home__loading"
-          >
-            <CdxProgressBar inline aria-label="Loading translation suggestions" />
-          </div>
-        </template>
-
         <WikitaLiteModule
-          v-if="!hasSavedPages || !editFeedLoading"
           :title="MODULE_TITLES.learn"
           :to="LEARN_PAGE"
         >
           <LearnModule />
         </WikitaLiteModule>
+
+        <div v-if="editTabLoading" class="wikita-lite-home__loading">
+          <CdxProgressBar inline aria-label="Loading" />
+        </div>
       </div>
     </CdxTab>
 
@@ -371,6 +395,48 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
             <CdxProgressBar inline aria-label="Loading reading list" />
           </div>
         </template>
+
+        <template v-else>
+          <WikitaLiteModule
+            :title="MODULE_TITLES.saved"
+            :to="SAVED_PAGE"
+          >
+            <SavedModule />
+          </WikitaLiteModule>
+
+          <WikitaLiteModule
+            v-if="trendingItems.length || trendingTabError"
+            :title="MODULE_TITLES.trending"
+            :to="TRENDING_PAGE"
+          >
+            <TrendingModule
+              :items="trendingItems"
+              :error="trendingTabError"
+              :preview-limit="HOME_TRENDING_PREVIEW_LIMIT"
+              :lists-version="listsVersion"
+              @retry="retryTrendingFeed"
+            />
+          </WikitaLiteModule>
+
+          <WikitaLiteModule
+            v-if="homeDidYouKnowPreview.length"
+            :title="MODULE_TITLES.didYouKnow"
+            :to="DID_YOU_KNOW_PAGE"
+          >
+            <DidYouKnowModule
+              :items="didYouKnow"
+              :preview-limit="HOME_DYK_PREVIEW_LIMIT"
+              :lists-version="listsVersion"
+            />
+          </WikitaLiteModule>
+
+          <div
+            v-if="exploreEmptyFeedLoading"
+            class="wikita-lite-home__loading"
+          >
+            <CdxProgressBar inline aria-label="Loading" />
+          </div>
+        </template>
       </div>
     </CdxTab>
 
@@ -388,9 +454,24 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
               :more-to="HELP_WANTED_PAGE"
             />
           </WikitaLiteModule>
+        </template>
 
+        <WikitaLiteModule
+          v-if="showTranslationModule && (translationPreview.length || translationError)"
+          :title="MODULE_TITLES.translateArticles"
+          :to="TRANSLATIONS_PAGE"
+        >
+          <TranslationModule
+            :items="translationSuggestions"
+            :error="translationError"
+            :preview-limit="HOME_TRANSLATION_PREVIEW_LIMIT"
+            @retry="retryTranslationFeed"
+          />
+        </WikitaLiteModule>
+
+        <template v-if="hasSavedPages">
           <WikitaLiteModule
-            v-if="!recentChangesLoading && recentActivityPreview.length"
+            v-if="showRecentActivityModule"
             :title="recentActivityTitle"
             :to="RECENT_ACTIVITY_PAGE"
           >
@@ -400,21 +481,10 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
               :more-to="RECENT_ACTIVITY_PAGE"
             />
           </WikitaLiteModule>
-
-          <div
-            v-if="editFeedLoading"
-            class="wikita-lite-home__loading"
-          >
-            <CdxProgressBar inline aria-label="Loading edit feeds" />
-          </div>
         </template>
 
-        <p v-else class="wikita-lite-home__empty">
-          Save pages to see edit suggestions and recent changes.
-        </p>
-
         <WikitaLiteModule
-          v-if="activeDiscussionsPreview.length || activeDiscussionsError"
+          v-if="showActiveDiscussionsModule"
           :title="MODULE_TITLES.activeDiscussions"
           :to="ACTIVE_DISCUSSIONS_PAGE"
         >
@@ -426,42 +496,16 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
           />
         </WikitaLiteModule>
 
-        <div
-          v-else-if="activeDiscussionsLoading"
-          class="wikita-lite-home__loading"
-        >
-          <CdxProgressBar inline aria-label="Loading active discussions" />
-        </div>
-
-        <template v-if="showTranslationModule">
-          <WikitaLiteModule
-            v-if="translationPreview.length || translationError"
-            :title="MODULE_TITLES.translateArticles"
-            :to="TRANSLATIONS_PAGE"
-          >
-            <TranslationModule
-              :items="translationSuggestions"
-              :error="translationError"
-              :preview-limit="HOME_TRANSLATION_PREVIEW_LIMIT"
-              @retry="retryTranslationFeed"
-            />
-          </WikitaLiteModule>
-
-          <div
-            v-else-if="translationLoading"
-            class="wikita-lite-home__loading"
-          >
-            <CdxProgressBar inline aria-label="Loading translation suggestions" />
-          </div>
-        </template>
-
         <WikitaLiteModule
-          v-if="!hasSavedPages || !editFeedLoading"
           :title="MODULE_TITLES.learn"
           :to="LEARN_PAGE"
         >
           <LearnModule />
         </WikitaLiteModule>
+
+        <div v-if="contributeTabLoading" class="wikita-lite-home__loading">
+          <CdxProgressBar inline aria-label="Loading" />
+        </div>
       </div>
     </CdxTab>
   </CdxTabs>
@@ -481,14 +525,6 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
   width: 100%;
   min-width: 0;
   padding-top: var(--spacing-100, 16px);
-}
-
-.wikita-lite-home__empty {
-  margin: 0;
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-medium, 1rem);
-  line-height: var(--line-height-small, 1.375);
-  color: var(--color-subtle, #54595d);
 }
 
 .wikita-lite-home__loading {
