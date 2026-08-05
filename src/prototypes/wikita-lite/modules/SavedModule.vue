@@ -58,28 +58,32 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
     <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading saved pages" />
 
     <template v-else>
-      <div v-if="displayItems.length" :class="['saved-module__cards', groupClass]">
-        <CdxCard
-          v-for="item in displayItems"
-          :key="item.id"
-          :class="[WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE, cardClass]"
-        :url="savedItemHref(item)"
-        :thumbnail="cardThumbnail(item.thumbnailUrl)"
-        :force-thumbnail="true"
-      >
-        <template #title>
-          {{ item.title }}
-        </template>
-        <template v-if="item.description" #description>
-          {{ item.description }}
-        </template>
-        <template #supporting-text>
-          <WikitaLiteSupportingRow :icon="cdxIconBookmark">
-            {{ formatSavedLabel(item.savedAt) }}
-          </WikitaLiteSupportingRow>
-        </template>
-        </CdxCard>
-      </div>
+      <template v-if="displayItems.length">
+        <div :class="['saved-module__cards', groupClass]">
+          <CdxCard
+            v-for="item in displayItems"
+            :key="item.id"
+            :class="[WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE, cardClass]"
+          :url="savedItemHref(item)"
+          :thumbnail="cardThumbnail(item.thumbnailUrl)"
+          :force-thumbnail="true"
+        >
+          <template #title>
+            {{ item.title }}
+          </template>
+          <template v-if="item.description" #description>
+            {{ item.description }}
+          </template>
+          <template #supporting-text>
+            <WikitaLiteSupportingRow :icon="cdxIconBookmark">
+              {{ formatSavedLabel(item.savedAt) }}
+            </WikitaLiteSupportingRow>
+          </template>
+          </CdxCard>
+        </div>
+
+        <slot name="after-cards" />
+      </template>
 
       <p v-else class="saved-module__empty">
         Use the save icon
@@ -116,5 +120,10 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
 .saved-module__empty-icon {
   display: inline-block;
   vertical-align: text-bottom;
+  color: var(--color-subtle, #54595d);
+}
+
+.saved-module__empty-icon :deep(svg path) {
+  fill: currentColor;
 }
 </style>

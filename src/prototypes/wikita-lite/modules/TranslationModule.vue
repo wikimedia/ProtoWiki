@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
+import { RouterLink } from 'vue-router'
 
 import { CdxButton, CdxCard, CdxProgressBar } from '@wikimedia/codex'
 import { cdxIconLanguage } from '@wikimedia/codex-icons'
@@ -15,6 +17,7 @@ interface Props {
   loadingMore?: boolean
   error?: string | null
   previewLimit?: number
+  moreTo?: RouteLocationRaw
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -24,6 +27,7 @@ const props = withDefaults(defineProps<Props>(), {
   loadingMore: false,
   error: null,
   previewLimit: 2,
+  moreTo: undefined,
 })
 
 defineEmits<{
@@ -32,6 +36,10 @@ defineEmits<{
 
 const displayItems = computed(() =>
   props.standalone ? props.items : props.items.slice(0, props.previewLimit),
+)
+
+const showMoreLink = computed(
+  () => !props.standalone && Boolean(props.moreTo) && displayItems.value.length > 0,
 )
 
 const { groupClass, cardClass } = useWikitaLiteCardListClasses({
@@ -72,6 +80,16 @@ function cardThumbnail(url?: string) {
         </template>
       </CdxCard>
     </div>
+
+    <slot name="after-cards" />
+
+    <RouterLink
+      v-if="showMoreLink && moreTo"
+      :to="moreTo"
+      class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled wikita-lite-button-link"
+    >
+      Show more suggestions
+    </RouterLink>
 
     <CdxProgressBar
       v-if="standalone && (loading || loadingMore)"

@@ -42,7 +42,7 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
 
 <template>
   <div class="did-you-know-module">
-    <CdxProgressBar v-if="loading" inline aria-label="Loading Did you know" />
+    <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading Did you know" />
 
     <template v-else>
       <div :class="['did-you-know-module__cards', groupClass]">
@@ -65,6 +65,8 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
         </template>
         </CdxCard>
       </div>
+
+      <slot name="after-cards" />
 
       <p v-if="standalone && !displayItems.length" class="did-you-know-module__empty">
         No Did you know hooks are available right now.

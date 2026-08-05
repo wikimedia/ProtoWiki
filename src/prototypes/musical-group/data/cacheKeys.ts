@@ -39,3 +39,8 @@ export function utcDayParts(date = new Date()): { yyyy: string; mm: string; dd: 
   const dd = String(date.getUTCDate()).padStart(2, '0')
   return { yyyy, mm, dd, key: `${yyyy}${mm}${dd}` }
 }
+
+/** Daily cache key for contribute-tab feeds seeded from random pages. */
+export function contributeRandomCacheKey(date = new Date()): string {
+  return `contribute-random:${utcDayKey(date)}`
+}

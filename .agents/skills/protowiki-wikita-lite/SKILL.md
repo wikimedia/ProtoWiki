@@ -28,10 +28,16 @@ Subpages use `WikitaLiteShell` + `MobileSubpageHeader` + a module with
 
 ### One loading bar per surface
 
-- **Home tab panels** — aggregate all in-flight feeds into a single
-  `CdxProgressBar` per tab (`editTabLoading`, `readFeedLoading`,
-  `exploreEmptyFeedLoading`, `contributeTabLoading` in `WikitaLiteHome.vue`).
-  Never stack multiple progress bars while feeds resolve.
+- **Home, Explore, and Contribute tabs** — loading UX is driven by
+  `useWikitaLiteTabLoading.ts` in `WikitaLiteHome.vue`:
+  - **Empty module** — one bar at the first pending slot in that tab's visual
+    module order; bar under the module title.
+  - **Refresh with preview cards** — stale cards stay visible; bar in each
+    updating module's `#after-cards` slot (above any CTA); multiple modules may
+    each show a bar while refreshing.
+  - **Hidden shells** — omit a module unless it has preview content or is
+    showing its loading bar.
+  - No aggregate footer loaders below static sections (e.g. Learn).
 - **Standalone subpages** — one `CdxProgressBar` per module, including
   pagination / infinite scroll (OR initial + load-more into one bar).
 - **Home preview mode** (`standalone=false`) — modules must **not**
@@ -50,6 +56,33 @@ Do **not** add similar save-nudging copy elsewhere:
 
 Save/bookmark **actions on cards** (bookmark icon, "Saved" label) and
 post-save toasts are fine.
+
+### Contribute tab without saved pages
+
+When the bookmark list is empty, the **Contribute** tab (not Home) still
+shows **Suggested edits** and **Review changes** seeded from random
+English Wikipedia articles (`fetchRandomPageItems` in the
+`musical-group` data layer). The Home tab does not show those modules
+until the user has saved at least one page. Still no save prompts — the
+modules simply appear when data exists.
+
+Preview results for both modules cache under `contributeRandomCacheKey()`
+(daily). Fullscreen subpages restore from that cache so the first card
+matches the Contribute tab preview:
+
+- **Suggested edits** — `fetchRandomEditSuggestions` /
+  `useWikitaLiteHelpWantedPage`
+- **Review changes** — `fetchRandomRecentChanges` /
+  `useWikitaLiteRecentActivityPage` (latest revision only per random
+  page; no revision-history pagination)
+
+When the user has saved pages, the Review changes subpage keeps
+`useActivityFeed` full mode (revision history on saved pages).
+
+**Active discussions** — always fetched; shown on the **Contribute**
+tab (and its subpage) even with no saved pages. The **Home** tab still
+requires saved pages and visible recent activity before showing the
+module.
 
 ## Adding a module
 

@@ -73,9 +73,9 @@ export async function fetchHelpWanted(
   items: HomeSavedItem[],
   signal?: AbortSignal,
   limit = DEFAULT_HELP_WANTED_LIMIT,
-  options?: { onEach?: (suggestion: HomeHelpWanted) => void },
+  options?: { onEach?: (suggestion: HomeHelpWanted) => void; dependencyKey?: string },
 ): Promise<HomeHelpWanted[]> {
-  const dependencyKey = bookmarksKey()
+  const dependencyKey = options?.dependencyKey ?? bookmarksKey()
   const cached = getCachedHelpWanted(dependencyKey)
   if (cached?.length >= limit) {
     return cached.slice(0, limit)

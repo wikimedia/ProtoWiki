@@ -76,6 +76,8 @@ function suggestionIcon(suggestion: HomeHelpWanted) {
       </CdxCard>
     </div>
 
+    <slot name="after-cards" />
+
     <RouterLink
       v-if="showMoreLink && moreTo"
       :to="moreTo"

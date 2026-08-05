@@ -9,7 +9,7 @@
     20px + env(safe-area-inset-bottom, 0px) + 44px + var(--spacing-25) + var(--spacing-25) +
       var(--spacing-100)
   );
-  padding-bottom: var(--wikita-lite-floating-nav-clearance);
+  padding-bottom: var(--spacing-50);
 }
 
 .special-page-wrapper.wikita-lite-shell[data-skin='mobile'] {
@@ -155,6 +155,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  padding-inline: var(--spacing-50, 8px);
 }
 
 .wikita-lite-shell .wikita-lite-card-group--divider > * {
@@ -163,11 +164,16 @@
 
 .wikita-lite-shell .wikita-lite-card--separation-divider.cdx-card,
 .wikita-lite-shell .wikita-lite-card--separation-none.cdx-card {
-  border-left-width: 0;
-  border-right-width: 0;
-  border-bottom-width: 0;
+  border-width: 0;
   border-radius: 0;
   padding: 0;
+}
+
+.wikita-lite-shell
+  .wikita-lite-card-group--divider
+  > .wikita-lite-card--separation-divider.cdx-card,
+.wikita-lite-shell .wikita-lite-card-group--divider > .wikita-lite-card--separation-none.cdx-card {
+  padding-bottom: var(--spacing-75, 12px);
 }
 
 .wikita-lite-shell
@@ -177,8 +183,8 @@
   padding-top: var(--spacing-75, 12px);
 }
 
-/* Wrapper articles (action / chip cards) in a divider group. */
-.wikita-lite-shell .wikita-lite-card-group--divider > * + * {
+/* Wrapper articles (action / chip cards) in a divider group — not raw CdxCard lists. */
+.wikita-lite-shell .wikita-lite-card-group--divider > * + *:not(.cdx-card) {
   border-top: 1px solid var(--border-color-base, #a2a9b1);
   padding-top: var(--spacing-75, 12px);
 }

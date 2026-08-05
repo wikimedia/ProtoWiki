@@ -3,44 +3,24 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { listBookmarks } from '../../musical-group/data/bookmarks'
 import { bookmarksKey } from '../../musical-group/data/cacheKeys'
 import {
-  loadNextRandomEditSuggestion,
-  restoreRandomEditSuggestionsFeed,
-  type RandomEditSuggestionsFeed,
-} from '../../musical-group/data/fetchRandomEditSuggestions'
+  loadNextRandomRecentChange,
+  restoreRandomRecentChangesFeed,
+  type RandomRecentChangesFeed,
+} from '../../musical-group/data/fetchRandomRecentChanges'
 import { fetchSavedItemSummaries } from '../../musical-group/data/fetchSavedItemSummaries'
 import { getCachedSavedSummaries } from '../../musical-group/data/homeTabCache'
-import type { HomeHelpWanted, HomeSavedItem } from '../../musical-group/data/types'
-import { useContributeSuggestionsFeed } from '../../musical-group/useContributeSuggestionsFeed'
+import type { HomeRecentChange, HomeSavedItem } from '../../musical-group/data/types'
 import {
   isSentinelNearViewport,
   useViewportInfiniteScroll,
 } from './useViewportInfiniteScroll'
 
-function useSavedHelpWantedPage(bookmarkEntries: ReturnType<typeof listBookmarks>) {
+function useSavedRecentActivityPage(bookmarkEntries: ReturnType<typeof listBookmarks>) {
   const dependencyKey = bookmarksKey()
   const cachedSummaries = getCachedSavedSummaries(dependencyKey)
 
   const savedItems = ref<HomeSavedItem[]>(cachedSummaries ?? [])
   const savedItemsLoading = ref(Boolean(!cachedSummaries?.length))
-  const pageActive = ref(Boolean(cachedSummaries?.length))
-  const loadSentinel = ref<HTMLElement | null>(null)
-
-  const {
-    savedSuggestions,
-    savedLoading,
-    relatedSuggestions,
-    relatedLoading,
-    relatedHasMore,
-    loadMoreRelated,
-  } = useContributeSuggestionsFeed(savedItems, pageActive)
-
-  useViewportInfiniteScroll({
-    sentinel: loadSentinel,
-    active: pageActive,
-    hasMore: relatedHasMore,
-    loading: relatedLoading,
-    loadMore: loadMoreRelated,
-  })
 
   onMounted(async () => {
     try {
@@ -49,68 +29,55 @@ function useSavedHelpWantedPage(bookmarkEntries: ReturnType<typeof listBookmarks
       if (!savedItems.value.length) savedItems.value = []
     }
     savedItemsLoading.value = false
-    pageActive.value = true
   })
 
-  const helpWanted = computed(() => [
-    ...savedSuggestions.value,
-    ...relatedSuggestions.value,
-  ])
-
-  const helpWantedLoading = computed(
-    () =>
-      savedItemsLoading.value ||
-      ((savedLoading.value || relatedLoading.value) && helpWanted.value.length === 0),
-  )
-
-  const helpWantedLoadingMore = computed(
-    () => helpWanted.value.length > 0 && (savedLoading.value || relatedLoading.value),
-  )
-
   return {
-    helpWanted,
-    helpWantedLoading,
-    helpWantedLoadingMore,
-    loadSentinel,
+    mode: 'saved' as const,
+    savedItems,
+    savedItemsLoading,
+    recentChanges: ref<HomeRecentChange[]>([]),
+    recentChangesLoading: computed(() => false),
+    recentChangesLoadingMore: computed(() => false),
+    loadSentinel: ref<HTMLElement | null>(null),
   }
 }
 
-function useRandomHelpWantedPage() {
+function useRandomRecentActivityPage() {
   const pageActive = ref(true)
   const loadSentinel = ref<HTMLElement | null>(null)
-  const helpWanted = ref<HomeHelpWanted[]>([])
+  const recentChanges = ref<HomeRecentChange[]>([])
   const loading = ref(true)
   const loadingMore = ref(false)
   const hasMore = ref(true)
 
-  let feed: RandomEditSuggestionsFeed | null = null
+  let feed: RandomRecentChangesFeed | null = null
   let abort: AbortController | null = null
   let fillingViewport = false
 
   function syncFromFeed(): void {
     if (!feed) {
-      helpWanted.value = []
+      recentChanges.value = []
       hasMore.value = false
       return
     }
-    helpWanted.value = [...feed.items]
+    recentChanges.value = [...feed.items]
     hasMore.value = !feed.exhausted
   }
 
   function initializeFeed(): void {
     abort?.abort()
     abort = new AbortController()
-    feed = restoreRandomEditSuggestionsFeed()
+    feed = restoreRandomRecentChangesFeed()
     syncFromFeed()
-    if (helpWanted.value.length) {
+    if (recentChanges.value.length) {
       loading.value = false
     }
   }
 
   async function loadNext(): Promise<boolean> {
-    if (!feed || !hasMore.value || loadingMore.value) return false
+    if (!feed || !hasMore.value || loading.value || loadingMore.value) return false
 
-    const isInitial = helpWanted.value.length === 0
+    const isInitial = recentChanges.value.length === 0
     if (isInitial) {
       loading.value = true
     } else {
@@ -118,9 +85,9 @@ function useRandomHelpWantedPage() {
     }
 
     try {
-      const suggestion = await loadNextRandomEditSuggestion(feed, abort?.signal)
+      const change = await loadNextRandomRecentChange(feed, abort?.signal)
       syncFromFeed()
-      return Boolean(suggestion)
+      return Boolean(change)
     } catch (err) {
       if ((err as Error).name === 'AbortError') return false
       hasMore.value = false
@@ -148,12 +115,12 @@ function useRandomHelpWantedPage() {
 
   const feedLoading = computed(() => loading.value || loadingMore.value)
 
-  const helpWantedLoading = computed(
-    () => feedLoading.value && helpWanted.value.length === 0,
+  const recentChangesLoading = computed(
+    () => feedLoading.value && recentChanges.value.length === 0,
   )
 
-  const helpWantedLoadingMore = computed(
-    () => helpWanted.value.length > 0 && feedLoading.value,
+  const recentChangesLoadingMore = computed(
+    () => recentChanges.value.length > 0 && feedLoading.value,
   )
 
   useViewportInfiniteScroll({
@@ -174,17 +141,20 @@ function useRandomHelpWantedPage() {
   })
 
   return {
-    helpWanted,
-    helpWantedLoading,
-    helpWantedLoadingMore,
+    mode: 'random' as const,
+    savedItems: ref<HomeSavedItem[]>([]),
+    savedItemsLoading: ref(false),
+    recentChanges,
+    recentChangesLoading,
+    recentChangesLoadingMore,
     loadSentinel,
   }
 }
 
-export function useWikitaLiteHelpWantedPage() {
+export function useWikitaLiteRecentActivityPage() {
   const bookmarkEntries = listBookmarks()
   if (bookmarkEntries.length) {
-    return useSavedHelpWantedPage(bookmarkEntries)
+    return useSavedRecentActivityPage(bookmarkEntries)
   }
-  return useRandomHelpWantedPage()
+  return useRandomRecentActivityPage()
 }

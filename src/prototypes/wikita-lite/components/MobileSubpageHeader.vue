@@ -49,7 +49,7 @@ function goBack() {
   box-sizing: border-box;
   width: 100%;
   min-height: 2.75rem;
-  margin: 0 0 var(--spacing-100, 16px);
+  margin: 0 0 var(--spacing-75, 12px);
   padding-bottom: var(--spacing-50, 8px);
   border-bottom: 1px solid var(--border-color-base, #a2a9b1);
 }

@@ -1,6 +1,6 @@
 import { onUnmounted, ref, watch, type Ref } from 'vue'
 
-import { bookmarksKey, savedPagesListKey } from './data/cacheKeys'
+import { bookmarksKey, contributeRandomCacheKey, savedPagesListKey } from './data/cacheKeys'
 import { normalizeEnwikiTitle } from './data/enwikiTitle'
 import { fetchAllSavedSuggestions, fetchEditSuggestionForPage } from './data/fetchEditSuggestion'
 import { fetchMorelikeTitles, resolveRelatedSummary } from './data/fetchRelatedReading'
@@ -106,7 +106,8 @@ export function useContributeSuggestionsFeed(
 
   /** Home preview caches suggestions separately; seed the full-page feed from that cache. */
   function restoreFromHelpWantedCache(key: string): boolean {
-    const helpCached = getCachedHelpWanted(bookmarksKey())
+    const previewCacheKey = bookmarksKey() || contributeRandomCacheKey()
+    const helpCached = getCachedHelpWanted(previewCacheKey)
     if (!helpCached?.length) return false
 
     resetRelatedState()

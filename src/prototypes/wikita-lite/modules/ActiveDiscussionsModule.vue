@@ -74,6 +74,8 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({
         </CdxCard>
       </div>
 
+      <slot name="after-cards" />
+
       <p v-if="standalone && !displayItems.length" class="active-discussions-module__empty">
         No active discussions right now.
       </p>

@@ -117,6 +117,8 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
         </template>
       </div>
 
+      <slot name="after-cards" />
+
       <p v-if="standalone && !displayItems.length" class="trending-module__empty">
         No trending articles are available right now.
       </p>

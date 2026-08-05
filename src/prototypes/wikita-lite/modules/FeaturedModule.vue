@@ -61,25 +61,28 @@ const thumbnailClass = computed(() => {
     </template>
 
     <template v-else>
-      <CdxCard
-        v-if="featuredArticle"
-        :class="thumbnailClass"
-        :url="externalArticleHref(featuredArticle)"
-        :thumbnail="cardThumbnail(featuredArticle.thumbnailUrl)"
-        :force-thumbnail="true"
-      >
-        <template #title>
-          {{ featuredArticle.title }}
-        </template>
-        <template v-if="featuredArticle.description" #description>
-          {{ featuredArticle.description }}
-        </template>
-        <template #supporting-text>
-          <WikitaLiteSupportingRow :icon="cdxIconStar">
-            {{ MODULE_TITLES.articleOfTheDay }}
-          </WikitaLiteSupportingRow>
-        </template>
-      </CdxCard>
+      <template v-if="featuredArticle">
+        <CdxCard
+          :class="thumbnailClass"
+          :url="externalArticleHref(featuredArticle)"
+          :thumbnail="cardThumbnail(featuredArticle.thumbnailUrl)"
+          :force-thumbnail="true"
+        >
+          <template #title>
+            {{ featuredArticle.title }}
+          </template>
+          <template v-if="featuredArticle.description" #description>
+            {{ featuredArticle.description }}
+          </template>
+          <template #supporting-text>
+            <WikitaLiteSupportingRow :icon="cdxIconStar">
+              {{ MODULE_TITLES.articleOfTheDay }}
+            </WikitaLiteSupportingRow>
+          </template>
+        </CdxCard>
+
+        <slot name="after-cards" />
+      </template>
 
       <p v-else-if="standalone" class="featured-module__empty">
         No featured article is available right now.

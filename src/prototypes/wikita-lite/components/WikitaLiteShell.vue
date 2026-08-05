@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { nextTick, onMounted } from 'vue'
+
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 import MobileWrapper from '@/components/MobileWrapper.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
@@ -12,11 +14,17 @@ interface Props {
   title?: string | null
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   title: undefined,
 })
 
-const { activeView, selectView } = useWikitaLiteView()
+const { activeView, selectView, scrollToTop } = useWikitaLiteView()
+
+onMounted(async () => {
+  if (props.title !== null) return
+  await nextTick()
+  scrollToTop()
+})
 </script>
 
 <template>

@@ -105,6 +105,8 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
       </template>
     </div>
 
+    <slot name="after-cards" />
+
     <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading further reading" />
 
     <p v-if="standalone && !displayItems.length && !loading" class="related-module__empty">

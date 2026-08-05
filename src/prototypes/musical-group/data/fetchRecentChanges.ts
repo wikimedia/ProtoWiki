@@ -685,15 +685,14 @@ export async function fetchLatestRecentChanges(
 export async function fetchRecentChanges(
   items: HomeSavedItem[],
   signal?: AbortSignal,
+  options?: { dependencyKey?: string; limit?: number },
 ): Promise<HomeRecentChange[]> {
-  const dependencyKey = bookmarksKey()
+  const dependencyKey = options?.dependencyKey ?? bookmarksKey()
+  const limit = options?.limit ?? MAX_RECENT_CHANGES
   const cached = getCachedRecentChangesPreview(dependencyKey)
-  if (cached) return cached
+  if (cached) return cached.slice(0, limit)
 
-  const result = (await fetchLatestRecentChanges(items, signal)).changes.slice(
-    0,
-    MAX_RECENT_CHANGES,
-  )
+  const result = (await fetchLatestRecentChanges(items, signal)).changes.slice(0, limit)
   if (result.length) {
     setCachedRecentChangesPreview(dependencyKey, result)
   }

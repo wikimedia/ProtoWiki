@@ -5,12 +5,13 @@ import { useConfig } from '@/composables/useConfig'
 
 import { WIKITA_SAVE_FEEDBACK_KEY } from './composables/useWikitaSaveFeedback'
 import { listBookmarks } from './data/bookmarks'
-import { bookmarksKey, utcDayKey } from './data/cacheKeys'
+import { bookmarksKey, contributeRandomCacheKey, utcDayKey } from './data/cacheKeys'
 import { fetchActiveDiscussions, clearActiveDiscussionsSessionCache } from './data/fetchActiveDiscussions'
 import { fetchFeaturedTabContent, isUsableFeaturedTab } from './data/fetchFeaturedFeed'
 import { fetchHelpWanted } from './data/fetchHelpWanted'
 import { fetchHomeMentions, filterMentionsExcludingRelated } from './data/fetchHomeMentions'
 import { fetchRecentChanges } from './data/fetchRecentChanges'
+import { fetchRandomPageItems } from './data/fetchRandomPageItems'
 import { fetchSavedItemSummaries } from './data/fetchSavedItemSummaries'
 import { fetchTrendingFeed, isTrendingSummaryIncomplete } from './data/fetchTrending'
 import { clearFeaturedFeedSessionCache } from './data/fetchEnwikiFeaturedFeedDay'
@@ -69,6 +70,9 @@ export interface ReloadBookmarksOptions {
   skipFeeds?: PersonalizedFeedId[]
 }
 
+const CONTRIBUTE_FALLBACK_HELP_WANTED_LIMIT = 1
+const CONTRIBUTE_FALLBACK_RECENT_CHANGES_LIMIT = 1
+
 export function useMusicalGroupHome(options: {
   helpWantedLimit?: number
   translationCountPerLanguage?: number
@@ -103,6 +107,7 @@ export function useMusicalGroupHome(options: {
   const recentChanges = ref<HomeRecentChange[]>([])
   const helpWantedLoading = ref(false)
   const recentChangesLoading = ref(false)
+  const contributeSeedItems = ref<HomeSavedItem[]>([])
 
   const featuredArticle = computed(() => featuredTab.value.article)
   const didYouKnow = computed(() => featuredTab.value.didYouKnow)
@@ -132,6 +137,11 @@ export function useMusicalGroupHome(options: {
 
   let abort: AbortController | null = null
   let bookmarkAbort: AbortController | null = null
+  let lastTranslationDependencyKey: string | null = null
+
+  function currentTranslationDependencyKey(): string {
+    return translationSuggestionsCacheKey(translationTargetLangs.value)
+  }
 
   function hydrateBookmarksFromCache(): void {
     const dependencyKey = bookmarksKey()
@@ -163,11 +173,96 @@ export function useMusicalGroupHome(options: {
     homeMentionsRaw.value = []
     helpWanted.value = []
     recentChanges.value = []
+    contributeSeedItems.value = []
     savedItemsLoading.value = false
     homeRelatedLoading.value = false
     homeMentionsLoading.value = false
     helpWantedLoading.value = false
     recentChangesLoading.value = false
+  }
+
+  async function loadContributeFallbackFeeds(signal: AbortSignal): Promise<void> {
+    const dependencyKey = contributeRandomCacheKey()
+    const cachedHelp = getCachedHelpWanted(dependencyKey)
+    const cachedRecent = getCachedRecentChangesPreview(dependencyKey)
+
+    const needsHelpFetch =
+      !cachedHelp || cachedHelp.length < CONTRIBUTE_FALLBACK_HELP_WANTED_LIMIT
+    const needsRecentFetch = !cachedRecent
+    const needsSeeds = !contributeSeedItems.value.length
+
+    if (cachedHelp && !needsHelpFetch) helpWanted.value = cachedHelp
+    if (cachedRecent && !needsRecentFetch) recentChanges.value = cachedRecent
+
+    if (!needsHelpFetch && !needsRecentFetch && !needsSeeds) return
+
+    if (needsHelpFetch) {
+      helpWantedLoading.value = true
+      if (!cachedHelp?.length) helpWanted.value = []
+    }
+    if (needsRecentFetch) {
+      recentChangesLoading.value = true
+      if (!cachedRecent?.length) recentChanges.value = []
+    }
+
+    let seeds = contributeSeedItems.value
+    if (needsSeeds) {
+      try {
+        seeds = await fetchRandomPageItems(undefined, signal)
+        if (signal.aborted) return
+        contributeSeedItems.value = seeds
+      } catch (err) {
+        if (isAbort(err)) return
+        helpWantedLoading.value = false
+        recentChangesLoading.value = false
+        return
+      }
+    }
+
+    if (!seeds.length) {
+      helpWantedLoading.value = false
+      recentChangesLoading.value = false
+      return
+    }
+
+    const appendHelpWanted = (suggestion: HomeHelpWanted): void => {
+      if (helpWanted.value.some((entry) => entry.itemId === suggestion.itemId)) return
+      helpWanted.value = [...helpWanted.value, suggestion]
+    }
+
+    await Promise.all([
+      (async () => {
+        if (!needsHelpFetch) return
+        try {
+          helpWanted.value = await fetchHelpWanted(
+            seeds,
+            signal,
+            CONTRIBUTE_FALLBACK_HELP_WANTED_LIMIT,
+            {
+              onEach: appendHelpWanted,
+              dependencyKey,
+            },
+          )
+        } catch (err) {
+          if (isAbort(err)) return
+        } finally {
+          helpWantedLoading.value = false
+        }
+      })(),
+      (async () => {
+        if (!needsRecentFetch) return
+        try {
+          recentChanges.value = await fetchRecentChanges(seeds, signal, {
+            dependencyKey,
+            limit: CONTRIBUTE_FALLBACK_RECENT_CHANGES_LIMIT,
+          })
+        } catch (err) {
+          if (isAbort(err)) return
+        } finally {
+          recentChangesLoading.value = false
+        }
+      })(),
+    ])
   }
 
   async function reloadBookmarks(reloadOptions: ReloadBookmarksOptions = {}): Promise<void> {
@@ -180,13 +275,19 @@ export function useMusicalGroupHome(options: {
     hasSavedPages.value = entries.length > 0
     if (!entries.length) {
       clearPersonalizedFeeds()
+      await Promise.all([
+        loadContributeFallbackFeeds(signal),
+        reloadTranslationForBookmarks(signal),
+      ])
       return
     }
+
+    contributeSeedItems.value = []
 
     hydrateBookmarksFromCache()
     const dependencyKey = bookmarksKey()
 
-    if (!getCachedSavedSummaries(dependencyKey)) {
+    if (!getCachedSavedSummaries(dependencyKey) && !savedItems.value.length) {
       savedItemsLoading.value = true
     }
 
@@ -226,7 +327,7 @@ export function useMusicalGroupHome(options: {
     if (needsMentionsFetch) homeMentionsLoading.value = true
     if (needsHelpFetch) {
       helpWantedLoading.value = true
-      if (!cachedHelp?.length) helpWanted.value = []
+      if (!cachedHelp?.length && !helpWanted.value.length) helpWanted.value = []
     }
     if (needsRecentFetch) recentChangesLoading.value = true
 
@@ -286,9 +387,46 @@ export function useMusicalGroupHome(options: {
           recentChangesLoading.value = false
         }
       })(),
+      reloadTranslationForBookmarks(signal),
     ])
 
     if (signal.aborted) return
+  }
+
+  async function reloadTranslationForBookmarks(signal: AbortSignal): Promise<void> {
+    const dependencyKey = currentTranslationDependencyKey()
+    if (dependencyKey === lastTranslationDependencyKey) return
+
+    translationError.value = null
+    const targetLangs = translationTargetLangs.value
+
+    if (!targetLangs.length) {
+      translationSuggestions.value = []
+      translationLoading.value = false
+      lastTranslationDependencyKey = dependencyKey
+      return
+    }
+
+    clearTranslationSuggestionsSessionCache()
+    translationLoading.value = true
+
+    try {
+      translationSuggestions.value = await fetchTranslationSuggestions(
+        targetLangs,
+        signal,
+        translationCountPerLanguage,
+      )
+      lastTranslationDependencyKey = dependencyKey
+    } catch (err) {
+      if (isAbort(err)) return
+      if (!translationSuggestions.value.length) {
+        translationSuggestions.value = []
+      }
+      translationError.value =
+        err instanceof Error ? err.message : 'Could not load translation suggestions.'
+    } finally {
+      translationLoading.value = false
+    }
   }
 
   async function loadFeatured(signal: AbortSignal): Promise<void> {
@@ -396,6 +534,7 @@ export function useMusicalGroupHome(options: {
         err instanceof Error ? err.message : 'Could not load translation suggestions.'
     } finally {
       translationLoading.value = false
+      lastTranslationDependencyKey = currentTranslationDependencyKey()
     }
   }
 
@@ -413,6 +552,7 @@ export function useMusicalGroupHome(options: {
     const cacheKey = translationSuggestionsCacheKey(translationTargetLangs.value)
     clearTranslationSuggestionsSessionCache()
     clearCachedTranslationSuggestions(cacheKey)
+    lastTranslationDependencyKey = null
 
     abort?.abort()
     abort = new AbortController()
@@ -575,6 +715,7 @@ export function useMusicalGroupHome(options: {
     retryTranslationFeed,
     hasSavedPages,
     savedSorted,
+    contributeSeedItems,
     recentlySaved,
     savedItemsLoading,
     homeRelatedItems,

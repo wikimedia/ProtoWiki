@@ -39,6 +39,7 @@ interface Props {
   savedItems?: HomeSavedItem[]
   savedItemsLoading?: boolean
   loading?: boolean
+  loadingMore?: boolean
   previewLimit?: number
   moreTo?: RouteLocationRaw
 }
@@ -49,11 +50,14 @@ const props = withDefaults(defineProps<Props>(), {
   savedItems: () => [],
   savedItemsLoading: false,
   loading: false,
+  loadingMore: false,
   previewLimit: 3,
   moreTo: undefined,
 })
 
-const activeRef = computed(() => props.standalone)
+const useInternalFeed = computed(() => props.standalone && props.savedItems.length > 0)
+
+const activeRef = computed(() => useInternalFeed.value)
 const savedItemsRef = toRef(() => props.savedItems)
 const feedMode = computed(() => (props.standalone ? 'full' : 'latest'))
 
@@ -72,7 +76,7 @@ const {
 })
 
 const activitySentinel = ref<HTMLElement | null>(null)
-const pageActive = computed(() => props.standalone)
+const pageActive = computed(() => useInternalFeed.value)
 
 const activityFeedLoading = computed(
   () => activityLoading.value || activityLoadingMore.value,
@@ -81,7 +85,7 @@ const activityFeedLoading = computed(
 let fillingViewport = false
 
 async function loadNextChange(): Promise<boolean> {
-  if (!props.standalone || activityFeedLoading.value || !activityHasMore.value) return false
+  if (!useInternalFeed.value || activityFeedLoading.value || !activityHasMore.value) return false
   return loadMoreActivity()
 }
 
@@ -102,9 +106,9 @@ async function fillViewport(): Promise<void> {
 
 watch(
   () =>
-    [props.standalone, props.savedItemsLoading, activityQueueReady.value] as const,
-  ([standalone, savedLoading, ready]) => {
-    if (!standalone || savedLoading || !ready) return
+    [useInternalFeed.value, props.savedItemsLoading, activityQueueReady.value] as const,
+  ([internalFeed, savedLoading, ready]) => {
+    if (!internalFeed || savedLoading || !ready) return
     void fillViewport()
   },
 )
@@ -119,7 +123,11 @@ useViewportInfiniteScroll({
 
 const previewItems = computed(() => props.items.slice(0, props.previewLimit))
 
-const displayItems = computed(() => (props.standalone ? activityChanges.value : previewItems.value))
+const displayItems = computed(() => {
+  if (!props.standalone) return previewItems.value
+  if (useInternalFeed.value) return activityChanges.value
+  return props.items
+})
 
 const displayCards = computed(() =>
   displayItems.value.map((change) => ({
@@ -132,11 +140,13 @@ const showMoreLink = computed(
   () => !props.standalone && Boolean(props.moreTo) && displayItems.value.length > 0,
 )
 
-const showStandaloneLoading = computed(
-  () =>
-    props.standalone &&
-    (props.savedItemsLoading || props.loading || activityFeedLoading.value),
-)
+const showStandaloneLoading = computed(() => {
+  if (!props.standalone) return false
+  if (useInternalFeed.value) {
+    return props.savedItemsLoading || activityFeedLoading.value
+  }
+  return props.loading || props.loadingMore
+})
 
 interface FlagPresentation {
   label: string
@@ -163,7 +173,7 @@ function flagPresentation(flag: HomeRecentChangeFlag): FlagPresentation | null {
 function changeChips(change: HomeRecentChange): WikitaLiteChip[] {
   const chips: WikitaLiteChip[] = []
 
-  if (props.standalone && change.isLatest) {
+  if (useInternalFeed.value && change.isLatest) {
     chips.push({ label: 'Latest', icon: cdxIconClock, status: 'notice' })
   }
   if (change.reverted) {
@@ -191,10 +201,6 @@ function changeChips(change: HomeRecentChange): WikitaLiteChip[] {
   return chips
 }
 
-function cardThumbnail(url?: string) {
-  return url?.trim() ? { url: url.trim() } : null
-}
-
 const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
 </script>
 
@@ -202,7 +208,7 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
   <div class="recent-activity-module">
     <div
       v-if="
-        standalone &&
+        useInternalFeed &&
         activityQueueReady &&
         revisionLookupFailed &&
         !activityChanges.length &&
@@ -224,8 +230,7 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
           :description="change.editSummary"
           :supporting-text="change.editedLabel"
           :supporting-icon="cdxIconUserAvatar"
-          :thumbnail-url="change.thumbnailUrl"
-          :force-thumbnail="true"
+          :force-thumbnail="false"
         />
 
         <template v-else>
@@ -237,16 +242,13 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
             :description="change.editSummary"
             :supporting-text="change.editedLabel"
             :supporting-icon="cdxIconUserAvatar"
-            :thumbnail-url="change.thumbnailUrl"
-            :force-thumbnail="true"
+            :force-thumbnail="false"
           />
 
           <CdxCard
             v-else
             :class="cardClass"
             :url="change.diffUrl"
-            :thumbnail="cardThumbnail(change.thumbnailUrl)"
-            :force-thumbnail="true"
           >
             <template #title>
               {{ change.title }}
@@ -264,6 +266,8 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
       </template>
     </div>
 
+    <slot name="after-cards" />
+
     <RouterLink
       v-if="showMoreLink && moreTo"
       :to="moreTo"
@@ -275,7 +279,7 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
     <CdxProgressBar v-if="showStandaloneLoading" inline aria-label="Loading recent activity" />
 
     <div
-      v-if="standalone"
+      v-if="useInternalFeed"
       ref="activitySentinel"
       class="recent-activity-module__sentinel"
       aria-hidden="true"

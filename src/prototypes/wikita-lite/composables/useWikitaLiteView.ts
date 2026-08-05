@@ -24,13 +24,13 @@ export function useWikitaLiteView() {
     return viewForPath(route.path)
   })
 
-  function scrollHomeToTop() {
+  function scrollToTop() {
     window.scrollTo(0, 0)
   }
 
   async function selectView(view: WikitaLiteView) {
     if (isHome.value && activeView.value === view) {
-      scrollHomeToTop()
+      scrollToTop()
       return
     }
 
@@ -42,13 +42,13 @@ export function useWikitaLiteView() {
     await router.push(destination)
 
     await nextTick()
-    scrollHomeToTop()
+    scrollToTop()
   }
 
   return {
     activeView,
     isHome,
     selectView,
-    scrollHomeToTop,
+    scrollToTop,
   }
 }
