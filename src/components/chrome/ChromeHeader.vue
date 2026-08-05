@@ -6,7 +6,6 @@ import {
   cdxIconAppearance,
   cdxIconBell,
   cdxIconBellOutline,
-  cdxIconMenu,
   cdxIconSearch,
   cdxIconTray,
   cdxIconUserAvatar,
@@ -20,6 +19,7 @@ import { globalSkin, globalTheme } from '@/theme'
 import type { Skin, Theme } from '@/theme'
 import UserSettingsPopover from '../settings/UserSettingsPopover.vue'
 import Search from '../Search.vue'
+import ChromeMenuPopover from './ChromeMenuPopover.vue'
 
 const { user } = useConfig()
 
@@ -109,10 +109,7 @@ function navHas(tool: ChromeNavTool): boolean {
     <nav v-if="isDesktop" class="chrome-header__nav-desktop" aria-label="Site">
       <div class="chrome-header__desktop-start">
         <slot name="menu">
-          <!-- Mock only — not interactive (FakeMediaWiki uses bare chrome / icon affordances). -->
-          <span class="chrome-header__menu-icon" aria-hidden="true">
-            <CdxIcon :icon="cdxIconMenu" />
-          </span>
+          <ChromeMenuPopover class="chrome-header__menu-btn" />
         </slot>
 
         <RouterLink
@@ -269,9 +266,7 @@ function navHas(tool: ChromeNavTool): boolean {
     <!-- Minerva-style chrome (mobile skin) -->
     <nav v-else class="chrome-header__nav-mobile" aria-label="Site">
       <slot name="menu">
-        <CdxButton weight="quiet" size="large" aria-label="Main menu">
-          <CdxIcon :icon="cdxIconMenu" />
-        </CdxButton>
+        <ChromeMenuPopover size="large" />
       </slot>
 
       <slot name="mobile-brand">

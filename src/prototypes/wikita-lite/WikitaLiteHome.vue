@@ -71,6 +71,8 @@ const {
   retryTrendingFeed,
   didYouKnow,
   hasSavedPages,
+  suggestionSeedsAvailable,
+  showSavedBasedMentions,
   recentlySaved,
   savedItemsLoading,
   homeRelatedItems,
@@ -110,7 +112,9 @@ const homeMentionsPreview = computed(() =>
 )
 
 const helpWantedPreviewLimit = computed(() =>
-  hasSavedPages.value ? HOME_HELP_WANTED_PREVIEW_LIMIT : UNSAVED_HELP_WANTED_PREVIEW_LIMIT,
+  suggestionSeedsAvailable.value || hasSavedPages.value
+    ? HOME_HELP_WANTED_PREVIEW_LIMIT
+    : UNSAVED_HELP_WANTED_PREVIEW_LIMIT,
 )
 
 const recentActivityPreviewLimit = computed(() =>
@@ -207,13 +211,13 @@ const editTab = useWikitaLiteTabLoading([
     id: 'furtherReading',
     loading: homeRelatedLoading,
     previewCount: computed(() => homeEditFurtherReadingPreview.value.length),
-    enabled: hasSavedPages,
+    enabled: suggestionSeedsAvailable,
   },
   {
     id: 'suggestedEdits',
     loading: helpWantedLoading,
     previewCount: computed(() => helpWantedPreview.value.length),
-    enabled: hasSavedPages,
+    enabled: suggestionSeedsAvailable,
   },
   {
     id: 'translation',
@@ -241,27 +245,27 @@ const editTab = useWikitaLiteTabLoading([
 
 const readExploreTab = useWikitaLiteTabLoading([
   {
+    id: 'didYouKnow',
+    loading: featuredTabLoading,
+    previewCount: computed(() => homeDidYouKnowPreview.value.length),
+  },
+  {
     id: 'saved',
     loading: savedItemsLoading,
     previewCount: computed(() => recentlySaved.value.length),
     enabled: hasSavedPages,
   },
   {
-    id: 'didYouKnow',
-    loading: featuredTabLoading,
-    previewCount: computed(() => homeDidYouKnowPreview.value.length),
-  },
-  {
     id: 'furtherReading',
     loading: homeRelatedLoading,
     previewCount: computed(() => homeFurtherReadingPreview.value.length),
-    enabled: hasSavedPages,
+    enabled: suggestionSeedsAvailable,
   },
   {
     id: 'mentions',
     loading: homeMentionsLoading,
     previewCount: computed(() => homeMentionsPreview.value.length),
-    enabled: hasSavedPages,
+    enabled: showSavedBasedMentions,
   },
 ])
 
@@ -321,7 +325,7 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
     return skip
   }
 
-  if (!hasSavedPages.value) return []
+  if (!hasSavedPages.value && !suggestionSeedsAvailable.value) return []
 
   const skip: PersonalizedFeedId[] = []
 
@@ -568,31 +572,6 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
     <CdxTab name="read" :label="VIEW_TAB_LABELS.read">
       <div class="wikita-lite-home__panel">
         <WikitaLiteModule
-          :title="MODULE_TITLES.saved"
-          :to="SAVED_PAGE"
-        >
-          <div
-            v-if="hasSavedPages && readExploreTab.showLoadingBar('saved') && !recentlySaved.length"
-            class="wikita-lite-home__loading"
-          >
-            <CdxProgressBar inline aria-label="Loading saved pages" />
-          </div>
-          <SavedModule
-            :items="hasSavedPages ? recentlySaved : []"
-            :preview-limit="HOME_SAVED_PREVIEW_LIMIT"
-          >
-            <template
-              v-if="hasSavedPages && readExploreTab.showLoadingBar('saved') && recentlySaved.length"
-              #after-cards
-            >
-              <div class="wikita-lite-home__loading">
-                <CdxProgressBar inline aria-label="Loading saved pages" />
-              </div>
-            </template>
-          </SavedModule>
-        </WikitaLiteModule>
-
-        <WikitaLiteModule
           v-if="readExploreTab.showModule('didYouKnow')"
           :title="MODULE_TITLES.didYouKnow"
           :to="DID_YOU_KNOW_PAGE"
@@ -620,7 +599,32 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
         </WikitaLiteModule>
 
         <WikitaLiteModule
-          v-if="hasSavedPages && readExploreTab.showModule('furtherReading')"
+          :title="MODULE_TITLES.saved"
+          :to="SAVED_PAGE"
+        >
+          <div
+            v-if="hasSavedPages && readExploreTab.showLoadingBar('saved') && !recentlySaved.length"
+            class="wikita-lite-home__loading"
+          >
+            <CdxProgressBar inline aria-label="Loading saved pages" />
+          </div>
+          <SavedModule
+            :items="hasSavedPages ? recentlySaved : []"
+            :preview-limit="HOME_SAVED_PREVIEW_LIMIT"
+          >
+            <template
+              v-if="hasSavedPages && readExploreTab.showLoadingBar('saved') && recentlySaved.length"
+              #after-cards
+            >
+              <div class="wikita-lite-home__loading">
+                <CdxProgressBar inline aria-label="Loading saved pages" />
+              </div>
+            </template>
+          </SavedModule>
+        </WikitaLiteModule>
+
+        <WikitaLiteModule
+          v-if="suggestionSeedsAvailable && readExploreTab.showModule('furtherReading')"
           :title="MODULE_TITLES.furtherReading"
           :to="FURTHER_READING_PAGE"
         >
@@ -653,7 +657,7 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
         </WikitaLiteModule>
 
         <WikitaLiteModule
-          v-if="hasSavedPages && readExploreTab.showModule('mentions')"
+          v-if="showSavedBasedMentions && readExploreTab.showModule('mentions')"
           :title="MODULE_TITLES.mentions"
           :to="MENTIONS_PAGE"
         >

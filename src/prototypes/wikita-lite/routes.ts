@@ -12,6 +12,8 @@ export const ACTIVE_DISCUSSIONS_PAGE = '/wikita-lite/active-discussions'
 export const TRANSLATIONS_PAGE = '/wikita-lite/translations'
 export const LEARN_PAGE = '/wikita-lite/learn'
 export const IMPACT_PAGE = '/wikita-lite/impact'
+export const CONFIGURE_PAGE = '/wikita-lite/configure'
+export const CONFIGURE_INTERESTS_PAGE = '/wikita-lite/configure/interests'
 
 export type WikitaLiteView = 'edit' | 'read' | 'contribute'
 

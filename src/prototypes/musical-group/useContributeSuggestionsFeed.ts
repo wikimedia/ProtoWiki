@@ -1,9 +1,11 @@
 import { onUnmounted, ref, watch, type Ref } from 'vue'
 
-import { bookmarksKey, contributeRandomCacheKey, savedPagesListKey } from './data/cacheKeys'
+import { useWikitaLiteSuggestionPreferencesSingleton } from '../wikita-lite/composables/useWikitaLiteSuggestionPreferences'
+import { bookmarksKey, contributeRandomCacheKey, suggestionFeedsKey } from './data/cacheKeys'
 import { normalizeEnwikiTitle } from './data/enwikiTitle'
 import { fetchAllSavedSuggestions, fetchEditSuggestionForPage } from './data/fetchEditSuggestion'
 import { fetchMorelikeTitles, resolveRelatedSummary } from './data/fetchRelatedReading'
+import { suggestionSeedItems } from './data/getSuggestionSeeds'
 import { getCachedContributeFeed, getCachedHelpWanted, setCachedContributeFeed } from './data/homeTabCache'
 import type { HomeHelpWanted, HomeSavedItem } from './data/types'
 
@@ -46,6 +48,7 @@ export function useContributeSuggestionsFeed(
   savedItems: Ref<HomeSavedItem[]>,
   active: Ref<boolean>,
 ) {
+  const { preferences } = useWikitaLiteSuggestionPreferencesSingleton()
   const savedSuggestions = ref<HomeHelpWanted[]>([])
   const savedLoading = ref(false)
   const relatedSuggestions = ref<HomeHelpWanted[]>([])
@@ -65,7 +68,7 @@ export function useContributeSuggestionsFeed(
   let savedLoadedForKey: string | null = null
 
   function savedKey(): string {
-    return savedPagesListKey(savedItems.value)
+    return suggestionFeedsKey(savedItems.value)
   }
 
   function persistState() {
@@ -167,7 +170,7 @@ export function useContributeSuggestionsFeed(
     titlePool = []
     nextSeedIndex = 0
 
-    for (const item of savedItems.value) {
+    for (const item of suggestionSeedItems(savedItems.value, preferences.value)) {
       excludedIds.add(item.id)
       if (!item.enwikiTitle) continue
       const key = titleKey(item.enwikiTitle)
@@ -271,11 +274,13 @@ export function useContributeSuggestionsFeed(
     savedLoading.value = true
 
     try {
-      await fetchAllSavedSuggestions(savedItems.value, signal, {
-        onEach: (suggestion) => {
-          savedSuggestions.value = [...savedSuggestions.value, suggestion]
-        },
-      })
+      if (preferences.value.useSavedPages) {
+        await fetchAllSavedSuggestions(savedItems.value, signal, {
+          onEach: (suggestion) => {
+            savedSuggestions.value = [...savedSuggestions.value, suggestion]
+          },
+        })
+      }
       savedLoadedForKey = key
       persistState()
     } catch (err) {

@@ -12,10 +12,13 @@ import WikitaLiteFloatingNav from './WikitaLiteFloatingNav.vue'
 
 interface Props {
   title?: string | null
+  /** Reserve the title-row actions aside (e.g. configure button on home). */
+  actions?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   title: undefined,
+  actions: false,
 })
 
 const { activeView, selectView, scrollToTop } = useWikitaLiteView()
@@ -34,9 +37,13 @@ onMounted(async () => {
         <SpecialPageWrapper
           :title="title"
           :help="Boolean(title)"
+          :actions="props.actions"
           class="wikita-lite-shell"
           :class="{ 'wikita-lite-shell--with-nav': SHOW_WIKITA_LITE_FLOATING_NAV }"
         >
+          <template v-if="$slots.actions" #actions>
+            <slot name="actions" />
+          </template>
           <slot />
         </SpecialPageWrapper>
       </ChromeWrapper>

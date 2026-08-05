@@ -1,5 +1,7 @@
 import { listBookmarks } from './bookmarks'
+import { interestsKey } from './interests'
 import { listUserLists } from './lists'
+import { loadSuggestionPreferences } from './suggestionPreferences'
 import type { HomeSavedItem } from './types'
 
 /** Stable fingerprint of the saved-pages library. Changes on add/remove/re-save. */
@@ -43,4 +45,15 @@ export function utcDayParts(date = new Date()): { yyyy: string; mm: string; dd: 
 /** Daily cache key for contribute-tab feeds seeded from random pages. */
 export function contributeRandomCacheKey(date = new Date()): string {
   return `contribute-random:${utcDayKey(date)}`
+}
+
+/** Fingerprint of suggestion preference toggles. */
+export function suggestionPrefsKey(): string {
+  const prefs = loadSuggestionPreferences()
+  return `prefs:s${prefs.useSavedPages ? 1 : 0}i${prefs.useInterests ? 1 : 0}`
+}
+
+/** Combined dependency key for personalized suggestion feeds. */
+export function suggestionFeedsKey(savedItems: HomeSavedItem[] = []): string {
+  return `${savedPagesListKey(savedItems)}|${interestsKey()}|${suggestionPrefsKey()}`
 }

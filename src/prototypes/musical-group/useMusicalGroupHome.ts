@@ -4,8 +4,9 @@ import { useRoute } from 'vue-router'
 import { useConfig } from '@/composables/useConfig'
 
 import { WIKITA_SAVE_FEEDBACK_KEY } from './composables/useWikitaSaveFeedback'
+import { useWikitaLiteSuggestionPreferencesSingleton } from '../wikita-lite/composables/useWikitaLiteSuggestionPreferences'
 import { listBookmarks } from './data/bookmarks'
-import { bookmarksKey, contributeRandomCacheKey, utcDayKey } from './data/cacheKeys'
+import { bookmarksKey, contributeRandomCacheKey, suggestionFeedsKey, utcDayKey } from './data/cacheKeys'
 import { fetchActiveDiscussions, clearActiveDiscussionsSessionCache } from './data/fetchActiveDiscussions'
 import { fetchFeaturedTabContent, isUsableFeaturedTab } from './data/fetchFeaturedFeed'
 import { fetchHelpWanted } from './data/fetchHelpWanted'
@@ -22,9 +23,11 @@ import {
   fetchTranslationSuggestions,
   translationSuggestionsCacheKey,
 } from './data/fetchTranslationSuggestions'
+import { hasSuggestionSeeds, suggestionSeedItems } from './data/getSuggestionSeeds'
 import {
   clearCachedActiveDiscussions,
   clearCachedFeaturedTab,
+  clearCachedSuggestionFeeds,
   clearCachedTranslationSuggestions,
   clearCachedTrendingFeed,
   getCachedActiveDiscussions,
@@ -84,6 +87,8 @@ export function useMusicalGroupHome(options: {
   const route = useRoute()
   const { knownLanguages } = useConfig()
   const saveFeedback = inject(WIKITA_SAVE_FEEDBACK_KEY, null)
+  const { preferences, preferencesVersion, interestsVersion } =
+    useWikitaLiteSuggestionPreferencesSingleton()
   const featuredTab = ref<HomeFeaturedTab>(EMPTY_FEATURED_TAB)
   const featuredTabLoading = ref(true)
   const featuredTabError = ref<string | null>(null)
@@ -129,6 +134,14 @@ export function useMusicalGroupHome(options: {
     filterMentionsExcludingRelated(homeMentionsRaw.value, homeRelatedItems.value),
   )
 
+  const suggestionSeedsAvailable = computed(() =>
+    hasSuggestionSeeds(savedItems.value, preferences.value),
+  )
+
+  const showSavedBasedMentions = computed(
+    () => preferences.value.useSavedPages && hasSavedPages.value,
+  )
+
   const translationTargetLangs = computed(() => {
     const override = options.translationLanguages?.()
     if (override?.length) return override
@@ -143,21 +156,10 @@ export function useMusicalGroupHome(options: {
     return translationSuggestionsCacheKey(translationTargetLangs.value)
   }
 
-  function hydrateBookmarksFromCache(): void {
-    const dependencyKey = bookmarksKey()
-    const cachedSummaries = getCachedSavedSummaries(dependencyKey)
-    if (cachedSummaries) {
-      savedItems.value = cachedSummaries
-    }
-
+  function hydratePersonalizedFeedsFromCache(dependencyKey: string): void {
     const cachedRelated = getCachedRelatedFeed('home', dependencyKey)
     if (cachedRelated) {
       homeRelatedItems.value = cachedRelated.items
-    }
-
-    const cachedMentions = getCachedHomeMentions(dependencyKey)
-    if (cachedMentions) {
-      homeMentionsRaw.value = cachedMentions
     }
 
     const cachedHelp = getCachedHelpWanted(dependencyKey)
@@ -165,6 +167,118 @@ export function useMusicalGroupHome(options: {
 
     const cachedRecent = getCachedRecentChangesPreview(dependencyKey)
     if (cachedRecent) recentChanges.value = cachedRecent
+  }
+
+  function hydrateBookmarksFromCache(): void {
+    const dependencyKey = bookmarksKey()
+    const cachedSummaries = getCachedSavedSummaries(dependencyKey)
+    if (cachedSummaries) {
+      savedItems.value = cachedSummaries
+    }
+
+    const feedKey = suggestionFeedsKey(savedItems.value)
+    hydratePersonalizedFeedsFromCache(feedKey)
+
+    if (preferences.value.useSavedPages) {
+      const cachedMentions = getCachedHomeMentions(dependencyKey)
+      if (cachedMentions) {
+        homeMentionsRaw.value = cachedMentions
+      }
+    }
+  }
+
+  async function loadPersonalizedSuggestionFeeds(
+    items: HomeSavedItem[],
+    dependencyKey: string,
+    signal: AbortSignal,
+    skipFeeds: Set<PersonalizedFeedId>,
+  ): Promise<void> {
+    const seedItems = suggestionSeedItems(items, preferences.value)
+    const includeSavedSuggestions = preferences.value.useSavedPages && items.length > 0
+
+    const cachedHelp = getCachedHelpWanted(dependencyKey)
+    const needsRelatedFetch =
+      !skipFeeds.has('related') && !getCachedRelatedFeed('home', dependencyKey)
+    const needsMentionsFetch =
+      preferences.value.useSavedPages &&
+      !skipFeeds.has('mentions') &&
+      !getCachedHomeMentions(bookmarksKey())
+    const needsHelpFetch =
+      !skipFeeds.has('helpWanted') &&
+      (!cachedHelp || cachedHelp.length < helpWantedLimit)
+    const needsRecentFetch =
+      !skipFeeds.has('recentChanges') &&
+      items.length > 0 &&
+      !getCachedRecentChangesPreview(dependencyKey)
+
+    if (needsRelatedFetch) homeRelatedLoading.value = true
+    if (needsMentionsFetch) homeMentionsLoading.value = true
+    if (needsHelpFetch) {
+      helpWantedLoading.value = true
+      if (!cachedHelp?.length && !helpWanted.value.length) helpWanted.value = []
+    }
+    if (needsRecentFetch) recentChangesLoading.value = true
+
+    const appendHelpWanted = (suggestion: HomeHelpWanted): void => {
+      if (helpWanted.value.some((entry) => entry.itemId === suggestion.itemId)) return
+      helpWanted.value = [...helpWanted.value, suggestion]
+    }
+
+    await Promise.all([
+      (async () => {
+        if (!needsRelatedFetch) return
+        try {
+          homeRelatedItems.value = await loadRelatedFeedInitialBatch(
+            'home',
+            seedItems,
+            dependencyKey,
+            signal,
+          )
+        } catch (err) {
+          if (isAbort(err)) return
+          homeRelatedItems.value = []
+        } finally {
+          homeRelatedLoading.value = false
+        }
+      })(),
+      (async () => {
+        if (!needsMentionsFetch) return
+        try {
+          const excludeRelated = getCachedRelatedFeed('home', dependencyKey)?.items ?? []
+          homeMentionsRaw.value = await fetchHomeMentions(items, signal, undefined, excludeRelated)
+        } catch (err) {
+          if (isAbort(err)) return
+          homeMentionsRaw.value = []
+        } finally {
+          homeMentionsLoading.value = false
+        }
+      })(),
+      (async () => {
+        if (!needsHelpFetch) return
+        try {
+          helpWanted.value = await fetchHelpWanted(seedItems, signal, helpWantedLimit, {
+            onEach: appendHelpWanted,
+            dependencyKey,
+            includeSavedSuggestions,
+            savedItems: items,
+          })
+        } catch (err) {
+          if (isAbort(err)) return
+        } finally {
+          helpWantedLoading.value = false
+        }
+      })(),
+      (async () => {
+        if (!needsRecentFetch) return
+        try {
+          recentChanges.value = await fetchRecentChanges(items, signal, { dependencyKey })
+        } catch (err) {
+          if (isAbort(err)) return
+        } finally {
+          recentChangesLoading.value = false
+        }
+      })(),
+    ])
   }
 
   function clearPersonalizedFeeds(): void {
@@ -273,21 +387,47 @@ export function useMusicalGroupHome(options: {
 
     const entries = listBookmarks()
     hasSavedPages.value = entries.length > 0
+
     if (!entries.length) {
-      clearPersonalizedFeeds()
+      savedItems.value = []
+      savedItemsLoading.value = false
+      homeMentionsRaw.value = []
+
+      if (!suggestionSeedsAvailable.value) {
+        clearPersonalizedFeeds()
+        await Promise.all([
+          loadContributeFallbackFeeds(signal),
+          reloadTranslationForBookmarks(signal),
+        ])
+        return
+      }
+
+      contributeSeedItems.value = []
+      const seedItems = suggestionSeedItems([], preferences.value)
+      const dependencyKey = suggestionFeedsKey(seedItems)
+      hydratePersonalizedFeedsFromCache(dependencyKey)
+
+      if (!seedItems.length) {
+        homeRelatedItems.value = []
+        helpWanted.value = []
+        recentChanges.value = []
+        return
+      }
+
       await Promise.all([
-        loadContributeFallbackFeeds(signal),
+        loadPersonalizedSuggestionFeeds([], dependencyKey, signal, skipFeeds),
         reloadTranslationForBookmarks(signal),
       ])
+      if (signal.aborted) return
       return
     }
 
     contributeSeedItems.value = []
 
     hydrateBookmarksFromCache()
-    const dependencyKey = bookmarksKey()
+    const dependencyKey = suggestionFeedsKey(savedItems.value)
 
-    if (!getCachedSavedSummaries(dependencyKey) && !savedItems.value.length) {
+    if (!getCachedSavedSummaries(bookmarksKey()) && !savedItems.value.length) {
       savedItemsLoading.value = true
     }
 
@@ -312,81 +452,30 @@ export function useMusicalGroupHome(options: {
       return
     }
 
-    const cachedHelp = getCachedHelpWanted(dependencyKey)
-    const needsRelatedFetch =
-      !skipFeeds.has('related') && !getCachedRelatedFeed('home', dependencyKey)
-    const needsMentionsFetch =
-      !skipFeeds.has('mentions') && !getCachedHomeMentions(dependencyKey)
-    const needsHelpFetch =
-      !skipFeeds.has('helpWanted') &&
-      (!cachedHelp || cachedHelp.length < helpWantedLimit)
-    const needsRecentFetch =
-      !skipFeeds.has('recentChanges') && !getCachedRecentChangesPreview(dependencyKey)
-
-    if (needsRelatedFetch) homeRelatedLoading.value = true
-    if (needsMentionsFetch) homeMentionsLoading.value = true
-    if (needsHelpFetch) {
-      helpWantedLoading.value = true
-      if (!cachedHelp?.length && !helpWanted.value.length) helpWanted.value = []
-    }
-    if (needsRecentFetch) recentChangesLoading.value = true
-
-    const appendHelpWanted = (suggestion: HomeHelpWanted): void => {
-      if (helpWanted.value.some((entry) => entry.itemId === suggestion.itemId)) return
-      helpWanted.value = [...helpWanted.value, suggestion]
-    }
-
-    await Promise.all([
-      (async () => {
-        if (!needsRelatedFetch) return
+    if (!preferences.value.useSavedPages && !preferences.value.useInterests) {
+      homeRelatedItems.value = []
+      homeMentionsRaw.value = []
+      helpWanted.value = []
+      if (!skipFeeds.has('recentChanges')) {
+        recentChangesLoading.value = true
         try {
-          homeRelatedItems.value = await loadRelatedFeedInitialBatch(
-            'home',
-            items,
-            dependencyKey,
-            signal,
-          )
-        } catch (err) {
-          if (isAbort(err)) return
-          homeRelatedItems.value = []
-        } finally {
-          homeRelatedLoading.value = false
-        }
-      })(),
-      (async () => {
-        if (!needsMentionsFetch) return
-        try {
-          const excludeRelated = getCachedRelatedFeed('home', dependencyKey)?.items ?? []
-          homeMentionsRaw.value = await fetchHomeMentions(items, signal, undefined, excludeRelated)
-        } catch (err) {
-          if (isAbort(err)) return
-          homeMentionsRaw.value = []
-        } finally {
-          homeMentionsLoading.value = false
-        }
-      })(),
-      (async () => {
-        if (!needsHelpFetch) return
-        try {
-          helpWanted.value = await fetchHelpWanted(items, signal, helpWantedLimit, {
-            onEach: appendHelpWanted,
-          })
-        } catch (err) {
-          if (isAbort(err)) return
-        } finally {
-          helpWantedLoading.value = false
-        }
-      })(),
-      (async () => {
-        if (!needsRecentFetch) return
-        try {
-          recentChanges.value = await fetchRecentChanges(items, signal)
+          recentChanges.value = await fetchRecentChanges(items, signal, { dependencyKey })
         } catch (err) {
           if (isAbort(err)) return
         } finally {
           recentChangesLoading.value = false
         }
-      })(),
+      }
+      await reloadTranslationForBookmarks(signal)
+      return
+    }
+
+    if (!preferences.value.useSavedPages) {
+      homeMentionsRaw.value = []
+    }
+
+    await Promise.all([
+      loadPersonalizedSuggestionFeeds(items, suggestionFeedsKey(items), signal, skipFeeds),
       reloadTranslationForBookmarks(signal),
     ])
 
@@ -678,6 +767,13 @@ export function useMusicalGroupHome(options: {
     },
   )
 
+  watch([preferencesVersion, interestsVersion], () => {
+    clearCachedSuggestionFeeds()
+    void reloadBookmarks({
+      skipFeeds: options.getBookmarkChangeSkipFeeds?.() ?? [],
+    })
+  })
+
   watch(
     translationTargetLangs,
     () => {
@@ -714,6 +810,8 @@ export function useMusicalGroupHome(options: {
     translationError,
     retryTranslationFeed,
     hasSavedPages,
+    suggestionSeedsAvailable,
+    showSavedBasedMentions,
     savedSorted,
     contributeSeedItems,
     recentlySaved,

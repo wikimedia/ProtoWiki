@@ -70,10 +70,17 @@ async function fetchUnsavedSuggestion(
 
 /** Edit suggestions for saved pages and related articles. */
 export async function fetchHelpWanted(
-  items: HomeSavedItem[],
+  seedItems: HomeSavedItem[],
   signal?: AbortSignal,
   limit = DEFAULT_HELP_WANTED_LIMIT,
-  options?: { onEach?: (suggestion: HomeHelpWanted) => void; dependencyKey?: string },
+  options?: {
+    onEach?: (suggestion: HomeHelpWanted) => void
+    dependencyKey?: string
+    /** When false, skip direct edit suggestions on saved pages. Default true. */
+    includeSavedSuggestions?: boolean
+    /** Saved bookmark summaries for the direct-suggestion leg. Defaults to seedItems. */
+    savedItems?: HomeSavedItem[]
+  },
 ): Promise<HomeHelpWanted[]> {
   const dependencyKey = options?.dependencyKey ?? bookmarksKey()
   const cached = getCachedHelpWanted(dependencyKey)
@@ -81,24 +88,30 @@ export async function fetchHelpWanted(
     return cached.slice(0, limit)
   }
 
-  const suggestions: HomeHelpWanted[] = []
-  const savedCandidates = items.filter((item) => item.enwikiTitle)
+  const includeSaved = options?.includeSavedSuggestions !== false
+  const savedForDirect = options?.savedItems ?? seedItems
 
-  for (const item of savedCandidates) {
-    if (suggestions.length >= limit) break
-    const suggestion = await fetchEditSuggestionForSavedItem(
-      item,
-      signal,
-      'musical-group-help-wanted',
-    )
-    if (suggestion) {
-      suggestions.push(suggestion)
-      options?.onEach?.(suggestion)
+  const suggestions: HomeHelpWanted[] = []
+
+  if (includeSaved) {
+    const savedCandidates = savedForDirect.filter((item) => item.enwikiTitle)
+
+    for (const item of savedCandidates) {
+      if (suggestions.length >= limit) break
+      const suggestion = await fetchEditSuggestionForSavedItem(
+        item,
+        signal,
+        'musical-group-help-wanted',
+      )
+      if (suggestion) {
+        suggestions.push(suggestion)
+        options?.onEach?.(suggestion)
+      }
     }
   }
 
   while (suggestions.length < limit) {
-    const unsavedSuggestion = await fetchUnsavedSuggestion(items, signal, suggestions)
+    const unsavedSuggestion = await fetchUnsavedSuggestion(seedItems, signal, suggestions)
     if (!unsavedSuggestion) break
     suggestions.push(unsavedSuggestion)
     options?.onEach?.(unsavedSuggestion)

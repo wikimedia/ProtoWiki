@@ -21,8 +21,39 @@ fetching, bookmarks, and feed logic with `musical-group` via
 | `src/prototypes/wikita-lite/routes.ts` | Paths, tab labels, module titles |
 | `src/prototypes/wikita-lite.*/index.vue` | Standalone subpages (one module each) |
 
+| `src/prototypes/wikita-lite.configure/index.vue` | Fullscreen configure (suggestion toggles) |
+| `src/prototypes/wikita-lite.configure.interests/index.vue` | Fullscreen interest picker |
+| `src/prototypes/wikita-lite/composables/useWikitaLiteSuggestionPreferences.ts` | Shared prefs + interests version signals |
+
 Subpages use `WikitaLiteShell` + `MobileSubpageHeader` + a module with
-`standalone`.
+`standalone`. Configure flows use `WikitaLiteFullscreenShell` (no chrome).
+
+## Configure + interests
+
+Home / Explore / Contribute tabs are on `/wikita-lite`; a **configure** icon
+(`cdxIconConfigure`) sits in the title row beside the greeting. Routes:
+
+- `/wikita-lite/configure` — toggles for saved-page and interest-based
+  suggestions; **Edit interests** opens the picker.
+- `/wikita-lite/configure/interests` — search + chips + related preview;
+  **Done** persists; close (X) discards.
+
+Preferences persist in `localStorage`:
+
+| Key | File |
+| --- | --- |
+| `wikita-lite-suggestion-prefs` | `musical-group/data/suggestionPreferences.ts` |
+| `wikita-lite-interests` | `musical-group/data/interests.ts` |
+
+Suggestion feeds (Further reading, Suggested edits, Mentions) honor the
+toggles via `getSuggestionSeeds()` and `suggestionFeedsKey()`. When both
+toggles are off and there are no bookmarks, Contribute still falls back to
+random seeds per the rules below. **Mentions** require the saved-pages
+toggle and at least one bookmark.
+
+Interest-only users (no bookmarks, interests toggle on) see Further reading
+and Suggested edits when seeds exist; Home tab suggested-edit previews
+follow `suggestionSeedsAvailable`, not raw bookmark count.
 
 ## UX rules (mandatory)
 
@@ -57,13 +88,15 @@ Do **not** add similar save-nudging copy elsewhere:
 Save/bookmark **actions on cards** (bookmark icon, "Saved" label) and
 post-save toasts are fine.
 
-### Contribute tab without saved pages
+### Contribute tab without saved pages or suggestion seeds
 
-When the bookmark list is empty, the **Contribute** tab (not Home) still
-shows **Suggested edits** and **Review changes** seeded from random
-English Wikipedia articles (`fetchRandomPageItems` in the
-`musical-group` data layer). The Home tab does not show those modules
-until the user has saved at least one page. Still no save prompts — the
+When there are **no bookmarks** and **no suggestion seeds** (both configure
+toggles off, or interests toggle on with an empty interest list), the
+**Contribute** tab (not Home) still shows **Suggested edits** and **Review
+changes** seeded from random English Wikipedia articles
+(`fetchRandomPageItems` in the `musical-group` data layer). The Home tab
+does not show those modules until `suggestionSeedsAvailable` is true (saved
+pages and/or interests per configure toggles). Still no save prompts — the
 modules simply appear when data exists.
 
 Preview results for both modules cache under `contributeRandomCacheKey()`

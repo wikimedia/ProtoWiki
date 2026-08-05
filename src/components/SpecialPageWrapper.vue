@@ -144,8 +144,9 @@ const showHeaderNav = computed(
   justify-content: space-between;
   gap: var(--spacing-100, 16px);
   width: 100%;
-  margin-bottom: var(--spacing-100, 16px);
-  padding-bottom: 2px;
+  /* margin-top: calc(var(--spacing-25) * -1); */
+  margin-bottom: var(--spacing-50);
+  /* padding-bottom: 2px; */
   border-bottom: 1px solid var(--border-color-base, #a2a9b1);
 }
 

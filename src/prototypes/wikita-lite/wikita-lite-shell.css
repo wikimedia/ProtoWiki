@@ -16,6 +16,25 @@
   padding-inline: var(--spacing-50, 8px);
 }
 
+/* Configure control — overlay on the title row without changing its height. */
+.special-page-wrapper.wikita-lite-shell .special-page-wrapper__header {
+  position: relative;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  padding-inline-end: calc(2.75rem + var(--spacing-50, 8px));
+}
+
+.special-page-wrapper.wikita-lite-shell .special-page-wrapper__header-aside {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+}
+
+.special-page-wrapper.wikita-lite-shell .special-page-wrapper__actions {
+  flex-shrink: 0;
+}
+
 /* Home tab strip stays visible while scrolling module feeds. */
 .wikita-lite-shell .wikita-lite-home__tabs .cdx-tabs__header {
   position: sticky;
@@ -25,7 +44,6 @@
   margin-inline: calc(-1 * var(--spacing-50, 8px));
   padding-inline: var(--spacing-50, 8px);
   padding-top: var(--spacing-25);
-  /* padding-bottom: var(--spacing-25, 4px); */
   background-color: var(--background-color-base);
 }
 

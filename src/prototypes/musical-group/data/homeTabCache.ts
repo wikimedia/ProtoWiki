@@ -331,6 +331,26 @@ export function setCachedContributeFeed(state: CachedContributeFeedState): void 
   setEntry(contributeFeedCacheKey(state.dependencyKey), state)
 }
 
+/** Drop personalized suggestion caches when prefs or interests change. */
+export function clearCachedSuggestionFeeds(): void {
+  const entries = readEntries()
+  let changed = false
+
+  for (const key of Object.keys(entries)) {
+    if (
+      key === 'helpWanted' ||
+      key.startsWith('related:') ||
+      key.startsWith('contribute:') ||
+      key === 'homeMentions'
+    ) {
+      delete entries[key]
+      changed = true
+    }
+  }
+
+  if (changed) writeEntries(entries)
+}
+
 export function clearHomeTabCache(): void {
   if (typeof window === 'undefined') return
   try {
