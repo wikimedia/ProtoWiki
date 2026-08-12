@@ -22,8 +22,10 @@ fetching, bookmarks, and feed logic with `musical-group` via
 | `src/prototypes/wikita-lite.*/index.vue` | Standalone subpages (one module each) |
 
 | `src/prototypes/wikita-lite.configure/index.vue` | Fullscreen configure (suggestion toggles) |
+| `src/prototypes/wikita-lite.help-wanted.configure/index.vue` | Suggested edits module configure |
 | `src/prototypes/wikita-lite.configure.interests/index.vue` | Fullscreen interest picker |
 | `src/prototypes/wikita-lite/composables/useWikitaLiteSuggestionPreferences.ts` | Shared prefs + interests version signals |
+| `src/prototypes/wikita-lite/composables/useWikitaLiteModuleSuggestionPreferences.ts` | Per-module suggestion overrides |
 
 Subpages use `WikitaLiteShell` + `MobileSubpageHeader` + a module with
 `standalone`. Configure flows use `WikitaLiteFullscreenShell` (no chrome).
@@ -43,32 +45,51 @@ Preferences persist in `localStorage`:
 | Key | File |
 | --- | --- |
 | `wikita-lite-suggestion-prefs` | `musical-group/data/suggestionPreferences.ts` |
+| `wikita-lite-module-suggestion-prefs` | `wikita-lite/data/moduleSuggestionPreferences.ts` |
 | `wikita-lite-interests` | `musical-group/data/interests.ts` |
 | `wikita-lite-dismissed-modules` | `wikita-lite/data/moduleDismissals.ts` |
 
-Suggestion feeds (Further reading, Suggested edits, Mentions) honor the
-toggles via `getSuggestionSeeds()` and `suggestionFeedsKey()`. Seeds can
-come from saved pages, the active user's `editedPages` list (ProtoWiki
-config / real-user impact sync), and/or chosen interests. When all three
-toggles are off and there are no bookmarks, Contribute still falls back to
-random seeds per the rules below. **Mentions** require the saved-pages
-toggle and at least one bookmark.
+Suggestion feeds (Further reading, Mentions) honor global toggles via
+`getSuggestionSeeds()` and `suggestionFeedsKey()`. **Suggested edits**
+uses module-effective prefs from `useWikitaLiteModuleSuggestionPreferences`
+and `helpWantedFeedsKey()` — it may diverge from global configure when the
+module override is active. Seeds can come from saved pages, the active user's
+`editedPages` list (ProtoWiki config / real-user impact sync), and/or chosen
+interests. When all three toggles are off and there are no bookmarks,
+Contribute still falls back to random seeds per the rules below.
+**Mentions** require the saved-pages toggle and at least one bookmark.
 
 Users with no bookmarks but editing-history and/or interests enabled see
-Further reading and Suggested edits when seeds exist; Home tab
-suggested-edit previews follow `suggestionSeedsAvailable`, not raw bookmark
-count.
+Further reading and Suggested edits when seeds exist. Home tab
+Suggested edits previews follow `suggestedEditsModuleSeedsAvailable` (module
+override or global defaults); Further reading still follows global
+`suggestionSeedsAvailable`.
 
 ### Module dismiss (overflow menus)
 
 When **Module overflow menus** are enabled (chrome hamburger menu), each
-module's overflow menu includes **Dismiss**. Dismissals are **global** — a
-dismissed module is hidden on every tab where it appears. Dismissed modules
+module's overflow menu includes **Dismiss**. **Suggested edits** also includes
+**Configure**, which opens `/wikita-lite/help-wanted/configure` — the same
+three suggestion-source toggles as global configure, prefixed by **Use my
+default settings**. When that master toggle is on, the module inherits global
+prefs and the underlying options are read-only; when off, overrides apply to
+Suggested edits only (Further reading and Mentions stay on global prefs).
+Interests remain **module-scoped when overrides are active** — stored in
+`wikita-lite-module-suggestion-prefs` alongside module toggles. **Add interest**
+on the module configure page opens `/wikita-lite/help-wanted/configure/interests`,
+which edits the module list only. When **Use my default settings** is on, the
+module inherits global prefs and global interests. Dismissals are **global** — a dismissed module is hidden on every tab where it appears. Dismissed modules
 hide immediately and **reappear at 3:00 AM local time**. Users can
 **Restore** early from **Configure** (`/wikita-lite/configure`). State
 persists in `wikita-lite-dismissed-modules` via
 `useWikitaLiteDismissedModules`. Dismissing also clears that module's pin
 on every tab.
+
+When overflow menus are enabled, modules that normally navigate via the
+clickable title show a footer **Show more …** link instead (Active
+discussions, Trending, Further reading, Saved, Mentions). Modules that
+already always show a footer CTA (Suggested edits, Translate articles,
+Review changes) are unchanged.
 
 ## UX rules (mandatory)
 
@@ -108,11 +129,11 @@ post-save toasts are fine.
 When there are **no bookmarks** and **no suggestion seeds** (all configure
 toggles off, or a toggle on with an empty source list), the **Contribute**
 tab (not Home) still shows **Suggested edits** and **Review changes** seeded
-from random English Wikipedia articles
-(`fetchRandomPageItems` in the `musical-group` data layer). The Home tab
-does not show those modules until `suggestionSeedsAvailable` is true (saved
-pages, editing history, and/or interests per configure toggles). Still no
-save prompts — the modules simply appear when data exists.
+from random English Wikipedia articles — unless Suggested edits has module
+overrides with available seeds (`suggestedEditsModuleSeedsAvailable`). The
+Home tab shows Suggested edits when `suggestedEditsModuleSeedsAvailable` is
+true (module override or global configure). Still no save prompts — the
+modules simply appear when data exists.
 
 Preview results for both modules cache under `contributeRandomCacheKey()`
 (daily). Fullscreen subpages restore from that cache so the first card

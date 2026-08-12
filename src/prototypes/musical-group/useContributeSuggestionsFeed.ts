@@ -1,7 +1,7 @@
 import { onUnmounted, ref, watch, type Ref } from 'vue'
 
-import { useWikitaLiteSuggestionPreferencesSingleton } from '../wikita-lite/composables/useWikitaLiteSuggestionPreferences'
-import { bookmarksKey, contributeRandomCacheKey, suggestionFeedsKey } from './data/cacheKeys'
+import { useWikitaLiteModuleSuggestionPreferencesSingleton } from '../wikita-lite/composables/useWikitaLiteModuleSuggestionPreferences'
+import { bookmarksKey, contributeRandomCacheKey, helpWantedFeedsKey } from './data/cacheKeys'
 import { normalizeEnwikiTitle } from './data/enwikiTitle'
 import { fetchAllSavedSuggestions, fetchEditSuggestionForPage } from './data/fetchEditSuggestion'
 import { fetchMorelikeTitles, resolveRelatedSummary } from './data/fetchRelatedReading'
@@ -44,11 +44,14 @@ function shuffleSeeds(seeds: SeedCursor[]): void {
   }
 }
 
+const SUGGESTED_EDITS_MODULE_ID = 'suggestedEdits' as const
+
 export function useContributeSuggestionsFeed(
   savedItems: Ref<HomeSavedItem[]>,
   active: Ref<boolean>,
 ) {
-  const { preferences } = useWikitaLiteSuggestionPreferencesSingleton()
+  const { effectiveSuggestionPreferences, effectiveModuleInterests, modulePreferencesVersion } =
+    useWikitaLiteModuleSuggestionPreferencesSingleton()
   const savedSuggestions = ref<HomeHelpWanted[]>([])
   const savedLoading = ref(false)
   const relatedSuggestions = ref<HomeHelpWanted[]>([])
@@ -67,8 +70,21 @@ export function useContributeSuggestionsFeed(
   let loadedForKey: string | null = null
   let savedLoadedForKey: string | null = null
 
+  function moduleEffectivePrefs() {
+    return effectiveSuggestionPreferences(SUGGESTED_EDITS_MODULE_ID)
+  }
+
+  function moduleEffectiveInterests() {
+    return effectiveModuleInterests(SUGGESTED_EDITS_MODULE_ID)
+  }
+
   function savedKey(): string {
-    return suggestionFeedsKey(savedItems.value)
+    modulePreferencesVersion.value
+    return helpWantedFeedsKey(
+      savedItems.value,
+      moduleEffectivePrefs(),
+      moduleEffectiveInterests(),
+    )
   }
 
   function persistState() {
@@ -107,52 +123,64 @@ export function useContributeSuggestionsFeed(
     return true
   }
 
+  function previewCacheKeys(): string[] {
+    const keys = [
+      helpWantedFeedsKey(savedItems.value, moduleEffectivePrefs(), moduleEffectiveInterests()),
+      bookmarksKey(),
+      contributeRandomCacheKey(),
+    ]
+    return [...new Set(keys.filter(Boolean))]
+  }
+
   /** Home preview caches suggestions separately; seed the full-page feed from that cache. */
   function restoreFromHelpWantedCache(key: string): boolean {
-    const previewCacheKey = bookmarksKey() || contributeRandomCacheKey()
-    const helpCached = getCachedHelpWanted(previewCacheKey)
-    if (!helpCached?.length) return false
+    for (const previewCacheKey of previewCacheKeys()) {
+      const helpCached = getCachedHelpWanted(previewCacheKey)
+      if (!helpCached?.length) continue
 
-    resetRelatedState()
+      resetRelatedState()
 
-    const savedIdSet = new Set(savedItems.value.map((item) => item.id))
-    const savedEnwikiSet = new Set(
-      savedItems.value
-        .filter((item) => item.enwikiTitle)
-        .map((item) => normalizeEnwikiTitle(item.enwikiTitle as string).toLowerCase()),
-    )
+      const savedIdSet = new Set(savedItems.value.map((item) => item.id))
+      const savedEnwikiSet = new Set(
+        savedItems.value
+          .filter((item) => item.enwikiTitle)
+          .map((item) => normalizeEnwikiTitle(item.enwikiTitle as string).toLowerCase()),
+      )
 
-    const saved: HomeHelpWanted[] = []
-    const related: HomeHelpWanted[] = []
+      const saved: HomeHelpWanted[] = []
+      const related: HomeHelpWanted[] = []
 
-    for (const suggestion of helpCached) {
-      const isSaved =
-        savedIdSet.has(suggestion.itemId) ||
-        Boolean(
-          suggestion.enwikiTitle &&
-            savedEnwikiSet.has(normalizeEnwikiTitle(suggestion.enwikiTitle).toLowerCase()),
-        )
+      for (const suggestion of helpCached) {
+        const isSaved =
+          savedIdSet.has(suggestion.itemId) ||
+          Boolean(
+            suggestion.enwikiTitle &&
+              savedEnwikiSet.has(normalizeEnwikiTitle(suggestion.enwikiTitle).toLowerCase()),
+          )
 
-      if (isSaved) {
-        saved.push(suggestion)
-      } else {
-        related.push(suggestion)
+        if (isSaved) {
+          saved.push(suggestion)
+        } else {
+          related.push(suggestion)
+        }
+
+        excludedIds.add(suggestion.itemId)
+        if (suggestion.enwikiTitle) {
+          seenTitles.add(normalizeEnwikiTitle(suggestion.enwikiTitle).toLowerCase())
+        }
       }
 
-      excludedIds.add(suggestion.itemId)
-      if (suggestion.enwikiTitle) {
-        seenTitles.add(normalizeEnwikiTitle(suggestion.enwikiTitle).toLowerCase())
-      }
+      savedSuggestions.value = saved
+      relatedSuggestions.value = related
+      savedLoading.value = false
+      relatedLoading.value = false
+      error.value = null
+      savedLoadedForKey = key
+      persistState()
+      return true
     }
 
-    savedSuggestions.value = saved
-    relatedSuggestions.value = related
-    savedLoading.value = false
-    relatedLoading.value = false
-    error.value = null
-    savedLoadedForKey = key
-    persistState()
-    return true
+    return false
   }
 
   function resetRelatedState() {
@@ -170,7 +198,11 @@ export function useContributeSuggestionsFeed(
     titlePool = []
     nextSeedIndex = 0
 
-    for (const item of suggestionSeedItems(savedItems.value, preferences.value)) {
+    for (const item of suggestionSeedItems(
+      savedItems.value,
+      moduleEffectivePrefs(),
+      moduleEffectiveInterests(),
+    )) {
       excludedIds.add(item.id)
       if (!item.enwikiTitle) continue
       const key = titleKey(item.enwikiTitle)
@@ -274,7 +306,7 @@ export function useContributeSuggestionsFeed(
     savedLoading.value = true
 
     try {
-      if (preferences.value.useSavedPages) {
+      if (moduleEffectivePrefs().useSavedPages) {
         await fetchAllSavedSuggestions(savedItems.value, signal, {
           onEach: (suggestion) => {
             savedSuggestions.value = [...savedSuggestions.value, suggestion]
@@ -334,7 +366,7 @@ export function useContributeSuggestionsFeed(
   }
 
   watch(
-    () => [savedKey(), active.value] as const,
+    () => [savedKey(), active.value, modulePreferencesVersion.value] as const,
     ([key, isActive], oldValue) => {
       const prevKey = oldValue?.[0]
 

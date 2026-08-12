@@ -1,9 +1,12 @@
 import { loadConfig } from '@/config'
 
 import { listBookmarks } from './bookmarks'
-import { interestsKey } from './interests'
+import { interestsKey, interestsKeyFrom } from './interests'
 import { listUserLists } from './lists'
-import { loadSuggestionPreferences } from './suggestionPreferences'
+import {
+  loadSuggestionPreferences,
+  type SuggestionPreferences,
+} from './suggestionPreferences'
 import type { HomeSavedItem } from './types'
 
 /** Stable fingerprint of the active user's edited page titles. */
@@ -59,12 +62,26 @@ export function contributeRandomCacheKey(date = new Date()): string {
 }
 
 /** Fingerprint of suggestion preference toggles. */
-export function suggestionPrefsKey(): string {
-  const prefs = loadSuggestionPreferences()
+export function suggestionPrefsKeyFrom(prefs: SuggestionPreferences): string {
   return `prefs:s${prefs.useSavedPages ? 1 : 0}e${prefs.useEditingHistory ? 1 : 0}i${prefs.useInterests ? 1 : 0}`
 }
 
-/** Combined dependency key for personalized suggestion feeds. */
+export function suggestionPrefsKey(): string {
+  return suggestionPrefsKeyFrom(loadSuggestionPreferences())
+}
+
+/** Combined dependency key for personalized suggestion feeds (global prefs). */
 export function suggestionFeedsKey(savedItems: HomeSavedItem[] = []): string {
   return `${savedPagesListKey(savedItems)}|${editedPagesKey()}|${interestsKey()}|${suggestionPrefsKey()}`
+}
+
+/** Dependency key for Suggested edits when module-specific prefs may differ from global. */
+export function helpWantedFeedsKey(
+  savedItems: HomeSavedItem[] = [],
+  prefs: SuggestionPreferences = loadSuggestionPreferences(),
+  interestTitles?: string[],
+): string {
+  const interestFingerprint =
+    interestTitles !== undefined ? interestsKeyFrom(interestTitles) : interestsKey()
+  return `${savedPagesListKey(savedItems)}|${editedPagesKey()}|${interestFingerprint}|${suggestionPrefsKeyFrom(prefs)}`
 }

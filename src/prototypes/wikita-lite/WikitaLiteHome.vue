@@ -84,6 +84,7 @@ const {
   didYouKnow,
   hasSavedPages,
   suggestionSeedsAvailable,
+  suggestedEditsModuleSeedsAvailable,
   showSavedBasedMentions,
   recentlySaved,
   savedItemsLoading,
@@ -124,7 +125,9 @@ const homeMentionsPreview = computed(() =>
 )
 
 const helpWantedPreviewLimit = computed(() =>
-  suggestionSeedsAvailable.value || hasSavedPages.value
+  suggestionSeedsAvailable.value ||
+  suggestedEditsModuleSeedsAvailable.value ||
+  hasSavedPages.value
     ? HOME_HELP_WANTED_PREVIEW_LIMIT
     : UNSAVED_HELP_WANTED_PREVIEW_LIMIT,
 )
@@ -229,7 +232,7 @@ const editTab = useWikitaLiteTabLoading([
     id: 'suggestedEdits',
     loading: helpWantedLoading,
     previewCount: computed(() => helpWantedPreview.value.length),
-    enabled: suggestionSeedsAvailable,
+    enabled: suggestedEditsModuleSeedsAvailable,
   },
   {
     id: 'translation',
@@ -416,6 +419,7 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
             :error="trendingTabError"
             :preview-limit="HOME_TRENDING_PREVIEW_LIMIT"
             :lists-version="listsVersion"
+            :more-to="TRENDING_PAGE"
             @retry="retryTrendingFeed"
           >
             <template v-if="editTab.showLoadingBar('trending') && trendingItems.length" #after-cards>
@@ -444,6 +448,7 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
             :items="homeEditFurtherReadingPreview"
             :preview-limit="HOME_EDIT_FURTHER_READING_PREVIEW_LIMIT"
             :lists-version="listsVersion"
+            :more-to="FURTHER_READING_PAGE"
           >
             <template
               v-if="editTab.showLoadingBar('furtherReading') && homeEditFurtherReadingPreview.length"
@@ -573,6 +578,7 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
             :items="activeDiscussionsPreview"
             :error="activeDiscussionsError"
             :preview-limit="HOME_ACTIVE_DISCUSSIONS_PREVIEW_LIMIT"
+            :more-to="ACTIVE_DISCUSSIONS_PAGE"
             @retry="retryActiveDiscussionsFeed"
           >
             <template
@@ -655,6 +661,7 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
           <SavedModule
             :items="hasSavedPages ? recentlySaved : []"
             :preview-limit="HOME_SAVED_PREVIEW_LIMIT"
+            :more-to="SAVED_PAGE"
           >
             <template
               v-if="hasSavedPages && readExploreTab.showLoadingBar('saved') && recentlySaved.length"
@@ -691,6 +698,7 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
             :items="homeFurtherReadingPreview"
             :preview-limit="HOME_FURTHER_READING_PREVIEW_LIMIT"
             :lists-version="listsVersion"
+            :more-to="FURTHER_READING_PAGE"
           >
             <template
               v-if="
@@ -728,6 +736,7 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
             :items="homeMentionsPreview"
             :preview-limit="HOME_MENTIONS_PREVIEW_LIMIT"
             :lists-version="listsVersion"
+            :more-to="MENTIONS_PAGE"
           >
             <template
               v-if="readExploreTab.showLoadingBar('mentions') && homeMentionsPreview.length"
@@ -861,6 +870,7 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
             :items="activeDiscussionsPreview"
             :error="activeDiscussionsError"
             :preview-limit="HOME_ACTIVE_DISCUSSIONS_PREVIEW_LIMIT"
+            :more-to="ACTIVE_DISCUSSIONS_PAGE"
             @retry="retryActiveDiscussionsFeed"
           >
             <template

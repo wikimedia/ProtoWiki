@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
+import { RouterLink } from 'vue-router'
 
 import { CdxButton, CdxCard, CdxProgressBar } from '@wikimedia/codex'
 import {
@@ -15,6 +17,7 @@ import {
   useWikitaLiteSaveActions,
 } from '../composables/useWikitaLiteCardActions'
 import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
+import { useWikitaLiteOverflowShowMore } from '../composables/useWikitaLiteOverflowShowMore'
 import { WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE } from '../wikita-lite-card'
 import WikitaLiteCardWithAction from '../components/WikitaLiteCardWithAction.vue'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
@@ -26,6 +29,7 @@ interface Props {
   error?: string | null
   previewLimit?: number
   listsVersion?: number
+  moreTo?: RouteLocationRaw
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -35,6 +39,7 @@ const props = withDefaults(defineProps<Props>(), {
   error: null,
   previewLimit: 2,
   listsVersion: 0,
+  moreTo: undefined,
 })
 
 defineEmits<{
@@ -64,6 +69,12 @@ function cardThumbnail(url?: string) {
 }
 
 const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
+
+const showMoreLink = useWikitaLiteOverflowShowMore({
+  standalone: () => props.standalone,
+  moreTo: () => props.moreTo,
+  hasItems: () => displayItems.value.length > 0,
+})
 </script>
 
 <template>
@@ -118,6 +129,14 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
       </div>
 
       <slot name="after-cards" />
+
+      <RouterLink
+        v-if="showMoreLink && moreTo"
+        :to="moreTo"
+        class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled wikita-lite-button-link"
+      >
+        Show more trending
+      </RouterLink>
 
       <p v-if="standalone && !displayItems.length" class="trending-module__empty">
         No trending articles are available right now.

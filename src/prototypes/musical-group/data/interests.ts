@@ -9,6 +9,21 @@ function normalizeInterestTitle(title: string): string | null {
   return normalizeEnwikiTitle(trimmed)
 }
 
+export function normalizeInterestTitles(titles: string[]): string[] {
+  const seen = new Set<string>()
+  const normalized: string[] = []
+  for (const title of titles) {
+    const value = normalizeInterestTitle(title)
+    if (!value) continue
+    const key = value.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    normalized.push(value)
+    if (normalized.length >= MAX_INTERESTS) break
+  }
+  return normalized
+}
+
 export function listInterests(): string[] {
   if (typeof window === 'undefined') return []
 
@@ -38,17 +53,7 @@ export function listInterests(): string[] {
 export function saveInterests(titles: string[]): void {
   if (typeof window === 'undefined') return
 
-  const seen = new Set<string>()
-  const normalized: string[] = []
-  for (const title of titles) {
-    const value = normalizeInterestTitle(title)
-    if (!value) continue
-    const key = value.toLowerCase()
-    if (seen.has(key)) continue
-    seen.add(key)
-    normalized.push(value)
-    if (normalized.length >= MAX_INTERESTS) break
-  }
+  const normalized = normalizeInterestTitles(titles)
 
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized))
@@ -57,9 +62,13 @@ export function saveInterests(titles: string[]): void {
   }
 }
 
-export function interestsKey(): string {
-  return listInterests()
+export function interestsKeyFrom(titles: string[]): string {
+  return titles
     .map((title) => title.toLowerCase())
     .sort()
     .join('|')
+}
+
+export function interestsKey(): string {
+  return interestsKeyFrom(listInterests())
 }

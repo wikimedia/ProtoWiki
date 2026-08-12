@@ -6,16 +6,36 @@ import { normalizeEnwikiTitle } from '../../musical-group/data/enwikiTitle'
 import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 import type { HomeRelated } from '../../musical-group/data/types'
 
+import type { WikitaLiteModuleId } from '../data/homeModuleIds'
+import { useWikitaLiteModuleSuggestionPreferencesSingleton } from './useWikitaLiteModuleSuggestionPreferences'
 import { useWikitaLiteSuggestionPreferencesSingleton } from './useWikitaLiteSuggestionPreferences'
 
 const MAX_INTERESTS = 10
 const RELATED_PREVIEW_LIMIT = 5
 
-export function useWikitaLiteInterestsPage() {
+export function useWikitaLiteInterestsPage(moduleId?: WikitaLiteModuleId) {
   const router = useRouter()
   const { listInterests, commitInterests } = useWikitaLiteSuggestionPreferencesSingleton()
+  const modulePrefs = moduleId
+    ? useWikitaLiteModuleSuggestionPreferencesSingleton()
+    : null
 
-  const draftInterests = ref<string[]>([...listInterests()])
+  function readInterests(): string[] {
+    if (moduleId && modulePrefs) {
+      return modulePrefs.listModuleInterests(moduleId)
+    }
+    return listInterests()
+  }
+
+  function writeInterests(titles: string[]): void {
+    if (moduleId && modulePrefs) {
+      modulePrefs.commitModuleInterests(moduleId, titles)
+      return
+    }
+    commitInterests(titles)
+  }
+
+  const draftInterests = ref<string[]>([...readInterests()])
   const relatedItems = ref<HomeRelated[]>([])
   const relatedLoading = ref(false)
   const relatedSeedTitle = ref<string | null>(draftInterests.value[0] ?? null)
@@ -24,8 +44,8 @@ export function useWikitaLiteInterestsPage() {
   let refreshDebounce: ReturnType<typeof setTimeout> | null = null
 
   function persistInterests(): void {
-    commitInterests(draftInterests.value)
-    draftInterests.value = [...listInterests()]
+    writeInterests(draftInterests.value)
+    draftInterests.value = [...readInterests()]
   }
 
   function addInterest(title: string): void {

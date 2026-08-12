@@ -5,8 +5,9 @@ import { useConfig } from '@/composables/useConfig'
 
 import { WIKITA_SAVE_FEEDBACK_KEY } from './composables/useWikitaSaveFeedback'
 import { useWikitaLiteSuggestionPreferencesSingleton } from '../wikita-lite/composables/useWikitaLiteSuggestionPreferences'
+import { useWikitaLiteModuleSuggestionPreferencesSingleton } from '../wikita-lite/composables/useWikitaLiteModuleSuggestionPreferences'
 import { listBookmarks } from './data/bookmarks'
-import { bookmarksKey, contributeRandomCacheKey, suggestionFeedsKey, utcDayKey } from './data/cacheKeys'
+import { bookmarksKey, contributeRandomCacheKey, helpWantedFeedsKey, suggestionFeedsKey, utcDayKey } from './data/cacheKeys'
 import { fetchActiveDiscussions, clearActiveDiscussionsSessionCache } from './data/fetchActiveDiscussions'
 import { fetchFeaturedTabContent, isUsableFeaturedTab } from './data/fetchFeaturedFeed'
 import { fetchHelpWanted } from './data/fetchHelpWanted'
@@ -75,6 +76,7 @@ export interface ReloadBookmarksOptions {
 
 const CONTRIBUTE_FALLBACK_HELP_WANTED_LIMIT = 1
 const CONTRIBUTE_FALLBACK_RECENT_CHANGES_LIMIT = 1
+const SUGGESTED_EDITS_MODULE_ID = 'suggestedEdits' as const
 
 export function useMusicalGroupHome(options: {
   helpWantedLimit?: number
@@ -89,6 +91,12 @@ export function useMusicalGroupHome(options: {
   const saveFeedback = inject(WIKITA_SAVE_FEEDBACK_KEY, null)
   const { preferences, preferencesVersion, interestsVersion } =
     useWikitaLiteSuggestionPreferencesSingleton()
+  const {
+    effectiveSuggestionPreferences,
+    effectiveModuleInterests,
+    hasModuleSuggestionSeeds,
+    modulePreferencesVersion,
+  } = useWikitaLiteModuleSuggestionPreferencesSingleton()
   const featuredTab = ref<HomeFeaturedTab>(EMPTY_FEATURED_TAB)
   const featuredTabLoading = ref(true)
   const featuredTabError = ref<string | null>(null)
@@ -138,6 +146,26 @@ export function useMusicalGroupHome(options: {
     hasSuggestionSeeds(savedItems.value, preferences.value),
   )
 
+  const suggestedEditsModuleSeedsAvailable = computed(() =>
+    hasModuleSuggestionSeeds(SUGGESTED_EDITS_MODULE_ID, savedItems.value),
+  )
+
+  function helpWantedDependencyKey(items: HomeSavedItem[] = savedItems.value): string {
+    return helpWantedFeedsKey(
+      items,
+      effectiveSuggestionPreferences(SUGGESTED_EDITS_MODULE_ID),
+      effectiveModuleInterests(SUGGESTED_EDITS_MODULE_ID),
+    )
+  }
+
+  function helpWantedSeedItemsFor(items: HomeSavedItem[]): HomeSavedItem[] {
+    return suggestionSeedItems(
+      items,
+      effectiveSuggestionPreferences(SUGGESTED_EDITS_MODULE_ID),
+      effectiveModuleInterests(SUGGESTED_EDITS_MODULE_ID),
+    )
+  }
+
   const showSavedBasedMentions = computed(
     () => preferences.value.useSavedPages && hasSavedPages.value,
   )
@@ -156,13 +184,16 @@ export function useMusicalGroupHome(options: {
     return translationSuggestionsCacheKey(translationTargetLangs.value)
   }
 
-  function hydratePersonalizedFeedsFromCache(dependencyKey: string): void {
+  function hydratePersonalizedFeedsFromCache(
+    dependencyKey: string,
+    helpWantedKey: string = dependencyKey,
+  ): void {
     const cachedRelated = getCachedRelatedFeed('home', dependencyKey)
     if (cachedRelated) {
       homeRelatedItems.value = cachedRelated.items
     }
 
-    const cachedHelp = getCachedHelpWanted(dependencyKey)
+    const cachedHelp = getCachedHelpWanted(helpWantedKey)
     if (cachedHelp) helpWanted.value = cachedHelp
 
     const cachedRecent = getCachedRecentChangesPreview(dependencyKey)
@@ -177,7 +208,7 @@ export function useMusicalGroupHome(options: {
     }
 
     const feedKey = suggestionFeedsKey(savedItems.value)
-    hydratePersonalizedFeedsFromCache(feedKey)
+    hydratePersonalizedFeedsFromCache(feedKey, helpWantedDependencyKey(savedItems.value))
 
     if (preferences.value.useSavedPages) {
       const cachedMentions = getCachedHomeMentions(dependencyKey)
@@ -194,9 +225,13 @@ export function useMusicalGroupHome(options: {
     skipFeeds: Set<PersonalizedFeedId>,
   ): Promise<void> {
     const seedItems = suggestionSeedItems(items, preferences.value)
-    const includeSavedSuggestions = preferences.value.useSavedPages && items.length > 0
+    const helpWantedPrefs = effectiveSuggestionPreferences(SUGGESTED_EDITS_MODULE_ID)
+    const helpWantedInterests = effectiveModuleInterests(SUGGESTED_EDITS_MODULE_ID)
+    const helpWantedKey = helpWantedFeedsKey(items, helpWantedPrefs, helpWantedInterests)
+    const helpWantedSeedItems = helpWantedSeedItemsFor(items)
+    const includeSavedSuggestions = helpWantedPrefs.useSavedPages && items.length > 0
 
-    const cachedHelp = getCachedHelpWanted(dependencyKey)
+    const cachedHelp = getCachedHelpWanted(helpWantedKey)
     const needsRelatedFetch =
       !skipFeeds.has('related') && !getCachedRelatedFeed('home', dependencyKey)
     const needsMentionsFetch =
@@ -256,9 +291,9 @@ export function useMusicalGroupHome(options: {
       (async () => {
         if (!needsHelpFetch) return
         try {
-          helpWanted.value = await fetchHelpWanted(seedItems, signal, helpWantedLimit, {
+          helpWanted.value = await fetchHelpWanted(helpWantedSeedItems, signal, helpWantedLimit, {
             onEach: appendHelpWanted,
-            dependencyKey,
+            dependencyKey: helpWantedKey,
             includeSavedSuggestions,
             savedItems: items,
           })
@@ -295,13 +330,57 @@ export function useMusicalGroupHome(options: {
     recentChangesLoading.value = false
   }
 
-  async function loadContributeFallbackFeeds(signal: AbortSignal): Promise<void> {
+  async function loadModuleHelpWantedOnly(
+    items: HomeSavedItem[],
+    signal: AbortSignal,
+    skipFeeds: Set<PersonalizedFeedId>,
+  ): Promise<void> {
+    if (skipFeeds.has('helpWanted')) return
+
+    const helpWantedPrefs = effectiveSuggestionPreferences(SUGGESTED_EDITS_MODULE_ID)
+    const helpWantedInterests = effectiveModuleInterests(SUGGESTED_EDITS_MODULE_ID)
+    const helpWantedKey = helpWantedFeedsKey(items, helpWantedPrefs, helpWantedInterests)
+    const helpWantedSeedItems = helpWantedSeedItemsFor(items)
+    const includeSavedSuggestions = helpWantedPrefs.useSavedPages && items.length > 0
+    const cachedHelp = getCachedHelpWanted(helpWantedKey)
+    const needsHelpFetch = !cachedHelp || cachedHelp.length < helpWantedLimit
+
+    if (cachedHelp) helpWanted.value = cachedHelp
+    if (!needsHelpFetch) return
+
+    helpWantedLoading.value = true
+    if (!cachedHelp?.length && !helpWanted.value.length) helpWanted.value = []
+
+    const appendHelpWanted = (suggestion: HomeHelpWanted): void => {
+      if (helpWanted.value.some((entry) => entry.itemId === suggestion.itemId)) return
+      helpWanted.value = [...helpWanted.value, suggestion]
+    }
+
+    try {
+      helpWanted.value = await fetchHelpWanted(helpWantedSeedItems, signal, helpWantedLimit, {
+        onEach: appendHelpWanted,
+        dependencyKey: helpWantedKey,
+        includeSavedSuggestions,
+        savedItems: items,
+      })
+    } catch (err) {
+      if (isAbort(err)) return
+    } finally {
+      helpWantedLoading.value = false
+    }
+  }
+
+  async function loadContributeFallbackFeeds(
+    signal: AbortSignal,
+    options: { skipHelpWanted?: boolean } = {},
+  ): Promise<void> {
     const dependencyKey = contributeRandomCacheKey()
     const cachedHelp = getCachedHelpWanted(dependencyKey)
     const cachedRecent = getCachedRecentChangesPreview(dependencyKey)
 
     const needsHelpFetch =
-      !cachedHelp || cachedHelp.length < CONTRIBUTE_FALLBACK_HELP_WANTED_LIMIT
+      !options.skipHelpWanted &&
+      (!cachedHelp || cachedHelp.length < CONTRIBUTE_FALLBACK_HELP_WANTED_LIMIT)
     const needsRecentFetch = !cachedRecent
     const needsSeeds = !contributeSeedItems.value.length
 
@@ -395,6 +474,16 @@ export function useMusicalGroupHome(options: {
 
       if (!suggestionSeedsAvailable.value) {
         clearPersonalizedFeeds()
+
+        if (suggestedEditsModuleSeedsAvailable.value) {
+          await Promise.all([
+            loadModuleHelpWantedOnly([], signal, skipFeeds),
+            loadContributeFallbackFeeds(signal, { skipHelpWanted: true }),
+            reloadTranslationForBookmarks(signal),
+          ])
+          return
+        }
+
         await Promise.all([
           loadContributeFallbackFeeds(signal),
           reloadTranslationForBookmarks(signal),
@@ -405,7 +494,7 @@ export function useMusicalGroupHome(options: {
       contributeSeedItems.value = []
       const seedItems = suggestionSeedItems([], preferences.value)
       const dependencyKey = suggestionFeedsKey(seedItems)
-      hydratePersonalizedFeedsFromCache(dependencyKey)
+      hydratePersonalizedFeedsFromCache(dependencyKey, helpWantedDependencyKey([]))
 
       if (!seedItems.length) {
         homeRelatedItems.value = []
@@ -460,17 +549,26 @@ export function useMusicalGroupHome(options: {
       homeRelatedItems.value = []
       homeMentionsRaw.value = []
       helpWanted.value = []
-      if (!skipFeeds.has('recentChanges')) {
-        recentChangesLoading.value = true
-        try {
-          recentChanges.value = await fetchRecentChanges(items, signal, { dependencyKey })
-        } catch (err) {
-          if (isAbort(err)) return
-        } finally {
-          recentChangesLoading.value = false
-        }
-      }
-      await reloadTranslationForBookmarks(signal)
+
+      const moduleSeedsAvailable = suggestedEditsModuleSeedsAvailable.value
+      await Promise.all([
+        moduleSeedsAvailable
+          ? loadModuleHelpWantedOnly(items, signal, skipFeeds)
+          : Promise.resolve(),
+        (async () => {
+          if (!skipFeeds.has('recentChanges')) {
+            recentChangesLoading.value = true
+            try {
+              recentChanges.value = await fetchRecentChanges(items, signal, { dependencyKey })
+            } catch (err) {
+              if (isAbort(err)) return
+            } finally {
+              recentChangesLoading.value = false
+            }
+          }
+        })(),
+        reloadTranslationForBookmarks(signal),
+      ])
       return
     }
 
@@ -771,7 +869,7 @@ export function useMusicalGroupHome(options: {
     },
   )
 
-  watch([preferencesVersion, interestsVersion], () => {
+  watch([preferencesVersion, interestsVersion, modulePreferencesVersion], () => {
     clearCachedSuggestionFeeds()
     void reloadBookmarks({
       skipFeeds: options.getBookmarkChangeSkipFeeds?.() ?? [],
@@ -826,6 +924,7 @@ export function useMusicalGroupHome(options: {
     retryTranslationFeed,
     hasSavedPages,
     suggestionSeedsAvailable,
+    suggestedEditsModuleSeedsAvailable,
     showSavedBasedMentions,
     savedSorted,
     contributeSeedItems,

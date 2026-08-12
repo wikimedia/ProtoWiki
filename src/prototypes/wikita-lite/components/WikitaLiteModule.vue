@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, provide, ref, watch } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 
 import { CdxButton, CdxIcon, CdxMenuButton } from '@wikimedia/codex'
 import type { MenuItemValue } from '@wikimedia/codex'
-import { cdxIconCheck, cdxIconEllipsis, cdxIconNext, cdxIconPushPin } from '@wikimedia/codex-icons'
+import { cdxIconCheck, cdxIconConfigure, cdxIconEllipsis, cdxIconNext, cdxIconPushPin } from '@wikimedia/codex-icons'
 
 import { useWikitaLiteCardBordersSingleton } from '../composables/useWikitaLiteCardBorders'
 import { useWikitaLiteDismissedModulesSingleton } from '../composables/useWikitaLiteDismissedModules'
@@ -14,6 +14,7 @@ import { useWikitaLitePinnedModulesSingleton } from '../composables/useWikitaLit
 import { useWikitaLitePreserveScroll } from '../composables/useWikitaLitePreserveScroll'
 import { useWikitaLiteView } from '../composables/useWikitaLiteView'
 import { isOverflowModuleId, type WikitaLiteModuleId } from '../data/homeModuleIds'
+import { HELP_WANTED_CONFIGURE_PAGE } from '../routes'
 import { WIKITA_LITE_CARD_SEPARATION, type WikitaLiteCardSeparation } from '../wikita-lite-card'
 
 interface Props {
@@ -37,6 +38,7 @@ const { isPinned, togglePin } = useWikitaLitePinnedModulesSingleton()
 const { dismiss } = useWikitaLiteDismissedModulesSingleton()
 const { activeView } = useWikitaLiteView()
 const { captureScroll, restoreScroll, preserveScrollFor } = useWikitaLitePreserveScroll()
+const router = useRouter()
 
 const menuSelected = ref<MenuItemValue | null>(null)
 
@@ -66,18 +68,29 @@ const pinMenuLabel = computed(() => {
 const overflowMenuItems = computed(() => {
   if (!props.moduleId) return []
 
-  return [
-    {
-      value: 'pin',
-      label: pinMenuLabel.value,
-      icon: cdxIconPushPin,
-    },
-    {
-      value: 'dismiss',
-      label: 'Dismiss',
-      icon: cdxIconCheck,
-    },
-  ]
+  const items = []
+
+  if (props.moduleId === 'suggestedEdits') {
+    items.push({
+      value: 'configure',
+      label: 'Configure',
+      icon: cdxIconConfigure,
+    })
+  }
+
+  items.push({
+    value: 'pin',
+    label: pinMenuLabel.value,
+    icon: cdxIconPushPin,
+  })
+
+  items.push({
+    value: 'dismiss',
+    label: 'Dismiss',
+    icon: cdxIconCheck,
+  })
+
+  return items
 })
 
 watch(menuSelected, (value) => {
@@ -94,6 +107,12 @@ watch(menuSelected, (value) => {
       dismiss(props.moduleId!)
       menuSelected.value = null
     })
+    return
+  }
+
+  if (value === 'configure' && props.moduleId === 'suggestedEdits') {
+    menuSelected.value = null
+    router.push(HELP_WANTED_CONFIGURE_PAGE)
   }
 })
 

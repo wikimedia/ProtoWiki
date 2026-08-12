@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
+import { RouterLink } from 'vue-router'
 
 import { CdxCard, CdxIcon, CdxProgressBar } from '@wikimedia/codex'
 import { cdxIconBookmark, cdxIconBookmarkOutline } from '@wikimedia/codex-icons'
@@ -7,6 +9,7 @@ import { cdxIconBookmark, cdxIconBookmarkOutline } from '@wikimedia/codex-icons'
 import type { HomeSavedItem } from '../../musical-group/data/types'
 import { savedItemHref } from '../composables/useWikitaLiteCardActions'
 import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
+import { useWikitaLiteOverflowShowMore } from '../composables/useWikitaLiteOverflowShowMore'
 import { WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE } from '../wikita-lite-card'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
 
@@ -15,6 +18,7 @@ interface Props {
   items?: HomeSavedItem[]
   loading?: boolean
   previewLimit?: number
+  moreTo?: RouteLocationRaw
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -22,6 +26,7 @@ const props = withDefaults(defineProps<Props>(), {
   items: () => [],
   loading: false,
   previewLimit: 5,
+  moreTo: undefined,
 })
 
 const displayItems = computed(() =>
@@ -51,6 +56,12 @@ function formatSavedLabel(savedAt: number): string {
 }
 
 const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
+
+const showMoreLink = useWikitaLiteOverflowShowMore({
+  standalone: () => props.standalone,
+  moreTo: () => props.moreTo,
+  hasItems: () => displayItems.value.length > 0,
+})
 </script>
 
 <template>
@@ -83,6 +94,14 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
         </div>
 
         <slot name="after-cards" />
+
+        <RouterLink
+          v-if="showMoreLink && moreTo"
+          :to="moreTo"
+          class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled wikita-lite-button-link"
+        >
+          Show more saved
+        </RouterLink>
       </template>
 
       <p v-else class="saved-module__empty">

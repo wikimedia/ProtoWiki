@@ -2,12 +2,11 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { CdxButton, CdxIcon, CdxToggleSwitch } from '@wikimedia/codex'
-import { cdxIconAdd } from '@wikimedia/codex-icons'
+import { CdxButton } from '@wikimedia/codex'
 
 import WikitaLiteFullscreenHeader from '../wikita-lite/components/WikitaLiteFullscreenHeader.vue'
 import WikitaLiteFullscreenShell from '../wikita-lite/components/WikitaLiteFullscreenShell.vue'
-import WikitaLiteInterestChips from '../wikita-lite/components/WikitaLiteInterestChips.vue'
+import WikitaLiteSuggestionConfigureToggles from '../wikita-lite/components/WikitaLiteSuggestionConfigureToggles.vue'
 import { useWikitaLiteDismissedModulesSingleton } from '../wikita-lite/composables/useWikitaLiteDismissedModules'
 import { useWikitaLiteSuggestionPreferencesSingleton } from '../wikita-lite/composables/useWikitaLiteSuggestionPreferences'
 import { CONFIGURE_INTERESTS_PAGE } from '../wikita-lite/routes'
@@ -48,30 +47,14 @@ function removeInterest(title: string) {
     <WikitaLiteFullscreenHeader title="Configure" @close="closeConfigure" />
 
     <div class="wikita-lite-configure">
-      <div class="wikita-lite-configure__toggles">
-        <CdxToggleSwitch v-model="preferences.useSavedPages" align-switch>
-          Show suggestions based on my saved pages
-        </CdxToggleSwitch>
-        <CdxToggleSwitch v-model="preferences.useEditingHistory" align-switch>
-          Show suggestions based on my editing history
-        </CdxToggleSwitch>
-        <div class="wikita-lite-configure__interests-group">
-          <CdxToggleSwitch v-model="preferences.useInterests" align-switch>
-            Show suggestions based on my interests
-          </CdxToggleSwitch>
-          <div class="wikita-lite-configure__interests-actions">
-            <WikitaLiteInterestChips
-              v-if="savedInterests.length"
-              :interests="savedInterests"
-              @remove="removeInterest"
-            />
-            <CdxButton class="wikita-lite-configure__add-interest" @click="openInterests">
-              <CdxIcon :icon="cdxIconAdd" />
-              Add interest
-            </CdxButton>
-          </div>
-        </div>
-      </div>
+      <WikitaLiteSuggestionConfigureToggles
+        v-model:use-saved-pages="preferences.useSavedPages"
+        v-model:use-editing-history="preferences.useEditingHistory"
+        v-model:use-interests="preferences.useInterests"
+        :interests="savedInterests"
+        @add-interest="openInterests"
+        @remove-interest="removeInterest"
+      />
 
       <section v-if="dismissedEntries.length" class="wikita-lite-configure__dismissed">
         <h3 class="wikita-lite-configure__dismissed-label">Dismissed modules</h3>
@@ -110,33 +93,6 @@ function removeInterest(title: string) {
   gap: var(--spacing-150, 24px);
   min-height: 0;
   padding: var(--spacing-50, 8px) var(--spacing-100, 16px) var(--spacing-200, 32px);
-}
-
-.wikita-lite-configure__toggles {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-150, 24px);
-}
-
-.wikita-lite-configure__toggles :deep(.cdx-toggle-switch) {
-  width: 100%;
-}
-
-.wikita-lite-configure__interests-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-75, 12px);
-}
-
-.wikita-lite-configure__interests-actions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-50, 8px);
-  align-items: flex-start;
-}
-
-.wikita-lite-configure__add-interest {
-  align-self: flex-start;
 }
 
 .wikita-lite-configure__dismissed {

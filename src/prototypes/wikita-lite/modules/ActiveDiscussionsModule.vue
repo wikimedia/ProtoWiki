@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
+import { RouterLink } from 'vue-router'
 
 import { CdxButton, CdxCard, CdxIcon, CdxProgressBar } from '@wikimedia/codex'
 import { cdxIconSpeechBubble } from '@wikimedia/codex-icons'
 
 import type { HomeActiveDiscussion } from '../../musical-group/data/types'
 import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
+import { useWikitaLiteOverflowShowMore } from '../composables/useWikitaLiteOverflowShowMore'
 
 interface Props {
   standalone?: boolean
@@ -13,6 +16,7 @@ interface Props {
   loading?: boolean
   error?: string | null
   previewLimit?: number
+  moreTo?: RouteLocationRaw
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -21,6 +25,7 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false,
   error: null,
   previewLimit: 3,
+  moreTo: undefined,
 })
 
 defineEmits<{
@@ -33,6 +38,12 @@ const displayItems = computed(() =>
 
 const { groupClass, cardClass } = useWikitaLiteCardListClasses({
   standalone: () => props.standalone,
+})
+
+const showMoreLink = useWikitaLiteOverflowShowMore({
+  standalone: () => props.standalone,
+  moreTo: () => props.moreTo,
+  hasItems: () => displayItems.value.length > 0,
 })
 </script>
 
@@ -75,6 +86,14 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({
       </div>
 
       <slot name="after-cards" />
+
+      <RouterLink
+        v-if="showMoreLink && moreTo"
+        :to="moreTo"
+        class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled wikita-lite-button-link"
+      >
+        Show more active discussions
+      </RouterLink>
 
       <p v-if="standalone && !displayItems.length" class="active-discussions-module__empty">
         No active discussions right now.
