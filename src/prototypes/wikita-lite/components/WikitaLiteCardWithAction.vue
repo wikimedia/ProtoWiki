@@ -6,6 +6,7 @@ import type { Icon } from '@wikimedia/codex-icons'
 
 import WikitaLiteSupportingRow from './WikitaLiteSupportingRow.vue'
 import {
+  WIKITA_LITE_CARD_CLASS_SEPARATION_BORDERLESS,
   WIKITA_LITE_CARD_CLASS_SEPARATION_DIVIDER,
   WIKITA_LITE_CARD_CLASS_SEPARATION_NONE,
   WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE,
@@ -48,6 +49,7 @@ const resolvedSeparation = computed(
 
 const separationClass = computed(() => {
   if (resolvedSeparation.value === 'divider') return WIKITA_LITE_CARD_CLASS_SEPARATION_DIVIDER
+  if (resolvedSeparation.value === 'borderless') return WIKITA_LITE_CARD_CLASS_SEPARATION_BORDERLESS
   if (resolvedSeparation.value === 'none') return WIKITA_LITE_CARD_CLASS_SEPARATION_NONE
   return ''
 })

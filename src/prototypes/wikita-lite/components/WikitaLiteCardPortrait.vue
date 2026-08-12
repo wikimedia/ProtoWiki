@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, inject, useId } from 'vue'
 
 import { CdxCard, CdxIcon } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
 import { cdxIconPlay } from '@wikimedia/codex-icons'
 
 import WikitaLiteSupportingRow from './WikitaLiteSupportingRow.vue'
+import {
+  WIKITA_LITE_CARD_SEPARATION,
+  type WikitaLiteCardSeparation,
+} from '../wikita-lite-card'
 
 interface Props {
   url?: string
@@ -29,6 +33,19 @@ const props = withDefaults(defineProps<Props>(), {
 
 const titleId = useId()
 
+const injectedSeparation = inject(WIKITA_LITE_CARD_SEPARATION, null)
+
+const resolvedSeparation = computed(
+  (): WikitaLiteCardSeparation => injectedSeparation?.value ?? 'outline',
+)
+
+const shellSeparationClass = computed(() => {
+  if (resolvedSeparation.value === 'divider') return 'wikita-lite-card-portrait--separation-divider'
+  if (resolvedSeparation.value === 'borderless') return 'wikita-lite-card-portrait--separation-borderless'
+  if (resolvedSeparation.value === 'none') return 'wikita-lite-card-portrait--separation-none'
+  return ''
+})
+
 const hasLink = computed(() => Boolean(props.url?.trim()))
 
 const showSupporting = computed(
@@ -39,7 +56,12 @@ const showSupporting = computed(
 <template>
   <article
     class="wikita-lite-card-portrait"
-    :class="{ 'wikita-lite-card-portrait--linked': hasLink }"
+    :class="[
+      {
+        'wikita-lite-card-portrait--linked': hasLink,
+      },
+      shellSeparationClass,
+    ]"
   >
     <a
       v-if="hasLink"
@@ -114,7 +136,7 @@ const showSupporting = computed(
   width: 100%;
   overflow: hidden;
   border: 1px solid var(--border-color-base, #a2a9b1);
-  border-radius: 2px;
+  border-radius: var(--wikita-lite-card-radius, var(--border-radius-base));
   background-color: var(--background-color-base, #fff);
   pointer-events: none;
 }
@@ -135,7 +157,7 @@ const showSupporting = computed(
   aspect-ratio: 16 / 9;
   overflow: hidden;
   border: 1px solid var(--border-color-subtle, #c8ccd1);
-  border-radius: var(--border-radius-base, 2px);
+  border-radius: var(--wikita-lite-card-radius, var(--border-radius-base));
 }
 
 .wikita-lite-card-portrait__image {

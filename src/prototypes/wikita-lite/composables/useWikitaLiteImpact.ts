@@ -6,6 +6,7 @@ import type { ImpactData } from '../../template-homepage/impact/data/impactTypes
 import { WIKITA_LITE_IMPACT, WIKITA_LITE_IMPACT_FULL } from '../data/impactFixtures'
 
 type ImpactModuleBind = ImpactData & {
+  empty?: boolean
   showRefresh?: boolean
   refreshing?: boolean
   refreshError?: string | null
@@ -14,6 +15,12 @@ type ImpactModuleBind = ImpactData & {
 
 function shouldShowLoadPrompt(hasStarted: boolean, hasRenderableData: boolean): boolean {
   return !hasStarted && !hasRenderableData
+}
+
+function isImpactEmpty(user: string, hasRenderableData: boolean): boolean {
+  if (user === 'experienced') return false
+  if (user === 'real') return !hasRenderableData
+  return true
 }
 
 export function useWikitaLiteImpact(): {
@@ -60,22 +67,29 @@ export function useWikitaLiteImpact(): {
       return {
         ...WIKITA_LITE_IMPACT,
         sparklineData: [...WIKITA_LITE_IMPACT.sparklineData],
+        empty: false,
       }
     }
     if (user.value === 'real') {
-      return realUserBind()
+      return {
+        ...realUserBind(),
+        empty: isImpactEmpty(user.value, realImpact.hasRenderableData.value),
+      }
     }
-    return {}
+    return { empty: true }
   })
 
   const impactPageProps = computed((): ImpactModuleBind => {
     if (user.value === 'experienced') {
-      return { ...WIKITA_LITE_IMPACT_FULL }
+      return { ...WIKITA_LITE_IMPACT_FULL, empty: false }
     }
     if (user.value === 'real') {
-      return realUserBind()
+      return {
+        ...realUserBind(),
+        empty: isImpactEmpty(user.value, realImpact.hasRenderableData.value),
+      }
     }
-    return {}
+    return { empty: true }
   })
 
   const showRealRefresh = computed(

@@ -33,8 +33,8 @@ Subpages use `WikitaLiteShell` + `MobileSubpageHeader` + a module with
 Home / Explore / Contribute tabs are on `/wikita-lite`; a **configure** icon
 (`cdxIconConfigure`) sits in the title row beside the greeting. Routes:
 
-- `/wikita-lite/configure` — toggles for saved-page and interest-based
-  suggestions; **Edit interests** opens the picker.
+- `/wikita-lite/configure` — toggles for saved-page, editing-history, and
+  interest-based suggestions; **Add interest** opens the picker.
 - `/wikita-lite/configure/interests` — search + chips + related preview;
   **Done** persists; close (X) discards.
 
@@ -44,16 +44,31 @@ Preferences persist in `localStorage`:
 | --- | --- |
 | `wikita-lite-suggestion-prefs` | `musical-group/data/suggestionPreferences.ts` |
 | `wikita-lite-interests` | `musical-group/data/interests.ts` |
+| `wikita-lite-dismissed-modules` | `wikita-lite/data/moduleDismissals.ts` |
 
 Suggestion feeds (Further reading, Suggested edits, Mentions) honor the
-toggles via `getSuggestionSeeds()` and `suggestionFeedsKey()`. When both
+toggles via `getSuggestionSeeds()` and `suggestionFeedsKey()`. Seeds can
+come from saved pages, the active user's `editedPages` list (ProtoWiki
+config / real-user impact sync), and/or chosen interests. When all three
 toggles are off and there are no bookmarks, Contribute still falls back to
 random seeds per the rules below. **Mentions** require the saved-pages
 toggle and at least one bookmark.
 
-Interest-only users (no bookmarks, interests toggle on) see Further reading
-and Suggested edits when seeds exist; Home tab suggested-edit previews
-follow `suggestionSeedsAvailable`, not raw bookmark count.
+Users with no bookmarks but editing-history and/or interests enabled see
+Further reading and Suggested edits when seeds exist; Home tab
+suggested-edit previews follow `suggestionSeedsAvailable`, not raw bookmark
+count.
+
+### Module dismiss (overflow menus)
+
+When **Module overflow menus** are enabled (chrome hamburger menu), each
+module's overflow menu includes **Dismiss**. Dismissals are **global** — a
+dismissed module is hidden on every tab where it appears. Dismissed modules
+hide immediately and **reappear at 3:00 AM local time**. Users can
+**Restore** early from **Configure** (`/wikita-lite/configure`). State
+persists in `wikita-lite-dismissed-modules` via
+`useWikitaLiteDismissedModules`. Dismissing also clears that module's pin
+on every tab.
 
 ## UX rules (mandatory)
 
@@ -90,14 +105,14 @@ post-save toasts are fine.
 
 ### Contribute tab without saved pages or suggestion seeds
 
-When there are **no bookmarks** and **no suggestion seeds** (both configure
-toggles off, or interests toggle on with an empty interest list), the
-**Contribute** tab (not Home) still shows **Suggested edits** and **Review
-changes** seeded from random English Wikipedia articles
+When there are **no bookmarks** and **no suggestion seeds** (all configure
+toggles off, or a toggle on with an empty source list), the **Contribute**
+tab (not Home) still shows **Suggested edits** and **Review changes** seeded
+from random English Wikipedia articles
 (`fetchRandomPageItems` in the `musical-group` data layer). The Home tab
 does not show those modules until `suggestionSeedsAvailable` is true (saved
-pages and/or interests per configure toggles). Still no save prompts — the
-modules simply appear when data exists.
+pages, editing history, and/or interests per configure toggles). Still no
+save prompts — the modules simply appear when data exists.
 
 Preview results for both modules cache under `contributeRandomCacheKey()`
 (daily). Fullscreen subpages restore from that cache so the first card

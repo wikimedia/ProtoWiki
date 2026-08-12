@@ -6,6 +6,7 @@ import type { Icon } from '@wikimedia/codex-icons'
 
 import WikitaLiteSupportingRow from './WikitaLiteSupportingRow.vue'
 import {
+  WIKITA_LITE_CARD_CLASS_SEPARATION_BORDERLESS,
   WIKITA_LITE_CARD_CLASS_SEPARATION_DIVIDER,
   WIKITA_LITE_CARD_CLASS_SEPARATION_NONE,
   WIKITA_LITE_CARD_SEPARATION,
@@ -49,12 +50,14 @@ const resolvedSeparation = computed(
 
 const shellSeparationClass = computed(() => {
   if (resolvedSeparation.value === 'divider') return 'wikita-lite-card-with-chip--separation-divider'
+  if (resolvedSeparation.value === 'borderless') return 'wikita-lite-card-with-chip--separation-borderless'
   if (resolvedSeparation.value === 'none') return 'wikita-lite-card-with-chip--separation-none'
   return ''
 })
 
 const cardSeparationClass = computed(() => {
   if (resolvedSeparation.value === 'divider') return WIKITA_LITE_CARD_CLASS_SEPARATION_DIVIDER
+  if (resolvedSeparation.value === 'borderless') return WIKITA_LITE_CARD_CLASS_SEPARATION_BORDERLESS
   if (resolvedSeparation.value === 'none') return WIKITA_LITE_CARD_CLASS_SEPARATION_NONE
   return ''
 })
@@ -159,7 +162,7 @@ const showSupporting = computed(
   width: 100%;
   padding: var(--spacing-75, 12px);
   border: 1px solid var(--border-color-base, #a2a9b1);
-  border-radius: 2px;
+  border-radius: var(--wikita-lite-card-radius, var(--border-radius-base));
   background-color: var(--background-color-base, #fff);
   pointer-events: none;
 }

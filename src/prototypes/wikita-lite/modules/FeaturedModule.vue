@@ -6,6 +6,7 @@ import { cdxIconStar } from '@wikimedia/codex-icons'
 
 import type { HomeFeatured } from '../../musical-group/data/types'
 import { externalArticleHref } from '../composables/useWikitaLiteCardActions'
+import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
 import {
   WIKITA_LITE_CARD_CLASS_THUMBNAIL_POSITION_TOP,
   WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE,
@@ -47,6 +48,8 @@ const thumbnailClass = computed(() => {
   if (props.thumbnailLayout === 'large') return WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE
   return WIKITA_LITE_CARD_CLASS_THUMBNAIL_POSITION_TOP
 })
+
+const { cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
 </script>
 
 <template>
@@ -63,7 +66,7 @@ const thumbnailClass = computed(() => {
     <template v-else>
       <template v-if="featuredArticle">
         <CdxCard
-          :class="thumbnailClass"
+          :class="[thumbnailClass, cardClass]"
           :url="externalArticleHref(featuredArticle)"
           :thumbnail="cardThumbnail(featuredArticle.thumbnailUrl)"
           :force-thumbnail="true"

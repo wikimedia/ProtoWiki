@@ -1,10 +1,12 @@
 export interface SuggestionPreferences {
   useSavedPages: boolean
+  useEditingHistory: boolean
   useInterests: boolean
 }
 
 export const DEFAULT_SUGGESTION_PREFERENCES: SuggestionPreferences = {
   useSavedPages: true,
+  useEditingHistory: true,
   useInterests: true,
 }
 
@@ -18,6 +20,10 @@ function parsePreferences(value: unknown): SuggestionPreferences | null {
   }
   return {
     useSavedPages: record.useSavedPages,
+    useEditingHistory:
+      typeof record.useEditingHistory === 'boolean'
+        ? record.useEditingHistory
+        : DEFAULT_SUGGESTION_PREFERENCES.useEditingHistory,
     useInterests: record.useInterests,
   }
 }

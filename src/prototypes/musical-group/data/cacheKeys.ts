@@ -1,8 +1,19 @@
+import { loadConfig } from '@/config'
+
 import { listBookmarks } from './bookmarks'
 import { interestsKey } from './interests'
 import { listUserLists } from './lists'
 import { loadSuggestionPreferences } from './suggestionPreferences'
 import type { HomeSavedItem } from './types'
+
+/** Stable fingerprint of the active user's edited page titles. */
+export function editedPagesKey(): string {
+  const config = loadConfig()
+  return (config.userPageLists[config.user]?.editedPages ?? [])
+    .map((title) => title.toLowerCase())
+    .sort()
+    .join('|')
+}
 
 /** Stable fingerprint of the saved-pages library. Changes on add/remove/re-save. */
 export function bookmarksKey(): string {
@@ -50,10 +61,10 @@ export function contributeRandomCacheKey(date = new Date()): string {
 /** Fingerprint of suggestion preference toggles. */
 export function suggestionPrefsKey(): string {
   const prefs = loadSuggestionPreferences()
-  return `prefs:s${prefs.useSavedPages ? 1 : 0}i${prefs.useInterests ? 1 : 0}`
+  return `prefs:s${prefs.useSavedPages ? 1 : 0}e${prefs.useEditingHistory ? 1 : 0}i${prefs.useInterests ? 1 : 0}`
 }
 
 /** Combined dependency key for personalized suggestion feeds. */
 export function suggestionFeedsKey(savedItems: HomeSavedItem[] = []): string {
-  return `${savedPagesListKey(savedItems)}|${interestsKey()}|${suggestionPrefsKey()}`
+  return `${savedPagesListKey(savedItems)}|${editedPagesKey()}|${interestsKey()}|${suggestionPrefsKey()}`
 }

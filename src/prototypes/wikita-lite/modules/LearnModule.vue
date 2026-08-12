@@ -10,19 +10,22 @@ import {
 } from '../data/learnContent'
 import WikitaLiteCardPortrait from '../components/WikitaLiteCardPortrait.vue'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
+import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
 
 interface Props {
   standalone?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   standalone: false,
 })
+
+const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
 </script>
 
 <template>
-  <div class="learn-module">
-    <CdxCard class="learn-module__card">
+  <div :class="['learn-module', groupClass]">
+    <CdxCard :class="['learn-module__card', cardClass]">
       <template #title>
         {{ LEARN_MENTOR.title }}
       </template>
@@ -36,7 +39,7 @@ withDefaults(defineProps<Props>(), {
       </template>
     </CdxCard>
 
-    <CdxCard class="learn-module__card" :url="LEARN_GUIDE.href">
+    <CdxCard :class="['learn-module__card', cardClass]" :url="LEARN_GUIDE.href">
       <template #title>
         {{ LEARN_GUIDE.title }}
       </template>
@@ -68,7 +71,6 @@ withDefaults(defineProps<Props>(), {
 .learn-module {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-50, 8px);
   width: 100%;
 }
 

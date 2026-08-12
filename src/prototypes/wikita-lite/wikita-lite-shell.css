@@ -3,6 +3,37 @@
   padding-inline: var(--spacing-50, 8px);
 }
 
+/* Experimental card radius — driven by --wikita-lite-card-radius on .wikita-lite-shell */
+.wikita-lite-shell
+  .cdx-card:not(.wikita-lite-card--separation-divider):not(.wikita-lite-card--separation-none) {
+  border-radius: var(--wikita-lite-card-radius, var(--border-radius-base));
+}
+
+.wikita-lite-shell .wikita-lite-card-portrait__image-frame {
+  border-radius: var(--wikita-lite-card-radius, var(--border-radius-base));
+}
+
+.wikita-lite-shell
+  :is(
+    .cdx-card,
+    .wikita-lite-card-with-action,
+    .wikita-lite-card-with-chip,
+    .wikita-lite-card-portrait
+  )
+  .cdx-button {
+  border-radius: var(--wikita-lite-card-radius, var(--border-radius-base));
+}
+
+.wikita-lite-shell
+  .cdx-card
+  :is(.cdx-thumbnail__placeholder, .cdx-thumbnail__image) {
+  border-radius: var(--wikita-lite-card-radius, var(--border-radius-base));
+}
+
+.wikita-lite-shell .wikita-lite-button-link {
+  border-radius: var(--wikita-lite-card-radius, var(--border-radius-base));
+}
+
 /* Bottom clearance for the four-button floating nav. */
 .special-page-wrapper.wikita-lite-shell--with-nav {
   --wikita-lite-floating-nav-clearance: calc(
@@ -169,6 +200,12 @@
   gap: var(--spacing-50, 8px);
 }
 
+.wikita-lite-shell .wikita-lite-card-group--borderless {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
 .wikita-lite-shell .wikita-lite-card-group--divider {
   display: flex;
   flex-direction: column;
@@ -185,6 +222,12 @@
   border-width: 0;
   border-radius: 0;
   padding: 0;
+}
+
+.wikita-lite-shell .wikita-lite-card--separation-borderless.cdx-card {
+  border-width: 0;
+  padding-block: var(--spacing-75, 12px);
+  padding-inline: 0;
 }
 
 .wikita-lite-shell
@@ -224,4 +267,95 @@
   .wikita-lite-card-with-chip--linked.wikita-lite-card-with-chip--separation-none
   .wikita-lite-card-with-chip__shell:hover {
   border-color: transparent;
+}
+
+.wikita-lite-shell
+  .wikita-lite-card-with-chip--separation-borderless
+  .wikita-lite-card-with-chip__shell {
+  border: 0;
+  border-radius: 0;
+  padding-block: var(--spacing-75, 12px);
+  padding-inline: 0;
+  background-color: transparent;
+}
+
+.wikita-lite-shell
+  .wikita-lite-card-with-chip--linked.wikita-lite-card-with-chip--separation-borderless
+  .wikita-lite-card-with-chip__shell:hover {
+  border-color: transparent;
+}
+
+.wikita-lite-shell
+  .wikita-lite-card-portrait--separation-divider
+  .wikita-lite-card-portrait__shell,
+.wikita-lite-shell
+  .wikita-lite-card-portrait--separation-none
+  .wikita-lite-card-portrait__shell {
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+}
+
+.wikita-lite-shell
+  .wikita-lite-card-portrait--linked.wikita-lite-card-portrait--separation-divider
+  .wikita-lite-card-portrait__shell:hover,
+.wikita-lite-shell
+  .wikita-lite-card-portrait--linked.wikita-lite-card-portrait--separation-none
+  .wikita-lite-card-portrait__shell:hover {
+  border-color: transparent;
+}
+
+.wikita-lite-shell
+  .wikita-lite-card-portrait--separation-borderless
+  .wikita-lite-card-portrait__shell {
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+}
+
+.wikita-lite-shell
+  .wikita-lite-card-portrait--separation-borderless
+  .wikita-lite-card-portrait__media {
+  padding-inline: 0;
+  padding-top: var(--spacing-75, 12px);
+  padding-bottom: 0;
+}
+
+.wikita-lite-shell
+  .wikita-lite-card-portrait--separation-borderless
+  .wikita-lite-card-portrait__shell
+  .wikita-lite-card-portrait__card.cdx-card {
+  padding-bottom: var(--spacing-75, 12px);
+}
+
+.wikita-lite-shell
+  .wikita-lite-card-portrait--linked.wikita-lite-card-portrait--separation-borderless
+  .wikita-lite-card-portrait__shell:hover {
+  border-color: transparent;
+}
+
+.wikita-lite-shell .impact-module .wikita-lite-card--separation-borderless.cdx-card,
+.wikita-lite-shell .featured-module .wikita-lite-card--separation-borderless.cdx-card {
+  border-width: 0;
+  padding-block: var(--spacing-75, 12px);
+  padding-inline: 0;
+}
+
+/* Hide card borders toggle — module + list spacing per Figma. */
+.wikita-lite-shell.wikita-lite-shell--hide-card-borders .wikita-lite-module {
+  gap: 0;
+}
+
+.wikita-lite-shell.wikita-lite-shell--hide-card-borders .wikita-lite-module__cards {
+  gap: 0;
+}
+
+/* Impact module title-to-cards gap stays spacing-50 in Figma borderless. */
+.wikita-lite-shell.wikita-lite-shell--hide-card-borders .wikita-lite-module__cards > .impact-module {
+  margin-top: var(--spacing-50, 8px);
+}
+
+.wikita-lite-shell.wikita-lite-shell--hide-card-borders
+  .wikita-lite-card-with-action__action {
+  margin-top: var(--spacing-25, 4px);
 }

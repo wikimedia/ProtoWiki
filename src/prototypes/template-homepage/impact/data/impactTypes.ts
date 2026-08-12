@@ -16,6 +16,8 @@ export interface ImpactData {
   longestStreak?: string
   /** Numeric when known; `"?"` when not available from live APIs. */
   thanksReceived?: number | string
+  /** Numeric when known; `"?"` when not available from live APIs. */
+  editsReviewed?: number | string
   totalEdits?: number
   recentActivityData?: number[]
   activityStartDate?: string

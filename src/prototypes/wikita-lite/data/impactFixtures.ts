@@ -1,23 +1,29 @@
 import type { MostViewedArticle } from '../../template-homepage/ImpactModule.vue'
 
-/** Mobile link-card preview (Home tab). */
+/** Mobile link-card preview (Home + Contribute tabs). */
 export const WIKITA_LITE_IMPACT = {
   viewCount: '628.7K',
+  viewLabel: 'On articles you\'ve edited',
+  totalEdits: 30,
+  thanksReceived: 2,
+  longestStreak: '3 days',
+  editsReviewed: 34,
   sparklineData: [
     8200, 7900, 8100, 8300, 8000, 7800, 8150, 8400, 8250, 8050, 7900, 8200, 8350, 8100, 7950,
     8300, 8500, 8200, 8000, 8150, 8400, 8250, 8100, 7950, 7800, 8000, 8200, 8100, 7900, 8050,
     8300, 8150, 7950, 7800, 8000, 8200, 8400, 8100, 7900, 7800, 7500, 7600,
   ],
   lastEdited: 'a month ago',
-  longestStreak: '3 days',
 } as const
 
 export const WIKITA_LITE_IMPACT_FULL: {
   totalEdits: number
   thanksReceived: number
+  editsReviewed: number
   lastEdited: string
   longestStreak: string
   viewCount: string
+  viewLabel: string
   sparklineData: number[]
   recentActivityData: number[]
   activityStartDate: string
@@ -27,9 +33,11 @@ export const WIKITA_LITE_IMPACT_FULL: {
 } = {
   totalEdits: 30,
   thanksReceived: 2,
+  editsReviewed: 34,
   lastEdited: 'a month ago',
   longestStreak: '3 days',
   viewCount: '628.7K',
+  viewLabel: 'On articles you\'ve edited',
   sparklineData: [...WIKITA_LITE_IMPACT.sparklineData],
   recentActivityData: [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

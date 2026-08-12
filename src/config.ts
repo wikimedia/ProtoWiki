@@ -33,8 +33,8 @@ export const DEFAULT_USER_PAGE_LISTS: Record<ConfigUser, UserPageLists> = {
   new: {
     lang: 'en',
     watchlist: [],
-    readingList: ['Wet Leg', 'Jade Thirlwall'],
-    editedPages: [],
+    readingList: [],
+    editedPages: ['Wet Leg'],
   },
   experienced: {
     lang: 'en',

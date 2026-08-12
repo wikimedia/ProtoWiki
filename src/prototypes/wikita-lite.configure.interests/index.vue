@@ -1,22 +1,19 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 
 import {
   CdxButton,
   CdxCard,
-  CdxIcon,
   CdxProgressBar,
   CdxTypeaheadSearch,
   type SearchResult,
 } from '@wikimedia/codex'
-import { cdxIconClose } from '@wikimedia/codex-icons'
-
-import '@wikimedia/codex/dist/modules/CdxChipInput.css'
 
 import { fetchInterestSearchResults } from '../musical-group/data/fetchInterestSearchResults'
 import { useWikitaLiteInterestsPage } from '../wikita-lite/composables/useWikitaLiteInterestsPage'
 import WikitaLiteFullscreenHeader from '../wikita-lite/components/WikitaLiteFullscreenHeader.vue'
 import WikitaLiteFullscreenShell from '../wikita-lite/components/WikitaLiteFullscreenShell.vue'
+import WikitaLiteInterestChips from '../wikita-lite/components/WikitaLiteInterestChips.vue'
 import { WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE } from '../wikita-lite/wikita-lite-card'
 
 definePage({
@@ -40,6 +37,13 @@ const searchResults = ref<SearchResult[]>([])
 const isSearching = ref(false)
 const lastQuery = ref('')
 const searchResetKey = ref(0)
+const searchRef = ref<InstanceType<typeof CdxTypeaheadSearch> | null>(null)
+
+function focusSearch() {
+  nextTick(() => searchRef.value?.focus())
+}
+
+onMounted(focusSearch)
 
 const showRelatedSection = computed(
   () =>
@@ -63,6 +67,7 @@ function clearSearchInput() {
   lastQuery.value = ''
   searchResults.value = []
   searchResetKey.value += 1
+  focusSearch()
 }
 
 function selectInterest(title: string) {
@@ -142,6 +147,7 @@ function onSearchResultClick(payload: TypeaheadSearchEvent) {
     <div class="wikita-lite-interests">
       <div class="wikita-lite-interests__search">
         <CdxTypeaheadSearch
+          ref="searchRef"
           :key="searchResetKey"
           id="wikita-lite-interests-search"
           placeholder=""
@@ -158,24 +164,10 @@ function onSearchResultClick(payload: TypeaheadSearchEvent) {
             <input type="hidden" name="title" value="Special:Search" />
           </template>
         </CdxTypeaheadSearch>
-        <div v-if="draftInterests.length" class="wikita-lite-interests__chips">
-          <button
-            v-for="interest in draftInterests"
-            :key="interest"
-            type="button"
-            class="cdx-input-chip wikita-lite-interests__chip"
-            :aria-label="`Remove ${interest}`"
-            @click="removeInterest(interest)"
-          >
-            <span class="cdx-input-chip__text">{{ interest }}</span>
-            <CdxIcon
-              class="wikita-lite-interests__chip-icon"
-              :icon="cdxIconClose"
-              size="small"
-              aria-hidden="true"
-            />
-          </button>
-        </div>
+        <WikitaLiteInterestChips
+          :interests="draftInterests"
+          @remove="removeInterest"
+        />
       </div>
 
       <div class="wikita-lite-interests__scroll">
@@ -260,22 +252,6 @@ function onSearchResultClick(payload: TypeaheadSearchEvent) {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-}
-
-.wikita-lite-interests__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-50, 8px);
-}
-
-.wikita-lite-interests__chip {
-  padding-right: 4px;
-  cursor: pointer;
-}
-
-.wikita-lite-interests__chip-icon {
-  flex-shrink: 0;
-  color: var(--color-subtle, #54595d);
 }
 
 .wikita-lite-interests__related {

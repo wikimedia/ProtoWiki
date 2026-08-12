@@ -7,6 +7,11 @@ import { useConfig } from '@/composables/useConfig'
 
 import { useWikitaSaveFeedback } from '../musical-group/composables/useWikitaSaveFeedback'
 import { useWikitaLiteHome, type PersonalizedFeedId } from './composables/useWikitaLiteHome'
+import { useWikitaLiteContributeModuleOrder } from './composables/useWikitaLiteContributeModuleOrder'
+import { useWikitaLiteDismissedModulesSingleton } from './composables/useWikitaLiteDismissedModules'
+import { useWikitaLiteExploreModuleOrder } from './composables/useWikitaLiteExploreModuleOrder'
+import { useWikitaLiteHomeModuleOrder } from './composables/useWikitaLiteHomeModuleOrder'
+import { useWikitaLiteImpact } from './composables/useWikitaLiteImpact'
 import { useWikitaLiteTabLoading } from './composables/useWikitaLiteTabLoading'
 import { useWikitaLiteView } from './composables/useWikitaLiteView'
 import WikitaLiteModule from './components/WikitaLiteModule.vue'
@@ -14,6 +19,7 @@ import ActiveDiscussionsModule from './modules/ActiveDiscussionsModule.vue'
 import DidYouKnowModule from './modules/DidYouKnowModule.vue'
 import FeaturedModule from './modules/FeaturedModule.vue'
 import HelpWantedModule from './modules/HelpWantedModule.vue'
+import ImpactModule from './modules/ImpactModule.vue'
 import LearnModule from './modules/LearnModule.vue'
 import MentionsModule from './modules/MentionsModule.vue'
 import RecentActivityModule from './modules/RecentActivityModule.vue'
@@ -27,6 +33,7 @@ import {
   FEATURED_PAGE,
   FURTHER_READING_PAGE,
   HELP_WANTED_PAGE,
+  IMPACT_PAGE,
   LEARN_PAGE,
   MENTIONS_PAGE,
   MODULE_TITLES,
@@ -57,6 +64,11 @@ const HOME_TRANSLATION_PREVIEW_LIMIT = 2
 const { listsVersion } = useWikitaSaveFeedback()
 const { knownLanguages } = useConfig()
 const { activeView, selectView } = useWikitaLiteView()
+const { showImpact, impactCardProps, onImpactRefresh } = useWikitaLiteImpact()
+const { homeModuleOrderStyle } = useWikitaLiteHomeModuleOrder()
+const { exploreModuleOrderStyle } = useWikitaLiteExploreModuleOrder()
+const { contributeModuleOrderStyle } = useWikitaLiteContributeModuleOrder()
+const { isDismissed } = useWikitaLiteDismissedModulesSingleton()
 
 let getBookmarkChangeSkipFeeds: () => PersonalizedFeedId[] = () => []
 
@@ -357,7 +369,9 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
     <CdxTab name="edit" :label="VIEW_TAB_LABELS.edit">
       <div class="wikita-lite-home__panel">
         <WikitaLiteModule
-          v-if="editTab.showModule('featured')"
+          v-if="editTab.showModule('featured') && !isDismissed('featured')"
+          module-id="featured"
+          :style="homeModuleOrderStyle('featured')"
           :title="MODULE_TITLES.featured"
           :to="FEATURED_PAGE"
         >
@@ -384,7 +398,9 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
         </WikitaLiteModule>
 
         <WikitaLiteModule
-          v-if="editTab.showModule('trending')"
+          v-if="editTab.showModule('trending') && !isDismissed('trending')"
+          module-id="trending"
+          :style="homeModuleOrderStyle('trending')"
           :title="MODULE_TITLES.trending"
           :to="TRENDING_PAGE"
         >
@@ -411,7 +427,9 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
         </WikitaLiteModule>
 
         <WikitaLiteModule
-          v-if="editTab.showModule('furtherReading')"
+          v-if="editTab.showModule('furtherReading') && !isDismissed('furtherReading')"
+          module-id="furtherReading"
+          :style="homeModuleOrderStyle('furtherReading')"
           :title="MODULE_TITLES.furtherReading"
           :to="FURTHER_READING_PAGE"
         >
@@ -439,7 +457,9 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
         </WikitaLiteModule>
 
         <WikitaLiteModule
-          v-if="editTab.showModule('suggestedEdits')"
+          v-if="editTab.showModule('suggestedEdits') && !isDismissed('suggestedEdits')"
+          module-id="suggestedEdits"
+          :style="homeModuleOrderStyle('suggestedEdits')"
           :title="MODULE_TITLES.suggestedEdits"
           :to="HELP_WANTED_PAGE"
         >
@@ -467,7 +487,9 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
         </WikitaLiteModule>
 
         <WikitaLiteModule
-          v-if="editTab.showModule('translation')"
+          v-if="editTab.showModule('translation') && !isDismissed('translation')"
+          module-id="translation"
+          :style="homeModuleOrderStyle('translation')"
           :title="MODULE_TITLES.translateArticles"
           :to="TRANSLATIONS_PAGE"
         >
@@ -504,7 +526,9 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
         </WikitaLiteModule>
 
         <WikitaLiteModule
-          v-if="editTab.showModule('recentActivity')"
+          v-if="editTab.showModule('recentActivity') && !isDismissed('recentActivity')"
+          module-id="recentActivity"
+          :style="homeModuleOrderStyle('recentActivity')"
           :title="recentActivityTitle"
           :to="RECENT_ACTIVITY_PAGE"
         >
@@ -532,7 +556,9 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
         </WikitaLiteModule>
 
         <WikitaLiteModule
-          v-if="editTab.showModule('activeDiscussions')"
+          v-if="editTab.showModule('activeDiscussions') && !isDismissed('activeDiscussions')"
+          module-id="activeDiscussions"
+          :style="homeModuleOrderStyle('activeDiscussions')"
           :title="MODULE_TITLES.activeDiscussions"
           :to="ACTIVE_DISCUSSIONS_PAGE"
         >
@@ -561,6 +587,19 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
         </WikitaLiteModule>
 
         <WikitaLiteModule
+          v-if="showImpact && !isDismissed('impact')"
+          module-id="impact"
+          :style="homeModuleOrderStyle('impact')"
+          :title="MODULE_TITLES.impact"
+          :to="IMPACT_PAGE"
+        >
+          <ImpactModule v-bind="impactCardProps" @refresh="onImpactRefresh" />
+        </WikitaLiteModule>
+
+        <WikitaLiteModule
+          v-if="!isDismissed('learn')"
+          module-id="learn"
+          :style="homeModuleOrderStyle('learn')"
           :title="MODULE_TITLES.learn"
           :to="LEARN_PAGE"
         >
@@ -572,7 +611,9 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
     <CdxTab name="read" :label="VIEW_TAB_LABELS.read">
       <div class="wikita-lite-home__panel">
         <WikitaLiteModule
-          v-if="readExploreTab.showModule('didYouKnow')"
+          v-if="readExploreTab.showModule('didYouKnow') && !isDismissed('didYouKnow')"
+          module-id="didYouKnow"
+          :style="exploreModuleOrderStyle('didYouKnow')"
           :title="MODULE_TITLES.didYouKnow"
           :to="DID_YOU_KNOW_PAGE"
         >
@@ -599,6 +640,9 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
         </WikitaLiteModule>
 
         <WikitaLiteModule
+          v-if="!isDismissed('saved')"
+          module-id="saved"
+          :style="exploreModuleOrderStyle('saved')"
           :title="MODULE_TITLES.saved"
           :to="SAVED_PAGE"
         >
@@ -624,7 +668,13 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
         </WikitaLiteModule>
 
         <WikitaLiteModule
-          v-if="suggestionSeedsAvailable && readExploreTab.showModule('furtherReading')"
+          v-if="
+            suggestionSeedsAvailable &&
+            readExploreTab.showModule('furtherReading') &&
+            !isDismissed('furtherReading')
+          "
+          module-id="furtherReading"
+          :style="exploreModuleOrderStyle('furtherReading')"
           :title="MODULE_TITLES.furtherReading"
           :to="FURTHER_READING_PAGE"
         >
@@ -657,7 +707,13 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
         </WikitaLiteModule>
 
         <WikitaLiteModule
-          v-if="showSavedBasedMentions && readExploreTab.showModule('mentions')"
+          v-if="
+            showSavedBasedMentions &&
+            readExploreTab.showModule('mentions') &&
+            !isDismissed('mentions')
+          "
+          module-id="mentions"
+          :style="exploreModuleOrderStyle('mentions')"
           :title="MODULE_TITLES.mentions"
           :to="MENTIONS_PAGE"
         >
@@ -689,7 +745,9 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
     <CdxTab name="contribute" :label="VIEW_TAB_LABELS.contribute">
       <div class="wikita-lite-home__panel">
         <WikitaLiteModule
-          v-if="contributeTab.showModule('suggestedEdits')"
+          v-if="contributeTab.showModule('suggestedEdits') && !isDismissed('suggestedEdits')"
+          module-id="suggestedEdits"
+          :style="contributeModuleOrderStyle('suggestedEdits')"
           :title="MODULE_TITLES.suggestedEdits"
           :to="HELP_WANTED_PAGE"
         >
@@ -717,7 +775,9 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
         </WikitaLiteModule>
 
         <WikitaLiteModule
-          v-if="contributeTab.showModule('translation')"
+          v-if="contributeTab.showModule('translation') && !isDismissed('translation')"
+          module-id="translation"
+          :style="contributeModuleOrderStyle('translation')"
           :title="MODULE_TITLES.translateArticles"
           :to="TRANSLATIONS_PAGE"
         >
@@ -754,7 +814,9 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
         </WikitaLiteModule>
 
         <WikitaLiteModule
-          v-if="contributeTab.showModule('recentActivity')"
+          v-if="contributeTab.showModule('recentActivity') && !isDismissed('recentActivity')"
+          module-id="recentActivity"
+          :style="contributeModuleOrderStyle('recentActivity')"
           :title="recentActivityTitle"
           :to="RECENT_ACTIVITY_PAGE"
         >
@@ -782,7 +844,9 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
         </WikitaLiteModule>
 
         <WikitaLiteModule
-          v-if="contributeTab.showModule('activeDiscussions')"
+          v-if="contributeTab.showModule('activeDiscussions') && !isDismissed('activeDiscussions')"
+          module-id="activeDiscussions"
+          :style="contributeModuleOrderStyle('activeDiscussions')"
           :title="MODULE_TITLES.activeDiscussions"
           :to="ACTIVE_DISCUSSIONS_PAGE"
         >
@@ -813,6 +877,19 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
         </WikitaLiteModule>
 
         <WikitaLiteModule
+          v-if="showImpact && !isDismissed('impact')"
+          module-id="impact"
+          :style="contributeModuleOrderStyle('impact')"
+          :title="MODULE_TITLES.impact"
+          :to="IMPACT_PAGE"
+        >
+          <ImpactModule v-bind="impactCardProps" @refresh="onImpactRefresh" />
+        </WikitaLiteModule>
+
+        <WikitaLiteModule
+          v-if="!isDismissed('learn')"
+          module-id="learn"
+          :style="contributeModuleOrderStyle('learn')"
           :title="MODULE_TITLES.learn"
           :to="LEARN_PAGE"
         >

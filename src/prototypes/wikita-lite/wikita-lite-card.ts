@@ -1,7 +1,7 @@
 import type { ComputedRef, InjectionKey } from 'vue'
 
 /** Local stand-in for upstream CdxCard props until Codex ships Gerrit 1319153. */
-export type WikitaLiteCardSeparation = 'outline' | 'divider' | 'none'
+export type WikitaLiteCardSeparation = 'outline' | 'divider' | 'borderless' | 'none'
 
 export type WikitaLiteCardThumbnailPosition = 'start' | 'end' | 'top'
 
@@ -15,6 +15,10 @@ export const WIKITA_LITE_CARD_CLASS_SEPARATION_DIVIDER = 'wikita-lite-card--sepa
 
 /** Mirrors upstream `cdx-card--separation-none`. */
 export const WIKITA_LITE_CARD_CLASS_SEPARATION_NONE = 'wikita-lite-card--separation-none'
+
+/** Borderless cards — no outline, no dividers; vertical padding on each card. */
+export const WIKITA_LITE_CARD_CLASS_SEPARATION_BORDERLESS =
+  'wikita-lite-card--separation-borderless'
 
 /** Mirrors upstream `cdx-card--thumbnail-position-end`. */
 export const WIKITA_LITE_CARD_CLASS_THUMBNAIL_POSITION_END =
@@ -32,3 +36,6 @@ export const WIKITA_LITE_CARD_GROUP_OUTLINE = 'wikita-lite-card-group--outline'
 
 /** Divider card lists on fullscreen module pages. */
 export const WIKITA_LITE_CARD_GROUP_DIVIDER = 'wikita-lite-card-group--divider'
+
+/** Borderless card lists — flush stack, no inter-card dividers. */
+export const WIKITA_LITE_CARD_GROUP_BORDERLESS = 'wikita-lite-card-group--borderless'

@@ -85,7 +85,7 @@ export function useMusicalGroupHome(options: {
   const helpWantedLimit = options.helpWantedLimit ?? 2
   const translationCountPerLanguage = options.translationCountPerLanguage ?? 2
   const route = useRoute()
-  const { knownLanguages } = useConfig()
+  const { knownLanguages, currentUserPageLists } = useConfig()
   const saveFeedback = inject(WIKITA_SAVE_FEEDBACK_KEY, null)
   const { preferences, preferencesVersion, interestsVersion } =
     useWikitaLiteSuggestionPreferencesSingleton()
@@ -452,7 +452,11 @@ export function useMusicalGroupHome(options: {
       return
     }
 
-    if (!preferences.value.useSavedPages && !preferences.value.useInterests) {
+    if (
+      !preferences.value.useSavedPages &&
+      !preferences.value.useEditingHistory &&
+      !preferences.value.useInterests
+    ) {
       homeRelatedItems.value = []
       homeMentionsRaw.value = []
       helpWanted.value = []
@@ -773,6 +777,17 @@ export function useMusicalGroupHome(options: {
       skipFeeds: options.getBookmarkChangeSkipFeeds?.() ?? [],
     })
   })
+
+  watch(
+    () => currentUserPageLists.value.editedPages,
+    () => {
+      clearCachedSuggestionFeeds()
+      void reloadBookmarks({
+        skipFeeds: options.getBookmarkChangeSkipFeeds?.() ?? [],
+      })
+    },
+    { deep: true },
+  )
 
   watch(
     translationTargetLangs,

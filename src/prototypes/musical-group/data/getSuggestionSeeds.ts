@@ -1,9 +1,16 @@
+import { loadConfig } from '@/config'
+
 import { listInterests } from './interests'
 import {
   loadSuggestionPreferences,
   type SuggestionPreferences,
 } from './suggestionPreferences'
 import type { HomeSavedItem } from './types'
+
+function listEditedPageTitles(): string[] {
+  const config = loadConfig()
+  return config.userPageLists[config.user]?.editedPages ?? []
+}
 
 /** Enwiki titles to use as morelike / suggestion seeds. */
 export function getSuggestionSeedTitles(
@@ -17,6 +24,10 @@ export function getSuggestionSeedTitles(
     for (const item of savedItems) {
       if (item.enwikiTitle) seeds.push(item.enwikiTitle)
     }
+  }
+
+  if (prefs.useEditingHistory) {
+    seeds.push(...listEditedPageTitles())
   }
 
   if (prefs.useInterests) {

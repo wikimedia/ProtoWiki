@@ -1,3 +1,5 @@
+import type { WikitaLiteModuleId } from './data/homeModuleIds'
+
 export const WIKITA_LITE_HOME = '/wikita-lite'
 export const FEATURED_PAGE = '/wikita-lite/featured'
 export const DID_YOU_KNOW_PAGE = '/wikita-lite/did-you-know'
@@ -108,4 +110,26 @@ export function recentActivityTitleForView(view: WikitaLiteView): string {
   return view === 'contribute' || view === 'edit'
     ? MODULE_TITLES.reviewChanges
     : MODULE_TITLES.recentChanges
+}
+
+const MODULE_TITLE_BY_ID: Partial<Record<WikitaLiteModuleId, string>> = {
+  featured: MODULE_TITLES.featured,
+  trending: MODULE_TITLES.trending,
+  furtherReading: MODULE_TITLES.furtherReading,
+  suggestedEdits: MODULE_TITLES.suggestedEdits,
+  translation: MODULE_TITLES.translateArticles,
+  activeDiscussions: MODULE_TITLES.activeDiscussions,
+  impact: MODULE_TITLES.impact,
+  learn: MODULE_TITLES.learn,
+  didYouKnow: MODULE_TITLES.didYouKnow,
+  saved: MODULE_TITLES.saved,
+  mentions: MODULE_TITLES.mentions,
+}
+
+export function moduleTitleFor(view: WikitaLiteView, moduleId: WikitaLiteModuleId): string {
+  if (moduleId === 'recentActivity') {
+    return recentActivityTitleForView(view)
+  }
+
+  return MODULE_TITLE_BY_ID[moduleId] ?? moduleId
 }

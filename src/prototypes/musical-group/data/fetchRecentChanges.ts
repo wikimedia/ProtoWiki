@@ -21,7 +21,12 @@ const REVERT_RISK_THRESHOLD = 0.7
 const REFERENCE_NEED_DELTA_THRESHOLD = 0.05
 /** Edit Check addReference minimum net new visible text length. */
 const UNSOURCED_ADDITION_MIN_CHARS = 50
-/** Total visible wikitext added + removed that qualifies as a major change. */
+/**
+ * Visible characters actually changed that qualifies as a major change.
+ * Measured from MediaWiki inline `.diffchange` markers when present (so a
+ * one-word edit in a long paragraph is not inflated), otherwise from whole
+ * added/deleted lines.
+ */
 const MAJOR_CHANGE_MIN_CHARS = 500
 /** Edit count below which a registered editor is treated as a newcomer. */
 const NEW_EDITOR_MAX_EDITS = 10
@@ -380,6 +385,44 @@ export interface RevisionDiff {
   removedPlain: string
   addedWikitext: string
   removedWikitext: string
+  /** Actual edit size; see `computeDiffChangeVolume`. */
+  changeVolume: number
+}
+
+const EMPTY_REVISION_DIFF: RevisionDiff = {
+  addedPlain: '',
+  removedPlain: '',
+  addedWikitext: '',
+  removedWikitext: '',
+  changeVolume: 0,
+}
+
+/**
+ * Visible change volume for one added/deleted line cell.
+ * Prefer MediaWiki inline `.diffchange` markers so a one-word edit in a long
+ * paragraph does not count the whole line (twice). Whole-line add/delete cells
+ * have no markers — count the full line.
+ */
+function lineChangeVolume(lineEl: Element): number {
+  const inline = lineEl.querySelectorAll('.diffchange')
+  if (inline.length > 0) {
+    let volume = 0
+    for (const el of Array.from(inline)) {
+      volume += visibleWikitextLength(el.textContent ?? '')
+    }
+    return volume
+  }
+  return visibleWikitextLength(lineEl.textContent ?? '')
+}
+
+function computeDiffChangeVolume(doc: Document): number {
+  let volume = 0
+  for (const line of Array.from(
+    doc.querySelectorAll('.diff-addedline, .diff-deletedline'),
+  )) {
+    volume += lineChangeVolume(line)
+  }
+  return volume
 }
 
 async function fetchRevisionDiff(
@@ -399,13 +442,13 @@ async function fetchRevisionDiff(
     headers: wikimediaApiFetchHeaders('musical-group-compare'),
   })
   if (!response.ok) {
-    return { addedPlain: '', removedPlain: '', addedWikitext: '', removedWikitext: '' }
+    return { ...EMPTY_REVISION_DIFF }
   }
 
   const json = (await response.json()) as { compare?: { '*'?: string } }
   const html = json.compare?.['*']
   if (!html) {
-    return { addedPlain: '', removedPlain: '', addedWikitext: '', removedWikitext: '' }
+    return { ...EMPTY_REVISION_DIFF }
   }
 
   const doc = new DOMParser().parseFromString(`<table>${html}</table>`, 'text/html')
@@ -414,18 +457,13 @@ async function fetchRevisionDiff(
     removedPlain: collectText(doc.querySelectorAll('.diff-deletedline')),
     addedWikitext: collectWikitext(doc.querySelectorAll('.diff-addedline')),
     removedWikitext: collectWikitext(doc.querySelectorAll('.diff-deletedline')),
+    changeVolume: computeDiffChangeVolume(doc),
   }
-}
-
-function diffChangeVolume(diff: RevisionDiff): number {
-  return (
-    visibleWikitextLength(diff.addedWikitext) + visibleWikitextLength(diff.removedWikitext)
-  )
 }
 
 function isMajorChange(diff: RevisionDiff | undefined): boolean {
   if (!diff) return false
-  return diffChangeVolume(diff) >= MAJOR_CHANGE_MIN_CHARS
+  return diff.changeVolume >= MAJOR_CHANGE_MIN_CHARS
 }
 
 function diffNetGrowth(diff: RevisionDiff): number {
