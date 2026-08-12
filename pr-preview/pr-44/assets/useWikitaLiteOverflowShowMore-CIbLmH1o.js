@@ -1,0 +1,1 @@
+import{u as o,a as t}from"./useWikitaLiteCardListClasses-DnaqdcJ2.js";import{j as i,ad as a}from"./index-BOJYWAbk.js";function l(e){const{useModuleMenuMode:r}=o(),{hideTabBar:u}=t();return i(()=>a(e.requireHideTabBar)&&!u.value?!1:!a(e.standalone)&&r.value&&!!a(e.moreTo)&&a(e.hasItems))}export{l as u};
