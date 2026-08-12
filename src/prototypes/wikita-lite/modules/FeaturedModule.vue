@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
+import { RouterLink } from 'vue-router'
 
 import { CdxButton, CdxCard, CdxProgressBar } from '@wikimedia/codex'
 import { cdxIconStar } from '@wikimedia/codex-icons'
@@ -7,6 +9,7 @@ import { cdxIconStar } from '@wikimedia/codex-icons'
 import type { HomeFeatured } from '../../musical-group/data/types'
 import { externalArticleHref } from '../composables/useWikitaLiteCardActions'
 import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
+import { useWikitaLiteOverflowShowMore } from '../composables/useWikitaLiteOverflowShowMore'
 import {
   WIKITA_LITE_CARD_CLASS_THUMBNAIL_POSITION_TOP,
   WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE,
@@ -21,6 +24,7 @@ interface Props {
   error?: string | null
   previewLimit?: number
   listsVersion?: number
+  moreTo?: RouteLocationRaw
   /** `large`: thumbnail beside text; `portrait` (default): full-width image on top. */
   thumbnailLayout?: 'large' | 'portrait'
 }
@@ -32,6 +36,7 @@ const props = withDefaults(defineProps<Props>(), {
   error: null,
   previewLimit: 3,
   listsVersion: 0,
+  moreTo: undefined,
   thumbnailLayout: 'portrait',
 })
 
@@ -50,6 +55,13 @@ const thumbnailClass = computed(() => {
 })
 
 const { cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
+
+const showMoreLink = useWikitaLiteOverflowShowMore({
+  standalone: () => props.standalone,
+  moreTo: () => props.moreTo,
+  hasItems: () => Boolean(props.featuredArticle),
+  requireHideTabBar: true,
+})
 </script>
 
 <template>
@@ -85,6 +97,14 @@ const { cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.sta
         </CdxCard>
 
         <slot name="after-cards" />
+
+        <RouterLink
+          v-if="showMoreLink && moreTo"
+          :to="moreTo"
+          class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled wikita-lite-button-link"
+        >
+          Show more featured articles
+        </RouterLink>
       </template>
 
       <p v-else-if="standalone" class="featured-module__empty">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 import { CdxProgressBar, CdxTab, CdxTabs } from '@wikimedia/codex'
 
@@ -10,6 +10,7 @@ import { useWikitaLiteHome, type PersonalizedFeedId } from './composables/useWik
 import { useWikitaLiteContributeModuleOrder } from './composables/useWikitaLiteContributeModuleOrder'
 import { useWikitaLiteDismissedModulesSingleton } from './composables/useWikitaLiteDismissedModules'
 import { useWikitaLiteExploreModuleOrder } from './composables/useWikitaLiteExploreModuleOrder'
+import { useWikitaLiteHideTabBarSingleton } from './composables/useWikitaLiteHideTabBar'
 import { useWikitaLiteHomeModuleOrder } from './composables/useWikitaLiteHomeModuleOrder'
 import { useWikitaLiteImpact } from './composables/useWikitaLiteImpact'
 import { useWikitaLiteTabLoading } from './composables/useWikitaLiteTabLoading'
@@ -69,6 +70,7 @@ const { homeModuleOrderStyle } = useWikitaLiteHomeModuleOrder()
 const { exploreModuleOrderStyle } = useWikitaLiteExploreModuleOrder()
 const { contributeModuleOrderStyle } = useWikitaLiteContributeModuleOrder()
 const { isDismissed } = useWikitaLiteDismissedModulesSingleton()
+const { hideTabBar } = useWikitaLiteHideTabBarSingleton()
 
 let getBookmarkChangeSkipFeeds: () => PersonalizedFeedId[] = () => []
 
@@ -329,8 +331,15 @@ function isSuggestedEditsVisible(): boolean {
 }
 
 function onSelectView(view: string) {
+  if (hideTabBar.value) return
   selectView(view as WikitaLiteView)
 }
+
+watch(hideTabBar, (enabled) => {
+  if (enabled && activeView.value !== 'edit') {
+    selectView('edit')
+  }
+})
 
 getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
   if (activeView.value === 'read') {
@@ -365,8 +374,8 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
 
 <template>
   <CdxTabs
-    :active="activeView"
-    class="wikita-lite-home__tabs"
+    :active="hideTabBar ? 'edit' : activeView"
+    :class="['wikita-lite-home__tabs', { 'wikita-lite-home__tabs--home-only': hideTabBar }]"
     @update:active="onSelectView"
   >
     <CdxTab name="edit" :label="VIEW_TAB_LABELS.edit">
@@ -390,6 +399,7 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
             :error="featuredTabError"
             :preview-limit="HOME_FEATURED_PREVIEW_LIMIT"
             :lists-version="listsVersion"
+            :more-to="FEATURED_PAGE"
             @retry="retryFeaturedFeed"
           >
             <template v-if="editTab.showLoadingBar('featured') && featuredHasContent" #after-cards>
@@ -614,7 +624,7 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
       </div>
     </CdxTab>
 
-    <CdxTab name="read" :label="VIEW_TAB_LABELS.read">
+    <CdxTab v-if="!hideTabBar" name="read" :label="VIEW_TAB_LABELS.read">
       <div class="wikita-lite-home__panel">
         <WikitaLiteModule
           v-if="readExploreTab.showModule('didYouKnow') && !isDismissed('didYouKnow')"
@@ -751,7 +761,7 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
       </div>
     </CdxTab>
 
-    <CdxTab name="contribute" :label="VIEW_TAB_LABELS.contribute">
+    <CdxTab v-if="!hideTabBar" name="contribute" :label="VIEW_TAB_LABELS.contribute">
       <div class="wikita-lite-home__panel">
         <WikitaLiteModule
           v-if="contributeTab.showModule('suggestedEdits') && !isDismissed('suggestedEdits')"

@@ -7,6 +7,7 @@ import { cdxIconCheck, cdxIconMenu } from '@wikimedia/codex-icons'
 
 import { useWikitaLiteCardBordersSingleton } from '../composables/useWikitaLiteCardBorders'
 import { useWikitaLiteCardRadiusSingleton } from '../composables/useWikitaLiteCardRadius'
+import { useWikitaLiteHideTabBarSingleton } from '../composables/useWikitaLiteHideTabBar'
 import { useWikitaLiteModuleMenuModeSingleton } from '../composables/useWikitaLiteModuleMenuMode'
 
 interface Props {
@@ -19,6 +20,7 @@ withDefaults(defineProps<Props>(), {
 
 const { useLargeRadius, toggleLargeRadius } = useWikitaLiteCardRadiusSingleton()
 const { hideCardBorders, toggleHideCardBorders } = useWikitaLiteCardBordersSingleton()
+const { hideTabBar, toggleHideTabBar } = useWikitaLiteHideTabBarSingleton()
 const { useModuleMenuMode, toggleModuleMenuMode } = useWikitaLiteModuleMenuModeSingleton()
 
 const menuSelected = ref<MenuItemValue | null>(null)
@@ -38,6 +40,11 @@ const menuItems = computed(() => [
     value: 'toggle-module-menu-mode',
     label: 'Module overflow menus',
     icon: useModuleMenuMode.value ? cdxIconCheck : undefined,
+  },
+  {
+    value: 'toggle-hide-tab-bar',
+    label: 'Hide tab bar',
+    icon: hideTabBar.value ? cdxIconCheck : undefined,
   },
   { value: 'clear-local-storage', label: 'Clear local storage' },
 ])
@@ -69,6 +76,12 @@ watch(menuSelected, (value) => {
 
   if (value === 'toggle-module-menu-mode') {
     toggleModuleMenuMode()
+    menuSelected.value = null
+    return
+  }
+
+  if (value === 'toggle-hide-tab-bar') {
+    toggleHideTabBar()
     menuSelected.value = null
     return
   }

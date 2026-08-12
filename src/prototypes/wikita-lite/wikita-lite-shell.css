@@ -78,6 +78,10 @@
   background-color: var(--background-color-base);
 }
 
+.wikita-lite-home__tabs--home-only .cdx-tabs__header {
+  display: none;
+}
+
 .special-page-wrapper.wikita-lite-shell .special-page-wrapper__title {
   font-family: var(--font-family-serif);
   font-size: var(--font-size-xxx-large);
