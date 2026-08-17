@@ -53,11 +53,14 @@
 }
 
 /*
- * Floated thumbs / figures (page/html paths only — app PCS sets skin--responsive).
- * ProtoWiki web ArticleLive serves desktop Parsoid; Minerva clears floats only when
- * body.skin--responsive is set. AppArticleLive uses page/mobile-html + PCS instead.
+ * Floated thumbs / figures. ProtoWiki web ArticleLive serves desktop Parsoid, and
+ * Minerva clears floats only when body.skin--responsive is set.
+ *
+ * These reach the web `page/html` path only. AppArticleLive renders PCS mobile-html
+ * in an iframe, which nothing here can cross — see the article reference in
+ * .agents/skills/protowiki-components/.
  */
-.article[data-skin='mobile']:not(:has(.app-article-pcs)) .mw-parser-output :is(
+.article[data-skin='mobile'] .mw-parser-output :is(
   figure,
   .thumb,
   div.tright,
@@ -74,21 +77,21 @@
   margin-inline: 0;
 }
 
-.article[data-skin='mobile']:not(:has(.app-article-pcs)) .mw-parser-output .thumbinner {
+.article[data-skin='mobile'] .mw-parser-output .thumbinner {
   width: auto !important;
   max-width: 100%;
   margin-inline: auto;
 }
 
-.article[data-skin='mobile']:not(:has(.app-article-pcs)) .mw-parser-output .thumb img,
-.article[data-skin='mobile']:not(:has(.app-article-pcs)) .mw-parser-output figure img.mw-file-element {
+.article[data-skin='mobile'] .mw-parser-output .thumb img,
+.article[data-skin='mobile'] .mw-parser-output figure img.mw-file-element {
   box-sizing: border-box;
   max-width: 100%;
   height: auto;
 }
 
-.article[data-skin='mobile']:not(:has(.app-article-pcs)) .mw-parser-output .thumbcaption,
-.article[data-skin='mobile']:not(:has(.app-article-pcs)) .mw-parser-output figure > figcaption {
+.article[data-skin='mobile'] .mw-parser-output .thumbcaption,
+.article[data-skin='mobile'] .mw-parser-output figure > figcaption {
   width: auto !important;
   box-sizing: border-box;
 }

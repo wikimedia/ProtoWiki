@@ -52,12 +52,10 @@ function onBottomNav(item: AppBottomNavItem): void {
 /** iOS convention is a plain chevron; Android uses a full back arrow. */
 const backIcon = computed(() => (isIos.value ? 'previous' : 'arrow-previous'))
 
-const headerLeft = computed(
-  (): AppHeaderItem[] => [
-    { type: 'button', icon: backIcon.value, label: 'Back', onClick: goBack },
-    { type: 'button', icon: 'search', label: 'Search', onClick: goToSearch },
-  ],
-)
+const headerLeft = computed((): AppHeaderItem[] => [
+  { type: 'button', icon: backIcon.value, label: 'Back', onClick: goBack },
+  { type: 'button', icon: 'search', label: 'Search', onClick: goToSearch },
+])
 
 const headerMiddle: AppHeaderItem[] = [{ type: 'link', icon: 'logo-wikipedia', label: 'Wikipedia' }]
 
@@ -78,6 +76,7 @@ const bottomNavItems = computed(() =>
     :middle="headerMiddle"
     :right="headerRight"
     :bottom-nav-items="bottomNavItems"
+    full-bleed
     @navigate="onBottomNav"
   >
     <AppArticleLive :article="article" :lang="lang" />

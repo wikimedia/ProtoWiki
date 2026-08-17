@@ -30,17 +30,17 @@ When any of these roots sit inside **`ChromeWrapper`**, they **inherit** effecti
 
 ## `ArticleWrapper`
 
-| Concern | Notes |
-| --- | --- |
+| Concern      | Notes                                                                                                |
+| ------------ | ---------------------------------------------------------------------------------------------------- |
 | Chrome props | **`title?`**, **`header`**, **`languagesCount?`**, **`lang`**, **`dir`**, **`skin`**, **`theme`**, … |
-| Slots | **default** (**main reader column** — **`ArticleRenderer`** or bespoke markup) |
+| Slots        | **default** (**main reader column** — **`ArticleRenderer`** or bespoke markup)                       |
 
 ## `ArticleRenderer`
 
-| Concern | Notes |
-| --- | --- |
-| Props | **`lang`/`dir`/`skin`/`theme`** (no parser string prop — use **`#default`**) |
-| Slots | **`#default`** — contents appear inside **`.mw-parser-output`**; omit **`ArticleRenderer`** when there is nothing to render ( **`ArticleLive`** / **`ArticleSnapshot`** gate mounting). |
+| Concern | Notes                                                                                                                                                                                   |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Props   | **`lang`/`dir`/`skin`/`theme`** (no parser string prop — use **`#default`**)                                                                                                            |
+| Slots   | **`#default`** — contents appear inside **`.mw-parser-output`**; omit **`ArticleRenderer`** when there is nothing to render ( **`ArticleLive`** / **`ArticleSnapshot`** gate mounting). |
 
 Companion CSS (**`mobile-wiki-overrides.css`**, **`ArticleRenderer.vue`** unscoped block: wide tables, mobile infobox / lead order, hatnotes) keys off **`.article[data-skin] .mw-parser-output`**, so **`ArticleWrapper`** + bare **`div.mw-parser-output`** behaves like **`ArticleRenderer`** for those rules (the **`.article-content`** wrapper still adds its own padding / **`min-width: 0`**). Prefer **`ArticleRenderer`** for **`ArticleLive`**, **`ArticleSnapshot`**, **`page/html`**, snapshots, and mobile **`innerHTML`** **`section > h2`** affordances. Fetched **`page/html`** emits **`section[data-mw-section-id=&quot;0&quot;]`**; on mobile, **`enhanceMobileLeadInfoboxOrder()`** in **`ArticleRenderer.vue`** reorders that section’s DOM so lead prose stacks above the infobox.
 
@@ -78,8 +78,8 @@ Same chrome / i18n / theme surface as **`ArticleWrapper`** — **`title?`**, **`
 
 ### Slots
 
-| Slot | Notes |
-| --- | --- |
+| Slot    | Notes                                                               |
+| ------- | ------------------------------------------------------------------- |
 | default | Parser body inside **`ArticleRenderer`** (**`.mw-parser-output`**). |
 
 ## `ArticleLive`
@@ -119,36 +119,44 @@ Selection only resolves a **title** (a lightweight, title-only request for the r
 
 ### Slots
 
-| Slot | Notes |
-| --- | --- |
+| Slot    | Notes                                                                                                                                                                         |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | default | Forwarded inside **`ArticleRenderer`** when passed — replaces the **`v-html`** wrapper **`ArticleLive`** / **`ArticleSnapshot`** emit for **`page/html`** / snapshot bundles. |
 
 ## `AppArticleLive`
 
 In-app article reader for **`AppChromeWrapper`** prototypes. Mirrors the native Wikipedia iOS/Android pipeline instead of **`ArticleRenderer`** + **`page/html`**.
 
-| Concern | Notes |
-| --- | --- |
-| Fetch | REST **`page/mobile-html/{title}`** via **`fetchMobileArticleBody()`** (separate cache prefix **`protowiki:mobileArticleBody:v1:`**) |
-| Prepare | **`prepareMobileArticleDocument()`** extracts **`#pcs`** inner HTML, strips duplicate PCS **`<header>`**, collects PCS stylesheet URLs from **`<head>`** |
-| Render | **`AppArticlePcsRenderer`** mounts **`#pcs`** with pagelib classes, injects PCS CSS, loads pagelib JS from **`meta.wikimedia.org`**, calls **`pcs.c1.Page.onBodyStart()`** then **`onBodyEnd()`** (required to reveal hidden sections) |
-| Chrome | Lead image, title, and description from **`fetchArticleView()`** (REST **`page/summary`**) — not from PCS header |
+| Concern | Notes                                                                                                                                                                       |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fetch   | REST **`page/mobile-html/{title}`** via **`fetchMobileArticleBody()`** (separate cache prefix **`protowiki:mobileArticleBody:v2:`**)                                        |
+| Prepare | **`prepareMobileArticleDocument()`** only absolutizes protocol-relative URLs — the response is already a complete, self-bootstrapping document                              |
+| Render  | **`AppArticlePcsRenderer`** hands the document to a same-origin **`srcdoc`** iframe. PCS loads its own CSS and JS and fires its own **`onBodyStart()`** / **`onBodyEnd()`** |
+| Chrome  | PCS renders its own lead header (title, description, divider) inside the frame                                                                                              |
 
-**Do not** route app articles through **`ArticleRenderer`**. Its mobile section / infobox DOM enhancements conflict with PCS section expand and collapse-table UI.
+### Why an iframe
 
-**`mobile-wiki-overrides.css`** float fallbacks are scoped away from **`.app-article-pcs`** — PCS sets **`skin--responsive`** and owns image layout.
+PCS ships stylesheets rooted at **`html`** / **`body`**, sized by **viewport** media queries, and boots from inline scripts. Inlining that markup into the host page breaks all three: the **`body`**-rooted rules never match, the media queries measure the desktop window instead of the phone column, and PCS's **`html`** / **`body`** / bare-element rules (**`h1`–`h6 { font: inherit }`**, **`ul { margin: 0 }`**, **`table { display: none }`**, **`body, html { height: unset !important }`**) escape and restyle **all of ProtoWiki**.
+
+An iframe fixes the cause rather than the symptoms: PCS gets a real document at phone width, so it lays itself out correctly and its CSS stays contained. **There is no PCS override layer, and there should not be one** — if PCS output looks wrong, the fix belongs upstream or in the frame's size, not in a ProtoWiki stylesheet.
+
+**Do not** route app articles through **`ArticleRenderer`**, and do not target PCS markup from **`mobile-wiki-overrides.css`**. Neither can reach inside the frame.
 
 ### Example
 
+Pair with **`full-bleed`** so the frame fills the content area and owns its own scrolling.
+
 ```vue
-<AppChromeWrapper …>
+<AppChromeWrapper full-bleed …>
   <AppArticleLive article="Baltimore" lang="en" />
 </AppChromeWrapper>
 ```
 
 ### Props (`AppArticleLive`)
 
-**`article`** (required), **`lang?`**, **`host?`**, **`dir?`**, **`theme?`**. Emits **`parserReady`** with the **`#pcs`** root after PCS init (for optional app-specific polish).
+**`article`** (required), **`lang?`**, **`host?`**, **`dir?`**, **`theme?`**. **`theme`** and **`dir`** are applied to the iframe's **`<html>`** (**`skin-theme-clientpref-day`** / **`-night`**, which is how PCS themes itself).
+
+Emits **`parserReady`** with the **`#pcs`** root **inside the frame** — `srcdoc` keeps it same-origin, so **`contentDocument`** stays scriptable for app-specific polish and overlays.
 
 Reference: **`src/prototypes/template-app-article/`**.
 
@@ -162,10 +170,9 @@ Loads **`public/snapshots/{slug}.html`** where **`slug`** comes from **`articleS
 <ArticleSnapshot article="Wet Leg" />
 ```
 
-
 ### Props (`ArticleSnapshot`)
 
-**`article`** (**required**) — **`articleSnapshotSlug(article)`** → **`public/snapshots/&lt;slug&gt;.html`**, and the same string seeds **`ArticleWrapper`** **`title`**. Same **`ArticleWrapper`** chrome passthroughs as **`ArticleLive`** except **`host`** and **`ArticleLive`'s **`header`** (no title override prop on snapshots).
+**`article`** (**required**) — **`articleSnapshotSlug(article)`** → **`public/snapshots/&lt;slug&gt;.html`**, and the same string seeds **`ArticleWrapper`** **`title`**. Same **`ArticleWrapper`** chrome passthroughs as **`ArticleLive`** except **`host`** and **`ArticleLive`'s **`header`\*\* (no title override prop on snapshots).
 
 ### Slots
 
@@ -175,11 +182,11 @@ Same as **`ArticleLive`**.
 
 Vector-like **page** chrome above the parser output (not the site **`WebChromeHeader`**).
 
-| Prop | Notes |
-| --- | --- |
-| **`title`** | Required display string (usually from **`ArticleWrapper`**). |
+| Prop                  | Notes                                                                                                                           |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| **`title`**           | Required display string (usually from **`ArticleWrapper`**).                                                                    |
 | **`languagesCount?`** | Number for the interlanguage control label (default **18** → “18 languages”). Language rows in the popover are fixed mock data. |
-| **`skin?`** | Desktop vs mobile layout. |
+| **`skin?`**           | Desktop vs mobile layout.                                                                                                       |
 
 Fixed copy: desktop tagline **“From Wikipedia, the free encyclopedia”**; Article / Read tabs are visually active (not prop-driven). **`#title`** slot replaces the **`h1`** inner markup. Emits language pick / settings and tab/tool clicks.
 

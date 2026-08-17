@@ -1,51 +1,56 @@
-/** Prepared mobile-html payload for {@link AppArticlePcsRenderer}. */
+/** Prepared `page/mobile-html` document for {@link AppArticlePcsRenderer}. */
 export type MobileArticleDocument = {
-  pcsHtml: string
-  stylesheetHrefs: string[]
+  /** Complete document, ready to hand to an iframe as `srcdoc`. */
+  html: string
 }
 
-const PCS_SCRIPT_PATH = '/api/rest_v1/data/javascript/mobile/pcs'
+/** Attributes in mobile-html that can hold a protocol-relative URL. */
+const URL_ATTRIBUTES = [
+  'src',
+  'href',
+  'srcset',
+  'data-src',
+  'data-srcset',
+  'data-data-file-original-src',
+] as const
 
-/** Protocol-relative and root-relative WMF asset URLs → absolute https. */
-export function absolutizeWikiAssetUrl(href: string, host: string): string {
-  const trimmed = href.trim()
-  if (!trimmed) return trimmed
-  if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) return trimmed
-  if (trimmed.startsWith('//')) return `https:${trimmed}`
-  if (trimmed.startsWith('/')) return `https://${host}${trimmed}`
-  return trimmed
+/**
+ * `//meta.wikimedia.org/…` → `https://meta.wikimedia.org/…`, including every
+ * candidate in a `srcset` list.
+ */
+function absolutizeProtocolRelative(value: string): string {
+  return value.replace(/(^|,\s*)\/\//g, '$1https://')
 }
 
 /**
- * Parse REST `page/mobile-html` and extract the `#pcs` subtree for injection.
- * Strips duplicate page chrome (PCS `<header>`) — AppArticleLive renders title/description.
+ * Prepare a `page/mobile-html` response for iframe rendering.
+ *
+ * The response is already a complete, self-bootstrapping document: it carries
+ * `<base href>`, the PCS `<script src>`, and its own `pcs.c1.Page.onBodyStart()`
+ * / `onBodyEnd()` calls. So there is nothing to assemble — the only fix needed is
+ * absolutizing protocol-relative URLs, because an iframe inherits the embedding
+ * page's protocol and on a plain-HTTP dev server `//meta.wikimedia.org` would
+ * resolve to `http:` and be dropped as insecure, taking the PCS script and
+ * stylesheets with it.
  */
-export function prepareMobileArticleDocument(raw: string, host: string): MobileArticleDocument {
+export function prepareMobileArticleDocument(raw: string): MobileArticleDocument {
   if (typeof DOMParser === 'undefined') {
     throw new Error('DOMParser is required to prepare mobile-html.')
   }
 
   const doc = new DOMParser().parseFromString(raw, 'text/html')
-  const pcs = doc.querySelector('#pcs')
-  if (!pcs) {
+  if (!doc.querySelector('#pcs')) {
     throw new Error('mobile-html response missing #pcs root.')
   }
 
-  pcs.querySelector('header')?.remove()
+  const selector = URL_ATTRIBUTES.map((attr) => `[${attr}]`).join(',')
+  doc.querySelectorAll(selector).forEach((el) => {
+    for (const attr of URL_ATTRIBUTES) {
+      const value = el.getAttribute(attr)
+      if (value) el.setAttribute(attr, absolutizeProtocolRelative(value))
+    }
+  })
 
-  // Inline boot script runs before our pagelib load — drop it; renderer calls onBodyStart().
-  pcs.querySelectorAll('script').forEach((node) => node.remove())
-
-  const stylesheetHrefs = Array.from(
-    doc.querySelectorAll<HTMLLinkElement>('head link[rel="stylesheet"][href]'),
-  )
-    .map((link) => absolutizeWikiAssetUrl(link.getAttribute('href') ?? '', host))
-    .filter((href) => href.length > 0)
-
-  return {
-    pcsHtml: pcs.innerHTML,
-    stylesheetHrefs,
-  }
+  // `outerHTML` drops the doctype; without it the iframe renders in quirks mode.
+  return { html: `<!DOCTYPE html>${doc.documentElement.outerHTML}` }
 }
-
-export const PCS_SCRIPT_URL = `https://meta.wikimedia.org${PCS_SCRIPT_PATH}`

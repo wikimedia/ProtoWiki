@@ -154,12 +154,12 @@ Icons are action buttons — none are shown as selected/highlighted.
 
 Named item arrays exported from `appBottomNavItems.ts`:
 
-| Constant                         | Layout                                                                 |
-| -------------------------------- | ---------------------------------------------------------------------- |
-| `ANDROID_MAIN_BOTTOM_NAV_ITEMS`  | home · saved · search · history · menu (same as default)               |
-| `IOS_MAIN_BOTTOM_NAV_ITEMS`      | explore · places · saved · history · search                            |
-| `ANDROID_ARTICLE_BOTTOM_NAV_ITEMS` | saved · language · find-in-page · case-sensitive · contents          |
-| `IOS_ARTICLE_BOTTOM_NAV_ITEMS`   | contents · language · saved · find-in-page · case-sensitive · more     |
+| Constant                           | Layout                                                             |
+| ---------------------------------- | ------------------------------------------------------------------ |
+| `ANDROID_MAIN_BOTTOM_NAV_ITEMS`    | home · saved · search · history · menu (same as default)           |
+| `IOS_MAIN_BOTTOM_NAV_ITEMS`        | explore · places · saved · history · search                        |
+| `ANDROID_ARTICLE_BOTTOM_NAV_ITEMS` | saved · language · find-in-page · case-sensitive · contents        |
+| `IOS_ARTICLE_BOTTOM_NAV_ITEMS`     | contents · language · saved · find-in-page · case-sensitive · more |
 
 Pass a preset via **`AppChromeWrapper`** **`bottomNavItems`**, or set
 **`showBottomMenu={false}`** to hide the bar (e.g. search screens with keyboard).
@@ -198,16 +198,17 @@ Vector/Minerva skin switching.
 
 ### Props
 
-| Prop             | Type                 | Default  | Notes                             |
-| ---------------- | -------------------- | -------- | --------------------------------- |
-| `lang`           | `string`             | —        | BCP-47; sets `lang` on root       |
-| `dir`            | `'ltr' \| 'rtl'`     | —        | Sets `dir` on root                |
-| `theme`          | `'light' \| 'dark'`  | global   | Forwarded to header + bottom menu |
-| `showBottomMenu` | `boolean`            | `true`   | Omit bottom nav when `false`      |
-| `left`           | `AppHeaderItem[]`    | —        | Forwarded                         |
-| `middle`         | `AppHeaderItem[]`    | —        | Forwarded; **`[]`** hides         |
-| `right`          | `AppHeaderItem[]`    | —        | Forwarded; **`[]`** hides         |
-| `bottomNavItems` | `AppBottomNavItem[]` | all five | Forwarded to **`AppBottomMenu`**  |
+| Prop             | Type                 | Default  | Notes                                                          |
+| ---------------- | -------------------- | -------- | -------------------------------------------------------------- |
+| `lang`           | `string`             | —        | BCP-47; sets `lang` on root                                    |
+| `dir`            | `'ltr' \| 'rtl'`     | —        | Sets `dir` on root                                             |
+| `theme`          | `'light' \| 'dark'`  | global   | Forwarded to header + bottom menu                              |
+| `showBottomMenu` | `boolean`            | `true`   | Omit bottom nav when `false`                                   |
+| `fullBleed`      | `boolean`            | `false`  | Drop the content inset; slot fills the area and owns scrolling |
+| `left`           | `AppHeaderItem[]`    | —        | Forwarded                                                      |
+| `middle`         | `AppHeaderItem[]`    | —        | Forwarded; **`[]`** hides                                      |
+| `right`          | `AppHeaderItem[]`    | —        | Forwarded; **`[]`** hides                                      |
+| `bottomNavItems` | `AppBottomNavItem[]` | all five | Forwarded to **`AppBottomMenu`**                               |
 
 ### Slots
 
