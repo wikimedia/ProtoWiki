@@ -1,24 +1,12 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 
-import { prepareMobileArticleDocument } from './prepareMobileArticleDocument'
-
 export type ArticleBody = { html: string; liveTitle: string }
 
-/**
- * REST `page/mobile-html` payload: a complete document for
- * {@link AppArticlePcsRenderer} to hand to an iframe.
- */
-export type MobileArticleBody = ArticleBody
-
 const articleBodyCache = new Map<string, ArticleBody>()
-const mobileArticleBodyCache = new Map<string, MobileArticleBody>()
 const inFlightFetches = new Map<string, Promise<ArticleBody>>()
-const inFlightMobileFetches = new Map<string, Promise<MobileArticleBody>>()
 
 const STORAGE_PREFIX = 'protowiki:articleBody:v1:'
-const MOBILE_STORAGE_PREFIX = 'protowiki:mobileArticleBody:v2:'
 const LOG_PREFIX = '[ProtoWiki][fetchArticleBody]'
-const MOBILE_LOG_PREFIX = '[ProtoWiki][fetchMobileArticleBody]'
 
 function getLocalStorage(): Storage | null {
   try {
@@ -168,87 +156,6 @@ export async function fetchArticleBody(
     inFlightFetches.set(key, bodyPromise)
   } else {
     console.info(`${LOG_PREFIX} coalesced with in-flight fetch`, {
-      host,
-      title: trimmed,
-    })
-  }
-
-  return bodyPromise
-}
-
-/**
- * Fetches mobile-optimized article HTML via REST `page/mobile-html` for
- * {@link AppArticleLive}. Returns the whole document, for iframe rendering.
- */
-export async function fetchMobileArticleBody(
-  title: string,
-  host: string,
-  options: FetchArticleBodyOptions = {},
-): Promise<MobileArticleBody> {
-  const trimmed = title.trim()
-  if (!trimmed.length) {
-    throw new Error('No article title given.')
-  }
-
-  const key = articleCacheKey(host, trimmed)
-  let cached = mobileArticleBodyCache.get(key)
-  let cacheSource: 'memory' | 'localStorage' | null = cached ? 'memory' : null
-  if (!cached) {
-    const stored = loadFromStorage(MOBILE_STORAGE_PREFIX, key)
-    if (stored) {
-      mobileArticleBodyCache.set(key, stored)
-      cached = stored
-      cacheSource = 'localStorage'
-    }
-  }
-  if (cached) {
-    console.info(`${MOBILE_LOG_PREFIX} load from cache`, {
-      host,
-      title: trimmed,
-      source: cacheSource,
-    })
-    return cached
-  }
-
-  let bodyPromise = inFlightMobileFetches.get(key)
-  if (!bodyPromise) {
-    bodyPromise = (async (): Promise<MobileArticleBody> => {
-      const url = `https://${host}/api/rest_v1/page/mobile-html/${encodeURIComponent(trimmed)}`
-      console.info(`${MOBILE_LOG_PREFIX} fetching from network`, {
-        host,
-        title: trimmed,
-        url,
-      })
-      const response = await fetch(url, {
-        signal: options.signal,
-        headers: {
-          Accept: 'text/html; charset=utf-8',
-          ...wikimediaApiFetchHeaders('page-mobile-html'),
-        },
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status} ${response.statusText}`)
-      }
-      const text = await response.text()
-      const prepared = prepareMobileArticleDocument(text)
-      const body: MobileArticleBody = {
-        html: prepared.html,
-        liveTitle: trimmed.replace(/_/g, ' '),
-      }
-      mobileArticleBodyCache.set(key, body)
-      saveToStorage(MOBILE_STORAGE_PREFIX, key, body)
-      console.info(`${MOBILE_LOG_PREFIX} fetch OK (cached)`, {
-        host,
-        title: trimmed,
-        htmlChars: body.html.length,
-      })
-      return body
-    })().finally(() => {
-      inFlightMobileFetches.delete(key)
-    })
-    inFlightMobileFetches.set(key, bodyPromise)
-  } else {
-    console.info(`${MOBILE_LOG_PREFIX} coalesced with in-flight fetch`, {
       host,
       title: trimmed,
     })

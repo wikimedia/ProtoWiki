@@ -28,7 +28,7 @@ const isIos = useIsIos()
 /** Article title — driven by `?article=` (e.g. navigated here from search); defaults for direct visits. */
 const article = computed(() => {
   const value = route.query.article
-  return typeof value === 'string' && value.trim().length ? value : 'Baltimore'
+  return typeof value === 'string' && value.trim().length ? value : 'Wet Leg'
 })
 
 /** Wikipedia language code — driven by `?lang=`. */
@@ -76,7 +76,6 @@ const bottomNavItems = computed(() =>
     :middle="headerMiddle"
     :right="headerRight"
     :bottom-nav-items="bottomNavItems"
-    full-bleed
     @navigate="onBottomNav"
   >
     <AppArticleLive :article="article" :lang="lang" />

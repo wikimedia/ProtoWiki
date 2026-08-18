@@ -53,12 +53,9 @@
 }
 
 /*
- * Floated thumbs / figures. ProtoWiki web ArticleLive serves desktop Parsoid, and
- * Minerva clears floats only when body.skin--responsive is set.
- *
- * These reach the web `page/html` path only. AppArticleLive renders PCS mobile-html
- * in an iframe, which nothing here can cross — see the article reference in
- * .agents/skills/protowiki-components/.
+ * Floated thumbs / figures. ProtoWiki serves desktop Parsoid HTML, and Minerva
+ * clears floats only when body.skin--responsive is set — so these are load-bearing
+ * for every mobile-skinned article surface, ArticleLive and AppArticleLive alike.
  */
 .article[data-skin='mobile'] .mw-parser-output :is(
   figure,

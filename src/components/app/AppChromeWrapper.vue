@@ -14,12 +14,6 @@ interface Props {
   dir?: 'ltr' | 'rtl'
   theme?: Theme
   showBottomMenu?: boolean
-  /**
-   * Drop the content area's inset and let the default slot fill it edge to edge,
-   * owning its own scrolling. For screens that are a single surface — a live
-   * article frame, a map, a full-bleed image.
-   */
-  fullBleed?: boolean
   left?: AppHeaderItem[]
   middle?: AppHeaderItem[]
   right?: AppHeaderItem[]
@@ -31,7 +25,6 @@ const props = withDefaults(defineProps<Props>(), {
   dir: undefined,
   theme: undefined,
   showBottomMenu: true,
-  fullBleed: false,
   left: undefined,
   middle: undefined,
   right: undefined,
@@ -63,10 +56,7 @@ function onNavigate(item: AppBottomNavItem): void {
         />
       </slot>
 
-      <main
-        class="app-chrome-wrapper__content"
-        :class="{ 'app-chrome-wrapper__content--full-bleed': props.fullBleed }"
-      >
+      <main class="app-chrome-wrapper__content">
         <slot />
       </main>
 
@@ -102,12 +92,5 @@ function onNavigate(item: AppBottomNavItem): void {
   overflow-x: clip;
   overflow-y: auto;
   padding-inline: var(--spacing-150, 24px);
-}
-
-.app-chrome-wrapper__content--full-bleed {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding-inline: 0;
 }
 </style>

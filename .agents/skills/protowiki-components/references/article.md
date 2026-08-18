@@ -39,8 +39,23 @@ When any of these roots sit inside **`ChromeWrapper`**, they **inherit** effecti
 
 | Concern | Notes                                                                                                                                                                                   |
 | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Props   | **`lang`/`dir`/`skin`/`theme`** (no parser string prop — use **`#default`**)                                                                                                            |
+| Props   | **`lang`/`dir`/`skin`/`theme`** (no parser string prop — use **`#default`**), **`app?`**                                                                                |
 | Slots   | **`#default`** — contents appear inside **`.mw-parser-output`**; omit **`ArticleRenderer`** when there is nothing to render ( **`ArticleLive`** / **`ArticleSnapshot`** gate mounting). |
+
+**`app`** (default **`false`**) switches the mobile reading affordances from web to in-app. **`AppArticleLive`** passes it; nothing else should need to.
+
+| Behaviour            | **`app: false`** (web mobile)                     | **`app: true`** (in-app)                                                                                                                                                                                           |
+| -------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **`section > h2`**   | every section collapsible, all starting **open**  | only **References** / **External links** collapse, starting **closed**; every other heading is static (same look, no chevron, no toggle)                                                                            |
+| Heading rule         | rule under each **`h2`**                          | no rule; the boundary is drawn once as a **top border** on the first end-matter **`section`** (**`.protowiki-mobile-end-matter-start`**, absent when neither section exists)                                          |
+| Tables               | styled in place                                   | folded into **Quick facts** / **More information** widgets — see below                                                                                                                                              |
+| Navboxes             | rendered                                          | hidden (**`.navbox`**, **`.vertical-navbox`** — authority control is a navbox too), matching the apps' article HTML; hatnotes and sister-site boxes stay                                                             |
+
+App-mode CSS keys off **`.article-content--app`** on the renderer root.
+
+End-matter headings match by text or anchor id, so **`External links`** matches **`id="External_links"`**; the list is the module constant **`APP_END_MATTER`** in **`ArticleRenderer.vue`**.
+
+**Collapsed table widgets** come from **`shared/collapseArticleTables.ts`**, a port of the apps' **`CollapseTable`** page-library transform (which can't be used directly — it only runs inside a PCS **`mobile-html`** document). Each eligible table is wrapped in **`.protowiki-collapse-table-container`** with a header button (**`Quick facts`** for **`.infobox`**, **`More information`** otherwise, plus a caption made of the first two usable **`th`** texts and an ellipsis), the table in a scrolling **`.protowiki-collapse-table__content`**, and a **`Close`** footer button. All start collapsed. **`navbox`**, **`vertical-navbox`**, **`navbox-inner`**, **`metadata`** and **`mbox-small`** tables are left alone, as are non-infobox tables with no usable headers. Re-running is a no-op, so hot reloads and re-renders are safe.
 
 Companion CSS (**`mobile-wiki-overrides.css`**, **`ArticleRenderer.vue`** unscoped block: wide tables, mobile infobox / lead order, hatnotes) keys off **`.article[data-skin] .mw-parser-output`**, so **`ArticleWrapper`** + bare **`div.mw-parser-output`** behaves like **`ArticleRenderer`** for those rules (the **`.article-content`** wrapper still adds its own padding / **`min-width: 0`**). Prefer **`ArticleRenderer`** for **`ArticleLive`**, **`ArticleSnapshot`**, **`page/html`**, snapshots, and mobile **`innerHTML`** **`section > h2`** affordances. Fetched **`page/html`** emits **`section[data-mw-section-id=&quot;0&quot;]`**; on mobile, **`enhanceMobileLeadInfoboxOrder()`** in **`ArticleRenderer.vue`** reorders that section’s DOM so lead prose stacks above the infobox.
 
@@ -125,38 +140,56 @@ Selection only resolves a **title** (a lightweight, title-only request for the r
 
 ## `AppArticleLive`
 
-In-app article reader for **`AppChromeWrapper`** prototypes. Mirrors the native Wikipedia iOS/Android pipeline instead of **`ArticleRenderer`** + **`page/html`**.
+In-app article reader for **`AppChromeWrapper`** prototypes. Same one-document path as the web article components — app chrome around it instead of web chrome.
 
-| Concern | Notes                                                                                                                                                                       |
-| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fetch   | REST **`page/mobile-html/{title}`** via **`fetchMobileArticleBody()`** (separate cache prefix **`protowiki:mobileArticleBody:v2:`**)                                        |
-| Prepare | **`prepareMobileArticleDocument()`** only absolutizes protocol-relative URLs — the response is already a complete, self-bootstrapping document                              |
-| Render  | **`AppArticlePcsRenderer`** hands the document to a same-origin **`srcdoc`** iframe. PCS loads its own CSS and JS and fires its own **`onBodyStart()`** / **`onBodyEnd()`** |
-| Chrome  | PCS renders its own lead header (title, description, divider) inside the frame                                                                                              |
+| Concern | Notes                                                                                       |
+| ------- | ------------------------------------------------------------------------------------------- |
+| Fetch   | REST **`page/html`** via **`fetchArticleBody()`** — the same fetch **`ArticleLive`** uses   |
+| Chrome  | Lead image, title and description from **`fetchArticleView()`** (REST **`page/summary`**)   |
+| Render  | **`ArticleRenderer`** with **`skin="mobile"`**, inside **`.article[data-skin="mobile"]`**   |
+| Styling | Vendored Minerva snapshot + **`mobile-wiki-overrides.css`**, exactly as the web mobile skin |
 
-### Why an iframe
+**`skin="mobile"`** is passed explicitly: **`AppChromeWrapper`** provides **`PROTOWIKI_CHROME_THEME`** but not **`PROTOWIKI_CHROME_SKIN`**, so **`ArticleRenderer`** would otherwise fall back to **`globalSkin`** and render desktop.
 
-PCS ships stylesheets rooted at **`html`** / **`body`**, sized by **viewport** media queries, and boots from inline scripts. Inlining that markup into the host page breaks all three: the **`body`**-rooted rules never match, the media queries measure the desktop window instead of the phone column, and PCS's **`html`** / **`body`** / bare-element rules (**`h1`–`h6 { font: inherit }`**, **`ul { margin: 0 }`**, **`table { display: none }`**, **`body, html { height: unset !important }`**) escape and restyle **all of ProtoWiki**.
+**`app`** is passed to **`ArticleRenderer`**, which supplies the in-app reading behaviour: static **`h2`** headings with an edit button, collapsed **References** / **External links** end matter behind a single divider, and **Quick facts** / **More information** table widgets (see **`ArticleRenderer`** above). **`AppArticleLive`** adds the app's own lead block on top — lead image, title, description, then the short 60px rule closing it off.
 
-An iframe fixes the cause rather than the symptoms: PCS gets a real document at phone width, so it lays itself out correctly and its CSS stays contained. **There is no PCS override layer, and there should not be one** — if PCS output looks wrong, the fix belongs upstream or in the frame's size, not in a ProtoWiki stylesheet.
+### Do not use REST `page/mobile-html` / PCS here
 
-**Do not** route app articles through **`ArticleRenderer`**, and do not target PCS markup from **`mobile-wiki-overrides.css`**. Neither can reach inside the frame.
+It was tried and reverted. PCS ships stylesheets rooted at **`html`** / **`body`** sized by **viewport** media queries, plus bare-element rules (**`h1`–`h6 { font: inherit }`**, **`ul { margin: 0 }`**, **`table { display: none }`**, **`body, html { height: unset !important }`**), so it only renders correctly in a document of its own. Inlining it leaks that CSS across all of ProtoWiki; putting it in an iframe fixes the rendering but puts the article beyond the reach of ProtoWiki CSS, Codex components and devtools.
+
+Prototypes need to reach **into** the article, and the audience is designers and PMs. One document wins.
 
 ### Example
 
-Pair with **`full-bleed`** so the frame fills the content area and owns its own scrolling.
-
 ```vue
-<AppChromeWrapper full-bleed …>
+<AppChromeWrapper …>
   <AppArticleLive article="Baltimore" lang="en" />
 </AppChromeWrapper>
 ```
 
+### Putting your own components in the article
+
+**`parserReady`** hands out a plain element in the **same document**, so **`<Teleport>`** and any Codex component work with no plumbing — no stylesheet copying, no token scoping, and no components that misbehave.
+
+```vue
+<script setup>
+const target = ref(null)
+function onParserReady(root) {
+  target.value = root.querySelector('#Etymology')?.closest('section')
+}
+</script>
+
+<template>
+  <AppArticleLive :article="article" @parser-ready="onParserReady" />
+  <Teleport v-if="target" :to="target">
+    <CdxCard>Your thing, in the article</CdxCard>
+  </Teleport>
+</template>
+```
+
 ### Props (`AppArticleLive`)
 
-**`article`** (required), **`lang?`**, **`host?`**, **`dir?`**, **`theme?`**. **`theme`** and **`dir`** are applied to the iframe's **`<html>`** (**`skin-theme-clientpref-day`** / **`-night`**, which is how PCS themes itself).
-
-Emits **`parserReady`** with the **`#pcs`** root **inside the frame** — `srcdoc` keeps it same-origin, so **`contentDocument`** stays scriptable for app-specific polish and overlays.
+**`article`** (required), **`lang?`**, **`host?`**, **`dir?`**, **`theme?`**. Emits **`parserReady`** with the rendered article root once the body is in the DOM.
 
 Reference: **`src/prototypes/template-app-article/`**.
 
@@ -200,7 +233,7 @@ Fixed copy: desktop tagline **“From Wikipedia, the free encyclopedia”**; Art
 
 - Prefer **`<ArticleCustom>`** for hand-authored / fixture-free article body HTML (**`ChromeWrapper` → `ArticleCustom`**).
 - Prefer **`<ArticleLive>`** inside **`ChromeWrapper`** for live read-mode demos.
-- Prefer **`<AppArticleLive>`** inside **`AppChromeWrapper`** for in-app live articles (**`page/mobile-html`** + PCS).
+- Prefer **`<AppArticleLive>`** inside **`AppChromeWrapper`** for in-app live articles (**`page/html`** + **`ArticleRenderer`**, same as the web path).
 - Prefer **`<ArticleSnapshot>`** for committed HTML snapshots.
 - Compose **`ArticleWrapper`** + **`ArticleRenderer`** manually when **`ArticleLive`** / **`ArticleSnapshot`** / **`ArticleCustom`** are too opinionated — including **fully hand-authored** **`#default`** (see **Hand-authored article markup** above; reference **`src/prototypes/template-article-custom/`**).
 - REST / CORS: **`/api/rest_v1/`** remains **`origin=*`**-friendly.

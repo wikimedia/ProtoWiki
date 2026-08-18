@@ -3,13 +3,23 @@ import { computed, inject, nextTick, onUpdated, ref, watch } from 'vue'
 
 import { globalSkin, globalTheme, PROTOWIKI_CHROME_SKIN, PROTOWIKI_CHROME_THEME } from '@/theme'
 import type { Skin, Theme } from '@/theme'
+import { collapseArticleTables } from './shared/collapseArticleTables'
 import { mobileH2ChevronSvg, mobileH2EditIconSvg } from './shared/mobileH2CodexIcons'
+
+/**
+ * App articles read top to bottom: body sections stay open and static, headings
+ * lose their rule, and only the end matter folds away — starting folded, with a
+ * single line dividing it from the body.
+ */
+const APP_END_MATTER = ['References', 'External links']
 
 interface Props {
   lang?: string
   dir?: 'ltr' | 'rtl'
   skin?: Skin
   theme?: Theme
+  /** In-app reading affordances on mobile — see {@link APP_END_MATTER}. */
+  app?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -17,6 +27,7 @@ const props = withDefaults(defineProps<Props>(), {
   dir: undefined,
   skin: undefined,
   theme: undefined,
+  app: false,
 })
 
 const inheritedSkin = inject(PROTOWIKI_CHROME_SKIN)
@@ -29,13 +40,68 @@ const effectiveTheme = computed<Theme>(
 
 const mwParserOutputRef = ref<HTMLElement | null>(null)
 
-function enhanceMobileSectionHeadings(root: HTMLElement) {
+/** Matches a heading by its visible text or its anchor id (`External_links`). */
+function sectionHeadingMatches(h2: HTMLHeadingElement, names: string[]): boolean {
+  const candidates = [h2.textContent ?? '', h2.id.replace(/_/g, ' ')].map((value) =>
+    value.trim().toLowerCase(),
+  )
+  return names.some((name) => candidates.includes(name.trim().toLowerCase()))
+}
+
+/**
+ * Marks where the end matter begins — whichever named section comes first. It
+ * carries the top border, so `References` + `External links` are divided from the
+ * body once rather than each getting a line. Nothing is marked when neither
+ * section exists.
+ */
+function markEndMatterStart(root: HTMLElement, names: string[]) {
+  if (root.querySelector('.protowiki-mobile-end-matter-start')) return
+
+  for (const h2 of root.querySelectorAll<HTMLHeadingElement>('section > h2')) {
+    if (h2.closest('.toc')) continue
+    if (!sectionHeadingMatches(h2, names)) continue
+
+    h2.parentElement?.classList.add('protowiki-mobile-end-matter-start')
+    return
+  }
+}
+
+function enhanceMobileSectionHeadings(root: HTMLElement, app: boolean) {
   root.querySelectorAll<HTMLHeadingElement>('section > h2').forEach((h2) => {
     if (h2.closest('.toc')) return
     if (h2.classList.contains('protowiki-mobile-h2--ready')) return
 
     const parent = h2.parentElement
     if (!parent || parent.tagName !== 'SECTION') return
+
+    const canCollapse = !app || sectionHeadingMatches(h2, APP_END_MATTER)
+    // In an app article only the end matter collapses, and closed is its
+    // resting state.
+    const startCollapsed = canCollapse && app
+
+    const titleText = h2.textContent?.trim() ?? ''
+    h2.textContent = ''
+    h2.classList.add('protowiki-mobile-h2', 'protowiki-mobile-h2--ready')
+
+    const label = document.createElement('span')
+    label.className = 'protowiki-mobile-h2__label'
+    label.textContent = titleText
+
+    const editBtn = document.createElement('button')
+    editBtn.type = 'button'
+    editBtn.className = 'protowiki-mobile-h2__edit'
+    editBtn.setAttribute('aria-label', 'Edit section')
+    editBtn.innerHTML = mobileH2EditIconSvg()
+
+    // Static headings keep the same look as toggling ones — they sit in the same
+    // article, so a bare `h2` fallback would read as a rendering bug. No chevron,
+    // no body wrapper, no listeners.
+    if (!canCollapse) {
+      h2.classList.add('protowiki-mobile-h2--static')
+      h2.appendChild(label)
+      h2.appendChild(editBtn)
+      return
+    }
 
     const bodyBits: Element[] = []
     let n = h2.nextElementSibling
@@ -49,30 +115,22 @@ function enhanceMobileSectionHeadings(root: HTMLElement) {
     bodyBits.forEach((el) => body.appendChild(el))
     h2.insertAdjacentElement('afterend', body)
 
-    const titleText = h2.textContent?.trim() ?? ''
-    h2.textContent = ''
-    h2.classList.add('protowiki-mobile-h2', 'protowiki-mobile-h2--ready')
-    h2.setAttribute('aria-expanded', 'true')
+    h2.setAttribute('aria-expanded', startCollapsed ? 'false' : 'true')
     h2.setAttribute('tabindex', '0')
 
     const chevron = document.createElement('span')
     chevron.className = 'protowiki-mobile-h2__chevron'
     chevron.setAttribute('aria-hidden', 'true')
-    chevron.innerHTML = mobileH2ChevronSvg(false)
-
-    const label = document.createElement('span')
-    label.className = 'protowiki-mobile-h2__label'
-    label.textContent = titleText
-
-    const editBtn = document.createElement('button')
-    editBtn.type = 'button'
-    editBtn.className = 'protowiki-mobile-h2__edit'
-    editBtn.setAttribute('aria-label', 'Edit section')
-    editBtn.innerHTML = mobileH2EditIconSvg()
+    chevron.innerHTML = mobileH2ChevronSvg(startCollapsed)
 
     h2.appendChild(chevron)
     h2.appendChild(label)
     h2.appendChild(editBtn)
+
+    if (startCollapsed) {
+      body.classList.add('protowiki-mobile-section-body--collapsed')
+      h2.classList.add('protowiki-mobile-h2--collapsed')
+    }
 
     function toggle() {
       const collapsed = body.classList.toggle('protowiki-mobile-section-body--collapsed')
@@ -138,12 +196,16 @@ async function applyMobileEnhancements() {
   if (effectiveSkin.value !== 'mobile') return
   const root = mwParserOutputRef.value
   if (!root) return
-  enhanceMobileSectionHeadings(root)
+  if (props.app) markEndMatterStart(root, APP_END_MATTER)
+  enhanceMobileSectionHeadings(root, props.app)
   enhanceMobileLeadInfoboxOrder(root)
+  // After the reorder — it matches `:scope > table.infobox`, which the wrapper
+  // would put out of reach.
+  if (props.app) collapseArticleTables(root)
 }
 
 watch(
-  effectiveSkin,
+  [effectiveSkin, () => props.app],
   () => {
     void applyMobileEnhancements()
   },
@@ -158,6 +220,7 @@ onUpdated(() => {
 <template>
   <div
     class="article-content"
+    :class="{ 'article-content--app': props.app }"
     :data-skin="effectiveSkin"
     :data-theme="effectiveTheme"
     :lang="props.lang"
@@ -236,6 +299,32 @@ onUpdated(() => {
   clear: left;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+
+.article[data-skin='mobile'] .mw-parser-output .protowiki-mobile-h2--static {
+  cursor: default;
+}
+
+/*
+ * App-style reading: no rule under each heading. The body/end-matter boundary is
+ * the single top border below.
+ */
+.article[data-skin='mobile'] .article-content--app .mw-parser-output .protowiki-mobile-h2 {
+  border-bottom: 0;
+}
+
+/*
+ * Navboxes (including authority control, which is one) never reach the apps —
+ * their article HTML has them stripped. Hatnotes and sister-site boxes stay.
+ */
+.article[data-skin='mobile'] .article-content--app .mw-parser-output .navbox,
+.article[data-skin='mobile'] .article-content--app .mw-parser-output .vertical-navbox {
+  display: none;
+}
+
+.article[data-skin='mobile'] .mw-parser-output .protowiki-mobile-end-matter-start {
+  margin-block-start: var(--spacing-100, 16px);
+  border-block-start: 1px solid var(--border-color-muted, var(--border-color-subtle));
 }
 
 .article[data-skin='mobile'] .mw-parser-output .protowiki-mobile-h2__label {
@@ -355,6 +444,87 @@ onUpdated(() => {
 
 .article[data-skin='mobile'] .mw-parser-output table.infobox tr {
   width: 100%;
+}
+
+/*
+ * Collapsed table widgets (app articles) — see `shared/collapseArticleTables.ts`.
+ * Metrics follow the apps' own stylesheet.
+ */
+.article[data-skin='mobile'] .mw-parser-output .protowiki-collapse-table-container {
+  clear: both;
+  width: 100%;
+  margin-block: 14px;
+  border-radius: var(--border-radius-base, 2px);
+  background-color: var(--background-color-neutral-subtle, #f8f9fa);
+}
+
+.article[data-skin='mobile'] .mw-parser-output .protowiki-collapse-table__header,
+.article[data-skin='mobile'] .mw-parser-output .protowiki-collapse-table__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-25, 4px);
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: var(--spacing-75, 12px);
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.2;
+  text-align: start;
+  color: var(--color-base);
+  cursor: pointer;
+}
+
+.article[data-skin='mobile'] .mw-parser-output .protowiki-collapse-table__caption,
+.article[data-skin='mobile'] .mw-parser-output .protowiki-collapse-table__footer-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--color-subtle, #54595d);
+}
+
+.article[data-skin='mobile'] .mw-parser-output .protowiki-collapse-table__chevron {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.article[data-skin='mobile'] .mw-parser-output .protowiki-collapse-table__chevron svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.article[data-skin='mobile'] .mw-parser-output .protowiki-collapse-table__footer {
+  border-block-start: 1px solid var(--border-color-muted, var(--border-color-subtle));
+}
+
+/* `display` above outranks the user-agent `[hidden]` rule. */
+.article[data-skin='mobile'] .mw-parser-output .protowiki-collapse-table__header[hidden],
+.article[data-skin='mobile'] .mw-parser-output .protowiki-collapse-table__footer[hidden],
+.article[data-skin='mobile'] .mw-parser-output .protowiki-collapse-table__content[hidden] {
+  display: none;
+}
+
+/* The widget owns the sideways scrolling, so wide wikitables keep table layout. */
+.article[data-skin='mobile'] .mw-parser-output .protowiki-collapse-table__content {
+  overflow-x: auto;
+}
+
+.article[data-skin='mobile'] .mw-parser-output table.protowiki-collapse-table {
+  display: table;
+  float: none !important;
+  width: 100% !important;
+  max-width: none;
+  margin: 0 !important;
+  overflow: visible;
 }
 
 /*

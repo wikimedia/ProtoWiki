@@ -198,17 +198,16 @@ Vector/Minerva skin switching.
 
 ### Props
 
-| Prop             | Type                 | Default  | Notes                                                          |
-| ---------------- | -------------------- | -------- | -------------------------------------------------------------- |
-| `lang`           | `string`             | —        | BCP-47; sets `lang` on root                                    |
-| `dir`            | `'ltr' \| 'rtl'`     | —        | Sets `dir` on root                                             |
-| `theme`          | `'light' \| 'dark'`  | global   | Forwarded to header + bottom menu                              |
-| `showBottomMenu` | `boolean`            | `true`   | Omit bottom nav when `false`                                   |
-| `fullBleed`      | `boolean`            | `false`  | Drop the content inset; slot fills the area and owns scrolling |
-| `left`           | `AppHeaderItem[]`    | —        | Forwarded                                                      |
-| `middle`         | `AppHeaderItem[]`    | —        | Forwarded; **`[]`** hides                                      |
-| `right`          | `AppHeaderItem[]`    | —        | Forwarded; **`[]`** hides                                      |
-| `bottomNavItems` | `AppBottomNavItem[]` | all five | Forwarded to **`AppBottomMenu`**                               |
+| Prop             | Type                 | Default  | Notes                             |
+| ---------------- | -------------------- | -------- | --------------------------------- |
+| `lang`           | `string`             | —        | BCP-47; sets `lang` on root       |
+| `dir`            | `'ltr' \| 'rtl'`     | —        | Sets `dir` on root                |
+| `theme`          | `'light' \| 'dark'`  | global   | Forwarded to header + bottom menu |
+| `showBottomMenu` | `boolean`            | `true`   | Omit bottom nav when `false`      |
+| `left`           | `AppHeaderItem[]`    | —        | Forwarded                         |
+| `middle`         | `AppHeaderItem[]`    | —        | Forwarded; **`[]`** hides         |
+| `right`          | `AppHeaderItem[]`    | —        | Forwarded; **`[]`** hides         |
+| `bottomNavItems` | `AppBottomNavItem[]` | all five | Forwarded to **`AppBottomMenu`**  |
 
 ### Slots
 
