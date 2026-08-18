@@ -8,7 +8,13 @@ from web Wikipedia chrome (`ChromeWrapper` / Vector / Minerva).
 
 Design reference: [protowiki-apps Figma](https://www.figma.com/design/8qeEyA6LT4bzpQLin1Gx43/protowiki-apps?node-id=1-695).
 
-Starter templates: **`src/prototypes/template-app-chrome/`**, **`src/prototypes/template-app-search/`**.
+Starter templates: **`template-app-chrome/`**, **`template-app-search/`**,
+**`template-app-article/`**, **`template-app-saved/`** (all under `src/prototypes/`).
+
+This file is the component API reference. For the app platform as a whole —
+`platform: 'app'` meta, the iOS / Android preference, in-app articles, which
+starter to copy — see
+[`protowiki-app-prototyping`](../../protowiki-app-prototyping/SKILL.md).
 
 ## AppChromeHeader
 
@@ -101,10 +107,12 @@ Flanking regions (**`left`** / **`right`**) are capped at **4** items.
 ```vue
 <script setup lang="ts">
 import { defineComponent, h, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { CdxSearchInput } from '@wikimedia/codex'
 import AppChromeHeader from '@/components/app/AppChromeHeader.vue'
 import type { AppHeaderItem } from '@/components/app/AppChromeHeader.vue'
 
+const router = useRouter()
 const query = ref('')
 
 const SearchField = defineComponent({
@@ -162,15 +170,15 @@ Named item arrays exported from `appBottomNavItems.ts`:
 | `IOS_ARTICLE_BOTTOM_NAV_ITEMS`     | contents · language · saved · find-in-page · case-sensitive · more |
 
 Pass a preset via **`AppChromeWrapper`** **`bottomNavItems`**, or set
-**`showBottomMenu={false}`** to hide the bar (e.g. search screens with keyboard).
+**`:show-bottom-menu="false"`** to hide the bar (e.g. search screens with keyboard).
 
 **`template-app-chrome`** exposes radio pickers for both header and bottom bar
 layouts so you can preview any combination independently. Bottom bar **Main**
 and **Article** presets follow the global app OS preference (**Auto**, **iOS**,
-or **Android**); only **Hidden** is platform-agnostic. **Auto** detects iOS vs
-Android from the current device; on desktop browsers it falls back to Android.
-**`?os=auto|ios|android`** on any route masks the saved preference for that page
-load without changing it.
+or **Android**), set under **App OS** in the gallery's Appearance settings; only
+**Hidden** is platform-agnostic. **Auto** detects iOS vs Android from the current
+device; on desktop browsers it falls back to Android. **`?os=auto|ios|android`**
+on any route masks the saved preference for that page load without changing it.
 
 ### Slots
 
@@ -253,7 +261,7 @@ definePage({ meta: { platform: 'app' } })
 
 Most app prototypes use `<AppChromeWrapper>`. Import primitives directly when:
 
-- You need header without bottom nav (`showBottomMenu={false}` on the wrapper
+- You need header without bottom nav (`:show-bottom-menu="false"` on the wrapper
   is usually enough).
 - You're building a custom shell with a non-default arrangement.
 
@@ -274,9 +282,10 @@ import AppChromeHeader from '@/components/app/AppChromeHeader.vue'
 
 ## Web vs app chrome
 
-|              | Web (`ChromeWrapper`)                | App (`AppChromeWrapper`)            |
-| ------------ | ------------------------------------ | ----------------------------------- |
-| Header       | Vector / Minerva                     | App top bar (inferred from regions) |
-| Footer / nav | Wikipedia footer strip               | Bottom icon nav                     |
-| Skin         | `desktop` / `mobile` via `data-skin` | No skin — app device mode           |
-| Gallery meta | `platform: 'web'` (default)          | `platform: 'app'`                   |
+|              | Web (`ChromeWrapper`)                | App (`AppChromeWrapper`)                       |
+| ------------ | ------------------------------------ | ---------------------------------------------- |
+| Header       | Vector / Minerva                     | App top bar (inferred from regions)            |
+| Footer / nav | Wikipedia footer strip               | Bottom icon nav                                |
+| Skin         | `desktop` / `mobile` via `data-skin` | No skin — iOS / Android via `data-app-platform` |
+| Article      | `<ArticleLive>`                      | `<ArticleLive app>` — see [`article.md`](article.md#in-app-articles-app) |
+| Gallery meta | `platform: 'web'` (default)          | `platform: 'app'`                              |

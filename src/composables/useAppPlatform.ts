@@ -1,4 +1,4 @@
-import { computed, readonly, type ComputedRef, type Readonly, type Ref } from 'vue'
+import { computed, readonly, type ComputedRef, type DeepReadonly, type Ref } from 'vue'
 
 import { globalAppPlatform } from '@/app-platform'
 import type { AppPlatform } from '@/config'
@@ -15,7 +15,7 @@ import type { AppPlatform } from '@/config'
  * Android. For visual-only differences, prefer [data-app-platform] selectors
  * in CSS.
  */
-export function useAppPlatform(): Readonly<Ref<AppPlatform>> {
+export function useAppPlatform(): DeepReadonly<Ref<AppPlatform>> {
   return readonly(globalAppPlatform)
 }
 

@@ -19,7 +19,7 @@
   color: var(--color-subtle, #54595d);
 }
 
-/* Lead hatnote — block padding handled by AppArticleLive / ArticleHeader chrome. */
+/* Lead hatnote — block padding handled by the ArticleWrapper lead block / ArticleHeader chrome. */
 .article[data-skin='mobile'] .mw-parser-output section[data-mw-section-id='0'] > div.hatnote {
   padding-block: 0 !important;
 }
@@ -55,7 +55,7 @@
 /*
  * Floated thumbs / figures. ProtoWiki serves desktop Parsoid HTML, and Minerva
  * clears floats only when body.skin--responsive is set — so these are load-bearing
- * for every mobile-skinned article surface, ArticleLive and AppArticleLive alike.
+ * for every mobile-skinned article surface, web and app alike.
  */
 .article[data-skin='mobile'] .mw-parser-output :is(
   figure,

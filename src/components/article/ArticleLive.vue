@@ -15,6 +15,7 @@ interface ArticleLiveCommonProps {
 /** Fixed article: `article` set; the random-only props are forbidden. */
 export type ArticleLiveFixedProps = ArticleLiveCommonProps & {
   article: string
+  app?: boolean
   source?: never
   langs?: never
 }
@@ -22,6 +23,7 @@ export type ArticleLiveFixedProps = ArticleLiveCommonProps & {
 /** Random article: `article` omitted; optional `source` / `langs` / `vitalLevel`. */
 export type ArticleLiveRandomProps = ArticleLiveCommonProps & {
   article?: undefined
+  app?: boolean
   source?: RandomArticleSource
   langs?: string[]
   vitalLevel?: number
@@ -36,12 +38,26 @@ export type ArticleLiveProps = ArticleLiveFixedProps | ArticleLiveRandomProps
 </script>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+/**
+ * Live article from REST `page/html`, rendered through {@link ArticleRenderer}
+ * inside {@link ArticleWrapper}. **`app`** swaps the web chrome for the apps'
+ * lead block and in-app reading affordances; everything else is shared.
+ *
+ * App articles are deliberately **not** REST `page/mobile-html` / PCS. PCS ships
+ * stylesheets rooted at `html` / `body` sized by viewport media queries, so it
+ * only renders correctly in a document of its own — and an iframe puts the
+ * article beyond the reach of ProtoWiki CSS, Codex components and devtools, which
+ * is the opposite of what prototypes need. Staying in one document is the point:
+ * `parserReady` hands out a plain element, so `<Teleport>` and any Codex
+ * component work with no plumbing.
+ */
+import { computed, nextTick, ref, watch } from 'vue'
 import { CdxMessage, CdxProgressBar } from '@wikimedia/codex'
 
 import ArticleRenderer from './ArticleRenderer.vue'
 import ArticleWrapper from './ArticleWrapper.vue'
 import { fetchArticleBody } from './shared/fetchArticleBody'
+import { fetchArticleView, type ArticleView } from './shared/fetchArticleView'
 import { DEFAULT_RANDOM_SOURCE, selectRandomArticle } from './shared/selectRandomArticle'
 import { wikiHostFromLang } from '@/config'
 
@@ -55,9 +71,18 @@ interface Props {
    * **Omit `article` to load a random article on each mount** (see **`source`** / **`langs`**).
    */
   article?: string
-  /** Reader-visible title override for **`ArticleHeader`**. **`undefined`** → derive from **`article`** (normalized). */
+  /** Reader-visible title override for **`ArticleHeader`**. **`undefined`** → derive from **`article`**. */
   header?: string
+  /** Wiki hostname. **`undefined`** → derived from **`lang`** (default **`en.wikipedia.org`**). */
   host?: string
+  /**
+   * In-app article screen: the apps' lead block (image, title, short
+   * description) replaces web chrome, end matter folds away, wide tables become
+   * collapsed widgets, and the skin is pinned to **`'mobile'`**. Pair it with
+   * **`AppChromeWrapper`**. Works in random mode too — the lead block fills in
+   * once the title resolves.
+   */
+  app?: boolean
   /**
    * Random-mode pool — only meaningful when **`article`** is omitted.
    * **`'random'`** (default) draws a live random page; **`'vital'`** draws a Wikipedia Vital article.
@@ -83,7 +108,8 @@ const props = withDefaults(defineProps<Props>(), {
   dir: undefined,
   article: undefined,
   header: undefined,
-  host: 'en.wikipedia.org',
+  host: undefined,
+  app: false,
   source: undefined,
   langs: undefined,
   vitalLevel: undefined,
@@ -92,79 +118,113 @@ const props = withDefaults(defineProps<Props>(), {
   languagesCount: undefined,
 })
 
+const emit = defineEmits<{
+  /** Parser root, once the body is in the DOM — for `<Teleport>` and in-article overlays. */
+  parserReady: [root: HTMLElement]
+}>()
+
 const liveHtml = ref<string | null>(null)
-const liveTitle = ref<string | null>(null)
 const error = ref<string | null>(null)
 const loading = ref(false)
+/** Lead-block metadata (title, description, image) — app articles only. */
+const view = ref<ArticleView | null>(null)
+const rendererRef = ref<InstanceType<typeof ArticleRenderer> | null>(null)
 
-/** Title shown in chrome — the `article` prop, or the selected random title. */
+/** Title shown in chrome — the live `view` title, the `article` prop, or the random pick. */
 const resolvedTitle = ref<string | null>(props.article ?? null)
-/** Host actually being read — `host` prop, or derived from the random language. */
-const resolvedHost = ref(props.host)
 
-async function fetchArticle(title: string, host: string) {
+const defaultHost = computed(() => wikiHostFromLang(props.lang ?? 'en'))
+/** Host actually being read — `host` prop, `lang`, or the random language. */
+const resolvedHost = ref(props.host ?? defaultHost.value)
+
+let loadAbort: AbortController | null = null
+
+async function fetchArticle(title: string, host: string, lang: string, signal: AbortSignal) {
   if (!title) return
 
-  loading.value = true
-  error.value = null
   liveHtml.value = null
-  liveTitle.value = null
+  view.value = null
 
-  try {
-    const body = await fetchArticleBody(title, host)
-    liveHtml.value = body.html
-    liveTitle.value = body.liveTitle
-    error.value = null
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : String(err)
-  } finally {
-    loading.value = false
-  }
+  const [body, articleView] = await Promise.all([
+    fetchArticleBody(title, host, { signal }),
+    // The lead block is the only consumer — web chrome takes its title from the body.
+    props.app ? fetchArticleView(title, { signal, lang }) : Promise.resolve(null),
+  ])
+  if (signal.aborted) return
+
+  liveHtml.value = body.html
+  view.value = articleView
+  if (articleView) resolvedTitle.value = articleView.title
 }
 
 /**
  * Resolve which article to load, then fetch its body. When **`article`** is
- * set, this is the fixed page on **`host`**; when omitted, a random title is
- * *selected* (title-only) from the requested pool/language, and the host is
+ * set, this is the fixed page on the resolved host; when omitted, a random title
+ * is *selected* (title-only) from the requested pool/language, and the host is
  * derived from that language.
  */
 async function resolveAndFetch() {
-  if (props.article) {
-    resolvedTitle.value = props.article
-    resolvedHost.value = props.host
-    void fetchArticle(props.article, props.host)
-    return
-  }
+  loadAbort?.abort()
+  loadAbort = new AbortController()
+  const { signal } = loadAbort
 
   loading.value = true
   error.value = null
-  liveHtml.value = null
-  liveTitle.value = null
-  resolvedTitle.value = null
 
   try {
+    if (props.article) {
+      resolvedTitle.value = props.article
+      resolvedHost.value = props.host ?? defaultHost.value
+      await fetchArticle(props.article, resolvedHost.value, props.lang ?? 'en', signal)
+      return
+    }
+
+    liveHtml.value = null
+    view.value = null
+    resolvedTitle.value = null
+
     const selected = await selectRandomArticle({
       source: props.source ?? DEFAULT_RANDOM_SOURCE,
       langs: props.langs,
       vitalLevel: props.vitalLevel,
     })
+    if (signal.aborted) return
     resolvedHost.value = wikiHostFromLang(selected.lang)
     resolvedTitle.value = selected.title
-    await fetchArticle(selected.title, resolvedHost.value)
+    await fetchArticle(selected.title, resolvedHost.value, selected.lang, signal)
   } catch (err) {
+    if (signal.aborted) return
     error.value = err instanceof Error ? err.message : String(err)
-    loading.value = false
+    liveHtml.value = null
+    view.value = null
+  } finally {
+    if (!signal.aborted) loading.value = false
   }
 }
 
 watch(
   () =>
-    [props.host, props.article, props.source, (props.langs ?? []).join('|'), props.vitalLevel] as const,
+    [
+      props.host ?? defaultHost.value,
+      props.article,
+      // App mode fetches the lead-block metadata alongside the body.
+      props.app,
+      props.source,
+      (props.langs ?? []).join('|'),
+      props.vitalLevel,
+    ] as const,
   () => {
     void resolveAndFetch()
   },
   { immediate: true },
 )
+
+watch(liveHtml, async (html) => {
+  if (!html) return
+  await nextTick()
+  const root = rendererRef.value?.$el as HTMLElement | undefined
+  if (root) emit('parserReady', root)
+})
 </script>
 
 <template>
@@ -176,6 +236,9 @@ watch(
     :skin="props.skin"
     :theme="props.theme"
     :languages-count="props.languagesCount"
+    :app="props.app"
+    :description="view?.description"
+    :lead-image-url="view?.thumbnailUrl ?? undefined"
   >
     <CdxProgressBar v-if="loading" inline aria-label="Loading article" />
 
@@ -185,10 +248,12 @@ watch(
 
     <ArticleRenderer
       v-if="liveHtml !== null || $slots.default"
+      ref="rendererRef"
       :lang="props.lang"
       :dir="props.dir"
       :skin="props.skin"
       :theme="props.theme"
+      :app="props.app"
     >
       <template v-if="$slots.default"><slot /></template>
       <!-- eslint-disable-next-line vue/no-v-html -->

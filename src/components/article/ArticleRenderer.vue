@@ -18,7 +18,10 @@ interface Props {
   dir?: 'ltr' | 'rtl'
   skin?: Skin
   theme?: Theme
-  /** In-app reading affordances on mobile — see {@link APP_END_MATTER}. */
+  /**
+   * In-app reading affordances — see {@link APP_END_MATTER}. Pins the skin to
+   * **`'mobile'`**, since app chrome provides no **`data-skin`** to inherit.
+   */
   app?: boolean
 }
 
@@ -33,7 +36,10 @@ const props = withDefaults(defineProps<Props>(), {
 const inheritedSkin = inject(PROTOWIKI_CHROME_SKIN)
 const inheritedTheme = inject(PROTOWIKI_CHROME_THEME)
 
-const effectiveSkin = computed<Skin>(() => props.skin ?? inheritedSkin?.value ?? globalSkin.value)
+const effectiveSkin = computed<Skin>(() => {
+  if (props.app) return 'mobile'
+  return props.skin ?? inheritedSkin?.value ?? globalSkin.value
+})
 const effectiveTheme = computed<Theme>(
   () => props.theme ?? inheritedTheme?.value ?? globalTheme.value,
 )

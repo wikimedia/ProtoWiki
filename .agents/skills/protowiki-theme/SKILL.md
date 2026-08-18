@@ -15,12 +15,20 @@ visual properties. Layout is the [skin](../protowiki-skins/SKILL.md)'s job.
 At boot, `src/theme.ts` decides the global theme in this order:
 
 1. `?theme=light` or `?theme=dark` URL param, if either is present.
-2. Otherwise, `window.matchMedia('(prefers-color-scheme: dark)').matches`
+2. The stored **Color** preference (`config.theme`: `light` / `dark` / `system`),
+   set in the gallery's Appearance settings.
+3. Otherwise (`system`), `window.matchMedia('(prefers-color-scheme: dark)').matches`
    determines the theme.
 
-The result is set as `data-theme="…"` on `<html>`. When the URL param is
-**not** pinning the value, the boot script subscribes to a media-query
-listener so the global theme updates live when the OS preference changes.
+The result is set as `data-theme="…"` on `<html>`. When neither the URL param nor
+the stored preference is pinning the value, the boot script subscribes to a
+media-query listener so the global theme updates live when the OS preference changes.
+
+**Theme is platform-agnostic.** It works identically in web and app prototypes —
+unlike the skin (`data-skin`, web only) and the app OS (`data-app-platform`, app
+only). `AppChromeWrapper` provides the effective theme to its subtree the same
+way `ChromeWrapper` does; see
+[`protowiki-app-prototyping`](../protowiki-app-prototyping/SKILL.md).
 
 ## How the Codex tokens get re-scoped
 

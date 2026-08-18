@@ -9,7 +9,6 @@ import {
   saveConfig,
   type ConfigAppPlatform,
   type Config,
-  type ConfigDevice,
   type ConfigTheme,
   type ConfigWebSkin,
   type ConfigUser,
@@ -37,9 +36,9 @@ watch(
 )
 
 watch(
-  () => [config.value.webSkin, config.value.device] as const,
-  ([webSkin, device]) => {
-    applyWebSkinPreference(webSkin, device)
+  () => config.value.webSkin,
+  (webSkin) => {
+    applyWebSkinPreference(webSkin)
   },
 )
 
@@ -53,7 +52,6 @@ watch(
 export function useConfig(): {
   config: DeepReadonly<Ref<Config>>
   theme: Ref<ConfigTheme>
-  device: Ref<ConfigDevice>
   appPlatform: Ref<ConfigAppPlatform>
   webSkin: Ref<ConfigWebSkin>
   user: Ref<ConfigUser>
@@ -70,13 +68,6 @@ export function useConfig(): {
     get: () => config.value.theme,
     set: (value: ConfigTheme) => {
       config.value = { ...config.value, theme: value }
-    },
-  })
-
-  const device = computed({
-    get: () => config.value.device,
-    set: (value: ConfigDevice) => {
-      config.value = { ...config.value, device: value }
     },
   })
 
@@ -169,7 +160,6 @@ export function useConfig(): {
   return {
     config: readonly(config),
     theme,
-    device,
     appPlatform,
     webSkin,
     user,

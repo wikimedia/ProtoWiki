@@ -14,7 +14,8 @@ function iconNameToExportKey(name: string): string {
 
 export function resolveHeaderIcon(name: HeaderIconName): Icon | undefined {
   const key = iconNameToExportKey(name)
-  const icon = (CodexIcons as Record<string, Icon | undefined>)[key]
+  // The module also exports helpers (`resolveIcon`), so index it through `unknown`.
+  const icon = (CodexIcons as unknown as Record<string, Icon | undefined>)[key]
   if (!icon && import.meta.env.DEV) {
     console.warn(`[HeaderItem] Unknown icon name "${name}" (expected export ${key}).`)
   }

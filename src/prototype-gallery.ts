@@ -1,6 +1,6 @@
 import type { RouteMeta } from 'vue-router'
 
-import type { ConfigDevice, PrototypePlatform } from '@/config'
+import type { PrototypePlatform } from '@/config'
 
 export type PageCategory = 'prototype' | 'template' | 'example'
 
@@ -91,10 +91,6 @@ function resolveCategory(meta: RouteMeta): PageCategory {
 export function resolvePlatform(meta: RouteMeta): PrototypePlatform {
   if (meta.platform === 'web' || meta.platform === 'app') return meta.platform
   return DEFAULT_PROTOTYPE_PLATFORM
-}
-
-export function matchesPlatform(meta: RouteMeta, device: ConfigDevice): boolean {
-  return resolvePlatform(meta) === device
 }
 
 export function parseGalleryEntry(meta: RouteMeta, path: string): GalleryEntry {

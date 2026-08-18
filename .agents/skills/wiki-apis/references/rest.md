@@ -55,6 +55,17 @@ which complements this skill rather than replacing it.
 | `page/mobile-sections-remaining/{title}` | JSON: everything after the lead |
 | `page/talk/{title}` | JSON: parsed talk page (threaded) |
 
+**`page/html` vs `page/mobile-html` for an app-shaped UI.** `mobile-html` is a
+whole document, not a fragment: PCS ships stylesheets rooted at `html` / `body`,
+sized by viewport media queries, plus bare-element rules — so it only renders
+correctly on its own. Inlining it leaks that CSS across your app; iframing it
+renders correctly but puts the article beyond the reach of your own CSS,
+components and devtools. If your surface needs to reach **into** the article,
+take `page/html` and apply the app-style transforms yourself.
+
+In ProtoWiki that's exactly what happens — see
+[`protowiki-integration.md`](protowiki-integration.md#page-html-not-mobile-html).
+
 ## Feed endpoints
 
 | Path | Returns |

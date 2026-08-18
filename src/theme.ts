@@ -3,7 +3,7 @@ import { ref, type ComputedRef, type InjectionKey, type Ref } from 'vue'
 import lightTokensRaw from '@wikimedia/codex-design-tokens/theme-wikimedia-ui.css?raw'
 import darkTokensRaw from '@wikimedia/codex-design-tokens/theme-wikimedia-ui-mode-dark.css?raw'
 
-import { loadConfig, type ConfigDevice, type ConfigTheme, type ConfigWebSkin } from '@/config'
+import { loadConfig, type ConfigTheme, type ConfigWebSkin } from '@/config'
 
 export type Skin = 'desktop' | 'mobile'
 export type Theme = 'light' | 'dark'
@@ -74,7 +74,6 @@ let themeUrlPinned = false
 let skinUrlPinned = false
 let themePreference: ConfigTheme = 'light'
 let webSkinPreference: ConfigWebSkin = 'auto'
-let platformDevice: ConfigDevice = 'web'
 let colorSchemeMql: MediaQueryList | null = null
 let onColorSchemeChange: ((event: MediaQueryListEvent) => void) | null = null
 let viewportMql: MediaQueryList | null = null
@@ -160,7 +159,7 @@ function setupViewportListener(): void {
 
   viewportMql = window.matchMedia(`(min-width: ${DESKTOP_MIN_WIDTH}px)`)
   onViewportChange = (event: MediaQueryListEvent) => {
-    if (skinUrlPinned || platformDevice === 'app' || webSkinPreference !== 'auto') return
+    if (skinUrlPinned || webSkinPreference !== 'auto') return
     const next: Skin = event.matches ? 'desktop' : 'mobile'
     if (next !== globalSkin.value) {
       applyGlobalSkin(next)
@@ -175,17 +174,14 @@ function resolveEffectiveSkin(preference: ConfigWebSkin): Skin {
 }
 
 /**
- * Apply stored web skin preference (auto / desktop / mobile) when platform is
- * web. URL `?skin=` still wins when present.
+ * Apply stored web skin preference (auto / desktop / mobile) to the global
+ * `data-skin`. URL `?skin=` still wins when present. App chrome ignores
+ * `data-skin` entirely — it reads `data-app-platform` instead.
  */
-export function applyWebSkinPreference(
-  webSkin: ConfigWebSkin,
-  device: ConfigDevice = platformDevice,
-): void {
+export function applyWebSkinPreference(webSkin: ConfigWebSkin): void {
   webSkinPreference = webSkin
-  platformDevice = device
 
-  if (skinUrlPinned || device === 'app') {
+  if (skinUrlPinned) {
     teardownViewportListener()
     return
   }
@@ -244,7 +240,7 @@ export function applyThemePreference(preference: ConfigTheme): void {
  * reactive when no URL param is pinning the value.
  *
  * Order of precedence:
- *   skin  : ?skin=  URL param  >  viewport (>= 640px desktop, else mobile)
+ *   skin  : ?skin=  URL param  >  config preference  >  viewport (>= 640px desktop, else mobile)
  *   theme : ?theme= URL param  >  config preference  >  prefers-color-scheme
  *
  * Call this once, before mounting the app.
@@ -261,14 +257,13 @@ export function initTheming(): void {
   themeUrlPinned = isTheme(themeParam)
 
   const storedConfig = loadConfig()
-  platformDevice = storedConfig.device
   webSkinPreference = storedConfig.webSkin
 
   if (skinUrlPinned) {
     applyGlobalSkin(skinParam as Skin)
     teardownViewportListener()
   } else {
-    applyWebSkinPreference(storedConfig.webSkin, storedConfig.device)
+    applyWebSkinPreference(storedConfig.webSkin)
   }
 
   applyThemePreference(storedConfig.theme)

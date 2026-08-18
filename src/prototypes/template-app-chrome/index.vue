@@ -99,52 +99,40 @@ const ARTICLE_RIGHT: AppHeaderItem[] = [
   { type: 'button', icon: 'vertical-ellipsis', label: 'Menu' },
 ]
 
-const headerLeft = computed((): AppHeaderItem[] | undefined => {
-  switch (headerVariant.value) {
-    case 'explore':
-      return undefined
-    case 'search':
-      return SEARCH_LEFT
-    case 'activity':
-      return ACTIVITY_LEFT
-    case 'saved':
-      return SAVED_LEFT
-    case 'article':
-      return ARTICLE_LEFT
-  }
-})
+/** `undefined` leaves the wrapper's own default in place; `[]` hides the region. */
+const HEADER_LEFT: Record<HeaderVariant, AppHeaderItem[] | undefined> = {
+  explore: undefined,
+  search: SEARCH_LEFT,
+  activity: ACTIVITY_LEFT,
+  saved: SAVED_LEFT,
+  article: ARTICLE_LEFT,
+}
+
+const HEADER_RIGHT: Record<HeaderVariant, AppHeaderItem[] | undefined> = {
+  explore: undefined,
+  search: [],
+  activity: ACTIVITY_RIGHT,
+  saved: SAVED_RIGHT,
+  article: ARTICLE_RIGHT,
+}
+
+const headerLeft = computed(() => HEADER_LEFT[headerVariant.value])
 
 const headerMiddle = computed((): AppHeaderItem[] | undefined => {
   if (headerVariant.value === 'article') return ARTICLE_MIDDLE
   return undefined
 })
 
-const headerRight = computed((): AppHeaderItem[] | undefined => {
-  switch (headerVariant.value) {
-    case 'explore':
-      return undefined
-    case 'search':
-      return []
-    case 'activity':
-      return ACTIVITY_RIGHT
-    case 'saved':
-      return SAVED_RIGHT
-    case 'article':
-      return ARTICLE_RIGHT
-  }
-})
+const headerRight = computed(() => HEADER_RIGHT[headerVariant.value])
 
 const showBottomMenu = computed(() => bottomBarVariant.value !== 'hidden')
 
 const bottomNavItems = computed((): AppBottomNavItem[] | undefined => {
-  switch (bottomBarVariant.value) {
-    case 'main':
-      return isIos.value ? IOS_MAIN_BOTTOM_NAV_ITEMS : ANDROID_MAIN_BOTTOM_NAV_ITEMS
-    case 'article':
-      return isIos.value ? IOS_ARTICLE_BOTTOM_NAV_ITEMS : ANDROID_ARTICLE_BOTTOM_NAV_ITEMS
-    case 'hidden':
-      return undefined
+  if (bottomBarVariant.value === 'hidden') return undefined
+  if (bottomBarVariant.value === 'article') {
+    return isIos.value ? IOS_ARTICLE_BOTTOM_NAV_ITEMS : ANDROID_ARTICLE_BOTTOM_NAV_ITEMS
   }
+  return isIos.value ? IOS_MAIN_BOTTOM_NAV_ITEMS : ANDROID_MAIN_BOTTOM_NAV_ITEMS
 })
 
 const bottomBarVariantOptions = computed(() => {
@@ -156,7 +144,6 @@ const bottomBarVariantOptions = computed(() => {
     { value: 'hidden' as const, label: 'Hidden — search / keyboard' },
   ]
 })
-
 </script>
 
 <template>

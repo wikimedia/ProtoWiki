@@ -18,23 +18,23 @@ import {
   type AppBottomNavItem,
 } from '@/components/app/appBottomNavItems'
 import type { AppHeaderItem } from '@/components/app/AppChromeHeader.vue'
-import AppArticleLive from '@/components/article/AppArticleLive.vue'
+import ArticleLive from '@/components/article/ArticleLive.vue'
 import { useIsIos } from '@/composables/useAppPlatform'
 
 const route = useRoute()
 const router = useRouter()
 const isIos = useIsIos()
 
-/** Article title — driven by `?article=` (e.g. navigated here from search); defaults for direct visits. */
+/** Article title from `?article=` (e.g. navigated here from search); a random article without it. */
 const article = computed(() => {
   const value = route.query.article
-  return typeof value === 'string' && value.trim().length ? value : 'Wet Leg'
+  return typeof value === 'string' && value.trim().length ? value : undefined
 })
 
-/** Wikipedia language code — driven by `?lang=`. */
+/** Wikipedia language code — driven by `?lang=`; random mode picks its own. */
 const lang = computed(() => {
   const value = route.query.lang
-  return typeof value === 'string' && value.trim().length ? value : 'en'
+  return typeof value === 'string' && value.trim().length ? value : undefined
 })
 
 function goBack(): void {
@@ -78,6 +78,6 @@ const bottomNavItems = computed(() =>
     :bottom-nav-items="bottomNavItems"
     @navigate="onBottomNav"
   >
-    <AppArticleLive :article="article" :lang="lang" />
+    <ArticleLive app :article="article" :lang="lang" />
   </AppChromeWrapper>
 </template>

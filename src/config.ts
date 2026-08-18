@@ -2,7 +2,6 @@ export type ConfigTheme = 'light' | 'dark' | 'system'
 export type PrototypePlatform = 'web' | 'app'
 export type AppPlatform = 'ios' | 'android'
 export type ConfigAppPlatform = 'auto' | AppPlatform
-export type ConfigDevice = PrototypePlatform
 export type ConfigWebSkin = 'auto' | 'desktop' | 'mobile'
 export type ConfigUser = 'logged-out' | 'new' | 'experienced' | 'real'
 
@@ -18,10 +17,9 @@ export interface UserPageLists {
 
 export interface Config {
   theme: ConfigTheme
-  device: ConfigDevice
   /** Native app OS preference for `platform: 'app'` prototypes. */
   appPlatform: ConfigAppPlatform
-  /** Vector / Minerva skin preference when `device` is `'web'`. */
+  /** Vector / Minerva skin preference for `platform: 'web'` prototypes. */
   webSkin: ConfigWebSkin
   user: ConfigUser
   /** Wikipedia username when `user` is `'real'`. */
@@ -74,7 +72,6 @@ export const DEFAULT_USER_PAGE_LISTS: Record<ConfigUser, UserPageLists> = {
 
 export const DEFAULT_CONFIG: Config = {
   theme: 'light',
-  device: 'web',
   appPlatform: 'auto',
   webSkin: 'auto',
   user: 'new',
@@ -106,15 +103,16 @@ export const CONFIG_THEME_MENU_ITEMS: { value: ConfigTheme; label: string }[] = 
   { value: 'dark', label: 'Dark' },
 ]
 
-export const CONFIG_DEVICE_MENU_ITEMS: { value: ConfigDevice; label: string }[] = [
-  { value: 'web', label: 'Web' },
-  { value: 'app', label: 'App' },
-]
-
 export const CONFIG_APP_PLATFORM_MENU_ITEMS: { value: ConfigAppPlatform; label: string }[] = [
   { value: 'auto', label: 'Auto' },
   { value: 'android', label: 'Android' },
   { value: 'ios', label: 'iOS' },
+]
+
+export const CONFIG_WEB_SKIN_MENU_ITEMS: { value: ConfigWebSkin; label: string }[] = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'desktop', label: 'Desktop' },
+  { value: 'mobile', label: 'Mobile' },
 ]
 
 /** Normalize a Wikipedia username for API calls and cache keys. */
@@ -199,7 +197,6 @@ export function wikimediaApiFetchHeaders(purpose?: string, apiContact?: string):
 const STORAGE_KEY = 'protowiki-prototype-user-config'
 
 const VALID_THEMES: ConfigTheme[] = ['light', 'dark', 'system']
-const VALID_DEVICES: ConfigDevice[] = ['web', 'app']
 const VALID_CONFIG_APP_PLATFORMS: ConfigAppPlatform[] = ['auto', 'ios', 'android']
 const VALID_WEB_SKINS: ConfigWebSkin[] = ['auto', 'desktop', 'mobile']
 const VALID_USERS: ConfigUser[] = ['logged-out', 'new', 'experienced', 'real']
@@ -207,10 +204,6 @@ const PAGE_LIST_KEYS: PageListKey[] = ['watchlist', 'readingList', 'editedPages'
 
 function isConfigTheme(value: unknown): value is ConfigTheme {
   return typeof value === 'string' && VALID_THEMES.includes(value as ConfigTheme)
-}
-
-function isConfigDevice(value: unknown): value is ConfigDevice {
-  return typeof value === 'string' && VALID_DEVICES.includes(value as ConfigDevice)
 }
 
 function isConfigAppPlatform(value: unknown): value is ConfigAppPlatform {
@@ -310,7 +303,6 @@ export function normalizeConfig(input: unknown): Config {
 
   return {
     theme: isConfigTheme(record.theme) ? record.theme : DEFAULT_CONFIG.theme,
-    device: isConfigDevice(record.device) ? record.device : DEFAULT_CONFIG.device,
     appPlatform: isConfigAppPlatform(record.appPlatform)
       ? record.appPlatform
       : DEFAULT_CONFIG.appPlatform,
@@ -363,7 +355,6 @@ export function loadConfig(): Config {
 function cloneConfig(config: Config): Config {
   return {
     theme: config.theme,
-    device: config.device,
     appPlatform: config.appPlatform,
     webSkin: config.webSkin,
     user: config.user,
