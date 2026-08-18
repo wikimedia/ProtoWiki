@@ -10,7 +10,7 @@ definePage({
 
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { CdxInfoChip, CdxSearchInput, CdxTab, CdxTabs } from '@wikimedia/codex'
+import { CdxInfoChip, CdxProgressBar, CdxSearchInput, CdxTab, CdxTabs } from '@wikimedia/codex'
 import { cdxIconBookmark } from '@wikimedia/codex-icons'
 
 import type { AppHeaderItem } from '@/components/app/AppChromeHeader.vue'
@@ -23,7 +23,7 @@ import {
 import { useIsIos } from '@/composables/useAppPlatform'
 
 import { SAVED_COLLECTIONS } from './collections'
-import { fetchSavedArticles, type SavedArticle } from './fetchSavedArticles'
+import { fetchSavedArticles, getCachedSavedArticles, type SavedArticle } from './fetchSavedArticles'
 
 const router = useRouter()
 const isIos = useIsIos()
@@ -37,8 +37,15 @@ const activeTab = ref<'all' | 'collections'>('all')
 const searchQuery = ref('')
 
 async function load(): Promise<void> {
-  loading.value = true
   error.value = null
+
+  const cached = getCachedSavedArticles()
+  if (cached) {
+    savedArticles.value = cached
+    return
+  }
+
+  loading.value = true
 
   try {
     savedArticles.value = await fetchSavedArticles()
@@ -106,6 +113,11 @@ const collectionsWithArticles = computed(() =>
     ),
   })).filter((collection) => collection.articles.length > 0),
 )
+
+/** One thumb when the collection is small; first four for the 2×2 collage. */
+function collectionPreviewArticles(articles: SavedArticle[]): SavedArticle[] {
+  return articles.length < 4 ? articles.slice(0, 1) : articles.slice(0, 4)
+}
 </script>
 
 <template>
@@ -126,7 +138,9 @@ const collectionsWithArticles = computed(() =>
 
       <CdxTabs v-model:active="activeTab" class="template-app-saved__tabs">
         <CdxTab name="all" label="All articles">
-          <p v-if="loading" class="template-app-saved__status">Loading…</p>
+          <div v-if="loading" class="template-app-saved__progress">
+            <CdxProgressBar inline aria-label="Loading" />
+          </div>
           <p v-else-if="error" class="template-app-saved__status">{{ error }}</p>
           <p v-else-if="!filteredArticles.length" class="template-app-saved__status">
             No saved articles.
@@ -168,7 +182,9 @@ const collectionsWithArticles = computed(() =>
         </CdxTab>
 
         <CdxTab name="collections" label="Collections">
-          <p v-if="loading" class="template-app-saved__status">Loading…</p>
+          <div v-if="loading" class="template-app-saved__progress">
+            <CdxProgressBar inline aria-label="Loading" />
+          </div>
           <p v-else-if="!collectionsWithArticles.length" class="template-app-saved__status">
             No collections yet.
           </p>
@@ -187,20 +203,24 @@ const collectionsWithArticles = computed(() =>
                   </span>
                 </div>
 
-                <div class="template-app-saved__collage">
+                <div
+                  class="template-app-saved__collage"
+                  :class="{
+                    'template-app-saved__collage--single': collection.articles.length < 4,
+                  }"
+                >
                   <div
-                    v-for="index in 4"
+                    v-for="(article, index) in collectionPreviewArticles(collection.articles)"
                     :key="index"
                     class="template-app-saved__collage-tile"
                     :class="{
-                      'template-app-saved__collage-tile--placeholder':
-                        !collection.articles[index - 1]?.thumbnailUrl,
+                      'template-app-saved__collage-tile--placeholder': !article.thumbnailUrl,
                     }"
                   >
                     <img
-                      v-if="collection.articles[index - 1]?.thumbnailUrl"
+                      v-if="article.thumbnailUrl"
                       class="template-app-saved__collage-img"
-                      :src="collection.articles[index - 1]?.thumbnailUrl ?? undefined"
+                      :src="article.thumbnailUrl"
                       alt=""
                     />
                   </div>
@@ -221,6 +241,10 @@ const collectionsWithArticles = computed(() =>
 
 .template-app-saved__search {
   margin-bottom: var(--spacing-100, 16px);
+}
+
+.template-app-saved__progress {
+  margin-top: var(--spacing-100, 16px);
 }
 
 .template-app-saved__status {
@@ -314,6 +338,12 @@ const collectionsWithArticles = computed(() =>
   grid-template-columns: repeat(2, 1fr);
   grid-template-rows: repeat(2, 1fr);
   gap: 2px;
+}
+
+.template-app-saved__collage--single {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+  gap: 0;
 }
 
 .template-app-saved__collage-tile {
