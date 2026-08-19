@@ -1,7 +1,6 @@
 ---
 name: wiki-attribution
 description: The Wikimedia Attribution Framework and Attribution API (beta) — principles, attribution levels (Basic / Approaching / Ideal), reuse scenarios (search, AI assistants, media, social, games, audio), all attribution signals (essential, trust/relevance, ecosystem growth), and how to fetch them via the Attribution API and alternative Wikimedia API pathways. Use when building off-wiki surfaces that credit Wikipedia or other Wikimedia content, picking which signals to show, or implementing attribution cards, source panels, or license notices.
-license: MIT
 ---
 
 # Wikimedia attribution

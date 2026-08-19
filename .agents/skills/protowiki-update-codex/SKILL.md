@@ -1,7 +1,6 @@
 ---
 name: protowiki-update-codex
 description: How to upgrade ProtoWiki to a new version of the Wikimedia Codex design system — bump the three @wikimedia/codex packages in lockstep, diff the upstream design-codex docs between the old and new release tags, propagate documented changes into the codex-* skills, refresh the vendored token snapshot, then verify. Use when asked to "update Codex", "upgrade Codex", "bump @wikimedia/codex", or pull in a new Codex version.
-license: MIT
 ---
 
 # Updating Codex in ProtoWiki

@@ -1,7 +1,6 @@
 ---
 name: protowiki-theme
 description: How light / dark theming works in ProtoWiki — boot-time resolution of ?theme= URL param + prefers-color-scheme into a data-theme attribute on <html>, the runtime-injected Codex token sets scoped to [data-theme], the per-component theme prop for subtree overrides (including full-route demos), and the read-only useTheme() hook. Use when adding theme-specific styles, embedding a dark snippet on a light page, debugging colour cascades, or wiring a "preview in dark" toggle.
-license: MIT
 ---
 
 # ProtoWiki — theme

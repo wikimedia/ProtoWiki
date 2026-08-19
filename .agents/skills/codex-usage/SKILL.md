@@ -1,7 +1,6 @@
 ---
 name: codex-usage
 description: How to use the Wikimedia Codex design system in any frontend — prefer Codex Vue components over custom DOM, lean on the bundled tokens / icons / base CSS, match Figma designs by reusing the same Codex assets, and know when (rarely) to write per-app CSS. Use when picking UI primitives, importing Codex, asking "should I write custom CSS?", or matching a Figma design with Codex assets.
-license: MIT
 ---
 
 # Codex usage

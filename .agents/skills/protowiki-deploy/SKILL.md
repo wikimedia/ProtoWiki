@@ -1,7 +1,6 @@
 ---
 name: protowiki-deploy
 description: How to build and deploy ProtoWiki to GitHub Pages — production deploy, PR preview deployments on gh-pages, template-first repo setup, base path (PROTOWIKI_BASE), SPA 404 fallback, and CI workflows. Use when asked to deploy, publish, preview a PR, ship to GitHub Pages, set up a copied repo, or fix base-path / 404 issues.
-license: MIT
 ---
 
 # Deploy ProtoWiki to GitHub Pages

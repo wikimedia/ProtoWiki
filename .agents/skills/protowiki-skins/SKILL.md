@@ -1,7 +1,6 @@
 ---
 name: protowiki-skins
 description: How desktop (Vector 2022) vs mobile (Minerva) web skins work in ProtoWiki — the boot-time resolution of ?skin= URL param + stored Web skin preference + viewport into a data-skin attribute on <html>, the per-component skin prop for embedding mobile previews on desktop pages, and the read-only useSkin() hook. Skins are a web-only axis; native app prototypes use data-app-platform instead. Use when adding skin-specific styles, embedding a mobile preview, debugging the responsive breakpoint, or wiring a "show mobile" toggle.
-license: MIT
 ---
 
 # ProtoWiki — skins

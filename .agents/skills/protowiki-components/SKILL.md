@@ -1,7 +1,6 @@
 ---
 name: protowiki-components
 description: Catalog of every shipped component in src/components/ — the single-concern layout wrappers (ChromeWrapper, SpecialPageWrapper, PlainWrapper, MobileWrapper), web chrome primitives (WebChromeHeader, VectorChromeHeader, MinervaChromeHeader, ChromeFooter), app chrome (AppChromeWrapper, AppChromeHeader, AppBottomMenu), Article surfaces (`ArticleWrapper` + `ArticleRenderer`, ArticleLive, ArticleSnapshot, ArticleCustom, ArticleHeader — all three surfaces take an `app` prop for in-app screens), dashboard layout (`Dashboard`, `DashboardModule`), attribution (`AttributionCard`, `useAttributionSignals`), and Search — including hand-authored article HTML in `ArticleRenderer`'s default slot (see `src/prototypes/template-article-custom/`) and newcomer homepage templates (`template-dashboard`, `template-homepage`). Use when picking a wrapper, composing a page, looking up props/slots/events for any ProtoWiki component, or asking "what components does ProtoWiki ship?".
-license: MIT
 ---
 
 # ProtoWiki components

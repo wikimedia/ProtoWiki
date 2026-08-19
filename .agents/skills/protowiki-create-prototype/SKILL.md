@@ -1,7 +1,6 @@
 ---
 name: protowiki-create-prototype
 description: How to add a new prototype to ProtoWiki via file-based routing — create a folder under src/prototypes/, register nothing, and the gallery picks it up from definePage meta (category, platform, order, hidden, spotlight). Platform-agnostic: works the same for web prototypes (ChromeWrapper) and app prototypes (AppChromeWrapper, see protowiki-app-prototyping). Never AI-generate gallery title or description — ask the author or omit (title falls back to folder name). Use when asked to "build a prototype", "add a new page", "make a demo", or any variant that creates a new prototype experience under src/prototypes/.
-license: MIT
 ---
 
 # Create a new prototype

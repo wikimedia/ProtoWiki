@@ -1,7 +1,6 @@
 ---
 name: protowiki-getting-started
 description: Orientation for the ProtoWiki repo — what it is, the Vite + Vue 3 + Codex + GitHub Pages stack, where code lives, where skills live, and the first thing to do. Use when first opening this repo, when asked "what is ProtoWiki" or "how does this repo work", or when an agent needs a high-level map before doing anything else.
-license: MIT
 ---
 
 # ProtoWiki — getting started

@@ -1,7 +1,6 @@
 ---
 name: wiki-apis
 description: How to fetch live data from MediaWiki and Wikipedia — the two API surfaces (REST API for read-mostly endpoints, Action API for everything else), which to choose when, and the etiquette every consumer must follow (User-Agent, rate limits, anonymous vs authenticated, exponential backoff). Use when adding live Wikimedia data to a frontend, picking between REST and Action API, or debugging a 4xx / rate-limited response.
-license: MIT
 ---
 
 # Wiki APIs

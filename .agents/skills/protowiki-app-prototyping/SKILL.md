@@ -1,7 +1,6 @@
 ---
 name: protowiki-app-prototyping
 description: How to prototype the Wikipedia mobile apps in ProtoWiki — declare `platform: 'app'`, wrap in AppChromeWrapper instead of ChromeWrapper, read articles with `<ArticleLive app>`, and branch iOS vs Android off the app OS preference (`?os=`, `config.appPlatform`, `data-app-platform`, `useIsIos()`). Covers which `template-app-*` starter to copy and how app prototypes differ from web ones (no Vector/Minerva skin, phone frame, bottom nav). Use when building or changing an app-style prototype, embedding an app screen, or asking "how do app prototypes work here?".
-license: MIT
 ---
 
 # App prototyping
