@@ -1,4 +1,4 @@
-# Chrome primitives — `WebChromeHeader`, `ChromeFooter`
+# Chrome primitives — `ChromeHeader`, `ChromeFooter`
 
 These are the two components `ChromeWrapper` composes to paint the
 Wikipedia chrome. They're independently importable when you want the
@@ -7,7 +7,7 @@ chrome-without-the-wrapper (e.g., a custom layout that doesn't use
 
 ## Skin variants
 
-**`WebChromeHeader`** delegates to **`VectorChromeHeader`** (desktop skin)
+**`ChromeHeader`** delegates to **`VectorChromeHeader`** (desktop skin)
 or **`MinervaChromeHeader`** (mobile skin) based on effective skin:
 
 | Skin | Component | Chrome feel | Notes |
@@ -27,7 +27,7 @@ or **`MinervaChromeHeader`** (mobile skin) based on effective skin:
 
 That notice is chrome **fiction** for prototypes — not wired to revisions. The toggle is **`lastEditedNotice`** on **`ChromeFooter`** / **`ChromeWrapper`**.
 
-## WebChromeHeader
+## ChromeHeader
 
 Public skin-aware delegator — import directly or use via **`ChromeWrapper`'s** default **`#header`** slot.
 
@@ -67,17 +67,17 @@ Desktop **inline search** is always **`<Search />`** inside **`VectorChromeHeade
 
 ```vue
 <script setup lang="ts">
-import WebChromeHeader from '@/components/chrome/WebChromeHeader.vue'
+import ChromeHeader from '@/components/chrome/ChromeHeader.vue'
 </script>
 
 <template>
-  <WebChromeHeader />
+  <ChromeHeader />
 </template>
 ```
 
 ## VectorChromeHeader
 
-Force desktop Vector chrome regardless of global skin. Same props/slots as the desktop path of **`WebChromeHeader`** (except **`skin`** / Minerva item arrays).
+Force desktop Vector chrome regardless of global skin. Same props/slots as the desktop path of **`ChromeHeader`** (except **`skin`** / Minerva item arrays).
 
 ```ts
 import VectorChromeHeader from '@/components/chrome/VectorChromeHeader.vue'
@@ -146,13 +146,13 @@ Use them directly when:
 
 ```vue
 <script setup lang="ts">
-import WebChromeHeader from '@/components/chrome/WebChromeHeader.vue'
+import ChromeHeader from '@/components/chrome/ChromeHeader.vue'
 import ChromeFooter from '@/components/chrome/ChromeFooter.vue'
 </script>
 
 <template>
   <div class="custom-shell">
-    <WebChromeHeader />
+    <ChromeHeader />
     <main class="custom-shell__body">
       <!-- bespoke layout here -->
     </main>

@@ -9,7 +9,7 @@ import VectorChromeHeader from './VectorChromeHeader.vue'
 import { globalSkin, globalTheme } from '@/theme'
 import type { Skin, Theme } from '@/theme'
 
-export type WebHeaderItem = HeaderItem
+export type { HeaderItem }
 
 interface Props {
   /** Local skin override. Sets `data-skin` on the root. */
@@ -55,7 +55,7 @@ const isDesktop = computed(() => effectiveSkin.value === 'desktop')
 
 function slotBridgeComponent(slotName: 'menu' | 'logo') {
   return defineComponent({
-    name: `WebChromeHeader${slotName === 'menu' ? 'Menu' : 'Logo'}Slot`,
+    name: `ChromeHeader${slotName === 'menu' ? 'Menu' : 'Logo'}Slot`,
     setup() {
       return () => slots[slotName]?.() ?? null
     },
@@ -75,7 +75,7 @@ const minervaMiddle = computed((): HeaderItem[] | undefined => {
       {
         type: 'component',
         component: defineComponent({
-          name: 'WebChromeHeaderLogoSlot',
+          name: 'ChromeHeaderLogoSlot',
           setup() {
             return () =>
               h(

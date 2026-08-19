@@ -228,7 +228,7 @@ Same as **`ArticleLive`**.
 
 ## `ArticleHeader`
 
-Vector-like **page** chrome above the parser output (not the site **`WebChromeHeader`**).
+Vector-like **page** chrome above the parser output (not the site **`ChromeHeader`**).
 
 | Prop                  | Notes                                                                                                                           |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------- |

@@ -1,6 +1,6 @@
 ---
 name: protowiki-components
-description: Catalog of every shipped component in src/components/ — the single-concern layout wrappers (ChromeWrapper, SpecialPageWrapper, PlainWrapper, MobileWrapper), web chrome primitives (WebChromeHeader, VectorChromeHeader, MinervaChromeHeader, ChromeFooter), app chrome (AppChromeWrapper, AppChromeHeader, AppBottomMenu), Article surfaces (`ArticleWrapper` + `ArticleRenderer`, ArticleLive, ArticleSnapshot, ArticleCustom, ArticleHeader — all three surfaces take an `app` prop for in-app screens), dashboard layout (`Dashboard`, `DashboardModule`), attribution (`AttributionCard`, `useAttributionSignals`), and Search — including hand-authored article HTML in `ArticleRenderer`'s default slot (see `src/prototypes/template-article-custom/`) and newcomer homepage templates (`template-dashboard`, `template-homepage`). Use when picking a wrapper, composing a page, looking up props/slots/events for any ProtoWiki component, or asking "what components does ProtoWiki ship?".
+description: Catalog of every shipped component in src/components/ — the single-concern layout wrappers (ChromeWrapper, SpecialPageWrapper, PlainWrapper, MobileWrapper), web chrome primitives (ChromeHeader, VectorChromeHeader, MinervaChromeHeader, ChromeFooter), app chrome (AppChromeWrapper, AppChromeHeader, AppBottomMenu), Article surfaces (`ArticleWrapper` + `ArticleRenderer`, ArticleLive, ArticleSnapshot, ArticleCustom, ArticleHeader — all three surfaces take an `app` prop for in-app screens), dashboard layout (`Dashboard`, `DashboardModule`), attribution (`AttributionCard`, `useAttributionSignals`), and Search — including hand-authored article HTML in `ArticleRenderer`'s default slot (see `src/prototypes/template-article-custom/`) and newcomer homepage templates (`template-dashboard`, `template-homepage`). Use when picking a wrapper, composing a page, looking up props/slots/events for any ProtoWiki component, or asking "what components does ProtoWiki ship?".
 ---
 
 # ProtoWiki components
@@ -15,7 +15,7 @@ This skill is the cross-cutting guide. Per-component depth lives in
 - [`references/wrappers.md`](references/wrappers.md) — `ChromeWrapper`,
   `SpecialPageWrapper`, `PlainWrapper`, `MobileWrapper`
 - [`references/chrome-primitives.md`](references/chrome-primitives.md) —
-  `WebChromeHeader`, `VectorChromeHeader`, `MinervaChromeHeader`, `ChromeFooter`
+  `ChromeHeader`, `VectorChromeHeader`, `MinervaChromeHeader`, `ChromeFooter`
 - [`references/app-chrome.md`](references/app-chrome.md) —
   `AppChromeWrapper`, `AppChromeHeader`, `AppBottomMenu`
 - [`references/article.md`](references/article.md) — `ArticleWrapper`, `ArticleRenderer`,
@@ -39,7 +39,7 @@ This skill is the cross-cutting guide. Per-component depth lives in
 | `SpecialPageWrapper`  | Special-page shell — title row + optional help/actions + content                                                                                                                                                                                              | No              | No (full-width)  |
 | `PlainWrapper`        | Centred narrow column — no chrome (gallery / Component-style demos)                                                                                                                                                                                           | No              | No               |
 | `MobileWrapper`       | Phone-frame preview — full width below 480px; centred column + neutral Codex gutters when clamped                                                                                                                                                             | No              | No               |
-| `WebChromeHeader`     | Skin-aware web header — Vector (desktop) or Minerva (mobile); wordmarks, search cluster, user tools                                                                                                                                                           | n/a             | n/a              |
+| `ChromeHeader`     | Skin-aware web header — Vector (desktop) or Minerva (mobile); wordmarks, search cluster, user tools                                                                                                                                                           | n/a             | n/a              |
 | `VectorChromeHeader`  | Force desktop Vector 2022 chrome — wordmarks, inline search, nav tools                                                                                                                                                                                        | n/a             | n/a              |
 | `MinervaChromeHeader` | Force mobile Minerva bar — `left` / `middle` / `right` item arrays                                                                                                                                                                                            | n/a             | n/a              |
 | `ChromeFooter`        | Footer chrome (via ChromeWrapper): **desktop** Vector strip with optional mock last-edited + CC lines, or **mobile** Minerva well + optional strip                                                                                                            | n/a             | n/a              |
@@ -64,7 +64,7 @@ Most regions follow the same pattern:
 2. **Prop** — tweak with the **same base name** as the paired slot where it fits (e.g. **`title`** / **`#title`**, **`help`** / **`#help`**). Boolean toggles such as **`actions`** stay plain nouns — no `show*` prefix.
 3. **Named slot `#x`** — replaces the default **inner** content for that region; when the slot is supplied, it wins over the prop-fed default.
 
-Examples: `title` / `#title` / `#header` (**`SpecialPageWrapper`** cluster), **`help`** (**`boolean`** or **`#help`**), **`actions`** (**`boolean`** or **`#actions`**), **`username`** / **`#username`**, `WebChromeHeader` **`navTools`** vs **`#nav`**.
+Examples: `title` / `#title` / `#header` (**`SpecialPageWrapper`** cluster), **`help`** (**`boolean`** or **`#help`**), **`actions`** (**`boolean`** or **`#actions`**), **`username`** / **`#username`**, `ChromeHeader` **`navTools`** vs **`#nav`**.
 
 ## The two ideas you need
 
@@ -134,7 +134,7 @@ All components live at `@/components/<Name>.vue`:
 
 ```ts
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
-import WebChromeHeader from '@/components/chrome/WebChromeHeader.vue'
+import ChromeHeader from '@/components/chrome/ChromeHeader.vue'
 import VectorChromeHeader from '@/components/chrome/VectorChromeHeader.vue'
 import MinervaChromeHeader from '@/components/chrome/MinervaChromeHeader.vue'
 import ChromeFooter from '@/components/chrome/ChromeFooter.vue'
@@ -166,7 +166,7 @@ The `@/` prefix resolves to `src/`.
 | `SpecialPageWrapper`  | `title?`, **`help?`** (**`boolean`**), **`actions?`**, `lang?`, `dir?`, `skin?`, `theme?`                                                                                                                                              | default, **`#header`**, **`#title`**, `#help`, `#actions`                                                                           |
 | `PlainWrapper`        | `heading?`, `lang?`, `dir?`                                                                                                                                                                                                            | default, `#heading`                                                                                                                 |
 | `MobileWrapper`       | `maxWidth?` (default `360px`), `lang?`, `dir?`                                                                                                                                                                                         | default                                                                                                                             |
-| `WebChromeHeader`     | `skin?`, `theme?`, **`username?`**, **`wordmarkSrc?`**, **`taglineSrc?`**, **`mobileWordmarkSrc?`**, **`navTools?`**, **`left?`**, **`middle?`**, **`right?`** (mobile)                                                                | `#menu`, `#logo`, `#username`, `#nav`                                                                                               |
+| `ChromeHeader`     | `skin?`, `theme?`, **`username?`**, **`wordmarkSrc?`**, **`taglineSrc?`**, **`mobileWordmarkSrc?`**, **`navTools?`**, **`left?`**, **`middle?`**, **`right?`** (mobile)                                                                | `#menu`, `#logo`, `#username`, `#nav`                                                                                               |
 | `VectorChromeHeader`  | `theme?`, **`username?`**, **`wordmarkSrc?`**, **`taglineSrc?`**, **`navTools?`**                                                                                                                                                      | `#menu`, `#logo`, `#username`, `#nav`                                                                                               |
 | `MinervaChromeHeader` | `theme?`, **`left?`**, **`middle?`**, **`right?`**, **`wordmarkSrc?`**, **`mobileWordmarkSrc?`**                                                                                                                                       | —                                                                                                                                   |
 | `ChromeFooter`        | `skin?`, `theme?`, **`lastEditedNotice?`**, **`username?`**                                                                                                                                                                            | default                                                                                                                             |

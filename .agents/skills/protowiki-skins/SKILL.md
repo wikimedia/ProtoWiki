@@ -41,7 +41,7 @@ when the URL forces a value).
 ## How CSS skins work
 
 Skin affects layout via **`data-skin="desktop"`** vs **`data-skin="mobile"`**
-on component roots (`ChromeWrapper`, `ArticleLive`, `ArticleSnapshot`, `ArticleCustom`, `WebChromeHeader`, etc.).
+on component roots (`ChromeWrapper`, `ArticleLive`, `ArticleSnapshot`, `ArticleCustom`, `ChromeHeader`, etc.).
 Desktop vs mobile rules live **next to those components** in scoped `<style>`
 blocks (e.g. `.article[data-skin='mobile'] { … }` for tighter article padding).
 

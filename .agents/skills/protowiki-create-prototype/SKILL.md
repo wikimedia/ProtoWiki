@@ -89,7 +89,7 @@ Android, app chrome, which `template-app-*` to copy — see
 - **Wrap in the chrome for your platform** unless the prototype is intentionally
   a bare fragment. Most prototypes start with chrome → content.
   - **Web** (`platform: 'web'`) — **`ChromeWrapper`**, which includes the default
-    **`WebChromeHeader`** (with inline **`Search`** on desktop). Set
+    **`ChromeHeader`** (with inline **`Search`** on desktop). Set
     **`username`** for the Meta user link; replace **`#header`** only for fully
     custom chrome.
   - **App** (`platform: 'app'`) — **`AppChromeWrapper`**, which includes the app

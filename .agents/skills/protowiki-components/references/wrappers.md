@@ -38,7 +38,7 @@ the rows above.
 Adds the Wikipedia chrome (header + footer) around its default slot. **No
 layout columns**: anything goes inside the chrome.
 
-**`ChromeWrapper`** forwards the same props to the default **`WebChromeHeader`** /
+**`ChromeWrapper`** forwards the same props to the default **`ChromeHeader`** /
 **`ChromeFooter`** (when you keep the default **`#header`** / **`#footer`** slots):
 footer mock last-edited chrome, username, and header logo / nav-tool configuration.
 
@@ -48,14 +48,14 @@ footer mock last-edited chrome, username, and header logo / nav-tool configurati
 | ------------------- | ----------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `lang`              | `string`                | `undefined`      | BCP-47 language tag; sets `lang` on the wrapper root and is inherited by descendants via the DOM                                                                                                                    |
 | `dir`               | `'ltr' \| 'rtl'`        | `undefined`      | Writing direction; sets `dir` on the wrapper root. Pass explicitly — we don't infer it from `lang`                                                                                                                  |
-| `skin`              | `'desktop' \| 'mobile'` | `undefined`      | Local skin override; forwarded to **`WebChromeHeader`** / **`ChromeFooter`**                                                                                                                                           |
-| `theme`             | `'light' \| 'dark'`     | `undefined`      | Local theme override; forwarded to **`WebChromeHeader`** / **`ChromeFooter`**                                                                                                                                          |
+| `skin`              | `'desktop' \| 'mobile'` | `undefined`      | Local skin override; forwarded to **`ChromeHeader`** / **`ChromeFooter`**                                                                                                                                           |
+| `theme`             | `'light' \| 'dark'`     | `undefined`      | Local theme override; forwarded to **`ChromeHeader`** / **`ChromeFooter`**                                                                                                                                          |
 | `lastEditedNotice`  | `boolean`               | `true`           | Forwarded to **`ChromeFooter`**: mock **last edited** notice — **desktop:** Vector-style timestamp + CC licence lines; **mobile:** Minerva strip above the grey well. Set **`false`** for special-page–style shells |
-| `username`          | `string`                | `'Username'`     | Forwarded to **`WebChromeHeader`** / **`ChromeFooter`**: desktop chrome user link + mobile “last edited by …”. Trimmed; **`''`** hides the header link (footer still falls back to **`Username`** for that line)       |
-| `wordmarkSrc`       | `string`                | `undefined`      | Forwarded to **`WebChromeHeader`** — desktop default wordmark **`#logo`** image URL                                                                                                                                    |
-| `taglineSrc`        | `string`                | `undefined`      | Forwarded to **`WebChromeHeader`** — desktop tagline image under the wordmark                                                                                                                                          |
-| `mobileWordmarkSrc` | `string`                | `undefined`      | Forwarded to **`WebChromeHeader`** — Minerva bar wordmark; defaults to **`wordmarkSrc`** then EN constant                                                                                                              |
-| `navTools`          | `ChromeNavTool[]`       | full desktop set | Forwarded to **`WebChromeHeader`** — which mocked Vector tool icons appear (**desktop**); **`#nav`** still replaces the cluster                                                                                        |
+| `username`          | `string`                | `'Username'`     | Forwarded to **`ChromeHeader`** / **`ChromeFooter`**: desktop chrome user link + mobile “last edited by …”. Trimmed; **`''`** hides the header link (footer still falls back to **`Username`** for that line)       |
+| `wordmarkSrc`       | `string`                | `undefined`      | Forwarded to **`ChromeHeader`** — desktop default wordmark **`#logo`** image URL                                                                                                                                    |
+| `taglineSrc`        | `string`                | `undefined`      | Forwarded to **`ChromeHeader`** — desktop tagline image under the wordmark                                                                                                                                          |
+| `mobileWordmarkSrc` | `string`                | `undefined`      | Forwarded to **`ChromeHeader`** — Minerva bar wordmark; defaults to **`wordmarkSrc`** then EN constant                                                                                                              |
+| `navTools`          | `ChromeNavTool[]`       | full desktop set | Forwarded to **`ChromeHeader`** — which mocked Vector tool icons appear (**desktop**); **`#nav`** still replaces the cluster                                                                                        |
 
 `ChromeNavTool` literals: `'appearance' \| 'notifications' \| 'notices' \| 'watchlist' \| 'user'` (see `src/components/chrome/headerNavTools.ts`). In the chrome header, `'appearance'` renders as a static, non-interactive icon button (like `'notifications'` / `'notices'`) — the working Appearance settings popover lives only on the prototype gallery home page (`src/prototypes/index.vue`).
 
@@ -68,10 +68,10 @@ own `lang` prop because the value is inherited via the DOM. **`ArticleLive`**, *
 | Slot      | Default content                                                             | Use for                                                                              |
 | --------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | default   | (your prototype)                                                            | Page body between header and footer                                                  |
-| `#header` | `<WebChromeHeader>` with props above                                           | Replace the entire header (custom header does not receive automatic prop forwarding) |
+| `#header` | `<ChromeHeader>` with props above                                           | Replace the entire header (custom header does not receive automatic prop forwarding) |
 | `#footer` | `<ChromeFooter>` (`lastEditedNotice` + `username` from **`ChromeWrapper`**) | Replace the entire footer                                                            |
 
-The chrome user link and search are **built-ins** on **`WebChromeHeader`**; tweak them via **`ChromeWrapper`** props unless you replace **`#header`**.
+The chrome user link and search are **built-ins** on **`ChromeHeader`**; tweak them via **`ChromeWrapper`** props unless you replace **`#header`**.
 
 ### Example
 
@@ -117,7 +117,7 @@ Regions appear when **`actions`** is true **or** the matching **slot** is suppli
 | Slot       | Use for                                                                                                                                                                                          |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | default    | Page body                                                                                                                                                                                        |
-| `#header`  | Replaces the **title cluster** on the left (default: scoped **`h1`** + **`#title`** / **`title`** inner). Unrelated to **`ChromeWrapper`**'s **`#header`** slot (whole site **`WebChromeHeader`**). |
+| `#header`  | Replaces the **title cluster** on the left (default: scoped **`h1`** + **`#title`** / **`title`** inner). Unrelated to **`ChromeWrapper`**'s **`#header`** slot (whole site **`ChromeHeader`**). |
 | `#title`   | Replaces inner content of the default **`h1`** (not used when **`#header`** replaces the cluster).                                                                                               |
 | `#help`    | Right side of the title row (**overrides** default Help link; still **desktop**-only in the default skin)                                                                                        |
 | `#actions` | Secondary toolbar beside `#help`                                                                                                                                                                 |
