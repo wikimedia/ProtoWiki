@@ -92,7 +92,7 @@ export const CONFIG_USER_DISPLAY_NAMES: Partial<Record<ConfigUser, string>> = {
 
 export const CONFIG_USER_MENU_ITEMS: { value: ConfigUser; label: string }[] = [
   { value: 'logged-out', label: 'Logged out user' },
-  { value: 'new', label: 'New editor' },
+  { value: 'new', label: 'New user' },
   { value: 'experienced', label: 'Experienced editor' },
   { value: 'real', label: 'Real user' },
 ]
@@ -170,15 +170,8 @@ export function formatPageList(pages: string[]): string {
   return pages.join(', ')
 }
 
-export function resetUserPageListField(
-  lists: UserPageLists,
-  user: ConfigUser,
-  field: PageListKey,
-): UserPageLists {
-  return {
-    ...lists,
-    [field]: [...DEFAULT_USER_PAGE_LISTS[user][field]],
-  }
+export function resetUserPageLists(user: ConfigUser): UserPageLists {
+  return cloneUserPageLists(DEFAULT_USER_PAGE_LISTS[user])
 }
 
 function resolveApiContact(rawContact: string): string {
@@ -208,8 +201,7 @@ function isConfigTheme(value: unknown): value is ConfigTheme {
 
 function isConfigAppPlatform(value: unknown): value is ConfigAppPlatform {
   return (
-    typeof value === 'string' &&
-    VALID_CONFIG_APP_PLATFORMS.includes(value as ConfigAppPlatform)
+    typeof value === 'string' && VALID_CONFIG_APP_PLATFORMS.includes(value as ConfigAppPlatform)
   )
 }
 

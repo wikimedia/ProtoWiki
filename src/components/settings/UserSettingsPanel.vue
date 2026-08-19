@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { CdxButton, CdxSelect, CdxTextInput } from '@wikimedia/codex'
+import { CdxButton, CdxField, CdxSelect, CdxTextInput } from '@wikimedia/codex'
 
 import { useConfig } from '@/composables/useConfig'
 import { CONFIG_USER_MENU_ITEMS, formatPageList, parsePageList } from '@/config'
@@ -14,7 +14,7 @@ const {
   lang,
   currentUserPageLists,
   setCurrentUserPageList,
-  resetCurrentUserPageListField,
+  resetCurrentUserPageLists,
 } = useConfig()
 
 const watchlistText = computed({
@@ -35,51 +35,49 @@ const editedPagesText = computed({
 
 <template>
   <div class="settings-panel user-settings-panel">
-    <label class="settings-panel__field">
-      <span class="settings-panel__label">Account</span>
-      <CdxSelect
-        v-model:selected="user"
-        :menu-items="CONFIG_USER_MENU_ITEMS"
-        default-label="New editor"
-      />
-    </label>
-    <label class="settings-panel__field">
-      <span class="settings-panel__label">Wiki</span>
-      <CdxTextInput v-model="lang" class="settings-panel__input" />
-    </label>
-    <label v-if="user === 'real'" class="settings-panel__field">
-      <span class="settings-panel__label">Username</span>
-      <CdxTextInput v-model="realUsername" class="settings-panel__input" />
-    </label>
-    <template v-if="user !== 'real'">
-      <label class="settings-panel__field">
-        <span class="settings-panel__label">Watchlist</span>
+    <div class="settings-panel__intro">
+      <h2 class="settings-panel__title">User profile settings</h2>
+      <p class="settings-panel__description">
+        Change these settings to preview supported prototypes from the perspective of different
+        users.
+      </p>
+    </div>
+    <div class="user-settings-panel__fields">
+      <CdxField>
+        <template #label>Preset</template>
         <div class="settings-panel__row">
+          <CdxSelect
+            v-model:selected="user"
+            class="settings-panel__input"
+            :menu-items="CONFIG_USER_MENU_ITEMS"
+            default-label="New user"
+          />
+          <CdxButton weight="quiet" @click="resetCurrentUserPageLists">Reset</CdxButton>
+        </div>
+      </CdxField>
+      <CdxField class="user-settings-panel__wiki-field">
+        <template #label>Wiki</template>
+        <CdxTextInput v-model="lang" class="settings-panel__input" />
+      </CdxField>
+      <CdxField v-if="user === 'real'">
+        <template #label>Username</template>
+        <CdxTextInput v-model="realUsername" class="settings-panel__input" />
+      </CdxField>
+      <template v-if="user !== 'real'">
+        <CdxField>
+          <template #label>Watchlist</template>
           <CdxTextInput v-model="watchlistText" class="settings-panel__input" />
-          <CdxButton weight="quiet" @click="resetCurrentUserPageListField('watchlist')">
-            Reset
-          </CdxButton>
-        </div>
-      </label>
-      <label class="settings-panel__field">
-        <span class="settings-panel__label">Reading list</span>
-        <div class="settings-panel__row">
+        </CdxField>
+        <CdxField>
+          <template #label>Saved pages</template>
           <CdxTextInput v-model="readingListText" class="settings-panel__input" />
-          <CdxButton weight="quiet" @click="resetCurrentUserPageListField('readingList')">
-            Reset
-          </CdxButton>
-        </div>
-      </label>
-      <label class="settings-panel__field">
-        <span class="settings-panel__label">Edited pages</span>
-        <div class="settings-panel__row">
+        </CdxField>
+        <CdxField>
+          <template #label>Edited pages</template>
           <CdxTextInput v-model="editedPagesText" class="settings-panel__input" />
-          <CdxButton weight="quiet" @click="resetCurrentUserPageListField('editedPages')">
-            Reset
-          </CdxButton>
-        </div>
-      </label>
-    </template>
+        </CdxField>
+      </template>
+    </div>
   </div>
 </template>
 
@@ -89,6 +87,16 @@ const editedPagesText = computed({
   align-items: stretch;
   width: auto;
   min-width: var(--size-2400);
+}
+
+.user-settings-panel__fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-100);
+}
+
+.user-settings-panel__wiki-field {
+  width: var(--size-800);
 }
 
 .user-settings-panel .settings-panel__row {

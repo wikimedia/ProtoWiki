@@ -111,6 +111,23 @@ Even then:
   instead of restyling raw `<button>`s.
 - **Importing Less / Sass partials.** The Codex npm package ships plain
   CSS — preprocessor mixins from older MediaWiki bundles aren't needed.
+- **Using `:deep()` to reach into a Codex component's internal classes**
+  (e.g. `:deep(.cdx-field__control)`, `:deep(.cdx-radio__icon)`). These
+  classes are Codex-owned implementation details, not a public API —
+  overriding their `display`/`flex-direction`/`margin`/etc. is exactly
+  the kind of "messing with Codex component styles" to avoid. If you
+  need extra layout, wrap the slot content in your **own** element with
+  your **own** class instead of restyling Codex's internals. (Purely
+  cosmetic `:deep()` uses that only set `width`/`max-width` on a
+  component's *root* class, like `:deep(.cdx-text-input) { width: 100% }`,
+  are fine — that's sizing the component, not restructuring it.)
+- **Assuming a component has no default spacing before checking.** Before
+  adding a margin/gap "fix" for a Codex component, check whether it
+  already ships one — e.g. stacked (non-`inline`) `CdxRadio` /
+  `CdxCheckbox` already get a `margin-bottom` between siblings for free.
+  Grep the installed CSS (`node_modules/@wikimedia/codex/dist/modules/*.css`)
+  or check <https://doc.wikimedia.org/codex/> before writing custom
+  spacing CSS.
 
 ## Wikipedia article-body styling
 

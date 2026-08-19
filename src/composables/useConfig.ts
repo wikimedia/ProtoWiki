@@ -5,7 +5,7 @@ import {
   configUserPageTitle,
   langForUser,
   loadConfig,
-  resetUserPageListField,
+  resetUserPageLists,
   saveConfig,
   type ConfigAppPlatform,
   type Config,
@@ -62,7 +62,7 @@ export function useConfig(): {
   pageTitle: ComputedRef<string>
   currentUserPageLists: ComputedRef<UserPageLists>
   setCurrentUserPageList: (field: PageListKey, pages: string[]) => void
-  resetCurrentUserPageListField: (field: PageListKey) => void
+  resetCurrentUserPageLists: () => void
 } {
   const theme = computed({
     get: () => config.value.theme,
@@ -142,17 +142,13 @@ export function useConfig(): {
     }
   }
 
-  function resetCurrentUserPageListField(field: PageListKey) {
+  function resetCurrentUserPageLists() {
     const activeUser = user.value
     config.value = {
       ...config.value,
       userPageLists: {
         ...config.value.userPageLists,
-        [activeUser]: resetUserPageListField(
-          config.value.userPageLists[activeUser],
-          activeUser,
-          field,
-        ),
+        [activeUser]: resetUserPageLists(activeUser),
       },
     }
   }
@@ -170,6 +166,6 @@ export function useConfig(): {
     pageTitle,
     currentUserPageLists,
     setCurrentUserPageList,
-    resetCurrentUserPageListField,
+    resetCurrentUserPageLists,
   }
 }
