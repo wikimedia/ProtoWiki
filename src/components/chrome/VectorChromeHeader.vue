@@ -16,8 +16,6 @@ import { useConfig } from '@/composables/useConfig'
 import { DEFAULT_CHROME_NAV_TOOLS, type ChromeNavTool } from './headerNavTools'
 import { globalTheme } from '@/theme'
 import type { Theme } from '@/theme'
-import AppearanceSettingsPanel from '../settings/AppearanceSettingsPanel.vue'
-import SettingsPopover from '../settings/SettingsPopover.vue'
 import Search from '../Search.vue'
 
 const { user } = useConfig()
@@ -161,21 +159,9 @@ function navHas(tool: ChromeNavTool): boolean {
           </a>
         </slot>
         <slot v-if="!isLoggedOut" name="nav">
-          <SettingsPopover v-if="navHas('appearance')">
-            <template #default="{ toggle, open }">
-              <CdxButton
-                weight="quiet"
-                aria-label="Appearance"
-                :aria-expanded="open"
-                @click="toggle"
-              >
-                <CdxIcon :icon="cdxIconAppearance" />
-              </CdxButton>
-            </template>
-            <template #panel>
-              <AppearanceSettingsPanel />
-            </template>
-          </SettingsPopover>
+          <CdxButton v-if="navHas('appearance')" weight="quiet" aria-label="Appearance">
+            <CdxIcon :icon="cdxIconAppearance" />
+          </CdxButton>
           <CdxButton
             v-if="navHas('notifications')"
             weight="quiet"

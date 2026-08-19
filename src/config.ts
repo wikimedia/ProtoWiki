@@ -37,7 +37,7 @@ export const DEFAULT_USER_PAGE_LISTS: Record<ConfigUser, UserPageLists> = {
   new: {
     lang: 'en',
     watchlist: [],
-    readingList: ['Wet Leg', 'Jade Thirlwall'],
+    readingList: [],
     editedPages: [],
   },
   experienced: {
@@ -75,7 +75,7 @@ export const DEFAULT_CONFIG: Config = {
   appPlatform: 'auto',
   webSkin: 'auto',
   user: 'new',
-  realUsername: '',
+  realUsername: 'Todepond',
   userPageLists: cloneUserPageListsMap(DEFAULT_USER_PAGE_LISTS),
 }
 
@@ -90,15 +90,15 @@ export const CONFIG_USER_DISPLAY_NAMES: Partial<Record<ConfigUser, string>> = {
   experienced: 'ExperiencedEditor',
 }
 
-export const CONFIG_USER_MENU_ITEMS: { value: ConfigUser; label: string }[] = [
+export const CONFIG_USER_MENU_ITEMS: { value: ConfigUser; label: string; description?: string }[] = [
   { value: 'logged-out', label: 'Logged out user' },
   { value: 'new', label: 'New user' },
   { value: 'experienced', label: 'Experienced editor' },
-  { value: 'real', label: 'Real user' },
+  { value: 'real', label: 'Real user', description: 'Connect to a real account on the wikis' },
 ]
 
 export const CONFIG_THEME_MENU_ITEMS: { value: ConfigTheme; label: string }[] = [
-  { value: 'system', label: 'System' },
+  { value: 'system', label: 'Auto' },
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
 ]
@@ -172,6 +172,22 @@ export function formatPageList(pages: string[]): string {
 
 export function resetUserPageLists(user: ConfigUser): UserPageLists {
   return cloneUserPageLists(DEFAULT_USER_PAGE_LISTS[user])
+}
+
+function userPageListsEqual(a: UserPageLists, b: UserPageLists): boolean {
+  const arraysEqual = (x: string[], y: string[]) =>
+    x.length === y.length && x.every((v, i) => v === y[i])
+  return (
+    a.lang === b.lang &&
+    arraysEqual(a.watchlist, b.watchlist) &&
+    arraysEqual(a.readingList, b.readingList) &&
+    arraysEqual(a.editedPages, b.editedPages)
+  )
+}
+
+/** Whether a preset's page lists still match its shipped defaults (i.e. nothing to reset). */
+export function isDefaultUserPageLists(user: ConfigUser, lists: UserPageLists): boolean {
+  return userPageListsEqual(lists, DEFAULT_USER_PAGE_LISTS[user])
 }
 
 function resolveApiContact(rawContact: string): string {

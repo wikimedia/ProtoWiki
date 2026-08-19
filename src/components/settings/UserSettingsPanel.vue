@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { CdxButton, CdxField, CdxSelect, CdxTextInput } from '@wikimedia/codex'
+import {
+  CdxButton,
+  CdxField,
+  CdxSelect,
+  CdxTextInput,
+  CdxTooltip as vTooltip,
+} from '@wikimedia/codex'
 
 import { useConfig } from '@/composables/useConfig'
 import { CONFIG_USER_MENU_ITEMS, formatPageList, parsePageList } from '@/config'
@@ -13,9 +19,18 @@ const {
   realUsername,
   lang,
   currentUserPageLists,
+  isCurrentUserPageListsModified,
   setCurrentUserPageList,
   resetCurrentUserPageLists,
 } = useConfig()
+
+const userMenuItems = computed(() =>
+  CONFIG_USER_MENU_ITEMS.map((item) =>
+    item.value === user.value && isCurrentUserPageListsModified.value
+      ? { ...item, label: `${item.label} (modified)` }
+      : item,
+  ),
+)
 
 const watchlistText = computed({
   get: () => formatPageList(currentUserPageLists.value.watchlist),
@@ -36,10 +51,9 @@ const editedPagesText = computed({
 <template>
   <div class="settings-panel user-settings-panel">
     <div class="settings-panel__intro">
-      <h2 class="settings-panel__title">User profile settings</h2>
+      <h2 class="settings-panel__title">Mock user settings</h2>
       <p class="settings-panel__description">
-        Change these settings to preview supported prototypes from the perspective of different
-        users.
+        Preview supported prototypes from the perspective of different users.
       </p>
     </div>
     <div class="user-settings-panel__fields">
@@ -49,10 +63,17 @@ const editedPagesText = computed({
           <CdxSelect
             v-model:selected="user"
             class="settings-panel__input"
-            :menu-items="CONFIG_USER_MENU_ITEMS"
+            :menu-items="userMenuItems"
             default-label="New user"
           />
-          <CdxButton weight="quiet" @click="resetCurrentUserPageLists">Reset</CdxButton>
+          <CdxButton
+            v-tooltip="!isCurrentUserPageListsModified ? 'Already set to default' : undefined"
+            weight="quiet"
+            :disabled="!isCurrentUserPageListsModified"
+            @click="resetCurrentUserPageLists"
+          >
+            Reset
+          </CdxButton>
         </div>
       </CdxField>
       <CdxField class="user-settings-panel__wiki-field">
@@ -63,7 +84,7 @@ const editedPagesText = computed({
         <template #label>Username</template>
         <CdxTextInput v-model="realUsername" class="settings-panel__input" />
       </CdxField>
-      <template v-if="user !== 'real'">
+      <template v-if="user !== 'real' && user !== 'logged-out'">
         <CdxField>
           <template #label>Watchlist</template>
           <CdxTextInput v-model="watchlistText" class="settings-panel__input" />
@@ -85,8 +106,8 @@ const editedPagesText = computed({
 .user-settings-panel {
   display: inline-flex;
   align-items: stretch;
-  width: auto;
-  min-width: var(--size-2400);
+  width: 100%;
+  max-width: var(--size-2800);
 }
 
 .user-settings-panel__fields {

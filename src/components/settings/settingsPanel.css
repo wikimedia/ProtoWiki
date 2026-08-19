@@ -6,6 +6,10 @@
   max-width: 100%;
 }
 
+.cdx-popover--bottom-sheet .settings-panel {
+  padding-top: var(--spacing-50);
+}
+
 /* Fields are spaced by their container's flex gap, not Codex's own margin. */
 .settings-panel .cdx-field {
   margin: 0;

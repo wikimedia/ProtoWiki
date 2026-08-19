@@ -57,7 +57,7 @@ footer mock last-edited chrome, username, and header logo / nav-tool configurati
 | `mobileWordmarkSrc` | `string`                | `undefined`      | Forwarded to **`WebChromeHeader`** — Minerva bar wordmark; defaults to **`wordmarkSrc`** then EN constant                                                                                                              |
 | `navTools`          | `ChromeNavTool[]`       | full desktop set | Forwarded to **`WebChromeHeader`** — which mocked Vector tool icons appear (**desktop**); **`#nav`** still replaces the cluster                                                                                        |
 
-`ChromeNavTool` literals: `'appearance' \| 'notifications' \| 'notices' \| 'watchlist' \| 'user'` (see `src/components/chrome/headerNavTools.ts`).
+`ChromeNavTool` literals: `'appearance' \| 'notifications' \| 'notices' \| 'watchlist' \| 'user'` (see `src/components/chrome/headerNavTools.ts`). In the chrome header, `'appearance'` renders as a static, non-interactive icon button (like `'notifications'` / `'notices'`) — the working Appearance settings popover lives only on the prototype gallery home page (`src/prototypes/index.vue`).
 
 `lang` and `dir` are the usual top-of-tree handles: primitives inside don't need their
 own `lang` prop because the value is inherited via the DOM. **`ArticleLive`**, **`ArticleSnapshot`**, and **`ArticleCustom`** also accept

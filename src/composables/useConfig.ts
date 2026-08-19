@@ -3,6 +3,8 @@ import { computed, readonly, ref, watch, type ComputedRef, type DeepReadonly, ty
 import {
   configUserDisplayName,
   configUserPageTitle,
+  DEFAULT_CONFIG,
+  isDefaultUserPageLists,
   langForUser,
   loadConfig,
   resetUserPageLists,
@@ -61,6 +63,7 @@ export function useConfig(): {
   displayName: ComputedRef<string>
   pageTitle: ComputedRef<string>
   currentUserPageLists: ComputedRef<UserPageLists>
+  isCurrentUserPageListsModified: ComputedRef<boolean>
   setCurrentUserPageList: (field: PageListKey, pages: string[]) => void
   resetCurrentUserPageLists: () => void
 } {
@@ -128,6 +131,14 @@ export function useConfig(): {
 
   const currentUserPageLists = computed(() => config.value.userPageLists[user.value])
 
+  const isCurrentUserPageListsModified = computed(() => {
+    if (!isDefaultUserPageLists(user.value, currentUserPageLists.value)) return true
+    if (user.value === 'real') {
+      return config.value.realUsername !== DEFAULT_CONFIG.realUsername
+    }
+    return false
+  })
+
   function setCurrentUserPageList(field: PageListKey, pages: string[]) {
     const activeUser = user.value
     config.value = {
@@ -146,6 +157,7 @@ export function useConfig(): {
     const activeUser = user.value
     config.value = {
       ...config.value,
+      realUsername: activeUser === 'real' ? DEFAULT_CONFIG.realUsername : config.value.realUsername,
       userPageLists: {
         ...config.value.userPageLists,
         [activeUser]: resetUserPageLists(activeUser),
@@ -165,6 +177,7 @@ export function useConfig(): {
     displayName,
     pageTitle,
     currentUserPageLists,
+    isCurrentUserPageListsModified,
     setCurrentUserPageList,
     resetCurrentUserPageLists,
   }
