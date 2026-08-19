@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { CdxButton, CdxSelect, CdxTextInput } from '@wikimedia/codex'
+import {
+  CdxButton,
+  CdxField,
+  CdxSelect,
+  CdxTextInput,
+  CdxTooltip as vTooltip,
+} from '@wikimedia/codex'
 
 import { useConfig } from '@/composables/useConfig'
 import { CONFIG_USER_MENU_ITEMS, formatPageList, parsePageList } from '@/config'
@@ -13,9 +19,18 @@ const {
   realUsername,
   lang,
   currentUserPageLists,
+  isCurrentUserPageListsModified,
   setCurrentUserPageList,
-  resetCurrentUserPageListField,
+  resetCurrentUserPageLists,
 } = useConfig()
+
+const userMenuItems = computed(() =>
+  CONFIG_USER_MENU_ITEMS.map((item) =>
+    item.value === user.value && isCurrentUserPageListsModified.value
+      ? { ...item, label: `${item.label} (modified)` }
+      : item,
+  ),
+)
 
 const watchlistText = computed({
   get: () => formatPageList(currentUserPageLists.value.watchlist),
@@ -35,51 +50,55 @@ const editedPagesText = computed({
 
 <template>
   <div class="settings-panel user-settings-panel">
-    <label class="settings-panel__field">
-      <span class="settings-panel__label">Account</span>
-      <CdxSelect
-        v-model:selected="user"
-        :menu-items="CONFIG_USER_MENU_ITEMS"
-        default-label="New editor"
-      />
-    </label>
-    <label class="settings-panel__field">
-      <span class="settings-panel__label">Wiki</span>
-      <CdxTextInput v-model="lang" class="settings-panel__input" />
-    </label>
-    <label v-if="user === 'real'" class="settings-panel__field">
-      <span class="settings-panel__label">Username</span>
-      <CdxTextInput v-model="realUsername" class="settings-panel__input" />
-    </label>
-    <template v-if="user !== 'real'">
-      <label class="settings-panel__field">
-        <span class="settings-panel__label">Watchlist</span>
+    <div class="settings-panel__intro">
+      <h2 class="settings-panel__title">Mock user settings</h2>
+      <p class="settings-panel__description">
+        Preview supported prototypes from the perspective of different users.
+      </p>
+    </div>
+    <div class="user-settings-panel__fields">
+      <CdxField>
+        <template #label>Preset</template>
         <div class="settings-panel__row">
+          <CdxSelect
+            v-model:selected="user"
+            class="settings-panel__input"
+            :menu-items="userMenuItems"
+            default-label="New user"
+          />
+          <CdxButton
+            v-tooltip="!isCurrentUserPageListsModified ? 'Already set to default' : undefined"
+            weight="quiet"
+            :disabled="!isCurrentUserPageListsModified"
+            @click="resetCurrentUserPageLists"
+          >
+            Reset
+          </CdxButton>
+        </div>
+      </CdxField>
+      <CdxField class="user-settings-panel__wiki-field">
+        <template #label>Wiki</template>
+        <CdxTextInput v-model="lang" class="settings-panel__input" />
+      </CdxField>
+      <CdxField v-if="user === 'real'">
+        <template #label>Username</template>
+        <CdxTextInput v-model="realUsername" class="settings-panel__input" />
+      </CdxField>
+      <template v-if="user !== 'real' && user !== 'logged-out'">
+        <CdxField>
+          <template #label>Watchlist</template>
           <CdxTextInput v-model="watchlistText" class="settings-panel__input" />
-          <CdxButton weight="quiet" @click="resetCurrentUserPageListField('watchlist')">
-            Reset
-          </CdxButton>
-        </div>
-      </label>
-      <label class="settings-panel__field">
-        <span class="settings-panel__label">Reading list</span>
-        <div class="settings-panel__row">
+        </CdxField>
+        <CdxField>
+          <template #label>Saved pages</template>
           <CdxTextInput v-model="readingListText" class="settings-panel__input" />
-          <CdxButton weight="quiet" @click="resetCurrentUserPageListField('readingList')">
-            Reset
-          </CdxButton>
-        </div>
-      </label>
-      <label class="settings-panel__field">
-        <span class="settings-panel__label">Edited pages</span>
-        <div class="settings-panel__row">
+        </CdxField>
+        <CdxField>
+          <template #label>Edited pages</template>
           <CdxTextInput v-model="editedPagesText" class="settings-panel__input" />
-          <CdxButton weight="quiet" @click="resetCurrentUserPageListField('editedPages')">
-            Reset
-          </CdxButton>
-        </div>
-      </label>
-    </template>
+        </CdxField>
+      </template>
+    </div>
   </div>
 </template>
 
@@ -87,8 +106,18 @@ const editedPagesText = computed({
 .user-settings-panel {
   display: inline-flex;
   align-items: stretch;
-  width: auto;
-  min-width: var(--size-2400);
+  width: 100%;
+  max-width: var(--size-2800);
+}
+
+.user-settings-panel__fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-100);
+}
+
+.user-settings-panel__wiki-field {
+  width: var(--size-800);
 }
 
 .user-settings-panel .settings-panel__row {

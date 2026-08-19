@@ -12,6 +12,8 @@ import './styles/wiki-skins/mobile-wiki-overrides.css'
 import './styles/dark.css'
 
 import { initTheming } from './theme'
+import { initAppPlatform } from './app-platform'
+import { loadConfig } from './config'
 
 import '@/composables/useConfig'
 
@@ -41,6 +43,7 @@ function syncGithubPagesPreviewRoute(router: ReturnType<typeof createRouter>): v
 }
 
 initTheming()
+initAppPlatform(loadConfig().appPlatform)
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),

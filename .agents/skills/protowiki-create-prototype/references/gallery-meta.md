@@ -49,7 +49,8 @@ See also [`protowiki-create-prototype` → Gallery copy](../SKILL.md#gallery-cop
 | --- | --- | --- | --- |
 | `title` | prototype | string | Short name; omitted titles fall back to `deriveTitleFromPath`; `template` / `example` categories get a `Template:` / `Example:` prefix on the card |
 | `description` | prototype | string | Card subtitle |
-| `category` | prototype | `prototype` \| `template` \| `example` (default `prototype`) | Primary block vs secondary block (below divider) |
+| `category` | prototype | `prototype` \| `template` \| `example` (default `prototype`) | Gallery tab filter (`Prototypes` / `Templates` / `Examples`); Home tab shows all |
+| `platform` | prototype | `web` \| `app` (default `web`) | Card chip label (Web / App); in the Templates tab, splits the list into **Web templates** then **App templates** |
 | `order` | prototype | number (default: alphabetical) | Sort within block; lower first |
 | `hidden` | prototype | boolean (default `false`) | Omit from gallery; route still works |
 | `spotlight` | prototype | boolean (default `false`) | When any prototype is spotlighted, gallery shows only spotlighted entries |
@@ -68,6 +69,9 @@ The gallery renders two blocks:
 2. **Divider** — horizontal rule when both blocks have visible entries
 3. **Secondary** — `category: 'template'` or `category: 'example'`, with templates
    before examples, then `order`, then `title`
+
+The **Templates** tab groups by `platform`: **Web templates** first, then
+**App templates**, each sorted by `order` then `title`.
 
 ## Spotlight mode
 
@@ -97,6 +101,24 @@ definePage({
 })
 // Gallery card title: "Template: Chrome"
 ```
+
+### App template starter
+
+```ts
+definePage({
+  meta: {
+    title: 'Article',
+    description: 'Template for an in-app article reading screen with live content.',
+    category: 'template',
+    platform: 'app',
+  },
+})
+// Gallery card title: "Template: Article"; chips: App · Template
+// Listed under the "App templates" heading, after the web templates
+```
+
+See [`protowiki-app-prototyping`](../../protowiki-app-prototyping/SKILL.md) for
+what `platform: 'app'` implies beyond the gallery.
 
 ### Worked example demo
 

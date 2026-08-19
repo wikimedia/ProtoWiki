@@ -1,7 +1,6 @@
 ---
 name: codex-icons
 description: How to use the Codex icon library (@wikimedia/codex-icons) — import a `cdxIcon…` constant, render it through CdxIcon, and look up the right name in the full icon list (references/icons.md) or the upstream catalogue. Covers bidi-aware icons, the langCodeMap variants (e.g., bold-x), and accessibility. Use when adding a glyph anywhere — toolbar buttons, actions, menus, pills.
-license: MIT
 ---
 
 # Codex icons

@@ -7,6 +7,7 @@ definePage({
     title: 'Special page',
     description: 'Template for special page prototypes.',
     category: 'template',
+    platform: 'web',
   },
 })
 </script>

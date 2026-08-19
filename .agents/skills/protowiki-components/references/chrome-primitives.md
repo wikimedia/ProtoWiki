@@ -7,13 +7,13 @@ chrome-without-the-wrapper (e.g., a custom layout that doesn't use
 
 ## Skin variants
 
-`ChromeHeader` renders **two different shells** based on effective skin
-(`data-skin` on the header root):
+**`ChromeHeader`** delegates to **`VectorChromeHeader`** (desktop skin)
+or **`MinervaChromeHeader`** (mobile skin) based on effective skin:
 
-| Skin | Chrome feel | Notes |
-| --- | --- | --- |
-| `desktop` | **Vector 2022–style** | Wordmark/tagline (**`wordmarkSrc`**, **`taglineSrc`**, **`#logo` override**), **`Search`** + **Search** button, username link (**`username`** + **`#username`**), user-tool cluster ( **`navTools`** preset vs **`#nav`** override ). **Main-menu glyph is icon-only** (mock). Global skin stays **desktop** until the viewport is **≤640px**; **below 1120px**, inline search collapses to a search icon; **below 768px**, watchlist hides (`nav-button-desktop` parity). |
-| `mobile` | **Minerva-style** | Grey elevated bar: menu, Wikipedia wordmark (**`mobileWordmarkSrc`** / **`wordmarkSrc`**, **`#logo`**), search icon + notifications — **`navTools` is ignored**. |
+| Skin | Component | Chrome feel | Notes |
+| --- | --- | --- | --- |
+| `desktop` | **`VectorChromeHeader`** | **Vector 2022–style** | Wordmark/tagline (**`wordmarkSrc`**, **`taglineSrc`**, **`#logo`**), **`Search`** + **Search** button, username link (**`username`** + **`#username`**), user-tool cluster (**`navTools`** vs **`#nav`**). Main-menu glyph is icon-only (mock). Global skin stays **desktop** until viewport **≤640px**; below **1120px** inline search collapses to a search icon; below **768px** watchlist hides. |
+| `mobile` | **`MinervaChromeHeader`** | **Minerva-style** | Grey elevated bar: menu · wordmark · search + notifications + user — prop-driven **`left`** / **`middle`** / **`right`** item arrays. **`navTools`** is ignored. |
 
 **`ChromeFooter`** matches the skin:
 
@@ -29,37 +29,82 @@ That notice is chrome **fiction** for prototypes — not wired to revisions. The
 
 ## ChromeHeader
 
+Public skin-aware delegator — import directly or use via **`ChromeWrapper`'s** default **`#header`** slot.
+
 ### Props
 
 | Prop | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `skin` | `'desktop' \| 'mobile'` | `undefined` | Local skin override; falls back to global `useSkin()` |
 | `theme` | `'light' \| 'dark'` | `undefined` | Local theme override; falls back to global `useTheme()` |
-| `username` | `string` | `'Username'` | Desktop chrome: **Meta link** mock before tool icons; trimmed; **`''`** hides that link unless **`#username`** overrides |
-| `wordmarkSrc` | `string` | EN CDN SVG | Desktop wordmark **`#logo`** (+ mobile fallback when **`mobileWordmarkSrc`** omitted) |
+| `username` | `string` | `'Username'` | **Desktop:** Meta link mock before tool icons; trimmed; **`''`** hides unless **`#username`** overrides |
+| `wordmarkSrc` | `string` | EN CDN SVG | Desktop wordmark **`#logo`** (+ Minerva fallback when **`mobileWordmarkSrc`** omitted) |
 | `taglineSrc` | `string` | EN CDN SVG | Desktop tagline **`#logo`** stack |
-| `mobileWordmarkSrc` | `string` | **`wordmarkSrc`** then EN CDN | Mobile bar wordmark when **`#logo`** default |
-| `navTools` | `ChromeNavTool[]` | full set (`src/components/chrome/headerNavTools.ts`) | Which desktop tool icons render; **`#nav`** replaces cluster |
+| `mobileWordmarkSrc` | `string` | **`wordmarkSrc`** then EN CDN | Minerva bar wordmark when **`middle`** is omitted |
+| `navTools` | `ChromeNavTool[]` | full set | **Desktop only** — which Vector tool icons render; **`#nav`** replaces cluster |
+| `left` | `HeaderItem[]` | Minerva default | **Mobile only** — override Minerva **`left`** region |
+| `middle` | `HeaderItem[]` | built-in wordmark | **Mobile only** — override Minerva **`middle`** region |
+| `right` | `HeaderItem[]` | Minerva default | **Mobile only** — override Minerva **`right`** region |
+
+`HeaderItem` matches **`AppChromeHeader`** (`link` / `button` / `component` / `title` with kebab-case icon names).
 
 `lang` / `dir` are deliberately not props on the primitives. Set them once
 on the surrounding wrapper (or on `<html>`) and the chrome inherits them
 through the DOM.
 
-Desktop **inline search** is always **`<Search />`** inside the header (not a slot).
+Desktop **inline search** is always **`<Search />`** inside **`VectorChromeHeader`** (not a slot).
 
 ### Slots
 
-| Slot | Default | Use for |
-| --- | --- | --- |
-| `#logo` | EN Wikipedia wordmark (+ tagline on desktop) via `<img>` | Replace with another project's wordmark / lockup |
-| `#username` | Anchor from **`username`** (hidden when empty after trim) | Replace with custom markup before tool icons (**desktop**) |
-| `#nav` | Vector-style tool icons on **desktop** only | Replace the default user-tool cluster (**`navTools` ignored**) |
+| Slot | Skin | Default | Use for |
+| --- | --- | --- | --- |
+| `#menu` | both | menu button / icon | Replace main-menu control (**`ChromeWrapper`** forwards this) |
+| `#logo` | both | EN Wikipedia wordmark (+ tagline on desktop) | Replace wordmark / lockup |
+| `#username` | desktop | Anchor from **`username`** | Replace markup before tool icons |
+| `#nav` | desktop | Vector tool icons | Replace user-tool cluster (**`navTools`** ignored) |
 
 ### Example
 
 ```vue
-<ChromeHeader />
+<script setup lang="ts">
+import ChromeHeader from '@/components/chrome/ChromeHeader.vue'
+</script>
+
+<template>
+  <ChromeHeader />
+</template>
 ```
+
+## VectorChromeHeader
+
+Force desktop Vector chrome regardless of global skin. Same props/slots as the desktop path of **`ChromeHeader`** (except **`skin`** / Minerva item arrays).
+
+```ts
+import VectorChromeHeader from '@/components/chrome/VectorChromeHeader.vue'
+```
+
+Props: **`theme?`**, **`username?`**, **`wordmarkSrc?`**, **`taglineSrc?`**, **`navTools?`**
+
+Slots: **`#menu`**, **`#logo`**, **`#username`**, **`#nav`**
+
+## MinervaChromeHeader
+
+Force mobile Minerva bar regardless of global skin. Prop-driven **`left`** / **`middle`** / **`right`** item arrays — same shape as **`AppChromeHeader`**. No slots.
+
+```ts
+import MinervaChromeHeader from '@/components/chrome/MinervaChromeHeader.vue'
+import type { MinervaHeaderItem } from '@/components/chrome/MinervaChromeHeader.vue'
+```
+
+| Region | Default |
+| --- | --- |
+| `left` | menu button |
+| `middle` | Wikipedia wordmark (`RouterLink` + `<img>`) when **`middle`** omitted |
+| `right` | search, notifications, user avatar buttons |
+
+Adjacent icon buttons/links in **`left`** and **`right`** have **no gap** between them (flush groups).
+
+Props: **`theme?`**, **`left?`**, **`middle?`**, **`right?`**, **`wordmarkSrc?`**, **`mobileWordmarkSrc?`**
 
 ## ChromeFooter
 

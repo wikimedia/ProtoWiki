@@ -3,7 +3,7 @@ import { ref, type ComputedRef, type InjectionKey, type Ref } from 'vue'
 import lightTokensRaw from '@wikimedia/codex-design-tokens/theme-wikimedia-ui.css?raw'
 import darkTokensRaw from '@wikimedia/codex-design-tokens/theme-wikimedia-ui-mode-dark.css?raw'
 
-import { loadConfig, type ConfigTheme } from '@/config'
+import { loadConfig, type ConfigTheme, type ConfigWebSkin } from '@/config'
 
 export type Skin = 'desktop' | 'mobile'
 export type Theme = 'light' | 'dark'
@@ -24,7 +24,7 @@ export const PROTOWIKI_CHROME_THEME: InjectionKey<ComputedRef<Theme>> =
  * Matches FakeMediaWiki `SpecialView/style.css`: `.nav-desktop` vs `.nav-mobile`
  * swap at **640px** — desktop chrome stays until the viewport is phone-sized.
  *
- * **1120px** is a separate concern: `ChromeHeader.vue` still hides inline search
+ * **1120px** is a separate concern: `VectorChromeHeader.vue` still hides inline search
  * below that width while remaining on desktop skin (same as FakeMediaWiki’s
  * `.nav-item-search` / `.nav-button-search` toggle).
  */
@@ -71,9 +71,13 @@ export const globalSkin: Ref<Skin> = ref<Skin>('desktop')
 export const globalTheme: Ref<Theme> = ref<Theme>('light')
 
 let themeUrlPinned = false
+let skinUrlPinned = false
 let themePreference: ConfigTheme = 'light'
+let webSkinPreference: ConfigWebSkin = 'auto'
 let colorSchemeMql: MediaQueryList | null = null
 let onColorSchemeChange: ((event: MediaQueryListEvent) => void) | null = null
+let viewportMql: MediaQueryList | null = null
+let onViewportChange: ((event: MediaQueryListEvent) => void) | null = null
 
 function readUrlParam(name: string): string | null {
   if (typeof window === 'undefined') return null
@@ -135,6 +139,62 @@ function applyGlobalTheme(theme: Theme): void {
   syncWikiSkinNightClass(theme)
 }
 
+function applyGlobalSkin(skin: Skin): void {
+  globalSkin.value = skin
+  setHtmlAttribute('data-skin', skin)
+}
+
+function teardownViewportListener(): void {
+  if (viewportMql && onViewportChange) {
+    viewportMql.removeEventListener('change', onViewportChange)
+  }
+  viewportMql = null
+  onViewportChange = null
+}
+
+function setupViewportListener(): void {
+  if (typeof window === 'undefined' || !window.matchMedia) return
+
+  teardownViewportListener()
+
+  viewportMql = window.matchMedia(`(min-width: ${DESKTOP_MIN_WIDTH}px)`)
+  onViewportChange = (event: MediaQueryListEvent) => {
+    if (skinUrlPinned || webSkinPreference !== 'auto') return
+    const next: Skin = event.matches ? 'desktop' : 'mobile'
+    if (next !== globalSkin.value) {
+      applyGlobalSkin(next)
+    }
+  }
+  viewportMql.addEventListener('change', onViewportChange)
+}
+
+function resolveEffectiveSkin(preference: ConfigWebSkin): Skin {
+  if (preference === 'desktop' || preference === 'mobile') return preference
+  return resolveSkinFromViewport()
+}
+
+/**
+ * Apply stored web skin preference (auto / desktop / mobile) to the global
+ * `data-skin`. URL `?skin=` still wins when present. App chrome ignores
+ * `data-skin` entirely — it reads `data-app-platform` instead.
+ */
+export function applyWebSkinPreference(webSkin: ConfigWebSkin): void {
+  webSkinPreference = webSkin
+
+  if (skinUrlPinned) {
+    teardownViewportListener()
+    return
+  }
+
+  applyGlobalSkin(resolveEffectiveSkin(webSkin))
+
+  if (webSkin === 'auto') {
+    setupViewportListener()
+  } else {
+    teardownViewportListener()
+  }
+}
+
 function teardownColorSchemeListener(): void {
   if (colorSchemeMql && onColorSchemeChange) {
     colorSchemeMql.removeEventListener('change', onColorSchemeChange)
@@ -180,7 +240,7 @@ export function applyThemePreference(preference: ConfigTheme): void {
  * reactive when no URL param is pinning the value.
  *
  * Order of precedence:
- *   skin  : ?skin=  URL param  >  viewport (>= 640px desktop, else mobile)
+ *   skin  : ?skin=  URL param  >  config preference  >  viewport (>= 640px desktop, else mobile)
  *   theme : ?theme= URL param  >  config preference  >  prefers-color-scheme
  *
  * Call this once, before mounting the app.
@@ -193,23 +253,18 @@ export function initTheming(): void {
   const skinParam = readUrlParam('skin')
   const themeParam = readUrlParam('theme')
 
-  const skinPinned = isSkin(skinParam)
+  skinUrlPinned = isSkin(skinParam)
   themeUrlPinned = isTheme(themeParam)
 
-  globalSkin.value = skinPinned ? (skinParam as Skin) : resolveSkinFromViewport()
-  setHtmlAttribute('data-skin', globalSkin.value)
+  const storedConfig = loadConfig()
+  webSkinPreference = storedConfig.webSkin
 
-  applyThemePreference(loadConfig().theme)
-
-  if (!skinPinned) {
-    const breakpoint = window.matchMedia(`(min-width: ${DESKTOP_MIN_WIDTH}px)`)
-    const onBreakpointChange = (event: MediaQueryListEvent | MediaQueryList) => {
-      const next: Skin = event.matches ? 'desktop' : 'mobile'
-      if (next !== globalSkin.value) {
-        globalSkin.value = next
-        setHtmlAttribute('data-skin', next)
-      }
-    }
-    breakpoint.addEventListener('change', onBreakpointChange)
+  if (skinUrlPinned) {
+    applyGlobalSkin(skinParam as Skin)
+    teardownViewportListener()
+  } else {
+    applyWebSkinPreference(storedConfig.webSkin)
   }
+
+  applyThemePreference(storedConfig.theme)
 }

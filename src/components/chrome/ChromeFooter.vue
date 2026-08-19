@@ -11,7 +11,7 @@ import {
 import { globalSkin, globalTheme } from '@/theme'
 import type { Skin, Theme } from '@/theme'
 
-/** EN mobile wordmark — matches ChromeHeader mobile logo slot default. */
+/** EN mobile wordmark — matches MinervaChromeHeader default wordmark. */
 const WIKIPEDIA_WORDMARK_EN =
   'https://en.wikipedia.org/static/images/mobile/copyright/wikipedia-wordmark-en-25.svg'
 

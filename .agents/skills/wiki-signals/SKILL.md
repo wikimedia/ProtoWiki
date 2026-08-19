@@ -1,7 +1,6 @@
 ---
 name: wiki-signals
 description: A catalogue of real-data signals available on Wikipedia / Wikimedia projects — inference signals (revision counts, watchers, infobox shape), analytics (pageviews, top articles), links (incoming, outgoing, redirects, related), curation (featured articles, image of the day, on this day), attribution (license, brand marks, source-wiki metadata), and edit suggestions (Edit Check-style coaching, mockable from rules / Lift Wing). Use when picking what real data to surface in a prototype, asking "what could I show alongside this article?", or grounding a feature idea in observable signals.
-license: MIT
 ---
 
 # Wiki signals

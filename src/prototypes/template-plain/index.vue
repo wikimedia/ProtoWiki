@@ -6,6 +6,7 @@ definePage({
     title: 'Plain',
     description: 'Template for minimal prototypes.',
     category: 'template',
+    platform: 'web',
   },
 })
 </script>

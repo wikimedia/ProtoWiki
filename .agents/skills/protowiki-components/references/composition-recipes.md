@@ -11,6 +11,53 @@ A page is one or more wrappers + the components inside. There is no
 </ChromeWrapper>
 ```
 
+## App shell with header + bottom nav
+
+For **`platform: 'app'`** prototypes — mobile app chrome (wordmark header,
+icon bottom nav). No Vector/Minerva skin.
+
+```vue
+<script setup lang="ts">
+import AppChromeWrapper from '@/components/app/AppChromeWrapper.vue'
+
+definePage({ meta: { platform: 'app' } })
+</script>
+
+<template>
+  <AppChromeWrapper>
+    <p>App body content.</p>
+  </AppChromeWrapper>
+</template>
+```
+
+**Reference implementation:** **`src/prototypes/template-app-chrome/`**. See
+[`app-chrome.md`](app-chrome.md) for props, slots, and primitive APIs.
+
+## In-app article screen
+
+Same article surface as the web page, with **`app`** for the apps' lead block and
+in-app reading affordances. No **`skin`** — **`app`** pins it to **`mobile`**.
+
+```vue
+<script setup lang="ts">
+import AppChromeWrapper from '@/components/app/AppChromeWrapper.vue'
+import ArticleLive from '@/components/article/ArticleLive.vue'
+
+definePage({ meta: { platform: 'app' } })
+</script>
+
+<template>
+  <AppChromeWrapper>
+    <ArticleLive app article="Wet Leg" lang="en" />
+  </AppChromeWrapper>
+</template>
+```
+
+**Reference implementation:** **`src/prototypes/template-app-article/`**. See
+[`article.md`](article.md#in-app-articles-app) for what **`app`** changes, and
+[`protowiki-app-prototyping`](../../protowiki-app-prototyping/SKILL.md) for the
+app platform as a whole.
+
 ## Hand-authored article (no live fetch or snapshot)
 
 Use when the prototype needs **Vue-authored** article markup (infobox + sections) without **`page/html`** or **`public/snapshots/`**. Content goes in **`ArticleRenderer`** so **`.mw-parser-output`** and skin CSS apply.

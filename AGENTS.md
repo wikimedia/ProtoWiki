@@ -64,9 +64,10 @@ trailing **Inside ProtoWiki** section.
 | Skill                                                                              | What it covers                                                           |
 | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | [`protowiki-getting-started`](.agents/skills/protowiki-getting-started/SKILL.md)   | Orientation: what ProtoWiki is, the stack, where everything lives        |
-| [`protowiki-create-prototype`](.agents/skills/protowiki-create-prototype/SKILL.md) | Adding a new prototype via file-based routing — zero registration        |
-| [`protowiki-components`](.agents/skills/protowiki-components/SKILL.md)             | Shipped Vue components: wrappers, chrome, article surfaces, search       |
-| [`protowiki-skins`](.agents/skills/protowiki-skins/SKILL.md)                       | Vector 2022 (desktop) vs Minerva (mobile); per-component skin overrides  |
+| [`protowiki-create-prototype`](.agents/skills/protowiki-create-prototype/SKILL.md) | Adding a new prototype via file-based routing — zero registration, web or app |
+| [`protowiki-app-prototyping`](.agents/skills/protowiki-app-prototyping/SKILL.md)   | The app platform: `platform: 'app'`, app chrome, in-app articles, iOS vs Android |
+| [`protowiki-components`](.agents/skills/protowiki-components/SKILL.md)             | Shipped Vue components: wrappers, web + app chrome, article surfaces, search |
+| [`protowiki-skins`](.agents/skills/protowiki-skins/SKILL.md)                       | Vector 2022 (desktop) vs Minerva (mobile) web skins; per-component skin overrides |
 | [`protowiki-theme`](.agents/skills/protowiki-theme/SKILL.md)                       | Light / dark theming; per-component theme overrides                      |
 | [`protowiki-deploy`](.agents/skills/protowiki-deploy/SKILL.md)                     | GitHub Pages deploy, PR previews, base path, fork setup, SPA 404         |
 | [`protowiki-update-codex`](.agents/skills/protowiki-update-codex/SKILL.md)         | Upgrading Codex: bump packages, diff upstream docs, sync skills + tokens |
@@ -116,6 +117,10 @@ mirrors [FakeMediaWiki `wiki-signals`](https://github.com/TodePond/FakeMediaWiki
 - Prototype gallery **title** and **description** must not be AI-generated;
   agents ask the author or omit — see
   [`protowiki-create-prototype`](.agents/skills/protowiki-create-prototype/SKILL.md).
+- **App prototypes** declare `platform: 'app'` and wrap in **`AppChromeWrapper`**
+  (not `ChromeWrapper`); in-app articles are **`<ArticleLive app>`**, not a
+  separate component. See
+  [`protowiki-app-prototyping`](.agents/skills/protowiki-app-prototyping/SKILL.md).
 - **Hand-authored article pages** (no `ArticleLive` / `ArticleSnapshot`): prefer **`ChromeWrapper` → `ArticleCustom`** (default slot = parser body); or compose **`ChromeWrapper` → `ArticleWrapper` → `ArticleRenderer`** when you need finer control. Put markup in the renderer slot. See [`protowiki-components` → `article.md`](.agents/skills/protowiki-components/references/article.md) and **`src/prototypes/template-article-custom/`**.
 
 ## What this repo is not

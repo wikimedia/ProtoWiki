@@ -1,7 +1,6 @@
 ---
 name: codex-components
 description: Catalogue of every Codex Vue component shipped via @wikimedia/codex — what each component is for, the most common props/slots/events, and which ones to reach for in typical Wikipedia UI patterns. Use when you need a button, input, dialog, menu, message, card, tabs, lookup, etc., or when you're picking between similar components ("Lookup vs TypeaheadSearch?").
-license: MIT
 ---
 
 # Codex components

@@ -1,7 +1,6 @@
 ---
 name: protowiki-deploy
 description: How to build and deploy ProtoWiki to GitHub Pages — production deploy, PR preview deployments on gh-pages, template-first repo setup, base path (PROTOWIKI_BASE), SPA 404 fallback, and CI workflows. Use when asked to deploy, publish, preview a PR, ship to GitHub Pages, set up a copied repo, or fix base-path / 404 issues.
-license: MIT
 ---
 
 # Deploy ProtoWiki to GitHub Pages
@@ -254,10 +253,14 @@ https://<org>.github.io/ProtoWiki/                         ← gallery
 https://<org>.github.io/ProtoWiki/template-chrome          ← prototype
 https://<org>.github.io/ProtoWiki/template-chrome?theme=dark
 https://<org>.github.io/ProtoWiki/template-chrome?skin=mobile
+https://<org>.github.io/ProtoWiki/template-app-article?os=ios
+https://<org>.github.io/ProtoWiki/template-app-chrome?os=android&theme=dark
+https://<org>.github.io/ProtoWiki/template-app-article?os=auto
 ```
 
-The `?skin=` and `?theme=` URL params are handled at boot — paste them
-into review tickets to pin a specific preview.
+The `?skin=`, `?theme=`, and `?os=` URL params are handled at boot — paste them
+into review tickets to pin a specific preview. `?os=auto|ios|android` masks the
+saved App OS preference without changing it.
 
 ## Troubleshooting
 

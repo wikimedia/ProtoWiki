@@ -3,17 +3,22 @@ import { computed, readonly, ref, watch, type ComputedRef, type DeepReadonly, ty
 import {
   configUserDisplayName,
   configUserPageTitle,
+  DEFAULT_CONFIG,
+  isDefaultUserPageLists,
   langForUser,
   loadConfig,
-  resetUserPageListField,
+  resetUserPageLists,
   saveConfig,
+  type ConfigAppPlatform,
   type Config,
   type ConfigTheme,
+  type ConfigWebSkin,
   type ConfigUser,
   type PageListKey,
   type UserPageLists,
 } from '@/config'
-import { applyThemePreference } from '@/theme'
+import { applyAppPlatform } from '@/app-platform'
+import { applyThemePreference, applyWebSkinPreference } from '@/theme'
 
 const config = ref<Config>(loadConfig())
 
@@ -32,9 +37,25 @@ watch(
   },
 )
 
+watch(
+  () => config.value.webSkin,
+  (webSkin) => {
+    applyWebSkinPreference(webSkin)
+  },
+)
+
+watch(
+  () => config.value.appPlatform,
+  (platform) => {
+    applyAppPlatform(platform)
+  },
+)
+
 export function useConfig(): {
   config: DeepReadonly<Ref<Config>>
   theme: Ref<ConfigTheme>
+  appPlatform: Ref<ConfigAppPlatform>
+  webSkin: Ref<ConfigWebSkin>
   user: Ref<ConfigUser>
   realUsername: Ref<string>
   lang: Ref<string>
@@ -42,13 +63,28 @@ export function useConfig(): {
   displayName: ComputedRef<string>
   pageTitle: ComputedRef<string>
   currentUserPageLists: ComputedRef<UserPageLists>
+  isCurrentUserPageListsModified: ComputedRef<boolean>
   setCurrentUserPageList: (field: PageListKey, pages: string[]) => void
-  resetCurrentUserPageListField: (field: PageListKey) => void
+  resetCurrentUserPageLists: () => void
 } {
   const theme = computed({
     get: () => config.value.theme,
     set: (value: ConfigTheme) => {
       config.value = { ...config.value, theme: value }
+    },
+  })
+
+  const appPlatform = computed({
+    get: () => config.value.appPlatform,
+    set: (value: ConfigAppPlatform) => {
+      config.value = { ...config.value, appPlatform: value }
+    },
+  })
+
+  const webSkin = computed({
+    get: () => config.value.webSkin,
+    set: (value: ConfigWebSkin) => {
+      config.value = { ...config.value, webSkin: value }
     },
   })
 
@@ -95,6 +131,14 @@ export function useConfig(): {
 
   const currentUserPageLists = computed(() => config.value.userPageLists[user.value])
 
+  const isCurrentUserPageListsModified = computed(() => {
+    if (!isDefaultUserPageLists(user.value, currentUserPageLists.value)) return true
+    if (user.value === 'real') {
+      return config.value.realUsername !== DEFAULT_CONFIG.realUsername
+    }
+    return false
+  })
+
   function setCurrentUserPageList(field: PageListKey, pages: string[]) {
     const activeUser = user.value
     config.value = {
@@ -109,17 +153,14 @@ export function useConfig(): {
     }
   }
 
-  function resetCurrentUserPageListField(field: PageListKey) {
+  function resetCurrentUserPageLists() {
     const activeUser = user.value
     config.value = {
       ...config.value,
+      realUsername: activeUser === 'real' ? DEFAULT_CONFIG.realUsername : config.value.realUsername,
       userPageLists: {
         ...config.value.userPageLists,
-        [activeUser]: resetUserPageListField(
-          config.value.userPageLists[activeUser],
-          activeUser,
-          field,
-        ),
+        [activeUser]: resetUserPageLists(activeUser),
       },
     }
   }
@@ -127,6 +168,8 @@ export function useConfig(): {
   return {
     config: readonly(config),
     theme,
+    appPlatform,
+    webSkin,
     user,
     realUsername,
     lang,
@@ -134,7 +177,8 @@ export function useConfig(): {
     displayName,
     pageTitle,
     currentUserPageLists,
+    isCurrentUserPageListsModified,
     setCurrentUserPageList,
-    resetCurrentUserPageListField,
+    resetCurrentUserPageLists,
   }
 }

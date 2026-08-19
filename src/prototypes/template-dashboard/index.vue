@@ -14,6 +14,7 @@ definePage({
     title: 'Dashboard',
     description: 'Template for dashboard prototypes that contain "box modules".',
     category: 'template',
+    platform: 'web',
   },
 })
 

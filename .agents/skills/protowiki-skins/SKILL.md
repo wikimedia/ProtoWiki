@@ -1,7 +1,6 @@
 ---
 name: protowiki-skins
-description: How desktop (Vector 2022) vs mobile (Minerva) skins work in ProtoWiki — the boot-time resolution of ?skin= URL param + viewport into a data-skin attribute on <html>, the per-component skin prop for embedding mobile previews on desktop pages, and the read-only useSkin() hook. Use when adding skin-specific styles, embedding a mobile preview, debugging the responsive breakpoint, or wiring a "show mobile" toggle.
-license: MIT
+description: How desktop (Vector 2022) vs mobile (Minerva) web skins work in ProtoWiki — the boot-time resolution of ?skin= URL param + stored Web skin preference + viewport into a data-skin attribute on <html>, the per-component skin prop for embedding mobile previews on desktop pages, and the read-only useSkin() hook. Skins are a web-only axis; native app prototypes use data-app-platform instead. Use when adding skin-specific styles, embedding a mobile preview, debugging the responsive breakpoint, or wiring a "show mobile" toggle.
 ---
 
 # ProtoWiki — skins
@@ -15,18 +14,26 @@ Skins control layout (column count, sticky rails, search-bar visibility,
 font-sizes) but not colours — those are the
 [theme](../protowiki-theme/SKILL.md)'s job.
 
+**Skins are the web axis only.** Minerva (`data-skin="mobile"`) is mobile
+**web**, not the native apps. App prototypes (`platform: 'app'`) have no skin at
+all — their platform axis is iOS vs Android on `<html data-app-platform>`. See
+[`protowiki-app-prototyping`](../protowiki-app-prototyping/SKILL.md).
+
 ## How the global skin is resolved
 
 At boot, `src/theme.ts` decides the global skin in this order:
 
 1. `?skin=desktop` or `?skin=mobile` URL param, if either is present.
-2. Otherwise, viewport: `window.innerWidth >= 640` → `desktop`, else `mobile`.
+2. The stored **Web skin** preference (`config.webSkin`: `auto` / `desktop` /
+   `mobile`), set in the gallery's Appearance settings.
+3. Otherwise (`auto`), viewport: `window.innerWidth >= 640` → `desktop`, else `mobile`.
    This matches **FakeMediaWiki** (`SpecialView/style.css`): desktop chrome
    (`nav-desktop`) stays until **640px**; below that, mobile chrome (`nav-mobile`).
 
-The result is set as `data-skin="…"` on `<html>`. When the URL param is
-**not** pinning the value, the boot script subscribes to a media-query
-listener so the global skin updates live as the viewport crosses **640 px**.
+The result is set as `data-skin="…"` on `<html>`. When neither the URL param nor
+the stored preference is pinning the value, the boot script subscribes to a
+media-query listener so the global skin updates live as the viewport crosses
+**640 px**.
 
 `?skin=` URL param wins permanently for that session (no live subscription
 when the URL forces a value).
@@ -39,7 +46,7 @@ Desktop vs mobile rules live **next to those components** in scoped `<style>`
 blocks (e.g. `.article[data-skin='mobile'] { … }` for tighter article padding).
 
 Vector chrome additionally uses **`@media (max-width: 1120px)`** inside
-`ChromeHeader.vue` to hide inline search and show the search icon — same idea as
+`VectorChromeHeader.vue` to hide inline search and show the search icon — same idea as
 FakeMediaWiki’s `.nav-item-search` / `.nav-button-search` toggle — and
 **`@media (max-width: 768px)`** to hide desktop-only tools such as the watchlist mock
 (FakeMediaWiki’s `.nav-button-desktop`). Those are **layout** breakpoints inside desktop
@@ -146,3 +153,6 @@ beat the `!important` rules RL ships.
 - **Don't try to read the local skin override from `useSkin()`.** It only
   reflects `<html>`. A component that received a `skin` prop already has
   the answer in props.
+- **Don't pass `skin` inside an app prototype.** App chrome has no skin;
+  `<ArticleLive app>` pins itself to `mobile`. Reach for
+  [`protowiki-app-prototyping`](../protowiki-app-prototyping/SKILL.md) instead.

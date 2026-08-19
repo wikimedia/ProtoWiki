@@ -1,7 +1,6 @@
 ---
 name: protowiki-getting-started
 description: Orientation for the ProtoWiki repo — what it is, the Vite + Vue 3 + Codex + GitHub Pages stack, where code lives, where skills live, and the first thing to do. Use when first opening this repo, when asked "what is ProtoWiki" or "how does this repo work", or when an agent needs a high-level map before doing anything else.
-license: MIT
 ---
 
 # ProtoWiki — getting started
@@ -21,7 +20,8 @@ Realism is the goal. The repo bundles:
   components, CSS tokens, icons) so prototypes look right.
 - Data utilities that talk to the live Wikipedia REST and Action APIs.
 - Single-concern layout wrappers that paint each Wikipedia surface (chrome,
-  article column, special-page shell, plain canvas) and compose by nesting.
+  article column, special-page shell, plain canvas) and compose by nesting —
+  for the **website** and for the **iOS / Android apps**.
 - A skills system under `.agents/skills/` that documents every part of
   the repo for both humans and AI coding agents.
 
@@ -70,6 +70,7 @@ read and that AI agents auto-discover.
 | If you want to… | Read… |
 | --- | --- |
 | Make a new prototype | [`protowiki-create-prototype`](../protowiki-create-prototype/SKILL.md) |
+| Prototype the iOS / Android apps rather than the website | [`protowiki-app-prototyping`](../protowiki-app-prototyping/SKILL.md) |
 | Customize home gallery listing | [`protowiki-create-prototype` → `gallery-meta.md`](../protowiki-create-prototype/references/gallery-meta.md) |
 | Look up a component (wrappers, article surfaces, search bar…) | [`protowiki-components`](../protowiki-components/SKILL.md) |
 | Use a Codex component, token, or icon | [`codex-usage`](../codex-usage/SKILL.md) |

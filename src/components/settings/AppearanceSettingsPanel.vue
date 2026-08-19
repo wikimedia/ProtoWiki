@@ -1,23 +1,29 @@
 <script setup lang="ts">
-import { CdxRadio } from '@wikimedia/codex'
+import { CdxField, CdxRadio } from '@wikimedia/codex'
 
 import { useConfig } from '@/composables/useConfig'
-import { CONFIG_THEME_MENU_ITEMS } from '@/config'
+import {
+  CONFIG_APP_PLATFORM_MENU_ITEMS,
+  CONFIG_THEME_MENU_ITEMS,
+  CONFIG_WEB_SKIN_MENU_ITEMS,
+} from '@/config'
 
 import './settingsPanel.css'
 
-const { theme } = useConfig()
+const { theme, appPlatform, webSkin } = useConfig()
 </script>
 
 <template>
-  <div class="settings-panel">
-    <div class="settings-panel__field appearance-settings-panel__theme">
-      <span id="protowiki-color-label" class="settings-panel__label">Color</span>
-      <div
-        class="appearance-settings-panel__options"
-        role="radiogroup"
-        aria-labelledby="protowiki-color-label"
-      >
+  <div class="settings-panel appearance-settings-panel">
+    <div class="settings-panel__intro">
+      <h2 class="settings-panel__title">Appearance settings</h2>
+      <p class="settings-panel__description">
+        Preview supported prototypes in different colors, skins, and app platforms.
+      </p>
+    </div>
+    <div class="appearance-settings-panel__fields">
+      <CdxField :is-fieldset="true">
+        <template #label>Color</template>
         <CdxRadio
           v-for="item in CONFIG_THEME_MENU_ITEMS"
           :key="item.value"
@@ -27,19 +33,43 @@ const { theme } = useConfig()
         >
           {{ item.label }}
         </CdxRadio>
-      </div>
+      </CdxField>
+
+      <CdxField :is-fieldset="true">
+        <template #label>Web skin</template>
+        <CdxRadio
+          v-for="item in CONFIG_WEB_SKIN_MENU_ITEMS"
+          :key="item.value"
+          v-model="webSkin"
+          name="protowiki-web-skin"
+          :input-value="item.value"
+        >
+          {{ item.label }}
+        </CdxRadio>
+      </CdxField>
+
+      <CdxField :is-fieldset="true">
+        <template #label>App OS</template>
+        <CdxRadio
+          v-for="item in CONFIG_APP_PLATFORM_MENU_ITEMS"
+          :key="item.value"
+          v-model="appPlatform"
+          name="protowiki-app-platform"
+          :input-value="item.value"
+        >
+          {{ item.label }}
+        </CdxRadio>
+      </CdxField>
     </div>
   </div>
 </template>
 
 <style scoped>
-.appearance-settings-panel__theme {
-  gap: var(--spacing-75);
-}
-
-.appearance-settings-panel__options {
+.appearance-settings-panel__fields {
   display: flex;
-  flex-direction: column;
-  gap: var(--spacing-50);
+  flex-wrap: wrap;
+  align-items: stretch;
+  width: 100%;
+  gap: var(--spacing-150);
 }
 </style>

@@ -1,3 +1,4 @@
+import type { PrototypePlatform } from '@/config'
 import type { PageCategory } from '@/prototype-gallery'
 
 export {}
@@ -7,6 +8,7 @@ declare module 'vue-router' {
     title?: string
     description?: string
     category?: PageCategory
+    platform?: PrototypePlatform
     order?: number
     hidden?: boolean
     spotlight?: boolean

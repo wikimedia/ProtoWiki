@@ -8,7 +8,7 @@ endpoints, and how to refresh the committed schema snapshots.
 
 | Component | API | Notes |
 | --- | --- | --- |
-| `ArticleLive` | REST `/page/html/{title}` | **`ArticleWrapper`** + **`ArticleRenderer`**; **`ArticleRenderer`** mounts when fetch supplies HTML or **`#default`** is passed (**`null`** fetch state omits **`ArticleRenderer`**). **`lang`** / **`dir`** passthrough unchanged. Defaults **`en.wikipedia.org`**; **`host`** switches wiki. |
+| `ArticleLive` | REST `/page/html/{title}` (+ Action `query` with `pageimages\|description` when **`app`**) | **`ArticleWrapper`** + **`ArticleRenderer`**; **`ArticleRenderer`** mounts when fetch supplies HTML or **`#default`** is passed (**`null`** fetch state omits **`ArticleRenderer`**). **`lang`** / **`dir`** passthrough unchanged. Host derives from **`lang`** (so **`en.wikipedia.org`** by default); **`host`** overrides. **`app`** adds the lead-block metadata fetch. |
 | `ArticleSnapshot` | (none — static **`public/snapshots/&lt;slug&gt;.html`**) | No REST body fetch; slug from **`articleSnapshotSlug(article)`**. |
 | `ArticleCustom` | (none) | Thin **`ArticleWrapper` → `ArticleRenderer`**; **`#default`** is hand-authored markup. |
 | `Search` | Action `?action=opensearch` | Debounced + `AbortController`-cancelled. Defaults to `en.wikipedia.org`; takes a `host` prop. |
@@ -18,6 +18,18 @@ endpoints, and how to refresh the committed schema snapshots.
 If you find yourself reaching for `fetch` directly to one of these
 endpoints, use the component instead — they already do the etiquette
 work (UA, cancellation, error handling).
+
+## `page/html`, not `mobile-html`
+
+In-app article screens (**`<ArticleLive app>`**) read the same REST
+**`page/html`** as the web ones and apply the app-style transforms in
+**`ArticleRenderer`**. REST **`page/mobile-html`** / PCS was tried and reverted:
+it only renders correctly in a document of its own, and an iframe puts the
+article beyond the reach of ProtoWiki CSS, Codex components and devtools —
+the opposite of what prototypes need. Full reasoning in
+[`protowiki-components` → `article.md`](../../protowiki-components/references/article.md#do-not-use-rest-pagemobile-html--pcs-here);
+the app platform overall is
+[`protowiki-app-prototyping`](../../protowiki-app-prototyping/SKILL.md).
 
 ## User-Agent
 

@@ -33,6 +33,7 @@ definePage({
     title: 'Homepage',
     description: 'Template for prototyping the newcomer homepage.',
     category: 'template',
+    platform: 'web',
   },
 })
 </script>

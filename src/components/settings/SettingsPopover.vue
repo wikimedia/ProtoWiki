@@ -20,6 +20,7 @@ function toggle(): void {
       v-model:open="open"
       :anchor="anchor"
       placement="bottom-end"
+      :use-bottom-sheet="true"
       class="settings-popover__overlay"
     >
       <div @click.stop>
