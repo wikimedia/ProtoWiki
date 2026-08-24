@@ -18,6 +18,8 @@ interface Props {
   middle?: AppHeaderItem[]
   right?: AppHeaderItem[]
   bottomNavItems?: AppBottomNavItem[]
+  /** Bottom nav item to highlight as the current screen. */
+  activeNavItem?: AppBottomNavItem
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -29,6 +31,7 @@ const props = withDefaults(defineProps<Props>(), {
   middle: undefined,
   right: undefined,
   bottomNavItems: undefined,
+  activeNavItem: undefined,
 })
 
 const emit = defineEmits<{
@@ -65,6 +68,7 @@ function onNavigate(item: AppBottomNavItem): void {
           v-if="props.showBottomMenu"
           :theme="effectiveTheme"
           :items="props.bottomNavItems"
+          :active-item="props.activeNavItem"
           @navigate="onNavigate"
         />
       </slot>

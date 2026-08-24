@@ -15,11 +15,14 @@ interface Props {
   theme?: Theme
   /** Subset/order of bottom nav items; default slot replaces the whole bar. */
   items?: AppBottomNavItem[]
+  /** Item to highlight as the current screen. */
+  activeItem?: AppBottomNavItem
 }
 
 const props = withDefaults(defineProps<Props>(), {
   theme: undefined,
   items: undefined,
+  activeItem: undefined,
 })
 
 const emit = defineEmits<{
@@ -57,6 +60,7 @@ function hasItemSlot(item: AppBottomNavItem): boolean {
       v-for="item in effectiveItems"
       :key="item"
       class="app-bottom-menu__item"
+      :class="{ 'app-bottom-menu__item--active': item === props.activeItem }"
       weight="quiet"
       size="large"
       :aria-label="APP_BOTTOM_NAV_ITEM_META[item].ariaLabel"
@@ -80,5 +84,9 @@ function hasItemSlot(item: AppBottomNavItem): boolean {
   padding-inline: var(--spacing-150, 24px);
   border-top: 1px solid var(--border-color-subtle, #c8ccd1);
   background-color: var(--background-color-base, #fff);
+}
+
+.app-bottom-menu__item--active {
+  color: var(--color-progressive, #36c);
 }
 </style>
