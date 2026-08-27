@@ -1,1 +1,0 @@
-import{aq as t}from"./codex-icons-D4rE05Ov.js";function r(o){return o.startsWith("cdxIcon")?o:`cdxIcon${o.split("-").map(c=>c.charAt(0).toUpperCase()+c.slice(1)).join("")}`}function e(o){const n=r(o);return t[n]}export{e as r};
