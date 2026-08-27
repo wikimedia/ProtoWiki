@@ -16,8 +16,6 @@ import {
   CdxIcon,
   CdxMessage,
   CdxProgressBar,
-  CdxTab,
-  CdxTabs,
   CdxThumbnail,
 } from '@wikimedia/codex'
 import {
@@ -25,7 +23,6 @@ import {
   cdxIconBookmarkOutline,
   cdxIconDownload,
   cdxIconDownTriangle,
-  cdxIconExpand,
   cdxIconGlobe,
   cdxIconHelpNotice,
   cdxIconInfo,
@@ -47,6 +44,8 @@ import { useIsIos } from '@/composables/useAppPlatform'
 
 import FeedSectionHeader from './FeedSectionHeader.vue'
 import { fetchFeed, type Feed } from './fetchFeed'
+import ForYouFeed from './ForYouFeed.vue'
+import HomeTabsRow from './HomeTabsRow.vue'
 import { rewriteWikiLinks } from './rewriteWikiLinks'
 
 const router = useRouter()
@@ -144,100 +143,298 @@ const shareIcon = computed(() => (isIos.value ? cdxIconShareIOS : cdxIconShareAn
 
 <template>
   <AppChromeWrapper
-    :left="headerLeft"
-    :right="headerRight"
+    :left="activeTab === 'foryou' ? [] : headerLeft"
+    :right="activeTab === 'foryou' ? [] : headerRight"
     :bottom-nav-items="bottomNavItems"
     :active-nav-item="activeNavItem"
+    :theme="activeTab === 'foryou' ? 'dark' : undefined"
+    class="template-app-home__chrome"
     @navigate="onBottomNav"
   >
-    <div class="template-app-home">
-      <div class="template-app-home__tabs-row">
-        <CdxTabs
-          v-model:active="activeTab"
-          class="template-app-home__tabs"
-        >
-          <CdxTab
-            name="community"
-            label="Community"
-          />
-          <CdxTab
-            name="foryou"
-            label="For you"
-          />
-        </CdxTabs>
-        <CdxButton
-          class="template-app-home__lang-pill"
-          weight="quiet"
-        >
-          EN
-          <CdxIcon :icon="cdxIconExpand" />
-        </CdxButton>
-      </div>
+    <ForYouFeed
+      v-if="activeTab === 'foryou'"
+      class="template-app-home__foryou"
+      :is-ios="isIos"
+      :header-left="headerLeft"
+      :header-right="headerRight"
+      :active-tab="activeTab"
+      @update:active-tab="activeTab = $event"
+    />
+
+    <div
+      v-else
+      class="template-app-home"
+    >
+      <HomeTabsRow
+        :active-tab="activeTab"
+        @update:active-tab="activeTab = $event"
+      />
 
       <div
-        v-if="activeTab === 'foryou'"
-        class="template-app-home__empty"
+        v-if="loading"
+        class="template-app-home__progress"
       >
-        <p>Nothing here yet.</p>
+        <CdxProgressBar
+          inline
+          aria-label="Loading"
+        />
       </div>
+      <p
+        v-else-if="error"
+        class="template-app-home__status"
+      >
+        {{ error }}
+      </p>
 
-      <template v-else>
-        <div
-          v-if="loading"
-          class="template-app-home__progress"
+      <div
+        v-else-if="feed"
+        class="template-app-home__feed"
+      >
+        <CdxMessage
+          class="template-app-home__intro-banner"
+          type="notice"
+          :icon="cdxIconGlobe"
         >
-          <CdxProgressBar
-            inline
-            aria-label="Loading"
+          Content and resources selected by and about the Wikimedia community.
+        </CdxMessage>
+
+        <h3 class="template-app-home__date-heading">
+          {{ feed.dateLabel }}
+        </h3>
+
+        <template v-if="feed.tfa">
+          <FeedSectionHeader
+            heading="Featured article"
+            description="One of Wikipedia's best articles, updated daily."
           />
-        </div>
-        <p
-          v-else-if="error"
-          class="template-app-home__status"
-        >
-          {{ error }}
-        </p>
-
-        <div
-          v-else-if="feed"
-          class="template-app-home__feed"
-        >
-          <CdxMessage
-            class="template-app-home__intro-banner"
-            type="notice"
-            :icon="cdxIconGlobe"
+          <div
+            class="template-app-home__tfa"
+            :class="{ 'template-app-home__tfa--with-image': feed.tfa.thumbnailUrl }"
           >
-            Content and resources selected by and about the Wikimedia community.
-          </CdxMessage>
-
-          <h3 class="template-app-home__date-heading">
-            {{ feed.dateLabel }}
-          </h3>
-
-          <template v-if="feed.tfa">
-            <FeedSectionHeader
-              heading="Featured article"
-              description="One of Wikipedia's best articles, updated daily."
-            />
+            <img
+              v-if="feed.tfa.thumbnailUrl"
+              class="template-app-home__tfa-image"
+              :src="feed.tfa.thumbnailUrl"
+              :alt="feed.tfa.displayTitle"
+            >
             <div
-              class="template-app-home__tfa"
-              :class="{ 'template-app-home__tfa--with-image': feed.tfa.thumbnailUrl }"
+              v-if="feed.tfa.thumbnailUrl"
+              class="template-app-home__floating-actions"
+            >
+              <CdxButton
+                weight="normal"
+                aria-label="Save"
+              >
+                <CdxIcon :icon="cdxIconBookmarkOutline" />
+              </CdxButton>
+              <CdxButton
+                weight="normal"
+                aria-label="Share"
+              >
+                <CdxIcon :icon="shareIcon" />
+              </CdxButton>
+            </div>
+
+            <CdxCard
+              :url="articleUrl(feed.tfa.title)"
+              class="template-app-home__tfa-card"
+            >
+              <template #title>
+                {{ feed.tfa.displayTitle }}
+              </template>
+              <template #description>
+                {{ feed.tfa.description }}
+              </template>
+              <template #supporting-text>
+                <hr class="template-app-home__divider">
+                <p
+                  class="template-app-home__tfa-extract"
+                  v-html="html(feed.tfa.extractHtml)"
+                />
+              </template>
+            </CdxCard>
+          </div>
+        </template>
+
+        <template v-if="feed.mostRead.length">
+          <FeedSectionHeader
+            heading="Top read"
+            description="What is trending today on Wikipedia."
+          />
+          <ol class="template-app-home__top-read-list">
+            <li
+              v-for="(article, index) in feed.mostRead"
+              :key="article.pageid"
+            >
+              <a
+                class="template-app-home__rank-link"
+                :href="articleUrl(article.title)"
+              >
+                <span class="template-app-home__rank-badge">{{ index + 1 }}</span>
+                <strong class="template-app-home__rank-title">{{ article.displayTitle }}</strong>
+                <span class="template-app-home__rank-description">{{
+                  article.description
+                }}</span>
+                <div class="template-app-home__rank-meta">
+                  <CdxIcon
+                    :icon="article.trend === 'down' ? cdxIconDownTriangle : cdxIconUpTriangle"
+                    :class="{
+                      'template-app-home__trend--down': article.trend === 'down',
+                      'template-app-home__trend--up': article.trend !== 'down',
+                    }"
+                  />
+                  <span>{{ formatNumber(article.views) }} views</span>
+                </div>
+                <CdxThumbnail
+                  class="template-app-home__rank-thumb"
+                  :thumbnail="article.thumbnailUrl ? { url: article.thumbnailUrl } : null"
+                />
+              </a>
+            </li>
+          </ol>
+          <CdxButton
+            class="template-app-home__more-link"
+            action="progressive"
+            weight="quiet"
+          >
+            More top read
+            <CdxIcon :icon="cdxIconArrowNext" />
+          </CdxButton>
+        </template>
+
+        <template v-if="feed.dyk.length">
+          <FeedSectionHeader
+            heading="Did you know?"
+            description="Interesting facts from newly created or expanded articles."
+          />
+          <ul class="template-app-home__dyk-list">
+            <li
+              v-for="(fact, index) in feed.dyk"
+              :key="index"
+            >
+              <CdxIcon
+                class="template-app-home__dyk-icon"
+                :icon="cdxIconHelpNotice"
+              />
+              <span v-html="html(fact)" />
+            </li>
+          </ul>
+          <CdxButton
+            class="template-app-home__more-link"
+            action="progressive"
+            weight="quiet"
+          >
+            More did you know
+            <CdxIcon :icon="cdxIconArrowNext" />
+          </CdxButton>
+        </template>
+
+        <template v-if="feed.news.length">
+          <FeedSectionHeader
+            heading="In the news"
+            description="Current events from around the world."
+          />
+          <div
+            ref="newsScrollRef"
+            class="template-app-home__news-carousel"
+            @scroll="onNewsScroll"
+          >
+            <div
+              v-for="(story, index) in feed.news"
+              :key="index"
+              class="template-app-home__news-slide"
+              :class="{ 'template-app-home__news-slide--with-image': story.thumbnailUrl }"
             >
               <img
-                v-if="feed.tfa.thumbnailUrl"
-                class="template-app-home__tfa-image"
-                :src="feed.tfa.thumbnailUrl"
-                :alt="feed.tfa.displayTitle"
+                v-if="story.thumbnailUrl"
+                class="template-app-home__news-image"
+                :src="story.thumbnailUrl"
+                alt=""
               >
+              <p
+                class="template-app-home__news-caption"
+                v-html="html(story.storyHtml)"
+              />
+            </div>
+          </div>
+          <div
+            v-if="feed.news.length > 1"
+            class="template-app-home__news-dots"
+          >
+            <button
+              v-for="(story, index) in feed.news"
+              :key="index"
+              type="button"
+              class="template-app-home__news-dot"
+              :class="{ 'template-app-home__news-dot--active': index === activeNewsIndex }"
+              :aria-label="`Story ${index + 1}`"
+              @click="scrollToNews(index)"
+            />
+          </div>
+        </template>
+
+        <template v-if="feed.onThisDay.length">
+          <FeedSectionHeader
+            heading="On this day"
+            description="Discover historical events from this day."
+          />
+          <div class="template-app-home__otd-timeline">
+            <div
+              v-for="item in feed.onThisDay"
+              :key="item.year"
+              class="template-app-home__otd-entry"
+            >
+              <span class="template-app-home__otd-marker" />
+              <div class="template-app-home__otd-date">
+                <span class="template-app-home__otd-year">{{ item.year }}</span>
+                <span class="template-app-home__otd-years-ago">{{ yearsAgo(item.year) }} years ago</span>
+              </div>
+              <p class="template-app-home__otd-text">
+                {{ item.text }}
+              </p>
               <div
-                v-if="feed.tfa.thumbnailUrl"
-                class="template-app-home__floating-actions"
+                v-if="item.pages.length"
+                class="template-app-home__otd-pages"
               >
+                <CdxCard
+                  v-for="page in item.pages"
+                  :key="page.pageid"
+                  :url="articleUrl(page.title)"
+                  :thumbnail="page.thumbnailUrl ? { url: page.thumbnailUrl } : null"
+                  force-thumbnail
+                  class="template-app-home__otd-page-card"
+                >
+                  <template #title>
+                    {{ page.displayTitle }}
+                  </template>
+                  <template #description>
+                    {{ page.description }}
+                  </template>
+                </CdxCard>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <template v-if="feed.image">
+          <FeedSectionHeader
+            heading="Picture of the day"
+            description="A photo, drawing, or animation featured today."
+          />
+          <div class="template-app-home__potd">
+            <div class="template-app-home__potd-image-wrap">
+              <img
+                v-if="feed.image.thumbnailUrl"
+                class="template-app-home__potd-image"
+                :src="feed.image.thumbnailUrl"
+                alt=""
+              >
+              <div class="template-app-home__floating-actions">
                 <CdxButton
                   weight="normal"
-                  aria-label="Save"
+                  aria-label="Download"
                 >
-                  <CdxIcon :icon="cdxIconBookmarkOutline" />
+                  <CdxIcon :icon="cdxIconDownload" />
                 </CdxButton>
                 <CdxButton
                   weight="normal"
@@ -246,257 +443,54 @@ const shareIcon = computed(() => (isIos.value ? cdxIconShareIOS : cdxIconShareAn
                   <CdxIcon :icon="shareIcon" />
                 </CdxButton>
               </div>
-
-              <CdxCard
-                :url="articleUrl(feed.tfa.title)"
-                class="template-app-home__tfa-card"
-              >
-                <template #title>
-                  {{ feed.tfa.displayTitle }}
-                </template>
-                <template #description>
-                  {{ feed.tfa.description }}
-                </template>
-                <template #supporting-text>
-                  <hr class="template-app-home__divider">
-                  <p
-                    class="template-app-home__tfa-extract"
-                    v-html="html(feed.tfa.extractHtml)"
-                  />
-                </template>
-              </CdxCard>
-            </div>
-          </template>
-
-          <template v-if="feed.mostRead.length">
-            <FeedSectionHeader
-              heading="Top read"
-              description="What is trending today on Wikipedia."
-            />
-            <ol class="template-app-home__top-read-list">
-              <li
-                v-for="(article, index) in feed.mostRead"
-                :key="article.pageid"
-              >
-                <a
-                  class="template-app-home__rank-link"
-                  :href="articleUrl(article.title)"
-                >
-                  <span class="template-app-home__rank-badge">{{ index + 1 }}</span>
-                  <strong class="template-app-home__rank-title">{{ article.displayTitle }}</strong>
-                  <span class="template-app-home__rank-description">{{
-                    article.description
-                  }}</span>
-                  <div class="template-app-home__rank-meta">
-                    <CdxIcon
-                      :icon="article.trend === 'down' ? cdxIconDownTriangle : cdxIconUpTriangle"
-                      :class="{
-                        'template-app-home__trend--down': article.trend === 'down',
-                        'template-app-home__trend--up': article.trend !== 'down',
-                      }"
-                    />
-                    <span>{{ formatNumber(article.views) }} views</span>
-                  </div>
-                  <CdxThumbnail
-                    class="template-app-home__rank-thumb"
-                    :thumbnail="article.thumbnailUrl ? { url: article.thumbnailUrl } : null"
-                  />
-                </a>
-              </li>
-            </ol>
-            <CdxButton
-              class="template-app-home__more-link"
-              action="progressive"
-              weight="quiet"
-            >
-              More top read
-              <CdxIcon :icon="cdxIconArrowNext" />
-            </CdxButton>
-          </template>
-
-          <template v-if="feed.dyk.length">
-            <FeedSectionHeader
-              heading="Did you know?"
-              description="Interesting facts from newly created or expanded articles."
-            />
-            <ul class="template-app-home__dyk-list">
-              <li
-                v-for="(fact, index) in feed.dyk"
-                :key="index"
-              >
-                <CdxIcon
-                  class="template-app-home__dyk-icon"
-                  :icon="cdxIconHelpNotice"
-                />
-                <span v-html="html(fact)" />
-              </li>
-            </ul>
-            <CdxButton
-              class="template-app-home__more-link"
-              action="progressive"
-              weight="quiet"
-            >
-              More did you know
-              <CdxIcon :icon="cdxIconArrowNext" />
-            </CdxButton>
-          </template>
-
-          <template v-if="feed.news.length">
-            <FeedSectionHeader
-              heading="In the news"
-              description="Current events from around the world."
-            />
-            <div
-              ref="newsScrollRef"
-              class="template-app-home__news-carousel"
-              @scroll="onNewsScroll"
-            >
-              <div
-                v-for="(story, index) in feed.news"
-                :key="index"
-                class="template-app-home__news-slide"
-                :class="{ 'template-app-home__news-slide--with-image': story.thumbnailUrl }"
-              >
-                <img
-                  v-if="story.thumbnailUrl"
-                  class="template-app-home__news-image"
-                  :src="story.thumbnailUrl"
-                  alt=""
-                >
+              <div class="template-app-home__potd-overlay">
                 <p
-                  class="template-app-home__news-caption"
-                  v-html="html(story.storyHtml)"
+                  class="template-app-home__potd-caption"
+                  v-html="html(feed.image.descriptionHtml)"
                 />
-              </div>
-            </div>
-            <div
-              v-if="feed.news.length > 1"
-              class="template-app-home__news-dots"
-            >
-              <button
-                v-for="(story, index) in feed.news"
-                :key="index"
-                type="button"
-                class="template-app-home__news-dot"
-                :class="{ 'template-app-home__news-dot--active': index === activeNewsIndex }"
-                :aria-label="`Story ${index + 1}`"
-                @click="scrollToNews(index)"
-              />
-            </div>
-          </template>
-
-          <template v-if="feed.onThisDay.length">
-            <FeedSectionHeader
-              heading="On this day"
-              description="Discover historical events from this day."
-            />
-            <div class="template-app-home__otd-timeline">
-              <div
-                v-for="item in feed.onThisDay"
-                :key="item.year"
-                class="template-app-home__otd-entry"
-              >
-                <span class="template-app-home__otd-marker" />
-                <div class="template-app-home__otd-date">
-                  <span class="template-app-home__otd-year">{{ item.year }}</span>
-                  <span class="template-app-home__otd-years-ago">{{ yearsAgo(item.year) }} years ago</span>
-                </div>
-                <p class="template-app-home__otd-text">
-                  {{ item.text }}
+                <p class="template-app-home__potd-credit">
+                  <CdxIcon :icon="cdxIconUserAvatarOutline" />
+                  <span v-html="html(feed.image.artistHtml)" />
                 </p>
-                <div
-                  v-if="item.pages.length"
-                  class="template-app-home__otd-pages"
+                <p
+                  v-if="feed.image.licenseType"
+                  class="template-app-home__potd-license"
                 >
-                  <CdxCard
-                    v-for="page in item.pages"
-                    :key="page.pageid"
-                    :url="articleUrl(page.title)"
-                    :thumbnail="page.thumbnailUrl ? { url: page.thumbnailUrl } : null"
-                    force-thumbnail
-                    class="template-app-home__otd-page-card"
-                  >
-                    <template #title>
-                      {{ page.displayTitle }}
-                    </template>
-                    <template #description>
-                      {{ page.description }}
-                    </template>
-                  </CdxCard>
-                </div>
+                  <CdxIcon :icon="cdxIconInfo" />
+                  <a
+                    :href="feed.image.licenseUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >{{
+                    feed.image.licenseType
+                  }}</a>
+                </p>
               </div>
             </div>
-          </template>
+          </div>
+        </template>
 
-          <template v-if="feed.image">
-            <FeedSectionHeader
-              heading="Picture of the day"
-              description="A photo, drawing, or animation featured today."
-            />
-            <div class="template-app-home__potd">
-              <div class="template-app-home__potd-image-wrap">
-                <img
-                  v-if="feed.image.thumbnailUrl"
-                  class="template-app-home__potd-image"
-                  :src="feed.image.thumbnailUrl"
-                  alt=""
-                >
-                <div class="template-app-home__floating-actions">
-                  <CdxButton
-                    weight="normal"
-                    aria-label="Download"
-                  >
-                    <CdxIcon :icon="cdxIconDownload" />
-                  </CdxButton>
-                  <CdxButton
-                    weight="normal"
-                    aria-label="Share"
-                  >
-                    <CdxIcon :icon="shareIcon" />
-                  </CdxButton>
-                </div>
-                <div class="template-app-home__potd-overlay">
-                  <p
-                    class="template-app-home__potd-caption"
-                    v-html="html(feed.image.descriptionHtml)"
-                  />
-                  <p class="template-app-home__potd-credit">
-                    <CdxIcon :icon="cdxIconUserAvatarOutline" />
-                    <span v-html="html(feed.image.artistHtml)" />
-                  </p>
-                  <p
-                    v-if="feed.image.licenseType"
-                    class="template-app-home__potd-license"
-                  >
-                    <CdxIcon :icon="cdxIconInfo" />
-                    <a
-                      :href="feed.image.licenseUrl"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >{{
-                      feed.image.licenseType
-                    }}</a>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </template>
-
-          <CdxButton
-            class="template-app-home__cta"
-            action="progressive"
-            weight="primary"
-          >
-            <CdxIcon :icon="cdxIconInstance" />
-            See past community content
-          </CdxButton>
-        </div>
-      </template>
+        <CdxButton
+          class="template-app-home__cta"
+          action="progressive"
+          weight="primary"
+        >
+          <CdxIcon :icon="cdxIconInstance" />
+          See past community content
+        </CdxButton>
+      </div>
     </div>
   </AppChromeWrapper>
 </template>
 
 <style scoped>
+/* On the For you tab, AppChromeWrapper's own header gets empty left/right
+   (ForYouFeed renders its own floating header instead) — collapse the now-empty
+   bar entirely so it doesn't reserve space above the full-bleed feed. */
+.template-app-home__chrome :deep(.app-chrome-header:has(.app-chrome-header__nav:empty)) {
+  display: none;
+}
+
 .template-app-home {
   display: flex;
   flex-direction: column;
@@ -504,26 +498,12 @@ const shareIcon = computed(() => (isIos.value ? cdxIconShareIOS : cdxIconShareAn
   padding-block: var(--spacing-100, 16px);
 }
 
-.template-app-home__tabs-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-75, 12px);
-}
-
-.template-app-home__tabs {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.template-app-home__lang-pill {
-  flex-shrink: 0;
-}
-
-.template-app-home__empty {
-  padding: var(--spacing-150, 24px) 0;
-  color: var(--color-subtle, #54595d);
-  text-align: center;
+/* Doubled selector beats ForYouFeed's own same-specificity `.foryou` rule —
+   the feed needs to bleed past `main`'s inline padding to reach the edges. */
+.foryou.template-app-home__foryou {
+  display: block;
+  width: calc(100% + var(--spacing-150, 24px) * 2);
+  margin-inline: calc(-1 * var(--spacing-150, 24px));
 }
 
 .template-app-home__progress {
