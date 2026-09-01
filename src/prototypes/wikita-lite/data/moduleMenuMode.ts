@@ -3,7 +3,7 @@ export interface ModuleMenuModePreference {
 }
 
 export const DEFAULT_MODULE_MENU_MODE_PREFERENCE: ModuleMenuModePreference = {
-  useModuleMenuMode: false,
+  useModuleMenuMode: true,
 }
 
 const STORAGE_KEY = 'wikita-lite-module-menu-mode'

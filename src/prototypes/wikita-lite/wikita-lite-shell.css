@@ -34,13 +34,13 @@
   border-radius: var(--wikita-lite-card-radius, var(--border-radius-base));
 }
 
-/* Bottom clearance for the four-button floating nav. */
+/* Bottom clearance for the floating home button. */
 .special-page-wrapper.wikita-lite-shell--with-nav {
   --wikita-lite-floating-nav-clearance: calc(
     20px + env(safe-area-inset-bottom, 0px) + 44px + var(--spacing-25) + var(--spacing-25) +
       var(--spacing-100)
   );
-  padding-bottom: var(--spacing-50);
+  padding-bottom: var(--wikita-lite-floating-nav-clearance);
 }
 
 .special-page-wrapper.wikita-lite-shell[data-skin='mobile'] {
@@ -214,7 +214,6 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding-inline: var(--spacing-50, 8px);
 }
 
 .wikita-lite-shell .wikita-lite-card-group--divider > * {

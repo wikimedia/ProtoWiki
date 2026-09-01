@@ -7,8 +7,11 @@ import { CdxButton, CdxCard, CdxIcon, CdxProgressBar } from '@wikimedia/codex'
 import { cdxIconSpeechBubble } from '@wikimedia/codex-icons'
 
 import type { HomeActiveDiscussion } from '../../musical-group/data/types'
+import WikitaLiteDailyReadsTabs from '../components/WikitaLiteDailyReadsTabs.vue'
+import { useWikitaLiteActiveDiscussionsTabs } from '../composables/useWikitaLiteActiveDiscussionsTabs'
 import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
 import { useWikitaLiteOverflowShowMore } from '../composables/useWikitaLiteOverflowShowMore'
+import { activeDiscussionCategoryLabel } from '../data/activeDiscussionLabels'
 
 interface Props {
   standalone?: boolean
@@ -32,9 +35,14 @@ defineEmits<{
   retry: []
 }>()
 
-const displayItems = computed(() =>
-  props.standalone ? props.items : props.items.slice(0, props.previewLimit),
-)
+const { tabs, activeTabId, showTabs, filteredItems } = useWikitaLiteActiveDiscussionsTabs({
+  items: () => props.items,
+})
+
+const displayItems = computed(() => {
+  const filtered = filteredItems.value
+  return props.standalone ? filtered : filtered.slice(0, props.previewLimit)
+})
 
 const { groupClass, cardClass } = useWikitaLiteCardListClasses({
   standalone: () => props.standalone,
@@ -59,6 +67,13 @@ const showMoreLink = useWikitaLiteOverflowShowMore({
     </template>
 
     <template v-else>
+      <WikitaLiteDailyReadsTabs
+        v-if="showTabs"
+        v-model:active-tab-id="activeTabId"
+        :tabs="tabs"
+        aria-label="Active discussion filters"
+      />
+
       <div :class="['active-discussions-module__cards', groupClass]">
         <CdxCard
           v-for="discussion in displayItems"
@@ -70,7 +85,7 @@ const showMoreLink = useWikitaLiteOverflowShowMore({
             {{ discussion.title }}
           </template>
           <template #description>
-            {{ discussion.noticeboardTitle }}
+            {{ activeDiscussionCategoryLabel(discussion.noticeboardTitle) }}
           </template>
           <template #supporting-text>
             <div class="active-discussions-module__meta wikita-lite-supporting-row">

@@ -3,8 +3,12 @@ import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 
+import { loadConfig } from '@/config'
+
 import { listBookmarks } from './bookmarks'
 import { bookmarksKey, utcDayKey } from './cacheKeys'
+import { fetchReadingListSummaries } from '../../wikita-lite/data/fetchReadingListSummaries'
+import { readingListKey } from '../../wikita-lite/data/readingListSavedPages'
 import { enwikiArticleUrl } from './enwikiTitle'
 import {
   getCachedSavedSummaries,
@@ -70,7 +74,7 @@ function translationCacheKey(targetLangs: string[]): string {
     .map((entry) => entry.id)
     .sort()
     .join(',')
-  return `${TRANSLATION_CACHE_VERSION}:${utcDayKey()}:${targetLangs.join(',')}:${bookmarkIds}`
+  return `${TRANSLATION_CACHE_VERSION}:${utcDayKey()}:${targetLangs.join(',')}:${bookmarkIds}:${readingListKey()}`
 }
 
 function addSeedTitlesFromSavedItems(
@@ -88,7 +92,8 @@ function collectSeedTitlesFromCache(): string[] {
   const seen = new Set<string>()
   const seeds: string[] = []
 
-  const cachedSaved = getCachedSavedSummaries(bookmarksKey())
+  const cachedSaved =
+    getCachedSavedSummaries(bookmarksKey()) ?? getCachedSavedSummaries(readingListKey())
   if (cachedSaved) {
     addSeedTitlesFromSavedItems(seen, seeds, cachedSaved)
   }
@@ -96,6 +101,11 @@ function collectSeedTitlesFromCache(): string[] {
   for (const entry of listBookmarks()) {
     const cached = getCachedMusicalGroup(entry.id)
     addSeedTitle(seen, seeds, cached?.data.enwikiTitle)
+  }
+
+  const config = loadConfig()
+  for (const title of config.userPageLists[config.user]?.readingList ?? []) {
+    addSeedTitle(seen, seeds, title)
   }
 
   for (let i = seeds.length - 1; i > 0; i--) {
@@ -109,10 +119,14 @@ function collectSeedTitlesFromCache(): string[] {
 /** Resolve enwiki titles from saved pages to seed translation recommendations. */
 export async function resolveTranslationSeedTitles(signal?: AbortSignal): Promise<string[]> {
   const seeds = collectSeedTitlesFromCache()
-  if (seeds.length || !listBookmarks().length) return seeds
+  const config = loadConfig()
+  const readingList = config.userPageLists[config.user]?.readingList ?? []
+  if (seeds.length || (!listBookmarks().length && !readingList.length)) return seeds
 
   try {
-    const items = await fetchSavedItemSummaries(listBookmarks(), signal)
+    const items = readingList.length
+      ? await fetchReadingListSummaries(readingList, signal)
+      : await fetchSavedItemSummaries(listBookmarks(), signal)
     const seen = new Set<string>()
     const resolved: string[] = []
     addSeedTitlesFromSavedItems(seen, resolved, items)

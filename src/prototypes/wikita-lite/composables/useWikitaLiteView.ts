@@ -28,6 +28,10 @@ export function useWikitaLiteView() {
     window.scrollTo(0, 0)
   }
 
+  const isHomeFeed = computed(
+    () => isHome.value && activeView.value === DEFAULT_WIKITA_LITE_VIEW,
+  )
+
   async function selectView(view: WikitaLiteView) {
     if (isHome.value && activeView.value === view) {
       scrollToTop()
@@ -45,10 +49,24 @@ export function useWikitaLiteView() {
     scrollToTop()
   }
 
+  async function goHome() {
+    if (isHomeFeed.value) {
+      scrollToTop()
+      return
+    }
+
+    await router.push({ path: WIKITA_LITE_HOME })
+
+    await nextTick()
+    scrollToTop()
+  }
+
   return {
     activeView,
     isHome,
+    isHomeFeed,
     selectView,
+    goHome,
     scrollToTop,
   }
 }

@@ -19,7 +19,9 @@ export const ENWIKI_ACTIVE_DISCUSSION_PAGES = [
 ] as const
 
 const FETCH_CONCURRENCY = 3
-const DEFAULT_LIMIT = 10
+/** Minimum threads to retain per noticeboard so tab previews can show two cards. */
+const PER_NOTICEBOARD_MIN = 2
+const DEFAULT_LIMIT = 20
 
 let sessionCached: { day: string; value: HomeActiveDiscussion[] } | null = null
 
@@ -140,6 +142,24 @@ export function clearActiveDiscussionsSessionCache(): void {
   sessionCached = null
 }
 
+function mergeActiveDiscussions(batches: HomeActiveDiscussion[][]): HomeActiveDiscussion[] {
+  const sortedBatches = batches.map((batch) =>
+    [...batch].sort((a, b) => b.latestReplyTimestamp.localeCompare(a.latestReplyTimestamp)),
+  )
+
+  const guaranteed = sortedBatches.flatMap((batch) => batch.slice(0, PER_NOTICEBOARD_MIN))
+  const guaranteedIds = new Set(guaranteed.map((d) => d.id))
+
+  const remainder = sortedBatches
+    .flat()
+    .filter((d) => !guaranteedIds.has(d.id))
+    .sort((a, b) => b.latestReplyTimestamp.localeCompare(a.latestReplyTimestamp))
+
+  return [...guaranteed, ...remainder]
+    .sort((a, b) => b.latestReplyTimestamp.localeCompare(a.latestReplyTimestamp))
+    .slice(0, DEFAULT_LIMIT)
+}
+
 /** Active discussions from configured enwiki noticeboards, sorted by latest reply. */
 export async function fetchActiveDiscussions(
   signal?: AbortSignal,
@@ -163,10 +183,7 @@ export async function fetchActiveDiscussions(
     signal,
   )
 
-  const merged = batches
-    .flat()
-    .sort((a, b) => b.latestReplyTimestamp.localeCompare(a.latestReplyTimestamp))
-    .slice(0, DEFAULT_LIMIT)
+  const merged = mergeActiveDiscussions(batches)
 
   sessionCached = { day: dayKey, value: merged }
   if (merged.length) {

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
+import { RouterLink } from 'vue-router'
 
 import { CdxCard, CdxProgressBar } from '@wikimedia/codex'
 
@@ -7,6 +9,7 @@ import type { HomeDidYouKnow } from '../../musical-group/data/types'
 import { externalArticleHref } from '../composables/useWikitaLiteCardActions'
 import { splitTitleEmphasis } from '../composables/splitTitleEmphasis'
 import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
+import { useWikitaLiteOverflowShowMore } from '../composables/useWikitaLiteOverflowShowMore'
 import { WIKITA_LITE_CARD_CLASS_THUMBNAIL_POSITION_END, WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE } from '../wikita-lite-card'
 
 interface Props {
@@ -15,6 +18,7 @@ interface Props {
   loading?: boolean
   previewLimit?: number
   listsVersion?: number
+  moreTo?: RouteLocationRaw
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -23,6 +27,7 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false,
   previewLimit: 3,
   listsVersion: 0,
+  moreTo: undefined,
 })
 
 const displayItems = computed(() =>
@@ -38,6 +43,12 @@ function titleSegments(item: HomeDidYouKnow) {
 }
 
 const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
+
+const showMoreLink = useWikitaLiteOverflowShowMore({
+  standalone: () => props.standalone,
+  moreTo: () => props.moreTo,
+  hasItems: () => displayItems.value.length > 0,
+})
 </script>
 
 <template>
@@ -67,6 +78,14 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
       </div>
 
       <slot name="after-cards" />
+
+      <RouterLink
+        v-if="showMoreLink && moreTo"
+        :to="moreTo"
+        class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled wikita-lite-button-link"
+      >
+        Show more
+      </RouterLink>
 
       <p v-if="standalone && !displayItems.length" class="did-you-know-module__empty">
         No Did you know hooks are available right now.

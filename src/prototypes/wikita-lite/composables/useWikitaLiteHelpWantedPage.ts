@@ -1,13 +1,14 @@
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
-import { listBookmarks } from '../../musical-group/data/bookmarks'
-import { bookmarksKey } from '../../musical-group/data/cacheKeys'
+import { useConfig } from '@/composables/useConfig'
+
+import { readingListKey } from '../data/readingListSavedPages'
+import { fetchReadingListSummaries } from '../data/fetchReadingListSummaries'
 import {
   loadNextRandomEditSuggestion,
   restoreRandomEditSuggestionsFeed,
   type RandomEditSuggestionsFeed,
 } from '../../musical-group/data/fetchRandomEditSuggestions'
-import { fetchSavedItemSummaries } from '../../musical-group/data/fetchSavedItemSummaries'
 import { getCachedSavedSummaries } from '../../musical-group/data/homeTabCache'
 import type { HomeHelpWanted, HomeSavedItem } from '../../musical-group/data/types'
 import { useContributeSuggestionsFeed } from '../../musical-group/useContributeSuggestionsFeed'
@@ -16,8 +17,8 @@ import {
   useViewportInfiniteScroll,
 } from './useViewportInfiniteScroll'
 
-function useSavedHelpWantedPage(bookmarkEntries: ReturnType<typeof listBookmarks>) {
-  const dependencyKey = bookmarksKey()
+function useSavedHelpWantedPage(readingListTitles: string[]) {
+  const dependencyKey = readingListKey()
   const cachedSummaries = getCachedSavedSummaries(dependencyKey)
 
   const savedItems = ref<HomeSavedItem[]>(cachedSummaries ?? [])
@@ -44,7 +45,7 @@ function useSavedHelpWantedPage(bookmarkEntries: ReturnType<typeof listBookmarks
 
   onMounted(async () => {
     try {
-      savedItems.value = await fetchSavedItemSummaries(bookmarkEntries)
+      savedItems.value = await fetchReadingListSummaries(readingListTitles)
     } catch {
       if (!savedItems.value.length) savedItems.value = []
     }
@@ -182,9 +183,10 @@ function useRandomHelpWantedPage() {
 }
 
 export function useWikitaLiteHelpWantedPage() {
-  const bookmarkEntries = listBookmarks()
-  if (bookmarkEntries.length) {
-    return useSavedHelpWantedPage(bookmarkEntries)
+  const { currentUserPageLists } = useConfig()
+  const readingListTitles = currentUserPageLists.value.readingList
+  if (readingListTitles.length) {
+    return useSavedHelpWantedPage(readingListTitles)
   }
   return useRandomHelpWantedPage()
 }

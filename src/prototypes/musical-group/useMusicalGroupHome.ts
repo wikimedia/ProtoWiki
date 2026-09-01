@@ -4,6 +4,8 @@ import { useRoute } from 'vue-router'
 import { useConfig } from '@/composables/useConfig'
 
 import { WIKITA_SAVE_FEEDBACK_KEY } from './composables/useWikitaSaveFeedback'
+import { fetchReadingListSummaries } from '../wikita-lite/data/fetchReadingListSummaries'
+import { readingListKey } from '../wikita-lite/data/readingListSavedPages'
 import { useWikitaLiteSuggestionPreferencesSingleton } from '../wikita-lite/composables/useWikitaLiteSuggestionPreferences'
 import { useWikitaLiteModuleSuggestionPreferencesSingleton } from '../wikita-lite/composables/useWikitaLiteModuleSuggestionPreferences'
 import { listBookmarks } from './data/bookmarks'
@@ -41,7 +43,10 @@ import {
   getCachedTranslationSuggestions,
   getCachedTrendingFeed,
 } from './data/homeTabCache'
-import { loadRelatedFeedInitialBatch } from './loadRelatedFeedInitialBatch'
+import {
+  loadRelatedFeedInitialBatch,
+  relatedFeedPreviewQuotaMet,
+} from './loadRelatedFeedInitialBatch'
 import type {
   HomeActiveDiscussion,
   HomeFeaturedTab,
@@ -69,6 +74,8 @@ function isAbort(err: unknown): boolean {
 
 export type PersonalizedFeedId = 'related' | 'mentions' | 'helpWanted' | 'recentChanges'
 
+export type SavedPagesSource = 'bookmarks' | 'readingList'
+
 export interface ReloadBookmarksOptions {
   /** Personalized feeds to leave as-is (saved summaries still refresh). */
   skipFeeds?: PersonalizedFeedId[]
@@ -83,9 +90,11 @@ export function useMusicalGroupHome(options: {
   translationCountPerLanguage?: number
   translationLanguages?: () => string[]
   getBookmarkChangeSkipFeeds?: () => PersonalizedFeedId[]
+  savedPagesSource?: SavedPagesSource
 } = {}) {
   const helpWantedLimit = options.helpWantedLimit ?? 2
   const translationCountPerLanguage = options.translationCountPerLanguage ?? 2
+  const savedPagesSource = options.savedPagesSource ?? 'bookmarks'
   const route = useRoute()
   const { knownLanguages, currentUserPageLists } = useConfig()
   const saveFeedback = inject(WIKITA_SAVE_FEEDBACK_KEY, null)
@@ -109,7 +118,11 @@ export function useMusicalGroupHome(options: {
   const translationSuggestions = ref<HomeTranslationSuggestion[]>([])
   const translationLoading = ref(true)
   const translationError = ref<string | null>(null)
-  const hasSavedPages = ref(listBookmarks().length > 0)
+  const hasSavedPages = ref(
+    savedPagesSource === 'readingList'
+      ? currentUserPageLists.value.readingList.length > 0
+      : listBookmarks().length > 0,
+  )
   const savedItems = ref<HomeSavedItem[]>([])
   const savedItemsLoading = ref(false)
   const homeRelatedItems = ref<HomeRelated[]>([])
@@ -200,8 +213,12 @@ export function useMusicalGroupHome(options: {
     if (cachedRecent) recentChanges.value = cachedRecent
   }
 
+  function savedPagesCacheKey(): string {
+    return savedPagesSource === 'readingList' ? readingListKey() : bookmarksKey()
+  }
+
   function hydrateBookmarksFromCache(): void {
-    const dependencyKey = bookmarksKey()
+    const dependencyKey = savedPagesCacheKey()
     const cachedSummaries = getCachedSavedSummaries(dependencyKey)
     if (cachedSummaries) {
       savedItems.value = cachedSummaries
@@ -232,12 +249,16 @@ export function useMusicalGroupHome(options: {
     const includeSavedSuggestions = helpWantedPrefs.useSavedPages && items.length > 0
 
     const cachedHelp = getCachedHelpWanted(helpWantedKey)
+    const cachedRelated = getCachedRelatedFeed('home', dependencyKey)
     const needsRelatedFetch =
-      !skipFeeds.has('related') && !getCachedRelatedFeed('home', dependencyKey)
+      !skipFeeds.has('related') &&
+      (!cachedRelated ||
+        (savedPagesSource === 'readingList' &&
+          !relatedFeedPreviewQuotaMet('home', dependencyKey, seedItems, 3)))
     const needsMentionsFetch =
       preferences.value.useSavedPages &&
       !skipFeeds.has('mentions') &&
-      !getCachedHomeMentions(bookmarksKey())
+      !getCachedHomeMentions(savedPagesCacheKey())
     const needsHelpFetch =
       !skipFeeds.has('helpWanted') &&
       (!cachedHelp || cachedHelp.length < helpWantedLimit)
@@ -268,6 +289,9 @@ export function useMusicalGroupHome(options: {
             seedItems,
             dependencyKey,
             signal,
+            savedPagesSource === 'readingList'
+              ? { minItemsPerSeed: 3, maxExtraBatches: 8 }
+              : undefined,
           )
         } catch (err) {
           if (isAbort(err)) return
@@ -464,10 +488,15 @@ export function useMusicalGroupHome(options: {
     const { signal } = bookmarkAbort
     const skipFeeds = new Set(reloadOptions.skipFeeds ?? [])
 
-    const entries = listBookmarks()
-    hasSavedPages.value = entries.length > 0
+    const readingListTitles =
+      savedPagesSource === 'readingList' ? [...currentUserPageLists.value.readingList] : []
+    const entries = savedPagesSource === 'readingList' ? [] : listBookmarks()
+    const hasAnySavedPages =
+      savedPagesSource === 'readingList' ? readingListTitles.length > 0 : entries.length > 0
 
-    if (!entries.length) {
+    hasSavedPages.value = hasAnySavedPages
+
+    if (!hasAnySavedPages) {
       savedItems.value = []
       savedItemsLoading.value = false
       homeMentionsRaw.value = []
@@ -516,13 +545,16 @@ export function useMusicalGroupHome(options: {
     hydrateBookmarksFromCache()
     const dependencyKey = suggestionFeedsKey(savedItems.value)
 
-    if (!getCachedSavedSummaries(bookmarksKey()) && !savedItems.value.length) {
+    if (!getCachedSavedSummaries(savedPagesCacheKey()) && !savedItems.value.length) {
       savedItemsLoading.value = true
     }
 
     let items: HomeSavedItem[]
     try {
-      items = await fetchSavedItemSummaries(entries, signal)
+      items =
+        savedPagesSource === 'readingList'
+          ? await fetchReadingListSummaries(readingListTitles, signal)
+          : await fetchSavedItemSummaries(entries, signal)
       if (signal.aborted) return
       savedItems.value = items
     } catch (err) {
@@ -879,6 +911,18 @@ export function useMusicalGroupHome(options: {
   watch(
     () => currentUserPageLists.value.editedPages,
     () => {
+      clearCachedSuggestionFeeds()
+      void reloadBookmarks({
+        skipFeeds: options.getBookmarkChangeSkipFeeds?.() ?? [],
+      })
+    },
+    { deep: true },
+  )
+
+  watch(
+    () => currentUserPageLists.value.readingList,
+    () => {
+      if (savedPagesSource !== 'readingList') return
       clearCachedSuggestionFeeds()
       void reloadBookmarks({
         skipFeeds: options.getBookmarkChangeSkipFeeds?.() ?? [],

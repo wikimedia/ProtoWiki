@@ -1,13 +1,14 @@
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
-import { listBookmarks } from '../../musical-group/data/bookmarks'
-import { bookmarksKey } from '../../musical-group/data/cacheKeys'
+import { useConfig } from '@/composables/useConfig'
+
+import { readingListKey } from '../data/readingListSavedPages'
+import { fetchReadingListSummaries } from '../data/fetchReadingListSummaries'
 import {
   loadNextRandomRecentChange,
   restoreRandomRecentChangesFeed,
   type RandomRecentChangesFeed,
 } from '../../musical-group/data/fetchRandomRecentChanges'
-import { fetchSavedItemSummaries } from '../../musical-group/data/fetchSavedItemSummaries'
 import { getCachedSavedSummaries } from '../../musical-group/data/homeTabCache'
 import type { HomeRecentChange, HomeSavedItem } from '../../musical-group/data/types'
 import {
@@ -15,8 +16,8 @@ import {
   useViewportInfiniteScroll,
 } from './useViewportInfiniteScroll'
 
-function useSavedRecentActivityPage(bookmarkEntries: ReturnType<typeof listBookmarks>) {
-  const dependencyKey = bookmarksKey()
+function useSavedRecentActivityPage(readingListTitles: string[]) {
+  const dependencyKey = readingListKey()
   const cachedSummaries = getCachedSavedSummaries(dependencyKey)
 
   const savedItems = ref<HomeSavedItem[]>(cachedSummaries ?? [])
@@ -24,7 +25,7 @@ function useSavedRecentActivityPage(bookmarkEntries: ReturnType<typeof listBookm
 
   onMounted(async () => {
     try {
-      savedItems.value = await fetchSavedItemSummaries(bookmarkEntries)
+      savedItems.value = await fetchReadingListSummaries(readingListTitles)
     } catch {
       if (!savedItems.value.length) savedItems.value = []
     }
@@ -152,9 +153,10 @@ function useRandomRecentActivityPage() {
 }
 
 export function useWikitaLiteRecentActivityPage() {
-  const bookmarkEntries = listBookmarks()
-  if (bookmarkEntries.length) {
-    return useSavedRecentActivityPage(bookmarkEntries)
+  const { currentUserPageLists } = useConfig()
+  const readingListTitles = currentUserPageLists.value.readingList
+  if (readingListTitles.length) {
+    return useSavedRecentActivityPage(readingListTitles)
   }
   return useRandomRecentActivityPage()
 }

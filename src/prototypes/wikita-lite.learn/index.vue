@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { provideWikitaSaveFeedback } from '../musical-group/composables/useWikitaSaveFeedback'
+import { provideWikitaLiteSaveFeedback } from '../wikita-lite/composables/useWikitaLiteSaveFeedback'
 import MobileSubpageHeader from '../wikita-lite/components/MobileSubpageHeader.vue'
 import WikitaLiteShell from '../wikita-lite/components/WikitaLiteShell.vue'
 import LearnModule from '../wikita-lite/modules/LearnModule.vue'
@@ -12,7 +12,7 @@ definePage({
   },
 })
 
-provideWikitaSaveFeedback()
+provideWikitaLiteSaveFeedback()
 </script>
 
 <template>

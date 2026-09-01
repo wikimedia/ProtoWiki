@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { provideWikitaSaveFeedback } from '../musical-group/composables/useWikitaSaveFeedback'
+import { provideWikitaLiteSaveFeedback } from '../wikita-lite/composables/useWikitaLiteSaveFeedback'
 import { useWikitaLiteHelpWantedPage } from '../wikita-lite/composables/useWikitaLiteHelpWantedPage'
+import WikitaLiteConfigureButton from '../wikita-lite/components/WikitaLiteConfigureButton.vue'
 import MobileSubpageHeader from '../wikita-lite/components/MobileSubpageHeader.vue'
 import WikitaLiteShell from '../wikita-lite/components/WikitaLiteShell.vue'
 import HelpWantedModule from '../wikita-lite/modules/HelpWantedModule.vue'
-import { MODULE_TITLES } from '../wikita-lite/routes'
+import { HELP_WANTED_CONFIGURE_PAGE, MODULE_TITLES } from '../wikita-lite/routes'
 
 definePage({
   meta: {
@@ -13,7 +14,7 @@ definePage({
   },
 })
 
-provideWikitaSaveFeedback()
+provideWikitaLiteSaveFeedback()
 
 const { helpWanted, helpWantedLoading, helpWantedLoadingMore, loadSentinel } =
   useWikitaLiteHelpWantedPage()
@@ -21,7 +22,14 @@ const { helpWanted, helpWantedLoading, helpWantedLoadingMore, loadSentinel } =
 
 <template>
   <WikitaLiteShell :title="null">
-    <MobileSubpageHeader :title="MODULE_TITLES.suggestedEdits" />
+    <MobileSubpageHeader :title="MODULE_TITLES.suggestedEdits">
+      <template #actions>
+        <WikitaLiteConfigureButton
+          :to="HELP_WANTED_CONFIGURE_PAGE"
+          label="Configure suggested edits"
+        />
+      </template>
+    </MobileSubpageHeader>
     <HelpWantedModule
       standalone
       :items="helpWanted"

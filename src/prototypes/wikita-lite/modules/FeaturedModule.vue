@@ -54,7 +54,10 @@ const thumbnailClass = computed(() => {
   return WIKITA_LITE_CARD_CLASS_THUMBNAIL_POSITION_TOP
 })
 
-const { cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
+// Featured always shows a single hero card, so it keeps the outlined card
+// look even on the fullscreen page — unlike list modules, it never switches
+// to the divider-separated standalone treatment.
+const { cardClass } = useWikitaLiteCardListClasses()
 
 const showMoreLink = useWikitaLiteOverflowShowMore({
   standalone: () => props.standalone,

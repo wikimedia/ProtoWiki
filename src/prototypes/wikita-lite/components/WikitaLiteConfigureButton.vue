@@ -8,16 +8,18 @@ import { CONFIGURE_PAGE } from '../routes'
 
 interface Props {
   label?: string
+  to?: string
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   label: 'Configure suggestions',
+  to: CONFIGURE_PAGE,
 })
 
 const router = useRouter()
 
 function openConfigure() {
-  router.push(CONFIGURE_PAGE)
+  router.push(props.to)
 }
 </script>
 

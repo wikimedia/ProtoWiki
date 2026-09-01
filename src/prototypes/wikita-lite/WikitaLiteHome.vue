@@ -13,10 +13,12 @@ import { useWikitaLiteExploreModuleOrder } from './composables/useWikitaLiteExpl
 import { useWikitaLiteHideTabBarSingleton } from './composables/useWikitaLiteHideTabBar'
 import { useWikitaLiteHomeModuleOrder } from './composables/useWikitaLiteHomeModuleOrder'
 import { useWikitaLiteImpact } from './composables/useWikitaLiteImpact'
+import { useWikitaLitePinnedModulesSingleton } from './composables/useWikitaLitePinnedModules'
 import { useWikitaLiteTabLoading } from './composables/useWikitaLiteTabLoading'
 import { useWikitaLiteView } from './composables/useWikitaLiteView'
 import WikitaLiteModule from './components/WikitaLiteModule.vue'
 import ActiveDiscussionsModule from './modules/ActiveDiscussionsModule.vue'
+import BornOnThisDayModule from './modules/BornOnThisDayModule.vue'
 import DidYouKnowModule from './modules/DidYouKnowModule.vue'
 import FeaturedModule from './modules/FeaturedModule.vue'
 import HelpWantedModule from './modules/HelpWantedModule.vue'
@@ -30,6 +32,7 @@ import TranslationModule from './modules/TranslationModule.vue'
 import TrendingModule from './modules/TrendingModule.vue'
 import {
   ACTIVE_DISCUSSIONS_PAGE,
+  BORN_ON_THIS_DAY_PAGE,
   DID_YOU_KNOW_PAGE,
   FEATURED_PAGE,
   FURTHER_READING_PAGE,
@@ -48,13 +51,13 @@ import {
 } from './routes'
 
 const HOME_FEATURED_PREVIEW_LIMIT = 3
-const HOME_TRENDING_PREVIEW_LIMIT = 2
 const HOME_DYK_PREVIEW_LIMIT = 2
+const HOME_BORN_ON_THIS_DAY_PREVIEW_LIMIT = 3
+const HOME_TRENDING_PREVIEW_LIMIT = 2
 const EXPLORE_UNSAVED_DYK_PREVIEW_LIMIT = 3
 const HOME_SAVED_PREVIEW_LIMIT = 5
 const HOME_MENTIONS_PREVIEW_LIMIT = 3
 const HOME_FURTHER_READING_PREVIEW_LIMIT = 3
-const HOME_EDIT_FURTHER_READING_PREVIEW_LIMIT = 1
 const HOME_HELP_WANTED_PREVIEW_LIMIT = 3
 const HOME_RECENT_ACTIVITY_PREVIEW_LIMIT = 3
 const UNSAVED_HELP_WANTED_PREVIEW_LIMIT = 1
@@ -70,6 +73,7 @@ const { homeModuleOrderStyle } = useWikitaLiteHomeModuleOrder()
 const { exploreModuleOrderStyle } = useWikitaLiteExploreModuleOrder()
 const { contributeModuleOrderStyle } = useWikitaLiteContributeModuleOrder()
 const { isDismissed } = useWikitaLiteDismissedModulesSingleton()
+const { isPinnedToHome } = useWikitaLitePinnedModulesSingleton()
 const { hideTabBar } = useWikitaLiteHideTabBarSingleton()
 
 let getBookmarkChangeSkipFeeds: () => PersonalizedFeedId[] = () => []
@@ -84,6 +88,7 @@ const {
   trendingTabError,
   retryTrendingFeed,
   didYouKnow,
+  bornOnThisDay,
   hasSavedPages,
   suggestionSeedsAvailable,
   suggestedEditsModuleSeedsAvailable,
@@ -114,13 +119,7 @@ const featuredPreviewCount = computed(() => (featuredHasContent.value ? 1 : 0))
 
 const trendingPreviewCount = computed(() => trendingItems.value.length)
 
-const homeFurtherReadingPreview = computed(() =>
-  homeRelatedItems.value.slice(0, HOME_FURTHER_READING_PREVIEW_LIMIT),
-)
-
-const homeEditFurtherReadingPreview = computed(() =>
-  homeRelatedItems.value.slice(0, HOME_EDIT_FURTHER_READING_PREVIEW_LIMIT),
-)
+const homeRelatedPreviewCount = computed(() => homeRelatedItems.value.length)
 
 const homeMentionsPreview = computed(() =>
   homeMentions.value.slice(0, HOME_MENTIONS_PREVIEW_LIMIT),
@@ -148,12 +147,30 @@ const recentActivityPreview = computed(() =>
   recentChanges.value.slice(0, recentActivityPreviewLimit.value),
 )
 
-const activeDiscussionsPreview = computed(() =>
-  activeDiscussions.value.slice(0, HOME_ACTIVE_DISCUSSIONS_PREVIEW_LIMIT),
-)
+const activeDiscussionsPreviewCount = computed(() => activeDiscussions.value.length)
 
 const translationPreview = computed(() =>
   translationSuggestions.value.slice(0, HOME_TRANSLATION_PREVIEW_LIMIT),
+)
+
+const showActiveDiscussionsContent = computed(
+  () => activeDiscussions.value.length > 0 || Boolean(activeDiscussionsError.value),
+)
+
+const activeDiscussionsPending = computed(
+  () =>
+    hasSavedPages.value &&
+    showRecentActivityModule.value &&
+    activeDiscussionsLoading.value &&
+    !activeDiscussions.value.length &&
+    !activeDiscussionsError.value,
+)
+
+const contributeActiveDiscussionsPending = computed(
+  () =>
+    activeDiscussionsLoading.value &&
+    !activeDiscussions.value.length &&
+    !activeDiscussionsError.value,
 )
 
 const exploreDidYouKnowPreviewLimit = computed(() =>
@@ -162,6 +179,38 @@ const exploreDidYouKnowPreviewLimit = computed(() =>
 
 const homeDidYouKnowPreview = computed(() =>
   didYouKnow.value.slice(0, exploreDidYouKnowPreviewLimit.value),
+)
+
+const homeBornOnThisDayPreview = computed(() =>
+  bornOnThisDay.value.slice(0, HOME_BORN_ON_THIS_DAY_PREVIEW_LIMIT),
+)
+
+const homePinnedDidYouKnowPreview = computed(() =>
+  didYouKnow.value.slice(0, HOME_DYK_PREVIEW_LIMIT),
+)
+
+const showDidYouKnowOnHome = computed(
+  () =>
+    isPinnedToHome('didYouKnow') &&
+    !isDismissed('didYouKnow') &&
+    (homePinnedDidYouKnowPreview.value.length > 0 || featuredTabLoading.value),
+)
+
+const showBornOnThisDayOnHome = computed(
+  () =>
+    isPinnedToHome('bornOnThisDay') &&
+    !isDismissed('bornOnThisDay') &&
+    (homeBornOnThisDayPreview.value.length > 0 || featuredTabLoading.value),
+)
+
+const showSavedOnHome = computed(() => isPinnedToHome('saved') && !isDismissed('saved'))
+
+const showMentionsOnHome = computed(
+  () =>
+    isPinnedToHome('mentions') &&
+    !isDismissed('mentions') &&
+    showSavedBasedMentions.value &&
+    (homeMentionsPreview.value.length > 0 || homeMentionsLoading.value),
 )
 
 const showTranslationModule = computed(() => knownLanguages.value.length > 0)
@@ -178,29 +227,6 @@ function isRecentActivityVisible(): boolean {
 
 const showRecentActivityModule = computed(
   () => hasSavedPages.value && isRecentActivityVisible(),
-)
-
-const activeDiscussionsPreviewCount = computed(() => activeDiscussionsPreview.value.length)
-
-const showActiveDiscussionsContent = computed(
-  () =>
-    activeDiscussionsPreview.value.length > 0 || Boolean(activeDiscussionsError.value),
-)
-
-const activeDiscussionsPending = computed(
-  () =>
-    hasSavedPages.value &&
-    showRecentActivityModule.value &&
-    activeDiscussionsLoading.value &&
-    !activeDiscussionsPreview.value.length &&
-    !activeDiscussionsError.value,
-)
-
-const contributeActiveDiscussionsPending = computed(
-  () =>
-    activeDiscussionsLoading.value &&
-    !activeDiscussionsPreview.value.length &&
-    !activeDiscussionsError.value,
 )
 
 const translationPending = computed(
@@ -227,7 +253,7 @@ const editTab = useWikitaLiteTabLoading([
   {
     id: 'furtherReading',
     loading: homeRelatedLoading,
-    previewCount: computed(() => homeEditFurtherReadingPreview.value.length),
+    previewCount: homeRelatedPreviewCount,
     enabled: suggestionSeedsAvailable,
   },
   {
@@ -275,7 +301,7 @@ const readExploreTab = useWikitaLiteTabLoading([
   {
     id: 'furtherReading',
     loading: homeRelatedLoading,
-    previewCount: computed(() => homeFurtherReadingPreview.value.length),
+    previewCount: homeRelatedPreviewCount,
     enabled: suggestionSeedsAvailable,
   },
   {
@@ -316,10 +342,7 @@ const contributeTab = useWikitaLiteTabLoading([
 
 function isFurtherReadingVisible(): boolean {
   if (homeRelatedLoading.value) return false
-  if (activeView.value === 'edit') {
-    return homeEditFurtherReadingPreview.value.length > 0
-  }
-  return homeFurtherReadingPreview.value.length > 0
+  return homeRelatedItems.value.length > 0
 }
 
 function isMentionsVisible(): boolean {
@@ -448,20 +471,20 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
           :to="FURTHER_READING_PAGE"
         >
           <div
-            v-if="editTab.showLoadingBar('furtherReading') && !homeEditFurtherReadingPreview.length"
+            v-if="editTab.showLoadingBar('furtherReading') && !homeRelatedItems.length"
             class="wikita-lite-home__loading"
           >
             <CdxProgressBar inline aria-label="Loading further reading" />
           </div>
           <RelatedModule
-            v-if="homeEditFurtherReadingPreview.length"
-            :items="homeEditFurtherReadingPreview"
-            :preview-limit="HOME_EDIT_FURTHER_READING_PREVIEW_LIMIT"
+            v-if="homeRelatedItems.length"
+            :items="homeRelatedItems"
+            :preview-limit="HOME_FURTHER_READING_PREVIEW_LIMIT"
             :lists-version="listsVersion"
             :more-to="FURTHER_READING_PAGE"
           >
             <template
-              v-if="editTab.showLoadingBar('furtherReading') && homeEditFurtherReadingPreview.length"
+              v-if="editTab.showLoadingBar('furtherReading') && homeRelatedItems.length"
               #after-cards
             >
               <div class="wikita-lite-home__loading">
@@ -585,7 +608,7 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
           </div>
           <ActiveDiscussionsModule
             v-if="showActiveDiscussionsContent"
-            :items="activeDiscussionsPreview"
+            :items="activeDiscussions"
             :error="activeDiscussionsError"
             :preview-limit="HOME_ACTIVE_DISCUSSIONS_PREVIEW_LIMIT"
             :more-to="ACTIVE_DISCUSSIONS_PAGE"
@@ -610,6 +633,92 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
           :to="IMPACT_PAGE"
         >
           <ImpactModule v-bind="impactCardProps" @refresh="onImpactRefresh" />
+        </WikitaLiteModule>
+
+        <WikitaLiteModule
+          v-if="showDidYouKnowOnHome"
+          module-id="didYouKnow"
+          :style="homeModuleOrderStyle('didYouKnow')"
+          :title="MODULE_TITLES.didYouKnow"
+          :to="DID_YOU_KNOW_PAGE"
+        >
+          <div
+            v-if="featuredTabLoading && !homePinnedDidYouKnowPreview.length"
+            class="wikita-lite-home__loading"
+          >
+            <CdxProgressBar inline aria-label="Loading Did you know" />
+          </div>
+          <DidYouKnowModule
+            v-if="homePinnedDidYouKnowPreview.length"
+            :items="didYouKnow"
+            :preview-limit="HOME_DYK_PREVIEW_LIMIT"
+            :lists-version="listsVersion"
+            :more-to="DID_YOU_KNOW_PAGE"
+          />
+        </WikitaLiteModule>
+
+        <WikitaLiteModule
+          v-if="showBornOnThisDayOnHome"
+          module-id="bornOnThisDay"
+          :style="homeModuleOrderStyle('bornOnThisDay')"
+          :title="MODULE_TITLES.bornOnThisDay"
+          :to="BORN_ON_THIS_DAY_PAGE"
+        >
+          <div
+            v-if="featuredTabLoading && !homeBornOnThisDayPreview.length"
+            class="wikita-lite-home__loading"
+          >
+            <CdxProgressBar inline aria-label="Loading Born on this day" />
+          </div>
+          <BornOnThisDayModule
+            v-if="homeBornOnThisDayPreview.length"
+            :items="bornOnThisDay"
+            :preview-limit="HOME_BORN_ON_THIS_DAY_PREVIEW_LIMIT"
+            :lists-version="listsVersion"
+            :more-to="BORN_ON_THIS_DAY_PAGE"
+          />
+        </WikitaLiteModule>
+
+        <WikitaLiteModule
+          v-if="showSavedOnHome"
+          module-id="saved"
+          :style="homeModuleOrderStyle('saved')"
+          :title="MODULE_TITLES.saved"
+          :to="SAVED_PAGE"
+        >
+          <div
+            v-if="hasSavedPages && savedItemsLoading && !recentlySaved.length"
+            class="wikita-lite-home__loading"
+          >
+            <CdxProgressBar inline aria-label="Loading saved pages" />
+          </div>
+          <SavedModule
+            :items="hasSavedPages ? recentlySaved : []"
+            :preview-limit="HOME_SAVED_PREVIEW_LIMIT"
+            :more-to="SAVED_PAGE"
+          />
+        </WikitaLiteModule>
+
+        <WikitaLiteModule
+          v-if="showMentionsOnHome"
+          module-id="mentions"
+          :style="homeModuleOrderStyle('mentions')"
+          :title="MODULE_TITLES.mentions"
+          :to="MENTIONS_PAGE"
+        >
+          <div
+            v-if="homeMentionsLoading && !homeMentionsPreview.length"
+            class="wikita-lite-home__loading"
+          >
+            <CdxProgressBar inline aria-label="Loading mentions" />
+          </div>
+          <MentionsModule
+            v-if="homeMentionsPreview.length"
+            :items="homeMentionsPreview"
+            :preview-limit="HOME_MENTIONS_PREVIEW_LIMIT"
+            :lists-version="listsVersion"
+            :more-to="MENTIONS_PAGE"
+          />
         </WikitaLiteModule>
 
         <WikitaLiteModule
@@ -697,15 +806,15 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
         >
           <div
             v-if="
-              readExploreTab.showLoadingBar('furtherReading') && !homeFurtherReadingPreview.length
+              readExploreTab.showLoadingBar('furtherReading') && !homeRelatedItems.length
             "
             class="wikita-lite-home__loading"
           >
             <CdxProgressBar inline aria-label="Loading further reading" />
           </div>
           <RelatedModule
-            v-if="homeFurtherReadingPreview.length"
-            :items="homeFurtherReadingPreview"
+            v-if="homeRelatedItems.length"
+            :items="homeRelatedItems"
             :preview-limit="HOME_FURTHER_READING_PREVIEW_LIMIT"
             :lists-version="listsVersion"
             :more-to="FURTHER_READING_PAGE"
@@ -713,7 +822,7 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
             <template
               v-if="
                 readExploreTab.showLoadingBar('furtherReading') &&
-                homeFurtherReadingPreview.length
+                homeRelatedItems.length
               "
               #after-cards
             >
@@ -877,7 +986,7 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
           </div>
           <ActiveDiscussionsModule
             v-if="showActiveDiscussionsContent"
-            :items="activeDiscussionsPreview"
+            :items="activeDiscussions"
             :error="activeDiscussionsError"
             :preview-limit="HOME_ACTIVE_DISCUSSIONS_PREVIEW_LIMIT"
             :more-to="ACTIVE_DISCUSSIONS_PAGE"

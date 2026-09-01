@@ -3,6 +3,8 @@ import { computed } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 import { RouterLink } from 'vue-router'
 
+import { useConfig } from '@/composables/useConfig'
+
 import { CdxCard, CdxProgressBar } from '@wikimedia/codex'
 import {
   cdxIconBookmark,
@@ -13,7 +15,6 @@ import {
 
 import {
   formatRelatedToLabel,
-  getCachedSavedPageTitles,
 } from '../../musical-group/data/relatedToLabel'
 import type { HomeMention } from '../../musical-group/data/types'
 import { useWikitaLiteSaveActions } from '../composables/useWikitaLiteCardActions'
@@ -42,6 +43,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const listsVersionRef = computed(() => props.listsVersion)
+const { currentUserPageLists } = useConfig()
 
 const { relatedReadingSaved, relatedReadingInList, onRelatedReadingSave } =
   useWikitaLiteSaveActions(listsVersionRef)
@@ -51,20 +53,21 @@ const displayItems = computed(() =>
 )
 
 function relatedLabel(relatedToTitle: string): string {
-  return formatRelatedToLabel(relatedToTitle, getCachedSavedPageTitles(), { alwaysShow: true })
+  const savedTitles = currentUserPageLists.value.readingList.map((title) => ({ title }))
+  return formatRelatedToLabel(relatedToTitle, savedTitles, { alwaysShow: true })
 }
 
 function cardThumbnail(url?: string) {
   return url?.trim() ? { url: url.trim() } : null
 }
 
-function saveIcon(itemId: string) {
+function saveIcon(itemId: string, title: string) {
   if (relatedReadingInList(itemId)) return cdxIconBookmarkList
-  return relatedReadingSaved(itemId) ? cdxIconBookmark : cdxIconBookmarkOutline
+  return relatedReadingSaved(title) ? cdxIconBookmark : cdxIconBookmarkOutline
 }
 
-function saveLabel(itemId: string): string {
-  return relatedReadingSaved(itemId) ? 'Saved' : 'Save'
+function saveLabel(title: string): string {
+  return relatedReadingSaved(title) ? 'Saved' : 'Save'
 }
 
 const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
@@ -90,8 +93,8 @@ const showMoreLink = useWikitaLiteOverflowShowMore({
         :thumbnail-url="item.thumbnailUrl"
         thumbnail-size="large"
         :force-thumbnail="true"
-        :action-label="saveLabel(item.itemId)"
-        :action-icon="saveIcon(item.itemId)"
+        :action-label="saveLabel(item.title)"
+        :action-icon="saveIcon(item.itemId, item.title)"
         @action-click="onRelatedReadingSave(item.itemId, item.title, item.thumbnailUrl)"
       />
 

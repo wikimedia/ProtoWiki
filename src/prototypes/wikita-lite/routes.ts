@@ -36,8 +36,8 @@ export const VIEW_TAB_LABELS: Record<WikitaLiteView, string> = {
   contribute: 'Contribute',
 }
 
-/** Set true to restore the floating pill nav (hidden while top tabs ship). */
-export const SHOW_WIKITA_LITE_FLOATING_NAV = false
+/** Floating home button — always shown on WikitaLiteShell routes. */
+export const SHOW_WIKITA_LITE_FLOATING_NAV = true
 
 export function viewTitleFor(view: WikitaLiteView): string | null {
   if (view === DEFAULT_WIKITA_LITE_VIEW) return null
@@ -124,6 +124,7 @@ const MODULE_TITLE_BY_ID: Partial<Record<WikitaLiteModuleId, string>> = {
   impact: MODULE_TITLES.impact,
   learn: MODULE_TITLES.learn,
   didYouKnow: MODULE_TITLES.didYouKnow,
+  bornOnThisDay: MODULE_TITLES.bornOnThisDay,
   saved: MODULE_TITLES.saved,
   mentions: MODULE_TITLES.mentions,
 }

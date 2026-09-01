@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { provideWikitaSaveFeedback } from '../musical-group/composables/useWikitaSaveFeedback'
-import { useWikitaLiteHome } from '../wikita-lite/composables/useWikitaLiteHome'
+import { provideWikitaLiteSaveFeedback } from '../wikita-lite/composables/useWikitaLiteSaveFeedback'
+import { useWikitaLiteFurtherReadingPage } from '../wikita-lite/composables/useWikitaLiteFurtherReadingPage'
+import WikitaLiteConfigureButton from '../wikita-lite/components/WikitaLiteConfigureButton.vue'
 import MobileSubpageHeader from '../wikita-lite/components/MobileSubpageHeader.vue'
 import WikitaLiteShell from '../wikita-lite/components/WikitaLiteShell.vue'
 import RelatedModule from '../wikita-lite/modules/RelatedModule.vue'
@@ -13,25 +14,37 @@ definePage({
   },
 })
 
-const { listsVersion } = provideWikitaSaveFeedback()
+const { listsVersion } = provideWikitaLiteSaveFeedback()
 
-const { homeRelatedItems, homeRelatedLoading } = useWikitaLiteHome()
+const { relatedItems, relatedLoading, relatedLoadingMore, loadSentinel } =
+  useWikitaLiteFurtherReadingPage()
 </script>
 
 <template>
   <WikitaLiteShell :title="null">
-    <MobileSubpageHeader :title="MODULE_TITLES.furtherReading" />
+    <MobileSubpageHeader :title="MODULE_TITLES.furtherReading">
+      <template #actions>
+        <WikitaLiteConfigureButton />
+      </template>
+    </MobileSubpageHeader>
     <RelatedModule
       standalone
-      :items="homeRelatedItems"
-      :loading="homeRelatedLoading"
+      :items="relatedItems"
+      :loading="relatedLoading"
+      :loading-more="relatedLoadingMore"
       :lists-version="listsVersion"
     />
+    <div ref="loadSentinel" class="wikita-lite-further-reading__sentinel" aria-hidden="true" />
   </WikitaLiteShell>
 </template>
 
 <style scoped>
 :deep(.wikita-lite-shell[data-skin='mobile']) {
   padding-top: var(--spacing-100, 16px);
+}
+
+.wikita-lite-further-reading__sentinel {
+  height: 1px;
+  flex-shrink: 0;
 }
 </style>

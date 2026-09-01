@@ -3,14 +3,14 @@ import { WIKITA_LITE_VIEWS } from '../routes'
 import {
   CONTRIBUTE_MODULE_IDS,
   EXPLORE_READ_MODULE_IDS,
-  HOME_EDIT_MODULE_IDS,
+  HOME_FEED_MODULE_IDS,
   type WikitaLiteModuleId,
 } from './homeModuleIds'
 
 const STORAGE_KEY = 'wikita-lite-pinned-modules'
 
 const MODULE_IDS_BY_VIEW: Record<WikitaLiteView, readonly string[]> = {
-  edit: HOME_EDIT_MODULE_IDS,
+  edit: HOME_FEED_MODULE_IDS,
   read: EXPLORE_READ_MODULE_IDS,
   contribute: CONTRIBUTE_MODULE_IDS,
 }

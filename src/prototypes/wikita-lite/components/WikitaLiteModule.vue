@@ -36,7 +36,7 @@ const { hideCardBorders } = useWikitaLiteCardBordersSingleton()
 const { useModuleMenuMode } = useWikitaLiteModuleMenuModeSingleton()
 const { isPinned, togglePin } = useWikitaLitePinnedModulesSingleton()
 const { dismiss } = useWikitaLiteDismissedModulesSingleton()
-const { activeView } = useWikitaLiteView()
+const { activeView, isHome } = useWikitaLiteView()
 const { captureScroll, restoreScroll, preserveScrollFor } = useWikitaLitePreserveScroll()
 const router = useRouter()
 
@@ -58,12 +58,24 @@ const moduleIsPinned = computed(
   () => props.moduleId !== undefined && isPinned(props.moduleId),
 )
 
-const showPinButton = computed(() => activeView.value === 'edit')
+const showPinButton = computed(() => {
+  if (!moduleIsPinned.value) return false
+  if (!isHome.value) return true
+  return activeView.value === 'edit'
+})
 
 const pinMenuLabel = computed(() => {
   if (!props.moduleId) return ''
-  return isPinned(props.moduleId) ? 'Unpin from top' : 'Pin to top'
+  const pinned = isPinned(props.moduleId)
+  if (!isHome.value) {
+    return pinned ? 'Unpin from home' : 'Pin to home'
+  }
+  return pinned ? 'Unpin from top' : 'Pin to top'
 })
+
+const unpinAriaLabel = computed(() =>
+  !isHome.value ? 'Unpin from home' : 'Unpin from top',
+)
 
 const overflowMenuItems = computed(() => {
   if (!props.moduleId) return []
@@ -147,7 +159,7 @@ provide(WIKITA_LITE_CARD_SEPARATION, effectiveCardSeparation)
           v-if="moduleIsPinned && showPinButton"
           weight="quiet"
           class="wikita-lite-module__pin-button"
-          aria-label="Unpin from top"
+          :aria-label="unpinAriaLabel"
           @click="onUnpin"
         >
           <CdxIcon :icon="cdxIconPushPin" />

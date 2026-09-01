@@ -1,8 +1,9 @@
 import { ref, type Ref } from 'vue'
 
+import { useConfig } from '@/composables/useConfig'
+
 import { useWikitaSaveFeedback } from '../../musical-group/composables/useWikitaSaveFeedback'
-import { isBookmarked } from '../../musical-group/data/bookmarks'
-import { enwikiArticleUrl } from '../../musical-group/data/enwikiTitle'
+import { enwikiArticleUrl, normalizeEnwikiTitle } from '../../musical-group/data/enwikiTitle'
 import { isEditThanked, toggleEditThank } from '../../musical-group/data/editThanks'
 import { isPageInAnyList } from '../../musical-group/data/lists'
 
@@ -29,15 +30,25 @@ export function helpWantedHref(item: { enwikiTitle?: string; title: string }): s
   return savedItemHref(item)
 }
 
-export function useWikitaLiteSaveActions(listsVersion: Ref<number>) {
-  const { savePage } = useWikitaSaveFeedback()
-  const relatedReadingBookmarkState = ref<Record<string, boolean>>({})
+function savedTitleKey(title: string): string {
+  return normalizeEnwikiTitle(title).toLowerCase()
+}
 
-  function relatedReadingSaved(itemId: string): boolean {
-    if (Object.prototype.hasOwnProperty.call(relatedReadingBookmarkState.value, itemId)) {
-      return relatedReadingBookmarkState.value[itemId]
-    }
-    return isBookmarked(itemId)
+export function useWikitaLiteSaveActions(listsVersion: Ref<number>) {
+  const { savePage, listsVersion: saveListsVersion } = useWikitaSaveFeedback()
+  const { currentUserPageLists } = useConfig()
+
+  function relatedReadingSaved(title: string): boolean {
+    void listsVersion.value
+    void saveListsVersion.value
+    void currentUserPageLists.value.readingList
+
+    const key = savedTitleKey(title)
+    if (!key) return false
+
+    return currentUserPageLists.value.readingList.some(
+      (entry) => savedTitleKey(entry) === key,
+    )
   }
 
   function relatedReadingInList(itemId: string): boolean {
@@ -46,11 +57,7 @@ export function useWikitaLiteSaveActions(listsVersion: Ref<number>) {
   }
 
   function onRelatedReadingSave(itemId: string, title: string, thumbnailUrl?: string) {
-    const saved = savePage(itemId, title, thumbnailUrl)
-    relatedReadingBookmarkState.value = {
-      ...relatedReadingBookmarkState.value,
-      [itemId]: saved,
-    }
+    savePage(itemId, title, thumbnailUrl)
   }
 
   return {

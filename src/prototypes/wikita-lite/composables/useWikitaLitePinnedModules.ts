@@ -2,7 +2,7 @@ import { computed, ref, watch, type ComputedRef } from 'vue'
 
 import { type WikitaLiteModuleId } from '../data/homeModuleIds'
 import { type TabPinnedModules, loadPinnedModules, savePinnedModules } from '../data/modulePins'
-import { WIKITA_LITE_VIEWS, type WikitaLiteView } from '../routes'
+import { DEFAULT_WIKITA_LITE_VIEW, WIKITA_LITE_VIEWS, type WikitaLiteView } from '../routes'
 import { useWikitaLiteView } from './useWikitaLiteView'
 
 const pinnedByTab = ref<TabPinnedModules>(loadPinnedModules())
@@ -16,14 +16,22 @@ watch(
 )
 
 export function useWikitaLitePinnedModules() {
-  const { activeView } = useWikitaLiteView()
+  const { activeView, isHome } = useWikitaLiteView()
+
+  function pinView(): WikitaLiteView {
+    return isHome.value ? activeView.value : DEFAULT_WIKITA_LITE_VIEW
+  }
 
   function isPinned(moduleId: WikitaLiteModuleId): boolean {
-    return pinnedByTab.value[activeView.value].includes(moduleId)
+    return pinnedByTab.value[pinView()].includes(moduleId)
+  }
+
+  function isPinnedToHome(moduleId: WikitaLiteModuleId): boolean {
+    return pinnedByTab.value.edit.includes(moduleId)
   }
 
   function togglePin(moduleId: WikitaLiteModuleId): void {
-    const view = activeView.value
+    const view = pinView()
     const current = pinnedByTab.value[view]
 
     if (current.includes(moduleId)) {
@@ -59,6 +67,7 @@ export function useWikitaLitePinnedModules() {
   return {
     pinnedByTab,
     isPinned,
+    isPinnedToHome,
     togglePin,
     pinnedIdsForView,
     unpinFromAllTabs,

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { provideWikitaSaveFeedback } from '../musical-group/composables/useWikitaSaveFeedback'
+import { provideWikitaLiteSaveFeedback } from '../wikita-lite/composables/useWikitaLiteSaveFeedback'
+import { useWikitaLiteDismissedModulesSingleton } from '../wikita-lite/composables/useWikitaLiteDismissedModules'
 import { useWikitaLiteHome } from '../wikita-lite/composables/useWikitaLiteHome'
 import MobileSubpageHeader from '../wikita-lite/components/MobileSubpageHeader.vue'
 import WikitaLiteModule from '../wikita-lite/components/WikitaLiteModule.vue'
@@ -22,7 +23,8 @@ definePage({
 
 const FEATURED_PREVIEW_LIMIT = 3
 
-const { listsVersion } = provideWikitaSaveFeedback()
+const { listsVersion } = provideWikitaLiteSaveFeedback()
+const { isDismissed } = useWikitaLiteDismissedModulesSingleton()
 
 const {
   featuredArticle,
@@ -49,7 +51,8 @@ const {
 
       <template v-if="!featuredTabLoading && !featuredTabError">
         <WikitaLiteModule
-          v-if="didYouKnow.length"
+          v-if="didYouKnow.length && !isDismissed('didYouKnow')"
+          module-id="didYouKnow"
           :title="MODULE_TITLES.didYouKnow"
           :to="DID_YOU_KNOW_PAGE"
         >
@@ -57,11 +60,13 @@ const {
             :items="didYouKnow"
             :preview-limit="FEATURED_PREVIEW_LIMIT"
             :lists-version="listsVersion"
+            :more-to="DID_YOU_KNOW_PAGE"
           />
         </WikitaLiteModule>
 
         <WikitaLiteModule
-          v-if="bornOnThisDay.length"
+          v-if="bornOnThisDay.length && !isDismissed('bornOnThisDay')"
+          module-id="bornOnThisDay"
           :title="MODULE_TITLES.bornOnThisDay"
           :to="BORN_ON_THIS_DAY_PAGE"
         >
@@ -69,6 +74,7 @@ const {
             :items="bornOnThisDay"
             :preview-limit="FEATURED_PREVIEW_LIMIT"
             :lists-version="listsVersion"
+            :more-to="BORN_ON_THIS_DAY_PAGE"
           />
         </WikitaLiteModule>
       </template>

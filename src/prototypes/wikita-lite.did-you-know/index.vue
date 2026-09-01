@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { provideWikitaSaveFeedback } from '../musical-group/composables/useWikitaSaveFeedback'
+import { provideWikitaLiteSaveFeedback } from '../wikita-lite/composables/useWikitaLiteSaveFeedback'
 import { useWikitaLiteHome } from '../wikita-lite/composables/useWikitaLiteHome'
 import MobileSubpageHeader from '../wikita-lite/components/MobileSubpageHeader.vue'
 import WikitaLiteShell from '../wikita-lite/components/WikitaLiteShell.vue'
@@ -13,7 +13,7 @@ definePage({
   },
 })
 
-const { listsVersion } = provideWikitaSaveFeedback()
+const { listsVersion } = provideWikitaLiteSaveFeedback()
 
 const { didYouKnow, featuredTabLoading } = useWikitaLiteHome()
 </script>

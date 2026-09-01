@@ -24,7 +24,7 @@ const props = withDefaults(defineProps<Props>(), {
   actions: false,
 })
 
-const { activeView, selectView, scrollToTop } = useWikitaLiteView()
+const { isHomeFeed, goHome, scrollToTop } = useWikitaLiteView()
 const { cardRadiusStyle } = useWikitaLiteCardRadiusSingleton()
 const { hideCardBorders } = useWikitaLiteCardBordersSingleton()
 
@@ -63,8 +63,9 @@ onMounted(async () => {
         </SpecialPageWrapper>
       </ChromeWrapper>
       <WikitaLiteFloatingNav
-        :active-view="activeView"
-        @select-view="selectView"
+        v-show="SHOW_WIKITA_LITE_FLOATING_NAV"
+        :home-active="isHomeFeed"
+        @go-home="goHome"
       />
     </div>
   </MobileWrapper>

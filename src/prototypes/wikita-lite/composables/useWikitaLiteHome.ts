@@ -30,5 +30,6 @@ export function useWikitaLiteHome(options?: {
         return langs.length ? [langs[0]] : []
       }),
     getBookmarkChangeSkipFeeds: options?.getBookmarkChangeSkipFeeds,
+    savedPagesSource: 'readingList',
   })
 }

@@ -55,13 +55,13 @@ const displayItems = computed(() =>
   props.standalone ? props.items : props.items.slice(0, props.previewLimit),
 )
 
-function saveIcon(itemId: string) {
+function saveIcon(itemId: string, title: string) {
   if (relatedReadingInList(itemId)) return cdxIconBookmarkList
-  return relatedReadingSaved(itemId) ? cdxIconBookmark : cdxIconBookmarkOutline
+  return relatedReadingSaved(title) ? cdxIconBookmark : cdxIconBookmarkOutline
 }
 
-function saveLabel(itemId: string): string {
-  return relatedReadingSaved(itemId) ? 'Saved' : 'Save'
+function saveLabel(title: string): string {
+  return relatedReadingSaved(title) ? 'Saved' : 'Save'
 }
 
 function cardThumbnail(url?: string) {
@@ -101,8 +101,8 @@ const showMoreLink = useWikitaLiteOverflowShowMore({
           :thumbnail-url="item.thumbnailUrl"
           thumbnail-size="large"
           :force-thumbnail="true"
-          :action-label="saveLabel(item.itemId)"
-          :action-icon="saveIcon(item.itemId)"
+          :action-label="saveLabel(item.title)"
+          :action-icon="saveIcon(item.itemId, item.title)"
           @action-click="onRelatedReadingSave(item.itemId, item.title, item.thumbnailUrl)"
         />
 

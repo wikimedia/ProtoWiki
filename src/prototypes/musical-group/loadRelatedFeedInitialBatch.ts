@@ -241,18 +241,101 @@ export async function loadRelatedFeedBatch(
   state.hasMore = state.seeds.length > 0
 }
 
+function previewSeedTitlesFromItems(savedItems: HomeSavedItem[]): string[] {
+  const titles: string[] = []
+  const seen = new Set<string>()
+
+  for (const item of savedItems) {
+    if (!item.enwikiTitle) continue
+    const key = item.title.trim().toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    titles.push(item.title)
+  }
+
+  return titles
+}
+
+function previewSeedQuotaMet(
+  state: RelatedFeedRuntimeState,
+  minPerSeed: number,
+  seedTitles: string[],
+): boolean {
+  if (seedTitles.length === 0) return true
+
+  const counts = new Map<string, number>()
+  for (const item of state.items) {
+    const key = item.relatedToTitle.trim().toLowerCase()
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+
+  for (const title of seedTitles) {
+    const key = title.trim().toLowerCase()
+    if ((counts.get(key) ?? 0) < minPerSeed) return false
+  }
+
+  return true
+}
+
+export function relatedFeedPreviewQuotaMet(
+  feedTabId: RelatedFeedTabId,
+  dependencyKey: string,
+  seedItems: HomeSavedItem[],
+  minPerSeed: number,
+): boolean {
+  const cached = getCachedRelatedFeed(feedTabId, dependencyKey)
+  if (!cached) return false
+
+  const state = relatedFeedStateFromCache(cached)
+  return previewSeedQuotaMet(state, minPerSeed, previewSeedTitlesFromItems(seedItems))
+}
+
+export interface LoadRelatedFeedInitialBatchOptions {
+  /** Keep loading batches until each seed has at least this many cards (preview tabs). */
+  minItemsPerSeed?: number
+  maxExtraBatches?: number
+}
+
 /** Load the first batch for a feed tab, using cache when available. */
 export async function loadRelatedFeedInitialBatch(
   feedTabId: RelatedFeedTabId,
   savedItems: HomeSavedItem[],
   dependencyKey: string,
   signal: AbortSignal,
+  options?: LoadRelatedFeedInitialBatchOptions,
 ): Promise<HomeRelated[]> {
-  const cached = getCachedRelatedFeed(feedTabId, dependencyKey)
-  if (cached) return cached.items
+  const minPerSeed = options?.minItemsPerSeed ?? 0
+  const maxExtra = options?.maxExtraBatches ?? 8
+  const previewSeedTitles = previewSeedTitlesFromItems(savedItems)
 
-  const state = createRelatedFeedState(savedItems)
-  await loadRelatedFeedBatch(state, signal)
+  const cached = getCachedRelatedFeed(feedTabId, dependencyKey)
+  const state = cached
+    ? relatedFeedStateFromCache(cached)
+    : createRelatedFeedState(savedItems)
+
+  if (
+    cached &&
+    (minPerSeed === 0 || previewSeedQuotaMet(state, minPerSeed, previewSeedTitles))
+  ) {
+    return cached.items
+  }
+
+  if (!cached) {
+    await loadRelatedFeedBatch(state, signal)
+  }
+
+  if (minPerSeed > 0) {
+    let extra = 0
+    while (
+      extra < maxExtra &&
+      state.hasMore &&
+      !previewSeedQuotaMet(state, minPerSeed, previewSeedTitles)
+    ) {
+      await loadRelatedFeedBatch(state, signal)
+      extra++
+    }
+  }
+
   persistRelatedFeedState(feedTabId, dependencyKey, state)
   return state.items
 }

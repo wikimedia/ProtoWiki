@@ -44,6 +44,7 @@ Preferences persist in `localStorage`:
 
 | Key | File |
 | --- | --- |
+| `protowiki-prototype-user-config` | `src/config.ts` — user profile incl. **`readingList`** (saved pages) and **`editedPages`** (editing history) |
 | `wikita-lite-suggestion-prefs` | `musical-group/data/suggestionPreferences.ts` |
 | `wikita-lite-module-suggestion-prefs` | `wikita-lite/data/moduleSuggestionPreferences.ts` |
 | `wikita-lite-interests` | `musical-group/data/interests.ts` |
@@ -53,9 +54,9 @@ Suggestion feeds (Further reading, Mentions) honor global toggles via
 `getSuggestionSeeds()` and `suggestionFeedsKey()`. **Suggested edits**
 uses module-effective prefs from `useWikitaLiteModuleSuggestionPreferences`
 and `helpWantedFeedsKey()` — it may diverge from global configure when the
-module override is active. Seeds can come from saved pages, the active user's
-`editedPages` list (ProtoWiki config / real-user impact sync), and/or chosen
-interests. When all three toggles are off and there are no bookmarks,
+module override is active. Seeds can come from the active user's **reading list** and **`editedPages`**
+list (ProtoWiki user profile / settings panel), and/or chosen interests. When all
+three toggles are off and there are no saved pages,
 Contribute still falls back to random seeds per the rules below.
 **Mentions** require the saved-pages toggle and at least one bookmark.
 
@@ -120,6 +121,10 @@ Do **not** add similar save-nudging copy elsewhere:
 
 - No CTAs like "Save pages to see…" on Home, Contribute, or other modules.
 - Other personalized sections simply **omit** when there is nothing to show.
+
+Saving a page in wikita-lite updates the user profile **`readingList`** in
+`protowiki-prototype-user-config` (not the separate `musical-group-bookmarks`
+store used by the musical-group prototype).
 
 Save/bookmark **actions on cards** (bookmark icon, "Saved" label) and
 post-save toasts are fine.

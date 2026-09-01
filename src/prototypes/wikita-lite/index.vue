@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useConfig } from '@/composables/useConfig'
-import { provideWikitaSaveFeedback } from '../musical-group/composables/useWikitaSaveFeedback'
+import { provideWikitaLiteSaveFeedback } from '../wikita-lite/composables/useWikitaLiteSaveFeedback'
 import WikitaLiteConfigureButton from './components/WikitaLiteConfigureButton.vue'
 import WikitaLiteShell from './components/WikitaLiteShell.vue'
 import WikitaLiteHome from './WikitaLiteHome.vue'
@@ -13,7 +13,7 @@ definePage({
 })
 
 const { pageTitle } = useConfig()
-provideWikitaSaveFeedback()
+provideWikitaLiteSaveFeedback()
 </script>
 
 <template>

@@ -1,48 +1,27 @@
 <script setup lang="ts">
 import { CdxIcon } from '@wikimedia/codex'
-import {
-  cdxIconBook,
-  cdxIconEdit,
-  cdxIconHome,
-} from '@wikimedia/codex-icons'
-import type { Icon } from '@wikimedia/codex-icons'
-
-import type { WikitaLiteView } from '../routes'
-import { SHOW_WIKITA_LITE_FLOATING_NAV, VIEW_TAB_LABELS } from '../routes'
-
-const NAV_ITEMS: { id: WikitaLiteView; label: string; icon: Icon }[] = [
-  { id: 'edit', label: VIEW_TAB_LABELS.edit, icon: cdxIconHome },
-  { id: 'read', label: VIEW_TAB_LABELS.read, icon: cdxIconBook },
-  { id: 'contribute', label: VIEW_TAB_LABELS.contribute, icon: cdxIconEdit },
-]
+import { cdxIconHome } from '@wikimedia/codex-icons'
 
 defineProps<{
-  activeView: WikitaLiteView
+  homeActive?: boolean
 }>()
 
 const emit = defineEmits<{
-  'select-view': [view: WikitaLiteView]
+  'go-home': []
 }>()
 </script>
 
 <template>
-  <div
-    v-show="SHOW_WIKITA_LITE_FLOATING_NAV"
-    class="wikita-lite-floating-nav"
-    role="navigation"
-    aria-label="Quick navigation"
-  >
+  <div class="wikita-lite-floating-nav" role="navigation" aria-label="Quick navigation">
     <button
-      v-for="item in NAV_ITEMS"
-      :key="item.id"
       type="button"
       class="wikita-lite-floating-nav__btn"
-      :class="{ 'wikita-lite-floating-nav__btn--active': activeView === item.id }"
-      :aria-label="item.label"
-      :aria-pressed="activeView === item.id"
-      @click="emit('select-view', item.id)"
+      :class="{ 'wikita-lite-floating-nav__btn--active': homeActive }"
+      aria-label="Home"
+      :aria-pressed="homeActive"
+      @click="emit('go-home')"
     >
-      <CdxIcon :icon="item.icon" />
+      <CdxIcon :icon="cdxIconHome" />
     </button>
   </div>
 </template>

@@ -3,7 +3,7 @@ export interface HideTabBarPreference {
 }
 
 export const DEFAULT_HIDE_TAB_BAR_PREFERENCE: HideTabBarPreference = {
-  hideTabBar: false,
+  hideTabBar: true,
 }
 
 const STORAGE_KEY = 'wikita-lite-hide-tab-bar'
