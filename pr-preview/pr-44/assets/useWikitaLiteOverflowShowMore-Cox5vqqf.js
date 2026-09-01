@@ -1,0 +1,1 @@
+import{u as o,a as t}from"./useWikitaLiteCardListClasses-DV6TKFHW.js";import{j as i,X as a}from"./index-By-tLi-X.js";function l(e){const{useModuleMenuMode:r}=o(),{hideTabBar:u}=t();return i(()=>a(e.requireHideTabBar)&&!u.value?!1:!a(e.standalone)&&r.value&&!!a(e.moreTo)&&a(e.hasItems))}export{l as u};
