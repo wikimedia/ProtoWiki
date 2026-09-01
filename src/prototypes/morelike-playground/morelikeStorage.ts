@@ -5,6 +5,7 @@ import {
   type MorelikeMltPreset,
   type MorelikeSortOrder,
 } from './morelikeMlt'
+import { type MorelikeRequestMode } from './fetchMorelike'
 
 export interface MorelikePlaygroundState {
   seedText: string
@@ -13,10 +14,11 @@ export interface MorelikePlaygroundState {
   mltPreset: MorelikeMltPreset
   mltCustom: MorelikeMltCustomSettings
   classicNoboostlinks: boolean
-  interleave: boolean
+  requestMode: MorelikeRequestMode
 }
 
-const STORAGE_KEY = 'protowiki-morelike-playground-v1'
+const STORAGE_KEY = 'protowiki-morelike-playground-v2'
+const LEGACY_STORAGE_KEY = 'protowiki-morelike-playground-v1'
 
 export const DEFAULT_MORELIKE_PLAYGROUND_STATE: MorelikePlaygroundState = {
   seedText: '',
@@ -25,7 +27,7 @@ export const DEFAULT_MORELIKE_PLAYGROUND_STATE: MorelikePlaygroundState = {
   mltPreset: 'default',
   mltCustom: { ...DEFAULT_MLT_CUSTOM },
   classicNoboostlinks: true,
-  interleave: false,
+  requestMode: 'single',
 }
 
 function clampResultLimit(value: number): number {
@@ -40,11 +42,26 @@ function isMltPreset(value: unknown): value is MorelikeMltPreset {
   return value === 'default' || value === 'custom'
 }
 
+function isRequestMode(value: unknown): value is MorelikeRequestMode {
+  return value === 'single' || value === 'total' || value === 'perPage'
+}
+
 function normalizeMltPreset(value: unknown): MorelikeMltPreset {
   if (isMltPreset(value)) return value
   // Removed presets fall back to wiki default.
   if (value === 'balancedTitles' || value === 'fewerTerms') return 'default'
   return DEFAULT_MORELIKE_PLAYGROUND_STATE.mltPreset
+}
+
+function normalizeRequestMode(record: Record<string, unknown>): MorelikeRequestMode {
+  if (isRequestMode(record.requestMode)) return record.requestMode
+
+  // Legacy v1 boolean: interleave true → total split across seeds.
+  if (typeof record.interleave === 'boolean') {
+    return record.interleave ? 'total' : 'single'
+  }
+
+  return DEFAULT_MORELIKE_PLAYGROUND_STATE.requestMode
 }
 
 function normalizeState(input: unknown): MorelikePlaygroundState {
@@ -69,20 +86,30 @@ function normalizeState(input: unknown): MorelikePlaygroundState {
       typeof record.classicNoboostlinks === 'boolean'
         ? record.classicNoboostlinks
         : DEFAULT_MORELIKE_PLAYGROUND_STATE.classicNoboostlinks,
-    interleave:
-      typeof record.interleave === 'boolean'
-        ? record.interleave
-        : DEFAULT_MORELIKE_PLAYGROUND_STATE.interleave,
+    requestMode: normalizeRequestMode(record),
   }
 }
 
-function clearStoredState(): void {
+function clearStoredState(key: string): void {
   if (typeof window === 'undefined') return
 
   try {
-    window.localStorage.removeItem(STORAGE_KEY)
+    window.localStorage.removeItem(key)
   } catch {
     // Private mode or blocked storage — ignore.
+  }
+}
+
+function readStoredJson(key: string): unknown | null {
+  if (typeof window === 'undefined') return null
+
+  try {
+    const stored = window.localStorage.getItem(key)
+    if (!stored) return null
+    return JSON.parse(stored) as unknown
+  } catch {
+    clearStoredState(key)
+    return null
   }
 }
 
@@ -91,18 +118,19 @@ export function loadMorelikePlaygroundState(): MorelikePlaygroundState {
     return { ...DEFAULT_MORELIKE_PLAYGROUND_STATE, mltCustom: { ...DEFAULT_MLT_CUSTOM } }
   }
 
-  try {
-    const stored = window.localStorage.getItem(STORAGE_KEY)
-    if (!stored) return { ...DEFAULT_MORELIKE_PLAYGROUND_STATE, mltCustom: { ...DEFAULT_MLT_CUSTOM } }
-
-    const parsed: unknown = JSON.parse(stored)
-    const normalized = normalizeState(parsed)
-    persistMorelikePlaygroundState(normalized)
-    return normalized
-  } catch {
-    clearStoredState()
+  const parsed = readStoredJson(STORAGE_KEY) ?? readStoredJson(LEGACY_STORAGE_KEY)
+  if (!parsed) {
     return { ...DEFAULT_MORELIKE_PLAYGROUND_STATE, mltCustom: { ...DEFAULT_MLT_CUSTOM } }
   }
+
+  const normalized = normalizeState(parsed)
+  persistMorelikePlaygroundState(normalized)
+
+  if (readStoredJson(LEGACY_STORAGE_KEY)) {
+    clearStoredState(LEGACY_STORAGE_KEY)
+  }
+
+  return normalized
 }
 
 export function persistMorelikePlaygroundState(state: MorelikePlaygroundState): void {

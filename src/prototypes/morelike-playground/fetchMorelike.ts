@@ -10,6 +10,8 @@ import {
 const WIKI_HOST = 'en.wikipedia.org'
 const API_URL = `https://${WIKI_HOST}/w/api.php`
 
+export type MorelikeRequestMode = 'single' | 'total' | 'perPage'
+
 export interface MorelikeSearchHit {
   title: string
   description: string
@@ -94,12 +96,30 @@ export function buildSrsearchForSeed(title: string): string {
   return `morelike:${title}`
 }
 
-/** Wire preview: combined query when off, one line per seed when interleaving. */
-export function buildSrsearchPreview(seedText: string, interleave: boolean): string | null {
+/** Per-seed gsrlimit values for multi-request modes. */
+export function perSeedRequestLimits(
+  limit: number,
+  seedCount: number,
+  requestMode: MorelikeRequestMode,
+): number[] {
+  if (seedCount <= 0) return []
+
+  if (requestMode === 'perPage') {
+    return Array.from({ length: seedCount }, () => limit)
+  }
+
+  return perSeedLimits(limit, seedCount)
+}
+
+/** Wire preview: combined query for single mode, one line per seed otherwise. */
+export function buildSrsearchPreview(
+  seedText: string,
+  requestMode: MorelikeRequestMode,
+): string | null {
   const seeds = parseSeedTitles(seedText)
   if (!seeds.length) return null
 
-  if (!interleave) {
+  if (requestMode === 'single') {
     return buildSrsearch(seedText)
   }
 
@@ -202,12 +222,12 @@ export function buildMorelikeApiRequestUrls(
   mltPreset: MorelikeMltPreset,
   mltCustom: MorelikeMltCustomSettings,
   classicNoboostlinks = true,
-  interleave = false,
+  requestMode: MorelikeRequestMode = 'single',
 ): string[] {
   const seeds = parseSeedTitles(seedText)
   if (!seeds.length) return []
 
-  if (!interleave) {
+  if (requestMode === 'single') {
     const gsrsearch = buildSrsearch(seedText)
     if (!gsrsearch) return []
 
@@ -222,7 +242,7 @@ export function buildMorelikeApiRequestUrls(
     ]
   }
 
-  const limits = perSeedLimits(totalLimit, seeds.length)
+  const limits = perSeedRequestLimits(totalLimit, seeds.length, requestMode)
   const urls: string[] = []
 
   for (let i = 0; i < seeds.length; i++) {
@@ -249,7 +269,7 @@ export function buildMorelikeApiRequestUrl(
   mltPreset: MorelikeMltPreset,
   mltCustom: MorelikeMltCustomSettings,
   classicNoboostlinks = true,
-  interleave = false,
+  requestMode: MorelikeRequestMode = 'single',
 ): string | null {
   const urls = buildMorelikeApiRequestUrls(
     seedText,
@@ -257,7 +277,7 @@ export function buildMorelikeApiRequestUrl(
     mltPreset,
     mltCustom,
     classicNoboostlinks,
-    interleave,
+    requestMode,
   )
 
   if (!urls.length) return null
@@ -349,15 +369,17 @@ export function sortMorelikeHits(
   return hits
 }
 
+type FetchMorelikeOptions = {
+  limit: number
+  mltPreset: MorelikeMltPreset
+  mltCustom: MorelikeMltCustomSettings
+  classicNoboostlinks: boolean
+  signal?: AbortSignal
+}
+
 async function fetchMorelikeResultsCombined(
   seedText: string,
-  options: {
-    limit: number
-    mltPreset: MorelikeMltPreset
-    mltCustom: MorelikeMltCustomSettings
-    classicNoboostlinks: boolean
-    signal?: AbortSignal
-  },
+  options: FetchMorelikeOptions,
 ): Promise<MorelikeSearchHit[]> {
   const requestUrl = buildMorelikeApiRequestUrl(
     seedText,
@@ -365,7 +387,7 @@ async function fetchMorelikeResultsCombined(
     options.mltPreset,
     options.mltCustom,
     options.classicNoboostlinks,
-    false,
+    'single',
   )
 
   if (!requestUrl) {
@@ -380,15 +402,10 @@ async function fetchMorelikeResultsCombined(
     .map(mapPageToHit)
 }
 
-async function fetchMorelikeResultsInterleaved(
+async function fetchMorelikeResultsMulti(
   seedText: string,
-  options: {
-    limit: number
-    mltPreset: MorelikeMltPreset
-    mltCustom: MorelikeMltCustomSettings
-    classicNoboostlinks: boolean
-    signal?: AbortSignal
-  },
+  options: FetchMorelikeOptions,
+  requestMode: 'total' | 'perPage',
 ): Promise<MorelikeSearchHit[]> {
   const seeds = parseSeedTitles(seedText)
   if (!seeds.length) {
@@ -396,7 +413,7 @@ async function fetchMorelikeResultsInterleaved(
   }
 
   const seedTitles = new Set(seeds)
-  const limits = perSeedLimits(options.limit, seeds.length)
+  const limits = perSeedRequestLimits(options.limit, seeds.length, requestMode)
   const lists: MorelikeSearchHit[][] = []
 
   for (let i = 0; i < seeds.length; i++) {
@@ -424,7 +441,9 @@ async function fetchMorelikeResultsInterleaved(
     )
   }
 
-  return interleaveMorelikeHits(lists, options.limit)
+  const mergeCap = requestMode === 'perPage' ? Number.POSITIVE_INFINITY : options.limit
+
+  return interleaveMorelikeHits(lists, mergeCap)
 }
 
 export async function fetchMorelikeResults(
@@ -434,7 +453,7 @@ export async function fetchMorelikeResults(
     mltPreset: MorelikeMltPreset
     mltCustom: MorelikeMltCustomSettings
     classicNoboostlinks?: boolean
-    interleave?: boolean
+    requestMode?: MorelikeRequestMode
     signal?: AbortSignal
   },
 ): Promise<MorelikeSearchHit[]> {
@@ -442,7 +461,7 @@ export async function fetchMorelikeResults(
     throw new MorelikeFetchError('Request aborted', 'aborted')
   }
 
-  const fetchOptions = {
+  const fetchOptions: FetchMorelikeOptions = {
     limit: options.limit,
     mltPreset: options.mltPreset,
     mltCustom: options.mltCustom,
@@ -450,8 +469,10 @@ export async function fetchMorelikeResults(
     signal: options.signal,
   }
 
-  if (options.interleave) {
-    return fetchMorelikeResultsInterleaved(seedText, fetchOptions)
+  const requestMode = options.requestMode ?? 'single'
+
+  if (requestMode === 'total' || requestMode === 'perPage') {
+    return fetchMorelikeResultsMulti(seedText, fetchOptions, requestMode)
   }
 
   return fetchMorelikeResultsCombined(seedText, fetchOptions)

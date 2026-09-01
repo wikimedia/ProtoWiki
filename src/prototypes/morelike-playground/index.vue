@@ -20,6 +20,7 @@ import {
   MorelikeFetchError,
   parseSeedTitles,
   sortMorelikeHits,
+  type MorelikeRequestMode,
   type MorelikeSearchHit,
 } from './fetchMorelike'
 import {
@@ -54,7 +55,7 @@ const mltCustom = ref<MorelikeMltCustomSettings>({
   ...DEFAULT_MORELIKE_PLAYGROUND_STATE.mltCustom,
 })
 const classicNoboostlinks = ref(DEFAULT_MORELIKE_PLAYGROUND_STATE.classicNoboostlinks)
-const interleave = ref(DEFAULT_MORELIKE_PLAYGROUND_STATE.interleave)
+const requestMode = ref<MorelikeRequestMode>(DEFAULT_MORELIKE_PLAYGROUND_STATE.requestMode)
 
 const results = ref<MorelikeSearchHit[]>([])
 const sortedResults = computed(() => sortMorelikeHits(results.value, sortOrder.value))
@@ -89,10 +90,43 @@ const mltFieldsMenuItems = [
   { value: 'opening_text', label: 'opening_text' },
 ]
 
-const gsrsearch = computed(() => buildSrsearchPreview(seedText.value, interleave.value) ?? '')
+const requestModeMenuItems = computed(() => {
+  const n = resultLimit.value
+  const resultWord = n === 1 ? 'result' : 'results'
+
+  return [
+    { value: 'single', label: 'Single result' },
+    { value: 'total', label: `One request per page, ${n} ${resultWord} total` },
+    { value: 'perPage', label: `One request per page, ${n} ${resultWord} per page` },
+  ]
+})
+
+const resultLimitLabel = computed(() => {
+  if (requestMode.value === 'perPage') {
+    return `Results per seed: ${resultLimit.value}`
+  }
+
+  return `Result limit: ${resultLimit.value}`
+})
+
+const resultLimitDescription = computed(() => {
+  if (requestMode.value === 'total') {
+    return 'Total morelike results after round-robin merge (1–100). Split across one query per seed.'
+  }
+
+  if (requestMode.value === 'perPage') {
+    return 'Number of morelike results to fetch per seed page (1–100). Merged round-robin with no total cap.'
+  }
+
+  return 'Number of morelike results to return (1–100)'
+})
+
+const usesMultipleRequests = computed(() => requestMode.value !== 'single')
+
+const gsrsearch = computed(() => buildSrsearchPreview(seedText.value, requestMode.value) ?? '')
 
 const showMultipleRequestUrls = computed(
-  () => interleave.value && seedTitles.value.length > 1,
+  () => usesMultipleRequests.value && seedTitles.value.length > 1,
 )
 
 const requestUrl = computed(
@@ -103,7 +137,7 @@ const requestUrl = computed(
       mltPreset.value,
       mltCustom.value,
       classicNoboostlinks.value,
-      interleave.value,
+      requestMode.value,
     ) ?? '',
 )
 
@@ -128,7 +162,7 @@ function schedulePersist(immediate = false): void {
       mltPreset: mltPreset.value,
       mltCustom: mltCustom.value,
       classicNoboostlinks: classicNoboostlinks.value,
-      interleave: interleave.value,
+      requestMode: requestMode.value,
     })
   }
 
@@ -156,7 +190,7 @@ async function onSearch(): Promise<void> {
       mltPreset: mltPreset.value,
       mltCustom: mltCustom.value,
       classicNoboostlinks: classicNoboostlinks.value,
-      interleave: interleave.value,
+      requestMode: requestMode.value,
       signal: abortController.signal,
     })
 
@@ -195,12 +229,12 @@ onMounted(() => {
   mltPreset.value = stored.mltPreset
   mltCustom.value = { ...stored.mltCustom }
   classicNoboostlinks.value = stored.classicNoboostlinks
-  interleave.value = stored.interleave
+  requestMode.value = stored.requestMode
 })
 
 watch(seedText, () => schedulePersist(false))
 watch(
-  [resultLimit, sortOrder, mltPreset, mltCustom, classicNoboostlinks, interleave],
+  [resultLimit, sortOrder, mltPreset, mltCustom, classicNoboostlinks, requestMode],
   () => schedulePersist(true),
   { deep: true },
 )
@@ -221,8 +255,8 @@ watch(
         </CdxField>
 
         <CdxField>
-          <template #label>Result limit: {{ resultLimit }}</template>
-          <template #description>Number of morelike results to return (1–100)</template>
+          <template #label>{{ resultLimitLabel }}</template>
+          <template #description>{{ resultLimitDescription }}</template>
           <input
             v-model.number="resultLimit"
             class="morelike-playground__range"
@@ -234,12 +268,16 @@ watch(
         </CdxField>
 
         <CdxField>
-          <template #label>Multiple requests</template>
+          <template #label>Request mode</template>
           <template #description>
-            One morelike query per seed, then round-robin merge (~N total, same as the limit
-            slider). Off uses a single combined `morelike:A|B|…` query.
+            Single request uses one combined `morelike:A|B|…` query. Other modes fire one query
+            per seed, then round-robin merge.
           </template>
-          <CdxToggleSwitch v-model="interleave" />
+          <CdxSelect
+            v-model:selected="requestMode"
+            :menu-items="requestModeMenuItems"
+            default-label="Single result"
+          />
         </CdxField>
 
         <CdxField>
@@ -373,14 +411,14 @@ watch(
         <CdxField>
           <template #label>Search query</template>
           <template #description>
-            How seed pages are encoded for morelike — one combined query, or one per seed when
-            multiple requests is on.
+            How seed pages are encoded for morelike — one combined query, or one per seed in
+            multi-request modes.
           </template>
           <CdxTextArea
             class="morelike-playground__wire-value"
             :model-value="gsrsearch"
             disabled
-            :rows="interleave && seedTitles.length > 1 ? Math.min(seedTitles.length, 6) : 1"
+            :rows="usesMultipleRequests && seedTitles.length > 1 ? Math.min(seedTitles.length, 6) : 1"
           />
         </CdxField>
 
