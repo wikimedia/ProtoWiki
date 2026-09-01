@@ -40,7 +40,6 @@ withDefaults(defineProps<Props>(), {
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--spacing-50, 8px);
-  margin-top: var(--spacing-100, 16px);
   margin-bottom: calc(-1 * var(--spacing-50, 8px));
 }
 

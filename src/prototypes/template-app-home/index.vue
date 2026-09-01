@@ -198,9 +198,9 @@ const shareIcon = computed(() => (isIos.value ? cdxIconShareIOS : cdxIconShareAn
           Content and resources selected by and about the Wikimedia community.
         </CdxMessage>
 
-        <h3 class="template-app-home__date-heading">
+        <small class="template-app-home__date-heading">
           {{ feed.dateLabel }}
-        </h3>
+        </small>
 
         <template v-if="feed.tfa">
           <FeedSectionHeader
@@ -522,9 +522,7 @@ const shareIcon = computed(() => (isIos.value ? cdxIconShareIOS : cdxIconShareAn
 
 .template-app-home__date-heading {
   margin: 0;
-  font-size: var(--font-size-large, 1.125rem);
-  font-weight: var(--font-weight-bold, 700);
-  color: var(--color-base, #202122);
+  color: var(--color-subtle, #54595d);
 }
 
 .template-app-home__more-link {
@@ -730,7 +728,7 @@ const shareIcon = computed(() => (isIos.value ? cdxIconShareIOS : cdxIconShareAn
 .template-app-home__news-image {
   display: block;
   width: 100%;
-  height: 200px;
+  height: 300px;
   object-fit: cover;
 }
 
