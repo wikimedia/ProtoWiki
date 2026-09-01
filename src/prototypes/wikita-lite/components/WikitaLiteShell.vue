@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, provide } from 'vue'
+import { computed, nextTick, onMounted, provide } from 'vue'
 
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 import MobileWrapper from '@/components/MobileWrapper.vue'
@@ -28,6 +28,8 @@ const { isHomeFeed, goHome, scrollToTop } = useWikitaLiteView()
 const { cardRadiusStyle } = useWikitaLiteCardRadiusSingleton()
 const { hideCardBorders } = useWikitaLiteCardBordersSingleton()
 
+const isSubpage = computed(() => props.title === null)
+
 /** Float menus on body so opening them does not shift in-page layout / scroll. */
 provide('CdxTeleportMenus', true)
 
@@ -41,8 +43,13 @@ onMounted(async () => {
 <template>
   <MobileWrapper>
     <div class="wikita-lite-shell-root">
-      <ChromeWrapper skin="mobile" :last-edited-notice="false">
-        <template #menu>
+      <ChromeWrapper
+        skin="mobile"
+        :last-edited-notice="false"
+        :show-header="!isSubpage"
+        :show-footer="!isSubpage"
+      >
+        <template v-if="!isSubpage" #menu>
           <WikitaLiteChromeMenuPopover />
         </template>
         <SpecialPageWrapper
@@ -51,6 +58,7 @@ onMounted(async () => {
           :actions="props.actions"
           class="wikita-lite-shell"
           :class="{
+            'wikita-lite-shell--subpage': isSubpage,
             'wikita-lite-shell--with-nav': SHOW_WIKITA_LITE_FLOATING_NAV,
             'wikita-lite-shell--hide-card-borders': hideCardBorders,
           }"

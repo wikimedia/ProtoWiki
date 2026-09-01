@@ -24,9 +24,3 @@ const { savedSorted, savedItemsLoading } = useWikitaLiteHome()
     <SavedModule standalone :items="savedSorted" :loading="savedItemsLoading" />
   </WikitaLiteShell>
 </template>
-
-<style scoped>
-:deep(.wikita-lite-shell[data-skin='mobile']) {
-  padding-top: var(--spacing-100, 16px);
-}
-</style>

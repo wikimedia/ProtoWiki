@@ -21,9 +21,3 @@ provideWikitaLiteSaveFeedback()
     <LearnModule standalone />
   </WikitaLiteShell>
 </template>
-
-<style scoped>
-:deep(.wikita-lite-shell[data-skin='mobile']) {
-  padding-top: var(--spacing-100, 16px);
-}
-</style>

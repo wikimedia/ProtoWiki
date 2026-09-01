@@ -47,6 +47,56 @@
   padding-inline: var(--spacing-50, 8px);
 }
 
+/* Drill-down subpages — no chrome header; sticky title bar + filter tabs. */
+.wikita-lite-shell--subpage {
+  --wikita-lite-safe-area-top: env(safe-area-inset-top, 0px);
+  --wikita-lite-subpage-top-inset: max(var(--spacing-100, 16px), var(--wikita-lite-safe-area-top));
+  --wikita-lite-subpage-toolbar-height: 2.75rem;
+  --wikita-lite-subpage-header-offset: calc(
+    var(--wikita-lite-subpage-top-inset) + var(--wikita-lite-subpage-toolbar-height) +
+      var(--spacing-50, 8px) + 1px
+  );
+}
+
+.special-page-wrapper.wikita-lite-shell.wikita-lite-shell--subpage[data-skin='mobile'] {
+  padding-top: 0;
+  padding-bottom: var(--spacing-100, 16px);
+}
+
+.special-page-wrapper.wikita-lite-shell.wikita-lite-shell--subpage .mobile-subpage-header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  box-sizing: border-box;
+  min-height: var(--wikita-lite-subpage-header-offset);
+  margin-bottom: 0;
+  padding-top: var(--wikita-lite-subpage-top-inset);
+  padding-bottom: var(--spacing-50, 8px);
+  background-color: var(--background-color-base, #fff);
+}
+
+.special-page-wrapper.wikita-lite-shell.wikita-lite-shell--subpage .mobile-subpage-header--bleed {
+  margin-top: 0;
+}
+
+.special-page-wrapper.wikita-lite-shell.wikita-lite-shell--subpage .wikita-lite-daily-reads-tabs {
+  position: sticky;
+  top: calc(var(--wikita-lite-subpage-header-offset) - 1px);
+  z-index: 3;
+  box-sizing: border-box;
+  width: calc(100% + 2 * var(--spacing-50, 8px));
+  margin-top: -1px;
+  margin-inline: calc(-1 * var(--spacing-50, 8px));
+  padding-top: var(--spacing-50, 8px);
+  padding-inline: var(--spacing-50, 8px);
+  padding-bottom: var(--spacing-50, 8px);
+  background-color: var(--background-color-base, #fff);
+}
+
+.special-page-wrapper.wikita-lite-shell.wikita-lite-shell--subpage .wikita-lite-daily-reads-tabs__track {
+  background-color: var(--background-color-base, #fff);
+}
+
 /* Configure control — overlay on the title row without changing its height. */
 .special-page-wrapper.wikita-lite-shell .special-page-wrapper__header {
   position: relative;

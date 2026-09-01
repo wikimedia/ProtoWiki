@@ -41,10 +41,6 @@ const { helpWanted, helpWantedLoading, helpWantedLoadingMore, loadSentinel } =
 </template>
 
 <style scoped>
-:deep(.wikita-lite-shell[data-skin='mobile']) {
-  padding-top: var(--spacing-100, 16px);
-}
-
 .wikita-lite-help-wanted__sentinel {
   height: 1px;
   flex-shrink: 0;

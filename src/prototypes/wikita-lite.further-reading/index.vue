@@ -39,10 +39,6 @@ const { relatedItems, relatedLoading, relatedLoadingMore, loadSentinel } =
 </template>
 
 <style scoped>
-:deep(.wikita-lite-shell[data-skin='mobile']) {
-  padding-top: var(--spacing-100, 16px);
-}
-
 .wikita-lite-further-reading__sentinel {
   height: 1px;
   flex-shrink: 0;
