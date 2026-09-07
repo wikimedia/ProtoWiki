@@ -34,6 +34,8 @@ interface Props {
   lastEditedNotice?: boolean
   /** When **`false`**, omit the default **`ChromeFooter`** (header-only chrome). */
   showFooter?: boolean
+  /** When **`false`**, omit the default **`ChromeHeader`** (content-only chrome). */
+  showHeader?: boolean
   /** Forwarded to **`ChromeHeader`** / **`ChromeFooter`** (Meta label; mobile footer line). */
   username?: string
   /** Forwarded to **`ChromeHeader`**. */
@@ -53,6 +55,7 @@ const props = withDefaults(defineProps<Props>(), {
   theme: undefined,
   lastEditedNotice: true,
   showFooter: true,
+  showHeader: true,
   username: undefined,
   wordmarkSrc: undefined,
   taglineSrc: undefined,
@@ -78,21 +81,23 @@ provide(PROTOWIKI_CHROME_THEME, effectiveTheme)
     :lang="props.lang"
     :dir="props.dir"
   >
-    <slot name="header">
-      <ChromeHeader
-        :skin="effectiveSkin"
-        :theme="effectiveTheme"
-        :username="effectiveUsername"
-        :wordmark-src="props.wordmarkSrc"
-        :tagline-src="props.taglineSrc"
-        :mobile-wordmark-src="props.mobileWordmarkSrc"
-        :nav-tools="props.navTools"
-      >
-        <template v-if="$slots.menu" #menu>
-          <slot name="menu" />
-        </template>
-      </ChromeHeader>
-    </slot>
+    <template v-if="props.showHeader">
+      <slot name="header">
+        <ChromeHeader
+          :skin="effectiveSkin"
+          :theme="effectiveTheme"
+          :username="effectiveUsername"
+          :wordmark-src="props.wordmarkSrc"
+          :tagline-src="props.taglineSrc"
+          :mobile-wordmark-src="props.mobileWordmarkSrc"
+          :nav-tools="props.navTools"
+        >
+          <template v-if="$slots.menu" #menu>
+            <slot name="menu" />
+          </template>
+        </ChromeHeader>
+      </slot>
+    </template>
 
     <main class="chrome-wrapper__content">
       <slot />

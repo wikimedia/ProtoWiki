@@ -4,9 +4,11 @@ import {
   configUserDisplayName,
   configUserPageTitle,
   DEFAULT_CONFIG,
+  formatLangList,
   isDefaultUserPageLists,
   langForUser,
   loadConfig,
+  parseLangList,
   resetUserPageLists,
   saveConfig,
   type ConfigAppPlatform,
@@ -58,6 +60,9 @@ export function useConfig(): {
   webSkin: Ref<ConfigWebSkin>
   user: Ref<ConfigUser>
   realUsername: Ref<string>
+  apiContact: Ref<string>
+  knownLanguages: Ref<string[]>
+  knownLanguagesText: Ref<string>
   lang: Ref<string>
   realLang: ComputedRef<string>
   displayName: ComputedRef<string>
@@ -99,6 +104,27 @@ export function useConfig(): {
     get: () => config.value.realUsername,
     set: (value: string) => {
       config.value = { ...config.value, realUsername: value }
+    },
+  })
+
+  const apiContact = computed({
+    get: () => config.value.apiContact,
+    set: (value: string) => {
+      config.value = { ...config.value, apiContact: value }
+    },
+  })
+
+  const knownLanguages = computed({
+    get: () => config.value.knownLanguages,
+    set: (value: string[]) => {
+      config.value = { ...config.value, knownLanguages: [...value] }
+    },
+  })
+
+  const knownLanguagesText = computed({
+    get: () => formatLangList(config.value.knownLanguages),
+    set: (value: string) => {
+      config.value = { ...config.value, knownLanguages: parseLangList(value) }
     },
   })
 
@@ -172,6 +198,9 @@ export function useConfig(): {
     webSkin,
     user,
     realUsername,
+    apiContact,
+    knownLanguages,
+    knownLanguagesText,
     lang,
     realLang,
     displayName,

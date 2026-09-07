@@ -24,6 +24,10 @@ export interface Config {
   user: ConfigUser
   /** Wikipedia username when `user` is `'real'`. */
   realUsername: string
+  /** Contact detail for Wikimedia API etiquette (email/URL), appended to user agent. */
+  apiContact: string
+  /** Wiki language codes the user can translate into (e.g. `fr`, `de`). */
+  knownLanguages: string[]
   userPageLists: Record<ConfigUser, UserPageLists>
 }
 
@@ -70,12 +74,16 @@ export const DEFAULT_USER_PAGE_LISTS: Record<ConfigUser, UserPageLists> = {
   },
 }
 
+export const DEFAULT_KNOWN_LANGUAGES = ['fr']
+
 export const DEFAULT_CONFIG: Config = {
   theme: 'light',
   appPlatform: 'auto',
   webSkin: 'auto',
   user: 'new',
-  realUsername: 'Todepond',
+  realUsername: '',
+  apiContact: '',
+  knownLanguages: [...DEFAULT_KNOWN_LANGUAGES],
   userPageLists: cloneUserPageListsMap(DEFAULT_USER_PAGE_LISTS),
 }
 
@@ -90,12 +98,13 @@ export const CONFIG_USER_DISPLAY_NAMES: Partial<Record<ConfigUser, string>> = {
   experienced: 'ExperiencedEditor',
 }
 
-export const CONFIG_USER_MENU_ITEMS: { value: ConfigUser; label: string; description?: string }[] = [
-  { value: 'logged-out', label: 'Logged out user' },
-  { value: 'new', label: 'New user' },
-  { value: 'experienced', label: 'Experienced editor' },
-  { value: 'real', label: 'Real user', description: 'Connect to a real account on the wikis' },
-]
+export const CONFIG_USER_MENU_ITEMS: { value: ConfigUser; label: string; description?: string }[] =
+  [
+    { value: 'logged-out', label: 'Logged out user' },
+    { value: 'new', label: 'New user' },
+    { value: 'experienced', label: 'Experienced editor' },
+    { value: 'real', label: 'Real user', description: 'Connect to a real account on the wikis' },
+  ]
 
 export const CONFIG_THEME_MENU_ITEMS: { value: ConfigTheme; label: string }[] = [
   { value: 'system', label: 'Auto' },
@@ -168,6 +177,24 @@ export function parsePageList(text: string): string[] {
 
 export function formatPageList(pages: string[]): string {
   return pages.join(', ')
+}
+
+export function parseLangList(text: string): string[] {
+  const seen = new Set<string>()
+  const result: string[] = []
+
+  for (const part of text.split(',')) {
+    const code = normalizeLang(part)
+    if (!code || seen.has(code)) continue
+    seen.add(code)
+    result.push(code)
+  }
+
+  return result
+}
+
+export function formatLangList(codes: string[]): string {
+  return codes.map((code) => normalizeLang(code)).join(', ')
 }
 
 export function resetUserPageLists(user: ConfigUser): UserPageLists {
@@ -300,6 +327,12 @@ export function normalizeConfig(input: unknown): Config {
   const record = input as Record<string, unknown>
   const realUsername =
     typeof record.realUsername === 'string' ? record.realUsername : DEFAULT_CONFIG.realUsername
+  const apiContact =
+    typeof record.apiContact === 'string' ? record.apiContact : DEFAULT_CONFIG.apiContact
+  const knownLanguagesParsed = parseStringArray(record.knownLanguages)
+  const knownLanguages = knownLanguagesParsed?.length
+    ? knownLanguagesParsed.map((code) => normalizeLang(code)).filter(Boolean)
+    : [...DEFAULT_KNOWN_LANGUAGES]
   const userPageLists = mergeUserPageListsMap(record.userPageLists)
 
   if (typeof record.realWiki === 'string') {
@@ -317,6 +350,8 @@ export function normalizeConfig(input: unknown): Config {
     webSkin: isConfigWebSkin(record.webSkin) ? record.webSkin : DEFAULT_CONFIG.webSkin,
     user: isConfigUser(record.user) ? record.user : DEFAULT_CONFIG.user,
     realUsername,
+    apiContact,
+    knownLanguages,
     userPageLists,
   }
 }
@@ -367,6 +402,8 @@ function cloneConfig(config: Config): Config {
     webSkin: config.webSkin,
     user: config.user,
     realUsername: config.realUsername,
+    apiContact: config.apiContact,
+    knownLanguages: [...config.knownLanguages],
     userPageLists: cloneUserPageListsMap(config.userPageLists),
   }
 }

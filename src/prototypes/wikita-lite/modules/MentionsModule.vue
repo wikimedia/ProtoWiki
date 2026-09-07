@@ -1,0 +1,162 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
+import { RouterLink } from 'vue-router'
+
+import { useConfig } from '@/composables/useConfig'
+
+import { CdxCard, CdxProgressBar } from '@wikimedia/codex'
+import {
+  cdxIconBookmark,
+  cdxIconBookmarkList,
+  cdxIconBookmarkOutline,
+  cdxIconQuotes,
+} from '@wikimedia/codex-icons'
+
+import {
+  formatRelatedToLabel,
+} from '../../musical-group/data/relatedToLabel'
+import type { HomeMention } from '../../musical-group/data/types'
+import { useWikitaLiteSaveActions } from '../composables/useWikitaLiteCardActions'
+import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
+import { useWikitaLiteOverflowShowMore } from '../composables/useWikitaLiteOverflowShowMore'
+import { WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE } from '../wikita-lite-card'
+import WikitaLiteCardWithAction from '../components/WikitaLiteCardWithAction.vue'
+import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
+
+interface Props {
+  standalone?: boolean
+  items?: HomeMention[]
+  loading?: boolean
+  previewLimit?: number
+  listsVersion?: number
+  moreTo?: RouteLocationRaw
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  standalone: false,
+  items: () => [],
+  loading: false,
+  previewLimit: 3,
+  listsVersion: 0,
+  moreTo: undefined,
+})
+
+const listsVersionRef = computed(() => props.listsVersion)
+const { currentUserPageLists } = useConfig()
+
+const { relatedReadingSaved, relatedReadingInList, onRelatedReadingSave } =
+  useWikitaLiteSaveActions(listsVersionRef)
+
+const displayItems = computed(() =>
+  props.standalone ? props.items : props.items.slice(0, props.previewLimit),
+)
+
+function relatedLabel(relatedToTitle: string): string {
+  const savedTitles = currentUserPageLists.value.readingList.map((title) => ({ title }))
+  return formatRelatedToLabel(relatedToTitle, savedTitles, { alwaysShow: true })
+}
+
+function cardThumbnail(url?: string) {
+  return url?.trim() ? { url: url.trim() } : null
+}
+
+function saveIcon(itemId: string, title: string) {
+  if (relatedReadingInList(itemId)) return cdxIconBookmarkList
+  return relatedReadingSaved(title) ? cdxIconBookmark : cdxIconBookmarkOutline
+}
+
+function saveLabel(title: string): string {
+  return relatedReadingSaved(title) ? 'Saved' : 'Save'
+}
+
+const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
+
+const showMoreLink = useWikitaLiteOverflowShowMore({
+  standalone: () => props.standalone,
+  moreTo: () => props.moreTo,
+  hasItems: () => displayItems.value.length > 0,
+})
+</script>
+
+<template>
+  <div class="mentions-module">
+    <div :class="['mentions-module__cards', groupClass]">
+      <template v-for="item in displayItems" :key="`${item.mentionedInTitle}-${item.title}`">
+      <WikitaLiteCardWithAction
+        v-if="item.itemId"
+        :url="item.articleUrl"
+        :title="item.title"
+        :description-html="item.snippetHtml"
+        :supporting-text="relatedLabel(item.mentionedInTitle)"
+        :supporting-icon="cdxIconQuotes"
+        :thumbnail-url="item.thumbnailUrl"
+        thumbnail-size="large"
+        :force-thumbnail="true"
+        :action-label="saveLabel(item.title)"
+        :action-icon="saveIcon(item.itemId, item.title)"
+        @action-click="onRelatedReadingSave(item.itemId, item.title, item.thumbnailUrl)"
+      />
+
+      <CdxCard
+        v-else
+        :class="[WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE, cardClass]"
+        :url="item.articleUrl"
+        :thumbnail="cardThumbnail(item.thumbnailUrl)"
+        :force-thumbnail="true"
+      >
+        <template #title>
+          {{ item.title }}
+        </template>
+        <template v-if="item.snippetHtml" #description>
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <span class="mentions-module__snippet" v-html="item.snippetHtml" />
+        </template>
+        <template v-if="item.mentionedInTitle" #supporting-text>
+          <WikitaLiteSupportingRow :icon="cdxIconQuotes">
+            {{ relatedLabel(item.mentionedInTitle) }}
+          </WikitaLiteSupportingRow>
+        </template>
+      </CdxCard>
+      </template>
+    </div>
+
+    <slot name="after-cards" />
+
+    <RouterLink
+      v-if="showMoreLink && moreTo"
+      :to="moreTo"
+      class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled wikita-lite-button-link"
+    >
+      Show more mentions
+    </RouterLink>
+
+    <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading mentions" />
+  </div>
+</template>
+
+<style scoped>
+.mentions-module {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-50, 8px);
+  width: 100%;
+}
+
+.mentions-module__cards {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.mentions-module__snippet {
+  display: block;
+}
+
+.mentions-module__snippet :deep(.searchmatch) {
+  padding: 0 1px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-base);
+  background-color: #ffe49c;
+}
+</style>

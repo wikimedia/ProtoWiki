@@ -207,7 +207,7 @@ function buildViewProgressPatch(
 
 function formatViewCount(total: number): string {
   if (total >= 1_000_000) return `${(total / 1_000_000).toFixed(1)}M`
-  if (total >= 1000) return `${(total / 1000).toFixed(1)}K`
+  if (total >= 1000) return `${(total / 1000).toFixed(1)}k`
   return total.toLocaleString()
 }
 

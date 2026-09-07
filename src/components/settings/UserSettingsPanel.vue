@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 
 import {
   CdxButton,
@@ -11,18 +11,35 @@ import {
 
 import { useConfig } from '@/composables/useConfig'
 import { CONFIG_USER_MENU_ITEMS, formatPageList, parsePageList } from '@/config'
+import {
+  WIKITA_UI_SKIN_KEY,
+  type WikitaUiSkin,
+} from '@/prototypes/musical-group/composables/useWikitaUiSkin'
+import { WIKITA_UI_SKIN_MENU_ITEMS } from '@/prototypes/musical-group/data/wikitaUiSkinPreference'
 
 import './settingsPanel.css'
 
 const {
   user,
   realUsername,
+  knownLanguagesText,
   lang,
   currentUserPageLists,
   isCurrentUserPageListsModified,
   setCurrentUserPageList,
   resetCurrentUserPageLists,
 } = useConfig()
+
+const wikitaUiSkin = inject(WIKITA_UI_SKIN_KEY, null)
+
+const wikitaUiSkinModel = computed({
+  get: () => wikitaUiSkin?.value ?? 'wikita',
+  set: (value: WikitaUiSkin) => {
+    if (wikitaUiSkin) wikitaUiSkin.value = value
+  },
+})
+
+const isWikipediaUiSkin = computed(() => wikitaUiSkin?.value === 'wikipedia')
 
 const userMenuItems = computed(() =>
   CONFIG_USER_MENU_ITEMS.map((item) =>
@@ -57,46 +74,65 @@ const editedPagesText = computed({
       </p>
     </div>
     <div class="user-settings-panel__fields">
-      <CdxField>
-        <template #label>Preset</template>
-        <div class="settings-panel__row">
-          <CdxSelect
-            v-model:selected="user"
+      <CdxField v-if="wikitaUiSkin">
+        <template #label>Interface</template>
+        <CdxSelect
+          v-model:selected="wikitaUiSkinModel"
+          class="settings-panel__input"
+          :menu-items="WIKITA_UI_SKIN_MENU_ITEMS"
+          default-label="Wikita"
+        />
+      </CdxField>
+      <template v-if="!isWikipediaUiSkin">
+        <CdxField>
+          <template #label>Preset</template>
+          <div class="settings-panel__row">
+            <CdxSelect
+              v-model:selected="user"
+              class="settings-panel__input"
+              :menu-items="userMenuItems"
+              default-label="New user"
+            />
+            <CdxButton
+              v-tooltip="!isCurrentUserPageListsModified ? 'Already set to default' : undefined"
+              weight="quiet"
+              :disabled="!isCurrentUserPageListsModified"
+              @click="resetCurrentUserPageLists"
+            >
+              Reset
+            </CdxButton>
+          </div>
+        </CdxField>
+        <CdxField class="user-settings-panel__wiki-field">
+          <template #label>Wiki</template>
+          <CdxTextInput v-model="lang" class="settings-panel__input" />
+        </CdxField>
+        <CdxField>
+          <template #label>Known languages</template>
+          <CdxTextInput
+            v-model="knownLanguagesText"
             class="settings-panel__input"
-            :menu-items="userMenuItems"
-            default-label="New user"
+            placeholder="fr, de, es"
           />
-          <CdxButton
-            v-tooltip="!isCurrentUserPageListsModified ? 'Already set to default' : undefined"
-            weight="quiet"
-            :disabled="!isCurrentUserPageListsModified"
-            @click="resetCurrentUserPageLists"
-          >
-            Reset
-          </CdxButton>
-        </div>
-      </CdxField>
-      <CdxField class="user-settings-panel__wiki-field">
-        <template #label>Wiki</template>
-        <CdxTextInput v-model="lang" class="settings-panel__input" />
-      </CdxField>
-      <CdxField v-if="user === 'real'">
-        <template #label>Username</template>
-        <CdxTextInput v-model="realUsername" class="settings-panel__input" />
-      </CdxField>
-      <template v-if="user !== 'real' && user !== 'logged-out'">
-        <CdxField>
-          <template #label>Watchlist</template>
-          <CdxTextInput v-model="watchlistText" class="settings-panel__input" />
         </CdxField>
-        <CdxField>
-          <template #label>Saved pages</template>
-          <CdxTextInput v-model="readingListText" class="settings-panel__input" />
+        <CdxField v-if="user === 'real'">
+          <template #label>Username</template>
+          <CdxTextInput v-model="realUsername" class="settings-panel__input" />
         </CdxField>
-        <CdxField>
-          <template #label>Edited pages</template>
-          <CdxTextInput v-model="editedPagesText" class="settings-panel__input" />
-        </CdxField>
+        <template v-if="user !== 'real' && user !== 'logged-out'">
+          <CdxField>
+            <template #label>Watchlist</template>
+            <CdxTextInput v-model="watchlistText" class="settings-panel__input" />
+          </CdxField>
+          <CdxField>
+            <template #label>Saved pages</template>
+            <CdxTextInput v-model="readingListText" class="settings-panel__input" />
+          </CdxField>
+          <CdxField>
+            <template #label>Edited pages</template>
+            <CdxTextInput v-model="editedPagesText" class="settings-panel__input" />
+          </CdxField>
+        </template>
       </template>
     </div>
   </div>
