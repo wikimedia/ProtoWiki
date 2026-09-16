@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { CdxIcon, CdxMenuButton } from '@wikimedia/codex'
+import { CdxButton, CdxIcon, CdxMenuButton } from '@wikimedia/codex'
 import { cdxIconEllipsis, cdxIconHelpNotice, cdxIconPushPin } from '@wikimedia/codex-icons'
 import { useSkin } from '@/composables/useSkin'
 import WikitabCard from './WikitabCard.vue'
+import { useEqualRowHeights } from './useEqualRowHeights'
 import { useRevealOnScrollEnd } from './useRevealOnScrollEnd'
 import { useSectionReveal } from './useSectionReveal'
 import type { WikitabCardData, WikitabSectionSpec } from './sections'
@@ -34,6 +35,16 @@ useRevealOnScrollEnd({
   sentinel,
   enabled: observeScrollEnd,
   onReach: revealMore,
+})
+
+const rowColumns = computed(() => (skin.value === 'desktop' ? 2 : 1))
+
+useEqualRowHeights({
+  container: scroller,
+  columns: rowColumns,
+  cardHeight: computed(() => props.spec.cardHeight),
+  enabled: computed(() => !props.error),
+  watchKeys: [computed(() => reserved.value), computed(() => ready.value)],
 })
 
 const slots = computed(() =>
@@ -95,7 +106,7 @@ watch(selection, (value) => {
       </CdxMenuButton>
     </div>
 
-    <p v-if="error" class="wikitab-section__error">{{ error }}</p>
+    <p v-if="error" class="wikitab-section__error"><small>{{ error }}</small></p>
 
     <div v-else ref="scroller" class="wikitab-section__cards">
       <WikitabCard
@@ -107,21 +118,23 @@ watch(selection, (value) => {
         :thumbnail-size="spec.thumbnailSize"
         :card="slot.card"
         :supporting-icon="spec.supportingIcon"
+        :full-hook="spec.fullHook"
         :loading="slot.loading"
       />
       <div ref="sentinel" class="wikitab-section__sentinel" aria-hidden="true" />
     </div>
 
     <div class="wikitab-section__more">
-      <button
+      <CdxButton
         v-if="canShowMore"
         class="wikitab-section__more-button"
-        type="button"
+        action="progressive"
+        weight="quiet"
         :disabled="showMoreDisabled"
         @click="revealMore"
       >
         Show more
-      </button>
+      </CdxButton>
     </div>
   </section>
 </template>
@@ -174,8 +187,6 @@ watch(selection, (value) => {
   align-items: center;
   margin: 0;
   min-height: var(--wikitab-card-height);
-  font-size: var(--font-size-small);
-  line-height: var(--line-height-small);
   color: var(--color-subtle);
 }
 
@@ -192,31 +203,17 @@ watch(selection, (value) => {
   margin-top: var(--spacing-50);
 }
 
-.wikitab-section__more-button {
-  padding: 0;
-  border: 0;
-  background: none;
-  font-family: inherit;
-  font-size: var(--font-size-small);
-  line-height: var(--line-height-small);
-  color: var(--color-progressive);
-  cursor: pointer;
-}
-
-.wikitab-section__more-button:hover:not(:disabled) {
-  text-decoration: underline;
-}
-
-.wikitab-section__more-button:disabled {
-  color: var(--color-disabled);
-  cursor: default;
-}
-
 /* Desktop: a two-column grid inside the centred column. */
 [data-skin='desktop'] .wikitab-section__cards {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
   gap: var(--spacing-100);
+}
+
+/* Grid items default to min-height: auto; row heights come from useEqualRowHeights. */
+[data-skin='desktop'] .wikitab-section__card {
+  min-height: 0;
 }
 
 [data-skin='desktop'] .wikitab-section__sentinel {
@@ -229,6 +226,7 @@ watch(selection, (value) => {
  */
 [data-skin='mobile'] .wikitab-section__cards {
   display: flex;
+  align-items: stretch;
   gap: var(--spacing-100);
   /* Cancel the page gutter so the row scrolls edge to edge, then reinstate it
      as padding so the first card still lines up with the heading. */
@@ -248,6 +246,8 @@ watch(selection, (value) => {
 
 [data-skin='mobile'] .wikitab-section__card {
   flex: 0 0 320px;
+  align-self: stretch;
+  min-height: var(--wikitab-card-height);
   scroll-snap-align: start;
 }
 

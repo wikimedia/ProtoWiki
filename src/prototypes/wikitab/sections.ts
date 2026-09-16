@@ -1,6 +1,6 @@
-import { cdxIconChartLine } from '@wikimedia/codex-icons'
+import { cdxIconCalendar, cdxIconChartLine } from '@wikimedia/codex-icons'
 
-export type WikitabSectionId = 'trending' | 'dyk' | 'news'
+export type WikitabSectionId = 'trending' | 'otd' | 'births' | 'dyk' | 'news'
 
 /**
  * Which card layout a section renders. Drives the real card, its placeholder,
@@ -30,6 +30,12 @@ export interface WikitabSectionSpec {
   thumbnailSize: number
   /** Glyph beside the card's supporting text, where the variant shows one. */
   supportingIcon?: string
+  /**
+   * Text variant only: show the full hook with no line-clamp and let the card
+   * grow past `cardHeight` (which becomes a minimum). Placeholders still use
+   * `cardHeight` exactly.
+   */
+  fullHook?: boolean
 }
 
 export const WIKITAB_SECTIONS: readonly WikitabSectionSpec[] = [
@@ -44,15 +50,6 @@ export const WIKITAB_SECTIONS: readonly WikitabSectionSpec[] = [
     supportingIcon: cdxIconChartLine as string,
   },
   {
-    id: 'dyk',
-    heading: 'Did you know',
-    initialCount: 4,
-    pageSize: 6,
-    cardHeight: 122,
-    variant: 'text',
-    thumbnailSize: 96,
-  },
-  {
     id: 'news',
     heading: 'In the news',
     initialCount: 4,
@@ -60,6 +57,37 @@ export const WIKITAB_SECTIONS: readonly WikitabSectionSpec[] = [
     cardHeight: 122,
     variant: 'text',
     thumbnailSize: 96,
+    fullHook: true,
+  },
+  {
+    id: 'otd',
+    heading: 'On this day',
+    initialCount: 4,
+    pageSize: 6,
+    cardHeight: 122,
+    variant: 'text',
+    thumbnailSize: 96,
+    fullHook: true,
+  },
+  {
+    id: 'births',
+    heading: 'Birthdays',
+    initialCount: 4,
+    pageSize: 6,
+    cardHeight: 122,
+    variant: 'thumbnail',
+    thumbnailSize: 96,
+    supportingIcon: cdxIconCalendar as string,
+  },
+  {
+    id: 'dyk',
+    heading: 'Did you know',
+    initialCount: 4,
+    pageSize: 6,
+    cardHeight: 122,
+    variant: 'text',
+    thumbnailSize: 96,
+    fullHook: true,
   },
 ]
 

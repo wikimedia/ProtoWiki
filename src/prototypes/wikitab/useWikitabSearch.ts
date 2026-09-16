@@ -1,15 +1,20 @@
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch, type Ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import type { MenuItemData } from '@wikimedia/codex'
 
 import { fetchWikitabSearch, type WikitabSearchResult } from './data/fetchWikitabSearch'
+import { bumpWikitabSearchMountKey } from './useWikitabSearchMount'
 
 const DEBOUNCE_MS = 200
 
-/** Reserved menu item value for the inert “Search for …” row. */
+/** Reserved menu item value for the “Search for …” row. */
 export const WIKITAB_SEARCH_FOR_VALUE = 'wikitab-search-for'
 
-export function useWikitabSearch() {
-  const query = ref('')
+export function useWikitabSearch(options: { initialQuery?: Ref<string> } = {}) {
+  const route = useRoute()
+  const router = useRouter()
+
+  const query = ref(options.initialQuery?.value ?? '')
   const results = ref<WikitabSearchResult[]>([])
   const loading = ref(false)
   const focused = ref(false)
@@ -40,6 +45,7 @@ export function useWikitabSearch() {
   let abortController: AbortController | null = null
   let debounceHandle: ReturnType<typeof setTimeout> | undefined
   let lastFetchedQuery = ''
+  let suppressSubmitClick = false
 
   function syncMenuExpanded(): void {
     if (focused.value && trimmedQuery.value.length > 0) {
@@ -47,6 +53,22 @@ export function useWikitabSearch() {
     } else if (!trimmedQuery.value.length) {
       menuExpanded.value = false
     }
+  }
+
+  function navigateToSearch(searchTerm: string): void {
+    const trimmed = searchTerm.trim()
+    const nextQuery = { ...route.query }
+
+    if (!trimmed.length) {
+      delete nextQuery.search
+    } else {
+      nextQuery.search = trimmed
+    }
+
+    void router.push({ path: route.path, query: nextQuery }).then(() => {
+      // Remount after the URL updates so initialQuery matches the submission.
+      void nextTick(() => bumpWikitabSearchMountKey())
+    })
   }
 
   async function runSearch(searchQuery: string): Promise<void> {
@@ -106,6 +128,14 @@ export function useWikitabSearch() {
   function onFocus(): void {
     focused.value = true
     syncMenuExpanded()
+    const trimmed = trimmedQuery.value
+    // Refocus after remount/blur: query is filled but lookahead was never fetched.
+    if (
+      trimmed.length > 0 &&
+      (lastFetchedQuery !== trimmed || results.value.length === 0)
+    ) {
+      void runSearch(trimmed)
+    }
   }
 
   function onBlur(): void {
@@ -113,11 +143,66 @@ export function useWikitabSearch() {
     menuExpanded.value = false
   }
 
+  function onSubmit(): void {
+    if (suppressSubmitClick) return
+    navigateToSearch(query.value)
+  }
+
+  /**
+   * Enter with the menu open: activate the highlighted row (same as click).
+   * Read the highlight before closing — Codex clears `selected` when the menu
+   * collapses, so we cannot rely on v-model:selected after Enter.
+   */
+  function onEnterWithMenu(highlighted: { value: string | number } | null): void {
+    suppressSubmitClick = true
+    menuExpanded.value = false
+
+    if (highlighted) {
+      onMenuItemClick(highlighted.value)
+    } else {
+      suppressSubmitClick = false
+      onSubmit()
+    }
+
+    void nextTick(() => {
+      suppressSubmitClick = false
+    })
+  }
+
+  function onMenuItemClick(payload: string | number | { value?: string | number }): void {
+    const value =
+      typeof payload === 'object' && payload !== null && 'value' in payload
+        ? payload.value ?? null
+        : payload
+
+    if (value === WIKITAB_SEARCH_FOR_VALUE) {
+      navigateToSearch(query.value)
+      return
+    }
+
+    const result = results.value.find((item) => item.id === value)
+    if (result) {
+      navigateToSearch(result.title)
+    }
+  }
+
   watch(menuExpanded, (expanded) => {
     if (!expanded) {
       selected.value = null
     }
   })
+
+  if (options.initialQuery) {
+    watch(
+      options.initialQuery,
+      (value) => {
+        if (query.value !== value) {
+          query.value = value
+        }
+      },
+      { immediate: true },
+    )
+  }
 
   return {
     query,
@@ -130,5 +215,8 @@ export function useWikitabSearch() {
     onInput,
     onFocus,
     onBlur,
+    onSubmit,
+    onMenuItemClick,
+    onEnterWithMenu,
   }
 }

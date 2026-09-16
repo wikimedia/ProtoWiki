@@ -1,7 +1,9 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import type { WikitabCardData, WikitabFeed } from '../sections'
+import { fetchBirthsOnThisDay } from './fetchBirthsOnThisDay'
 import { isCacheBypassed, readCachedFeed, utcDayKey, writeCachedFeed } from './feedCache'
+import { fetchMainPageOtd } from './fetchMainPageOtd'
 import { EN_WIKI_HOST, articleUrl, normalizeFeedHtml, primaryLinkTitle } from './wikitabHtml'
 
 interface FeedThumbnail {
@@ -113,7 +115,10 @@ function mapNews(response: FeaturedFeedResponse): WikitabCardData[] {
     })
 }
 
-async function requestFeed(day: string, signal?: AbortSignal): Promise<WikitabFeed> {
+async function fetchFeaturedPayload(
+  day: string,
+  signal?: AbortSignal,
+): Promise<FeaturedFeedResponse> {
   const response = await fetchWikimedia(feedUrl(day), {
     headers: wikimediaApiFetchHeaders('wikitab-feed'),
     signal,
@@ -121,18 +126,36 @@ async function requestFeed(day: string, signal?: AbortSignal): Promise<WikitabFe
   if (!response.ok) {
     throw new Error(`Featured feed request failed (${response.status})`)
   }
+  return (await response.json()) as FeaturedFeedResponse
+}
 
-  const payload = (await response.json()) as FeaturedFeedResponse
+async function requestFeed(day: string, signal?: AbortSignal): Promise<WikitabFeed> {
+  const [featuredResult, otdResult, birthsResult] = await Promise.allSettled([
+    fetchFeaturedPayload(day, signal),
+    fetchMainPageOtd(signal),
+    fetchBirthsOnThisDay(day, signal),
+  ])
+
+  if (featuredResult.status === 'rejected') {
+    throw featuredResult.reason
+  }
+
+  const payload = featuredResult.value
+  const otd = otdResult.status === 'fulfilled' ? otdResult.value : []
+  const births = birthsResult.status === 'fulfilled' ? birthsResult.value : []
+
   return {
     trending: mapTrending(payload, day),
+    otd,
+    births,
     dyk: mapDyk(payload),
     news: mapNews(payload),
   }
 }
 
 /**
- * One request supplies all three sections. Reads through the session map, then
- * the localStorage day cache, before going to the network.
+ * Featured feed plus Main Page OTD and births endpoints. Reads through the
+ * session map, then the localStorage day cache, before going to the network.
  */
 export function fetchDailyFeed(signal?: AbortSignal): Promise<WikitabFeed> {
   const day = utcDayKey()

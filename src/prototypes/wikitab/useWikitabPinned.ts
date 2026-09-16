@@ -1,13 +1,17 @@
 import { onMounted, onUnmounted, ref } from 'vue'
-import { readPinnedFromUrl, writePinnedToUrl } from './pinnedUrl'
+import {
+  loadWikitabConfig,
+  patchWikitabConfig,
+  WIKITAB_CONFIG_STORAGE_KEY,
+} from './data/wikitabConfig'
 import type { WikitabSectionId } from './sections'
 import type { WikitabSectionState } from './useWikitabFeed'
 
 export function useWikitabPinned() {
-  const pinnedIds = ref<WikitabSectionId[]>(readPinnedFromUrl())
+  const pinnedIds = ref<WikitabSectionId[]>(loadWikitabConfig().pinnedSectionIds)
 
-  function syncFromUrl(): void {
-    pinnedIds.value = readPinnedFromUrl()
+  function syncFromStorage(): void {
+    pinnedIds.value = loadWikitabConfig().pinnedSectionIds
   }
 
   function isPinned(id: WikitabSectionId): boolean {
@@ -21,7 +25,7 @@ export function useWikitabPinned() {
       pinnedIds.value = [id, ...pinnedIds.value.filter((pinnedId) => pinnedId !== id)]
     }
 
-    writePinnedToUrl(pinnedIds.value)
+    patchWikitabConfig({ pinnedSectionIds: pinnedIds.value })
   }
 
   function orderSections(sections: WikitabSectionState[]): WikitabSectionState[] {
@@ -34,12 +38,17 @@ export function useWikitabPinned() {
     return [...pinned, ...unpinned]
   }
 
+  function onStorage(event: StorageEvent): void {
+    if (event.key !== WIKITAB_CONFIG_STORAGE_KEY) return
+    syncFromStorage()
+  }
+
   onMounted(() => {
-    window.addEventListener('popstate', syncFromUrl)
+    window.addEventListener('storage', onStorage)
   })
 
   onUnmounted(() => {
-    window.removeEventListener('popstate', syncFromUrl)
+    window.removeEventListener('storage', onStorage)
   })
 
   return { pinnedIds, isPinned, togglePin, orderSections }

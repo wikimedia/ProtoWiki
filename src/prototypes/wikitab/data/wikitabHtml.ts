@@ -25,6 +25,8 @@ export function normalizeFeedHtml(html: string): string {
     const href = anchor.getAttribute('href') ?? ''
     if (href.startsWith('./')) {
       anchor.setAttribute('href', `https://${EN_WIKI_HOST}/wiki/${href.slice(2)}`)
+    } else if (href.startsWith('/wiki/')) {
+      anchor.setAttribute('href', `https://${EN_WIKI_HOST}${href}`)
     }
     anchor.setAttribute('target', '_blank')
     anchor.setAttribute('rel', 'noreferrer')

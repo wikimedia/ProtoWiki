@@ -1,8 +1,14 @@
 <script setup lang="ts">
-import { useId, ref } from 'vue'
+import { useId, ref, toRef } from 'vue'
 import { CdxMenu, CdxSearchInput } from '@wikimedia/codex'
 
 import { useWikitabSearch, WIKITAB_SEARCH_FOR_VALUE } from './useWikitabSearch'
+
+const props = defineProps<{
+  initialQuery?: string
+}>()
+
+const initialQueryRef = toRef(() => props.initialQuery ?? '')
 
 const {
   query,
@@ -13,23 +19,33 @@ const {
   onInput,
   onFocus,
   onBlur,
-} = useWikitabSearch()
+  onSubmit,
+  onMenuItemClick,
+  onEnterWithMenu,
+} = useWikitabSearch({ initialQuery: initialQueryRef })
 
 const menuId = useId()
 const menuRef = ref<InstanceType<typeof CdxMenu> | null>(null)
 
-function onSubmitInert(): void {
-  // Navigation deliberately omitted in this build.
-}
-
-function onItemClickInert(): void {
-  // Navigation deliberately omitted in this build.
+type MenuWithHighlight = InstanceType<typeof CdxMenu> & {
+  getHighlightedMenuItem?: () => { value: string | number } | null
 }
 
 function onKeydown(event: KeyboardEvent): void {
-  if (!menuRef.value || !query.value.trim().length) return
+  if (!query.value.trim().length) return
+
   // Match CdxTypeaheadSearch: space types in the input; it is not menu navigation.
   if (event.key === ' ') return
+
+  if (event.key === 'Enter' && menuExpanded.value && menuRef.value) {
+    event.preventDefault()
+    const highlighted =
+      (menuRef.value as MenuWithHighlight).getHighlightedMenuItem?.() ?? null
+    onEnterWithMenu(highlighted)
+    return
+  }
+
+  if (!menuRef.value) return
   menuRef.value.delegateKeyNavigation(event)
 }
 </script>
@@ -50,7 +66,7 @@ function onKeydown(event: KeyboardEvent): void {
       @update:model-value="onInput"
       @focus="onFocus"
       @blur="onBlur"
-      @submit-click="onSubmitInert"
+      @submit-click="onSubmit"
       @keydown="onKeydown"
     >
       <div v-show="menuExpanded" class="wikitab-search__panel">
@@ -65,7 +81,7 @@ function onKeydown(event: KeyboardEvent): void {
           :show-pending="loading"
           :bold-label="true"
           render-in-place
-          @menu-item-click="onItemClickInert"
+          @menu-item-click="onMenuItemClick"
         >
           <template #default="{ menuItem }">
             <span
@@ -124,19 +140,8 @@ function onKeydown(event: KeyboardEvent): void {
   box-shadow: none;
 }
 
-.wikitab-search__search-for {
-  font-size: var(--font-size-medium);
-  line-height: var(--line-height-small);
-  color: var(--color-base);
-}
-
 .wikitab-search__search-for strong {
-  font-weight: var(--font-weight-bold);
   white-space: pre-wrap;
-}
-
-.wikitab-search__menu :deep(.cdx-menu-item__content) {
-  padding: var(--spacing-50) var(--spacing-75);
 }
 
 .wikitab-search__menu :deep(.cdx-thumbnail__placeholder),

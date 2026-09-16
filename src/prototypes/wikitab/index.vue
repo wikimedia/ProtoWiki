@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import WikitabSection from './WikitabSection.vue'
+import { useRoute } from 'vue-router'
+
 import WikitabSearch from './WikitabSearch.vue'
+import WikitabSearchPage from './WikitabSearchPage.vue'
+import WikitabSection from './WikitabSection.vue'
 import { useWikitabFeed } from './useWikitabFeed'
 import { useWikitabPinned } from './useWikitabPinned'
+import { useWikitabSearchMountKey } from './useWikitabSearchMount'
 
 definePage({
   meta: {
@@ -13,22 +17,42 @@ definePage({
   },
 })
 
-const { sections, loading, error } = useWikitabFeed()
+const route = useRoute()
+
+const searchQuery = computed(() => String(route.query.search ?? '').trim())
+const searchMountKey = useWikitabSearchMountKey()
+const isSearchMode = computed(() => searchQuery.value.length > 0)
+const feedEnabled = computed(() => !isSearchMode.value)
+
+const { sections, loading, error } = useWikitabFeed({ enabled: feedEnabled })
 const { isPinned, togglePin, orderSections } = useWikitabPinned()
 
 const orderedSections = computed(() => orderSections(sections.value))
+
+const visibleSections = computed(() =>
+  loading.value
+    ? orderedSections.value
+    : orderedSections.value.filter((section) => section.items.length > 0),
+)
 </script>
 
 <template>
-  <div class="wikitab">
+  <div class="wikitab" :class="{ 'wikitab--search': isSearchMode }">
     <header class="wikitab__hero">
-      <h1 class="wikitab__wordmark">Wikitab</h1>
-      <WikitabSearch class="wikitab__search" />
+      <div class="wikitab__hero-top">
+        <h1 class="wikitab__wordmark">Wikitab</h1>
+        <WikitabSearch
+          :key="searchMountKey"
+          class="wikitab__search"
+          :initial-query="searchQuery"
+        />
+      </div>
+      <WikitabSearchPage v-if="isSearchMode" class="wikitab__search-page" :search-query="searchQuery" />
     </header>
 
-    <div class="wikitab__sections">
+    <div v-if="!isSearchMode" class="wikitab__sections">
       <WikitabSection
-        v-for="section in orderedSections"
+        v-for="section in visibleSections"
         :key="section.spec.id"
         :spec="section.spec"
         :items="section.items"
@@ -62,6 +86,14 @@ const orderedSections = computed(() => orderSections(sections.value))
   gap: var(--spacing-50);
 }
 
+.wikitab__hero-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-50);
+  width: 100%;
+}
+
 /* Elevate the whole hero while search is open so the menu covers section links. */
 .wikitab__hero:has(.wikitab-search--expanded) {
   position: relative;
@@ -70,14 +102,13 @@ const orderedSections = computed(() => orderSections(sections.value))
 
 .wikitab__wordmark {
   margin: 0;
-  font-family: var(--font-family-serif);
-  font-size: var(--font-size-xxx-large);
-  font-weight: var(--font-weight-normal);
-  line-height: var(--line-height-xxx-large);
-  color: var(--color-base);
 }
 
 .wikitab__search {
+  width: 100%;
+}
+
+.wikitab__search-page {
   width: 100%;
 }
 
@@ -138,10 +169,47 @@ const orderedSections = computed(() => orderSections(sections.value))
 }
 
 [data-skin='mobile'] .wikitab__hero {
-  padding-block: var(--spacing-200) var(--spacing-400);
+  padding-block: calc(var(--spacing-200) + var(--spacing-100)) var(--spacing-400);
 }
 
 [data-skin='mobile'] .wikitab__sections {
   gap: var(--spacing-300);
+}
+
+/*
+ * Search results layout — left-aligned column with per-region max widths:
+ * wordmark + search (640px), tabs (full bleed), results (896px).
+ * Matches Figma desktop node 237:17943.
+ */
+[data-skin='desktop'] .wikitab--search {
+  align-items: stretch;
+  padding-inline: var(--spacing-400);
+}
+
+[data-skin='desktop'] .wikitab--search .wikitab__hero {
+  align-items: flex-start;
+  gap: var(--spacing-150);
+  max-width: none;
+  padding-block: var(--spacing-400);
+}
+
+[data-skin='desktop'] .wikitab--search .wikitab__hero-top {
+  align-items: flex-start;
+  max-width: 640px;
+}
+
+[data-skin='desktop'] .wikitab--search .wikitab__search-page {
+  max-width: none;
+}
+
+[data-skin='mobile'] .wikitab--search .wikitab__hero {
+  align-items: flex-start;
+  gap: var(--spacing-100);
+  padding-block: calc(var(--spacing-200) + var(--spacing-100)) var(--spacing-100);
+}
+
+[data-skin='mobile'] .wikitab--search .wikitab__hero-top {
+  align-items: flex-start;
+  width: 100%;
 }
 </style>

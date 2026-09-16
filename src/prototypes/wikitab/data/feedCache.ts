@@ -2,13 +2,13 @@ import type { WikitabFeed } from '../sections'
 
 /**
  * Cache only — nothing here is authoritative. Clearing it costs one refetch and
- * nothing else. User config and app state belong in the URL, not in here.
+ * nothing else. User preferences live in `wikitabConfig.ts`, not here.
  *
  * A new tab page is opened dozens of times a day and `feed/featured` is a daily
  * resource, so the first open of a day fetches and every open after it paints
  * from this cache.
  */
-const CACHE_KEY = 'wikitab-feed-cache-v2'
+const CACHE_KEY = 'wikitab-feed-cache-v10'
 
 interface CacheEntry {
   day: string
