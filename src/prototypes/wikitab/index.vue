@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { CdxSearchInput } from '@wikimedia/codex'
 import WikitabSection from './WikitabSection.vue'
 import { useWikitabFeed } from './useWikitabFeed'
+import { useWikitabPinned } from './useWikitabPinned'
 
 definePage({
   meta: {
@@ -13,6 +14,9 @@ definePage({
 })
 
 const { sections, loading, error } = useWikitabFeed()
+const { isPinned, togglePin, orderSections } = useWikitabPinned()
+
+const orderedSections = computed(() => orderSections(sections.value))
 
 // Inert this build: nothing reads this, and there is no submit handler.
 const query = ref('')
@@ -32,12 +36,14 @@ const query = ref('')
 
     <div class="wikitab__sections">
       <WikitabSection
-        v-for="section in sections"
+        v-for="section in orderedSections"
         :key="section.spec.id"
         :spec="section.spec"
         :items="section.items"
         :loading="loading"
         :error="error"
+        :pinned="isPinned(section.spec.id)"
+        @toggle-pin="togglePin(section.spec.id)"
       />
     </div>
   </div>

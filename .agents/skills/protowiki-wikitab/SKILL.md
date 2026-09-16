@@ -122,8 +122,8 @@ against our own origin, while `dyk` hooks use absolute ones.
 Two rules, and the prototype is built to keep them:
 
 - **The URL holds user config and app state.** Shareable, restorable, no
-  migration story. Pinning is designed but inert; when it lands it becomes
-  something like `?pinned=trending,dyk`.
+  migration story. Section pinning uses `?pinned=trending,dyk` (comma-separated
+  section ids — see [Pinning](#pinning)).
 - **localStorage is cache only.** Nothing in `data/feedCache.ts` is
   authoritative — clearing it must only ever cost a refetch.
 
@@ -138,6 +138,26 @@ writing today's feed evicts every older day. `?nocache=1` forces a refetch.
 
 Consequence worth knowing when developing: after the first load of the day you
 mostly **won't see** the loading slots. Use `?nocache=1` when working on them.
+
+## Pinning
+
+Pinned sections move to the top of the page. State lives in the URL only — not
+localStorage.
+
+- **`pinnedUrl.ts`** — reads and writes `?pinned=` via `URLSearchParams` and
+  `history.replaceState`. Unknown and duplicate ids are dropped on parse.
+- **`useWikitabPinned.ts`** — reactive pin list, `togglePin()` (prepends on
+  pin, removes on unpin), `orderSections()` for render order, and a `popstate`
+  listener so back/forward restores pin state.
+
+**Ordering:** pinned ids first, in URL list order (most recently pinned is
+prepended, so it sits at the very top), then unpinned sections in registry
+order from `sections.ts`.
+
+**UI:** pinned sections show `cdxIconPushPin` beside the heading. The ellipsis
+menu switches between "Pin to top" and "Unpin from top" using the same icon.
+Pinning reorders sections keyed by `spec.id` and does not affect the no-jump
+loading contract.
 
 ## Layout
 
@@ -172,10 +192,9 @@ for the canonical text styles those values map onto.
 
 ## What's inert
 
-Three controls render faithfully but do nothing: the search input (a plain
-`CdxSearchInput` with `button-label`, not ProtoWiki's `Search.vue`), "Pin to
-top", and "About {section}". The menu handler just clears the selection so
-neither item stays looking selected.
+Two controls render faithfully but do nothing: the search input (a plain
+`CdxSearchInput` with `button-label`, not ProtoWiki's `Search.vue`) and
+"About {section}". The About menu row clears its selection without acting.
 
 The `…` menu is a single `CdxMenuButton` — its `footer` prop renders the
 separated "About …" row, and the 2px ring on the open trigger is the underlying

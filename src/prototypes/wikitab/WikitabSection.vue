@@ -13,6 +13,11 @@ const props = defineProps<{
   items: WikitabCardData[]
   loading: boolean
   error: string | null
+  pinned: boolean
+}>()
+
+const emit = defineEmits<{
+  'toggle-pin': []
 }>()
 
 const items = computed(() => props.items)
@@ -47,15 +52,21 @@ const canShowMore = computed(() => props.loading || hasMore.value)
 const showMoreDisabled = computed(() => props.loading || revealing.value)
 
 const selection = ref<string | number | null>(null)
-const menuItems = [{ value: 'pin', label: 'Pin to top', icon: cdxIconPushPin }]
+const menuItems = computed(() => [
+  {
+    value: 'pin',
+    label: props.pinned ? 'Unpin from top' : 'Pin to top',
+    icon: cdxIconPushPin,
+  },
+])
 const footerItem = computed(() => ({
   value: 'about',
   label: `About ${props.spec.heading}`,
   icon: cdxIconHelpNotice,
 }))
 
-// Both menu items are inert this build, so neither should stay looking selected.
 watch(selection, (value) => {
+  if (value === 'pin') emit('toggle-pin')
   if (value !== null) selection.value = null
 })
 </script>
@@ -63,7 +74,15 @@ watch(selection, (value) => {
 <template>
   <section class="wikitab-section" :style="{ '--wikitab-card-height': `${spec.cardHeight}px` }">
     <div class="wikitab-section__head">
-      <h2 class="wikitab-section__heading">{{ spec.heading }}</h2>
+      <div class="wikitab-section__title">
+        <CdxIcon
+          v-if="pinned"
+          class="wikitab-section__pin"
+          :icon="cdxIconPushPin"
+          icon-label="Pinned to top"
+        />
+        <h2 class="wikitab-section__heading">{{ spec.heading }}</h2>
+      </div>
       <CdxMenuButton
         v-model:selected="selection"
         class="wikitab-section__menu"
@@ -119,6 +138,19 @@ watch(selection, (value) => {
   justify-content: space-between;
   gap: var(--spacing-50);
   margin-bottom: var(--spacing-50);
+}
+
+.wikitab-section__title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-25);
+  min-width: 0;
+}
+
+.wikitab-section__pin {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
 }
 
 .wikitab-section__heading {
