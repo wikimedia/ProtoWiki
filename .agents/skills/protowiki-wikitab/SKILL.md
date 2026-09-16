@@ -265,8 +265,13 @@ When `?search=` is present, the daily feed is hidden and
 home feed). The feed orchestrator is skipped while search mode is active.
 
 **Tabs** — quiet `CdxTabs` with four labels: Articles, Images, Activity,
-Contribute. Only **Articles** has content. The other three panels are literally
-empty (no placeholder copy).
+Contribute. **Articles** and **Activity** have content. **Images** and
+**Contribute** are empty (no placeholder copy).
+
+**Loading cards** — `WikitabSearchLoadingCard.vue` is the shared search-result
+placeholder. Variants: `article` (96px thumbnail stub) and `activity` (no
+thumbnail column). Use these heavily while API work resolves — especially on
+Activity, where edits stream in one at a time.
 
 **Articles tab** — `WikitabSearchResultCard.vue` per hit:
 
@@ -282,13 +287,40 @@ empty (no placeholder copy).
 
 Cards link whole-row to English Wikipedia (`articleUrl`). Infinite scroll uses
 `useInfiniteScroll.ts` (viewport sentinel) + `useWikitabSearchResults.ts`
-(`loadMore` guarded while a batch is in flight). Initial load shows neutral
-skeleton blocks; no error/empty placeholder text when the query resolves to
-nothing.
+(`loadMore` guarded while a batch is in flight). Initial load shows
+`WikitabSearchLoadingCard variant="article"` placeholders; no error/empty
+placeholder text when the query resolves to nothing.
 
 Implementation: `data/fetchWikitabSearchArticles.ts`,
 `useWikitabSearchResults.ts`, `WikitabSearchPage.vue`,
 `WikitabSearchResultCard.vue`.
+
+**Activity tab** — merged edit feed scoped to the search query's **top 6
+articles** (seed + related via `fetchWikitabSearchTopTitles`). Reuses those
+titles from the Articles tab when already loaded. Edits from all six pages merge
+into one **newest-first** list; infinite scroll pages backward through revision
+history on those titles.
+
+Rate-limit contract (mandatory):
+
+- All requests via `fetchWikimedia` (host queue + backoff).
+- **One resolved card per fetch cycle** — never dump a full parallel batch into
+  the UI.
+- Queue refill uses `mapWithConcurrency(…, 2)` per-title revision fetches,
+  `rvlimit=5`, only when the internal merge queue is empty.
+- One batch call for latest revid per title (Latest chip).
+- Tab fetch starts only when Activity is selected (`enabled` ref); abort on
+  query change.
+
+UI: slot list mixing `WikitabSearchLoadingCard variant="activity"` and
+`WikitabSearchActivityCard`. Cards are borderless like Articles but **no
+thumbnail**; chip row uses `CdxInfoChip` (API-derived **Latest** /
+**Reverted** only). Links go to the en.wikipedia.org diff. Chips sit above the
+page title; supporting row is editor + relative time.
+
+Implementation: `data/fetchWikitabSearchActivity.ts`,
+`useWikitabSearchActivity.ts`, `WikitabSearchActivityCard.vue`,
+`WikitabSearchLoadingCard.vue`.
 
 ## What's inert
 

@@ -195,3 +195,30 @@ export async function fetchWikitabSearchArticlesMore(
 ): Promise<WikitabSearchArticlesBatch> {
   return fetchMoreLikeBatch(seedTitle, excludePageid, offset, options.signal)
 }
+
+export interface WikitabSearchTopTitle {
+  pageid: number
+  title: string
+  thumbnailUrl?: string
+}
+
+/** Top N article titles for a search query (seed + related). */
+export async function fetchWikitabSearchTopTitles(
+  query: string,
+  options: { signal?: AbortSignal; limit?: number } = {},
+): Promise<WikitabSearchTopTitle[]> {
+  const limit = options.limit ?? 6
+  const { signal } = options
+  const seed = await resolveWikitabSearchSeed(query, { signal })
+  if (!seed) return []
+
+  const relatedBatch = await fetchMoreLikeBatch(seed.title, seed.pageid, undefined, signal)
+  const titles: WikitabSearchTopTitle[] = [{ pageid: seed.pageid, title: seed.title }]
+
+  for (const article of relatedBatch.articles) {
+    if (titles.length >= limit) break
+    titles.push({ pageid: article.pageid, title: article.title })
+  }
+
+  return titles
+}
