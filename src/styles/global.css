@@ -172,6 +172,12 @@ ol ol {
   margin-block-end: 0;
 }
 
+/* Codex menus are semantic <ul>/<li> but must not pick up prose list spacing. */
+.cdx-menu__listbox > .cdx-menu-item,
+.cdx-menu__group__item {
+  margin-block: 0;
+}
+
 dl {
   margin-block: 0 var(--spacing-75, 12px);
 }
