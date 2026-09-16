@@ -246,34 +246,6 @@ function resolveApiContact(rawContact: string): string {
   return normalized.length ? normalized : DEFAULT_API_CONTACT
 }
 
-/** Stable UA token for wikita-lite Growth demo sessions. */
-export const WIKITA_LITE_PROTOTYPE_UA_TOKEN = 'growth-home-prototype-user'
-
-let prototypeUserAgentUsername = ''
-
-/** Set the onboarding username appended to Wikimedia API User-Agent strings. */
-export function setPrototypeUserAgentUsername(username: string): void {
-  prototypeUserAgentUsername = sanitizeUserAgentToken(username)
-}
-
-/** Clear the prototype username suffix (e.g. when leaving wikita-lite). */
-export function clearPrototypeUserAgentUsername(): void {
-  prototypeUserAgentUsername = ''
-}
-
-/** Strip characters unsafe for HTTP User-Agent header values. */
-export function sanitizeUserAgentToken(raw: string): string {
-  return raw
-    .replace(/[\0-\x1f\x7f]/g, '')
-    .trim()
-    .replace(/\s+/g, ' ')
-}
-
-function prototypeUserAgentSuffix(): string {
-  if (!prototypeUserAgentUsername) return ''
-  return `${WIKITA_LITE_PROTOTYPE_UA_TOKEN}/${prototypeUserAgentUsername}`
-}
-
 /** Full Wikimedia API User-Agent string (without the header name). */
 export function formatWikimediaApiUserAgent(purpose?: string, apiContact?: string): string {
   const tag = purpose?.trim()
@@ -281,8 +253,6 @@ export function formatWikimediaApiUserAgent(purpose?: string, apiContact?: strin
   const base = `${PROTOWIKI_API_USER_AGENT} (${PROTOWIKI_API_PROJECT_URL}; ${contact})`
   const parts = [base]
   if (tag) parts.push(tag)
-  const usernameSuffix = prototypeUserAgentSuffix()
-  if (usernameSuffix) parts.push(usernameSuffix)
   return parts.join(' ')
 }
 

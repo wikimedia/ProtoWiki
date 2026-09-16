@@ -90,8 +90,6 @@ const techniques = [
         </p>
         <p class="tab-lab__links">
           Related:
-          <a href="/musical-group">Musical group tabs</a>
-          (current plain 1px border) ·
           <a href="?theme=dark">Dark theme preview</a>
         </p>
       </section>

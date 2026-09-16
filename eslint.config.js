@@ -19,13 +19,4 @@ export default [
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     },
   },
-  {
-    files: [
-      'src/prototypes/wikita-lite/onboarding/components/CreateAccountForm.vue',
-      'src/prototypes/wikita-lite/onboarding/components/UsernamePolicy.vue',
-    ],
-    rules: {
-      'vue/block-lang': 'off',
-    },
-  },
 ]

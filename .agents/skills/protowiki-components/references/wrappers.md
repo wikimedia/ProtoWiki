@@ -234,12 +234,23 @@ before slot children mount.
 `use-bottom-sheet` falls back to floating popover mode. Add
 `mobile-wrapper__sheet-popover` on the `CdxPopover` (teleport into the overlay
 root is fine) so `mobile-wrapper-overlays.css` keeps the sheet anchored to the
-bottom of the phone column — see
-`src/prototypes/wikita-lite/onboarding/components/SavePagesSheet.vue`.
+bottom of the phone column:
 
-**Full-screen in-place dialogs** inside the frame: see
-`src/prototypes/wikita-lite/onboarding/components/OnboardingShell.vue`
-(`render-in-place` + absolute backdrop overrides).
+```vue
+<CdxPopover
+  v-model:open="open"
+  class="mobile-wrapper__sheet-popover"
+  use-bottom-sheet
+  :anchor="triggerRef"
+>
+  …
+</CdxPopover>
+```
+
+**Full-screen in-place dialogs** inside the frame: pass `render-in-place` to
+`CdxDialog` so it stays within the phone column instead of teleporting to
+`<body>`, then override the backdrop to `position: absolute` (it defaults to
+`fixed`, which would cover the whole browser viewport rather than the frame).
 
 ## Why these wrappers?
 
