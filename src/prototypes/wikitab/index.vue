@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { CdxSearchInput } from '@wikimedia/codex'
+import { computed } from 'vue'
 import WikitabSection from './WikitabSection.vue'
+import WikitabSearch from './WikitabSearch.vue'
 import { useWikitabFeed } from './useWikitabFeed'
 import { useWikitabPinned } from './useWikitabPinned'
 
@@ -17,21 +17,13 @@ const { sections, loading, error } = useWikitabFeed()
 const { isPinned, togglePin, orderSections } = useWikitabPinned()
 
 const orderedSections = computed(() => orderSections(sections.value))
-
-// Inert this build: nothing reads this, and there is no submit handler.
-const query = ref('')
 </script>
 
 <template>
   <div class="wikitab">
     <header class="wikitab__hero">
       <h1 class="wikitab__wordmark">Wikitab</h1>
-      <CdxSearchInput
-        v-model="query"
-        class="wikitab__search"
-        button-label="Search"
-        placeholder="Search"
-      />
+      <WikitabSearch class="wikitab__search" />
     </header>
 
     <div class="wikitab__sections">
@@ -68,6 +60,12 @@ const query = ref('')
   flex-direction: column;
   align-items: center;
   gap: var(--spacing-50);
+}
+
+/* Elevate the whole hero while search is open so the menu covers section links. */
+.wikitab__hero:has(.wikitab-search--expanded) {
+  position: relative;
+  z-index: 10;
 }
 
 .wikitab__wordmark {

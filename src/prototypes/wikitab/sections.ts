@@ -2,7 +2,12 @@ import { cdxIconChartLine } from '@wikimedia/codex-icons'
 
 export type WikitabSectionId = 'trending' | 'dyk' | 'news'
 
-/** Which card layout a section renders. Drives both the real card and its placeholder. */
+/**
+ * Which card layout a section renders. Drives the real card, its placeholder,
+ * and the loading mode (see `WikitabCard.vue`):
+ * - `thumbnail` — always shows a thumbnail column; thumbnail-slot loading.
+ * - `text` — thumbnail only when a URL resolves; full-card skeleton while loading.
+ */
 export type WikitabCardVariant = 'thumbnail' | 'text'
 
 export interface WikitabSectionSpec {

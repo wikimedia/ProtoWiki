@@ -27,20 +27,36 @@ const cardStyle = computed(() => ({
  * one sits beside text that should use the height instead.
  */
 const roomy = computed(() => props.thumbnailSize >= 96)
+
+/*
+ * Two loading modes, driven by section variant (see sections.ts):
+ * - `thumbnail` (Trending): card shell + text paint as soon as feed data lands;
+ *   only the thumbnail slot stays in a flat pending block until decode.
+ * - `text` (Did you know, In the news): thumbnail is optional, so the whole
+ *   slot stays a full-card skeleton until the page is ready — no empty thumbnail
+ *   column while DYK summaries resolve or while a missing thumbnail is ruled out.
+ */
+const showFullLoading = computed(
+  () => props.loading && (props.variant === 'text' || !props.card),
+)
+
+const showThumbnail = computed(() => {
+  if (props.variant === 'thumbnail') return true
+  return !!props.card?.thumbnailUrl
+})
 </script>
 
 <template>
-  <div
-    v-if="loading"
-    class="wikitab-card wikitab-card--loading"
-    :style="cardStyle"
-  />
+  <div v-if="showFullLoading" class="wikitab-card wikitab-card--loading" :style="cardStyle" />
   <div
     v-else
     class="wikitab-card"
     :class="[
       `wikitab-card--${variant}`,
-      { 'wikitab-card--linked': card?.href, 'wikitab-card--roomy': roomy },
+      {
+        'wikitab-card--linked': card?.href && !loading,
+        'wikitab-card--roomy': roomy,
+      },
     ]"
     :style="cardStyle"
   >
@@ -52,7 +68,7 @@ const roomy = computed(() => props.thumbnailSize >= 96)
       the card.
     -->
     <a
-      v-if="card?.href"
+      v-if="card?.href && !loading"
       class="wikitab-card__link"
       :href="card.href"
       :aria-label="card.linkTitle"
@@ -61,7 +77,12 @@ const roomy = computed(() => props.thumbnailSize >= 96)
     />
 
     <template v-if="variant === 'thumbnail'">
-      <CdxThumbnail class="wikitab-card__thumbnail" :thumbnail="thumbnail" />
+      <div
+        v-if="loading"
+        class="wikitab-card__thumbnail wikitab-card__thumbnail--pending"
+        aria-hidden="true"
+      />
+      <CdxThumbnail v-else class="wikitab-card__thumbnail" :thumbnail="thumbnail" />
       <div class="wikitab-card__body">
         <p class="wikitab-card__title">{{ card?.title }}</p>
         <p v-if="card?.description" class="wikitab-card__description">
@@ -77,8 +98,13 @@ const roomy = computed(() => props.thumbnailSize >= 96)
     <template v-else>
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div class="wikitab-card__hook" v-html="card?.html" />
+      <div
+        v-if="loading && showThumbnail"
+        class="wikitab-card__thumbnail wikitab-card__thumbnail--pending"
+        aria-hidden="true"
+      />
       <CdxThumbnail
-        v-if="card?.thumbnailUrl"
+        v-else-if="showThumbnail"
         class="wikitab-card__thumbnail"
         :thumbnail="thumbnail"
       />
@@ -143,6 +169,16 @@ const roomy = computed(() => props.thumbnailSize >= 96)
   flex-shrink: 0;
   /* Codex spaces thumbnails with a margin; this layout uses flex gap instead. */
   margin-right: 0;
+}
+
+/* Figma loading state: flat neutral block, no Codex image icon. */
+.wikitab-card__thumbnail--pending {
+  width: var(--wikitab-thumbnail-size);
+  min-width: var(--wikitab-thumbnail-size);
+  height: var(--wikitab-thumbnail-size);
+  min-height: var(--wikitab-thumbnail-size);
+  border-radius: var(--border-radius-base);
+  background-color: var(--background-color-neutral-subtle);
 }
 
 /* Codex fixes thumbnails at 40px, including a min, so both have to be reset. */

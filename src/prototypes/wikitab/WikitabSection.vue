@@ -38,7 +38,7 @@ useRevealOnScrollEnd({
 
 const slots = computed(() =>
   Array.from({ length: reserved.value }, (_, index) => ({
-    card: index < ready.value ? props.items[index] : undefined,
+    card: props.items[index],
     loading: index >= ready.value,
   })),
 )

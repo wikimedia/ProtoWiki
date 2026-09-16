@@ -38,15 +38,11 @@ function formatViews(views: number): string {
   return String(views)
 }
 
-/**
- * `mostread` reports the last *complete* day of pageviews, which is normally
- * yesterday, so the caption is derived rather than hardcoded to "today".
- */
+/** When `mostread.date` matches the requested feed day, suffix with "today". */
 function viewsPeriodLabel(mostreadDay: string | undefined, requestedDay: string): string {
   const day = mostreadDay?.slice(0, 10)
-  if (!day || day === requestedDay) return 'today'
-  const yesterday = utcDayKey(new Date(Date.parse(`${requestedDay}T00:00:00Z`) - 86_400_000))
-  return day === yesterday ? 'yesterday' : 'on the latest day'
+  if (day === requestedDay) return 'today'
+  return ''
 }
 
 function summaryUrl(summary: FeedSummary): string | undefined {
@@ -69,7 +65,7 @@ function mapTrending(response: FeaturedFeedResponse, day: string): WikitabCardDa
       description: article.description || undefined,
       supportingText:
         typeof article.views === 'number'
-          ? `${formatViews(article.views)} views ${period}`
+          ? `${formatViews(article.views)} views${period ? ` ${period}` : ''}`
           : undefined,
       thumbnailUrl: article.thumbnail?.source,
     }))

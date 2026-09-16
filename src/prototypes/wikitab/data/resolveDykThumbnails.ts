@@ -56,6 +56,9 @@ export async function resolveDykThumbnails(
 
   for (const card of cards) {
     if (!card.thumbnailTitle || card.thumbnailUrl) continue
-    card.thumbnailUrl = thumbnailByTitle.get(card.thumbnailTitle) ?? undefined
+    if (!thumbnailByTitle.has(card.thumbnailTitle)) continue
+    const source = thumbnailByTitle.get(card.thumbnailTitle)
+    if (source) card.thumbnailUrl = source
+    else card.thumbnailTitle = undefined
   }
 }

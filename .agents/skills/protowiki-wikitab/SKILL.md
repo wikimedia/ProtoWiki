@@ -25,7 +25,7 @@ never in a component:
 | `initialCount`  | Slots shown before any paging (4). Desktop renders these 2×2.         |
 | `pageSize`      | How many more one reveal adds (6).                                    |
 | `cardHeight`    | Exact px height. **Placeholder and real card must match.**            |
-| `variant`       | `thumbnail` (image left, title, description) or `text` (hook, image right). |
+| `variant`       | `thumbnail` (Trending — always shows thumbnail; thumbnail-slot loading) or `text` (DYK/news — optional thumbnail; full-card loading). See [Loading modes](#loading-modes). |
 | `thumbnailSize` | Thumbnail edge in px. Must fit inside `cardHeight`.                   |
 
 `cardHeight` and `thumbnailSize` are coupled: a 96px thumbnail needs a 122px card
@@ -40,8 +40,8 @@ This is the point of the prototype, so treat it as load-bearing.
 The heading and `…` button paint immediately. Each section then reserves exactly
 `initialCount` slots at exactly `cardHeight` — flat
 `background-color-neutral-subtle` blocks with **no border** — and "Show more"
-renders in `color-disabled`. When a page resolves, each placeholder is replaced
-in place by a card of identical height.
+renders in `color-disabled`. How a slot looks while its page resolves depends
+on the section's **`variant`** in `sections.ts` (see [Loading modes](#loading-modes)).
 
 Four details make it actually not jump. Breaking any one of them reintroduces
 shift:
@@ -50,8 +50,7 @@ shift:
    hooks are line-clamped so long text cannot grow a card.
 2. **A page is only "ready" once its thumbnails have decoded** — see
    `preloadImages.ts`, which preloads via `new Image()` with a 1.5s cap so one
-   dead image can't hold a slot open. Without this, cards swap in and their
-   images pop a beat later.
+   dead image can't hold a slot open.
 3. **The error state keeps the reserved height** rather than collapsing.
 4. **The "Show more" row is always rendered,** even when a section is exhausted
    and the control inside it is gone. Otherwise the sections below shift up the
@@ -60,11 +59,26 @@ shift:
 `useSectionReveal.ts` expresses the contract as two numbers:
 
 - `reserved` — how many slots are on screen. Raised **immediately** on reveal.
-- `ready` — how many of them have data. Raised only once the page fully resolves.
+- `ready` — how many of them have fully resolved (thumbnails decoded, and for
+  DYK any per-hook summary fetch finished).
 
-A slot at index `i` renders as a card when `i < ready`, and as a placeholder
-otherwise. That ordering is what gives a mobile scroll gesture somewhere to go
-before its data lands.
+A slot at index `i` is `loading` when `i >= ready`.
+
+### Loading modes
+
+Controlled by `WikitabCardVariant` in the section registry — **do not** branch
+on section id in components; add or change a `variant` in `sections.ts` instead.
+
+| Variant | Sections | Thumbnail column | While `loading` |
+| ------- | -------- | ---------------- | --------------- |
+| `thumbnail` | Trending | Always — every article carries a feed thumbnail | **Thumbnail-slot loading:** card shell + title/description paint as soon as feed data lands; only the image area is a flat `background-color-neutral-subtle` block at `thumbnailSize` (no Codex image icon) until decode finishes. |
+| `text` | Did you know, In the news | **Only when a URL resolves** — omit the column entirely if there is no image | **Full-card loading:** the whole slot stays the borderless neutral skeleton until the page is ready. Never show an empty thumbnail column while DYK summaries are fetched or while "no thumbnail" is still being determined. |
+
+Implementation lives in `WikitabCard.vue`: `showFullLoading` for the skeleton,
+`showThumbnail` (text variant checks `thumbnailUrl` only, not `thumbnailTitle`).
+
+When adding a section: if thumbnails are guaranteed from the feed, use
+`thumbnail`. If thumbnails are optional or need a follow-up fetch, use `text`.
 
 ## Pagination
 
@@ -190,11 +204,34 @@ set by shadowing the tokens themselves on `.wikitab` under
 `[data-skin="desktop"]`. See [`codex-typography`](../codex-typography/SKILL.md)
 for the canonical text styles those values map onto.
 
+## Lookahead search
+
+`WikitabSearch.vue` wraps `CdxSearchInput` + `CdxMenu` (not ProtoWiki's
+`Search.vue` / `CdxTypeaheadSearch`). English Wikipedia title search via Core
+REST:
+
+`GET https://en.wikipedia.org/w/rest.php/v1/search/title?q=…&limit=6`
+
+- **`data/fetchWikitabSearch.ts`** — fetch + map to `{ id, title, description,
+  thumbnailUrl }`. Thumbnail URLs are normalised to `https:`. No `url` on menu
+  items.
+- **`useWikitabSearch.ts`** — debounced input (200ms), `AbortController`
+  cancellation, maps results to `MenuItemData` for `CdxMenu`.
+- **Panel** — first menu row is the inert `Search for "…"` item (custom menu
+  slot, text only, no thumbnail; shows the raw input inside the quotes
+  including whitespace; `&nbsp;` before the opening quote so that space cannot
+  collapse); then thumbnail + title + description rows. Dropdown
+  width matches the input wrapper only (not the Search button). When open,
+  `.wikitab__hero:has(.wikitab-search--expanded)` gets `z-index: 10` so the
+  menu covers feed card link overlays (`z-index: 2`). Keyboard handling matches
+  `CdxTypeaheadSearch`: arrow keys navigate the menu, but **Space** is left to
+  the input (never delegated to `CdxMenu`).
+
 ## What's inert
 
-Two controls render faithfully but do nothing: the search input (a plain
-`CdxSearchInput` with `button-label`, not ProtoWiki's `Search.vue`) and
-"About {section}". The About menu row clears its selection without acting.
+Search **shows live lookahead** but **does not navigate** — clicking a result,
+pressing Enter, or clicking Search is a no-op for now. "About {section}" is also
+inert; its menu row clears its selection without acting.
 
 The `…` menu is a single `CdxMenuButton` — its `footer` prop renders the
 separated "About …" row, and the 2px ring on the open trigger is the underlying
