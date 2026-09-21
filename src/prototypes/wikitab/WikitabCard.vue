@@ -138,6 +138,24 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
   z-index: 1;
 }
 
+/*
+ * Text cards omit CdxCard `url` (hooks carry nested anchors), so Codex never
+ * adds `.cdx-card--is-link`. Drive hover/active border from the wrapper so
+ * nested inline links still show the interactive border.
+ */
+.wikitab-card--text :deep(.cdx-card) {
+  transition-property: background-color, color, border-color, box-shadow;
+  transition-duration: 0.1s;
+}
+
+.wikitab-card--text:hover :deep(.cdx-card) {
+  border-color: var(--border-color-interactive--hover, #27292d);
+}
+
+.wikitab-card--text:active :deep(.cdx-card) {
+  border-color: var(--border-color-interactive--active, #202122);
+}
+
 /* Drawn inside the card, which clips its overflow. */
 .wikitab-card__link:focus-visible {
   outline: var(--border-width-thick) var(--border-style-base)
@@ -264,5 +282,14 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
 .wikitab-card__hook :deep(a) {
   position: relative;
   z-index: 2;
+}
+
+/* Feed cards keep progressive link colour even after the URL is visited. */
+.wikitab-card :deep(a:visited) {
+  color: var(--color-progressive);
+}
+
+.wikitab-card :deep(a:visited:hover) {
+  color: var(--color-progressive--hover);
 }
 </style>
