@@ -59,10 +59,9 @@ export function useWikitabSearch(options: { initialQuery?: Ref<string> } = {}) {
     const trimmed = searchTerm.trim()
     const nextQuery = { ...route.query }
 
-    delete nextQuery.tab
-
     if (!trimmed.length) {
       delete nextQuery.search
+      delete nextQuery.tab
     } else {
       nextQuery.search = trimmed
     }

@@ -288,7 +288,8 @@ Contribute. **Articles** and **Activity** have content. **Images** and
 **Contribute** are empty (no placeholder copy). Active tab syncs to
 `?tab=` (`articles` | `images` | `activity` | `contribute`); omitted means
 Articles. Tab clicks **push** browser history so Back/Forward walks tab
-selections. Submitting a new search clears `tab` (lands on Articles).
+selections. Submitting a new search keeps the current `tab`; clearing search
+removes `tab` from the URL.
 `useWikitabSearchTab.ts` owns URL ↔ state sync.
 
 **Tab cache** — Articles and Activity results stay in composable memory for
