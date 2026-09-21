@@ -4,11 +4,17 @@ import { CdxIcon, CdxInfoChip, CdxThumbnail } from '@wikimedia/codex'
 import {
   cdxIconClock,
   cdxIconEditUndo,
+  cdxIconRobot,
+  cdxIconUserAnonymous,
   cdxIconUserAvatar,
+  cdxIconUserTemporary,
 } from '@wikimedia/codex-icons'
 import type { Icon } from '@wikimedia/codex-icons'
 
-import type { WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
+import type {
+  EditorKind,
+  WikitabSearchActivityItem,
+} from './data/fetchWikitabSearchActivity'
 
 const props = defineProps<{
   item: WikitabSearchActivityItem
@@ -42,6 +48,15 @@ const thumbnail = computed(() =>
 const showDiffSize = computed(
   () => (props.item.charsAdded ?? 0) > 0 || (props.item.charsRemoved ?? 0) > 0,
 )
+
+const EDITOR_ICONS: Record<EditorKind, Icon> = {
+  bot: cdxIconRobot,
+  temporary: cdxIconUserTemporary,
+  user: cdxIconUserAvatar,
+  anonymous: cdxIconUserAnonymous,
+}
+
+const editorIcon = computed(() => EDITOR_ICONS[props.item.editorKind])
 </script>
 
 <template>
@@ -93,7 +108,7 @@ const showDiffSize = computed(
         </p>
       </div>
       <p class="wikitab-search-activity-card__supporting">
-        <CdxIcon :icon="cdxIconUserAvatar" size="x-small" />
+        <CdxIcon :icon="editorIcon" size="x-small" />
         {{ item.editedLabel }}
       </p>
     </div>

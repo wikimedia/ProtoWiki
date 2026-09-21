@@ -327,7 +327,11 @@ UI: slot list mixing `WikitabSearchLoadingCard variant="activity"` and
 `WikitabSearchActivityCard`. Cards are borderless like Articles but **no
 thumbnail**; chip row uses `CdxInfoChip` (API-derived **Latest** /
 **Reverted** only). Links go to the en.wikipedia.org diff. Chips sit above the
-page title; supporting row is editor + relative time.
+page title; supporting row is editor + relative time, with a Codex icon for
+editor type — **Bot** (`cdxIconRobot`), **Temporary** (`cdxIconUserTemporary`),
+**User** (`cdxIconUserAvatar`), **Anonymous** (`cdxIconUserAnonymous`).
+Resolved from revision `userid` (anonymous when 0) plus a cached batched
+`list=users&usprop=groups` lookup during queue refill (`bot` / `temp` groups).
 
 Implementation: `data/fetchWikitabSearchActivity.ts`,
 `useWikitabSearchActivity.ts`, `WikitabSearchActivityCard.vue`,

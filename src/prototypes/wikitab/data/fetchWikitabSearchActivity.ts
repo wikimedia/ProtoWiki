@@ -13,6 +13,10 @@ export { fetchWikitabSearchTopTitles, type WikitabSearchTopTitle }
 /** Revisions fetched per page when refilling the merge queue. */
 export const REVISIONS_PER_FETCH = 5
 const THUMBNAIL_SIZE = 200
+/** MediaWiki list=users batch size. */
+const USERS_PER_FETCH = 50
+
+export type EditorKind = 'bot' | 'temporary' | 'user' | 'anonymous'
 
 export interface WikitabSearchActivityItem {
   pageid: number
@@ -27,6 +31,7 @@ export interface WikitabSearchActivityItem {
   isLatest: boolean
   editedLabel: string
   editedTimestamp: string
+  editorKind: EditorKind
 }
 
 interface RevisionRow {
@@ -34,6 +39,7 @@ interface RevisionRow {
   parentid: number
   size: number
   user: string
+  userid: number
   comment: string
   parsedComment: string
   timestamp: string
@@ -61,10 +67,17 @@ type RevisionApiRow = {
   parentid?: number
   size?: number
   user?: string
+  userid?: number
   comment?: string
   parsedcomment?: string
   timestamp?: string
   tags?: string[]
+}
+
+type UserApiRow = {
+  name?: string
+  missing?: string
+  groups?: string[]
 }
 
 type RevisionPageRow = {
@@ -82,6 +95,17 @@ type ThumbnailPageRow = {
 
 function titleKey(title: string): string {
   return title.trim().replace(/_/g, ' ').replace(/\s+/g, ' ').toLowerCase()
+}
+
+function userKey(user: string): string {
+  return user.trim()
+}
+
+function classifyEditor(userid: number, groups: string[] | undefined): EditorKind {
+  if (userid === 0) return 'anonymous'
+  if (groups?.includes('bot')) return 'bot'
+  if (groups?.includes('temp')) return 'temporary'
+  return 'user'
 }
 
 function normalizeThumbnailUrl(url: string | undefined): string | undefined {
@@ -106,6 +130,7 @@ function parseRevisionRow(revision: RevisionApiRow): RevisionRow | null {
     parentid: revision.parentid ?? 0,
     size: revision.size,
     user: revision.user ?? '',
+    userid: revision.userid ?? 0,
     comment: revision.comment ?? '',
     parsedComment: revision.parsedcomment ?? '',
     timestamp: revision.timestamp ?? '',
@@ -201,7 +226,7 @@ async function fetchRevisionsForTitle(
     action: 'query',
     prop: 'revisions',
     titles: title,
-    rvprop: 'ids|timestamp|user|comment|parsedcomment|tags|size',
+    rvprop: 'ids|timestamp|user|userid|comment|parsedcomment|tags|size',
     rvlimit: String(limit),
   }
   if (olderThanRevid != null) {
@@ -290,10 +315,64 @@ async function fetchPageThumbnails(
   return thumbnails
 }
 
+async function fetchEditorKindsForBatch(
+  usernames: string[],
+  signal: AbortSignal | undefined,
+): Promise<Map<string, EditorKind>> {
+  const kinds = new Map<string, EditorKind>()
+  if (!usernames.length) return kinds
+
+  const response = await fetchWikimedia(
+    wikiActionUrl({
+      action: 'query',
+      list: 'users',
+      ususers: usernames.join('|'),
+      usprop: 'groups',
+    }),
+    {
+      signal,
+      headers: wikimediaApiFetchHeaders('wikitab-search-activity'),
+    },
+  )
+  if (!response.ok) return kinds
+
+  const json = (await response.json()) as {
+    query?: { users?: UserApiRow[] }
+  }
+
+  for (const row of json.query?.users ?? []) {
+    if (!row.name) continue
+    const kind = row.missing !== undefined ? 'user' : classifyEditor(1, row.groups)
+    kinds.set(userKey(row.name), kind)
+  }
+
+  return kinds
+}
+
+async function fetchEditorKinds(
+  usernames: string[],
+  signal: AbortSignal | undefined,
+): Promise<Map<string, EditorKind>> {
+  const unique = [...new Set(usernames.map(userKey).filter(Boolean))]
+  const kinds = new Map<string, EditorKind>()
+  if (!unique.length) return kinds
+
+  for (let index = 0; index < unique.length; index += USERS_PER_FETCH) {
+    const batch = unique.slice(index, index + USERS_PER_FETCH)
+    const batchKinds = await fetchEditorKindsForBatch(batch, signal)
+    for (const [name, kind] of batchKinds.entries()) {
+      kinds.set(name, kind)
+    }
+  }
+
+  return kinds
+}
+
 function mapCandidate(
   candidate: ActivityCandidate,
   latestRevidByTitle: Map<string, number>,
   thumbnailByTitle: Map<string, string>,
+  editorKindByUser: Map<string, EditorKind>,
 ): WikitabSearchActivityItem {
   const key = titleKey(candidate.title)
   const wikiLatestRevid = latestRevidByTitle.get(key)
@@ -315,6 +394,9 @@ function mapCandidate(
     isLatest,
     editedLabel: formatEditMetaLabel(candidate.revision.timestamp, candidate.revision.user),
     editedTimestamp: candidate.revision.timestamp,
+    editorKind:
+      editorKindByUser.get(userKey(candidate.revision.user)) ??
+      classifyEditor(candidate.revision.userid, undefined),
   }
 }
 
@@ -379,6 +461,7 @@ export class WikitabSearchActivityFeed {
   private readonly seenRevids = new Set<number>()
   private latestRevidByTitle = new Map<string, number>()
   private thumbnailByTitle = new Map<string, string>()
+  private readonly editorKindByUser = new Map<string, EditorKind>()
 
   constructor(titles: WikitabSearchTopTitle[]) {
     this.pageStates = titles.map((title) => ({
@@ -425,7 +508,46 @@ export class WikitabSearchActivityFeed {
     const candidate = this.queue.shift()
     if (!candidate) return null
 
-    return mapCandidate(candidate, this.latestRevidByTitle, this.thumbnailByTitle)
+    return mapCandidate(
+      candidate,
+      this.latestRevidByTitle,
+      this.thumbnailByTitle,
+      this.editorKindByUser,
+    )
+  }
+
+  private async ensureEditorKinds(
+    candidates: ActivityCandidate[],
+    signal: AbortSignal,
+  ): Promise<void> {
+    const unknown: string[] = []
+
+    for (const candidate of candidates) {
+      const { user, userid } = candidate.revision
+      const key = userKey(user)
+      if (this.editorKindByUser.has(key)) continue
+
+      if (userid === 0) {
+        this.editorKindByUser.set(key, 'anonymous')
+        continue
+      }
+
+      unknown.push(user)
+    }
+
+    if (!unknown.length) return
+
+    const fetched = await fetchEditorKinds(unknown, signal)
+    for (const [name, kind] of fetched.entries()) {
+      this.editorKindByUser.set(name, kind)
+    }
+
+    for (const user of unknown) {
+      const key = userKey(user)
+      if (!this.editorKindByUser.has(key)) {
+        this.editorKindByUser.set(key, 'user')
+      }
+    }
   }
 
   private async refillQueue(signal: AbortSignal): Promise<void> {
@@ -434,9 +556,10 @@ export class WikitabSearchActivityFeed {
       this.seenRevids,
       signal,
     )
-    if (fresh.length) {
-      this.queue.push(...fresh)
-    }
+    if (!fresh.length) return
+
+    await this.ensureEditorKinds(fresh, signal)
+    this.queue.push(...fresh)
   }
 }
 
