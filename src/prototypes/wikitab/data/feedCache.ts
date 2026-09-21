@@ -8,7 +8,7 @@ import type { WikitabFeed } from '../sections'
  * resource, so the first open of a day fetches and every open after it paints
  * from this cache.
  */
-const CACHE_KEY = 'wikitab-feed-cache-v10'
+const CACHE_KEY = 'wikitab-feed-cache-v18'
 
 interface CacheEntry {
   day: string

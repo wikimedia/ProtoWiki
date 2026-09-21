@@ -1,6 +1,7 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import type { WikitabCardData, WikitabFeed } from '../sections'
+import { fetchActiveDiscussions } from './fetchActiveDiscussions'
 import { fetchBirthsOnThisDay } from './fetchBirthsOnThisDay'
 import { isCacheBypassed, readCachedFeed, utcDayKey, writeCachedFeed } from './feedCache'
 import { fetchMainPageOtd } from './fetchMainPageOtd'
@@ -130,10 +131,11 @@ async function fetchFeaturedPayload(
 }
 
 async function requestFeed(day: string, signal?: AbortSignal): Promise<WikitabFeed> {
-  const [featuredResult, otdResult, birthsResult] = await Promise.allSettled([
+  const [featuredResult, otdResult, birthsResult, discussionsResult] = await Promise.allSettled([
     fetchFeaturedPayload(day, signal),
     fetchMainPageOtd(signal),
     fetchBirthsOnThisDay(day, signal),
+    fetchActiveDiscussions(signal),
   ])
 
   if (featuredResult.status === 'rejected') {
@@ -143,13 +145,16 @@ async function requestFeed(day: string, signal?: AbortSignal): Promise<WikitabFe
   const payload = featuredResult.value
   const otd = otdResult.status === 'fulfilled' ? otdResult.value : []
   const births = birthsResult.status === 'fulfilled' ? birthsResult.value : []
+  const discussions =
+    discussionsResult.status === 'fulfilled' ? discussionsResult.value : []
 
   return {
     trending: mapTrending(payload, day),
+    news: mapNews(payload),
+    discussions,
     otd,
     births,
     dyk: mapDyk(payload),
-    news: mapNews(payload),
   }
 }
 

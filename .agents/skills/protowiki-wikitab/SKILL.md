@@ -1,12 +1,12 @@
 ---
 name: protowiki-wikitab
-description: The Wikitab new-tab prototype — its section registry, the reserved-slot "no-jump" loading contract that keeps the layout perfectly still, the shared reveal-more engine (desktop Show more button vs mobile continuous scroll), the daily feed orchestrator (featured + Main Page OTD + births), and the localStorage config / feed-cache split. Use when editing src/prototypes/wikitab/, adding a section, changing card sizes, or debugging layout shift or paging there.
+description: The Wikitab new-tab prototype — its section registry, the reserved-slot "no-jump" loading contract that keeps the layout perfectly still, the shared reveal-more engine (desktop Show more button vs mobile continuous scroll), the daily feed orchestrator (featured + Active discussions + Main Page OTD + births), and the localStorage config / feed-cache split. Use when editing src/prototypes/wikitab/, adding a section, changing card sizes, or debugging layout shift or paging there.
 ---
 
 # ProtoWiki — Wikitab
 
 Route `/wikitab`. A bare, responsive new-tab page: serif wordmark, a search
-input, and five feed sections. Logged-out only, `platform: 'web'`.
+input, and six feed sections. Logged-out only, `platform: 'web'`.
 
 Deliberately **not** wrapped in `ChromeWrapper` — this is a page you set as your
 browser's new-tab URL, so it has no Wikipedia chrome and no fake browser chrome.
@@ -25,14 +25,14 @@ never in a component:
 | `initialCount`  | Slots shown before any paging (4). Desktop renders these 2×2.         |
 | `pageSize`      | How many more one reveal adds (6).                                    |
 | `cardHeight`    | Placeholder slot height (px) and row floor. Real cards grow taller when content needs it; rows equalize via `useEqualRowHeights`. |
-| `variant`       | `thumbnail` (Trending, Birthdays — always shows thumbnail; thumbnail-slot loading) or `text` (On this day, DYK, news — optional thumbnail; full-card loading). See [Loading modes](#loading-modes). |
+| `variant`       | `thumbnail` (Trending, Birthdays — always shows thumbnail; thumbnail-slot loading) or `text` (Active discussions, On this day, DYK, news — optional thumbnail; full-card loading). See [Loading modes](#loading-modes). |
 | `thumbnailSize` | Thumbnail edge in px. Must fit inside `cardHeight`.                   |
 | `fullHook`      | Text variant only: no line-clamp; card grows past `cardHeight` (min). On this day, Did you know, and In the news. |
 
 `cardHeight` and `thumbnailSize` are coupled: a 96px thumbnail needs a 122px card
 (96 + 12px padding either side + 1px border), and a 40px one fits a 98px card.
 Change one without the other and the thumbnail either clips or floats in space.
-Trending and Birthdays use 122/96 thumbnail cards; On this day, Did you know, and In the news use the same 122/96 text-card layout (thumbnail only when one resolves).
+Trending and Birthdays use 122/96 thumbnail cards; On this day, Did you know, and In the news use the same 122/96 text-card layout (thumbnail only when one resolves). Active discussions uses a 98px text card with no thumbnail column.
 
 ## The no-jump loading contract
 
@@ -76,7 +76,7 @@ on section id in components; add or change a `variant` in `sections.ts` instead.
 | Variant | Sections | Thumbnail column | While `loading` |
 | ------- | -------- | ---------------- | --------------- |
 | `thumbnail` | Trending, Birthdays | Always — every item carries a feed thumbnail (or one fetched for the lead page) | **Thumbnail-slot loading:** card shell + title/description paint as soon as feed data lands; only the image area is a flat `background-color-neutral-subtle` block at `thumbnailSize` (no Codex image icon) until decode finishes. |
-| `text` | On this day, Did you know, In the news | **Only when a URL resolves** — omit the column entirely if there is no image | **Full-card loading:** the whole slot stays the borderless neutral skeleton until the page is ready. Never show an empty thumbnail column while summaries are fetched or while "no thumbnail" is still being determined. |
+| `text` | Active discussions, On this day, Did you know, In the news | **Only when a URL resolves** — omit the column entirely if there is no image | **Full-card loading:** the whole slot stays the borderless neutral skeleton until the page is ready. Never show an empty thumbnail column while summaries are fetched or while "no thumbnail" is still being determined. |
 
 Implementation lives in `WikitabCard.vue`: `showFullLoading` for the skeleton,
 `showThumbnail` (text variant checks `thumbnailUrl` only, not `thumbnailTitle`).
@@ -128,22 +128,24 @@ queue several pages.
 Sections **cap** at whatever the day's feed contains rather than reaching back
 into previous days. Depth varies by day, so `hasMore` always derives from the
 actual list length — never hardcode it. Typically Trending has ~44 items, On this day ~5 (Main Page event bullets),
-Birthdays ~294 (Wikifeeds births, newest first), Did you know ~9, and
+Birthdays ~294 (Wikifeeds births, newest first), Did you know ~9,
 In the news ~4 (which exactly fills the initial slots, so no control ever
-renders for it). Sections with zero items for the day are hidden once the feed
+renders for it), and Active discussions ~20 (merged from six noticeboards).
+Sections with zero items for the day are hidden once the feed
 loads (still skeleton while loading).
 
 ## Daily feed sources
 
-`data/fetchDailyFeed.ts` orchestrates three parallel requests, cached as one
+`data/fetchDailyFeed.ts` orchestrates four parallel requests, cached as one
 daily blob:
 
 - **`feed/featured/{yyyy}/{mm}/{dd}`** — Trending, DYK, In the news
+- **Action API `discussiontoolspageinfo`** — Active discussions (six noticeboards)
 - **Action API parse of `Main_Page`** — On this day event bullets (`#mp-otd > ul > li`)
 - **`feed/onthisday/births/{mm}/{dd}`** — Birthdays
 
-Featured failure fails the whole load; Main Page OTD or births failure yields an
-empty section for that part only.
+Featured failure fails the whole load; Main Page OTD, births, or Active
+discussions failure yields an empty section for that part only.
 
 Every card links as a whole to the **bolded** link inside it — the page the feed
 marks as the item's subject — via `primaryLinkTitle()`. For news that means
@@ -176,6 +178,18 @@ you touch the card's stacking.
   out of the HTML and fetches summaries for the **revealed page only**.
 - **In the news** ← `news[]`. Each story has `links[]` of full summaries, so
   again no follow-up requests.
+- **Active discussions** ← `data/fetchActiveDiscussions.ts` queries
+  `discussiontoolspageinfo` with `prop=threaditemshtml` and
+  `threaditemsflags=noreplies|excludesignatures|activity` on six enwiki
+  noticeboards (Help desk + five Village pumps — same list as Personal
+  Dashboard, T420785). Threads need `authorCount > 1` and a latest reply;
+  merged newest-first with at least two per noticeboard, capped at ~20. Cards:
+  discussion title, noticeboard as plain `#description`, supporting row
+  `cdxIconSpeechBubbles` + `"{n} comments"` at row start, compact relative time at row end.
+  Links to the
+  noticeboard URL with a `#` fragment to the thread. Default registry order:
+  Trending → In the news → Did you know → Active discussions → On this day →
+  Birthdays. No thumbnails, no per-card follow-up fetches.
 
 `data/wikitabHtml.ts` normalises feed HTML. Note the asymmetry it exists for:
 `news` stories use relative `./Page_Title` hrefs, which would otherwise resolve
@@ -224,13 +238,17 @@ margins and reinstates it as padding, plus
 start edge scrolls straight past the padding and the first card sits flush to
 the viewport edge instead of lining up with the heading.
 
-**Type scale.** The design uses 16/18/28px on mobile and 14/16/26px on desktop.
-Codex's type tokens are `rem`-based, so they resolve against the document root
-and **cannot** be scaled by a `font-size` on the page element. Codex's defaults
-already match the mobile design, so mobile needs nothing; the desktop scale is
-set by shadowing the tokens themselves on `.wikitab` under
-`[data-skin="desktop"]`. See [`codex-typography`](../codex-typography/SKILL.md)
-for the canonical text styles those values map onto.
+**Type scale.** Two contexts, both using Codex token shadowing on a scoped
+ancestor (tokens are `rem`-based and cannot be scaled by `font-size` on the page
+element):
+
+- **Home feed cards** — compact scale on `.wikitab-section__cards` in
+  `WikitabSection.vue`: 14px body / 12px small. Section headings, wordmark, and
+  chrome use Codex defaults (18px / 28px).
+- **Search results** — Codex defaults throughout (16px body / 14px small).
+
+See [`codex-typography`](../codex-typography/SKILL.md) for the canonical text
+styles those values map onto.
 
 ## Lookahead search
 
@@ -327,7 +345,8 @@ UI: slot list mixing `WikitabSearchLoadingCard variant="activity"` and
 `WikitabSearchActivityCard`. Cards are borderless like Articles but **no
 thumbnail**; chip row uses `CdxInfoChip` (API-derived **Latest** /
 **Reverted** only). Links go to the en.wikipedia.org diff. Chips sit above the
-page title; supporting row is editor + relative time, with a Codex icon for
+entire card (above the thumbnail + content row); supporting row is editor +
+relative time, with a Codex icon for
 editor type — **Bot** (`cdxIconRobot`), **Temporary** (`cdxIconUserTemporary`),
 **User** (`cdxIconUserAvatar`). IP edits (`userid === 0`) use the same
 **Temporary** icon (`cdxIconUserTemporary`). Resolved from revision `userid`

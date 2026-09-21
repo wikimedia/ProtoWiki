@@ -190,6 +190,18 @@ watch(selection, (value) => {
   color: var(--color-subtle);
 }
 
+/*
+ * Home feed cards use a compact type scale (14px body / 12px small). Codex tokens
+ * are rem-based, so shadow them on the card scroller — not on `.wikitab` — so the
+ * search results page keeps Codex defaults (16px body).
+ */
+.wikitab-section__cards {
+  --font-size-small: 0.75rem;
+  --font-size-medium: 0.875rem;
+  --line-height-small: 1.25rem;
+  --line-height-medium: 1.375rem;
+}
+
 .wikitab-section__sentinel {
   flex: 0 0 1px;
   width: 1px;

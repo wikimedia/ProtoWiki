@@ -125,22 +125,11 @@ const visibleSections = computed(() =>
  *   mobile carousel and the centred wide-desktop column.
  * - Wide (768px+): centred 640px column, 64px page gutter.
  *
- * Codex's type tokens are `rem`-based, so they resolve against the document root
- * and cannot be scaled by a font-size on this element. The desktop scale is
- * therefore set by shadowing the tokens themselves — which also means mobile
- * needs nothing, since Codex's defaults already match the mobile design
- * (16px body / 18px heading / 28px wordmark).
+ * Typography: Codex defaults for wordmark, section headings, and search results
+ * (16px body). Home feed cards shadow a compact scale on `.wikitab-section__cards`
+ * (14px body) — see WikitabSection.vue.
  */
 [data-skin='desktop'] .wikitab {
-  --font-size-small: 0.75rem;
-  --font-size-medium: 0.875rem;
-  --font-size-large: 1rem;
-  --font-size-xxx-large: 1.625rem;
-  --line-height-small: 1.25rem;
-  --line-height-medium: 1.375rem;
-  --line-height-large: 1.625rem;
-  --line-height-xxx-large: 2.25rem;
-
   align-items: center;
 }
 

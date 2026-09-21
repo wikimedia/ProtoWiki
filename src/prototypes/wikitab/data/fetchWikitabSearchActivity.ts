@@ -23,8 +23,6 @@ export interface WikitabSearchActivityItem {
   title: string
   editSummary: string
   thumbnailUrl?: string
-  charsAdded?: number
-  charsRemoved?: number
   diffUrl: string
   revid: number
   reverted: boolean
@@ -36,16 +34,12 @@ export interface WikitabSearchActivityItem {
 
 interface RevisionRow {
   revid: number
-  parentid: number
-  size: number
   user: string
   userid: number
   comment: string
   parsedComment: string
   timestamp: string
   reverted: boolean
-  charsAdded?: number
-  charsRemoved?: number
 }
 
 interface ActivityCandidate {
@@ -59,13 +53,10 @@ export interface PageRevisionState {
   title: string
   oldestRevid?: number
   exhausted: boolean
-  revSizesById: Map<number, number>
 }
 
 type RevisionApiRow = {
   revid?: number
-  parentid?: number
-  size?: number
   user?: string
   userid?: number
   comment?: string
@@ -123,45 +114,16 @@ function wikiActionUrl(params: Record<string, string>): string {
 }
 
 function parseRevisionRow(revision: RevisionApiRow): RevisionRow | null {
-  if (!revision.revid || typeof revision.size !== 'number') return null
+  if (!revision.revid) return null
 
   return {
     revid: revision.revid,
-    parentid: revision.parentid ?? 0,
-    size: revision.size,
     user: revision.user ?? '',
     userid: revision.userid ?? 0,
     comment: revision.comment ?? '',
     parsedComment: revision.parsedcomment ?? '',
     timestamp: revision.timestamp ?? '',
     reverted: (revision.tags ?? []).includes('mw-reverted'),
-  }
-}
-
-function computeDiffSize(
-  revision: Pick<RevisionRow, 'parentid' | 'size'>,
-  revSizesById: Map<number, number>,
-): Pick<RevisionRow, 'charsAdded' | 'charsRemoved'> | null {
-  if (!revision.parentid) return null
-  const parentSize = revSizesById.get(revision.parentid)
-  if (parentSize == null) return null
-
-  const delta = revision.size - parentSize
-  if (delta > 0) return { charsAdded: delta, charsRemoved: 0 }
-  if (delta < 0) return { charsAdded: 0, charsRemoved: -delta }
-  return { charsAdded: 0, charsRemoved: 0 }
-}
-
-function attachDiffSizes(revisions: RevisionRow[], revSizesById: Map<number, number>): void {
-  for (const revision of revisions) {
-    revSizesById.set(revision.revid, revision.size)
-  }
-
-  for (const revision of revisions) {
-    const diffSize = computeDiffSize(revision, revSizesById)
-    if (!diffSize) continue
-    revision.charsAdded = diffSize.charsAdded
-    revision.charsRemoved = diffSize.charsRemoved
   }
 }
 
@@ -226,7 +188,7 @@ async function fetchRevisionsForTitle(
     action: 'query',
     prop: 'revisions',
     titles: title,
-    rvprop: 'ids|timestamp|user|userid|comment|parsedcomment|tags|size',
+    rvprop: 'ids|timestamp|user|userid|comment|parsedcomment|tags',
     rvlimit: String(limit),
   }
   if (olderThanRevid != null) {
@@ -386,8 +348,6 @@ function mapCandidate(
       candidate.revision.comment,
     ),
     thumbnailUrl: thumbnailByTitle.get(key),
-    charsAdded: candidate.revision.charsAdded,
-    charsRemoved: candidate.revision.charsRemoved,
     diffUrl: diffUrl(candidate.title, candidate.revision.revid),
     revid: candidate.revision.revid,
     reverted: candidate.revision.reverted,
@@ -432,8 +392,6 @@ async function fetchNextActivityCandidates(
       continue
     }
 
-    attachDiffSizes(revisions, state.revSizesById)
-
     state.oldestRevid = revisions[revisions.length - 1].revid
     if (revisions.length < limit) {
       state.exhausted = true
@@ -468,7 +426,6 @@ export class WikitabSearchActivityFeed {
       pageid: title.pageid,
       title: title.title,
       exhausted: false,
-      revSizesById: new Map<number, number>(),
     }))
 
     for (const title of titles) {

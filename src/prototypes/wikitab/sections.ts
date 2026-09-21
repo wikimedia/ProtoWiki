@@ -1,6 +1,6 @@
-import { cdxIconCalendar, cdxIconChartLine } from '@wikimedia/codex-icons'
+import { cdxIconCalendar, cdxIconChartLine, type Icon } from '@wikimedia/codex-icons'
 
-export type WikitabSectionId = 'trending' | 'otd' | 'births' | 'dyk' | 'news'
+export type WikitabSectionId = 'trending' | 'otd' | 'births' | 'dyk' | 'news' | 'discussions'
 
 /**
  * Which card layout a section renders. Drives the real card, its placeholder,
@@ -29,7 +29,7 @@ export interface WikitabSectionSpec {
    */
   thumbnailSize: number
   /** Glyph beside the card's supporting text, where the variant shows one. */
-  supportingIcon?: string
+  supportingIcon?: Icon
   /**
    * Text variant only: show the full hook with no line-clamp and let the card
    * grow past `cardHeight` (which becomes a minimum). Placeholders still use
@@ -47,7 +47,7 @@ export const WIKITAB_SECTIONS: readonly WikitabSectionSpec[] = [
     cardHeight: 122,
     variant: 'thumbnail',
     thumbnailSize: 96,
-    supportingIcon: cdxIconChartLine as string,
+    supportingIcon: cdxIconChartLine,
   },
   {
     id: 'news',
@@ -58,6 +58,25 @@ export const WIKITAB_SECTIONS: readonly WikitabSectionSpec[] = [
     variant: 'text',
     thumbnailSize: 96,
     fullHook: true,
+  },
+  {
+    id: 'dyk',
+    heading: 'Did you know',
+    initialCount: 4,
+    pageSize: 6,
+    cardHeight: 122,
+    variant: 'text',
+    thumbnailSize: 96,
+    fullHook: true,
+  },
+  {
+    id: 'discussions',
+    heading: 'Active discussions',
+    initialCount: 4,
+    pageSize: 6,
+    cardHeight: 98,
+    variant: 'text',
+    thumbnailSize: 96,
   },
   {
     id: 'otd',
@@ -77,19 +96,14 @@ export const WIKITAB_SECTIONS: readonly WikitabSectionSpec[] = [
     cardHeight: 122,
     variant: 'thumbnail',
     thumbnailSize: 96,
-    supportingIcon: cdxIconCalendar as string,
-  },
-  {
-    id: 'dyk',
-    heading: 'Did you know',
-    initialCount: 4,
-    pageSize: 6,
-    cardHeight: 122,
-    variant: 'text',
-    thumbnailSize: 96,
-    fullHook: true,
+    supportingIcon: cdxIconCalendar,
   },
 ]
+
+export interface WikitabSupportingSignal {
+  icon: Icon
+  text: string
+}
 
 /** One card's display data. Fields used depend on the section's variant. */
 export interface WikitabCardData {
@@ -102,6 +116,10 @@ export interface WikitabCardData {
   title?: string
   description?: string
   supportingText?: string
+  /** When set, renders multiple icon + text pairs instead of `supportingText`. */
+  supportingSignals?: WikitabSupportingSignal[]
+  /** With `supportingSignals`, pins this text to the inline end of the row. */
+  supportingTextEnd?: string
   /** `text` variant: hook / story HTML with its inline links preserved. */
   html?: string
   thumbnailUrl?: string

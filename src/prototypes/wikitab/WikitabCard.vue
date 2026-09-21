@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { CdxCard, CdxIcon } from '@wikimedia/codex'
+import type { Icon } from '@wikimedia/codex-icons'
 import type { WikitabCardData, WikitabCardVariant } from './sections'
 
 const props = defineProps<{
@@ -9,7 +10,7 @@ const props = defineProps<{
   height: number
   thumbnailSize: number
   card?: WikitabCardData
-  supportingIcon?: string
+  supportingIcon?: Icon
   fullHook?: boolean
   loading?: boolean
 }>()
@@ -112,7 +113,30 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
         <!-- eslint-disable-next-line vue/no-v-html -->
         <span class="wikitab-card__hook" v-html="card.html" />
       </template>
-      <template v-if="card?.supportingText" #supporting-text>
+      <template v-else-if="variant === 'text' && card?.description" #description>
+        {{ card.description }}
+      </template>
+      <template v-if="card?.supportingSignals?.length" #supporting-text>
+        <span
+          class="wikitab-card__supporting"
+          :class="{ 'wikitab-card__supporting--split': card.supportingTextEnd }"
+        >
+          <span class="wikitab-card__supporting-start">
+            <span
+              v-for="(signal, index) in card.supportingSignals"
+              :key="index"
+              class="wikitab-card__supporting-signal"
+            >
+              <CdxIcon :icon="signal.icon" size="x-small" />
+              {{ signal.text }}
+            </span>
+          </span>
+          <span v-if="card.supportingTextEnd" class="wikitab-card__supporting-end">
+            {{ card.supportingTextEnd }}
+          </span>
+        </span>
+      </template>
+      <template v-else-if="card?.supportingText" #supporting-text>
         <span class="wikitab-card__supporting">
           <CdxIcon v-if="supportingIcon" :icon="supportingIcon" size="x-small" />
           {{ card.supportingText }}
@@ -247,7 +271,34 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
   display: none;
 }
 
+.wikitab-card :deep(.cdx-card__text__supporting-text) {
+  width: 100%;
+}
+
 .wikitab-card__supporting {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-25);
+}
+
+.wikitab-card__supporting--split {
+  box-sizing: border-box;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.wikitab-card__supporting-start {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-25);
+  min-width: 0;
+}
+
+.wikitab-card__supporting-end {
+  flex-shrink: 0;
+}
+
+.wikitab-card__supporting-signal {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-25);
