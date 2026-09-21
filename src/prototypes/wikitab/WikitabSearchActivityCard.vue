@@ -5,16 +5,12 @@ import {
   cdxIconClock,
   cdxIconEditUndo,
   cdxIconRobot,
-  cdxIconUserAnonymous,
   cdxIconUserAvatar,
   cdxIconUserTemporary,
 } from '@wikimedia/codex-icons'
 import type { Icon } from '@wikimedia/codex-icons'
 
-import type {
-  EditorKind,
-  WikitabSearchActivityItem,
-} from './data/fetchWikitabSearchActivity'
+import type { EditorKind, WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
 
 const props = defineProps<{
   item: WikitabSearchActivityItem
@@ -53,23 +49,15 @@ const EDITOR_ICONS: Record<EditorKind, Icon> = {
   bot: cdxIconRobot,
   temporary: cdxIconUserTemporary,
   user: cdxIconUserAvatar,
-  anonymous: cdxIconUserAnonymous,
+  anonymous: cdxIconUserTemporary,
 }
 
 const editorIcon = computed(() => EDITOR_ICONS[props.item.editorKind])
 </script>
 
 <template>
-  <a
-    class="wikitab-search-activity-card"
-    :href="item.diffUrl"
-    target="_blank"
-    rel="noreferrer"
-  >
-    <CdxThumbnail
-      class="wikitab-search-activity-card__thumbnail"
-      :thumbnail="thumbnail"
-    />
+  <a class="wikitab-search-activity-card" :href="item.diffUrl" target="_blank" rel="noreferrer">
+    <CdxThumbnail class="wikitab-search-activity-card__thumbnail" :thumbnail="thumbnail" />
 
     <div class="wikitab-search-activity-card__content">
       <div v-if="chips.length" class="wikitab-search-activity-card__chips">
@@ -90,16 +78,10 @@ const editorIcon = computed(() => EDITOR_ICONS[props.item.editorKind])
         class="wikitab-search-activity-card__description-block"
       >
         <p v-if="showDiffSize" class="wikitab-search-activity-card__diff-size">
-          <span
-            v-if="item.charsAdded"
-            class="wikitab-search-activity-card__diff-size-added"
-          >
+          <span v-if="item.charsAdded" class="wikitab-search-activity-card__diff-size-added">
             +{{ item.charsAdded }}
           </span>
-          <span
-            v-if="item.charsRemoved"
-            class="wikitab-search-activity-card__diff-size-removed"
-          >
+          <span v-if="item.charsRemoved" class="wikitab-search-activity-card__diff-size-removed">
             −{{ item.charsRemoved }}
           </span>
         </p>
@@ -108,8 +90,14 @@ const editorIcon = computed(() => EDITOR_ICONS[props.item.editorKind])
         </p>
       </div>
       <p class="wikitab-search-activity-card__supporting">
-        <CdxIcon :icon="editorIcon" size="x-small" />
-        {{ item.editedLabel }}
+        <CdxIcon
+          :icon="editorIcon"
+          size="x-small"
+          class="wikitab-search-activity-card__supporting-icon"
+        />
+        <span class="wikitab-search-activity-card__supporting-text">
+          {{ item.editedLabel }}
+        </span>
       </p>
     </div>
   </a>
@@ -119,6 +107,7 @@ const editorIcon = computed(() => EDITOR_ICONS[props.item.editorKind])
 .wikitab-search-activity-card {
   display: flex;
   gap: var(--spacing-75);
+  min-width: 0;
   padding-block: var(--spacing-75);
   border-radius: var(--border-radius-base);
   background-color: var(--background-color-base);
@@ -198,7 +187,7 @@ const editorIcon = computed(() => EDITOR_ICONS[props.item.editorKind])
 
 .wikitab-search-activity-card__supporting {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: var(--spacing-25);
   margin: 0;
   padding-top: var(--spacing-25);
@@ -206,5 +195,15 @@ const editorIcon = computed(() => EDITOR_ICONS[props.item.editorKind])
   font-weight: var(--font-weight-normal);
   line-height: var(--line-height-small);
   color: var(--color-subtle);
+}
+
+.wikitab-search-activity-card__supporting-icon {
+  flex-shrink: 0;
+}
+
+.wikitab-search-activity-card__supporting-text {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-wrap: anywhere;
 }
 </style>
