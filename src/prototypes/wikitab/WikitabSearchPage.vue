@@ -92,7 +92,14 @@ const SKELETON_COUNT = 3
             />
           </template>
 
-          <WikitabSearchLoadingCard v-if="loadingMore" variant="article" compact />
+          <template v-if="loadingMore">
+            <WikitabSearchLoadingCard
+              v-for="index in SKELETON_COUNT"
+              :key="`more-${index}`"
+              variant="article"
+              compact
+            />
+          </template>
 
           <div
             v-if="!loading && hasMore"
@@ -108,13 +115,12 @@ const SKELETON_COUNT = 3
       </CdxTab>
 
       <CdxTab name="activity" label="Activity">
-        <div v-if="activeTab === 'activity'" class="wikitab-search-page__list">
+        <div
+          v-if="activeTab === 'activity'"
+          class="wikitab-search-page__list wikitab-search-page__list--activity"
+        >
           <template v-if="activityLoading">
-            <WikitabSearchLoadingCard
-              v-for="index in SKELETON_COUNT"
-              :key="index"
-              variant="activity"
-            />
+            <WikitabSearchLoadingCard v-for="index in SKELETON_COUNT" :key="index" />
           </template>
 
           <template v-else>
@@ -122,7 +128,7 @@ const SKELETON_COUNT = 3
               v-for="slot in activitySlots"
               :key="slot.kind === 'loading' ? slot.id : slot.item.revid"
             >
-              <WikitabSearchLoadingCard v-if="slot.kind === 'loading'" variant="activity" />
+              <WikitabSearchLoadingCard v-if="slot.kind === 'loading'" />
               <WikitabSearchActivityCard v-else :item="slot.item" />
             </template>
           </template>
@@ -152,17 +158,27 @@ const SKELETON_COUNT = 3
   width: 100%;
 }
 
+.wikitab-search-page__tabs :deep(.cdx-tabs__header) {
+  margin-inline: 0;
+}
+
 .wikitab-search-page__list {
+  --wikitab-search-list-gap: var(--spacing-100);
+
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-100);
+  gap: var(--wikitab-search-list-gap);
   width: 100%;
-  max-width: 896px;
-  padding-top: var(--spacing-150);
+  padding-top: var(--wikitab-search-list-gap);
 }
 
 [data-skin='desktop'] .wikitab-search-page__list {
-  gap: var(--spacing-150);
+  --wikitab-search-list-gap: var(--spacing-150);
+}
+
+.wikitab-search-page__list--activity {
+  gap: var(--spacing-75);
+  padding-top: var(--spacing-75);
 }
 
 .wikitab-search-page__sentinel {

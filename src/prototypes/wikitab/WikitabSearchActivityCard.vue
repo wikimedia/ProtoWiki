@@ -10,6 +10,8 @@ import {
 } from '@wikimedia/codex-icons'
 import type { Icon } from '@wikimedia/codex-icons'
 
+import { useSkin } from '@/composables/useSkin'
+
 import type { EditorKind, WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
 
 const props = defineProps<{
@@ -49,10 +51,21 @@ const EDITOR_ICONS: Record<EditorKind, Icon> = {
 }
 
 const editorIcon = computed(() => EDITOR_ICONS[props.item.editorKind])
+
+const skin = useSkin()
+const showNestedLinks = computed(() => skin.value !== 'mobile')
 </script>
 
 <template>
-  <a class="wikitab-search-activity-card" :href="item.diffUrl" target="_blank" rel="noreferrer">
+  <div class="wikitab-search-activity-card">
+    <a
+      class="wikitab-search-activity-card__link"
+      :href="item.diffUrl"
+      :aria-label="`View diff for ${item.title}`"
+      target="_blank"
+      rel="noreferrer"
+    />
+
     <div v-if="chips.length" class="wikitab-search-activity-card__chips">
       <CdxInfoChip
         v-for="(chip, index) in chips"
@@ -69,7 +82,18 @@ const editorIcon = computed(() => EDITOR_ICONS[props.item.editorKind])
       <CdxThumbnail class="wikitab-search-activity-card__thumbnail" :thumbnail="thumbnail" />
 
       <div class="wikitab-search-activity-card__content">
-        <p class="wikitab-search-activity-card__title">{{ item.title }}</p>
+        <p class="wikitab-search-activity-card__title">
+          <a
+            v-if="showNestedLinks"
+            class="wikitab-search-activity-card__title-link"
+            :href="item.articleHref"
+            target="_blank"
+            rel="noreferrer"
+          >
+            {{ item.title }}
+          </a>
+          <span v-else>{{ item.title }}</span>
+        </p>
         <p v-if="item.editSummary" class="wikitab-search-activity-card__description">
           {{ item.editSummary }}
         </p>
@@ -80,25 +104,58 @@ const editorIcon = computed(() => EDITOR_ICONS[props.item.editorKind])
             class="wikitab-search-activity-card__supporting-icon"
           />
           <span class="wikitab-search-activity-card__supporting-text">
-            {{ item.editedLabel }}
+            <a
+              v-if="showNestedLinks"
+              class="wikitab-search-activity-card__editor-link"
+              :href="item.editorHref"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {{ item.editorName }}
+            </a>
+            <span v-else class="wikitab-search-activity-card__editor-name">{{
+              item.editorName
+            }}</span
+            ><span class="wikitab-search-activity-card__edited-meta"
+              >, {{ item.editedRelative }}</span
+            >
           </span>
         </p>
       </div>
     </div>
-  </a>
+  </div>
 </template>
 
 <style scoped>
 .wikitab-search-activity-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-50);
+  box-sizing: border-box;
   min-width: 0;
   padding-block: var(--spacing-75);
-  border-radius: var(--border-radius-base);
+  padding-inline: var(--spacing-75);
+  border: var(--border-width-base) solid transparent;
   background-color: var(--background-color-base);
-  color: inherit;
-  text-decoration: none;
+  transition-property: background-color, color, border-color, box-shadow;
+  transition-duration: 0.1s;
+}
+
+.wikitab-search-activity-card:hover {
+  border-color: var(--border-color-subtle);
+}
+
+.wikitab-search-activity-card__link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.wikitab-search-activity-card__link:focus-visible {
+  outline: var(--border-width-thick) var(--border-style-base)
+    var(--outline-color-progressive--focus);
+  outline-offset: calc(var(--border-width-thick) * -1);
 }
 
 .wikitab-search-activity-card__body {
@@ -109,18 +166,14 @@ const editorIcon = computed(() => EDITOR_ICONS[props.item.editorKind])
 
 .wikitab-search-activity-card__thumbnail {
   flex-shrink: 0;
-  width: 40px;
-  min-width: 40px;
-  height: 40px;
-  min-height: 40px;
+  width: 96px;
+  height: 96px;
 }
 
 .wikitab-search-activity-card__thumbnail :deep(.cdx-thumbnail__image),
 .wikitab-search-activity-card__thumbnail :deep(.cdx-thumbnail__placeholder) {
-  width: 40px;
-  min-width: 40px;
-  height: 40px;
-  min-height: 40px;
+  width: 96px;
+  height: 96px;
 }
 
 .wikitab-search-activity-card__content {
@@ -149,8 +202,33 @@ const editorIcon = computed(() => EDITOR_ICONS[props.item.editorKind])
   color: var(--color-base);
 }
 
+.wikitab-search-activity-card__title-link,
+.wikitab-search-activity-card__editor-link {
+  position: relative;
+  z-index: 2;
+  text-decoration: none;
+}
+
+.wikitab-search-activity-card__title-link {
+  color: var(--color-base);
+}
+
+.wikitab-search-activity-card__editor-link,
+.wikitab-search-activity-card__editor-name {
+  color: var(--color-subtle);
+}
+
+.wikitab-search-activity-card__title-link:hover,
+.wikitab-search-activity-card__title-link:focus-visible,
+.wikitab-search-activity-card__editor-link:hover,
+.wikitab-search-activity-card__editor-link:focus-visible {
+  text-decoration: underline;
+}
+
 .wikitab-search-activity-card__description {
   margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: var(--font-size-medium);
   font-weight: var(--font-weight-normal);
   line-height: var(--line-height-small);
@@ -159,7 +237,7 @@ const editorIcon = computed(() => EDITOR_ICONS[props.item.editorKind])
 
 .wikitab-search-activity-card__supporting {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--spacing-25);
   margin: 0;
   padding-top: var(--spacing-25);
@@ -177,5 +255,9 @@ const editorIcon = computed(() => EDITOR_ICONS[props.item.editorKind])
   min-width: 0;
   flex: 1 1 auto;
   overflow-wrap: anywhere;
+}
+
+.wikitab-search-activity-card__edited-meta {
+  color: var(--color-subtle);
 }
 </style>

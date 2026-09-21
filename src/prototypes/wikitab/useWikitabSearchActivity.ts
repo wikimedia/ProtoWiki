@@ -69,10 +69,8 @@ export function useWikitabSearchActivity(
     )
   }
 
-  async function resolveNext(replaceTarget: 'oldest' | string): Promise<boolean> {
-    if (!feed || loadingMore.value) return false
-
-    loadingMore.value = true
+  async function resolveOne(replaceTarget: 'oldest' | string): Promise<boolean> {
+    if (!feed) return false
 
     try {
       const item = await feed.takeNext(abortController?.signal)
@@ -94,6 +92,16 @@ export function useWikitabSearchActivity(
       }
       hasMore.value = false
       return false
+    }
+  }
+
+  async function resolveNext(replaceTarget: 'oldest' | string): Promise<boolean> {
+    if (!feed || loadingMore.value) return false
+
+    loadingMore.value = true
+
+    try {
+      return await resolveOne(replaceTarget)
     } finally {
       loadingMore.value = false
       syncHasMore()
@@ -150,9 +158,27 @@ export function useWikitabSearchActivity(
   async function loadMore(): Promise<void> {
     if (!feed || loading.value || loadingMore.value || !hasMore.value) return
 
-    const loadingSlot = createLoadingSlot()
-    slots.value.push(loadingSlot)
-    await resolveNext(loadingSlot.id)
+    loadingMore.value = true
+
+    const loadingSlots = Array.from({ length: INITIAL_LOADING_SLOTS }, () =>
+      createLoadingSlot(),
+    )
+    slots.value.push(...loadingSlots)
+
+    try {
+      for (const slot of loadingSlots) {
+        if (!feed?.hasMore) {
+          removeLoadingSlot(slot.id)
+          break
+        }
+
+        const added = await resolveOne(slot.id)
+        if (!added) break
+      }
+    } finally {
+      loadingMore.value = false
+      syncHasMore()
+    }
   }
 
   const resolvedCount = computed(() =>

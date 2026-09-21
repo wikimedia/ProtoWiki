@@ -6,7 +6,7 @@ import {
   fetchWikitabSearchTopTitles,
   type WikitabSearchTopTitle,
 } from './fetchWikitabSearchArticles'
-import { EN_WIKI_HOST } from './wikitabHtml'
+import { articleUrl, EN_WIKI_HOST } from './wikitabHtml'
 
 export { fetchWikitabSearchTopTitles, type WikitabSearchTopTitle }
 
@@ -23,11 +23,14 @@ export interface WikitabSearchActivityItem {
   title: string
   editSummary: string
   thumbnailUrl?: string
+  articleHref: string
   diffUrl: string
   revid: number
   reverted: boolean
   isLatest: boolean
-  editedLabel: string
+  editorName: string
+  editorHref: string
+  editedRelative: string
   editedTimestamp: string
   editorKind: EditorKind
 }
@@ -165,17 +168,102 @@ function formatRelativeTime(isoTimestamp: string): string {
   return `${months} months ago`
 }
 
-function formatEditMetaLabel(timestamp: string, user: string): string {
-  const relative = formatRelativeTime(timestamp)
-  const editor = user.trim() || 'Anonymous'
-  return `${editor}, ${relative}`
+function editorDisplayName(user: string): string {
+  return user.trim() || 'Anonymous'
 }
 
+function editorUrl(user: string, userid: number): string {
+  const name = user.trim()
+  if (!name) {
+    return `https://${EN_WIKI_HOST}/wiki/Special:Contributions`
+  }
+
+  const encoded = encodeURIComponent(name.replace(/ /g, '_'))
+  if (userid === 0) {
+    return `https://${EN_WIKI_HOST}/wiki/Special:Contributions/${encoded}`
+  }
+
+  return `https://${EN_WIKI_HOST}/wiki/User:${encoded}`
+}
+
+function isSystemEditSummary(doc: Document, text: string): boolean {
+  if (doc.querySelector('a[href*="Special:Contributions"]')) return true
+  if (/#IABot\b/.test(text)) return true
+  if (/^Restored revision \d+/.test(text)) return true
+  if (/^Rescuing \d+ sources/.test(text)) return true
+  return false
+}
+
+function formatRawWikitextComment(comment: string): string {
+  const trimmed = comment.trim()
+  if (!trimmed) return ''
+
+  const sectionMatch = trimmed.match(/^\/\*(.+?)\*\/\s*(.*)$/s)
+  if (sectionMatch) {
+    const section = sectionMatch[1].trim()
+    const userText = sectionMatch[2].trim()
+    const prefix = `→${section}: `
+    if (userText) return `${prefix}"${userText}"`
+    return `→${section}`
+  }
+
+  const doc = new DOMParser().parseFromString(trimmed, 'text/html')
+  if (isSystemEditSummary(doc, trimmed)) return trimmed
+
+  return `"${trimmed}"`
+}
+
+/** Autocomment prefixes stay bare; free-text portions are wrapped in quotes. */
 function formatEditSummary(parsedComment: string, comment: string): string {
   const raw = parsedComment.trim() || comment.trim()
   if (!raw) return ''
+
+  if (!parsedComment.trim()) {
+    return formatRawWikitextComment(comment)
+  }
+
   const doc = new DOMParser().parseFromString(raw, 'text/html')
-  return (doc.body.textContent ?? raw).trim()
+  const body = doc.body
+  const hasAutocomment = body.querySelector('.autocomment') !== null
+
+  if (hasAutocomment) {
+    let result = ''
+    let userBuffer = ''
+
+    const flushUser = () => {
+      const trimmed = userBuffer.trim()
+      if (trimmed) {
+        result += `"${trimmed}"`
+      }
+      userBuffer = ''
+    }
+
+    for (const node of body.childNodes) {
+      const isAutocomment =
+        node instanceof Element && node.classList.contains('autocomment')
+
+      if (isAutocomment) {
+        flushUser()
+        result += node.textContent ?? ''
+      } else {
+        userBuffer += node.textContent ?? ''
+      }
+    }
+
+    flushUser()
+    return result.trim()
+  }
+
+  const text = (body.textContent ?? raw).trim()
+  if (!text) return ''
+  if (isSystemEditSummary(doc, text)) return text
+  return `"${text}"`
+}
+
+function wrapInternetArchiveBotSummary(summary: string, user: string): string {
+  if (!summary || user.trim() !== 'InternetArchiveBot') return summary
+  if (summary.startsWith('(')) return summary
+  return `(${summary})`
 }
 
 async function fetchRevisionsForTitle(
@@ -343,16 +431,22 @@ function mapCandidate(
   return {
     pageid: candidate.pageid,
     title: candidate.title,
-    editSummary: formatEditSummary(
-      candidate.revision.parsedComment,
-      candidate.revision.comment,
+    editSummary: wrapInternetArchiveBotSummary(
+      formatEditSummary(
+        candidate.revision.parsedComment,
+        candidate.revision.comment,
+      ),
+      candidate.revision.user,
     ),
     thumbnailUrl: thumbnailByTitle.get(key),
+    articleHref: articleUrl(candidate.title),
     diffUrl: diffUrl(candidate.title, candidate.revision.revid),
     revid: candidate.revision.revid,
     reverted: candidate.revision.reverted,
     isLatest,
-    editedLabel: formatEditMetaLabel(candidate.revision.timestamp, candidate.revision.user),
+    editorName: editorDisplayName(candidate.revision.user),
+    editorHref: editorUrl(candidate.revision.user, candidate.revision.userid),
+    editedRelative: formatRelativeTime(candidate.revision.timestamp),
     editedTimestamp: candidate.revision.timestamp,
     editorKind:
       editorKindByUser.get(userKey(candidate.revision.user)) ??

@@ -166,39 +166,16 @@ const visibleSections = computed(() =>
 }
 
 /*
- * Search results layout — left-aligned column with per-region max widths:
- * wordmark + search (640px), tabs (full bleed), results (896px).
- * Matches Figma desktop node 237:17943.
+ * Search mode — keep hero top padding so the search bar stays put; only tighten
+ * spacing below the results. Layout inherits the centred 640px column.
  */
-[data-skin='desktop'] .wikitab--search {
-  align-items: stretch;
-  padding-inline: var(--spacing-400);
-}
-
 [data-skin='desktop'] .wikitab--search .wikitab__hero {
-  align-items: flex-start;
   gap: var(--spacing-150);
-  max-width: none;
-  padding-block: var(--spacing-400);
-}
-
-[data-skin='desktop'] .wikitab--search .wikitab__hero-top {
-  align-items: flex-start;
-  max-width: 640px;
-}
-
-[data-skin='desktop'] .wikitab--search .wikitab__search-page {
-  max-width: none;
+  padding-bottom: var(--spacing-400);
 }
 
 [data-skin='mobile'] .wikitab--search .wikitab__hero {
-  align-items: flex-start;
   gap: var(--spacing-100);
-  padding-block: calc(var(--spacing-200) + var(--spacing-100)) var(--spacing-100);
-}
-
-[data-skin='mobile'] .wikitab--search .wikitab__hero-top {
-  align-items: flex-start;
-  width: 100%;
+  padding-bottom: var(--spacing-100);
 }
 </style>

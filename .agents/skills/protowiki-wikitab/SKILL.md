@@ -279,8 +279,9 @@ REST:
 ## Search results (`?search=`)
 
 When `?search=` is present, the daily feed is hidden and
-`WikitabSearchPage.vue` renders below the hero (tighter desktop padding than the
-home feed). The feed orchestrator is skipped while search mode is active.
+`WikitabSearchPage.vue` renders below the hero in the same centred 640px column
+as the home feed (hero top padding unchanged so the search bar does not jump).
+The feed orchestrator is skipped while search mode is active.
 
 **Tabs** — quiet `CdxTabs` with four labels: Articles, Images, Activity,
 Contribute. **Articles** and **Activity** have content. **Images** and
