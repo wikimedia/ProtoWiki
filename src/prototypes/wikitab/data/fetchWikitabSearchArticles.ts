@@ -81,7 +81,6 @@ async function fetchActionApiPages(
     prop: 'pageimages|description|extracts',
     exintro: '1',
     explaintext: '1',
-    exchars: '400',
     piprop: 'thumbnail',
     pithumbsize: String(THUMBNAIL_SIZE),
     ...params,

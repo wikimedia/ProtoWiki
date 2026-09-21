@@ -285,7 +285,8 @@ Activity, where edits stream in one at a time.
    `cdxIconLink` + `Related to {seedTitle}`. Seed pageid is deduped from
    related batches.
 
-Cards link whole-row to English Wikipedia (`articleUrl`). Infinite scroll uses
+Only the **h3 title link** navigates to the English Wikipedia article page
+(`articleUrl`); the card itself is not tappable. Infinite scroll uses
 `useInfiniteScroll.ts` (viewport sentinel) + `useWikitabSearchResults.ts`
 (`loadMore` guarded while a batch is in flight). Initial load shows
 `WikitabSearchLoadingCard variant="article"` placeholders; no error/empty

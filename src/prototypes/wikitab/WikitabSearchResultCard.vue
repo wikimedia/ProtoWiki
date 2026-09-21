@@ -27,19 +27,18 @@ const thumbnail = computed(() =>
 </script>
 
 <template>
-  <a
-    class="wikitab-search-result-card"
-    :href="article.href"
-    target="_blank"
-    rel="noreferrer"
-  >
+  <div class="wikitab-search-result-card">
     <CdxThumbnail
       class="wikitab-search-result-card__thumbnail"
       :thumbnail="thumbnail"
     />
 
     <div class="wikitab-search-result-card__content">
-      <p class="wikitab-search-result-card__title">{{ article.title }}</p>
+      <h3 class="wikitab-search-result-card__title">
+        <a :href="article.href" target="_blank" rel="noreferrer">
+          {{ article.title }}
+        </a>
+      </h3>
       <p v-if="article.description" class="wikitab-search-result-card__description">
         {{ article.description }}
       </p>
@@ -51,7 +50,7 @@ const thumbnail = computed(() =>
         {{ supportingText }}
       </p>
     </div>
-  </a>
+  </div>
 </template>
 
 <style scoped>
@@ -61,8 +60,6 @@ const thumbnail = computed(() =>
   padding-block: var(--spacing-75);
   border-radius: var(--border-radius-base);
   background-color: var(--background-color-base);
-  color: inherit;
-  text-decoration: none;
 }
 
 .wikitab-search-result-card__thumbnail {
@@ -87,10 +84,16 @@ const thumbnail = computed(() =>
 
 .wikitab-search-result-card__title {
   margin: 0;
-  font-size: var(--font-size-medium);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-small);
-  color: var(--color-base);
+}
+
+.wikitab-search-result-card__title a {
+  color: var(--color-link);
+  text-decoration: none;
+}
+
+.wikitab-search-result-card__title a:hover,
+.wikitab-search-result-card__title a:focus-visible {
+  text-decoration: underline;
 }
 
 .wikitab-search-result-card__description,
@@ -100,6 +103,14 @@ const thumbnail = computed(() =>
   font-weight: var(--font-weight-normal);
   line-height: var(--line-height-small);
   color: var(--color-subtle);
+}
+
+.wikitab-search-result-card__extract {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
 }
 
 .wikitab-search-result-card__supporting {
