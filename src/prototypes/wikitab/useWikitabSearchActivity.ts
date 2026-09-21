@@ -32,6 +32,7 @@ export function useWikitabSearchActivity(
 
   let feed: WikitabSearchActivityFeed | null = null
   let abortController: AbortController | null = null
+  let loadedForQuery = ''
 
   function reset(): void {
     slots.value = []
@@ -135,9 +136,11 @@ export function useWikitabSearchActivity(
       loading.value = false
 
       await fillInitialSlots()
+      loadedForQuery = query
     } catch (err) {
       if (signal.aborted || (err as Error)?.name === 'AbortError') return
       reset()
+      loadedForQuery = ''
     } finally {
       if (!signal.aborted) loading.value = false
       syncHasMore()
@@ -156,21 +159,23 @@ export function useWikitabSearchActivity(
     slots.value.filter((slot) => slot.kind === 'resolved').length,
   )
 
+  watch(searchQuery, () => {
+    abortController?.abort()
+    reset()
+    loadedForQuery = ''
+  })
+
   watch(
-    [searchQuery, enabled],
-    ([query, isEnabled]) => {
+    [enabled, searchQuery],
+    ([isEnabled, query]) => {
       if (!isEnabled) {
         abortController?.abort()
-        reset()
         return
       }
 
       const trimmed = query.trim()
-      if (!trimmed.length) {
-        abortController?.abort()
-        reset()
-        return
-      }
+      if (!trimmed.length) return
+      if (loadedForQuery === trimmed && feed) return
       void loadInitial(trimmed)
     },
     { immediate: true },

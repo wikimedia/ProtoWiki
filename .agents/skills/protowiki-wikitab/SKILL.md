@@ -266,7 +266,16 @@ home feed). The feed orchestrator is skipped while search mode is active.
 
 **Tabs** — quiet `CdxTabs` with four labels: Articles, Images, Activity,
 Contribute. **Articles** and **Activity** have content. **Images** and
-**Contribute** are empty (no placeholder copy).
+**Contribute** are empty (no placeholder copy). Active tab syncs to
+`?tab=` (`articles` | `images` | `activity` | `contribute`); omitted means
+Articles. Tab clicks **push** browser history so Back/Forward walks tab
+selections. Submitting a new search clears `tab` (lands on Articles).
+`useWikitabSearchTab.ts` owns URL ↔ state sync.
+
+**Tab cache** — Articles and Activity results stay in composable memory for
+the search session. Switching tabs does not refetch or show skeletons again;
+Activity aborts in-flight requests when hidden but keeps resolved slots and
+feed state. Query change resets both tabs.
 
 **Loading cards** — `WikitabSearchLoadingCard.vue` is the shared search-result
 placeholder. Variants: `article` (96px thumbnail stub) and `activity` (no
@@ -310,8 +319,9 @@ Rate-limit contract (mandatory):
 - Queue refill uses `mapWithConcurrency(…, 2)` per-title revision fetches,
   `rvlimit=5`, only when the internal merge queue is empty.
 - One batch call for latest revid per title (Latest chip).
-- Tab fetch starts only when Activity is selected (`enabled` ref); abort on
-  query change.
+- Tab fetch starts only when Activity is selected (`enabled` ref); abort
+  in-flight work when hidden or on query change, but keep resolved results in
+  memory when switching tabs.
 
 UI: slot list mixing `WikitabSearchLoadingCard variant="activity"` and
 `WikitabSearchActivityCard`. Cards are borderless like Articles but **no

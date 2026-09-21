@@ -8,13 +8,14 @@ import WikitabSearchResultCard from './WikitabSearchResultCard.vue'
 import { useInfiniteScroll } from './useInfiniteScroll'
 import { useWikitabSearchActivity } from './useWikitabSearchActivity'
 import { useWikitabSearchResults } from './useWikitabSearchResults'
+import { useWikitabSearchTab } from './useWikitabSearchTab'
 
 const props = defineProps<{
   searchQuery: string
 }>()
 
 const searchQueryRef = toRef(props, 'searchQuery')
-const activeTab = ref('articles')
+const { activeTab } = useWikitabSearchTab()
 const articlesSentinel = ref<HTMLElement | null>(null)
 const activitySentinel = ref<HTMLElement | null>(null)
 
