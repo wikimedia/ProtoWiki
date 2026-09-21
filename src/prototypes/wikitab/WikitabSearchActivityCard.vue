@@ -260,4 +260,13 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
 .wikitab-search-activity-card__edited-meta {
   color: var(--color-subtle);
 }
+
+[data-skin='mobile'] .wikitab-search-activity-card {
+  padding-inline: 0;
+  border: 0;
+}
+
+[data-skin='mobile'] .wikitab-search-activity-card:hover {
+  border-color: transparent;
+}
 </style>
