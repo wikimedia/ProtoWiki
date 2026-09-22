@@ -2,12 +2,17 @@ import { computed, nextTick, ref, watch, type Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { MenuItemData } from '@wikimedia/codex'
 
-import { fetchWikitabSearch, type WikitabSearchResult } from './data/fetchWikitabSearch'
+import {
+  fetchWikitabSearchRaw,
+  filterDisambiguationResults,
+  WIKITAB_SEARCH_LIMIT,
+  type WikitabSearchResult,
+} from './data/fetchWikitabSearch'
 import { bumpWikitabSearchMountKey } from './useWikitabSearchMount'
 
 const DEBOUNCE_MS = 200
 
-/** Reserved menu item value for the “Search for …” row. */
+/** Reserved menu item value for the “Explore for …” row. */
 export const WIKITAB_SEARCH_FOR_VALUE = 'wikitab-search-for'
 
 export function useWikitabSearch(options: { initialQuery?: Ref<string> } = {}) {
@@ -29,7 +34,7 @@ export function useWikitabSearch(options: { initialQuery?: Ref<string> } = {}) {
 
     const searchForRow: MenuItemData = {
       value: WIKITAB_SEARCH_FOR_VALUE,
-      label: `Search for "${query.value}"`,
+      label: `Explore for "${query.value}"`,
     }
 
     const resultRows = results.value.map((result) => ({
@@ -85,14 +90,25 @@ export function useWikitabSearch(options: { initialQuery?: Ref<string> } = {}) {
     abortController = new AbortController()
     const { signal } = abortController
 
-    loading.value = true
+    loading.value = results.value.length === 0
     syncMenuExpanded()
     lastFetchedQuery = trimmed
 
     try {
-      const found = await fetchWikitabSearch(trimmed, { signal })
+      const raw = await fetchWikitabSearchRaw(trimmed, { signal })
       if (signal.aborted || lastFetchedQuery !== trimmed) return
-      results.value = found
+
+      results.value = raw.slice(0, WIKITAB_SEARCH_LIMIT)
+      loading.value = false
+      syncMenuExpanded()
+
+      const filtered = await filterDisambiguationResults(raw, {
+        signal,
+        limit: WIKITAB_SEARCH_LIMIT,
+      })
+      if (signal.aborted || lastFetchedQuery !== trimmed) return
+
+      results.value = filtered
     } catch (err) {
       if (signal.aborted) return
       results.value = []
@@ -121,7 +137,9 @@ export function useWikitabSearch(options: { initialQuery?: Ref<string> } = {}) {
       syncMenuExpanded()
       return
     }
-    loading.value = true
+    if (results.value.length === 0) {
+      loading.value = true
+    }
     syncMenuExpanded()
     scheduleSearch(value)
   }

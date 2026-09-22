@@ -1,89 +1,156 @@
 import { computed, ref, shallowRef, watch, type Ref } from 'vue'
 
 import {
-  fetchWikitabSearchArticlesInitial,
+  drainMorelikeRoundRobin,
+  enrichTitleHits,
   fetchWikitabSearchArticlesMore,
+  fetchWikitabSearchArticlesRelated,
+  fetchWikitabSearchTextMatch,
+  resolveWikitabSearchTitleHits,
+  type MorelikeSeedState,
   type WikitabSearchArticle,
 } from './data/fetchWikitabSearchArticles'
 
 export function useWikitabSearchResults(searchQuery: Ref<string>) {
-  const exact = shallowRef<WikitabSearchArticle | null>(null)
+  const curated = shallowRef<WikitabSearchArticle[]>([])
   const related = shallowRef<WikitabSearchArticle[]>([])
+  const morelikeState = shallowRef<MorelikeSeedState[]>([])
   const loading = ref(false)
+  const loadingRelated = ref(false)
   const loadingMore = ref(false)
-  const nextOffset = ref<number | null>(null)
-  const seedTitle = ref<string | null>(null)
-  const seedPageid = ref<number | null>(null)
-
   let abortController: AbortController | null = null
 
-  const hasMore = computed(() => nextOffset.value !== null)
+  const hasMore = computed(() =>
+    morelikeState.value.some(
+      (seed) => seed.nextOffset !== null || seed.pending.length > 0,
+    ),
+  )
 
-  const articles = computed(() => {
-    const list: WikitabSearchArticle[] = []
-    if (exact.value) list.push(exact.value)
-    list.push(...related.value)
-    return list
-  })
+  const articles = computed(() => [...curated.value, ...related.value])
+
+  function allSeenPageids(): Set<number> {
+    return new Set(articles.value.map((item) => item.pageid))
+  }
 
   function reset(): void {
-    exact.value = null
+    curated.value = []
     related.value = []
-    nextOffset.value = null
-    seedTitle.value = null
-    seedPageid.value = null
+    morelikeState.value = []
+  }
+
+  function appendCurated(article: WikitabSearchArticle): void {
+    curated.value = [...curated.value, article]
   }
 
   async function loadInitial(query: string): Promise<void> {
     abortController?.abort()
     abortController = new AbortController()
     const { signal } = abortController
+    const fetchQuery = query
 
     loading.value = true
+    loadingRelated.value = false
     reset()
 
     try {
-      const result = await fetchWikitabSearchArticlesInitial(query, { signal })
-      if (signal.aborted) return
+      const seen = new Set<number>()
 
-      exact.value = result.exact
-      related.value = result.related
-      nextOffset.value = result.nextOffset
-      seedTitle.value = result.seedTitle
-      seedPageid.value = result.exact?.pageid ?? null
+      const { trimmed, exactHit, nearHits } = await resolveWikitabSearchTitleHits(query, {
+        signal,
+      })
+      if (signal.aborted || searchQuery.value.trim() !== fetchQuery) return
+
+      const titleHitsToEnrich = [
+        ...(exactHit ? [exactHit] : []),
+        ...nearHits,
+      ]
+
+      if (titleHitsToEnrich.length) {
+        const relationByPageid = new Map<number, 'exact' | 'near'>()
+        if (exactHit) relationByPageid.set(exactHit.id, 'exact')
+        for (const hit of nearHits) relationByPageid.set(hit.id, 'near')
+
+        const titleArticles = await enrichTitleHits(titleHitsToEnrich, relationByPageid, signal)
+        if (signal.aborted || searchQuery.value.trim() !== fetchQuery) return
+
+        const exactArticles = titleArticles.filter((article) => article.relation === 'exact')
+        const nearArticles = titleArticles.filter((article) => article.relation === 'near')
+
+        for (const article of exactArticles) {
+          if (seen.has(article.pageid)) continue
+          seen.add(article.pageid)
+          appendCurated(article)
+        }
+
+        for (const article of nearArticles) {
+          if (seen.has(article.pageid)) continue
+          seen.add(article.pageid)
+          appendCurated(article)
+        }
+      }
+
+      const match = await fetchWikitabSearchTextMatch(trimmed, seen, signal)
+      if (signal.aborted || searchQuery.value.trim() !== fetchQuery) return
+
+      if (match) {
+        seen.add(match.pageid)
+        appendCurated(match)
+      }
+
+      loading.value = false
+
+      loadingRelated.value = true
+      const relatedResult = await fetchWikitabSearchArticlesRelated(curated.value, { signal })
+      if (signal.aborted || searchQuery.value.trim() !== fetchQuery) return
+
+      related.value = relatedResult.related
+      morelikeState.value = relatedResult.morelikeState
     } catch (err) {
       if (signal.aborted || (err as Error)?.name === 'AbortError') return
       reset()
     } finally {
-      if (!signal.aborted) loading.value = false
+      if (!signal.aborted && searchQuery.value.trim() === fetchQuery) {
+        loading.value = false
+        loadingRelated.value = false
+      }
     }
   }
 
   async function loadMore(): Promise<void> {
     if (loadingMore.value || loading.value || !hasMore.value) return
-    if (seedTitle.value === null || nextOffset.value === null) return
 
-    const offset = nextOffset.value
+    const seeds = morelikeState.value
+    const seed = seeds[0]
+
+    if (!seed) return
+    if (seed.nextOffset === null && !seed.pending.length) return
+
     loadingMore.value = true
 
     try {
-      const batch = await fetchWikitabSearchArticlesMore(
-        seedTitle.value,
-        seedPageid.value,
-        offset,
-        { signal: abortController?.signal },
-      )
+      if (seed.nextOffset !== null) {
+        const batch = await fetchWikitabSearchArticlesMore(
+          seed.seedTitle,
+          seed.nextOffset,
+          allSeenPageids(),
+          { signal: abortController?.signal },
+        )
+
+        if (abortController?.signal.aborted) return
+
+        const seen = allSeenPageids()
+        seed.pending.push(...batch.articles.filter((item) => !seen.has(item.pageid)))
+        seed.nextOffset = batch.nextOffset
+      }
 
       if (abortController?.signal.aborted) return
 
-      const seen = new Set([
-        ...(exact.value ? [exact.value.pageid] : []),
-        ...related.value.map((item) => item.pageid),
-      ])
-
-      const fresh = batch.articles.filter((item) => !seen.has(item.pageid))
-      related.value = [...related.value, ...fresh]
-      nextOffset.value = batch.nextOffset
+      const seen = allSeenPageids()
+      const fresh = drainMorelikeRoundRobin(seeds, seen)
+      if (fresh.length) {
+        related.value = [...related.value, ...fresh]
+      }
+      morelikeState.value = [...seeds]
     } catch (err) {
       if ((err as Error)?.name === 'AbortError') return
     } finally {
@@ -99,6 +166,7 @@ export function useWikitabSearchResults(searchQuery: Ref<string>) {
         abortController?.abort()
         reset()
         loading.value = false
+        loadingRelated.value = false
         loadingMore.value = false
         return
       }
@@ -108,10 +176,11 @@ export function useWikitabSearchResults(searchQuery: Ref<string>) {
   )
 
   return {
-    exact,
+    curated,
     related,
     articles,
     loading,
+    loadingRelated,
     loadingMore,
     hasMore,
     loadMore,

@@ -214,7 +214,7 @@ watch(selection, (value) => {
 
 .wikitab-section__more {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   /* Reserved even when empty, so revealing or exhausting a section shifts nothing. */
   min-height: var(--line-height-small);
   margin-top: var(--spacing-50);

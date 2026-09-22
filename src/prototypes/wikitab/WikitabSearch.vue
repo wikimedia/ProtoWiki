@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useId, ref, toRef } from 'vue'
+import { computed, useId, ref, toRef } from 'vue'
 import { CdxMenu, CdxSearchInput } from '@wikimedia/codex'
 
 import { useWikitabSearch, WIKITAB_SEARCH_FOR_VALUE } from './useWikitabSearch'
@@ -12,6 +12,7 @@ const initialQueryRef = toRef(() => props.initialQuery ?? '')
 
 const {
   query,
+  results,
   loading,
   selected,
   menuExpanded,
@@ -23,6 +24,8 @@ const {
   onMenuItemClick,
   onEnterWithMenu,
 } = useWikitabSearch({ initialQuery: initialQueryRef })
+
+const showMenuPending = computed(() => loading.value && results.value.length === 0)
 
 const menuId = useId()
 const menuRef = ref<InstanceType<typeof CdxMenu> | null>(null)
@@ -56,8 +59,8 @@ function onKeydown(event: KeyboardEvent): void {
       :model-value="query"
       class="wikitab-search__input"
       :use-button="true"
-      button-label="Search"
-      placeholder="Search"
+      button-label="Explore"
+      placeholder="Explore"
       role="combobox"
       autocomplete="off"
       aria-autocomplete="list"
@@ -78,7 +81,7 @@ function onKeydown(event: KeyboardEvent): void {
           class="wikitab-search__menu"
           :menu-items="menuItems"
           :show-thumbnail="true"
-          :show-pending="loading"
+          :show-pending="showMenuPending"
           :bold-label="true"
           render-in-place
           @menu-item-click="onMenuItemClick"
@@ -88,7 +91,7 @@ function onKeydown(event: KeyboardEvent): void {
               v-if="menuItem.value === WIKITAB_SEARCH_FOR_VALUE"
               class="cdx-menu-item__content wikitab-search__search-for"
             >
-              Search for<strong>&nbsp;"{{ query }}"</strong>
+              Explore for<strong>&nbsp;"{{ query }}"</strong>
             </span>
           </template>
         </CdxMenu>

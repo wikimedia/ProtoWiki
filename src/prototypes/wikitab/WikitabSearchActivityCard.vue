@@ -138,14 +138,15 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
   min-width: 0;
   padding-block: var(--spacing-75);
   padding-inline: var(--spacing-75);
-  border: var(--border-width-base) solid transparent;
+  border-radius: var(--border-radius-base);
   background-color: var(--background-color-base);
-  transition-property: background-color, color, border-color, box-shadow;
+  transition-property: background-color, color, box-shadow;
   transition-duration: 0.1s;
 }
 
 .wikitab-search-activity-card:hover {
-  border-color: var(--border-color-interactive--hover, #27292d);
+  background-color: var(--background-color-interactive-subtle--hover);
+  mix-blend-mode: var(--mix-blend-mode-blend, multiply);
 }
 
 .wikitab-search-activity-card__link {
@@ -290,10 +291,5 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
 
 [data-skin='mobile'] .wikitab-search-activity-card {
   padding-inline: 0;
-  border: 0;
-}
-
-[data-skin='mobile'] .wikitab-search-activity-card:hover {
-  border-color: transparent;
 }
 </style>

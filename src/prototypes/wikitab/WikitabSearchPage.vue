@@ -19,7 +19,7 @@ const { activeTab } = useWikitabSearchTab()
 const articlesSentinel = ref<HTMLElement | null>(null)
 const activitySentinel = ref<HTMLElement | null>(null)
 
-const { articles, loading, loadingMore, hasMore, loadMore } =
+const { articles, loading, loadingRelated, loadingMore, hasMore, loadMore } =
   useWikitabSearchResults(searchQueryRef)
 
 const knownTitles = computed(() =>
@@ -68,7 +68,9 @@ useInfiniteScroll({
   },
 })
 
-const SKELETON_COUNT = 3
+const INITIAL_SKELETON_COUNT = 3
+const TAIL_SKELETON_COUNT = 2
+const LOAD_MORE_SKELETON_COUNT = 3
 </script>
 
 <template>
@@ -76,28 +78,34 @@ const SKELETON_COUNT = 3
     <CdxTabs v-model:active="activeTab" class="wikitab-search-page__tabs">
       <CdxTab name="articles" label="Articles">
         <div v-if="activeTab === 'articles'" class="wikitab-search-page__list">
-          <template v-if="loading">
+          <template v-if="loading && articles.length === 0">
             <WikitabSearchLoadingCard
-              v-for="index in SKELETON_COUNT"
+              v-for="index in INITIAL_SKELETON_COUNT"
               :key="index"
               variant="article"
             />
           </template>
 
-          <template v-else>
-            <WikitabSearchResultCard
-              v-for="article in articles"
-              :key="article.pageid"
-              :article="article"
+          <WikitabSearchResultCard
+            v-for="article in articles"
+            :key="article.pageid"
+            :article="article"
+            :search-query="searchQuery"
+          />
+
+          <template v-if="(loading || loadingRelated) && articles.length > 0">
+            <WikitabSearchLoadingCard
+              v-for="index in TAIL_SKELETON_COUNT"
+              :key="`tail-${index}`"
+              variant="article"
             />
           </template>
 
           <template v-if="loadingMore">
             <WikitabSearchLoadingCard
-              v-for="index in SKELETON_COUNT"
+              v-for="index in LOAD_MORE_SKELETON_COUNT"
               :key="`more-${index}`"
               variant="article"
-              compact
             />
           </template>
 
@@ -120,7 +128,10 @@ const SKELETON_COUNT = 3
           class="wikitab-search-page__list wikitab-search-page__list--activity"
         >
           <template v-if="activityLoading">
-            <WikitabSearchLoadingCard v-for="index in SKELETON_COUNT" :key="index" />
+            <WikitabSearchLoadingCard
+              v-for="index in LOAD_MORE_SKELETON_COUNT"
+              :key="index"
+            />
           </template>
 
           <template v-else>

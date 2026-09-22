@@ -287,23 +287,28 @@ REST:
 
 `GET https://en.wikipedia.org/w/rest.php/v1/search/title?q=…&limit=6`
 
-- **`data/fetchWikitabSearch.ts`** — fetch + map to `{ id, title, description,
-  thumbnailUrl }`. Thumbnail URLs are normalised to `https:`. No `url` on menu
-  items. Over-fetches from REST, then drops disambiguation pages via Action API
-  `pageprops` (`data/filterDisambiguationPages.ts`) so the next ranked title
-  is promoted (e.g. **Squash (sport)** instead of **Squash** dab page).
+- **`data/fetchWikitabSearch.ts`** — two-step fetch for speed:
+  `fetchWikitabSearchRaw` (REST only) paints menu rows immediately;
+  `filterDisambiguationResults` runs in the background via Action API
+  `pageprops` (`data/filterDisambiguationPages.ts`) and patches the list when
+  done (e.g. **Squash (sport)** replaces **Squash** dab page). Thumbnail URLs
+  are normalised to `https:`. No `url` on menu items. Thumbnails decode
+  in-place — **no preload gate** (contrast feed cards). Rows without a
+  thumbnail URL use the default Codex placeholder icon.
 - **`useWikitabSearch.ts`** — debounced input (200ms), `AbortController`
-  cancellation, maps results to `MenuItemData` for `CdxMenu`.
-- **Panel** — first menu row is the `Search for "…"` item (custom menu slot,
+  cancellation, maps results to `MenuItemData` for `CdxMenu`. Stale rows stay
+  visible while debouncing; `show-pending` only when the first fetch has zero
+  result rows.
+- **Panel** — first menu row is the `Explore for "…"` item (custom menu slot,
   text only, no thumbnail; shows the raw input inside the quotes including
   whitespace; `&nbsp;` before the opening quote so that space cannot collapse);
   then thumbnail + title + description rows. Dropdown width matches the input
-  wrapper only (not the Search button). When open,
+  wrapper only (not the Explore button). When open,
   `.wikitab__hero:has(.wikitab-search--expanded)` gets `z-index: 10` so the
   menu covers feed card link overlays (`z-index: 2`). Keyboard handling matches
   `CdxTypeaheadSearch`: arrow keys navigate the menu, but **Space** is left to
   the input (never delegated to `CdxMenu`).
-- **Navigation** — submit, the `Search for "…"` row, or a lookahead result
+- **Navigation** — submit, the `Explore for "…"` row, or a lookahead result
   pushes `?search=…` on the same `/wikitab` route (result rows use the matched
   title). Clearing the input and submitting removes `search` from the query.
 
@@ -333,30 +338,54 @@ placeholder. Variants: `article` (96px thumbnail stub) and `activity` (no
 thumbnail column). Use these heavily while API work resolves — especially on
 Activity, where edits stream in one at a time.
 
-**Articles tab** — `WikitabSearchResultCard.vue` per hit:
+**Articles tab** — `WikitabSearchResultCard.vue` per hit. One flat list built in
+priority order from four sources (global `pageid` dedupe — earlier slots win):
 
-1. Resolve the query to a seed title via REST title search (`limit: 1`), with
-   disambiguation pages filtered out (same `filterDisambiguationPages` helper).
-2. **Top hit** — Action API page props for the resolved title (description, lead
-   extract, thumbnail). Supporting row: `cdxIconSuccess` + "Exact match" when
-   the query matches the title (case-insensitive), otherwise "Nearest match"
-   (`cdxIconSearch`).
-3. **Related** — Action API `generator=search` with
-   `gsrsearch=morelike:{seedTitle}`, paginated via `gsroffset`. Disambiguation
-   pages are filtered from each batch. Supporting row:
-   `cdxIconLink` + `Related to {seedTitle}`. Seed pageid is deduped from
-   related batches.
+| Cap | Source | Relation |
+| --- | ------ | -------- |
+| 1 | REST `search/title` | `exact` |
+| 1 | REST `search/title` | `near` — **only when there is no exact match** |
+| 1 | Action `generator=search` `gsrsearch="{query}"` (quoted phrase) + `gsrprop=snippet` | `match` — CirrusSearch snippet (~200–300 chars, not configurable) with hits in **bold**; `…` prepended/appended when the fragment starts mid-article or ends mid-sentence |
+| remainder | Action `morelike:{seed}` (top curated hit only) | `related` |
+
+**Supporting row** (all cards) — split row from the [Attribution API](https://www.mediawiki.org/wiki/Attribution_API) via `useWikitabSearchArticleAttribution.ts` (module cache keyed by title; fetches through `fetchWikimedia`):
+
+- **Start:** `cdxIconChartLine` + compact page-view count (`trust_and_relevance.page_views`, last 30 days) and `cdxIconReference` + reference count (`trust_and_relevance.reference_count`), 16px apart.
+- **End:** relative last update (`formatRelativeUpdate` on `trust_and_relevance.last_updated`).
+- Row hidden while loading and when all three signals are null/missing. Partial rows show only available signals.
+
+**Card menu** — each resolved card has a top-right `CdxMenuButton` (`cdxIconEllipsis`, quiet weight, subtle icon — same pattern as section headings on the home feed). One row: **Why am I seeing this?** (`cdxIconHelpNotice`). Opens a dismissable `CdxDialog` whose body explains the hit from `article.relation` via `formatSearchArticleRelationExplanation()` in `data/formatSearchArticleRelation.ts` — **exact** / **related** use `{title} …`; **near** uses `{title} is the nearest match to your query "{query}".`; **match** uses `"{query}" was found within the {title} article.`
+
+Title search runs first; full-text search always uses a quoted phrase. Title enrichment and full-text then run **in parallel**. Morelike is seeded from
+the **top curated result** only (exact, else near, else text match). Disambiguation pages
+filtered from every batch via `filterDisambiguationPages`.
+
+**Progressive load** — `useWikitabSearchResults` streams cards in priority order:
+exact title → near title (when no exact) → text match → related. Each slot
+paints as soon as its fetch resolves; initial skeletons hide once the first card
+lands. Initial morelike uses `INITIAL_MORELIKE_BATCH_SIZE` (5), not the 20-item
+pagination batch. `loadingRelated` covers the morelike tail;
+tail skeletons while related resolves.
+
+**Thumbnail-slot loading** — `WikitabSearchResultCard` always reserves the 96px
+thumbnail column. Title, description, and extract paint as soon as API data
+lands; when a `thumbnailUrl` exists, only the image area stays a flat
+borderless `background-color-neutral-subtle` block (no Codex image icon) until
+decode finishes (`useThumbnailSlotReady.ts`, 1.5s cap). When no thumbnail URL
+resolves, fall back to the default Codex placeholder icon — never keep the
+loading block. **Do not** call `preloadImages` before rendering search cards —
+unlike feed cards, which intentionally gate reveal on decode.
 
 Only the **h3 title link** navigates to the English Wikipedia article page
 (`articleUrl`); the card itself is not tappable. Infinite scroll uses
 `useInfiniteScroll.ts` (viewport sentinel) + `useWikitabSearchResults.ts`
-(`loadMore` guarded while a batch is in flight). Initial load shows
-`WikitabSearchLoadingCard variant="article"` placeholders; no error/empty
-placeholder text when the query resolves to nothing.
+(`loadMore` guarded while a batch is in flight). No error/empty placeholder
+text when the query resolves to nothing.
 
 Implementation: `data/fetchWikitabSearchArticles.ts`,
-`useWikitabSearchResults.ts`, `WikitabSearchPage.vue`,
-`WikitabSearchResultCard.vue`.
+`data/formatSearchArticleRelation.ts`, `useWikitabSearchResults.ts`,
+`WikitabSearchPage.vue`, `WikitabSearchResultCard.vue`,
+`useThumbnailSlotReady.ts`, `useWikitabSearchArticleAttribution.ts`.
 
 **Activity tab** — merged edit feed scoped to the search query's **top 6
 articles** (seed + related via `fetchWikitabSearchTopTitles`). Reuses those
