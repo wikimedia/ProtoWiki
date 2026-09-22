@@ -95,7 +95,7 @@ watch(selection, (value) => {
     >
       <p class="wikitab-search-result-card__why">
         <template v-if="relationExplanation.kind === 'textMatch'">
-          "{{ relationExplanation.quotedQuery }}" was found within the
+          Your query was found within the
           <strong>{{ article.title }}</strong> article.
         </template>
         <template v-else-if="relationExplanation.kind === 'nearMatch'">

@@ -133,11 +133,11 @@ const orderedSections = computed(() => orderSections(sections.value))
 }
 
 [data-skin='desktop'] .wikitab__hero {
-  padding-block: 128px;
+  padding-block: var(--spacing-400);
 }
 
 [data-skin='desktop'] .wikitab__sections {
-  gap: var(--spacing-400);
+  gap: var(--spacing-300);
 }
 
 @media (min-width: 768px) {
@@ -152,7 +152,7 @@ const orderedSections = computed(() => orderSections(sections.value))
 }
 
 [data-skin='mobile'] .wikitab__hero {
-  padding-block: calc(var(--spacing-200) + var(--spacing-100)) var(--spacing-400);
+  padding-block: var(--spacing-400);
 }
 
 [data-skin='mobile'] .wikitab__sections {

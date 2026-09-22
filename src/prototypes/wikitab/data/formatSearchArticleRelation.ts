@@ -10,8 +10,6 @@ export type SearchArticleRelationExplanation =
     }
   | {
       kind: 'textMatch'
-      /** Quoted search phrase shown before the article title. */
-      quotedQuery: string
     }
   | {
       kind: 'nearMatch'
@@ -29,7 +27,7 @@ export function formatSearchArticleRelationExplanation(
     case 'near':
       return { kind: 'nearMatch', quotedQuery: searchQuery.trim() }
     case 'match':
-      return { kind: 'textMatch', quotedQuery: searchQuery.trim() }
+      return { kind: 'textMatch' }
     case 'related':
       if (article.seedTitle) {
         return { kind: 'titleFirst', tail: 'is related to', seedTitle: article.seedTitle }

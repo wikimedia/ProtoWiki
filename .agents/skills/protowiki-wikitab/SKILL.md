@@ -354,7 +354,7 @@ priority order from four sources (global `pageid` dedupe — earlier slots win):
 - **End:** relative last update (`formatRelativeUpdate` on `trust_and_relevance.last_updated`).
 - Row hidden while loading and when all three signals are null/missing. Partial rows show only available signals.
 
-**Card menu** — each resolved card has a top-right `CdxMenuButton` (`cdxIconEllipsis`, quiet weight, subtle icon — same pattern as section headings on the home feed). One row: **Why am I seeing this?** (`cdxIconHelpNotice`). Opens a dismissable `CdxDialog` whose body explains the hit from `article.relation` via `formatSearchArticleRelationExplanation()` in `data/formatSearchArticleRelation.ts` — **exact** / **related** use `{title} …`; **near** uses `{title} is the nearest match to your query "{query}".`; **match** uses `"{query}" was found within the {title} article.`
+**Card menu** — each resolved card has a top-right `CdxMenuButton` (`cdxIconEllipsis`, quiet weight, subtle icon — same pattern as section headings on the home feed). One row: **Why am I seeing this?** (`cdxIconHelpNotice`). Opens a dismissable `CdxDialog` whose body explains the hit from `article.relation` via `formatSearchArticleRelationExplanation()` in `data/formatSearchArticleRelation.ts` — **exact** / **related** use `{title} …`; **near** uses `{title} is the nearest match to your query "{query}".`; **match** uses `Your query was found within the {title} article.`
 
 Title search runs first; full-text search always uses a quoted phrase. Title enrichment and full-text then run **in parallel**. Morelike is seeded from
 the **top curated result** only (exact, else near, else text match). Disambiguation pages
