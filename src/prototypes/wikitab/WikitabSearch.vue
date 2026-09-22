@@ -59,8 +59,8 @@ function onKeydown(event: KeyboardEvent): void {
       :model-value="query"
       class="wikitab-search__input"
       :use-button="true"
-      button-label="Explore"
-      placeholder="Explore"
+      button-label="Search"
+      placeholder="Search"
       role="combobox"
       autocomplete="off"
       aria-autocomplete="list"
@@ -91,7 +91,7 @@ function onKeydown(event: KeyboardEvent): void {
               v-if="menuItem.value === WIKITAB_SEARCH_FOR_VALUE"
               class="cdx-menu-item__content wikitab-search__search-for"
             >
-              Explore for<strong>&nbsp;"{{ query }}"</strong>
+              Search for<strong>&nbsp;"{{ query }}"</strong>
             </span>
           </template>
         </CdxMenu>

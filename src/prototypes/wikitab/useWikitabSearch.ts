@@ -12,7 +12,7 @@ import { bumpWikitabSearchMountKey } from './useWikitabSearchMount'
 
 const DEBOUNCE_MS = 200
 
-/** Reserved menu item value for the “Explore for …” row. */
+/** Reserved menu item value for the “Search for …” row. */
 export const WIKITAB_SEARCH_FOR_VALUE = 'wikitab-search-for'
 
 export function useWikitabSearch(options: { initialQuery?: Ref<string> } = {}) {
@@ -34,7 +34,7 @@ export function useWikitabSearch(options: { initialQuery?: Ref<string> } = {}) {
 
     const searchForRow: MenuItemData = {
       value: WIKITAB_SEARCH_FOR_VALUE,
-      label: `Explore for "${query.value}"`,
+      label: `Search for "${query.value}"`,
     }
 
     const resultRows = results.value.map((result) => ({
