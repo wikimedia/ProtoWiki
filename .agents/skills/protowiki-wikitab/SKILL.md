@@ -320,23 +320,24 @@ as the home feed (hero top padding unchanged so the search bar does not jump).
 The feed orchestrator is skipped while search mode is active.
 
 **Tabs** — quiet `CdxTabs` with four labels: Articles, Images, Activity,
-Contribute. **Articles** and **Activity** have content. **Images** and
-**Contribute** are empty (no placeholder copy). Active tab syncs to
+Contribute. **Articles**, **Images**, and **Activity** have content.
+**Contribute** is empty (no placeholder copy). Active tab syncs to
 `?tab=` (`articles` | `images` | `activity` | `contribute`); omitted means
 Articles. Tab clicks **push** browser history so Back/Forward walks tab
 selections. Submitting a new search keeps the current `tab`; clearing search
 removes `tab` from the URL.
 `useWikitabSearchTab.ts` owns URL ↔ state sync.
 
-**Tab cache** — Articles and Activity results stay in composable memory for
-the search session. Switching tabs does not refetch or show skeletons again;
-Activity aborts in-flight requests when hidden but keeps resolved slots and
-feed state. Query change resets both tabs.
+**Tab cache** — Articles, Images, and Activity results stay in composable memory
+for the search session. Switching tabs does not refetch or show skeletons again;
+Activity and Images abort in-flight requests when hidden but keep resolved
+results. Query change resets all three tabs.
 
 **Loading cards** — `WikitabSearchLoadingCard.vue` is the shared search-result
-placeholder. Variants: `article` (96px thumbnail stub) and `activity` (no
-thumbnail column). Use these heavily while API work resolves — especially on
-Activity, where edits stream in one at a time.
+placeholder. Variants: `article` (96px thumbnail stub), `activity` (no
+thumbnail column), and `image` (borderless aspect-ratio skeleton tile).
+Use these heavily while API work resolves — especially on Activity, where edits
+stream in one at a time.
 
 **Articles tab** — `WikitabSearchResultCard.vue` per hit. One flat list built in
 priority order from four sources (global `pageid` dedupe — earlier slots win):
@@ -345,7 +346,7 @@ priority order from four sources (global `pageid` dedupe — earlier slots win):
 | --- | ------ | -------- |
 | 1 | REST `search/title` | `exact` |
 | 1 | REST `search/title` | `near` — **only when there is no exact match** |
-| 1 | Action `generator=search` `gsrsearch="{query}"` (quoted phrase) + `gsrprop=snippet` | `match` — CirrusSearch snippet (~200–300 chars, not configurable) with hits in **bold**; `…` prepended/appended when the fragment starts mid-article or ends mid-sentence |
+| 1 | Action `generator=search` `gsrsearch={query}` (unquoted) + `gsrprop=snippet` | `match` — CirrusSearch snippet (~200–300 chars, not configurable) with hits in **bold**; `…` prepended/appended when the fragment starts mid-article or ends mid-sentence |
 | remainder | Action `morelike:{seed}` (top curated hit only) | `related` |
 
 **Supporting row** (all cards) — split row from the [Attribution API](https://www.mediawiki.org/wiki/Attribution_API) via `useWikitabSearchArticleAttribution.ts` (module cache keyed by title; fetches through `fetchWikimedia`):
@@ -356,7 +357,7 @@ priority order from four sources (global `pageid` dedupe — earlier slots win):
 
 **Card menu** — each resolved card has a top-right `CdxMenuButton` (`cdxIconEllipsis`, quiet weight, subtle icon — same pattern as section headings on the home feed). One row: **Why am I seeing this?** (`cdxIconHelpNotice`). Opens a dismissable `CdxDialog` whose body explains the hit from `article.relation` via `formatSearchArticleRelationExplanation()` in `data/formatSearchArticleRelation.ts` — **exact** / **related** use `{title} …`; **near** uses `{title} is the nearest match to your query "{query}".`; **match** uses `Your query was found within the {title} article.`
 
-Title search runs first; full-text search always uses a quoted phrase. Title enrichment and full-text then run **in parallel**. Morelike is seeded from
+Title search runs first; full-text search uses the query unquoted. Title enrichment and full-text then run **in parallel**. Morelike is seeded from
 the **top curated result** only (exact, else near, else text match). Disambiguation pages
 filtered from every batch via `filterDisambiguationPages`.
 
@@ -387,11 +388,84 @@ Implementation: `data/fetchWikitabSearchArticles.ts`,
 `WikitabSearchPage.vue`, `WikitabSearchResultCard.vue`,
 `useThumbnailSlotReady.ts`, `useWikitabSearchArticleAttribution.ts`.
 
+**Images tab** — Wikimedia Commons file search in a **responsive masonry grid**
+(minimum two columns on mobile — not the home-feed horizontal carousel).
+Column count grows with panel width (~320px target column width via
+`useWikitabSearchImageColumns.ts`). Each tile links to the Commons file
+description page.
+
+- **Source** — Commons Action API search with **MediaSearch image-tab defaults**:
+  `generator=search`, `gsrnamespace=6`, `gsrsearch="filetype:bitmap|drawing
+  -fileres:0 {query}"`, `gsrlimit=40`, `prop=imageinfo` (`url|size|mime`,
+  `iiurlwidth=640` — wider than MediaSearch's `iiurlheight=180` for full-bleed
+  masonry). Same engine as [Special:MediaSearch](https://commons.wikimedia.org/wiki/Special:MediaSearch),
+  not Articles-tab seeds / morelike. Client-side filter:
+  `mime.startsWith('image/')` with valid width/height. Paginate via Action API
+  `continue` params (`gsroffset`, etc.).
+- **Layout** — `WikitabSearchImageGrid.vue` splits results into N equal columns
+  with **2px gaps** (horizontal and vertical). `useWikitabSearchImageColumns.ts`
+  derives N from the image panel width (`ResizeObserver`, min 2, ~320px per
+  column). Results are sorted by the API's search `index`, then distributed
+  round-robin into columns so the top row is hits 1…N. Each card uses
+  the API's native
+  `width / height` as CSS `aspect-ratio` — images fill column width with
+  **no cropping** (`height: auto`, no `object-fit: cover`). On wide desktop
+  the image panel **breaks out** to the screen edge with **2px** inset on each
+  side; tabs and other tab panels stay in the centred column.
+- **Styling** — subtle border (`--border-color-subtle`), `--border-radius-base`.
+  Hover/active borders match feed cards (`--border-color-interactive--hover` /
+  `--border-color-interactive--active`). The card frame keeps the API
+  `width / height` as CSS `aspect-ratio` through decode so tile height stays
+  stable; the img fills at `width: 100%`, `height: auto`.
+- **Loading** — `WikitabSearchImageCard` uses thumbnail-slot loading
+  (`useThumbnailSlotReady.ts`, 1.5s cap): flat neutral block inside the
+  aspect-ratio box until decode. Initial skeletons use
+  `WikitabSearchImageSkeletonGrid` (borderless tiles, mixed aspect ratios,
+  masonry-packed). Resolved cards keep the subtle border.
+- **Fetch contract** — all requests via `fetchWikimedia`. Tab fetch starts only
+  when Images is selected (`enabled` ref); abort when hidden or on query change,
+  but keep resolved results when switching tabs. Infinite scroll: one sentinel
+  per masonry column in `WikitabSearchImageGrid.vue` (`useInfiniteScrollMany.ts`
+  — fires when any column tail nears the viewport; disabled while
+  `loadingMore`). Load-more uses **batch-sized tail slots** per column
+  (`fetchingTailSlotCountsPerColumn` in `wikitabSearchImageSkeletons.ts`):
+  conservative `4/3` placeholders while the fetch is in flight, then exact
+  API aspect-ratio skeleton UI for gated slots until they reveal.
+- **Top-down reveal** — never paint a real card below a skeleton in the same
+  column. `useWikitabSearchImageDecode.ts` tracks per-`pageid` decode;
+  `WikitabSearchImageGrid.vue` reveals slots top-to-bottom only when every
+  image above in that column has finished decoding (including the 1.5s cap).
+
+Implementation: `data/fetchWikitabSearchImages.ts`,
+`useWikitabSearchImages.ts`, `useWikitabSearchImageColumns.ts`,
+`useWikitabSearchImageDecode.ts`, `WikitabSearchImageGrid.vue`,
+`WikitabSearchImageSkeletonGrid.vue`, `WikitabSearchImageCard.vue`,
+`wikitabSearchImageSkeletons.ts`.
+
 **Activity tab** — merged edit feed scoped to the search query's **top 6
 articles** (seed + related via `fetchWikitabSearchTopTitles`). Reuses those
-titles from the Articles tab when already loaded. Edits from all six pages merge
-into one **newest-first** list; infinite scroll pages backward through revision
-history on those titles.
+titles from the Articles tab when already loaded; if Activity opens while
+Articles is still loading, **wait** for the first six article titles rather than
+duplicating the Articles fetch pipeline. Edits from all six pages merge into one
+**newest-first** list; infinite scroll pages backward through revision history on
+those titles.
+
+**Progressive load** — mirrors the Articles tab skeleton phases:
+
+1. **Initial** — `WikitabSearchLoadingCard variant="activity"` while titles /
+   the first revision batch resolve (`loading`, or `fillingInitial` before the
+   first card).
+2. **Resolved cards** — append one at a time as `takeNext()` completes.
+3. **Tail** — two activity skeletons below resolved cards while the initial
+   batch is still streaming (`loadingTail`).
+4. **Load more** — three skeletons at the bottom during infinite scroll
+   (`loadingMore`).
+
+Feed bootstrap is **non-blocking**: `createWikitabSearchActivityFeed` returns
+after titles resolve; `feed.start()` fetches the first revision batch;
+`feed.prefetchMetadata()` runs in the background for latest revids and missing
+thumbnails. Cards paint immediately with partial metadata; **Latest** chips may
+appear once latest-revid data settles.
 
 Rate-limit contract (mandatory):
 
@@ -400,22 +474,24 @@ Rate-limit contract (mandatory):
   the UI.
 - Queue refill uses `mapWithConcurrency(…, 2)` per-title revision fetches,
   `rvlimit=5`, only when the internal merge queue is empty.
-- One batch call for latest revid per title (Latest chip).
+- Latest revid per title fetched in background (`prefetchMetadata`) for the
+  **Latest** chip — not a gate before the first card paints.
+- Editor kind resolved per card in `takeNext()` via cached
+  `list=users&usprop=groups` lookup (`bot` / `temp` groups).
 - Tab fetch starts only when Activity is selected (`enabled` ref); abort
   in-flight work when hidden or on query change, but keep resolved results in
   memory when switching tabs.
 
-UI: slot list mixing `WikitabSearchLoadingCard variant="activity"` and
-`WikitabSearchActivityCard`. Cards are borderless like Articles but **no
-thumbnail**; chip row uses `CdxInfoChip` (API-derived **Latest** /
-**Reverted** only). Links go to the en.wikipedia.org diff. Chips sit above the
-entire card (above the thumbnail + content row); supporting row is editor +
-relative time, with a Codex icon for
+UI: resolved `WikitabSearchActivityCard` rows plus activity skeleton phases
+above. Cards are borderless like Articles but **no thumbnail column in
+skeletons**; resolved cards show a 96px thumbnail when one resolves. Chip row
+uses `CdxInfoChip` (API-derived **Latest** / **Reverted** only). Links go to the
+en.wikipedia.org diff. Chips sit above the entire card (above the thumbnail +
+content row); supporting row is editor + relative time, with a Codex icon for
 editor type — **Bot** (`cdxIconRobot`), **Temporary** (`cdxIconUserTemporary`),
 **User** (`cdxIconUserAvatar`). IP edits (`userid === 0`) use the same
 **Temporary** icon (`cdxIconUserTemporary`). Resolved from revision `userid`
-(anonymous when 0) plus a cached batched
-`list=users&usprop=groups` lookup during queue refill (`bot` / `temp` groups).
+(anonymous when 0) plus the per-card user-group lookup above.
 
 Implementation: `data/fetchWikitabSearchActivity.ts`,
 `useWikitabSearchActivity.ts`, `WikitabSearchActivityCard.vue`,

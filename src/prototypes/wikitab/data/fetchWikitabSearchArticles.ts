@@ -66,10 +66,9 @@ function isExactTitleMatch(query: string, title: string): boolean {
   return query.trim().toLowerCase() === title.trim().toLowerCase()
 }
 
-/** CirrusSearch phrase query — user's query wrapped in double quotes. */
+/** CirrusSearch full-text query — user's query passed unquoted. */
 function buildTextMatchGsrsearch(query: string): string {
-  const escaped = query.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
-  return `"${escaped}"`
+  return query.trim()
 }
 
 function sortPagesByGeneratorIndex(pages: RawPage[]): RawPage[] {

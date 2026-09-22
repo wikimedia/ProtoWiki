@@ -3,12 +3,16 @@ import { computed, ref, toRef } from 'vue'
 import { CdxTab, CdxTabs } from '@wikimedia/codex'
 
 import WikitabSearchActivityCard from './WikitabSearchActivityCard.vue'
+import WikitabSearchImageGrid from './WikitabSearchImageGrid.vue'
+import WikitabSearchImageSkeletonGrid from './WikitabSearchImageSkeletonGrid.vue'
 import WikitabSearchLoadingCard from './WikitabSearchLoadingCard.vue'
 import WikitabSearchResultCard from './WikitabSearchResultCard.vue'
 import { useInfiniteScroll } from './useInfiniteScroll'
 import { useWikitabSearchActivity } from './useWikitabSearchActivity'
+import { useWikitabSearchImages } from './useWikitabSearchImages'
 import { useWikitabSearchResults } from './useWikitabSearchResults'
 import { useWikitabSearchTab } from './useWikitabSearchTab'
+import { useWikitabSearchImageColumnCount } from './useWikitabSearchImageColumns'
 
 const props = defineProps<{
   searchQuery: string
@@ -17,6 +21,8 @@ const props = defineProps<{
 const searchQueryRef = toRef(props, 'searchQuery')
 const { activeTab } = useWikitabSearchTab()
 const articlesSentinel = ref<HTMLElement | null>(null)
+const imagesListRef = ref<HTMLElement | null>(null)
+const { columnCount: imageColumnCount } = useWikitabSearchImageColumnCount(imagesListRef)
 const activitySentinel = ref<HTMLElement | null>(null)
 
 const { articles, loading, loadingRelated, loadingMore, hasMore, loadMore } =
@@ -30,18 +36,38 @@ const knownTitles = computed(() =>
   })),
 )
 
+const imagesEnabled = computed(() => activeTab.value === 'images')
 const activityEnabled = computed(() => activeTab.value === 'activity')
+
+const {
+  images,
+  loading: imagesLoading,
+  loadingMore: imagesLoadingMore,
+  hasMore: imagesHasMore,
+  loadMore: loadMoreImages,
+} = useWikitabSearchImages(searchQueryRef, imagesEnabled)
 
 const {
   slots: activitySlots,
   loading: activityLoading,
+  fillingInitial: activityFillingInitial,
+  loadingTail: activityLoadingTail,
   loadingMore: activityLoadingMore,
   hasMore: activityHasMore,
+  resolvedCount: activityResolvedCount,
   loadMore: loadMoreActivity,
-} = useWikitabSearchActivity(searchQueryRef, knownTitles, activityEnabled)
+} = useWikitabSearchActivity(searchQueryRef, knownTitles, loading, activityEnabled)
 
 const articlesScrollEnabled = computed(
   () => activeTab.value === 'articles' && hasMore.value && !loading.value,
+)
+
+const imagesScrollEnabled = computed(
+  () =>
+    activeTab.value === 'images' &&
+    imagesHasMore.value &&
+    !imagesLoading.value &&
+    !imagesLoadingMore.value,
 )
 
 const activityScrollEnabled = computed(
@@ -49,6 +75,7 @@ const activityScrollEnabled = computed(
     activeTab.value === 'activity' &&
     activityHasMore.value &&
     !activityLoading.value &&
+    !activityFillingInitial.value &&
     !activityLoadingMore.value,
 )
 
@@ -71,6 +98,7 @@ useInfiniteScroll({
 const INITIAL_SKELETON_COUNT = 3
 const TAIL_SKELETON_COUNT = 2
 const LOAD_MORE_SKELETON_COUNT = 3
+const INITIAL_IMAGE_SKELETON_COUNT = 16
 </script>
 
 <template>
@@ -119,7 +147,26 @@ const LOAD_MORE_SKELETON_COUNT = 3
       </CdxTab>
 
       <CdxTab name="images" label="Images">
-        <div v-if="activeTab === 'images'" />
+        <div
+          v-if="activeTab === 'images'"
+          ref="imagesListRef"
+          class="wikitab-search-page__list wikitab-search-page__list--images"
+        >
+          <WikitabSearchImageSkeletonGrid
+            v-if="imagesLoading && images.length === 0"
+            :column-count="imageColumnCount"
+            :count="INITIAL_IMAGE_SKELETON_COUNT"
+          />
+
+          <WikitabSearchImageGrid
+            v-if="images.length > 0"
+            :images="images"
+            :column-count="imageColumnCount"
+            :loading-more="imagesLoadingMore"
+            :scroll-enabled="imagesScrollEnabled"
+            @reach="loadMoreImages"
+          />
+        </div>
       </CdxTab>
 
       <CdxTab name="activity" label="Activity">
@@ -127,25 +174,44 @@ const LOAD_MORE_SKELETON_COUNT = 3
           v-if="activeTab === 'activity'"
           class="wikitab-search-page__list wikitab-search-page__list--activity"
         >
-          <template v-if="activityLoading">
+          <template
+            v-if="
+              (activityLoading || (activityFillingInitial && activityResolvedCount === 0)) &&
+              activityResolvedCount === 0
+            "
+          >
             <WikitabSearchLoadingCard
-              v-for="index in LOAD_MORE_SKELETON_COUNT"
+              v-for="index in INITIAL_SKELETON_COUNT"
               :key="index"
+              variant="activity"
             />
           </template>
 
-          <template v-else>
-            <template
-              v-for="slot in activitySlots"
-              :key="slot.kind === 'loading' ? slot.id : slot.item.revid"
-            >
-              <WikitabSearchLoadingCard v-if="slot.kind === 'loading'" />
-              <WikitabSearchActivityCard v-else :item="slot.item" />
-            </template>
+          <template
+            v-for="slot in activitySlots"
+            :key="slot.kind === 'resolved' ? slot.item.revid : slot.kind"
+          >
+            <WikitabSearchActivityCard v-if="slot.kind === 'resolved'" :item="slot.item" />
+          </template>
+
+          <template v-if="activityLoadingTail">
+            <WikitabSearchLoadingCard
+              v-for="index in TAIL_SKELETON_COUNT"
+              :key="`activity-tail-${index}`"
+              variant="activity"
+            />
+          </template>
+
+          <template v-if="activityLoadingMore">
+            <WikitabSearchLoadingCard
+              v-for="index in LOAD_MORE_SKELETON_COUNT"
+              :key="`activity-more-${index}`"
+              variant="activity"
+            />
           </template>
 
           <div
-            v-if="!activityLoading && activityHasMore"
+            v-if="!activityLoading && !activityFillingInitial && activityHasMore"
             ref="activitySentinel"
             class="wikitab-search-page__sentinel"
             aria-hidden="true"
@@ -190,6 +256,23 @@ const LOAD_MORE_SKELETON_COUNT = 3
 .wikitab-search-page__list--activity {
   gap: var(--spacing-75);
   padding-top: var(--spacing-75);
+}
+
+.wikitab-search-page__tabs :deep(.cdx-tabs__content) {
+  overflow: visible;
+}
+
+/*
+ * Image results break out of the centred search column and page gutters to the
+ * screen edge, with 2px inset on each side. Tabs and other tab panels stay put.
+ */
+.wikitab-search-page__list--images {
+  gap: 0;
+  box-sizing: border-box;
+  width: 100vw;
+  max-width: 100vw;
+  margin-inline: calc(50% - 50vw);
+  padding-inline: 2px;
 }
 
 .wikitab-search-page__sentinel {

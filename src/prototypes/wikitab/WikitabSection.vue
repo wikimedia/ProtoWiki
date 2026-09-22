@@ -5,6 +5,7 @@ import { cdxIconEllipsis, cdxIconHelpNotice, cdxIconPushPin } from '@wikimedia/c
 import { useSkin } from '@/composables/useSkin'
 import WikitabCard from './WikitabCard.vue'
 import { useEqualRowHeights } from './useEqualRowHeights'
+import { usePreventHorizontalSwipeNavigation } from './usePreventHorizontalSwipeNavigation'
 import { useRevealOnScrollEnd } from './useRevealOnScrollEnd'
 import { useSectionReveal } from './useSectionReveal'
 import type { WikitabCardData, WikitabSectionSpec } from './sections'
@@ -35,6 +36,11 @@ useRevealOnScrollEnd({
   sentinel,
   enabled: observeScrollEnd,
   onReach: revealMore,
+})
+
+usePreventHorizontalSwipeNavigation({
+  scroller,
+  enabled: computed(() => skin.value === 'mobile'),
 })
 
 const rowColumns = computed(() => (skin.value === 'desktop' ? 2 : 1))
@@ -155,7 +161,7 @@ watch(selection, (value) => {
 
 .wikitab-section__head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--spacing-50);
   margin-bottom: var(--spacing-50);
@@ -254,6 +260,7 @@ watch(selection, (value) => {
   margin-inline: calc(var(--wikitab-page-gutter) * -1);
   padding-inline: var(--wikitab-page-gutter);
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
   /* Without this, snapping to a card's start edge scrolls straight past the
      row's start padding and the first card sits flush to the viewport edge. */

@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { CdxIcon, CdxInfoChip, CdxThumbnail } from '@wikimedia/codex'
 import {
-  cdxIconClock,
+  cdxIconArticle,
   cdxIconEditUndo,
   cdxIconRobot,
   cdxIconUserAvatar,
@@ -30,7 +30,7 @@ const chips = computed((): ActivityChip[] => {
   const list: ActivityChip[] = []
 
   if (props.item.isLatest) {
-    list.push({ label: 'Latest revision', icon: cdxIconClock, status: 'notice' })
+    list.push({ label: 'Latest revision', icon: cdxIconArticle, status: 'notice' })
   }
   if (props.item.reverted) {
     list.push({ label: 'Reverted', icon: cdxIconEditUndo, status: 'notice' })

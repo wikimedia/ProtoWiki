@@ -1,4 +1,4 @@
-import { computed, ref, shallowRef, watch, type Ref } from 'vue'
+import { computed, ref, watch, type Ref } from 'vue'
 
 import {
   createWikitabSearchActivityFeed,
@@ -13,20 +13,15 @@ export type ActivitySlot =
 
 const INITIAL_LOADING_SLOTS = 3
 
-let nextLoadingId = 0
-
-function createLoadingSlot(): ActivitySlot {
-  nextLoadingId += 1
-  return { kind: 'loading', id: `loading-${nextLoadingId}` }
-}
-
 export function useWikitabSearchActivity(
   searchQuery: Ref<string>,
   knownTitles: Ref<WikitabSearchTopTitle[]>,
+  articlesLoading: Ref<boolean>,
   enabled: Ref<boolean>,
 ) {
   const slots = ref<ActivitySlot[]>([])
   const loading = ref(false)
+  const fillingInitial = ref(false)
   const loadingMore = ref(false)
   const hasMore = ref(false)
 
@@ -37,6 +32,7 @@ export function useWikitabSearchActivity(
   function reset(): void {
     slots.value = []
     loading.value = false
+    fillingInitial.value = false
     loadingMore.value = false
     hasMore.value = false
     feed = null
@@ -46,77 +42,49 @@ export function useWikitabSearchActivity(
     hasMore.value = Boolean(feed?.hasMore)
   }
 
-  function replaceLoadingSlot(
-    target: 'oldest' | string,
-    item: WikitabSearchActivityItem,
-  ): void {
-    const index =
-      target === 'oldest'
-        ? slots.value.findIndex((slot) => slot.kind === 'loading')
-        : slots.value.findIndex((slot) => slot.kind === 'loading' && slot.id === target)
-
-    if (index >= 0) {
-      slots.value[index] = { kind: 'resolved', item }
-      return
-    }
-
-    slots.value.push({ kind: 'resolved', item })
-  }
-
-  function removeLoadingSlot(id: string): void {
-    slots.value = slots.value.filter(
-      (slot) => !(slot.kind === 'loading' && slot.id === id),
-    )
-  }
-
-  async function resolveOne(replaceTarget: 'oldest' | string): Promise<boolean> {
+  async function appendNext(): Promise<boolean> {
     if (!feed) return false
 
     try {
       const item = await feed.takeNext(abortController?.signal)
       syncHasMore()
 
-      if (!item) {
-        if (typeof replaceTarget === 'string' && replaceTarget !== 'oldest') {
-          removeLoadingSlot(replaceTarget)
-        }
-        return false
-      }
+      if (!item) return false
 
-      replaceLoadingSlot(replaceTarget, item)
+      slots.value.push({ kind: 'resolved', item })
       return true
     } catch (err) {
       if ((err as Error)?.name === 'AbortError') return false
-      if (typeof replaceTarget === 'string' && replaceTarget !== 'oldest') {
-        removeLoadingSlot(replaceTarget)
-      }
       hasMore.value = false
       return false
     }
   }
 
-  async function resolveNext(replaceTarget: 'oldest' | string): Promise<boolean> {
-    if (!feed || loadingMore.value) return false
-
-    loadingMore.value = true
+  async function fillInitialSlots(): Promise<void> {
+    fillingInitial.value = true
 
     try {
-      return await resolveOne(replaceTarget)
+      for (let index = 0; index < INITIAL_LOADING_SLOTS; index++) {
+        if (!feed?.hasMore) break
+        const added = await appendNext()
+        if (!added) break
+      }
     } finally {
-      loadingMore.value = false
+      fillingInitial.value = false
       syncHasMore()
     }
   }
 
-  async function fillInitialSlots(): Promise<void> {
-    for (let index = 0; index < INITIAL_LOADING_SLOTS; index++) {
-      if (!feed?.hasMore) break
-      const added = await resolveNext('oldest')
-      if (!added) break
-    }
+  function shouldWaitForArticlesTitles(): boolean {
+    return !knownTitles.value.length && articlesLoading.value
   }
 
   async function loadInitial(query: string): Promise<void> {
+    if (shouldWaitForArticlesTitles()) {
+      loading.value = true
+      return
+    }
+
     abortController?.abort()
     abortController = new AbortController()
     const { signal } = abortController
@@ -140,9 +108,15 @@ export function useWikitabSearchActivity(
       }
 
       syncHasMore()
-      slots.value = Array.from({ length: INITIAL_LOADING_SLOTS }, () => createLoadingSlot())
-      loading.value = false
 
+      void feed.prefetchMetadata(signal).catch((err) => {
+        if ((err as Error)?.name === 'AbortError') return
+      })
+
+      await feed.start(signal)
+      if (signal.aborted) return
+
+      loading.value = false
       await fillInitialSlots()
       loadedForQuery = query
     } catch (err) {
@@ -156,23 +130,16 @@ export function useWikitabSearchActivity(
   }
 
   async function loadMore(): Promise<void> {
-    if (!feed || loading.value || loadingMore.value || !hasMore.value) return
+    if (!feed || loading.value || fillingInitial.value || loadingMore.value || !hasMore.value) {
+      return
+    }
 
     loadingMore.value = true
 
-    const loadingSlots = Array.from({ length: INITIAL_LOADING_SLOTS }, () =>
-      createLoadingSlot(),
-    )
-    slots.value.push(...loadingSlots)
-
     try {
-      for (const slot of loadingSlots) {
-        if (!feed?.hasMore) {
-          removeLoadingSlot(slot.id)
-          break
-        }
-
-        const added = await resolveOne(slot.id)
+      for (let index = 0; index < INITIAL_LOADING_SLOTS; index++) {
+        if (!feed?.hasMore) break
+        const added = await appendNext()
         if (!added) break
       }
     } finally {
@@ -185,6 +152,10 @@ export function useWikitabSearchActivity(
     slots.value.filter((slot) => slot.kind === 'resolved').length,
   )
 
+  const loadingTail = computed(
+    () => fillingInitial.value && resolvedCount.value > 0,
+  )
+
   watch(searchQuery, () => {
     abortController?.abort()
     reset()
@@ -192,7 +163,7 @@ export function useWikitabSearchActivity(
   })
 
   watch(
-    [enabled, searchQuery],
+    [enabled, searchQuery, knownTitles, articlesLoading],
     ([isEnabled, query]) => {
       if (!isEnabled) {
         abortController?.abort()
@@ -210,6 +181,8 @@ export function useWikitabSearchActivity(
   return {
     slots,
     loading,
+    fillingInitial,
+    loadingTail,
     loadingMore,
     hasMore,
     resolvedCount,

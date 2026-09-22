@@ -530,13 +530,21 @@ export class WikitabSearchActivityFeed {
     return this.queue.length > 0 || this.pageStates.some((state) => !state.exhausted)
   }
 
-  async initialize(signal: AbortSignal): Promise<void> {
+  /** First revision batch — does not wait for latest-revid / thumbnail metadata. */
+  async start(signal: AbortSignal): Promise<void> {
+    await this.refillQueue(signal)
+  }
+
+  /** Latest revids and missing thumbnails — safe to run in the background. */
+  async prefetchMetadata(signal: AbortSignal): Promise<void> {
     const titles = this.pageStates.map((state) => state.title)
     const missingThumbnails = titles.filter((title) => !this.thumbnailByTitle.has(titleKey(title)))
 
     const [latestRevisions, fetchedThumbnails] = await Promise.all([
       fetchLatestRevisionsForTitles(titles, signal),
-      fetchPageThumbnails(missingThumbnails, signal),
+      missingThumbnails.length
+        ? fetchPageThumbnails(missingThumbnails, signal)
+        : Promise.resolve(new Map<string, string>()),
     ])
 
     this.latestRevidByTitle = new Map(
@@ -545,8 +553,6 @@ export class WikitabSearchActivityFeed {
     for (const [key, url] of fetchedThumbnails.entries()) {
       this.thumbnailByTitle.set(key, url)
     }
-
-    await this.refillQueue(signal)
   }
 
   async takeNext(signal: AbortSignal): Promise<WikitabSearchActivityItem | null> {
@@ -557,6 +563,8 @@ export class WikitabSearchActivityFeed {
     const candidate = this.queue.shift()
     if (!candidate) return null
 
+    await this.ensureEditorKindForCandidate(candidate, signal)
+
     return mapCandidate(
       candidate,
       this.latestRevidByTitle,
@@ -565,38 +573,22 @@ export class WikitabSearchActivityFeed {
     )
   }
 
-  private async ensureEditorKinds(
-    candidates: ActivityCandidate[],
+  private async ensureEditorKindForCandidate(
+    candidate: ActivityCandidate,
     signal: AbortSignal,
   ): Promise<void> {
-    const unknown: string[] = []
+    const { user, userid } = candidate.revision
+    const key = userKey(user)
+    if (this.editorKindByUser.has(key)) return
 
-    for (const candidate of candidates) {
-      const { user, userid } = candidate.revision
-      const key = userKey(user)
-      if (this.editorKindByUser.has(key)) continue
-
-      if (userid === 0) {
-        this.editorKindByUser.set(key, 'anonymous')
-        continue
-      }
-
-      unknown.push(user)
+    if (userid === 0) {
+      this.editorKindByUser.set(key, 'anonymous')
+      return
     }
 
-    if (!unknown.length) return
-
-    const fetched = await fetchEditorKinds(unknown, signal)
-    for (const [name, kind] of fetched.entries()) {
-      this.editorKindByUser.set(name, kind)
-    }
-
-    for (const user of unknown) {
-      const key = userKey(user)
-      if (!this.editorKindByUser.has(key)) {
-        this.editorKindByUser.set(key, 'user')
-      }
-    }
+    const fetched = await fetchEditorKinds([user], signal)
+    const kind = fetched.get(key) ?? 'user'
+    this.editorKindByUser.set(key, kind)
   }
 
   private async refillQueue(signal: AbortSignal): Promise<void> {
@@ -607,7 +599,6 @@ export class WikitabSearchActivityFeed {
     )
     if (!fresh.length) return
 
-    await this.ensureEditorKinds(fresh, signal)
     this.queue.push(...fresh)
   }
 }
@@ -626,7 +617,5 @@ export async function createWikitabSearchActivityFeed(
 
   if (!titles.length) return null
 
-  const feed = new WikitabSearchActivityFeed(titles)
-  await feed.initialize(options.signal)
-  return feed
+  return new WikitabSearchActivityFeed(titles)
 }

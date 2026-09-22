@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, watch } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
+
+import tabularWordmark from './assets/tabular-wikipedia-wordmark.svg'
 
 import WikitabSearch from './WikitabSearch.vue'
 import WikitabSearchPage from './WikitabSearchPage.vue'
 import WikitabSection from './WikitabSection.vue'
 import { useWikitabFeed } from './useWikitabFeed'
 import { useWikitabPinned } from './useWikitabPinned'
-import { useWikitabSearchMountKey } from './useWikitabSearchMount'
+import { bumpWikitabSearchMountKey, useWikitabSearchMountKey } from './useWikitabSearchMount'
 
 definePage({
   meta: {
@@ -28,13 +30,29 @@ const { sections, error, isSectionLoading } = useWikitabFeed({ enabled: feedEnab
 const { isPinned, togglePin, orderSections } = useWikitabPinned()
 
 const orderedSections = computed(() => orderSections(sections.value))
+
+watch(searchQuery, (next, prev) => {
+  if (prev.length > 0 && next.length === 0) {
+    bumpWikitabSearchMountKey()
+  }
+})
 </script>
 
 <template>
   <div class="wikitab" :class="{ 'wikitab--search': isSearchMode }">
     <header class="wikitab__hero">
       <div class="wikitab__hero-top">
-        <h1 class="wikitab__wordmark">Wikitab</h1>
+        <h1 class="wikitab__wordmark">
+          <RouterLink class="wikitab__wordmark-link" :to="{ path: route.path, query: {} }">
+            <img
+              class="wikitab__wordmark-img"
+              :src="tabularWordmark"
+              alt="Tabular Wikipedia"
+              width="150"
+              height="33"
+            />
+          </RouterLink>
+        </h1>
         <WikitabSearch
           :key="searchMountKey"
           class="wikitab__search"
@@ -96,6 +114,28 @@ const orderedSections = computed(() => orderSections(sections.value))
 
 .wikitab__wordmark {
   margin: 0;
+}
+
+.wikitab__wordmark-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.wikitab__wordmark-link:hover,
+.wikitab__wordmark-link:focus-visible {
+  text-decoration: none;
+  opacity: 0.85;
+}
+
+.wikitab__wordmark-img {
+  display: block;
+  height: 33px;
+  width: auto;
+}
+
+[data-theme='dark'] .wikitab__wordmark-img {
+  filter: brightness(0) invert(1);
 }
 
 .wikitab__search {
