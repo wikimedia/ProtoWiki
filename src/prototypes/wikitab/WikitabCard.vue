@@ -205,12 +205,18 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
  * In-flow so the flex/grid line can measure content height, then stretch every
  * slot in the row to the tallest. flex: 1 + height 100% fills the stretched slot.
  */
+/*
+ * class merges onto the CdxCard root (.cdx-card) — not a wrapper around it.
+ * Fill the equalized slot and stretch the text column so supporting text can
+ * pin to the bottom inner edge of the bordered card.
+ */
 .wikitab-card__cdx {
   flex: 1 1 auto;
   box-sizing: border-box;
   width: 100%;
   min-height: 0;
   height: 100%;
+  align-items: stretch;
   overflow: hidden;
 }
 
@@ -271,8 +277,35 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
   display: none;
 }
 
+/*
+ * CdxCard always renders `.cdx-card__text__title` even when the slot is omitted
+ * (In the news, Did you know, On this day). Hide the empty strut and drop the
+ * description's 4px top margin that only applies below a title.
+ */
+.wikitab-card :deep(.cdx-card__text__title:empty) {
+  display: none;
+}
+
+.wikitab-card :deep(.cdx-card__text__title:empty + .cdx-card__text__description) {
+  margin-top: 0;
+}
+
+/*
+ * Pin supporting text to the card bottom while keeping Codex spacing: 8px above
+ * the supporting row (margin-top on the slot) and 12px card padding below it.
+ * margin-top: auto would swallow the 8px and sit flush on the content edge.
+ */
+.wikitab-card :deep(.cdx-card__text:has(.cdx-card__text__supporting-text)::after) {
+  content: '';
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+  order: 10;
+}
+
 .wikitab-card :deep(.cdx-card__text__supporting-text) {
   width: 100%;
+  order: 11;
 }
 
 .wikitab-card__supporting {

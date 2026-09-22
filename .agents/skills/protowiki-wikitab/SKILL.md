@@ -106,7 +106,12 @@ line-clamp, overflow) belong on the wrapper.
 (Trending, Birthdays, On this day, etc.) equalizes to the tallest card in that
 row — pairs on desktop, the whole carousel on mobile — via `ResizeObserver`.
 `cardHeight` in `sections.ts` is the **placeholder floor**, not a fixed cap on
-real cards.
+real cards. `useEqualRowHeights` sets a definite inline `height` (not just
+`min-height`) on each slot so the bordered `CdxCard` can fill the row.
+Supporting text is pinned to the bottom inner edge of that card with a flex
+`::after` spacer on `.cdx-card__text` (so Codex’s 8px `margin-top` on the
+supporting slot is preserved) and `align-items: stretch` on `.wikitab-card__cdx`
+(the Codex card root — the class merges onto `.cdx-card`, not a wrapper).
 
 When adding a section: if thumbnails are guaranteed from the feed, use
 `thumbnail`. If thumbnails are optional or need a follow-up fetch, use `text`.

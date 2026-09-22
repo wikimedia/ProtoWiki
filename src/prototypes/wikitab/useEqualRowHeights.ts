@@ -44,7 +44,11 @@ export function useEqualRowHeights(options: {
     for (const row of rows) {
       const max = Math.max(floor, ...row.map((el) => el.getBoundingClientRect().height))
       const rowHeight = `${max}px`
-      for (const el of row) el.style.minHeight = rowHeight
+      for (const el of row) {
+        // Definite height so the bordered CdxCard can fill the slot (not just min-height).
+        el.style.height = rowHeight
+        el.style.minHeight = rowHeight
+      }
     }
   }
 
