@@ -394,14 +394,21 @@ Column count grows with panel width (~320px target column width via
 `useWikitabSearchImageColumns.ts`). Each tile links to the Commons file
 description page.
 
-- **Source** — Commons Action API search with **MediaSearch image-tab defaults**:
+- **Source** — Commons Action API search with **MediaSearch image-tab defaults**
+  plus explicit-content `-deepcat:` exclusions:
   `generator=search`, `gsrnamespace=6`, `gsrsearch="filetype:bitmap|drawing
-  -fileres:0 {query}"`, `gsrlimit=40`, `prop=imageinfo` (`url|size|mime`,
-  `iiurlwidth=640` — wider than MediaSearch's `iiurlheight=180` for full-bleed
-  masonry). Same engine as [Special:MediaSearch](https://commons.wikimedia.org/wiki/Special:MediaSearch),
-  not Articles-tab seeds / morelike. Client-side filter:
-  `mime.startsWith('image/')` with valid width/height. Paginate via Action API
-  `continue` params (`gsroffset`, etc.).
+  -fileres:0 -deepcat:\"Pornography\" -deepcat:\"Sexual acts\"
+  -deepcat:\"Explicit content\" -deepcat:\"Hentai\" {query}"`, `gsrlimit=40`,
+  `prop=imageinfo` (`url|size|mime`, `iiurlwidth=640` — wider than MediaSearch's
+  `iiurlheight=180` for full-bleed masonry). Same engine as
+  [Special:MediaSearch](https://commons.wikimedia.org/wiki/Special:MediaSearch),
+  not Articles-tab seeds / morelike. **Explicit-content filter** — CirrusSearch
+  excludes files in pornography / sexual-acts / explicit-content / hentai
+  category trees only; artistic and medical nudity are not excluded. Commons has
+  no safe-search API — coverage is partial (CirrusSearch may apply only a subset
+  of deep categories; uncategorized explicit files can still appear). Client-side
+  filter: `mime.startsWith('image/')` with valid width/height. Paginate via Action
+  API `continue` params (`gsroffset`, etc.).
 - **Layout** — `WikitabSearchImageGrid.vue` splits results into N equal columns
   with **2px gaps** (horizontal and vertical). `useWikitabSearchImageColumns.ts`
   derives N from the image panel width (`ResizeObserver`, min 2, ~320px per

@@ -60,7 +60,6 @@ function onKeydown(event: KeyboardEvent): void {
       class="wikitab-search__input"
       :use-button="true"
       button-label="Search"
-      placeholder="Search"
       role="combobox"
       autocomplete="off"
       aria-autocomplete="list"

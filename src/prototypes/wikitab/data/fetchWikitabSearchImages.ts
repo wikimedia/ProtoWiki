@@ -46,20 +46,18 @@ function commonsFilePageUrl(title: string): string {
   return `https://${COMMONS_HOST}/wiki/${path}`
 }
 
-function parseImagePage(
-  page: {
-    pageid?: number
-    title?: string
-    index?: number
-    imageinfo?: Array<{
-      url?: string
-      thumburl?: string
-      width?: number
-      height?: number
-      mime?: string
-    }>
-  },
-): WikitabSearchImage | null {
+function parseImagePage(page: {
+  pageid?: number
+  title?: string
+  index?: number
+  imageinfo?: Array<{
+    url?: string
+    thumburl?: string
+    width?: number
+    height?: number
+    mime?: string
+  }>
+}): WikitabSearchImage | null {
   if (typeof page.pageid !== 'number' || !page.title) return null
 
   const info = page.imageinfo?.[0]
@@ -100,7 +98,7 @@ export async function fetchWikitabSearchImages(
     format: 'json',
     origin: '*',
     generator: 'search',
-    gsrsearch: `${MEDIASEARCH_IMAGE_FILTERS} ${trimmed}`,
+    gsrsearch: `${IMAGE_SEARCH_FILTERS} ${trimmed}`,
     gsrnamespace: '6',
     gsrlimit: String(WIKITAB_SEARCH_IMAGES_BATCH_SIZE),
     prop: 'imageinfo',
@@ -152,9 +150,7 @@ export async function fetchWikitabSearchImages(
     .filter((item): item is WikitabSearchImage => item !== null)
 
   const continueParams = data.continue
-    ? Object.fromEntries(
-        Object.entries(data.continue).filter(([key]) => key !== 'continue'),
-      )
+    ? Object.fromEntries(Object.entries(data.continue).filter(([key]) => key !== 'continue'))
     : null
 
   return {
