@@ -2,6 +2,7 @@ import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 
 import { fetchWikitabSearch } from './fetchWikitabSearch'
+import { filterDisambiguationPageIds } from './filterDisambiguationPages'
 import { EN_WIKI_HOST, articleUrl } from './wikitabHtml'
 
 const MORELIKE_BATCH_SIZE = 20
@@ -139,7 +140,15 @@ async function fetchMoreLikeBatch(
     .map((page) => mapPage(page, 'related', seedTitle))
     .filter((article): article is WikitabSearchArticle => article !== null)
 
-  return { articles, nextOffset }
+  const disambiguationIds = await filterDisambiguationPageIds(
+    articles.map((article) => article.pageid),
+    { signal },
+  )
+
+  return {
+    articles: articles.filter((article) => !disambiguationIds.has(article.pageid)),
+    nextOffset,
+  }
 }
 
 export interface WikitabSearchArticlesInitial {

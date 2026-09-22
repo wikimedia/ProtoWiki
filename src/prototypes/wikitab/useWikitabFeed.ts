@@ -1,15 +1,38 @@
 import { computed, onUnmounted, ref, shallowRef, watch, type Ref } from 'vue'
-import { fetchDailyFeed } from './data/fetchDailyFeed'
-import { WIKITAB_SECTIONS, type WikitabCardData, type WikitabFeed, type WikitabSectionSpec } from './sections'
+import { fetchDailyFeedProgressive } from './data/fetchDailyFeed'
+import {
+  WIKITAB_SECTIONS,
+  type WikitabCardData,
+  type WikitabFeed,
+  type WikitabSectionId,
+  type WikitabSectionSpec,
+} from './sections'
+
+export type WikitabFeedPhase = 'idle' | 'featured' | 'complete' | 'error'
 
 export interface WikitabSectionState {
   spec: WikitabSectionSpec
   items: WikitabCardData[]
 }
 
+const SECONDARY_SECTION_IDS: readonly WikitabSectionId[] = ['otd', 'births', 'discussions']
+
+function isSecondarySection(id: WikitabSectionId): boolean {
+  return SECONDARY_SECTION_IDS.includes(id)
+}
+
+export function isSectionFeedLoading(
+  sectionId: WikitabSectionId,
+  feedPhase: WikitabFeedPhase,
+): boolean {
+  if (feedPhase === 'complete' || feedPhase === 'error') return false
+  if (feedPhase === 'featured') return isSecondarySection(sectionId)
+  return true
+}
+
 export function useWikitabFeed(options: { enabled?: Ref<boolean> } = {}) {
   const feed = shallowRef<WikitabFeed | null>(null)
-  const loading = ref(true)
+  const feedPhase = ref<WikitabFeedPhase>('idle')
   const error = ref<string | null>(null)
 
   let controller: AbortController | null = null
@@ -17,7 +40,7 @@ export function useWikitabFeed(options: { enabled?: Ref<boolean> } = {}) {
   async function load(): Promise<void> {
     if (options.enabled && !options.enabled.value) {
       controller?.abort()
-      loading.value = false
+      feedPhase.value = 'idle'
       return
     }
 
@@ -25,24 +48,33 @@ export function useWikitabFeed(options: { enabled?: Ref<boolean> } = {}) {
     const local = new AbortController()
     controller = local
 
-    loading.value = true
+    feedPhase.value = 'idle'
+    feed.value = null
     error.value = null
 
     try {
-      const result = await fetchDailyFeed(local.signal)
+      await fetchDailyFeedProgressive((partial) => {
+        if (local.signal.aborted) return
+        feed.value = partial
+        if (feedPhase.value !== 'featured') feedPhase.value = 'featured'
+      }, local.signal)
+
       if (local.signal.aborted) return
-      feed.value = result
+      feedPhase.value = 'complete'
     } catch (cause) {
       if (local.signal.aborted || (cause as Error)?.name === 'AbortError') return
       error.value = 'Could not load the feed.'
-    } finally {
-      if (!local.signal.aborted) loading.value = false
+      feedPhase.value = 'error'
     }
   }
 
   const sections = computed<WikitabSectionState[]>(() =>
     WIKITAB_SECTIONS.map((spec) => ({ spec, items: feed.value?.[spec.id] ?? [] })),
   )
+
+  function isSectionLoading(sectionId: WikitabSectionId): boolean {
+    return isSectionFeedLoading(sectionId, feedPhase.value)
+  }
 
   if (options.enabled) {
     watch(
@@ -51,7 +83,7 @@ export function useWikitabFeed(options: { enabled?: Ref<boolean> } = {}) {
         if (enabled) void load()
         else {
           controller?.abort()
-          loading.value = false
+          feedPhase.value = 'idle'
         }
       },
       { immediate: true },
@@ -62,5 +94,5 @@ export function useWikitabFeed(options: { enabled?: Ref<boolean> } = {}) {
 
   onUnmounted(() => controller?.abort())
 
-  return { sections, loading, error, reload: load }
+  return { sections, feedPhase, error, isSectionLoading, reload: load }
 }

@@ -20,6 +20,13 @@ export function utcDayKey(date = new Date()): string {
   return date.toISOString().slice(0, 10)
 }
 
+/** Previous UTC calendar day as `YYYY-MM-DD`. */
+export function previousUtcDay(day: string): string {
+  const date = new Date(`${day}T00:00:00.000Z`)
+  date.setUTCDate(date.getUTCDate() - 1)
+  return date.toISOString().slice(0, 10)
+}
+
 /** `?nocache=1` forces a refetch, for when the day's content has gone stale. */
 export function isCacheBypassed(): boolean {
   if (typeof window === 'undefined') return false

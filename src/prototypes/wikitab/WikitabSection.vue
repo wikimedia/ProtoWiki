@@ -59,6 +59,8 @@ const slots = computed(() =>
  * inside it comes and goes. While the feed is still loading we can't yet know
  * whether a section has more, so it shows as disabled rather than hidden.
  */
+const isEmpty = computed(() => !props.loading && !props.error && props.items.length === 0)
+
 const canShowMore = computed(() => props.loading || hasMore.value)
 const showMoreDisabled = computed(() => props.loading || revealing.value)
 
@@ -107,6 +109,8 @@ watch(selection, (value) => {
     </div>
 
     <p v-if="error" class="wikitab-section__error"><small>{{ error }}</small></p>
+
+    <p v-else-if="isEmpty" class="wikitab-section__empty"><small>Nothing to show right now.</small></p>
 
     <div v-else ref="scroller" class="wikitab-section__cards">
       <WikitabCard
@@ -182,7 +186,8 @@ watch(selection, (value) => {
 }
 
 /* Holds the reserved height rather than collapsing the section. */
-.wikitab-section__error {
+.wikitab-section__error,
+.wikitab-section__empty {
   display: flex;
   align-items: center;
   margin: 0;

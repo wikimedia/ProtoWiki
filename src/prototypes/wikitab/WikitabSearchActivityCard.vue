@@ -98,28 +98,30 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
           {{ item.editSummary }}
         </p>
         <p class="wikitab-search-activity-card__supporting">
-          <CdxIcon
-            :icon="editorIcon"
-            size="x-small"
-            class="wikitab-search-activity-card__supporting-icon"
-          />
-          <span class="wikitab-search-activity-card__supporting-text">
-            <a
-              v-if="showNestedLinks"
-              class="wikitab-search-activity-card__editor-link"
-              :href="item.editorHref"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {{ item.editorName }}
-            </a>
-            <span v-else class="wikitab-search-activity-card__editor-name">{{
-              item.editorName
-            }}</span
-            ><span class="wikitab-search-activity-card__edited-meta"
-              >, {{ item.editedRelative }}</span
-            >
+          <span class="wikitab-search-activity-card__supporting-start">
+            <CdxIcon
+              :icon="editorIcon"
+              size="x-small"
+              class="wikitab-search-activity-card__supporting-icon"
+            />
+            <span class="wikitab-search-activity-card__supporting-text">
+              <a
+                v-if="showNestedLinks"
+                class="wikitab-search-activity-card__editor-link"
+                :href="item.editorHref"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {{ item.editorName }}
+              </a>
+              <span v-else class="wikitab-search-activity-card__editor-name">{{
+                item.editorName
+              }}</span>
+            </span>
           </span>
+          <span class="wikitab-search-activity-card__supporting-end">{{
+            item.editedRelative
+          }}</span>
         </p>
       </div>
     </div>
@@ -143,7 +145,7 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
 }
 
 .wikitab-search-activity-card:hover {
-  border-color: var(--border-color-subtle);
+  border-color: var(--border-color-interactive--hover, #27292d);
 }
 
 .wikitab-search-activity-card__link {
@@ -160,8 +162,11 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
 
 .wikitab-search-activity-card__body {
   display: flex;
+  flex: 1 1 auto;
+  align-items: stretch;
   gap: var(--spacing-75);
   min-width: 0;
+  min-height: 96px;
 }
 
 .wikitab-search-activity-card__thumbnail {
@@ -180,8 +185,21 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: var(--spacing-25);
+  align-self: stretch;
   min-width: 0;
+  min-height: 96px;
+}
+
+/*
+ * ::after is last in the box tree — use order so the spacer sits above the
+ * supporting row (same pattern as WikitabCard).
+ */
+.wikitab-search-activity-card__content::after {
+  content: '';
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+  order: 10;
 }
 
 .wikitab-search-activity-card__chips {
@@ -226,7 +244,7 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
 }
 
 .wikitab-search-activity-card__description {
-  margin: 0;
+  margin: var(--spacing-25) 0 0;
   min-width: 0;
   overflow-wrap: anywhere;
   font-size: var(--font-size-medium);
@@ -237,14 +255,24 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
 
 .wikitab-search-activity-card__supporting {
   display: flex;
-  align-items: center;
+  align-items: first baseline;
+  justify-content: space-between;
   gap: var(--spacing-25);
-  margin: 0;
-  padding-top: var(--spacing-25);
+  box-sizing: border-box;
+  width: 100%;
+  order: 11;
+  margin: var(--spacing-50) 0 0;
   font-size: var(--font-size-small);
   font-weight: var(--font-weight-normal);
   line-height: var(--line-height-small);
   color: var(--color-subtle);
+}
+
+.wikitab-search-activity-card__supporting-start {
+  display: inline-flex;
+  align-items: first baseline;
+  gap: var(--spacing-25);
+  min-width: 0;
 }
 
 .wikitab-search-activity-card__supporting-icon {
@@ -253,12 +281,11 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
 
 .wikitab-search-activity-card__supporting-text {
   min-width: 0;
-  flex: 1 1 auto;
   overflow-wrap: anywhere;
 }
 
-.wikitab-search-activity-card__edited-meta {
-  color: var(--color-subtle);
+.wikitab-search-activity-card__supporting-end {
+  flex-shrink: 0;
 }
 
 [data-skin='mobile'] .wikitab-search-activity-card {

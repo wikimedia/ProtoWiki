@@ -24,16 +24,10 @@ const searchMountKey = useWikitabSearchMountKey()
 const isSearchMode = computed(() => searchQuery.value.length > 0)
 const feedEnabled = computed(() => !isSearchMode.value)
 
-const { sections, loading, error } = useWikitabFeed({ enabled: feedEnabled })
+const { sections, error, isSectionLoading } = useWikitabFeed({ enabled: feedEnabled })
 const { isPinned, togglePin, orderSections } = useWikitabPinned()
 
 const orderedSections = computed(() => orderSections(sections.value))
-
-const visibleSections = computed(() =>
-  loading.value
-    ? orderedSections.value
-    : orderedSections.value.filter((section) => section.items.length > 0),
-)
 </script>
 
 <template>
@@ -52,11 +46,11 @@ const visibleSections = computed(() =>
 
     <div v-if="!isSearchMode" class="wikitab__sections">
       <WikitabSection
-        v-for="section in visibleSections"
+        v-for="section in orderedSections"
         :key="section.spec.id"
         :spec="section.spec"
         :items="section.items"
-        :loading="loading"
+        :loading="isSectionLoading(section.spec.id)"
         :error="error"
         :pinned="isPinned(section.spec.id)"
         @toggle-pin="togglePin(section.spec.id)"

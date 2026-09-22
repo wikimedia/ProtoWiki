@@ -1,7 +1,11 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 
+import { filterDisambiguationPageIds } from './filterDisambiguationPages'
+
 const SEARCH_HOST = 'en.wikipedia.org'
 const DEFAULT_SEARCH_LIMIT = 6
+const OVERFETCH_BUFFER = 4
+const REST_SEARCH_MAX = 50
 
 export interface WikitabSearchResult {
   id: number
@@ -23,9 +27,12 @@ export async function fetchWikitabSearch(
   const trimmed = query.trim()
   if (!trimmed.length) return []
 
+  const limit = options.limit ?? DEFAULT_SEARCH_LIMIT
+  const restLimit = Math.min(limit + OVERFETCH_BUFFER, REST_SEARCH_MAX)
+
   const params = new URLSearchParams({
     q: trimmed,
-    limit: String(options.limit ?? DEFAULT_SEARCH_LIMIT),
+    limit: String(restLimit),
   })
 
   const response = await fetch(
@@ -49,7 +56,7 @@ export async function fetchWikitabSearch(
     }>
   }
 
-  return (data.pages ?? [])
+  const mapped = (data.pages ?? [])
     .filter((page): page is typeof page & { id: number; title: string } =>
       typeof page.id === 'number' && typeof page.title === 'string',
     )
@@ -59,4 +66,11 @@ export async function fetchWikitabSearch(
       description: page.description?.trim() || undefined,
       thumbnailUrl: normalizeThumbnailUrl(page.thumbnail?.url),
     }))
+
+  const disambiguationIds = await filterDisambiguationPageIds(
+    mapped.map((page) => page.id),
+    { signal: options.signal },
+  )
+
+  return mapped.filter((page) => !disambiguationIds.has(page.id)).slice(0, limit)
 }

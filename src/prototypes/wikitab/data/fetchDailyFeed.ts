@@ -3,7 +3,13 @@ import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import type { WikitabCardData, WikitabFeed } from '../sections'
 import { fetchActiveDiscussions } from './fetchActiveDiscussions'
 import { fetchBirthsOnThisDay } from './fetchBirthsOnThisDay'
-import { isCacheBypassed, readCachedFeed, utcDayKey, writeCachedFeed } from './feedCache'
+import {
+  isCacheBypassed,
+  previousUtcDay,
+  readCachedFeed,
+  utcDayKey,
+  writeCachedFeed,
+} from './feedCache'
 import { fetchMainPageOtd } from './fetchMainPageOtd'
 import { EN_WIKI_HOST, articleUrl, normalizeFeedHtml, primaryLinkTitle } from './wikitabHtml'
 
@@ -27,8 +33,14 @@ interface FeaturedFeedResponse {
   news?: { story?: string; links?: FeedSummary[] }[]
 }
 
+interface InFlightProgressive {
+  promise: Promise<WikitabFeed>
+  listeners: Set<(feed: WikitabFeed) => void>
+  lastFeed: WikitabFeed | null
+}
+
 /** Deduplicates concurrent and repeat calls within a single page session. */
-const inFlight = new Map<string, Promise<WikitabFeed>>()
+const inFlight = new Map<string, InFlightProgressive>()
 
 function feedUrl(day: string): string {
   const [year, month, date] = day.split('-')
@@ -116,6 +128,17 @@ function mapNews(response: FeaturedFeedResponse): WikitabCardData[] {
     })
 }
 
+function mapFeaturedFeed(payload: FeaturedFeedResponse, day: string): WikitabFeed {
+  return {
+    trending: mapTrending(payload, day),
+    news: mapNews(payload),
+    dyk: mapDyk(payload),
+    discussions: [],
+    otd: [],
+    births: [],
+  }
+}
+
 async function fetchFeaturedPayload(
   day: string,
   signal?: AbortSignal,
@@ -130,50 +153,121 @@ async function fetchFeaturedPayload(
   return (await response.json()) as FeaturedFeedResponse
 }
 
-async function requestFeed(day: string, signal?: AbortSignal): Promise<WikitabFeed> {
-  const [featuredResult, otdResult, birthsResult, discussionsResult] = await Promise.allSettled([
-    fetchFeaturedPayload(day, signal),
-    fetchMainPageOtd(signal),
-    fetchBirthsOnThisDay(day, signal),
-    fetchActiveDiscussions(signal),
+/** When today's `mostread` is missing, fall back to the previous UTC day. */
+async function resolveTrending(
+  payload: FeaturedFeedResponse,
+  day: string,
+  signal?: AbortSignal,
+): Promise<WikitabCardData[]> {
+  let trending = mapTrending(payload, day)
+  if (trending.length > 0) return trending
+
+  try {
+    const yesterday = previousUtcDay(day)
+    const fallback = await fetchFeaturedPayload(yesterday, signal)
+    trending = mapTrending(fallback, yesterday)
+  } catch {
+    // Empty state keeps the section visible.
+  }
+  return trending
+}
+
+/**
+ * Phase 1: featured feed (Trending, In the news, Did you know). Phase 2: OTD,
+ * Birthdays, and Active discussions in parallel, patching the feed as each
+ * secondary request settles so lower sections can resolve independently.
+ */
+async function requestFeedProgressive(
+  day: string,
+  onUpdate: (feed: WikitabFeed) => void,
+  signal?: AbortSignal,
+): Promise<WikitabFeed> {
+  const payload = await fetchFeaturedPayload(day, signal)
+  const trending = await resolveTrending(payload, day, signal)
+  const feed = { ...mapFeaturedFeed(payload, day), trending }
+  onUpdate(feed)
+
+  await Promise.all([
+    fetchMainPageOtd(signal).then(
+      (otd) => {
+        feed.otd = otd
+        onUpdate({ ...feed })
+      },
+      () => {
+        feed.otd = []
+        onUpdate({ ...feed })
+      },
+    ),
+    fetchBirthsOnThisDay(day, signal).then(
+      (births) => {
+        feed.births = births
+        onUpdate({ ...feed })
+      },
+      () => {
+        feed.births = []
+        onUpdate({ ...feed })
+      },
+    ),
+    fetchActiveDiscussions(signal).then(
+      (discussions) => {
+        feed.discussions = discussions
+        onUpdate({ ...feed })
+      },
+      () => {
+        feed.discussions = []
+        onUpdate({ ...feed })
+      },
+    ),
   ])
 
-  if (featuredResult.status === 'rejected') {
-    throw featuredResult.reason
-  }
+  return { ...feed }
+}
 
-  const payload = featuredResult.value
-  const otd = otdResult.status === 'fulfilled' ? otdResult.value : []
-  const births = birthsResult.status === 'fulfilled' ? birthsResult.value : []
-  const discussions =
-    discussionsResult.status === 'fulfilled' ? discussionsResult.value : []
-
-  return {
-    trending: mapTrending(payload, day),
-    news: mapNews(payload),
-    discussions,
-    otd,
-    births,
-    dyk: mapDyk(payload),
-  }
+function notifyListeners(entry: InFlightProgressive, feed: WikitabFeed): void {
+  entry.lastFeed = feed
+  entry.listeners.forEach((listener) => listener(feed))
 }
 
 /**
  * Featured feed plus Main Page OTD and births endpoints. Reads through the
  * session map, then the localStorage day cache, before going to the network.
+ * Calls `onUpdate` after the featured payload lands and again as each secondary
+ * section resolves.
  */
-export function fetchDailyFeed(signal?: AbortSignal): Promise<WikitabFeed> {
+export function fetchDailyFeedProgressive(
+  onUpdate: (feed: WikitabFeed) => void,
+  signal?: AbortSignal,
+): Promise<WikitabFeed> {
   const day = utcDayKey()
 
-  const pending = inFlight.get(day)
-  if (pending) return pending
-
   const cached = readCachedFeed(day)
-  if (cached) return Promise.resolve(cached)
+  if (cached) {
+    onUpdate(cached)
+    return Promise.resolve(cached)
+  }
 
-  const request = requestFeed(day, signal)
+  const pending = inFlight.get(day)
+  if (pending) {
+    if (pending.lastFeed) onUpdate(pending.lastFeed)
+    pending.listeners.add(onUpdate)
+    return pending.promise
+  }
+
+  const entry: InFlightProgressive = {
+    promise: Promise.resolve({} as WikitabFeed),
+    listeners: new Set([onUpdate]),
+    lastFeed: null,
+  }
+
+  entry.promise = requestFeedProgressive(
+    day,
+    (feed) => notifyListeners(entry, feed),
+    signal,
+  )
     .then((feed) => {
-      if (!isCacheBypassed()) writeCachedFeed(day, feed)
+      // Skip caching when Trending is still empty so the next tab open can retry.
+      if (!isCacheBypassed() && feed.trending.length > 0) writeCachedFeed(day, feed)
+      inFlight.delete(day)
       return feed
     })
     .catch((error) => {
@@ -181,6 +275,11 @@ export function fetchDailyFeed(signal?: AbortSignal): Promise<WikitabFeed> {
       throw error
     })
 
-  inFlight.set(day, request)
-  return request
+  inFlight.set(day, entry)
+  return entry.promise
+}
+
+/** Awaits the complete daily feed without subscribing to intermediate updates. */
+export function fetchDailyFeed(signal?: AbortSignal): Promise<WikitabFeed> {
+  return fetchDailyFeedProgressive(() => {}, signal)
 }

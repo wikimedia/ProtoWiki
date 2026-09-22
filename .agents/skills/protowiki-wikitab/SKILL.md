@@ -136,18 +136,36 @@ actual list length — never hardcode it. Typically Trending has ~44 items, On t
 Birthdays ~294 (Wikifeeds births, newest first), Did you know ~9,
 In the news ~4 (which exactly fills the initial slots, so no control ever
 renders for it), and Active discussions ~20 (merged from six noticeboards).
-Sections with zero items for the day are hidden once the feed
-loads (still skeleton while loading).
+All registered sections **always render**. While a section's slice is still
+loading, skeleton slots show; once resolved with zero items, a reserved empty
+state (`"Nothing to show right now."`) appears instead of removing the section.
+Feed errors show the same reserved-height error row per section.
 
 ## Daily feed sources
 
-`data/fetchDailyFeed.ts` orchestrates four parallel requests, cached as one
-daily blob:
+`data/fetchDailyFeed.ts` loads the feed in **two phases** so top sections can
+resolve while slower secondary APIs are still in flight. Cached as one daily blob
+once the complete feed is assembled.
+
+**Phase 1 — featured (blocking):**
 
 - **`feed/featured/{yyyy}/{mm}/{dd}`** — Trending, DYK, In the news
+
+`fetchDailyFeedProgressive(onUpdate)` calls `onUpdate` with this partial feed
+immediately. `useWikitabFeed` sets `feedPhase = 'featured'` and featured
+sections stop being feed-loading — their `useSectionReveal` watch fires and
+card pages begin resolving.
+
+**Phase 2 — secondary (parallel, patched as each settles):**
+
 - **Action API `discussiontoolspageinfo`** — Active discussions (six noticeboards)
 - **Action API parse of `Main_Page`** — On this day event bullets (`#mp-otd > ul > li`)
 - **`feed/onthisday/births/{mm}/{dd}`** — Birthdays
+
+Each secondary request patches its slice into the feed and calls `onUpdate`
+again. `feedPhase` stays `'featured'` until all three settle, then becomes
+`'complete'`. Secondary sections keep skeleton slots until their slice arrives;
+they no longer block Trending / In the news / Did you know above them.
 
 Featured failure fails the whole load; Main Page OTD, births, or Active
 discussions failure yields an empty section for that part only.
@@ -167,7 +185,11 @@ you touch the card's stacking.
 - **Trending** ← `mostread.articles`. Already full page summaries, so read
   `description`, `thumbnail` and `views` straight off the feed. **Do not** fetch
   per-article summaries — that was the main waste in the old wikita prototype.
-  Sort by `rank`; the list is not pre-sorted.
+  Sort by `rank`; the list is not pre-sorted. When today's `mostread` is
+  missing or empty (documented API behaviour, especially early in the UTC day),
+  `fetchDailyFeed.ts` falls back to the **previous UTC day's** featured feed for
+  Trending only. Feeds with empty Trending after that fallback are not cached,
+  so a later tab open can retry.
 - **On this day** ← `data/fetchMainPageOtd.ts` parses `#mp-otd` from the Main
   Page HTML (Action API). Text cards with inline links; year kept in the hook as
   linked prose (`In <year>, ….`). ~5 event bullets matching desktop Main Page
@@ -203,7 +225,9 @@ against our own origin, while `dyk` hooks use absolute ones.
 ## State and storage
 
 User preferences (`data/wikitabConfig.ts`), feed cache (`data/feedCache.ts`),
-and transient reveal counts (`useSectionReveal`) live in three separate layers.
+feed orchestration phase (`useWikitabFeed` → `feedPhase` +
+`isSectionLoading`), and transient reveal counts (`useSectionReveal`) live in
+separate layers.
 See [references/state-and-storage.md](references/state-and-storage.md) for the
 full rules, migration from legacy `?pinned=`, and how to add future config
 fields without over-building a schema.
@@ -265,7 +289,9 @@ REST:
 
 - **`data/fetchWikitabSearch.ts`** — fetch + map to `{ id, title, description,
   thumbnailUrl }`. Thumbnail URLs are normalised to `https:`. No `url` on menu
-  items.
+  items. Over-fetches from REST, then drops disambiguation pages via Action API
+  `pageprops` (`data/filterDisambiguationPages.ts`) so the next ranked title
+  is promoted (e.g. **Squash (sport)** instead of **Squash** dab page).
 - **`useWikitabSearch.ts`** — debounced input (200ms), `AbortController`
   cancellation, maps results to `MenuItemData` for `CdxMenu`.
 - **Panel** — first menu row is the `Search for "…"` item (custom menu slot,
@@ -309,13 +335,15 @@ Activity, where edits stream in one at a time.
 
 **Articles tab** — `WikitabSearchResultCard.vue` per hit:
 
-1. Resolve the query to a seed title via REST title search (`limit: 1`).
+1. Resolve the query to a seed title via REST title search (`limit: 1`), with
+   disambiguation pages filtered out (same `filterDisambiguationPages` helper).
 2. **Top hit** — Action API page props for the resolved title (description, lead
    extract, thumbnail). Supporting row: `cdxIconSuccess` + "Exact match" when
    the query matches the title (case-insensitive), otherwise "Nearest match"
    (`cdxIconSearch`).
 3. **Related** — Action API `generator=search` with
-   `gsrsearch=morelike:{seedTitle}`, paginated via `gsroffset`. Supporting row:
+   `gsrsearch=morelike:{seedTitle}`, paginated via `gsroffset`. Disambiguation
+   pages are filtered from each batch. Supporting row:
    `cdxIconLink` + `Related to {seedTitle}`. Seed pageid is deduped from
    related batches.
 
