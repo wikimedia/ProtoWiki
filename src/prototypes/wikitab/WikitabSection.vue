@@ -108,9 +108,13 @@ watch(selection, (value) => {
       </CdxMenuButton>
     </div>
 
-    <p v-if="error" class="wikitab-section__error"><small>{{ error }}</small></p>
+    <p v-if="error" class="wikitab-section__error">
+      <small>{{ error }}</small>
+    </p>
 
-    <p v-else-if="isEmpty" class="wikitab-section__empty"><small>Nothing to show right now.</small></p>
+    <p v-else-if="isEmpty" class="wikitab-section__empty">
+      <small>Nothing to show right now.</small>
+    </p>
 
     <div v-else ref="scroller" class="wikitab-section__cards">
       <WikitabCard
@@ -217,7 +221,7 @@ watch(selection, (value) => {
   justify-content: center;
   /* Reserved even when empty, so revealing or exhausting a section shifts nothing. */
   min-height: var(--line-height-small);
-  margin-top: var(--spacing-50);
+  margin-top: var(--spacing-100);
 }
 
 /* Desktop: a two-column grid inside the centred column. */
