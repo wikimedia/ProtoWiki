@@ -23,24 +23,31 @@ withDefaults(
     }"
     :style="variant === 'image' ? { aspectRatio } : undefined"
     aria-hidden="true"
-  />
+  >
+  </div>
 </template>
 
 <style scoped>
 .wikitab-search-loading-card {
   min-height: 120px;
   border-radius: var(--border-radius-base);
-  background-color: var(--background-color-neutral-subtle);
+  background-color: var(--wikitab-theme-skeleton-bg, var(--background-color-neutral-subtle));
 }
 
 .wikitab-search-loading-card--compact {
   min-height: 80px;
 }
 
-/* Matches WikitabSearchActivityCard body row — no thumbnail column. */
+/*
+ * Typical resolved activity card: chip row + title, delta, summary, supporting
+ * (compact type on `.wikitab-search-page__list--activity` flows into line-height tokens).
+ */
 .wikitab-search-loading-card--activity {
   box-sizing: border-box;
-  min-height: calc(96px + 2 * var(--spacing-75));
+  min-height: calc(
+    2 * var(--spacing-75) + var(--spacing-50) + 2rem + 4 * var(--line-height-small) +
+      var(--spacing-25) + var(--spacing-50)
+  );
   padding-block: var(--spacing-75);
   padding-inline: var(--spacing-75);
 }

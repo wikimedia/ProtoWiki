@@ -8,6 +8,7 @@ import {
   WIKITAB_SEARCH_LIMIT,
   type WikitabSearchResult,
 } from './data/fetchWikitabSearch'
+import { articleUrl } from './data/wikitabHtml'
 import { bumpWikitabSearchMountKey } from './useWikitabSearchMount'
 
 const DEBOUNCE_MS = 200
@@ -75,6 +76,10 @@ export function useWikitabSearch(options: { initialQuery?: Ref<string> } = {}) {
       // Remount after the URL updates so initialQuery matches the submission.
       void nextTick(() => bumpWikitabSearchMountKey())
     })
+  }
+
+  function navigateToArticle(title: string): void {
+    window.location.assign(articleUrl(title))
   }
 
   async function runSearch(searchQuery: string): Promise<void> {
@@ -201,7 +206,7 @@ export function useWikitabSearch(options: { initialQuery?: Ref<string> } = {}) {
 
     const result = results.value.find((item) => item.id === value)
     if (result) {
-      navigateToSearch(result.title)
+      navigateToArticle(result.title)
     }
   }
 

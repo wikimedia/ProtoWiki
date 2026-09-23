@@ -1,4 +1,6 @@
 import { WIKITAB_SECTIONS, type WikitabSectionId } from '../sections'
+import { normalizeColorThemeId, type WikitabColorThemeId } from './wikitabColorThemes'
+import { articleTitleKey } from './wikitabHtml'
 
 /** Bump the suffix on breaking shape changes; add fields in-place until then. */
 export const WIKITAB_CONFIG_STORAGE_KEY = 'wikitab-config-v1'
@@ -6,10 +8,19 @@ export const WIKITAB_CONFIG_STORAGE_KEY = 'wikitab-config-v1'
 export interface WikitabConfig {
   /** Most recently pinned first. */
   pinnedSectionIds: WikitabSectionId[]
+  /** Normalized article title keys hidden from the home feed (read from localStorage). */
+  hiddenArticleTitleKeys: string[]
+  /** Activity-tab revision ids dismissed permanently from the feed. */
+  dismissedActivityRevids: number[]
+  /** Page background theme; null keeps Codex `--background-color-base`. */
+  colorThemeId: WikitabColorThemeId | null
 }
 
 const DEFAULT_WIKITAB_CONFIG: WikitabConfig = {
   pinnedSectionIds: [],
+  hiddenArticleTitleKeys: [],
+  dismissedActivityRevids: [],
+  colorThemeId: null,
 }
 
 const VALID_IDS = new Set<WikitabSectionId>(WIKITAB_SECTIONS.map((section) => section.id))
@@ -36,6 +47,41 @@ export function normalizePinnedSectionIds(raw: unknown): WikitabSectionId[] {
   return ids
 }
 
+/** Unknown and duplicate keys are dropped; order is preserved. */
+export function normalizeHiddenArticleTitleKeys(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return []
+
+  const seen = new Set<string>()
+  const keys: string[] = []
+
+  for (const item of raw) {
+    if (typeof item !== 'string') continue
+    const key = articleTitleKey(item)
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    keys.push(key)
+  }
+
+  return keys
+}
+
+/** Unknown and duplicate revids are dropped; order is preserved. */
+export function normalizeDismissedActivityRevids(raw: unknown): number[] {
+  if (!Array.isArray(raw)) return []
+
+  const seen = new Set<number>()
+  const revids: number[] = []
+
+  for (const item of raw) {
+    const revid = typeof item === 'number' ? item : Number(item)
+    if (!Number.isInteger(revid) || revid <= 0 || seen.has(revid)) continue
+    seen.add(revid)
+    revids.push(revid)
+  }
+
+  return revids
+}
+
 function normalizePinnedFromCommaList(raw: string): WikitabSectionId[] {
   const seen = new Set<WikitabSectionId>()
   const ids: WikitabSectionId[] = []
@@ -59,12 +105,18 @@ function normalizeConfig(raw: unknown): WikitabConfig {
 
   return {
     pinnedSectionIds: normalizePinnedSectionIds(record.pinnedSectionIds),
+    hiddenArticleTitleKeys: normalizeHiddenArticleTitleKeys(record.hiddenArticleTitleKeys),
+    dismissedActivityRevids: normalizeDismissedActivityRevids(record.dismissedActivityRevids),
+    colorThemeId: normalizeColorThemeId(record.colorThemeId),
   }
 }
 
 function cloneConfig(config: WikitabConfig): WikitabConfig {
   return {
     pinnedSectionIds: [...config.pinnedSectionIds],
+    hiddenArticleTitleKeys: [...config.hiddenArticleTitleKeys],
+    dismissedActivityRevids: [...config.dismissedActivityRevids],
+    colorThemeId: config.colorThemeId,
   }
 }
 

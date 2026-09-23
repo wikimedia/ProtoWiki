@@ -4,6 +4,15 @@ export function articleUrl(title: string): string {
   return `https://${EN_WIKI_HOST}/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`
 }
 
+export function visualEditorUrl(title: string): string {
+  return `${articleUrl(title)}?action=edit&veaction=edit`
+}
+
+/** Canonical lowercase key for matching article titles across feed cards. */
+export function articleTitleKey(title: string): string {
+  return title.trim().replace(/_/g, ' ').replace(/\s+/g, ' ').toLowerCase()
+}
+
 function parseFragment(html: string): HTMLElement {
   const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html')
   return (doc.body.firstElementChild as HTMLElement | null) ?? doc.createElement('div')

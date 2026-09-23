@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { CdxCard, CdxIcon } from '@wikimedia/codex'
+import { computed, ref, watch } from 'vue'
+import { CdxCard, CdxIcon, CdxMenuButton } from '@wikimedia/codex'
+import { cdxIconEllipsis, cdxIconEyeClosed } from '@wikimedia/codex-icons'
 import type { Icon } from '@wikimedia/codex-icons'
 import type { WikitabCardData, WikitabCardVariant } from './sections'
 
@@ -13,7 +14,25 @@ const props = defineProps<{
   supportingIcon?: Icon
   fullHook?: boolean
   loading?: boolean
+  showHideMenu?: boolean
 }>()
+
+const emit = defineEmits<{
+  'hide-article': [title: string]
+}>()
+
+const selection = ref<string | number | null>(null)
+
+const hideMenuItems = [{ value: 'hide', label: 'Hide from Trending', icon: cdxIconEyeClosed }]
+
+const hideArticleTitle = computed(() => props.card?.linkTitle ?? props.card?.title ?? '')
+
+watch(selection, (value) => {
+  if (value === 'hide' && hideArticleTitle.value) {
+    emit('hide-article', hideArticleTitle.value)
+  }
+  if (value !== null) selection.value = null
+})
 
 const thumbnail = computed(() =>
   props.card?.thumbnailUrl ? { url: props.card.thumbnailUrl } : null,
@@ -52,14 +71,16 @@ const showThumbnail = computed(() => {
   return !!props.card?.thumbnailUrl
 })
 
-const cardUrl = computed(() => {
-  if (props.variant === 'text' || props.loading) return undefined
-  return props.card?.href
+const showOverlayLink = computed(() => {
+  if (props.loading || !props.card?.href) return false
+  if (props.variant === 'text') return true
+  return props.showHideMenu === true && props.variant === 'thumbnail'
 })
 
-const showOverlayLink = computed(
-  () => props.variant === 'text' && !!props.card?.href && !props.loading,
-)
+const cardUrl = computed(() => {
+  if (props.loading || showOverlayLink.value) return undefined
+  return props.card?.href
+})
 
 const cardThumbnail = computed(() => {
   if (props.loading && props.variant === 'thumbnail') return null
@@ -81,12 +102,13 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
       'wikitab-card--thumbnail': variant === 'thumbnail',
       'wikitab-card--text': variant === 'text',
       'wikitab-card--thumbnail-pending': loading && variant === 'thumbnail',
+      'wikitab-card--has-menu': showHideMenu && card,
     }"
     :style="cardStyle"
   >
     <!--
-      Text variant only: card-wide link as an overlay rather than CdxCard `url`,
-      because hooks and news stories carry nested inline anchors.
+      Card-wide overlay link when CdxCard `url` is omitted — text hooks with nested
+      anchors, or thumbnail cards that expose an in-title menu button.
     -->
     <a
       v-if="showOverlayLink"
@@ -96,6 +118,20 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
       target="_blank"
       rel="noreferrer"
     />
+
+    <div v-if="showHideMenu && card" class="wikitab-card__menu">
+      <CdxMenuButton
+        v-model:selected="selection"
+        class="wikitab-card__menu-button"
+        weight="quiet"
+        :menu-items="hideMenuItems"
+        :menu-config="{ renderInPlace: true }"
+        :aria-label="`${hideArticleTitle} options`"
+        @click.stop
+      >
+        <CdxIcon :icon="cdxIconEllipsis" />
+      </CdxMenuButton>
+    </div>
 
     <CdxCard
       class="wikitab-card__cdx"
@@ -180,6 +216,87 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
   border-color: var(--border-color-interactive--active, #202122);
 }
 
+/* Thumbnail cards with a menu use the overlay link instead of CdxCard `url`. */
+.wikitab-card--thumbnail.wikitab-card--has-menu :deep(.cdx-card) {
+  transition-property: background-color, color, border-color, box-shadow;
+  transition-duration: 0.1s;
+}
+
+.wikitab-card--thumbnail.wikitab-card--has-menu:hover :deep(.cdx-card) {
+  border-color: var(--border-color-interactive--hover, #27292d);
+}
+
+.wikitab-card--thumbnail.wikitab-card--has-menu:active :deep(.cdx-card) {
+  border-color: var(--border-color-interactive--active, #202122);
+}
+
+.wikitab-card--has-menu {
+  overflow: visible;
+  z-index: 0;
+}
+
+.wikitab-card--has-menu:has([aria-expanded='true']) {
+  z-index: 2;
+}
+
+.wikitab-card--has-menu .wikitab-card__cdx {
+  overflow: visible;
+}
+
+.wikitab-card--has-menu :deep(.cdx-card) {
+  overflow: visible;
+}
+
+.wikitab-card--has-menu :deep(.cdx-card__text) {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.wikitab-card--has-menu :deep(.cdx-card__text__title) {
+  padding-inline-end: var(--spacing-200);
+}
+
+/* Quiet icon button — 32×32 hit target, tucked to the card corner (Figma). */
+.wikitab-card__menu {
+  position: absolute;
+  top: var(--spacing-35);
+  inset-inline-end: var(--spacing-35);
+  z-index: 2;
+}
+
+/*
+ * Desktop: hide the menu until the card is hovered. Keep it visible while the
+ * menu is open or the button has keyboard focus; mobile always shows it.
+ */
+[data-skin='desktop'] .wikitab-card--has-menu .wikitab-card__menu {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s;
+}
+
+[data-skin='desktop'] .wikitab-card--has-menu:hover .wikitab-card__menu,
+[data-skin='desktop'] .wikitab-card--has-menu:focus-within .wikitab-card__menu,
+[data-skin='desktop'] .wikitab-card--has-menu:has([aria-expanded='true']) .wikitab-card__menu {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.wikitab-card__menu-button :deep(.cdx-icon) {
+  color: var(--color-neutral);
+}
+
+/* MenuButton sizes to available width by default; shrink to label + icon. */
+.wikitab-card__menu-button :deep(.cdx-menu) {
+  width: max-content !important;
+  min-width: 0 !important;
+}
+
+.wikitab-card__menu-button :deep(.cdx-menu-item__text) {
+  font-weight: var(--font-weight-normal);
+  font-size: var(--font-size-medium);
+  line-height: var(--line-height-small);
+}
+
 /* Drawn inside the card, which clips its overflow. */
 .wikitab-card__link:focus-visible {
   outline: var(--border-width-thick) var(--border-style-base)
@@ -193,7 +310,7 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
  */
 .wikitab-card--loading {
   border: 0;
-  background-color: var(--background-color-neutral-subtle);
+  background-color: var(--wikitab-theme-skeleton-bg, var(--background-color-neutral-subtle));
 }
 
 /*
@@ -242,6 +359,11 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
   min-width: var(--wikitab-thumbnail-size);
   height: var(--wikitab-thumbnail-size);
   min-height: var(--wikitab-thumbnail-size);
+}
+
+/* Placeholder thumbnails stay Codex neutral grey, not the page color theme. */
+.wikitab-card :deep(.cdx-card__thumbnail .cdx-thumbnail__placeholder) {
+  background-color: var(--background-color-neutral-subtle);
 }
 
 /* Text cards place the thumbnail after the hook (Codex DYK pattern). */

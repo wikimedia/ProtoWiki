@@ -1,6 +1,7 @@
 import { computed, ref, shallowRef, watch, type Ref } from 'vue'
 
 import {
+  backfillArticleThumbnails,
   drainMorelikeRoundRobin,
   enrichTitleHits,
   fetchWikitabSearchArticlesMore,
@@ -18,6 +19,7 @@ export function useWikitabSearchResults(searchQuery: Ref<string>) {
   const loading = ref(false)
   const loadingRelated = ref(false)
   const loadingMore = ref(false)
+  const thumbnailBackfillPendingPageids = ref(new Set<number>())
   let abortController: AbortController | null = null
 
   const hasMore = computed(() =>
@@ -36,10 +38,53 @@ export function useWikitabSearchResults(searchQuery: Ref<string>) {
     curated.value = []
     related.value = []
     morelikeState.value = []
+    thumbnailBackfillPendingPageids.value = new Set()
+  }
+
+  function markThumbnailBackfillPending(pageids: number[]): void {
+    const next = new Set(thumbnailBackfillPendingPageids.value)
+    for (const pageid of pageids) next.add(pageid)
+    thumbnailBackfillPendingPageids.value = next
+  }
+
+  function clearThumbnailBackfillPending(pageid: number): void {
+    if (!thumbnailBackfillPendingPageids.value.has(pageid)) return
+    const next = new Set(thumbnailBackfillPendingPageids.value)
+    next.delete(pageid)
+    thumbnailBackfillPendingPageids.value = next
+  }
+
+  function applyArticleThumbnail(pageid: number, thumbnailUrl?: string): void {
+    clearThumbnailBackfillPending(pageid)
+    if (!thumbnailUrl) return
+
+    curated.value = curated.value.map((article) =>
+      article.pageid === pageid ? { ...article, thumbnailUrl } : article,
+    )
+    related.value = related.value.map((article) =>
+      article.pageid === pageid ? { ...article, thumbnailUrl } : article,
+    )
   }
 
   function appendCurated(article: WikitabSearchArticle): void {
     curated.value = [...curated.value, article]
+  }
+
+  function scheduleThumbnailBackfill(
+    articles: WikitabSearchArticle[],
+    signal: AbortSignal,
+  ): void {
+    const needsBackfill = articles.filter((article) => !article.thumbnailUrl)
+    if (!needsBackfill.length || signal.aborted) return
+
+    markThumbnailBackfillPending(needsBackfill.map((article) => article.pageid))
+
+    void backfillArticleThumbnails(articles, signal, (pageid, thumbnailUrl) => {
+      if (signal.aborted) return
+      applyArticleThumbnail(pageid, thumbnailUrl)
+    }).catch((err) => {
+      if (signal.aborted || (err as Error)?.name === 'AbortError') return
+    })
   }
 
   async function loadInitial(query: string): Promise<void> {
@@ -80,12 +125,14 @@ export function useWikitabSearchResults(searchQuery: Ref<string>) {
           if (seen.has(article.pageid)) continue
           seen.add(article.pageid)
           appendCurated(article)
+          scheduleThumbnailBackfill([article], signal)
         }
 
         for (const article of nearArticles) {
           if (seen.has(article.pageid)) continue
           seen.add(article.pageid)
           appendCurated(article)
+          scheduleThumbnailBackfill([article], signal)
         }
       }
 
@@ -95,6 +142,7 @@ export function useWikitabSearchResults(searchQuery: Ref<string>) {
       if (match) {
         seen.add(match.pageid)
         appendCurated(match)
+        scheduleThumbnailBackfill([match], signal)
       }
 
       loading.value = false
@@ -105,6 +153,7 @@ export function useWikitabSearchResults(searchQuery: Ref<string>) {
 
       related.value = relatedResult.related
       morelikeState.value = relatedResult.morelikeState
+      scheduleThumbnailBackfill(relatedResult.related, signal)
     } catch (err) {
       if (signal.aborted || (err as Error)?.name === 'AbortError') return
       reset()
@@ -149,6 +198,9 @@ export function useWikitabSearchResults(searchQuery: Ref<string>) {
       const fresh = drainMorelikeRoundRobin(seeds, seen)
       if (fresh.length) {
         related.value = [...related.value, ...fresh]
+        if (abortController?.signal) {
+          scheduleThumbnailBackfill(fresh, abortController.signal)
+        }
       }
       morelikeState.value = [...seeds]
     } catch (err) {
@@ -184,5 +236,6 @@ export function useWikitabSearchResults(searchQuery: Ref<string>) {
     loadingMore,
     hasMore,
     loadMore,
+    thumbnailBackfillPendingPageids,
   }
 }

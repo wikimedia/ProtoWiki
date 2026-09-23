@@ -6,13 +6,13 @@ import {
   fetchWikitabSearchTopTitles,
   type WikitabSearchTopTitle,
 } from './fetchWikitabSearchArticles'
+import { fetchWikitabPageSummaryThumbnails } from './fetchWikitabPageSummary'
 import { articleUrl, EN_WIKI_HOST } from './wikitabHtml'
 
 export { fetchWikitabSearchTopTitles, type WikitabSearchTopTitle }
 
 /** Revisions fetched per page when refilling the merge queue. */
 export const REVISIONS_PER_FETCH = 5
-const THUMBNAIL_SIZE = 200
 /** MediaWiki list=users batch size. */
 const USERS_PER_FETCH = 50
 
@@ -23,10 +23,15 @@ export interface WikitabSearchActivityItem {
   title: string
   editSummary: string
   thumbnailUrl?: string
+  charsAdded?: number
+  charsRemoved?: number
   articleHref: string
   diffUrl: string
+  thankUrl: string
   revid: number
   reverted: boolean
+  /** Set asynchronously after Lift Wing revert-risk lookup. */
+  highRevertRisk?: boolean
   isLatest: boolean
   editorName: string
   editorHref: string
@@ -37,12 +42,16 @@ export interface WikitabSearchActivityItem {
 
 interface RevisionRow {
   revid: number
+  parentid: number
+  size: number
   user: string
   userid: number
   comment: string
   parsedComment: string
   timestamp: string
   reverted: boolean
+  charsAdded?: number
+  charsRemoved?: number
 }
 
 interface ActivityCandidate {
@@ -56,10 +65,13 @@ export interface PageRevisionState {
   title: string
   oldestRevid?: number
   exhausted: boolean
+  revSizesById: Map<number, number>
 }
 
 type RevisionApiRow = {
   revid?: number
+  parentid?: number
+  size?: number
   user?: string
   userid?: number
   comment?: string
@@ -79,12 +91,6 @@ type RevisionPageRow = {
   pageid?: number
   missing?: string
   revisions?: RevisionApiRow[]
-}
-
-type ThumbnailPageRow = {
-  title?: string
-  missing?: string
-  thumbnail?: { source?: string }
 }
 
 function titleKey(title: string): string {
@@ -117,16 +123,102 @@ function wikiActionUrl(params: Record<string, string>): string {
 }
 
 function parseRevisionRow(revision: RevisionApiRow): RevisionRow | null {
-  if (!revision.revid) return null
+  if (!revision.revid || typeof revision.size !== 'number') return null
 
   return {
     revid: revision.revid,
+    parentid: revision.parentid ?? 0,
+    size: revision.size,
     user: revision.user ?? '',
     userid: revision.userid ?? 0,
     comment: revision.comment ?? '',
     parsedComment: revision.parsedcomment ?? '',
     timestamp: revision.timestamp ?? '',
     reverted: (revision.tags ?? []).includes('mw-reverted'),
+  }
+}
+
+function computeDiffSize(
+  revision: Pick<RevisionRow, 'parentid' | 'size'>,
+  revSizesById: Map<number, number>,
+): Pick<RevisionRow, 'charsAdded' | 'charsRemoved'> | null {
+  if (!revision.parentid) return null
+  const parentSize = revSizesById.get(revision.parentid)
+  if (parentSize == null) return null
+
+  const delta = revision.size - parentSize
+  if (delta > 0) return { charsAdded: delta, charsRemoved: 0 }
+  if (delta < 0) return { charsAdded: 0, charsRemoved: -delta }
+  return { charsAdded: 0, charsRemoved: 0 }
+}
+
+function attachDiffSizes(revisions: RevisionRow[], revSizesById: Map<number, number>): void {
+  for (const revision of revisions) {
+    revSizesById.set(revision.revid, revision.size)
+  }
+
+  for (const revision of revisions) {
+    const diffSize = computeDiffSize(revision, revSizesById)
+    if (!diffSize) continue
+    revision.charsAdded = diffSize.charsAdded
+    revision.charsRemoved = diffSize.charsRemoved
+  }
+}
+
+/** Parent of the oldest rev in each batch is outside the batch — fetch its size for the delta. */
+async function fetchRevisionSizesForIds(
+  revids: number[],
+  signal: AbortSignal | undefined,
+): Promise<Map<number, number>> {
+  const sizes = new Map<number, number>()
+  if (!revids.length) return sizes
+
+  const response = await fetchWikimedia(
+    wikiActionUrl({
+      action: 'query',
+      prop: 'revisions',
+      revids: revids.join('|'),
+      rvprop: 'ids|size',
+    }),
+    {
+      signal,
+      headers: wikimediaApiFetchHeaders('wikitab-search-activity'),
+    },
+  )
+  if (!response.ok) return sizes
+
+  const json = (await response.json()) as {
+    query?: { pages?: Record<string, RevisionPageRow> }
+  }
+
+  for (const page of Object.values(json.query?.pages ?? {})) {
+    for (const revision of page.revisions ?? []) {
+      if (revision.revid && typeof revision.size === 'number') {
+        sizes.set(revision.revid, revision.size)
+      }
+    }
+  }
+
+  return sizes
+}
+
+async function ensureParentSizes(
+  revisions: RevisionRow[],
+  revSizesById: Map<number, number>,
+  signal: AbortSignal | undefined,
+): Promise<void> {
+  const missingParentIds = [
+    ...new Set(
+      revisions
+        .map((revision) => revision.parentid)
+        .filter((parentid) => parentid > 0 && !revSizesById.has(parentid)),
+    ),
+  ]
+  if (!missingParentIds.length) return
+
+  const fetched = await fetchRevisionSizesForIds(missingParentIds, signal)
+  for (const [revid, size] of fetched.entries()) {
+    revSizesById.set(revid, size)
   }
 }
 
@@ -137,6 +229,10 @@ function diffUrl(title: string, revid: number): string {
     oldid: String(revid),
   })
   return `https://${EN_WIKI_HOST}/w/index.php?${params.toString()}`
+}
+
+function thankUrl(revid: number): string {
+  return `https://${EN_WIKI_HOST}/wiki/Special:Thanks/${revid}`
 }
 
 function parseMediaWikiTimestamp(timestamp: string): Date {
@@ -274,7 +370,7 @@ async function fetchRevisionsForTitle(
     action: 'query',
     prop: 'revisions',
     titles: title,
-    rvprop: 'ids|timestamp|user|userid|comment|parsedcomment|tags',
+    rvprop: 'ids|timestamp|user|userid|comment|parsedcomment|tags|size',
     rvlimit: String(limit),
   }
   if (olderThanRevid != null) {
@@ -326,41 +422,6 @@ async function fetchLatestRevisionsForTitles(
   }
 
   return revisions
-}
-
-async function fetchPageThumbnails(
-  titles: string[],
-  signal: AbortSignal | undefined,
-): Promise<Map<string, string>> {
-  const thumbnails = new Map<string, string>()
-  if (!titles.length) return thumbnails
-
-  const response = await fetchWikimedia(
-    wikiActionUrl({
-      action: 'query',
-      prop: 'pageimages',
-      titles: titles.join('|'),
-      piprop: 'thumbnail',
-      pithumbsize: String(THUMBNAIL_SIZE),
-    }),
-    {
-      signal,
-      headers: wikimediaApiFetchHeaders('wikitab-search-activity'),
-    },
-  )
-  if (!response.ok) return thumbnails
-
-  const json = (await response.json()) as {
-    query?: { pages?: Record<string, ThumbnailPageRow> }
-  }
-
-  for (const page of Object.values(json.query?.pages ?? {})) {
-    if (page.missing !== undefined || !page.title) continue
-    const url = normalizeThumbnailUrl(page.thumbnail?.source)
-    if (url) thumbnails.set(titleKey(page.title), url)
-  }
-
-  return thumbnails
 }
 
 async function fetchEditorKindsForBatch(
@@ -437,8 +498,11 @@ function mapCandidate(
       candidate.revision.user,
     ),
     thumbnailUrl: thumbnailByTitle.get(key),
+    charsAdded: candidate.revision.charsAdded,
+    charsRemoved: candidate.revision.charsRemoved,
     articleHref: articleUrl(candidate.title),
     diffUrl: diffUrl(candidate.title, candidate.revision.revid),
+    thankUrl: thankUrl(candidate.revision.revid),
     revid: candidate.revision.revid,
     reverted: candidate.revision.reverted,
     isLatest,
@@ -484,6 +548,9 @@ async function fetchNextActivityCandidates(
       continue
     }
 
+    await ensureParentSizes(revisions, state.revSizesById, signal)
+    attachDiffSizes(revisions, state.revSizesById)
+
     state.oldestRevid = revisions[revisions.length - 1].revid
     if (revisions.length < limit) {
       state.exhausted = true
@@ -518,6 +585,7 @@ export class WikitabSearchActivityFeed {
       pageid: title.pageid,
       title: title.title,
       exhausted: false,
+      revSizesById: new Map<number, number>(),
     }))
 
     for (const title of titles) {
@@ -536,14 +604,18 @@ export class WikitabSearchActivityFeed {
   }
 
   /** Latest revids and missing thumbnails — safe to run in the background. */
-  async prefetchMetadata(signal: AbortSignal): Promise<void> {
+  async prefetchMetadata(signal: AbortSignal): Promise<Map<string, string>> {
     const titles = this.pageStates.map((state) => state.title)
     const missingThumbnails = titles.filter((title) => !this.thumbnailByTitle.has(titleKey(title)))
 
     const [latestRevisions, fetchedThumbnails] = await Promise.all([
       fetchLatestRevisionsForTitles(titles, signal),
       missingThumbnails.length
-        ? fetchPageThumbnails(missingThumbnails, signal)
+        ? fetchWikitabPageSummaryThumbnails(
+            missingThumbnails,
+            signal,
+            'wikitab-search-activity-thumbnail',
+          )
         : Promise.resolve(new Map<string, string>()),
     ])
 
@@ -553,6 +625,8 @@ export class WikitabSearchActivityFeed {
     for (const [key, url] of fetchedThumbnails.entries()) {
       this.thumbnailByTitle.set(key, url)
     }
+
+    return fetchedThumbnails
   }
 
   async takeNext(signal: AbortSignal): Promise<WikitabSearchActivityItem | null> {

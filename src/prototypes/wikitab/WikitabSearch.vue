@@ -2,6 +2,8 @@
 import { computed, useId, ref, toRef } from 'vue'
 import { CdxMenu, CdxSearchInput } from '@wikimedia/codex'
 
+import { globalTheme } from '@/theme'
+
 import { useWikitabSearch, WIKITAB_SEARCH_FOR_VALUE } from './useWikitabSearch'
 
 const props = defineProps<{
@@ -54,7 +56,11 @@ function onKeydown(event: KeyboardEvent): void {
 </script>
 
 <template>
-  <div class="wikitab-search" :class="{ 'wikitab-search--expanded': menuExpanded }">
+  <div
+    class="wikitab-search"
+    :class="{ 'wikitab-search--expanded': menuExpanded }"
+    :data-theme="globalTheme"
+  >
     <CdxSearchInput
       :model-value="query"
       class="wikitab-search__input"
@@ -105,6 +111,15 @@ function onKeydown(event: KeyboardEvent): void {
   width: 100%;
 }
 
+/*
+ * data-theme on this root re-applies Codex light/dark tokens here so page-theme
+ * custom properties from .wikitab (tinted subtle, etc.) do not leak into the
+ * white search island. See protowiki-theme.
+ *
+ * Theme accent (--wikitab-theme-card-progressive, inherited from .wikitab) applies
+ * only to the focus ring and menu loading bar — not icons, menu text, or button.
+ */
+
 .wikitab-search--expanded {
   /* Card inline links use z-index 2; sit above them when the menu overlaps sections. */
   z-index: 10;
@@ -112,6 +127,11 @@ function onKeydown(event: KeyboardEvent): void {
 
 .wikitab-search :deep(.cdx-search-input__input-wrapper) {
   position: relative;
+}
+
+.wikitab-search--expanded :deep(.cdx-search-input--has-end-button) {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .wikitab-search--expanded :deep(.cdx-text-input) {
@@ -136,7 +156,8 @@ function onKeydown(event: KeyboardEvent): void {
     0 0 8px 0 var(--box-shadow-color-base, rgba(0, 0, 0, 0.06));
 }
 
-.wikitab-search__menu {
+/* :deep() — CdxMenu root does not receive parent scope id. */
+.wikitab-search :deep(.wikitab-search__menu) {
   position: static;
   border: 0;
   box-shadow: none;
@@ -153,4 +174,25 @@ function onKeydown(event: KeyboardEvent): void {
   height: 40px;
   min-height: 40px;
 }
+
+.wikitab-search :deep(.cdx-text-input__input:enabled:focus) {
+  border-color: var(
+    --wikitab-theme-card-progressive,
+    var(--border-color-progressive--focus, #36c)
+  );
+  box-shadow: inset 0 0 0 1px
+    var(--wikitab-theme-card-progressive, var(--box-shadow-color-progressive--focus, #36c));
+}
+
+.wikitab-search :deep(.cdx-menu__progress-bar.cdx-progress-bar) {
+  border-color: var(--wikitab-theme-card-progressive, var(--border-color-progressive, #36c));
+}
+
+.wikitab-search :deep(.cdx-menu__progress-bar .cdx-progress-bar__bar) {
+  background-color: var(
+    --wikitab-theme-card-progressive,
+    var(--background-color-progressive, #36c)
+  );
+}
+
 </style>

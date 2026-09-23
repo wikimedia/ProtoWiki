@@ -17,9 +17,15 @@ User preferences for this browser profile live in
 wikita-lite-style mega schema — the old prototype's 772-line `urlStateSchema.ts`
 is the anti-pattern.
 
-Section pinning is the first field: `pinnedSectionIds` (most recently pinned
-first). More options (hidden sections, layout prefs, …) land here as features
-need them.
+Current fields:
+
+- `pinnedSectionIds` — most recently pinned first
+- `hiddenArticleTitleKeys` — normalized article titles hidden from Trending on
+  the home feed (`useWikitabHiddenArticles.ts`)
+- `dismissedActivityRevids` — Activity-tab revision ids permanently dismissed
+  via the card ellipsis menu (`useWikitabDismissedActivity.ts`)
+
+More options (hidden sections, layout prefs, …) land here as features need them.
 
 ## Cache-only feed storage (`wikitab-feed-cache-v*`)
 
@@ -57,5 +63,7 @@ is stripped via `history.replaceState`.
 
 ## Cross-tab sync
 
-`useWikitabPinned.ts` listens for the `storage` event on
-`WIKITAB_CONFIG_STORAGE_KEY` so pin changes in one tab update open tabs.
+`useWikitabPinned.ts`, `useWikitabHiddenArticles.ts`, and
+`useWikitabDismissedActivity.ts` listen for the `storage` event on
+`WIKITAB_CONFIG_STORAGE_KEY` so pin / hide / dismiss changes in one tab update
+open tabs.

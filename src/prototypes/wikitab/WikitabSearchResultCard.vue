@@ -23,6 +23,7 @@ import { useWikitabSearchArticleAttribution } from './useWikitabSearchArticleAtt
 const props = defineProps<{
   article: WikitabSearchArticle
   searchQuery: string
+  thumbnailBackfillPending?: boolean
 }>()
 
 const articleTitle = toRef(() => props.article.title)
@@ -39,6 +40,14 @@ const {
 
 const thumbnailUrl = toRef(() => props.article.thumbnailUrl)
 const { showThumbnailPending } = useThumbnailSlotReady(thumbnailUrl)
+
+const showThumbnailBackfillPending = computed(
+  () => props.thumbnailBackfillPending === true && !props.article.thumbnailUrl,
+)
+
+const showThumbnailSlotPending = computed(
+  () => showThumbnailBackfillPending.value || showThumbnailPending.value,
+)
 
 const thumbnail = computed(() =>
   props.article.thumbnailUrl ? { url: props.article.thumbnailUrl } : null,
@@ -90,7 +99,7 @@ watch(selection, (value) => {
     <CdxDialog
       v-model:open="whyDialogOpen"
       title="Why am I seeing this?"
-      close-button-label="Close"
+      :use-close-button="true"
       :dismissable="true"
     >
       <p class="wikitab-search-result-card__why">
@@ -115,7 +124,7 @@ watch(selection, (value) => {
 
     <CdxThumbnail
       class="wikitab-search-result-card__thumbnail"
-      :class="{ 'wikitab-search-result-card__thumbnail--pending': showThumbnailPending }"
+      :class="{ 'wikitab-search-result-card__thumbnail--pending': showThumbnailSlotPending }"
       :thumbnail="thumbnail"
     />
 
@@ -189,7 +198,7 @@ watch(selection, (value) => {
   gap: var(--spacing-75);
   padding-block: var(--spacing-75);
   border-radius: var(--border-radius-base);
-  background-color: var(--background-color-base);
+  background-color: transparent;
 }
 
 .wikitab-search-result-card__menu {
@@ -222,7 +231,7 @@ watch(selection, (value) => {
 .wikitab-search-result-card__thumbnail--pending :deep(.cdx-thumbnail),
 .wikitab-search-result-card__thumbnail--pending :deep(.cdx-thumbnail__placeholder) {
   border: 0;
-  background-color: var(--background-color-neutral-subtle);
+  background-color: var(--wikitab-theme-skeleton-bg, var(--background-color-neutral-subtle));
 }
 
 .wikitab-search-result-card__thumbnail--pending :deep(.cdx-icon) {
@@ -239,21 +248,31 @@ watch(selection, (value) => {
   flex-direction: column;
   gap: var(--spacing-25);
   min-width: 0;
-  padding-inline-end: var(--spacing-150);
 }
 
 .wikitab-search-result-card__title {
   margin: 0;
+  /* Reserve space for the corner menu; body text runs to the card edge. */
+  padding-inline-end: var(--spacing-200);
 }
 
 .wikitab-search-result-card__title a {
-  color: var(--color-link);
+  color: var(--color-progressive);
   text-decoration: none;
 }
 
 .wikitab-search-result-card__title a:hover,
 .wikitab-search-result-card__title a:focus-visible {
+  color: var(--color-progressive--hover);
   text-decoration: underline;
+}
+
+.wikitab-search-result-card__title a:visited {
+  color: var(--color-progressive);
+}
+
+.wikitab-search-result-card__title a:visited:hover {
+  color: var(--color-progressive--hover);
 }
 
 .wikitab-search-result-card__description,
@@ -276,7 +295,7 @@ watch(selection, (value) => {
 .wikitab-search-result-card__description :deep(strong),
 .wikitab-search-result-card__extract :deep(strong) {
   font-weight: var(--font-weight-bold);
-  color: var(--color-base);
+  color: inherit;
 }
 
 .wikitab-search-result-card__supporting {
@@ -307,6 +326,10 @@ watch(selection, (value) => {
   cursor: default;
 }
 
+.wikitab-search-result-card__supporting :deep(.cdx-icon) {
+  color: inherit;
+}
+
 .wikitab-search-result-card__supporting-end {
   flex-shrink: 0;
   cursor: default;
@@ -327,7 +350,7 @@ watch(selection, (value) => {
   width: 52px;
   height: var(--line-height-small);
   border-radius: var(--border-radius-base);
-  background-color: var(--background-color-neutral-subtle);
+  background-color: var(--wikitab-theme-skeleton-bg, var(--background-color-neutral-subtle));
 }
 
 .wikitab-search-result-card__supporting-skeleton-end {
@@ -335,6 +358,6 @@ watch(selection, (value) => {
   width: 56px;
   height: var(--line-height-small);
   border-radius: var(--border-radius-base);
-  background-color: var(--background-color-neutral-subtle);
+  background-color: var(--wikitab-theme-skeleton-bg, var(--background-color-neutral-subtle));
 }
 </style>

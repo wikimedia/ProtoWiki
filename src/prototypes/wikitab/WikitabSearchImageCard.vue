@@ -81,7 +81,7 @@ watch(
 .wikitab-search-image-card__pending {
   position: absolute;
   inset: 0;
-  background-color: var(--background-color-neutral-subtle);
+  background-color: var(--wikitab-theme-skeleton-bg, var(--background-color-neutral-subtle));
 }
 
 .wikitab-search-image-card__img {

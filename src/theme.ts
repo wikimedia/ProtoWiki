@@ -142,7 +142,12 @@ function resolveEffectiveTheme(preference: ConfigTheme): Theme {
   return resolveThemeFromMedia()
 }
 
-function applyGlobalTheme(theme: Theme): void {
+/**
+ * Set the resolved light/dark theme on `<html>` immediately.
+ * Prefer {@link applyThemePreference} for stored user preference; use this
+ * for temporary document-theme overrides (e.g. Wikitab color themes).
+ */
+export function applyGlobalTheme(theme: Theme): void {
   globalTheme.value = theme
   setHtmlAttribute('data-theme', theme)
   syncWikiSkinNightClass(theme)

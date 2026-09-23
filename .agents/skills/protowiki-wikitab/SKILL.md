@@ -274,7 +274,10 @@ element):
 - **Home feed cards** — compact scale on `.wikitab-section__cards` in
   `WikitabSection.vue`: 14px body / 12px small. Section headings, wordmark, and
   chrome use Codex defaults (18px / 28px).
-- **Search results** — Codex defaults throughout (16px body / 14px small).
+- **Search results** — Codex defaults for tabs, hero search, and Articles /
+  Images panels (16px body / 14px small). **Activity tab cards** use the home
+  feed compact scale (14px body / 12px small) via token shadowing on
+  `.wikitab-search-page__list--activity`.
 
 See [`codex-typography`](../codex-typography/SKILL.md) for the canonical text
 styles those values map onto.
@@ -299,18 +302,20 @@ REST:
   cancellation, maps results to `MenuItemData` for `CdxMenu`. Stale rows stay
   visible while debouncing; `show-pending` only when the first fetch has zero
   result rows.
-- **Panel** — first menu row is the `Explore for "…"` item (custom menu slot,
+- **Panel** — first menu row is the `Search for "…"` item (custom menu slot,
   text only, no thumbnail; shows the raw input inside the quotes including
   whitespace; `&nbsp;` before the opening quote so that space cannot collapse);
   then thumbnail + title + description rows. Dropdown width matches the input
-  wrapper only (not the Explore button). When open,
+  wrapper only (not the Search button). When open,
   `.wikitab__hero:has(.wikitab-search--expanded)` gets `z-index: 10` so the
   menu covers feed card link overlays (`z-index: 2`). Keyboard handling matches
   `CdxTypeaheadSearch`: arrow keys navigate the menu, but **Space** is left to
   the input (never delegated to `CdxMenu`).
-- **Navigation** — submit, the `Explore for "…"` row, or a lookahead result
-  pushes `?search=…` on the same `/wikitab` route (result rows use the matched
-  title). Clearing the input and submitting removes `search` from the query.
+- **Navigation** — submit or the `Search for "…"` row pushes `?search=…` on the
+  same `/wikitab` route. A lookahead result row (click or Enter with that row
+  highlighted) navigates the tab to the English Wikipedia article via
+  `articleUrl(title)`. Clearing the input and submitting removes `search` from
+  the query.
 
 ## Search results (`?search=`)
 
@@ -320,24 +325,24 @@ as the home feed (hero top padding unchanged so the search bar does not jump).
 The feed orchestrator is skipped while search mode is active.
 
 **Tabs** — quiet `CdxTabs` with four labels: Articles, Images, Activity,
-Contribute. **Articles**, **Images**, and **Activity** have content.
-**Contribute** is empty (no placeholder copy). Active tab syncs to
+Contribute. All four tabs have content. Active tab syncs to
 `?tab=` (`articles` | `images` | `activity` | `contribute`); omitted means
 Articles. Tab clicks **push** browser history so Back/Forward walks tab
 selections. Submitting a new search keeps the current `tab`; clearing search
 removes `tab` from the URL.
 `useWikitabSearchTab.ts` owns URL ↔ state sync.
 
-**Tab cache** — Articles, Images, and Activity results stay in composable memory
-for the search session. Switching tabs does not refetch or show skeletons again;
-Activity and Images abort in-flight requests when hidden but keep resolved
-results. Query change resets all three tabs.
+**Tab cache** — Articles, Images, Activity, and Contribute results stay in
+composable memory for the search session. Switching tabs does not refetch or
+show skeletons again; Activity, Contribute, and Images abort in-flight requests
+when hidden but keep resolved results. Query change resets all four tabs.
 
 **Loading cards** — `WikitabSearchLoadingCard.vue` is the shared search-result
 placeholder. Variants: `article` (96px thumbnail stub), `activity` (no
-thumbnail column), and `image` (borderless aspect-ratio skeleton tile).
-Use these heavily while API work resolves — especially on Activity, where edits
-stream in one at a time.
+thumbnail column), and `image` (borderless aspect-ratio skeleton tile). Use
+these heavily while API work resolves — especially on Activity and Contribute,
+where cards stream in one at a time. Contribute reuses the **activity** skeleton
+variant (same compact list type).
 
 **Articles tab** — `WikitabSearchResultCard.vue` per hit. One flat list built in
 priority order from four sources (global `pageid` dedupe — earlier slots win):
@@ -368,6 +373,12 @@ lands. Initial morelike uses `INITIAL_MORELIKE_BATCH_SIZE` (5), not the 20-item
 pagination batch. `loadingRelated` covers the morelike tail;
 tail skeletons while related resolves.
 
+**Thumbnails** — initial `thumbnailUrl` comes from the Action API `pageimages`
+pass in `fetchActionApiPages`. Any article still missing a thumbnail after that
+is backfilled asynchronously via REST `/page/summary/` (`backfillArticleThumbnails`
+in `fetchWikitabSearchArticles.ts`, shared cache in
+`data/fetchWikitabPageSummary.ts`) — non-blocking; cards paint immediately.
+
 **Thumbnail-slot loading** — `WikitabSearchResultCard` always reserves the 96px
 thumbnail column. Title, description, and extract paint as soon as API data
 lands; when a `thumbnailUrl` exists, only the image area stays a flat
@@ -384,9 +395,10 @@ Only the **h3 title link** navigates to the English Wikipedia article page
 text when the query resolves to nothing.
 
 Implementation: `data/fetchWikitabSearchArticles.ts`,
-`data/formatSearchArticleRelation.ts`, `useWikitabSearchResults.ts`,
-`WikitabSearchPage.vue`, `WikitabSearchResultCard.vue`,
-`useThumbnailSlotReady.ts`, `useWikitabSearchArticleAttribution.ts`.
+`data/fetchWikitabPageSummary.ts`, `data/formatSearchArticleRelation.ts`,
+`useWikitabSearchResults.ts`, `WikitabSearchPage.vue`,
+`WikitabSearchResultCard.vue`, `useThumbnailSlotReady.ts`,
+`useWikitabSearchArticleAttribution.ts`.
 
 **Images tab** — Wikimedia Commons file search in a **responsive masonry grid**
 (minimum two columns on mobile — not the home-feed horizontal carousel).
@@ -471,8 +483,11 @@ those titles.
 Feed bootstrap is **non-blocking**: `createWikitabSearchActivityFeed` returns
 after titles resolve; `feed.start()` fetches the first revision batch;
 `feed.prefetchMetadata()` runs in the background for latest revids and missing
-thumbnails. Cards paint immediately with partial metadata; **Latest** chips may
-appear once latest-revid data settles.
+thumbnails (REST `/page/summary/` via `fetchWikitabPageSummaryThumbnails` —
+same shared cache as Articles / Contribute). Cards paint immediately with
+partial metadata; **Latest** chips and **40px thumbnails** patch onto already-
+rendered slots when prefetch settles (`patchThumbnails` in
+`useWikitabSearchActivity.ts`, same reactive pattern as revert-risk chips).
 
 Rate-limit contract (mandatory):
 
@@ -483,6 +498,9 @@ Rate-limit contract (mandatory):
   `rvlimit=5`, only when the internal merge queue is empty.
 - Latest revid per title fetched in background (`prefetchMetadata`) for the
   **Latest** chip — not a gate before the first card paints.
+- Revert risk fetched per card in the background via Lift Wing
+  (`fetchRevertRiskLanguageAgnostic.ts`) — serial queue, not a gate before
+  paint; indefinite in-memory cache keyed by `revid`.
 - Editor kind resolved per card in `takeNext()` via cached
   `list=users&usprop=groups` lookup (`bot` / `temp` groups).
 - Tab fetch starts only when Activity is selected (`enabled` ref); abort
@@ -490,10 +508,21 @@ Rate-limit contract (mandatory):
   memory when switching tabs.
 
 UI: resolved `WikitabSearchActivityCard` rows plus activity skeleton phases
-above. Cards are borderless like Articles but **no thumbnail column in
-skeletons**; resolved cards show a 96px thumbnail when one resolves. Chip row
-uses `CdxInfoChip` (API-derived **Latest** / **Reverted** only). Links go to the
-en.wikipedia.org diff. Chips sit above the entire card (above the thumbnail +
+above. Resolved cards use the standard Codex card border (`--border-color-subtle`
+at rest, interactive hover/active border tokens) — unlike Articles tab cards,
+which are borderless. Activity skeletons have **no thumbnail column**; resolved
+cards show a 40px thumbnail when one resolves. Description block: green **+n** / red **−n** character delta (from revision `size`
+vs parent), or subtle **±0** when size is unchanged, on its own line above the edit
+summary when the parent size is known. Chip row uses `CdxInfoChip` (in order):
+**High revert risk** (Lift Wing `revertrisk-language-agnostic`, ≥0.9 probability,
+every resolved edit — not latest-only; fetched per card in the background;
+indefinite in-memory cache keyed by `revid`), **Latest revision** (from
+background latest-revid prefetch), and **Reverted** (from revision `mw-reverted`
+tag). Multiple chips may appear on one card.
+Top-right `CdxMenuButton` (`cdxIconEllipsis`, quiet) exposes **Thank** (opens
+`Special:Thanks/{revid}` on en.wikipedia.org in a new tab) and **Dismiss** — persists the revision id in
+`WikitabConfig.dismissedActivityRevids` and removes the card; dismissed diffs are
+skipped on future loads. Card links go to the en.wikipedia.org diff. Chips sit above the entire card (above the thumbnail +
 content row); supporting row is editor + relative time, with a Codex icon for
 editor type — **Bot** (`cdxIconRobot`), **Temporary** (`cdxIconUserTemporary`),
 **User** (`cdxIconUserAvatar`). IP edits (`userid === 0`) use the same
@@ -501,7 +530,43 @@ editor type — **Bot** (`cdxIconRobot`), **Temporary** (`cdxIconUserTemporary`)
 (anonymous when 0) plus the per-card user-group lookup above.
 
 Implementation: `data/fetchWikitabSearchActivity.ts`,
-`useWikitabSearchActivity.ts`, `WikitabSearchActivityCard.vue`,
+`data/fetchWikitabPageSummary.ts`, `data/fetchRevertRiskLanguageAgnostic.ts`,
+`useWikitabSearchActivity.ts`,
+`useWikitabDismissedActivity.ts`, `WikitabSearchActivityCard.vue`,
+`WikitabSearchLoadingCard.vue`.
+
+**Contribute tab** — edit-opportunity cards scoped to the search query's **top 6
+articles** (same `knownTitles` as Activity). Reuses Articles-tab titles when
+already loaded; if Contribute opens while Articles is still loading, **wait** for
+the first six titles rather than duplicating the Articles fetch pipeline.
+
+- **Source** — Microtask Generator `POST /quality-check` (`potential_needs[]` →
+  task label + body via `editOpportunityCopy.ts` / `editOpportunityIcons.ts`).
+  Phase A quality-checks each top-6 title in Articles order; phase B expands via
+  Action API `list=search` + `srsearch=morelike:{seed}` into related articles.
+  Thumbnails and descriptions from Articles-tab cache or
+  `fetchWikitabPageSummary.ts` (shared with Articles / Activity).
+- **Progressive load** — same skeleton phases as Activity (`variant="activity"`):
+  initial three skeletons → one resolved card per `takeNext()` → tail skeletons
+  while filling → load-more skeletons on infinite scroll.
+- **Rate-limit contract** — Wikipedia requests via `fetchWikimedia`; Microtask
+  POST via `fetchWithTimeout` (not queued). **One resolved card per fetch cycle.**
+  Quality-check results and built cards are cached per page as each card resolves
+  (indefinite in-memory cache keyed by `pageid` / title; `'none'` for misses).
+  Summary responses are cached per title in `fetchWikitabPageSummary.ts`. Tab
+  fetch starts only when Contribute is selected; abort when hidden or on query
+  change, but keep resolved results when switching tabs.
+
+UI: `WikitabSearchContributeCard.vue` — bordered card (Activity shell), 96px
+left thumbnail with thumbnail-slot loading, article title, task body, supporting
+row with progressive task icon + label at row start and **Related to {seed}** at
+row end when from morelike. Whole card links to Visual Editor
+(`visualEditorUrl()` in `wikitabHtml.ts`).
+
+Implementation: `data/fetchWikitabSearchContribute.ts`,
+`data/fetchWikitabPageSummary.ts`, `data/editOpportunityCopy.ts`,
+`data/editOpportunityIcons.ts`,
+`useWikitabSearchContribute.ts`, `WikitabSearchContributeCard.vue`,
 `WikitabSearchLoadingCard.vue`.
 
 ## What's inert

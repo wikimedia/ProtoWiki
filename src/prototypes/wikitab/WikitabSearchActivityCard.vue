@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { CdxIcon, CdxInfoChip, CdxThumbnail } from '@wikimedia/codex'
+import { computed, ref, watch } from 'vue'
+import { CdxIcon, CdxInfoChip, CdxMenuButton, CdxThumbnail } from '@wikimedia/codex'
 import {
+  cdxIconAlert,
   cdxIconArticle,
+  cdxIconCheck,
   cdxIconEditUndo,
+  cdxIconEllipsis,
+  cdxIconHeartOutline,
   cdxIconRobot,
   cdxIconUserAvatar,
   cdxIconUserTemporary,
@@ -18,6 +22,25 @@ const props = defineProps<{
   item: WikitabSearchActivityItem
 }>()
 
+const emit = defineEmits<{
+  dismiss: [revid: number]
+}>()
+
+const selection = ref<string | number | null>(null)
+
+const menuItems = [
+  { value: 'thank', label: 'Thank', icon: cdxIconHeartOutline },
+  { value: 'dismiss', label: 'Dismiss', icon: cdxIconCheck },
+]
+
+watch(selection, (value) => {
+  if (value === 'thank') {
+    window.open(props.item.thankUrl, '_blank', 'noopener,noreferrer')
+  }
+  if (value === 'dismiss') emit('dismiss', props.item.revid)
+  if (value !== null) selection.value = null
+})
+
 type ChipStatus = 'notice' | 'warning' | 'error' | 'success'
 
 interface ActivityChip {
@@ -29,6 +52,9 @@ interface ActivityChip {
 const chips = computed((): ActivityChip[] => {
   const list: ActivityChip[] = []
 
+  if (props.item.highRevertRisk) {
+    list.push({ label: 'High revert risk', icon: cdxIconAlert, status: 'warning' })
+  }
   if (props.item.isLatest) {
     list.push({ label: 'Latest revision', icon: cdxIconArticle, status: 'notice' })
   }
@@ -41,6 +67,18 @@ const chips = computed((): ActivityChip[] => {
 
 const thumbnail = computed(() =>
   props.item.thumbnailUrl ? { url: props.item.thumbnailUrl } : null,
+)
+
+const hasDiffSize = computed(
+  () =>
+    props.item.charsAdded !== undefined || props.item.charsRemoved !== undefined,
+)
+
+const isZeroDiffSize = computed(
+  () =>
+    hasDiffSize.value &&
+    (props.item.charsAdded ?? 0) === 0 &&
+    (props.item.charsRemoved ?? 0) === 0,
 )
 
 const EDITOR_ICONS: Record<EditorKind, Icon> = {
@@ -58,6 +96,20 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
 
 <template>
   <div class="wikitab-search-activity-card">
+    <div class="wikitab-search-activity-card__menu">
+      <CdxMenuButton
+        v-model:selected="selection"
+        class="wikitab-search-activity-card__menu-button"
+        weight="quiet"
+        :menu-items="menuItems"
+        :menu-config="{ renderInPlace: true }"
+        :aria-label="`${item.title} edit options`"
+        @click.stop
+      >
+        <CdxIcon :icon="cdxIconEllipsis" />
+      </CdxMenuButton>
+    </div>
+
     <a
       class="wikitab-search-activity-card__link"
       :href="item.diffUrl"
@@ -94,9 +146,30 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
           </a>
           <span v-else>{{ item.title }}</span>
         </p>
-        <p v-if="item.editSummary" class="wikitab-search-activity-card__description">
-          {{ item.editSummary }}
-        </p>
+        <div
+          v-if="hasDiffSize || item.editSummary"
+          class="wikitab-search-activity-card__description-block"
+        >
+          <p v-if="hasDiffSize" class="wikitab-search-activity-card__diff-size">
+            <span v-if="isZeroDiffSize" class="wikitab-search-activity-card__diff-size-neutral">
+              ±0
+            </span>
+            <template v-else>
+              <span v-if="item.charsAdded" class="wikitab-search-activity-card__diff-size-added">
+                +{{ item.charsAdded }}
+              </span>
+              <span
+                v-if="item.charsRemoved"
+                class="wikitab-search-activity-card__diff-size-removed"
+              >
+                −{{ item.charsRemoved }}
+              </span>
+            </template>
+          </p>
+          <p v-if="item.editSummary" class="wikitab-search-activity-card__description">
+            {{ item.editSummary }}
+          </p>
+        </div>
         <p class="wikitab-search-activity-card__supporting">
           <span class="wikitab-search-activity-card__supporting-start">
             <CdxIcon
@@ -138,15 +211,39 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
   min-width: 0;
   padding-block: var(--spacing-75);
   padding-inline: var(--spacing-75);
+  border: var(--border-width-base) solid var(--border-color-subtle);
   border-radius: var(--border-radius-base);
   background-color: var(--background-color-base);
-  transition-property: background-color, color, box-shadow;
+  transition-property: background-color, color, border-color, box-shadow;
   transition-duration: 0.1s;
 }
 
 .wikitab-search-activity-card:hover {
-  background-color: var(--background-color-interactive-subtle--hover);
-  mix-blend-mode: var(--mix-blend-mode-blend, multiply);
+  border-color: var(--border-color-interactive--hover, #27292d);
+}
+
+.wikitab-search-activity-card:active {
+  border-color: var(--border-color-interactive--active, #202122);
+}
+
+.wikitab-search-activity-card:has([aria-expanded='true']) {
+  z-index: 2;
+}
+
+.wikitab-search-activity-card__menu {
+  position: absolute;
+  top: var(--spacing-35);
+  inset-inline-end: var(--spacing-35);
+  z-index: 2;
+}
+
+.wikitab-search-activity-card__menu-button :deep(.cdx-icon) {
+  color: var(--color-subtle);
+}
+
+.wikitab-search-activity-card__menu-button :deep(.cdx-menu) {
+  width: max-content !important;
+  min-width: 0 !important;
 }
 
 .wikitab-search-activity-card__link {
@@ -179,7 +276,14 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
 .wikitab-search-activity-card__thumbnail :deep(.cdx-thumbnail__image),
 .wikitab-search-activity-card__thumbnail :deep(.cdx-thumbnail__placeholder) {
   width: 96px;
+  min-width: 96px;
   height: 96px;
+  min-height: 96px;
+}
+
+/* Placeholder thumbnails stay Codex neutral grey, not the page color theme. */
+.wikitab-search-activity-card__thumbnail :deep(.cdx-thumbnail__placeholder) {
+  background-color: var(--background-color-neutral-subtle);
 }
 
 .wikitab-search-activity-card__content {
@@ -244,8 +348,38 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
   text-decoration: underline;
 }
 
-.wikitab-search-activity-card__description {
+.wikitab-search-activity-card__description-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-25);
   margin: var(--spacing-25) 0 0;
+  min-width: 0;
+}
+
+.wikitab-search-activity-card__diff-size {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-50);
+  margin: 0;
+  font-size: var(--font-size-medium);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-small);
+}
+
+.wikitab-search-activity-card__diff-size-added {
+  color: var(--color-success);
+}
+
+.wikitab-search-activity-card__diff-size-removed {
+  color: var(--color-error);
+}
+
+.wikitab-search-activity-card__diff-size-neutral {
+  color: var(--color-subtle);
+}
+
+.wikitab-search-activity-card__description {
+  margin: 0;
   min-width: 0;
   overflow-wrap: anywhere;
   font-size: var(--font-size-medium);
@@ -280,6 +414,10 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
   flex-shrink: 0;
 }
 
+.wikitab-search-activity-card__supporting :deep(.cdx-icon) {
+  color: inherit;
+}
+
 .wikitab-search-activity-card__supporting-text {
   min-width: 0;
   overflow-wrap: anywhere;
@@ -287,9 +425,5 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
 
 .wikitab-search-activity-card__supporting-end {
   flex-shrink: 0;
-}
-
-[data-skin='mobile'] .wikitab-search-activity-card {
-  padding-inline: 0;
 }
 </style>

@@ -1,7 +1,9 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
+import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 
 import { fetchWikitabSearch, type WikitabSearchResult } from './fetchWikitabSearch'
+import { fetchWikitabPageSummary } from './fetchWikitabPageSummary'
 import { filterDisambiguationPageIds } from './filterDisambiguationPages'
 import { EN_WIKI_HOST, articleUrl } from './wikitabHtml'
 
@@ -475,6 +477,39 @@ export interface WikitabSearchTopTitle {
   pageid: number
   title: string
   thumbnailUrl?: string
+}
+
+/** REST page summary backfill for articles missing a thumbnail from the Action API pass. */
+export async function backfillArticleThumbnails(
+  articles: WikitabSearchArticle[],
+  signal: AbortSignal | undefined,
+  onComplete?: (pageid: number, thumbnailUrl?: string) => void,
+): Promise<void> {
+  const pending = articles.filter((article) => !article.thumbnailUrl)
+  if (!pending.length) return
+
+  await mapWithConcurrency(
+    pending,
+    2,
+    async (article) => {
+      try {
+        const summary = await fetchWikitabPageSummary(
+          article.title,
+          signal,
+          'wikitab-search-articles-thumbnail',
+        )
+        const thumbnailUrl = summary?.thumbnailUrl
+        if (thumbnailUrl) {
+          article.thumbnailUrl = thumbnailUrl
+        }
+        onComplete?.(article.pageid, thumbnailUrl)
+      } catch (err) {
+        if ((err as Error)?.name === 'AbortError') throw err
+        onComplete?.(article.pageid, undefined)
+      }
+    },
+    signal,
+  )
 }
 
 /** Top N article titles for a search query (curated + related). */

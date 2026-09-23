@@ -20,6 +20,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'toggle-pin': []
+  'hide-article': [title: string]
 }>()
 
 const items = computed(() => props.items)
@@ -134,6 +135,8 @@ watch(selection, (value) => {
         :supporting-icon="spec.supportingIcon"
         :full-hook="spec.fullHook"
         :loading="slot.loading"
+        :show-hide-menu="spec.id === 'trending' && !slot.loading && !!slot.card"
+        @hide-article="emit('hide-article', $event)"
       />
       <div ref="sentinel" class="wikitab-section__sentinel" aria-hidden="true" />
     </div>
@@ -189,12 +192,6 @@ watch(selection, (value) => {
   color: var(--color-base);
 }
 
-/* Codex has no "subtle" button action, and the design's ellipsis is quieter than
-   the heading beside it. */
-.wikitab-section__menu :deep(.cdx-icon) {
-  color: var(--color-subtle);
-}
-
 /* Holds the reserved height rather than collapsing the section. */
 .wikitab-section__error,
 .wikitab-section__empty {
@@ -203,18 +200,6 @@ watch(selection, (value) => {
   margin: 0;
   min-height: var(--wikitab-card-height);
   color: var(--color-subtle);
-}
-
-/*
- * Home feed cards use a compact type scale (14px body / 12px small). Codex tokens
- * are rem-based, so shadow them on the card scroller — not on `.wikitab` — so the
- * search results page keeps Codex defaults (16px body).
- */
-.wikitab-section__cards {
-  --font-size-small: 0.75rem;
-  --font-size-medium: 0.875rem;
-  --line-height-small: 1.25rem;
-  --line-height-medium: 1.375rem;
 }
 
 .wikitab-section__sentinel {
@@ -230,6 +215,19 @@ watch(selection, (value) => {
   margin-top: var(--spacing-100);
 }
 
+/*
+ * Home feed card compact type (14px body / 12px small). Codex tokens are rem-based, so
+ * shadow them on the card grid only — hero search and section headings keep defaults.
+ */
+.wikitab-section__cards {
+  --font-size-small: 0.75rem;
+  --font-size-medium: 0.875rem;
+  --font-size-large: 1rem;
+  --line-height-small: 1.25rem;
+  --line-height-medium: 1.375rem;
+  --line-height-large: 1.375rem;
+}
+
 /* Desktop: a two-column grid inside the centred column. */
 [data-skin='desktop'] .wikitab-section__cards {
   display: grid;
@@ -241,6 +239,11 @@ watch(selection, (value) => {
 /* Grid items default to min-height: auto; row heights come from useEqualRowHeights. */
 [data-skin='desktop'] .wikitab-section__card {
   min-height: 0;
+}
+
+[data-skin='desktop'] .wikitab-section__card:has(.wikitab-card--has-menu [aria-expanded='true']) {
+  overflow: visible;
+  z-index: 2;
 }
 
 [data-skin='desktop'] .wikitab-section__sentinel {
