@@ -19,12 +19,15 @@ import { highlightSearchQuery } from './data/highlightSearchQuery'
 import type { WikitabSearchArticle } from './data/fetchWikitabSearchArticles'
 import { useThumbnailSlotReady } from './useThumbnailSlotReady'
 import { useWikitabSearchArticleAttribution } from './useWikitabSearchArticleAttribution'
+import { useWikitabSearchNavigation } from './useWikitabSearchNavigation'
 
 const props = defineProps<{
   article: WikitabSearchArticle
   searchQuery: string
   thumbnailBackfillPending?: boolean
 }>()
+
+const { navigateToSearch } = useWikitabSearchNavigation()
 
 const articleTitle = toRef(() => props.article.title)
 const {
@@ -80,6 +83,11 @@ watch(selection, (value) => {
   if (value === 'why') whyDialogOpen.value = true
   if (value !== null) selection.value = null
 })
+
+function onTitleClick(event: MouseEvent): void {
+  event.preventDefault()
+  navigateToSearch(props.article.title)
+}
 </script>
 
 <template>
@@ -130,7 +138,7 @@ watch(selection, (value) => {
 
     <div class="wikitab-search-result-card__content">
       <h3 class="wikitab-search-result-card__title">
-        <a :href="article.href" target="_blank" rel="noreferrer">
+        <a href="#" @click="onTitleClick">
           {{ article.title }}
         </a>
       </h3>

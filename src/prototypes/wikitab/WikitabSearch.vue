@@ -8,9 +8,11 @@ import { useWikitabSearch, WIKITAB_SEARCH_FOR_VALUE } from './useWikitabSearch'
 
 const props = defineProps<{
   initialQuery?: string
+  searchMode?: boolean
 }>()
 
 const initialQueryRef = toRef(() => props.initialQuery ?? '')
+const searchModeRef = toRef(() => props.searchMode ?? false)
 
 const {
   query,
@@ -25,7 +27,7 @@ const {
   onSubmit,
   onMenuItemClick,
   onEnterWithMenu,
-} = useWikitabSearch({ initialQuery: initialQueryRef })
+} = useWikitabSearch({ initialQuery: initialQueryRef, searchMode: searchModeRef })
 
 const showMenuPending = computed(() => loading.value && results.value.length === 0)
 

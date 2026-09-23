@@ -114,6 +114,7 @@ watch(searchQuery, (next, prev) => {
             :key="searchMountKey"
             class="wikitab__search"
             :initial-query="searchQuery"
+            :search-mode="isSearchMode"
           />
         </div>
         <WikitabSearchPage

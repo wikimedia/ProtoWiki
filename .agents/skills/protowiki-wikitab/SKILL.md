@@ -312,10 +312,12 @@ REST:
   `CdxTypeaheadSearch`: arrow keys navigate the menu, but **Space** is left to
   the input (never delegated to `CdxMenu`).
 - **Navigation** — submit or the `Search for "…"` row pushes `?search=…` on the
-  same `/wikitab` route. A lookahead result row (click or Enter with that row
-  highlighted) navigates the tab to the English Wikipedia article via
-  `articleUrl(title)`. Clearing the input and submitting removes `search` from
-  the query.
+  same `/wikitab` route. On the **home feed**, a lookahead result row (click or
+  Enter with that row highlighted) navigates the tab to the English Wikipedia
+  article via `articleUrl(title)`. On the **search results page** (`?search=`
+  present), the same action pivots search — updates `?search=` to that title via
+  `useWikitabSearchNavigation()` and refreshes results (current `?tab=` preserved).
+  Clearing the input and submitting removes `search` from the query.
 
 ## Search results (`?search=`)
 
@@ -388,8 +390,9 @@ resolves, fall back to the default Codex placeholder icon — never keep the
 loading block. **Do not** call `preloadImages` before rendering search cards —
 unlike feed cards, which intentionally gate reveal on decode.
 
-Only the **h3 title link** navigates to the English Wikipedia article page
-(`articleUrl`); the card itself is not tappable. Infinite scroll uses
+The **h3 title link** pivots search — updates `?search=` to that article title
+via `useWikitabSearchNavigation()` (Wikipedia is not opened from the results
+list); the card itself is not otherwise tappable. Infinite scroll uses
 `useInfiniteScroll.ts` (viewport sentinel) + `useWikitabSearchResults.ts`
 (`loadMore` guarded while a batch is in flight). No error/empty placeholder
 text when the query resolves to nothing.
