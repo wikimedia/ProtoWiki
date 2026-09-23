@@ -53,13 +53,13 @@ watch(searchQuery, (next, prev) => {
             />
           </RouterLink>
         </h1>
-        <WikitabSearch
-          :key="searchMountKey"
-          class="wikitab__search"
-          :initial-query="searchQuery"
-        />
+        <WikitabSearch :key="searchMountKey" class="wikitab__search" :initial-query="searchQuery" />
       </div>
-      <WikitabSearchPage v-if="isSearchMode" class="wikitab__search-page" :search-query="searchQuery" />
+      <WikitabSearchPage
+        v-if="isSearchMode"
+        class="wikitab__search-page"
+        :search-query="searchQuery"
+      />
     </header>
 
     <div v-if="!isSearchMode" class="wikitab__sections">
@@ -102,7 +102,7 @@ watch(searchQuery, (next, prev) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-50);
+  gap: var(--spacing-100);
   width: 100%;
 }
 

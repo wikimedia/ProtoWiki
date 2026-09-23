@@ -9,6 +9,27 @@ function parseFragment(html: string): HTMLElement {
   return (doc.body.firstElementChild as HTMLElement | null) ?? doc.createElement('div')
 }
 
+/** Drop whitespace that only padded a removed empty Parsoid `<i>` / `<b>` placeholder. */
+function stripPlaceholderPadding(el: Element): void {
+  const prev = el.previousSibling
+  const next = el.nextSibling
+
+  if (next?.nodeType === Node.TEXT_NODE) {
+    const text = next as Text
+    if (/^\s+[,;:.!?)\]]/.test(text.data)) {
+      text.data = text.data.replace(/^\s+/, '')
+    }
+  }
+
+  if (prev?.nodeType === Node.TEXT_NODE && next?.nodeType === Node.TEXT_NODE) {
+    const prevText = prev as Text
+    const nextText = next as Text
+    if (/\s$/.test(prevText.data) && /^[\s,;:.!?)\]]/.test(nextText.data)) {
+      prevText.data = prevText.data.replace(/\s+$/, '')
+    }
+  }
+}
+
 /**
  * Feed HTML arrives with Parsoid decoration: `id="mwXX"` on most nodes, empty
  * `<i>` placeholders, and — in `news` stories but not `dyk` hooks — hrefs in the
@@ -33,7 +54,10 @@ export function normalizeFeedHtml(html: string): string {
   }
 
   for (const empty of Array.from(root.querySelectorAll('i, b'))) {
-    if (!empty.textContent?.trim()) empty.remove()
+    if (!empty.textContent?.trim()) {
+      stripPlaceholderPadding(empty)
+      empty.remove()
+    }
   }
 
   return root.innerHTML.trim()
