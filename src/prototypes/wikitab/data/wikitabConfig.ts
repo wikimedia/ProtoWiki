@@ -2,6 +2,7 @@ import {
   WIKITAB_DAILY_READS_MODULE_ID,
   WIKITAB_SAVED_MODULE_ID,
   WIKITAB_SECTIONS,
+  WIKITAB_SUGGESTED_EDITS_MODULE_ID,
   type WikitabModuleId,
   type WikitabSectionId,
 } from '../sections'
@@ -54,6 +55,7 @@ const VALID_MODULE_IDS = new Set<WikitabModuleId>([
   ...VALID_FEED_SECTION_IDS,
   WIKITAB_SAVED_MODULE_ID,
   WIKITAB_DAILY_READS_MODULE_ID,
+  WIKITAB_SUGGESTED_EDITS_MODULE_ID,
 ])
 
 function isModuleId(value: string): value is WikitabModuleId {

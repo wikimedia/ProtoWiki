@@ -4,11 +4,13 @@ export type WikitabSectionId = 'trending' | 'otd' | 'births' | 'dyk' | 'news' | 
 
 export const WIKITAB_SAVED_MODULE_ID = 'saved' as const
 export const WIKITAB_DAILY_READS_MODULE_ID = 'daily-reads' as const
+export const WIKITAB_SUGGESTED_EDITS_MODULE_ID = 'suggested-edits' as const
 
 export type WikitabModuleId =
   | WikitabSectionId
   | typeof WIKITAB_SAVED_MODULE_ID
   | typeof WIKITAB_DAILY_READS_MODULE_ID
+  | typeof WIKITAB_SUGGESTED_EDITS_MODULE_ID
 
 /**
  * Which card layout a section renders. Drives the real card, its placeholder,
@@ -108,10 +110,11 @@ export const WIKITAB_SECTIONS: readonly WikitabSectionSpec[] = [
   },
 ]
 
-/** Default home-feed module order when nothing is pinned. Saved and Daily reads lead. */
+/** Default home-feed module order when nothing is pinned. */
 export const WIKITAB_HOME_MODULE_ORDER: readonly WikitabModuleId[] = [
   WIKITAB_SAVED_MODULE_ID,
   WIKITAB_DAILY_READS_MODULE_ID,
+  WIKITAB_SUGGESTED_EDITS_MODULE_ID,
   'trending',
   ...WIKITAB_SECTIONS.filter((section) => section.id !== 'trending').map(
     (section) => section.id,
@@ -141,13 +144,28 @@ export const WIKITAB_DAILY_READS_MODULE_SPEC = {
   supportingIcon: cdxIconLink,
 }
 
-/** Configure-panel rows: Saved first, then daily feed sections. */
+/** Home Suggested edits module — quality-check tasks from daily-random saved seeds. */
+export const WIKITAB_SUGGESTED_EDITS_MODULE_SPEC = {
+  id: WIKITAB_SUGGESTED_EDITS_MODULE_ID,
+  heading: 'Suggested edits',
+  initialCount: 4,
+  pageSize: 6,
+  cardHeight: 122,
+  variant: 'thumbnail' as WikitabCardVariant,
+  thumbnailSize: 96,
+}
+
+/** Configure-panel rows: saved-adjacent modules first, then daily feed sections. */
 export const WIKITAB_CONFIGURE_MODULES: ReadonlyArray<{
   id: WikitabModuleId
   heading: string
 }> = [
   { id: WIKITAB_SAVED_MODULE_ID, heading: WIKITAB_SAVED_MODULE_SPEC.heading },
   { id: WIKITAB_DAILY_READS_MODULE_ID, heading: WIKITAB_DAILY_READS_MODULE_SPEC.heading },
+  {
+    id: WIKITAB_SUGGESTED_EDITS_MODULE_ID,
+    heading: WIKITAB_SUGGESTED_EDITS_MODULE_SPEC.heading,
+  },
   ...WIKITAB_SECTIONS.map((section) => ({ id: section.id, heading: section.heading })),
 ]
 

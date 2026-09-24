@@ -54,3 +54,38 @@ export function writeCachedFeed(day: string, feed: WikitabFeed): void {
     // A full or unavailable localStorage must never break the page.
   }
 }
+
+const FEED_SLICE_KEYS: (keyof WikitabFeed)[] = [
+  'trending',
+  'news',
+  'dyk',
+  'discussions',
+  'otd',
+  'births',
+]
+
+/**
+ * Merge non-empty section slices into the day cache. Skips when Trending is
+ * still empty so a later tab open can retry early-UTC gaps.
+ */
+export function persistPartialFeed(day: string, feed: WikitabFeed): void {
+  if (isCacheBypassed()) return
+  if (feed.trending.length === 0) return
+
+  const existing = readCachedFeed(day) ?? {
+    trending: [],
+    news: [],
+    dyk: [],
+    discussions: [],
+    otd: [],
+    births: [],
+  }
+
+  const merged = { ...existing }
+  for (const key of FEED_SLICE_KEYS) {
+    const slice = feed[key]
+    if (slice?.length) merged[key] = slice
+  }
+
+  writeCachedFeed(day, merged)
+}

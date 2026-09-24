@@ -1,5 +1,6 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
+import { pickSavedArticleSeeds } from './pickSavedArticleSeeds'
 import type { WikitabSavedArticle } from './wikitabConfig'
 import { filterDisambiguationPageIds } from './filterDisambiguationPages'
 import { fetchWikitabPageSummary } from './fetchWikitabPageSummary'
@@ -82,21 +83,7 @@ export function pickDailyReadSeeds(
   articles: readonly WikitabSavedArticle[],
   day: string,
 ): WikitabSavedArticle[] {
-  if (!articles.length) return []
-
-  const fingerprint = articles
-    .map((article) => article.titleKey)
-    .sort()
-    .join('|')
-  const rng = mulberry32(hashString(`${day}:${fingerprint}`))
-  const copy = [...articles]
-
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1))
-    ;[copy[i], copy[j]] = [copy[j], copy[i]]
-  }
-
-  return copy.slice(0, Math.min(MAX_SEEDS, copy.length))
+  return pickSavedArticleSeeds(articles, day, MAX_SEEDS, 'daily-reads')
 }
 
 async function fetchMorelikePages(

@@ -6,6 +6,8 @@ import {
   isExcludedEditOpportunityNeed,
   resolveEditOpportunityCopy,
 } from './editOpportunityCopy'
+import { cdxIconLightbulb } from '@wikimedia/codex-icons'
+import type { WikitabCardData } from '../sections'
 import {
   fetchWikitabSearchTopTitles,
   type WikitabSearchTopTitle,
@@ -44,6 +46,12 @@ interface SeedCursor {
 interface PooledTitle {
   title: string
   relatedToTitle: string
+}
+
+export interface WikitabContributeSeed {
+  pageid?: number
+  title: string
+  thumbnailUrl?: string
 }
 
 export interface WikitabSearchContributeItem {
@@ -225,6 +233,29 @@ async function resolveContributeItem(
   return item
 }
 
+function displayTitle(title: string): string {
+  return title.trim().replace(/_/g, ' ')
+}
+
+/** Map a Contribute feed item to home-feed `WikitabCardData`. */
+export function contributeItemToCard(item: WikitabSearchContributeItem): WikitabCardData {
+  const title = displayTitle(item.title)
+  return {
+    key: `suggested-edits:${item.pageid}`,
+    href: item.editHref,
+    linkTitle: `Edit ${title}: ${item.suggestionLabel}`,
+    title,
+    description: item.description || undefined,
+    thumbnailUrl: item.thumbnailUrl,
+    supportingSignals: [
+      {
+        icon: cdxIconLightbulb,
+        text: item.suggestionLabel,
+      },
+    ],
+  }
+}
+
 function titlesPerSeed(seedCount: number): number {
   return Math.max(TITLES_PER_SEED, Math.ceil(REFILL_THRESHOLD / Math.max(seedCount, 1)))
 }
@@ -236,26 +267,39 @@ function shuffleSeeds(seeds: SeedCursor[]): void {
   }
 }
 
-/** Stateful feed: edit suggestions for top search articles + morelike expansion. */
+export interface WikitabSearchContributeFeedOptions {
+  /** Skip morelike titles already saved (home Suggested edits). */
+  excludedTitleKeys?: Set<string>
+  /** Page ids already emitted — for cache resume. */
+  seenPageids?: Iterable<number>
+}
+
+/** Stateful feed: edit suggestions for seed articles + morelike expansion. */
 export class WikitabSearchContributeFeed {
-  private readonly directSeeds: WikitabSearchTopTitle[]
+  private readonly directSeeds: WikitabContributeSeed[]
   private directIndex = 0
   private readonly seenTitles = new Set<string>()
   private readonly emittedPageids = new Set<number>()
+  private readonly excludedTitleKeys: Set<string>
   private seeds: SeedCursor[] = []
   private titlePool: PooledTitle[] = []
   private nextSeedIndex = 0
   private directPhaseDone = false
   private relatedExhausted = false
 
-  constructor(seeds: WikitabSearchTopTitle[]) {
+  constructor(seeds: WikitabContributeSeed[], options: WikitabSearchContributeFeedOptions = {}) {
     this.directSeeds = seeds
+    this.excludedTitleKeys = options.excludedTitleKeys ?? new Set()
+
+    if (options.seenPageids) {
+      for (const pageid of options.seenPageids) this.emittedPageids.add(pageid)
+    }
 
     for (const seed of seeds) {
       this.seenTitles.add(articleTitleKey(seed.title))
       this.seeds.push({
         searchTitle: seed.title,
-        displayTitle: seed.title,
+        displayTitle: displayTitle(seed.title),
         offset: 0,
       })
     }
@@ -304,11 +348,11 @@ export class WikitabSearchContributeFeed {
       const seed = this.directSeeds[this.directIndex]
       this.directIndex++
 
-      if (this.emittedPageids.has(seed.pageid)) continue
+      if (seed.pageid != null && this.emittedPageids.has(seed.pageid)) continue
 
       const item = await resolveContributeItem(
         {
-          pageid: seed.pageid,
+          pageid: seed.pageid ?? 0,
           title: seed.title,
           thumbnailUrl: normalizeThumbnailUrl(seed.thumbnailUrl),
         },
@@ -371,7 +415,7 @@ export class WikitabSearchContributeFeed {
           if (added >= perSeed) break
 
           const key = articleTitleKey(title)
-          if (this.seenTitles.has(key)) continue
+          if (!key || this.seenTitles.has(key) || this.excludedTitleKeys.has(key)) continue
           this.seenTitles.add(key)
           this.titlePool.push({ title, relatedToTitle: seed.displayTitle })
           added++
@@ -390,6 +434,14 @@ export class WikitabSearchContributeFeed {
   }
 }
 
+export function createContributeFeedFromSeeds(
+  seeds: WikitabContributeSeed[],
+  options: WikitabSearchContributeFeedOptions = {},
+): WikitabSearchContributeFeed | null {
+  if (!seeds.length) return null
+  return new WikitabSearchContributeFeed(seeds, options)
+}
+
 export async function createWikitabSearchContributeFeed(
   query: string,
   options: {
@@ -404,5 +456,11 @@ export async function createWikitabSearchContributeFeed(
 
   if (!titles.length) return null
 
-  return new WikitabSearchContributeFeed(titles)
+  const seeds: WikitabContributeSeed[] = titles.map((title) => ({
+    pageid: title.pageid,
+    title: title.title,
+    thumbnailUrl: title.thumbnailUrl,
+  }))
+
+  return createContributeFeedFromSeeds(seeds)
 }

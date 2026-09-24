@@ -30,11 +30,27 @@ Current fields:
 ## Cache-only feed storage (`wikitab-feed-cache-v*`)
 
 [`data/feedCache.ts`](../../../../src/prototypes/wikitab/data/feedCache.ts) caches
-today's `feed/featured` response under a UTC-day key. Nothing here is
-authoritative — clearing it must only ever cost one refetch.
+the full daily feed — all six sections (Trending, In the news, Did you know,
+Active discussions, On this day, Birthdays) — under a UTC-day key. Nothing here
+is authoritative — clearing it must only ever cost one refetch.
 
 A new-tab page opens dozens of times a day; caching the daily feed is both fast
 and good API etiquette. Writing today's entry evicts older days.
+
+**Ordered home load** (`index.vue` → `refreshHomeModulesInOrder` →
+`useWikitabFeed.loadSection`) reads and writes through the same cache:
+
+- `prepareForOrderedLoad()` hydrates `feed.value` from `readCachedFeed()` when
+  the day key hits, marking cached sections as already fetched.
+- Each `loadSection` call reads its slice via `fetchWikitabSectionFeed` (cache
+  before network) and patches localStorage via `persistPartialFeed()` after each
+  non-empty slice lands. Empty slices are not cached so a later open can retry.
+- `feed/featured` is deduped in-memory per UTC day when Trending, News, and DYK
+  load separately on a cache miss (`getFeaturedPayload` in
+  `fetchDailyFeed.ts`).
+
+Skip caching when Trending is still empty (early UTC) so the next tab open can
+retry. `?nocache=1` bypasses reads and writes.
 
 ## Cache-only Daily reads storage (`wikitab-daily-reads-cache-v*`)
 
@@ -44,6 +60,14 @@ Refetch only when that key misses (saved pages changed, UTC day rolled, or first
 visit) and a Daily reads render is triggered via `refreshHomeSavedModules()` —
 not on every save during the session. Only the first batch loads on refresh;
 additional cards fetch on Show more. Same `?nocache=1` bypass as the feed cache.
+
+## Cache-only Suggested edits storage (`wikitab-suggested-edits-cache-v*`)
+
+[`data/suggestedEditsCache.ts`](../../../../src/prototypes/wikitab/data/suggestedEditsCache.ts)
+mirrors Daily reads: `{ day, savedFingerprint, items, hasMore }`. Same refresh
+cadence via `refreshHomeSavedModules()` and the Saved-module snapshot. Resumable
+partial loads — `hasMore: true` lets `loadMore()` recreate the Contribute feed
+with `seenPageidsFromCards()` so cached cards are not duplicated.
 
 ## Transient component state
 

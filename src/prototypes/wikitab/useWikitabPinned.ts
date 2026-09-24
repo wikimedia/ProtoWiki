@@ -7,6 +7,7 @@ import {
 import {
   WIKITAB_DAILY_READS_MODULE_ID,
   WIKITAB_SAVED_MODULE_ID,
+  WIKITAB_SUGGESTED_EDITS_MODULE_ID,
   type WikitabModuleId,
   type WikitabSectionId,
 } from './sections'
@@ -14,6 +15,7 @@ import {
 const FEED_ONLY_PIN_EXCLUSIONS = new Set<WikitabModuleId>([
   WIKITAB_SAVED_MODULE_ID,
   WIKITAB_DAILY_READS_MODULE_ID,
+  WIKITAB_SUGGESTED_EDITS_MODULE_ID,
 ])
 import type { WikitabSectionState } from './useWikitabFeed'
 

@@ -11,6 +11,7 @@ import WikitabConfigurePanel from './WikitabConfigurePanel.vue'
 import WikitabSavedArticlesButton from './WikitabSavedArticlesButton.vue'
 import WikitabSavedArticlesPanel from './WikitabSavedArticlesPanel.vue'
 import WikitabDailyReadsSection from './WikitabDailyReadsSection.vue'
+import WikitabSuggestedEditsSection from './WikitabSuggestedEditsSection.vue'
 import WikitabSavedSection from './WikitabSavedSection.vue'
 import WikitabSearch from './WikitabSearch.vue'
 import WikitabSearchPage from './WikitabSearchPage.vue'
@@ -20,6 +21,8 @@ import {
   WIKITAB_DAILY_READS_MODULE_ID,
   WIKITAB_HOME_MODULE_ORDER,
   WIKITAB_SAVED_MODULE_ID,
+  WIKITAB_SECTIONS,
+  WIKITAB_SUGGESTED_EDITS_MODULE_ID,
   type WikitabCardData,
   type WikitabModuleId,
   type WikitabSectionId,
@@ -38,6 +41,7 @@ import { useWikitabFeed } from './useWikitabFeed'
 import { useWikitabHiddenArticles } from './useWikitabHiddenArticles'
 import { useWikitabHiddenSections } from './useWikitabHiddenSections'
 import { useWikitabDailyReads } from './useWikitabDailyReads'
+import { useWikitabSuggestedEdits } from './useWikitabSuggestedEdits'
 import { useWikitabPinned } from './useWikitabPinned'
 import {
   loadWikitabConfig,
@@ -70,15 +74,23 @@ const feedEnabled = computed(() => !isSearchMode.value)
 const CUSTOM_MODULE_IDS = new Set<WikitabModuleId>([
   WIKITAB_SAVED_MODULE_ID,
   WIKITAB_DAILY_READS_MODULE_ID,
+  WIKITAB_SUGGESTED_EDITS_MODULE_ID,
 ])
 
 const { hiddenIds, isHidden, hideSection, showSection } = useWikitabHiddenSections()
 const feedHiddenSectionIds = computed(() =>
   hiddenIds.value.filter((id): id is WikitabSectionId => !CUSTOM_MODULE_IDS.has(id)),
 )
-const { sections, error, isSectionLoading } = useWikitabFeed({
+const {
+  sections,
+  error,
+  isSectionLoading,
+  prepareForOrderedLoad,
+  loadSection: loadFeedSection,
+} = useWikitabFeed({
   enabled: feedEnabled,
   hiddenSectionIds: feedHiddenSectionIds,
+  autoLoad: false,
 })
 const { pinnedIds, isPinned, togglePin, orderSections } = useWikitabPinned()
 const { filterCards, hideArticle } = useWikitabHiddenArticles()
@@ -94,6 +106,16 @@ const {
   loadMore: loadMoreDailyReads,
   abort: abortDailyReads,
 } = useWikitabDailyReads()
+const {
+  items: suggestedEditsItems,
+  loading: suggestedEditsLoading,
+  loadingMore: suggestedEditsLoadingMore,
+  hasMore: suggestedEditsHasMore,
+  error: suggestedEditsError,
+  refresh: refreshSuggestedEdits,
+  loadMore: loadMoreSuggestedEdits,
+  abort: abortSuggestedEdits,
+} = useWikitabSuggestedEdits()
 
 /** Home Saved module cards — empty until enrich finishes so skeletons can reserve slots. */
 const savedModuleArticles = ref<WikitabSavedArticle[]>([])
@@ -128,10 +150,88 @@ async function refreshSavedModule(): Promise<void> {
   }
 }
 
-/** Saved + Daily reads share the same refresh cadence and Saved snapshot. */
-async function refreshHomeSavedModules(): Promise<void> {
-  await refreshSavedModule()
-  await refreshDailyReads(savedModuleArticles.value)
+const FEED_SECTION_IDS = new Set<WikitabSectionId>(
+  WIKITAB_SECTIONS.map((section) => section.id),
+)
+
+function isFeedSectionId(id: WikitabModuleId): id is WikitabSectionId {
+  return FEED_SECTION_IDS.has(id as WikitabSectionId)
+}
+
+/** Load order from pin state + registry — skips hidden and saved-gated modules. */
+function computeHomeModuleLoadOrder(): WikitabModuleId[] {
+  const pinnedSet = new Set<WikitabModuleId>(pinnedIds.value)
+  const hasSaved = loadWikitabConfig().savedArticles.length > 0
+  const order: WikitabModuleId[] = []
+
+  function consider(id: WikitabModuleId): void {
+    if (isHidden(id)) return
+    if (
+      (id === WIKITAB_SAVED_MODULE_ID ||
+        id === WIKITAB_DAILY_READS_MODULE_ID ||
+        id === WIKITAB_SUGGESTED_EDITS_MODULE_ID) &&
+      !hasSaved
+    ) {
+      return
+    }
+    order.push(id)
+  }
+
+  for (const id of pinnedIds.value) {
+    consider(id)
+  }
+
+  for (const id of WIKITAB_HOME_MODULE_ORDER) {
+    if (!pinnedSet.has(id)) consider(id)
+  }
+
+  return order
+}
+
+let homeLoadGeneration = 0
+
+/** Refresh visible home modules top-to-bottom (respects pin + hide). */
+async function refreshHomeModulesInOrder(): Promise<void> {
+  if (isSearchMode.value) return
+
+  const generation = ++homeLoadGeneration
+  prepareForOrderedLoad()
+
+  const order = computeHomeModuleLoadOrder()
+
+  const needsSavedSnapshot = order.some(
+    (moduleId) =>
+      moduleId === WIKITAB_DAILY_READS_MODULE_ID ||
+      moduleId === WIKITAB_SUGGESTED_EDITS_MODULE_ID,
+  )
+
+  if (needsSavedSnapshot && !order.includes(WIKITAB_SAVED_MODULE_ID)) {
+    await refreshSavedModule()
+    if (generation !== homeLoadGeneration) return
+  }
+
+  for (const id of order) {
+    if (generation !== homeLoadGeneration) return
+
+    if (id === WIKITAB_SAVED_MODULE_ID) {
+      await refreshSavedModule()
+      continue
+    }
+
+    if (id === WIKITAB_DAILY_READS_MODULE_ID) {
+      await refreshDailyReads(savedModuleArticles.value)
+      continue
+    }
+
+    if (id === WIKITAB_SUGGESTED_EDITS_MODULE_ID) {
+      await refreshSuggestedEdits(savedModuleArticles.value)
+      continue
+    }
+
+    if (isFeedSectionId(id)) {
+      await loadFeedSection(id)
+    }
+  }
 }
 
 const { colorThemeId, themeStyle, setColorTheme } = useWikitabColorTheme()
@@ -175,7 +275,7 @@ async function closeSavedPanel(): Promise<void> {
 }
 
 function toggleSaveFromCard(card: WikitabCardData): void {
-  const title = card.linkTitle ?? card.title ?? ''
+  const title = card.title ?? card.linkTitle ?? ''
   if (!title) return
   toggleSave({
     title,
@@ -245,9 +345,19 @@ const showDailyReadsModule = computed(
     (dailyReadsLoading.value || visibleDailyReadsItems.value.length > 0),
 )
 
+const visibleSuggestedEditsItems = computed(() => filterCards(suggestedEditsItems.value))
+
+const showSuggestedEditsModule = computed(
+  () =>
+    !isHidden(WIKITAB_SUGGESTED_EDITS_MODULE_ID) &&
+    savedModuleArticles.value.length > 0 &&
+    (suggestedEditsLoading.value || visibleSuggestedEditsItems.value.length > 0),
+)
+
 type HomeModuleEntry =
   | { kind: 'saved' }
   | { kind: 'daily-reads' }
+  | { kind: 'suggested-edits' }
   | { kind: 'feed'; section: WikitabSectionState & { items: WikitabCardData[] } }
 
 const orderedHomeModules = computed((): HomeModuleEntry[] => {
@@ -262,6 +372,11 @@ const orderedHomeModules = computed((): HomeModuleEntry[] => {
 
     if (id === WIKITAB_DAILY_READS_MODULE_ID) {
       if (showDailyReadsModule.value) modules.push({ kind: 'daily-reads' })
+      return
+    }
+
+    if (id === WIKITAB_SUGGESTED_EDITS_MODULE_ID) {
+      if (showSuggestedEditsModule.value) modules.push({ kind: 'suggested-edits' })
       return
     }
 
@@ -286,28 +401,31 @@ watch(
     if (next === 0) {
       savedModuleArticles.value = []
       savedModuleLoading.value = false
+      void refreshDailyReads([])
+      void refreshSuggestedEdits([])
     }
   },
 )
 
 onMounted(() => {
-  void refreshHomeSavedModules()
+  void refreshHomeModulesInOrder()
 })
 
 onUnmounted(() => {
   savedModuleAbort?.abort()
   abortDailyReads()
+  abortSuggestedEdits()
 })
 
 watch(isSearchMode, (searchMode, wasSearchMode) => {
   if (wasSearchMode && !searchMode) {
-    void refreshHomeSavedModules()
+    void refreshHomeModulesInOrder()
   }
 })
 
 watch(overlayOpen, (open, wasOpen) => {
   if (wasOpen && !open) {
-    void refreshHomeSavedModules()
+    void refreshHomeModulesInOrder()
   }
 })
 
@@ -387,7 +505,9 @@ watch(searchQuery, (next, prev) => {
               ? 'saved'
               : entry.kind === 'daily-reads'
                 ? 'daily-reads'
-                : entry.section.spec.id
+                : entry.kind === 'suggested-edits'
+                  ? 'suggested-edits'
+                  : entry.section.spec.id
           "
         >
           <WikitabSavedSection
@@ -414,6 +534,21 @@ watch(searchQuery, (next, prev) => {
             @hide-article="hideArticle"
             @toggle-save="toggleSaveFromCard"
             @load-more="loadMoreDailyReads"
+          />
+          <WikitabSuggestedEditsSection
+            v-else-if="entry.kind === 'suggested-edits'"
+            :items="visibleSuggestedEditsItems"
+            :loading="suggestedEditsLoading"
+            :loading-more="suggestedEditsLoadingMore"
+            :has-more="suggestedEditsHasMore"
+            :error="suggestedEditsError"
+            :pinned="isPinned(WIKITAB_SUGGESTED_EDITS_MODULE_ID)"
+            :is-article-saved="isSaved"
+            @toggle-pin="togglePin(WIKITAB_SUGGESTED_EDITS_MODULE_ID)"
+            @hide-section="hideSection(WIKITAB_SUGGESTED_EDITS_MODULE_ID)"
+            @hide-article="hideArticle"
+            @toggle-save="toggleSaveFromCard"
+            @load-more="loadMoreSuggestedEdits"
           />
           <WikitabSection
             v-else
@@ -683,22 +818,26 @@ watch(searchQuery, (next, prev) => {
 }
 
 .wikitab--themed :deep(.wikitab-saved-section__heading),
-.wikitab--themed :deep(.wikitab-daily-reads-section__heading) {
+.wikitab--themed :deep(.wikitab-daily-reads-section__heading),
+.wikitab--themed :deep(.wikitab-suggested-edits-section__heading) {
   color: var(--wikitab-theme-fg);
 }
 
 .wikitab--themed :deep(.wikitab-saved-section__pin),
-.wikitab--themed :deep(.wikitab-daily-reads-section__pin) {
+.wikitab--themed :deep(.wikitab-daily-reads-section__pin),
+.wikitab--themed :deep(.wikitab-suggested-edits-section__pin) {
   color: var(--wikitab-theme-fg);
 }
 
 .wikitab--themed.wikitab--tinted-subtle :deep(.wikitab-saved-section),
-.wikitab--themed.wikitab--tinted-subtle :deep(.wikitab-daily-reads-section) {
+.wikitab--themed.wikitab--tinted-subtle :deep(.wikitab-daily-reads-section),
+.wikitab--themed.wikitab--tinted-subtle :deep(.wikitab-suggested-edits-section) {
   --color-subtle: var(--wikitab-theme-subtle);
 }
 
 .wikitab--themed.wikitab--tinted-subtle :deep(.wikitab-daily-reads-section__error),
-.wikitab--themed.wikitab--tinted-subtle :deep(.wikitab-daily-reads-section__empty) {
+.wikitab--themed.wikitab--tinted-subtle :deep(.wikitab-daily-reads-section__empty),
+.wikitab--themed.wikitab--tinted-subtle :deep(.wikitab-suggested-edits-section__error) {
   color: var(--wikitab-theme-subtle);
 }
 
@@ -706,6 +845,7 @@ watch(searchQuery, (next, prev) => {
 .wikitab--themed :deep(.wikitab-section__menu .cdx-icon),
 .wikitab--themed :deep(.wikitab-saved-section__menu .cdx-icon),
 .wikitab--themed :deep(.wikitab-daily-reads-section__menu .cdx-icon),
+.wikitab--themed :deep(.wikitab-suggested-edits-section__menu .cdx-icon),
 .wikitab--themed :deep(.wikitab-configure-button .cdx-icon),
 .wikitab--themed :deep(.wikitab-saved-articles-button .cdx-icon),
 .wikitab--themed :deep(.wikitab-color-theme-button .cdx-icon) {
@@ -723,6 +863,8 @@ watch(searchQuery, (next, prev) => {
 .wikitab--themed :deep(.wikitab-saved-section__more-button.cdx-button--weight-quiet),
 .wikitab--themed :deep(.wikitab-daily-reads-section__menu .cdx-button.cdx-button--weight-quiet),
 .wikitab--themed :deep(.wikitab-daily-reads-section__more-button.cdx-button--weight-quiet),
+.wikitab--themed :deep(.wikitab-suggested-edits-section__menu .cdx-button.cdx-button--weight-quiet),
+.wikitab--themed :deep(.wikitab-suggested-edits-section__more-button.cdx-button--weight-quiet),
 .wikitab--themed :deep(.wikitab-saved-articles-panel__more-button.cdx-button--weight-quiet),
 .wikitab--themed :deep(.wikitab-configure-button.cdx-button--weight-quiet),
 .wikitab--themed :deep(.wikitab-saved-articles-button.cdx-button--weight-quiet),
@@ -742,6 +884,8 @@ watch(searchQuery, (next, prev) => {
 .wikitab--themed :deep(.wikitab-saved-section__more-button.cdx-button--weight-quiet:hover),
 .wikitab--themed :deep(.wikitab-daily-reads-section__menu .cdx-button.cdx-button--weight-quiet:hover),
 .wikitab--themed :deep(.wikitab-daily-reads-section__more-button.cdx-button--weight-quiet:hover),
+.wikitab--themed :deep(.wikitab-suggested-edits-section__menu .cdx-button.cdx-button--weight-quiet:hover),
+.wikitab--themed :deep(.wikitab-suggested-edits-section__more-button.cdx-button--weight-quiet:hover),
 .wikitab--themed :deep(.wikitab-saved-articles-panel__more-button.cdx-button--weight-quiet:hover),
 .wikitab--themed :deep(.wikitab-configure-button.cdx-button--weight-quiet:hover),
 .wikitab--themed :deep(.wikitab-saved-articles-button.cdx-button--weight-quiet:hover),
@@ -770,6 +914,12 @@ watch(searchQuery, (next, prev) => {
 .wikitab--themed :deep(.wikitab-daily-reads-section__more-button.cdx-button--weight-quiet:active),
 .wikitab--themed
   :deep(.wikitab-daily-reads-section__more-button.cdx-button--weight-quiet.cdx-button--is-active),
+.wikitab--themed :deep(.wikitab-suggested-edits-section__menu .cdx-button.cdx-button--weight-quiet:active),
+.wikitab--themed
+  :deep(.wikitab-suggested-edits-section__menu .cdx-button.cdx-button--weight-quiet.cdx-button--is-active),
+.wikitab--themed :deep(.wikitab-suggested-edits-section__more-button.cdx-button--weight-quiet:active),
+.wikitab--themed
+  :deep(.wikitab-suggested-edits-section__more-button.cdx-button--weight-quiet.cdx-button--is-active),
 .wikitab--themed :deep(.wikitab-saved-articles-panel__more-button.cdx-button--weight-quiet:active),
 .wikitab--themed
   :deep(.wikitab-saved-articles-panel__more-button.cdx-button--weight-quiet.cdx-button--is-active),

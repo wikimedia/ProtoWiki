@@ -1,5 +1,6 @@
 import { computed, onUnmounted, ref, shallowRef, watch, type Ref } from 'vue'
 import { fetchDailyFeedProgressive, fetchWikitabSectionFeed } from './data/fetchDailyFeed'
+import { persistPartialFeed, readCachedFeed, utcDayKey } from './data/feedCache'
 import {
   WIKITAB_SECTIONS,
   type WikitabCardData,
@@ -38,7 +39,12 @@ export function isSectionFeedLoading(
 }
 
 export function useWikitabFeed(
-  options: { enabled?: Ref<boolean>; hiddenSectionIds?: Ref<WikitabSectionId[]> } = {},
+  options: {
+    enabled?: Ref<boolean>
+    hiddenSectionIds?: Ref<WikitabSectionId[]>
+    /** When false, the page orchestrator calls `loadSection` in visual order. */
+    autoLoad?: boolean
+  } = {},
 ) {
   const feed = shallowRef<WikitabFeed | null>(null)
   const feedPhase = ref<WikitabFeedPhase>('idle')
@@ -71,11 +77,58 @@ export function useWikitabFeed(
         ...feed.value,
         [id]: items,
       }
+      persistPartialFeed(utcDayKey(), feed.value)
     } finally {
       if (signal.aborted) return
       const next = new Set(loadingSectionIds.value)
       next.delete(id)
       loadingSectionIds.value = next
+    }
+  }
+
+  function prepareForOrderedLoad(): void {
+    controller?.abort()
+    controller = new AbortController()
+    feedPhase.value = 'idle'
+    error.value = null
+    fetchedSections.value = new Set()
+    loadingSectionIds.value = new Set()
+
+    const cached = readCachedFeed(utcDayKey())
+    if (cached) {
+      feed.value = cached
+      const enabled = currentEnabledSections()
+      const fetched = new Set<WikitabSectionId>()
+      for (const id of ALL_SECTION_IDS) {
+        if (enabled.has(id) && (cached[id]?.length ?? 0) > 0) fetched.add(id)
+      }
+      fetchedSections.value = fetched
+      feedPhase.value = [...enabled].every((id) => fetched.has(id)) ? 'complete' : 'featured'
+    } else {
+      feed.value = null
+    }
+  }
+
+  /** Load one feed section — used by the home-page top-to-bottom orchestrator. */
+  async function loadSection(sectionId: WikitabSectionId): Promise<void> {
+    if (options.enabled && !options.enabled.value) return
+    if (!currentEnabledSections().has(sectionId)) return
+    if (fetchedSections.value.has(sectionId)) return
+
+    if (!controller) controller = new AbortController()
+    const { signal } = controller
+
+    try {
+      await fetchUnhiddenSection(sectionId, signal)
+      if (signal.aborted) return
+
+      const enabled = currentEnabledSections()
+      const allFetched = [...enabled].every((id) => fetchedSections.value.has(id))
+      feedPhase.value = allFetched ? 'complete' : 'featured'
+    } catch (cause) {
+      if (signal.aborted || (cause as Error)?.name === 'AbortError') return
+      error.value = 'Could not load the feed.'
+      feedPhase.value = 'error'
     }
   }
 
@@ -132,23 +185,39 @@ export function useWikitabFeed(
   function isSectionLoading(sectionId: WikitabSectionId): boolean {
     if (loadingSectionIds.value.has(sectionId)) return true
     if (!currentEnabledSections().has(sectionId)) return false
+    if (fetchedSections.value.has(sectionId)) return false
     return isSectionFeedLoading(sectionId, feedPhase.value)
   }
 
-  if (options.enabled) {
+  const autoLoad = options.autoLoad !== false
+
+  if (autoLoad) {
+    if (options.enabled) {
+      watch(
+        options.enabled,
+        (enabled) => {
+          if (enabled) void load()
+          else {
+            controller?.abort()
+            feedPhase.value = 'idle'
+          }
+        },
+        { immediate: true },
+      )
+    } else {
+      void load()
+    }
+  } else if (options.enabled) {
     watch(
       options.enabled,
       (enabled) => {
-        if (enabled) void load()
-        else {
+        if (!enabled) {
           controller?.abort()
           feedPhase.value = 'idle'
         }
       },
       { immediate: true },
     )
-  } else {
-    void load()
   }
 
   if (options.hiddenSectionIds) {
@@ -173,5 +242,13 @@ export function useWikitabFeed(
     unhideController?.abort()
   })
 
-  return { sections, feedPhase, error, isSectionLoading, reload: load }
+  return {
+    sections,
+    feedPhase,
+    error,
+    isSectionLoading,
+    reload: load,
+    prepareForOrderedLoad,
+    loadSection,
+  }
 }

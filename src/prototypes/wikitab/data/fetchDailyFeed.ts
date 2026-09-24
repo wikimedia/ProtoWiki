@@ -4,11 +4,10 @@ import { WIKITAB_SECTIONS, type WikitabCardData, type WikitabFeed, type WikitabS
 import { fetchActiveDiscussions } from './fetchActiveDiscussions'
 import { fetchBirthsOnThisDay } from './fetchBirthsOnThisDay'
 import {
-  isCacheBypassed,
+  persistPartialFeed,
   previousUtcDay,
   readCachedFeed,
   utcDayKey,
-  writeCachedFeed,
 } from './feedCache'
 import { fetchMainPageOtd } from './fetchMainPageOtd'
 import { EN_WIKI_HOST, articleUrl, normalizeFeedHtml, primaryLinkTitle } from './wikitabHtml'
@@ -41,6 +40,9 @@ interface InFlightProgressive {
 
 /** Deduplicates concurrent and repeat calls within a single page session. */
 const inFlight = new Map<string, InFlightProgressive>()
+
+/** One `feed/featured` request per UTC day per page session. */
+const featuredPayloadByDay = new Map<string, Promise<FeaturedFeedResponse>>()
 
 const ALL_SECTION_IDS = new Set<WikitabSectionId>(WIKITAB_SECTIONS.map((section) => section.id))
 
@@ -180,6 +182,27 @@ async function fetchFeaturedPayload(
   return (await response.json()) as FeaturedFeedResponse
 }
 
+function getFeaturedPayload(day: string, signal?: AbortSignal): Promise<FeaturedFeedResponse> {
+  const existing = featuredPayloadByDay.get(day)
+  if (existing) return existing
+
+  const promise = fetchFeaturedPayload(day, signal).catch((error) => {
+    featuredPayloadByDay.delete(day)
+    throw error
+  })
+  featuredPayloadByDay.set(day, promise)
+  return promise
+}
+
+function readCachedSectionSlice(
+  day: string,
+  sectionId: WikitabSectionId,
+): WikitabCardData[] | null {
+  const cached = readCachedFeed(day)
+  if (!cached?.[sectionId]?.length) return null
+  return cached[sectionId]
+}
+
 /** When today's `mostread` is missing, fall back to the previous UTC day. */
 async function resolveTrending(
   payload: FeaturedFeedResponse,
@@ -191,7 +214,7 @@ async function resolveTrending(
 
   try {
     const yesterday = previousUtcDay(day)
-    const fallback = await fetchFeaturedPayload(yesterday, signal)
+    const fallback = await getFeaturedPayload(yesterday, signal)
     trending = mapTrending(fallback, yesterday)
   } catch {
     // Empty state keeps the section visible.
@@ -216,7 +239,7 @@ async function requestFeedProgressive(
   if (!needsFeaturedFetch(enabled)) {
     onUpdate({ ...feed })
   } else {
-    const payload = await fetchFeaturedPayload(day, signal)
+    const payload = await getFeaturedPayload(day, signal)
     const trending = enabled.has('trending')
       ? await resolveTrending(payload, day, signal)
       : []
@@ -283,7 +306,7 @@ async function fetchFeaturedSectionSlice(
   day: string,
   signal?: AbortSignal,
 ): Promise<WikitabCardData[]> {
-  const payload = await fetchFeaturedPayload(day, signal)
+  const payload = await getFeaturedPayload(day, signal)
 
   switch (sectionId) {
     case 'trending':
@@ -310,13 +333,14 @@ export async function fetchWikitabSectionFeed(
       return pending.lastFeed[sectionId]
     }
 
-    const cached = readCachedFeed(day)
-    if (cached?.[sectionId]?.length) {
-      return cached[sectionId]
-    }
+    const cachedSlice = readCachedSectionSlice(day, sectionId)
+    if (cachedSlice) return cachedSlice
 
     return fetchFeaturedSectionSlice(sectionId, day, signal)
   }
+
+  const cachedSlice = readCachedSectionSlice(day, sectionId)
+  if (cachedSlice) return cachedSlice
 
   switch (sectionId) {
     case 'otd':
@@ -381,8 +405,7 @@ export function fetchDailyFeedProgressive(
     options,
   )
     .then((feed) => {
-      // Skip caching when Trending is still empty so the next tab open can retry.
-      if (!isCacheBypassed() && feed.trending.length > 0) writeCachedFeed(day, feed)
+      persistPartialFeed(day, feed)
       inFlight.delete(day)
       return feed
     })

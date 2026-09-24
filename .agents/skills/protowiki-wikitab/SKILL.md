@@ -144,8 +144,9 @@ Feed errors show the same reserved-height error row per section.
 ## Daily feed sources
 
 `data/fetchDailyFeed.ts` loads the feed in **two phases** so top sections can
-resolve while slower secondary APIs are still in flight. Cached as one daily blob
-once the complete feed is assembled.
+resolve while slower secondary APIs are still in flight. All six sections are
+cached under one UTC-day blob (`wikitab-feed-cache-v*`); slices patch in via
+`persistPartialFeed()` as each section resolves during ordered home load.
 
 **Phase 1 — featured (blocking):**
 
@@ -222,13 +223,13 @@ you touch the card's stacking.
 `news` stories use relative `./Page_Title` hrefs, which would otherwise resolve
 against our own origin, while `dyk` hooks use absolute ones.
 
-## Saved and Daily reads modules
+## Saved-adjacent home modules
 
-Two home modules sit beside the daily feed — not in `WIKITAB_SECTIONS` or
-`useWikitabFeed`. Both use the same paging contract as feed sections
+Three home modules sit beside the daily feed — not in `WIKITAB_SECTIONS` or
+`useWikitabFeed`. All use the same paging contract as feed sections
 (`initialCount` 4, `pageSize` 6, thumbnail cards at 122/96). Default home order
-(`WIKITAB_HOME_MODULE_ORDER`): Saved → Daily reads → Trending → remaining feed
-sections. Both appear in Configure and support pin / hide.
+(`WIKITAB_HOME_MODULE_ORDER`): Saved → Daily reads → Suggested edits → Trending
+→ remaining feed sections. All appear in Configure and support pin / hide.
 
 **Saved** (`saved`) — home feed cards come from a **snapshot**
 (`savedModuleArticles` in `index.vue`), not live `savedArticles`. The section is
@@ -259,14 +260,31 @@ batch `preloadImages` gate (`WikitabDailyReadsSection.vue` does not use
 
 Cached under `wikitab-daily-reads-cache-v3` keyed by `{ utcDay, savedFingerprint }`
 (`data/dailyReadsCache.ts`); entries store the loaded card list plus a `hasMore`
-flag. A render triggered on mount, search exit, or overlay close calls
-`refreshHomeSavedModules()` in `index.vue`, which refreshes Saved then Daily
-reads from the **same snapshot**. Network runs only on cache miss (saved list or
-UTC day changed); session memory skips even localStorage when the key matches.
-Only the first `initialCount` cards fetch on load — further pages load on **Show
-more** (`loadMore()` in `useWikitabDailyReads.ts`), continuing the same seed
+flag.
+
+**Suggested edits** (`suggested-edits`) — edit-opportunity cards from the same
+Microtask `POST /quality-check` pipeline as the search **Contribute** tab
+(`fetchWikitabSearchContribute.ts`), seeded from up to **six** saved pages via a
+**deterministic daily shuffle** with a separate salt from Daily reads
+(`pickSavedArticleSeeds.ts` → `SuggestedEditsFeed` in
+`data/fetchWikitabSuggestedEdits.ts`). Direct phase quality-checks saved seeds;
+morelike expansion skips titles already in the saved list. Cards map to
+`WikitabCardData` via `contributeItemToCard()` (Visual Editor link, task body,
+`supportingSignals` for task icon + label, optional `Related to {seed}` end
+text). Same visibility rules as Daily reads — hidden when the snapshot is empty
+or when a completed fetch yields zero cards. Same composable / section pattern as
+Daily reads (`useWikitabSuggestedEdits.ts`, `WikitabSuggestedEditsSection.vue` —
+local `reserved` display slots, no `useSectionReveal`). Cached under
+`wikitab-suggested-edits-cache-v1` (`data/suggestedEditsCache.ts`).
+
+A render triggered on mount, search exit, or overlay close calls
+`refreshHomeSavedModules()` in `index.vue`, which refreshes Saved, Daily reads,
+and Suggested edits from the **same snapshot**. Network runs only on cache miss
+(saved list or UTC day changed); session memory skips even localStorage when the
+key matches. Only the first `initialCount` cards fetch on load — further pages
+load on **Show more** (`loadMore()` in each composable), continuing the same seed
 feed from refresh time (not the live saved list). A full refresh after save/unsave
-waits for overlay close, search exit, or a new tab. `?nocache=1` bypasses the cache.
+waits for overlay close, search exit, or a new tab. `?nocache=1` bypasses caches.
 
 ## State and storage
 
@@ -286,9 +304,12 @@ unpinned sections in registry order. Pinned sections show `cdxIconPushPin`
 beside the heading; the ellipsis menu toggles "Pin to top" / "Unpin from top".
 Pinning reorders by `spec.id` and does not affect the no-jump loading contract.
 
-`feed/featured` is cached under a UTC-day key; `?nocache=1` forces a refetch.
-After the first load of the day you mostly won't see loading slots — use
-`?nocache=1` when working on them.
+The full daily feed (featured + Active discussions + Main Page OTD + births) is
+cached under a UTC-day key; ordered per-section loading reads and writes through
+the same cache, with one in-session `feed/featured` request shared across
+Trending / News / DYK on a cache miss. `?nocache=1` forces a refetch. After the
+first load of the day you mostly won't see loading slots — use `?nocache=1` when
+working on them.
 
 ## Layout
 
