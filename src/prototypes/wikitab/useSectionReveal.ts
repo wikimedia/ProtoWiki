@@ -14,6 +14,8 @@ import type { WikitabCardData, WikitabSectionSpec } from './sections'
 export function useSectionReveal(
   spec: Pick<WikitabSectionSpec, 'initialCount' | 'pageSize'>,
   items: Ref<WikitabCardData[]>,
+  /** When true and `items` is still empty, reserve initial skeleton slots (feed + home modules). */
+  loading?: Ref<boolean>,
 ) {
   const reserved = ref(spec.initialCount)
   const ready = ref(0)
@@ -23,6 +25,16 @@ export function useSectionReveal(
   onUnmounted(() => controller.abort())
 
   const hasMore = computed(() => items.value.length > reserved.value)
+
+  function applyEmptyListState(): void {
+    if (loading?.value) {
+      reserved.value = spec.initialCount
+      ready.value = 0
+    } else {
+      reserved.value = 0
+      ready.value = 0
+    }
+  }
 
   async function prepare(from: number, to: number): Promise<void> {
     revealing.value = true
@@ -57,8 +69,7 @@ export function useSectionReveal(
     items,
     (list, prevList) => {
       if (!list.length) {
-        reserved.value = 0
-        ready.value = 0
+        applyEmptyListState()
         return
       }
 
@@ -83,6 +94,12 @@ export function useSectionReveal(
     },
     { immediate: true },
   )
+
+  if (loading) {
+    watch(loading, () => {
+      if (!items.value.length) applyEmptyListState()
+    })
+  }
 
   return { reserved, ready, revealing, hasMore, revealMore }
 }

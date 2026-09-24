@@ -4,7 +4,17 @@ import {
   patchWikitabConfig,
   WIKITAB_CONFIG_STORAGE_KEY,
 } from './data/wikitabConfig'
-import { WIKITAB_SAVED_MODULE_ID, type WikitabModuleId, type WikitabSectionId } from './sections'
+import {
+  WIKITAB_DAILY_READS_MODULE_ID,
+  WIKITAB_SAVED_MODULE_ID,
+  type WikitabModuleId,
+  type WikitabSectionId,
+} from './sections'
+
+const FEED_ONLY_PIN_EXCLUSIONS = new Set<WikitabModuleId>([
+  WIKITAB_SAVED_MODULE_ID,
+  WIKITAB_DAILY_READS_MODULE_ID,
+])
 import type { WikitabSectionState } from './useWikitabFeed'
 
 export function useWikitabPinned() {
@@ -31,7 +41,7 @@ export function useWikitabPinned() {
   function orderSections(sections: WikitabSectionState[]): WikitabSectionState[] {
     const pinnedSet = new Set<WikitabModuleId>(pinnedIds.value)
     const pinned = pinnedIds.value
-      .filter((id): id is WikitabSectionId => id !== WIKITAB_SAVED_MODULE_ID)
+      .filter((id): id is WikitabSectionId => !FEED_ONLY_PIN_EXCLUSIONS.has(id))
       .map((id) => sections.find((section) => section.spec.id === id))
       .filter((section): section is WikitabSectionState => section !== undefined)
     const unpinned = sections.filter((section) => !pinnedSet.has(section.spec.id))

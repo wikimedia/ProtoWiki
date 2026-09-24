@@ -222,6 +222,52 @@ you touch the card's stacking.
 `news` stories use relative `./Page_Title` hrefs, which would otherwise resolve
 against our own origin, while `dyk` hooks use absolute ones.
 
+## Saved and Daily reads modules
+
+Two home modules sit beside the daily feed — not in `WIKITAB_SECTIONS` or
+`useWikitabFeed`. Both use the same paging contract as feed sections
+(`initialCount` 4, `pageSize` 6, thumbnail cards at 122/96). Default home order
+(`WIKITAB_HOME_MODULE_ORDER`): Saved → Daily reads → Trending → remaining feed
+sections. Both appear in Configure and support pin / hide.
+
+**Saved** (`saved`) — home feed cards come from a **snapshot**
+(`savedModuleArticles` in `index.vue`), not live `savedArticles`. The section is
+hidden until a refresh runs (mount, search exit, overlay close) and only then
+reflects what was saved at that moment — saving your first article mid-session
+does not surface the module. Snapshot + REST summary enrichment via
+`useWikitabSavedArticles.ts`, `WikitabSavedSection.vue`. Unsaving every article
+during the session clears the snapshot immediately.
+
+**Daily reads** (`daily-reads`) — morelike suggestions seeded from up to **four**
+saved pages picked by a **deterministic daily shuffle** (UTC day +
+sorted `titleKey`s → seeded Fisher-Yates). Hidden when the Saved-module
+snapshot has no articles (so saving your first page mid-session does not
+surface an empty section), and hidden again once a refresh completes with
+zero suggestions. Action API `generator=search` with `gsrsearch=morelike:{title}` per
+seed (`DailyReadsFeed` in `data/fetchWikitabDailyReads.ts`); seeds load in
+parallel but cards resolve **one at a time** via `takeNext()` — a daily-seeded
+random shuffle across all seed queues (stable for the UTC day, mixed on screen).
+Each card is
+enriched with REST `/page/summary/` before paint (better thumbnails than
+pageimages alone); a non-blocking summary backfill runs if a thumbnail is still
+missing. Cards are thumbnail variant with
+`supportingText: "Related to {seed title}"`. Excludes disambiguation pages,
+duplicate `pageid`s, and all saved titles. Hidden-article keys are filtered
+client-side via `filterCards` in `index.vue`. Cards paint as they resolve — no
+batch `preloadImages` gate (`WikitabDailyReadsSection.vue` does not use
+`useSectionReveal`).
+
+Cached under `wikitab-daily-reads-cache-v3` keyed by `{ utcDay, savedFingerprint }`
+(`data/dailyReadsCache.ts`); entries store the loaded card list plus a `hasMore`
+flag. A render triggered on mount, search exit, or overlay close calls
+`refreshHomeSavedModules()` in `index.vue`, which refreshes Saved then Daily
+reads from the **same snapshot**. Network runs only on cache miss (saved list or
+UTC day changed); session memory skips even localStorage when the key matches.
+Only the first `initialCount` cards fetch on load — further pages load on **Show
+more** (`loadMore()` in `useWikitabDailyReads.ts`), continuing the same seed
+feed from refresh time (not the live saved list). A full refresh after save/unsave
+waits for overlay close, search exit, or a new tab. `?nocache=1` bypasses the cache.
+
 ## State and storage
 
 User preferences (`data/wikitabConfig.ts`), feed cache (`data/feedCache.ts`),

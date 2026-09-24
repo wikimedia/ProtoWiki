@@ -206,7 +206,7 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
               class="wikitab-card__supporting-signal"
             >
               <CdxIcon :icon="signal.icon" size="x-small" />
-              {{ signal.text }}
+              <span class="wikitab-card__supporting-label">{{ signal.text }}</span>
             </span>
           </span>
           <span v-if="card.supportingTextEnd" class="wikitab-card__supporting-end">
@@ -217,7 +217,7 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
       <template v-else-if="card?.supportingText" #supporting-text>
         <span class="wikitab-card__supporting">
           <CdxIcon v-if="supportingIcon" :icon="supportingIcon" size="x-small" />
-          {{ card.supportingText }}
+          <span class="wikitab-card__supporting-label">{{ card.supportingText }}</span>
         </span>
       </template>
     </CdxCard>
@@ -493,7 +493,7 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
 
 .wikitab-card__supporting {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: var(--spacing-25);
 }
 
@@ -505,7 +505,7 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
 
 .wikitab-card__supporting-start {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: var(--spacing-25);
   min-width: 0;
 }
@@ -516,8 +516,17 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
 
 .wikitab-card__supporting-signal {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: var(--spacing-25);
+}
+
+.wikitab-card__supporting :deep(.cdx-icon) {
+  flex-shrink: 0;
+  /*
+   * x-small icons sit on the small-text baseline — a hair above the SVG box
+   * bottom so they optically match the label cap height.
+   */
+  translate: 0 0.0625em;
 }
 
 /*

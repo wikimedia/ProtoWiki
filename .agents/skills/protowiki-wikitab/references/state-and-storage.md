@@ -36,6 +36,15 @@ authoritative — clearing it must only ever cost one refetch.
 A new-tab page opens dozens of times a day; caching the daily feed is both fast
 and good API etiquette. Writing today's entry evicts older days.
 
+## Cache-only Daily reads storage (`wikitab-daily-reads-cache-v*`)
+
+[`data/dailyReadsCache.ts`](../../../../src/prototypes/wikitab/data/dailyReadsCache.ts)
+caches the loaded card list plus `hasMore` under `{ day, savedFingerprint }`.
+Refetch only when that key misses (saved pages changed, UTC day rolled, or first
+visit) and a Daily reads render is triggered via `refreshHomeSavedModules()` —
+not on every save during the session. Only the first batch loads on refresh;
+additional cards fetch on Show more. Same `?nocache=1` bypass as the feed cache.
+
 ## Transient component state
 
 Revealed page counts (`useSectionReveal`: `reserved` / `ready`) stay in memory

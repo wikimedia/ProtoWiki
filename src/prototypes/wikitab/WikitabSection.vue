@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, toRef, watch } from 'vue'
 import { CdxButton, CdxIcon, CdxMenuButton } from '@wikimedia/codex'
 import { cdxIconEllipsis, cdxIconEyeClosed, cdxIconHelpNotice, cdxIconPushPin } from '@wikimedia/codex-icons'
 import { useSkin } from '@/composables/useSkin'
@@ -39,7 +39,12 @@ function cardArticleTitle(card: WikitabCardData): string {
 }
 
 const items = computed(() => props.items)
-const { reserved, ready, revealing, hasMore, revealMore } = useSectionReveal(props.spec, items)
+const loading = toRef(props, 'loading')
+const { reserved, ready, revealing, hasMore, revealMore } = useSectionReveal(
+  props.spec,
+  items,
+  loading,
+)
 
 const skin = useSkin()
 
