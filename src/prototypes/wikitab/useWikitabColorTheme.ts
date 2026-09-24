@@ -12,12 +12,23 @@ import {
 } from './data/wikitabColorThemes'
 import {
   loadWikitabConfig,
+  parseWikitabConfigJson,
   patchWikitabConfig,
   WIKITAB_CONFIG_STORAGE_KEY,
+  type WikitabConfig,
 } from './data/wikitabConfig'
 
 export function useWikitabColorTheme() {
-  const colorThemeId = ref<WikitabColorThemeId | null>(loadWikitabConfig().colorThemeId)
+  let lastAppliedRevision = 0
+
+  function trackRevision(config: WikitabConfig): void {
+    lastAppliedRevision = config.configRevision
+  }
+
+  const initialConfig = loadWikitabConfig()
+  trackRevision(initialConfig)
+
+  const colorThemeId = ref<WikitabColorThemeId | null>(initialConfig.colorThemeId)
 
   const activeTheme = computed(() => {
     if (isDefaultColorTheme(colorThemeId.value)) return null
@@ -29,19 +40,37 @@ export function useWikitabColorTheme() {
     return colorThemePageStyle(colorThemeId.value!)
   })
 
-  function syncFromStorage(): void {
-    colorThemeId.value = loadWikitabConfig().colorThemeId
+  function syncFromStorage(config: WikitabConfig): void {
+    colorThemeId.value = config.colorThemeId
   }
 
   function setColorTheme(id: WikitabColorThemeId): void {
     const next = isDefaultColorTheme(id) ? null : id
     colorThemeId.value = next
-    patchWikitabConfig({ colorThemeId: next })
+    trackRevision(patchWikitabConfig({ colorThemeId: next }))
+
+    // Another open Wikitab tab can clobber localStorage with a stale read-modify-write.
+    queueMicrotask(() => {
+      if (colorThemeId.value !== next) return
+      if (loadWikitabConfig().colorThemeId === next) return
+      trackRevision(patchWikitabConfig({ colorThemeId: next }))
+    })
   }
 
   function onStorage(event: StorageEvent): void {
-    if (event.key !== WIKITAB_CONFIG_STORAGE_KEY) return
-    syncFromStorage()
+    if (event.key !== WIKITAB_CONFIG_STORAGE_KEY || !event.newValue) return
+
+    let incoming: WikitabConfig
+    try {
+      incoming = parseWikitabConfigJson(event.newValue)
+    } catch {
+      return
+    }
+
+    if (incoming.configRevision <= lastAppliedRevision) return
+
+    lastAppliedRevision = incoming.configRevision
+    syncFromStorage(incoming)
   }
 
   function syncDocumentBackground(): void {
@@ -72,7 +101,7 @@ export function useWikitabColorTheme() {
       syncDocumentBackground()
       syncDocumentCodexTheme()
     },
-    { immediate: true },
+    { immediate: true, flush: 'post' },
   )
 
   onMounted(() => {

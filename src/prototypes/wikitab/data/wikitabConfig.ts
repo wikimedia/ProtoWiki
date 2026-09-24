@@ -36,6 +36,8 @@ export interface WikitabConfig {
   colorThemeId: WikitabColorThemeId | null
   /** Most recently saved first. */
   savedArticles: WikitabSavedArticle[]
+  /** Monotonic write counter — lets open tabs ignore stale cross-tab storage events. */
+  configRevision: number
 }
 
 const DEFAULT_WIKITAB_CONFIG: WikitabConfig = {
@@ -45,6 +47,7 @@ const DEFAULT_WIKITAB_CONFIG: WikitabConfig = {
   dismissedActivityRevids: [],
   colorThemeId: null,
   savedArticles: [],
+  configRevision: 0,
 }
 
 const VALID_FEED_SECTION_IDS = new Set<WikitabSectionId>(
@@ -188,6 +191,11 @@ function normalizePinnedFromCommaList(raw: string): WikitabModuleId[] {
   return ids
 }
 
+function normalizeConfigRevision(raw: unknown): number {
+  if (typeof raw !== 'number' || !Number.isFinite(raw)) return 0
+  return Math.max(0, Math.floor(raw))
+}
+
 function normalizeConfig(raw: unknown): WikitabConfig {
   if (typeof raw !== 'object' || raw === null) {
     return { ...DEFAULT_WIKITAB_CONFIG, pinnedSectionIds: [] }
@@ -202,6 +210,7 @@ function normalizeConfig(raw: unknown): WikitabConfig {
     dismissedActivityRevids: normalizeDismissedActivityRevids(record.dismissedActivityRevids),
     colorThemeId: normalizeColorThemeId(record.colorThemeId),
     savedArticles: normalizeSavedArticles(record.savedArticles),
+    configRevision: normalizeConfigRevision(record.configRevision),
   }
 }
 
@@ -213,7 +222,39 @@ function cloneConfig(config: WikitabConfig): WikitabConfig {
     dismissedActivityRevids: [...config.dismissedActivityRevids],
     colorThemeId: config.colorThemeId,
     savedArticles: config.savedArticles.map((article) => ({ ...article })),
+    configRevision: config.configRevision,
   }
+}
+
+function readConfigFromStorage(): WikitabConfig {
+  if (typeof window === 'undefined') {
+    return cloneConfig(DEFAULT_WIKITAB_CONFIG)
+  }
+
+  try {
+    const raw = window.localStorage.getItem(WIKITAB_CONFIG_STORAGE_KEY)
+    if (!raw) return cloneConfig(DEFAULT_WIKITAB_CONFIG)
+    return normalizeConfig(JSON.parse(raw))
+  } catch {
+    return cloneConfig(DEFAULT_WIKITAB_CONFIG)
+  }
+}
+
+function partialPatchMatches(
+  stored: WikitabConfig,
+  expected: WikitabConfig,
+  partial: Partial<WikitabConfig>,
+): boolean {
+  for (const key of Object.keys(partial) as (keyof WikitabConfig)[]) {
+    if (key === 'configRevision') continue
+    if (JSON.stringify(stored[key]) !== JSON.stringify(expected[key])) return false
+  }
+  return true
+}
+
+/** Parse a `storage` event payload without touching localStorage. */
+export function parseWikitabConfigJson(raw: string): WikitabConfig {
+  return normalizeConfig(JSON.parse(raw))
 }
 
 function clearStoredConfig(): void {
@@ -292,8 +333,34 @@ export function loadWikitabConfig(): WikitabConfig {
   }
 }
 
+const PATCH_MAX_ATTEMPTS = 6
+
 export function patchWikitabConfig(partial: Partial<WikitabConfig>): WikitabConfig {
-  const next = normalizeConfig({ ...loadWikitabConfig(), ...partial })
-  saveWikitabConfig(next)
-  return next
+  if (typeof window === 'undefined') {
+    const next = normalizeConfig({ ...DEFAULT_WIKITAB_CONFIG, ...partial })
+    return cloneConfig(next)
+  }
+
+  for (let attempt = 0; attempt < PATCH_MAX_ATTEMPTS; attempt++) {
+    const current = readConfigFromStorage()
+    const next = normalizeConfig({
+      ...current,
+      ...partial,
+      configRevision: current.configRevision + 1,
+    })
+
+    const guard = readConfigFromStorage()
+    if (guard.configRevision !== current.configRevision) continue
+
+    persistConfig(next)
+    const verify = readConfigFromStorage()
+    if (
+      verify.configRevision === next.configRevision &&
+      partialPatchMatches(verify, next, partial)
+    ) {
+      return cloneConfig(next)
+    }
+  }
+
+  return loadWikitabConfig()
 }
