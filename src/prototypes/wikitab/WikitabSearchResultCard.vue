@@ -19,9 +19,9 @@ import {
 import { formatSearchArticleRelationExplanation } from './data/formatSearchArticleRelation'
 import { highlightSearchQuery } from './data/highlightSearchQuery'
 import type { WikitabSearchArticle } from './data/fetchWikitabSearchArticles'
+import { articleUrl } from './data/wikitabHtml'
 import { useThumbnailSlotReady } from './useThumbnailSlotReady'
 import { useWikitabSearchArticleAttribution } from './useWikitabSearchArticleAttribution'
-import { useWikitabSearchNavigation } from './useWikitabSearchNavigation'
 
 const props = defineProps<{
   article: WikitabSearchArticle
@@ -33,8 +33,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   'toggle-save': []
 }>()
-
-const { navigateToSearch } = useWikitabSearchNavigation()
 
 const articleTitle = toRef(() => props.article.title)
 const {
@@ -97,10 +95,6 @@ watch(selection, (value) => {
   if (value !== null) selection.value = null
 })
 
-function onTitleClick(event: MouseEvent): void {
-  event.preventDefault()
-  navigateToSearch(props.article.title)
-}
 </script>
 
 <template>
@@ -151,7 +145,7 @@ function onTitleClick(event: MouseEvent): void {
 
     <div class="wikitab-search-result-card__content">
       <h3 class="wikitab-search-result-card__title">
-        <a href="#" @click="onTitleClick">
+        <a :href="articleUrl(article.title)" target="_blank" rel="noreferrer">
           {{ article.title }}
         </a>
       </h3>

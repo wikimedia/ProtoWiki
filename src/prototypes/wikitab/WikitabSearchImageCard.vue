@@ -32,7 +32,12 @@ watch(
 </script>
 
 <template>
-  <a class="wikitab-search-image-card" :href="image.filePageUrl">
+  <a
+    class="wikitab-search-image-card"
+    :href="image.filePageUrl"
+    target="_blank"
+    rel="noreferrer"
+  >
     <div class="wikitab-search-image-card__frame" :style="{ aspectRatio }">
       <div
         v-if="showThumbnailPending"
