@@ -1,0 +1,1 @@
+function c(l,t){const e=l.getBoundingClientRect(),n=t.getBoundingClientRect(),i=getComputedStyle(t),o=parseFloat(i.paddingLeft)||0,g=parseFloat(i.paddingRight)||0;e.left<n.left?t.scrollLeft-=n.left-e.left+o:e.right>n.right&&(t.scrollLeft+=e.right-n.right+g)}export{c as s};
