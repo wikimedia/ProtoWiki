@@ -1,1 +1,0 @@
-import{d as a,o as e,c as t,F as o,r as s}from"./index-8DYW1iSU.js";const u=a({__name:"WikitaLiteCardSkeletons",props:{count:{}},setup(n){return(c,i)=>(e(!0),t(o,null,s(n.count,r=>(e(),t("div",{key:`skeleton-${r}`,class:"wikita-lite-card-skeleton","aria-hidden":"true"}))),128))}});export{u as _};
