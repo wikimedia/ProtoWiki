@@ -15,6 +15,8 @@ const spec = WIKITAB_SUGGESTED_EDITS_MODULE_SPEC
 const props = defineProps<{
   items: WikitabCardData[]
   loading: boolean
+  fillingInitial: boolean
+  pending: boolean
   loadingMore: boolean
   hasMore: boolean
   error: string | null
@@ -44,10 +46,18 @@ const reserved = ref(spec.initialCount)
 const bufferedHasMore = computed(() => props.items.length > reserved.value)
 const fetchHasMore = computed(() => props.hasMore)
 
-const isInitialLoading = computed(() => props.loading && props.items.length === 0)
+const isInitialLoading = computed(
+  () =>
+    props.items.length === 0 &&
+    (props.loading || props.pending || props.fillingInitial),
+)
 
 const canFetchMore = computed(
-  () => fetchHasMore.value && !props.loading && reserved.value >= props.items.length,
+  () =>
+    fetchHasMore.value &&
+    !props.loading &&
+    !props.fillingInitial &&
+    reserved.value >= props.items.length,
 )
 
 const observeScrollEnd = computed(
@@ -94,7 +104,8 @@ const slots = computed(() => {
 
   return Array.from({ length: reserved.value }, (_, index) => ({
     card: props.items[index],
-    loading: (props.loading || props.loadingMore) && index >= props.items.length,
+    loading:
+      (props.fillingInitial || props.loadingMore) && index >= props.items.length,
   }))
 })
 
@@ -117,7 +128,11 @@ const canShowMore = computed(
 )
 
 const showMoreDisabled = computed(
-  () => props.loading || isInitialLoading.value || props.loadingMore,
+  () =>
+    props.loading ||
+    props.fillingInitial ||
+    isInitialLoading.value ||
+    props.loadingMore,
 )
 
 const selection = ref<string | number | null>(null)

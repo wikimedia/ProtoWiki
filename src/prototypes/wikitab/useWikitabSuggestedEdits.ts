@@ -38,6 +38,7 @@ function sessionCacheKey(day: string, savedFingerprint: string): string {
 export function useWikitabSuggestedEdits() {
   const items = ref<WikitabCardData[]>([])
   const loading = ref(false)
+  const fillingInitial = ref(false)
   const loadingMore = ref(false)
   const hasMore = ref(false)
   const error = ref<string | null>(null)
@@ -113,6 +114,7 @@ export function useWikitabSuggestedEdits() {
   function clearState(): void {
     items.value = []
     loading.value = false
+    fillingInitial.value = false
     loadingMore.value = false
     hasMore.value = false
     error.value = null
@@ -151,6 +153,16 @@ export function useWikitabSuggestedEdits() {
     for (let i = 0; i < count; i++) {
       const card = await appendOne(signal)
       if (!card) break
+    }
+  }
+
+  async function fillInitialSlots(signal: AbortSignal): Promise<void> {
+    fillingInitial.value = true
+
+    try {
+      await appendMany(initialCount, signal)
+    } finally {
+      fillingInitial.value = false
     }
   }
 
@@ -199,7 +211,9 @@ export function useWikitabSuggestedEdits() {
       await withFeedLock(async () => {
         activeFeed = createSuggestedEditsFeed(savedArticlesSnapshot, day, signal)
         if (!activeFeed) return
-        await appendMany(initialCount, signal)
+
+        loading.value = false
+        await fillInitialSlots(signal)
       })
 
       if (signal.aborted) return
@@ -218,7 +232,7 @@ export function useWikitabSuggestedEdits() {
   }
 
   async function loadMore(): Promise<void> {
-    if (loadingMore.value || loading.value) return
+    if (loadingMore.value || loading.value || fillingInitial.value) return
     if (!savedArticlesSnapshot.length || !cacheContext) {
       hasMore.value = false
       return
@@ -257,8 +271,19 @@ export function useWikitabSuggestedEdits() {
   function abort(): void {
     controller?.abort()
     loading.value = false
+    fillingInitial.value = false
     loadingMore.value = false
   }
 
-  return { items, loading, loadingMore, hasMore, error, refresh, loadMore, abort }
+  return {
+    items,
+    loading,
+    fillingInitial,
+    loadingMore,
+    hasMore,
+    error,
+    refresh,
+    loadMore,
+    abort,
+  }
 }

@@ -109,6 +109,7 @@ const {
 const {
   items: suggestedEditsItems,
   loading: suggestedEditsLoading,
+  fillingInitial: suggestedEditsFillingInitial,
   loadingMore: suggestedEditsLoadingMore,
   hasMore: suggestedEditsHasMore,
   error: suggestedEditsError,
@@ -116,6 +117,9 @@ const {
   loadMore: loadMoreSuggestedEdits,
   abort: abortSuggestedEdits,
 } = useWikitabSuggestedEdits()
+
+/** Skeleton before Suggested edits refresh starts (saved snapshot ready, load queued). */
+const suggestedEditsPending = ref(false)
 
 /** Home Saved module cards — empty until enrich finishes so skeletons can reserve slots. */
 const savedModuleArticles = ref<WikitabSavedArticle[]>([])
@@ -190,11 +194,36 @@ function computeHomeModuleLoadOrder(): WikitabModuleId[] {
 
 let homeLoadGeneration = 0
 
+function isSavedAdjacentModuleId(id: WikitabModuleId): boolean {
+  return id === WIKITAB_DAILY_READS_MODULE_ID || id === WIKITAB_SUGGESTED_EDITS_MODULE_ID
+}
+
+async function refreshSavedAdjacentModules(
+  batch: readonly WikitabModuleId[],
+): Promise<void> {
+  const runsSuggestedEdits = batch.includes(WIKITAB_SUGGESTED_EDITS_MODULE_ID)
+  if (runsSuggestedEdits) suggestedEditsPending.value = true
+
+  try {
+    await Promise.all(
+      batch.map((moduleId) => {
+        if (moduleId === WIKITAB_DAILY_READS_MODULE_ID) {
+          return refreshDailyReads(savedModuleArticles.value)
+        }
+        return refreshSuggestedEdits(savedModuleArticles.value)
+      }),
+    )
+  } finally {
+    if (runsSuggestedEdits) suggestedEditsPending.value = false
+  }
+}
+
 /** Refresh visible home modules top-to-bottom (respects pin + hide). */
 async function refreshHomeModulesInOrder(): Promise<void> {
   if (isSearchMode.value) return
 
   const generation = ++homeLoadGeneration
+  suggestedEditsPending.value = false
   prepareForOrderedLoad()
 
   const order = computeHomeModuleLoadOrder()
@@ -210,21 +239,25 @@ async function refreshHomeModulesInOrder(): Promise<void> {
     if (generation !== homeLoadGeneration) return
   }
 
-  for (const id of order) {
+  for (let index = 0; index < order.length; index++) {
     if (generation !== homeLoadGeneration) return
+
+    const id = order[index]
 
     if (id === WIKITAB_SAVED_MODULE_ID) {
       await refreshSavedModule()
       continue
     }
 
-    if (id === WIKITAB_DAILY_READS_MODULE_ID) {
-      await refreshDailyReads(savedModuleArticles.value)
-      continue
-    }
+    if (isSavedAdjacentModuleId(id)) {
+      const batch: WikitabModuleId[] = []
+      while (index < order.length && isSavedAdjacentModuleId(order[index])) {
+        batch.push(order[index])
+        index++
+      }
+      index--
 
-    if (id === WIKITAB_SUGGESTED_EDITS_MODULE_ID) {
-      await refreshSuggestedEdits(savedModuleArticles.value)
+      await refreshSavedAdjacentModules(batch)
       continue
     }
 
@@ -351,7 +384,10 @@ const showSuggestedEditsModule = computed(
   () =>
     !isHidden(WIKITAB_SUGGESTED_EDITS_MODULE_ID) &&
     savedModuleArticles.value.length > 0 &&
-    (suggestedEditsLoading.value || visibleSuggestedEditsItems.value.length > 0),
+    (suggestedEditsPending.value ||
+      suggestedEditsLoading.value ||
+      suggestedEditsFillingInitial.value ||
+      visibleSuggestedEditsItems.value.length > 0),
 )
 
 type HomeModuleEntry =
@@ -401,6 +437,7 @@ watch(
     if (next === 0) {
       savedModuleArticles.value = []
       savedModuleLoading.value = false
+      suggestedEditsPending.value = false
       void refreshDailyReads([])
       void refreshSuggestedEdits([])
     }
@@ -539,6 +576,8 @@ watch(searchQuery, (next, prev) => {
             v-else-if="entry.kind === 'suggested-edits'"
             :items="visibleSuggestedEditsItems"
             :loading="suggestedEditsLoading"
+            :filling-initial="suggestedEditsFillingInitial"
+            :pending="suggestedEditsPending"
             :loading-more="suggestedEditsLoadingMore"
             :has-more="suggestedEditsHasMore"
             :error="suggestedEditsError"

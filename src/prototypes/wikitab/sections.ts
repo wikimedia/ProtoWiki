@@ -148,8 +148,8 @@ export const WIKITAB_DAILY_READS_MODULE_SPEC = {
 export const WIKITAB_SUGGESTED_EDITS_MODULE_SPEC = {
   id: WIKITAB_SUGGESTED_EDITS_MODULE_ID,
   heading: 'Suggested edits',
-  initialCount: 4,
-  pageSize: 6,
+  initialCount: 2,
+  pageSize: 4,
   cardHeight: 122,
   variant: 'thumbnail' as WikitabCardVariant,
   thumbnailSize: 96,
