@@ -39,7 +39,7 @@ and good API etiquette. Writing today's entry evicts older days.
 
 **Active discussions TTL** — the discussions slice carries
 `sliceFetchedAt.discussions` (epoch ms). `readCachedSectionSlice('discussions')`
-and `readCachedFeed()` treat the slice as a miss after **30 minutes**
+and `readCachedFeed()` treat the slice as a miss after **5 minutes**
 (`DISCUSSIONS_TTL_MS`). Other slices remain on the UTC-day key. Legacy entries
 without a timestamp are treated as stale. `persistPartialFeed()` stamps the time
 when a non-empty discussions slice lands.

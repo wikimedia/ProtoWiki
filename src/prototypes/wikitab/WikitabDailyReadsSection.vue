@@ -271,15 +271,6 @@ function revealMore(): void {
   color: var(--color-base);
 }
 
-.wikitab-daily-reads-section__menu :deep(.cdx-menu) {
-  width: max-content !important;
-  min-width: 12rem;
-}
-
-.wikitab-daily-reads-section__menu :deep(.cdx-menu-item__text__label) {
-  white-space: nowrap;
-}
-
 .wikitab-daily-reads-section__error,
 .wikitab-daily-reads-section__empty {
   display: flex;

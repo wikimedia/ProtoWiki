@@ -276,15 +276,6 @@ function revealMore(): void {
   color: var(--color-base);
 }
 
-.wikitab-suggested-edits-section__menu :deep(.cdx-menu) {
-  width: max-content !important;
-  min-width: 12rem;
-}
-
-.wikitab-suggested-edits-section__menu :deep(.cdx-menu-item__text__label) {
-  white-space: nowrap;
-}
-
 .wikitab-suggested-edits-section__error {
   display: flex;
   align-items: center;

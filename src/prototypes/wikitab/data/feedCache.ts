@@ -11,7 +11,7 @@ import type { WikitabFeed, WikitabSectionId } from '../sections'
 const CACHE_KEY = 'wikitab-feed-cache-v19'
 
 /** Active discussions can go stale within a day — shorter TTL than other slices. */
-export const DISCUSSIONS_TTL_MS = 30 * 60 * 1000
+export const DISCUSSIONS_TTL_MS = 5 * 60 * 1000
 
 interface CacheEntry {
   day: string

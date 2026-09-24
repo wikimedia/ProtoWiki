@@ -226,16 +226,6 @@ watch(selection, (value) => {
   color: var(--color-base);
 }
 
-/* MenuButton sizes to the trigger width by default; grow with content. */
-.wikitab-section__menu :deep(.cdx-menu) {
-  width: max-content !important;
-  min-width: 12rem;
-}
-
-.wikitab-section__menu :deep(.cdx-menu-item__text__label) {
-  white-space: nowrap;
-}
-
 /* Holds the reserved height rather than collapsing the section. */
 .wikitab-section__error,
 .wikitab-section__empty {

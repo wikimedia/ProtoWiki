@@ -814,6 +814,42 @@ watch(searchQuery, (next, prev) => {
 }
 
 /*
+ * Section-heading ⋯ menus. Codex caps MenuButton menus at 16rem and pins the footer
+ * row (position:absolute), so width:max-content never sees "About …" labels. Unpin
+ * the footer and drop the cap; positioning stays on Floating UI.
+ */
+.wikitab :deep(.wikitab-section__menu .cdx-menu),
+.wikitab :deep(.wikitab-daily-reads-section__menu .cdx-menu),
+.wikitab :deep(.wikitab-saved-section__menu .cdx-menu),
+.wikitab :deep(.wikitab-suggested-edits-section__menu .cdx-menu) {
+  width: max-content !important;
+  min-width: 12rem;
+  max-width: none !important;
+}
+
+.wikitab :deep(.wikitab-section__menu .cdx-menu-item__text__label),
+.wikitab :deep(.wikitab-daily-reads-section__menu .cdx-menu-item__text__label),
+.wikitab :deep(.wikitab-saved-section__menu .cdx-menu-item__text__label),
+.wikitab :deep(.wikitab-suggested-edits-section__menu .cdx-menu-item__text__label) {
+  white-space: nowrap;
+}
+
+.wikitab :deep(.wikitab-section__menu .cdx-menu--has-footer .cdx-menu__listbox),
+.wikitab :deep(.wikitab-daily-reads-section__menu .cdx-menu--has-footer .cdx-menu__listbox),
+.wikitab :deep(.wikitab-saved-section__menu .cdx-menu--has-footer .cdx-menu__listbox),
+.wikitab :deep(.wikitab-suggested-edits-section__menu .cdx-menu--has-footer .cdx-menu__listbox) {
+  margin-bottom: 0 !important;
+}
+
+.wikitab :deep(.wikitab-section__menu .cdx-menu--has-footer .cdx-menu__listbox > .cdx-menu-item:last-of-type),
+.wikitab :deep(.wikitab-daily-reads-section__menu .cdx-menu--has-footer .cdx-menu__listbox > .cdx-menu-item:last-of-type),
+.wikitab :deep(.wikitab-saved-section__menu .cdx-menu--has-footer .cdx-menu__listbox > .cdx-menu-item:last-of-type),
+.wikitab :deep(.wikitab-suggested-edits-section__menu .cdx-menu--has-footer .cdx-menu__listbox > .cdx-menu-item:last-of-type) {
+  position: static;
+  width: auto;
+}
+
+/*
  * Page chrome on tinted backgrounds — headings/pins use --wikitab-theme-fg (dark on
  * light / lightCards themes, inverted on neutral dark themes). Page-scope progressive
  * (Show more, tab underline) uses --color-progressive — white on lightCards tints.

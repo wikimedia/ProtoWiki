@@ -212,15 +212,6 @@ watch(selection, (value) => {
   color: var(--color-base);
 }
 
-.wikitab-saved-section__menu :deep(.cdx-menu) {
-  width: max-content !important;
-  min-width: 12rem;
-}
-
-.wikitab-saved-section__menu :deep(.cdx-menu-item__text__label) {
-  white-space: nowrap;
-}
-
 .wikitab-saved-section__empty {
   display: flex;
   align-items: center;

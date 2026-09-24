@@ -147,7 +147,7 @@ Feed errors show the same reserved-height error row per section.
 resolve while slower secondary APIs are still in flight. All six sections are
 cached under one UTC-day blob (`wikitab-feed-cache-v*`); slices patch in via
 `persistPartialFeed()` as each section resolves during ordered home load.
-**Active discussions** is the exception: its slice carries a **30-minute TTL**
+**Active discussions** is the exception: its slice carries a **5-minute TTL**
 (`DISCUSSIONS_TTL_MS` in `feedCache.ts`) so noticeboard threads stay reasonably
 fresh without refetching the whole daily feed.
 
@@ -315,7 +315,7 @@ The full daily feed (featured + Active discussions + Main Page OTD + births) is
 cached under a UTC-day key; ordered per-section loading reads and writes through
 the same cache, with one in-session `feed/featured` request shared across
 Trending / News / DYK on a cache miss. **Active discussions** refetches when its
-30-minute TTL expires — other slices still hit the day cache. Stale discussions
+5-minute TTL expires — other slices still hit the day cache. Stale discussions
 are stripped on hydrate so skeleton slots show until the refetch lands.
 `?nocache=1` forces a refetch. After the first load of the day you mostly won't
 see loading slots — use `?nocache=1` when working on them.
