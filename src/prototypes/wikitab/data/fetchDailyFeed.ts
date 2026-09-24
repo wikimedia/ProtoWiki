@@ -4,9 +4,11 @@ import { WIKITAB_SECTIONS, type WikitabCardData, type WikitabFeed, type WikitabS
 import { fetchActiveDiscussions } from './fetchActiveDiscussions'
 import { fetchBirthsOnThisDay } from './fetchBirthsOnThisDay'
 import {
+  isDiscussionsCacheStale,
   persistPartialFeed,
   previousUtcDay,
   readCachedFeed,
+  readCachedSectionSlice,
   utcDayKey,
 } from './feedCache'
 import { fetchMainPageOtd } from './fetchMainPageOtd'
@@ -194,15 +196,6 @@ function getFeaturedPayload(day: string, signal?: AbortSignal): Promise<Featured
   return promise
 }
 
-function readCachedSectionSlice(
-  day: string,
-  sectionId: WikitabSectionId,
-): WikitabCardData[] | null {
-  const cached = readCachedFeed(day)
-  if (!cached?.[sectionId]?.length) return null
-  return cached[sectionId]
-}
-
 /** When today's `mostread` is missing, fall back to the previous UTC day. */
 async function resolveTrending(
   payload: FeaturedFeedResponse,
@@ -375,6 +368,18 @@ export function fetchDailyFeedProgressive(
 
   const cached = readCachedFeed(day)
   if (cached) {
+    if (enabled.has('discussions') && isDiscussionsCacheStale(day)) {
+      onUpdate(cached)
+      return fetchActiveDiscussions(signal)
+        .then((discussions) => {
+          const updated = { ...cached, discussions }
+          persistPartialFeed(day, updated)
+          onUpdate(updated)
+          return updated
+        })
+        .catch(() => cached)
+    }
+
     onUpdate(cached)
     return Promise.resolve(cached)
   }

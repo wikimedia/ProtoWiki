@@ -1,6 +1,6 @@
 import { computed, onUnmounted, ref, shallowRef, watch, type Ref } from 'vue'
 import { fetchDailyFeedProgressive, fetchWikitabSectionFeed } from './data/fetchDailyFeed'
-import { persistPartialFeed, readCachedFeed, utcDayKey } from './data/feedCache'
+import { persistPartialFeed, readCachedFeed, readCachedSectionSlice, utcDayKey } from './data/feedCache'
 import {
   WIKITAB_SECTIONS,
   type WikitabCardData,
@@ -94,13 +94,14 @@ export function useWikitabFeed(
     fetchedSections.value = new Set()
     loadingSectionIds.value = new Set()
 
-    const cached = readCachedFeed(utcDayKey())
+    const day = utcDayKey()
+    const cached = readCachedFeed(day)
     if (cached) {
       feed.value = cached
       const enabled = currentEnabledSections()
       const fetched = new Set<WikitabSectionId>()
       for (const id of ALL_SECTION_IDS) {
-        if (enabled.has(id) && (cached[id]?.length ?? 0) > 0) fetched.add(id)
+        if (enabled.has(id) && (readCachedSectionSlice(day, id)?.length ?? 0) > 0) fetched.add(id)
       }
       fetchedSections.value = fetched
       feedPhase.value = [...enabled].every((id) => fetched.has(id)) ? 'complete' : 'featured'

@@ -37,20 +37,35 @@ is authoritative — clearing it must only ever cost one refetch.
 A new-tab page opens dozens of times a day; caching the daily feed is both fast
 and good API etiquette. Writing today's entry evicts older days.
 
+**Active discussions TTL** — the discussions slice carries
+`sliceFetchedAt.discussions` (epoch ms). `readCachedSectionSlice('discussions')`
+and `readCachedFeed()` treat the slice as a miss after **30 minutes**
+(`DISCUSSIONS_TTL_MS`). Other slices remain on the UTC-day key. Legacy entries
+without a timestamp are treated as stale. `persistPartialFeed()` stamps the time
+when a non-empty discussions slice lands.
+
 **Ordered home load** (`index.vue` → `refreshHomeModulesInOrder` →
 `useWikitabFeed.loadSection`) reads and writes through the same cache:
 
 - `prepareForOrderedLoad()` hydrates `feed.value` from `readCachedFeed()` when
-  the day key hits, marking cached sections as already fetched.
+  the day key hits, marking cached sections as already fetched via
+  `readCachedSectionSlice()` (so stale discussions are not marked fetched).
 - Each `loadSection` call reads its slice via `fetchWikitabSectionFeed` (cache
   before network) and patches localStorage via `persistPartialFeed()` after each
   non-empty slice lands. Empty slices are not cached so a later open can retry.
 - `feed/featured` is deduped in-memory per UTC day when Trending, News, and DYK
   load separately on a cache miss (`getFeaturedPayload` in
   `fetchDailyFeed.ts`).
+- `fetchDailyFeedProgressive()` refetches discussions only when the rest of the
+  day cache hits but discussions exceeded the TTL.
 
 Skip caching when Trending is still empty (early UTC) so the next tab open can
 retry. `?nocache=1` bypasses reads and writes.
+
+**DYK / In the news** — both are "current day only" in the Wikifeeds API. DYK
+normally updates once at ~00:00 UTC; enwiki can switch to twice daily (~00:00 and
+~12:00 UTC) during nomination backlog. UTC-day cache is sufficient for normal
+days; no separate TTL unless parity with the midday rotation is needed later.
 
 ## Cache-only Daily reads storage (`wikitab-daily-reads-cache-v*`)
 
