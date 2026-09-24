@@ -1,8 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { CdxCard, CdxIcon, CdxMenuButton } from '@wikimedia/codex'
-import { cdxIconEllipsis, cdxIconEyeClosed } from '@wikimedia/codex-icons'
+import {
+  cdxIconBookmark,
+  cdxIconBookmarkOutline,
+  cdxIconEllipsis,
+  cdxIconEyeClosed,
+} from '@wikimedia/codex-icons'
 import type { Icon } from '@wikimedia/codex-icons'
+import { useSkin } from '@/composables/useSkin'
 import type { WikitabCardData, WikitabCardVariant } from './sections'
 
 const props = defineProps<{
@@ -14,23 +20,43 @@ const props = defineProps<{
   supportingIcon?: Icon
   fullHook?: boolean
   loading?: boolean
-  showHideMenu?: boolean
+  showArticleMenu?: boolean
+  isSaved?: boolean
+  /** When set, adds a "Hide from {heading}" row (feed sections, including discussions). */
+  hideMenuSectionHeading?: string
 }>()
 
 const emit = defineEmits<{
   'hide-article': [title: string]
+  'toggle-save': []
 }>()
 
 const selection = ref<string | number | null>(null)
 
-const hideMenuItems = [{ value: 'hide', label: 'Hide from Trending', icon: cdxIconEyeClosed }]
+const articleTitle = computed(() => props.card?.linkTitle ?? props.card?.title ?? '')
 
-const hideArticleTitle = computed(() => props.card?.linkTitle ?? props.card?.title ?? '')
+const menuItems = computed(() => {
+  const items: Array<{ value: string; label: string; icon: Icon }> = []
+  if (props.showArticleMenu) {
+    items.push({
+      value: 'save',
+      label: props.isSaved ? 'Unsave article' : 'Save article',
+      icon: props.isSaved ? cdxIconBookmark : cdxIconBookmarkOutline,
+    })
+  }
+  if (props.hideMenuSectionHeading) {
+    items.push({
+      value: 'hide',
+      label: `Hide from ${props.hideMenuSectionHeading}`,
+      icon: cdxIconEyeClosed,
+    })
+  }
+  return items
+})
 
 watch(selection, (value) => {
-  if (value === 'hide' && hideArticleTitle.value) {
-    emit('hide-article', hideArticleTitle.value)
-  }
+  if (value === 'save') emit('toggle-save')
+  if (value === 'hide' && articleTitle.value) emit('hide-article', articleTitle.value)
   if (value !== null) selection.value = null
 })
 
@@ -71,10 +97,23 @@ const showThumbnail = computed(() => {
   return !!props.card?.thumbnailUrl
 })
 
+const skin = useSkin()
+
+const showCardMenu = computed(
+  () => !!(props.card && (props.showArticleMenu || props.hideMenuSectionHeading)),
+)
+
+/** Desktop: all cards. Mobile: only text cards with an inline-end thumbnail. */
+const menuRevealOnInteraction = computed(() => {
+  if (!showCardMenu.value) return false
+  if (skin.value === 'desktop') return true
+  return props.variant === 'text' && showThumbnail.value
+})
+
 const showOverlayLink = computed(() => {
   if (props.loading || !props.card?.href) return false
   if (props.variant === 'text') return true
-  return props.showHideMenu === true && props.variant === 'thumbnail'
+  return showCardMenu.value && props.variant === 'thumbnail'
 })
 
 const cardUrl = computed(() => {
@@ -102,7 +141,8 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
       'wikitab-card--thumbnail': variant === 'thumbnail',
       'wikitab-card--text': variant === 'text',
       'wikitab-card--thumbnail-pending': loading && variant === 'thumbnail',
-      'wikitab-card--has-menu': showHideMenu && card,
+      'wikitab-card--has-menu': showCardMenu,
+      'wikitab-card--menu-on-hover': menuRevealOnInteraction,
     }"
     :style="cardStyle"
   >
@@ -119,18 +159,20 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
       rel="noreferrer"
     />
 
-    <div v-if="showHideMenu && card" class="wikitab-card__menu">
-      <CdxMenuButton
-        v-model:selected="selection"
-        class="wikitab-card__menu-button"
-        weight="quiet"
-        :menu-items="hideMenuItems"
-        :menu-config="{ renderInPlace: true }"
-        :aria-label="`${hideArticleTitle} options`"
-        @click.stop
-      >
-        <CdxIcon :icon="cdxIconEllipsis" />
-      </CdxMenuButton>
+    <div v-if="showCardMenu" class="wikitab-card__menu">
+      <div class="wikitab-card__menu-surface">
+        <CdxMenuButton
+          v-model:selected="selection"
+          class="wikitab-card__menu-button"
+          weight="quiet"
+          :menu-items="menuItems"
+          :menu-config="{ renderInPlace: true }"
+          :aria-label="`${articleTitle} options`"
+          @click.stop
+        >
+          <CdxIcon :icon="cdxIconEllipsis" />
+        </CdxMenuButton>
+      </div>
     </div>
 
     <CdxCard
@@ -236,7 +278,7 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
 }
 
 .wikitab-card--has-menu:has([aria-expanded='true']) {
-  z-index: 2;
+  z-index: 3;
 }
 
 .wikitab-card--has-menu .wikitab-card__cdx {
@@ -256,32 +298,51 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
   padding-inline-end: var(--spacing-200);
 }
 
-/* Quiet icon button — 32×32 hit target, tucked to the card corner (Figma). */
+/*
+ * Quiet icon button — 32×32 hit target, tucked to the card corner (Figma).
+ * Above hook inline links (z-index: 2) so the dropdown is never covered.
+ */
 .wikitab-card__menu {
   position: absolute;
   top: var(--spacing-35);
   inset-inline-end: var(--spacing-35);
-  z-index: 2;
+  z-index: 3;
 }
 
 /*
- * Desktop: hide the menu until the card is hovered. Keep it visible while the
- * menu is open or the button has keyboard focus; mobile always shows it.
+ * Hide the menu until the card is hovered or focused. Desktop: every card.
+ * Mobile: text cards with an inline-end thumbnail only (menu sits on the image).
  */
-[data-skin='desktop'] .wikitab-card--has-menu .wikitab-card__menu {
+.wikitab-card--menu-on-hover .wikitab-card__menu {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.1s;
 }
 
-[data-skin='desktop'] .wikitab-card--has-menu:hover .wikitab-card__menu,
-[data-skin='desktop'] .wikitab-card--has-menu:focus-within .wikitab-card__menu,
-[data-skin='desktop'] .wikitab-card--has-menu:has([aria-expanded='true']) .wikitab-card__menu {
+.wikitab-card--menu-on-hover:hover .wikitab-card__menu,
+.wikitab-card--menu-on-hover:focus-within .wikitab-card__menu,
+.wikitab-card--menu-on-hover:has([aria-expanded='true']) .wikitab-card__menu {
   opacity: 1;
   pointer-events: auto;
 }
 
+/* Opaque card surface behind the quiet button — keeps Codex hover on the button. */
+.wikitab-card__menu-surface {
+  display: flex;
+  line-height: 0;
+  background-color: var(--background-color-base);
+  border-radius: var(--border-radius-base);
+}
+
+/* Collapse the inline-flex button strut (Codex MenuButton is 33px otherwise). */
+.wikitab-card__menu-button {
+  line-height: 0;
+}
+
 .wikitab-card__menu-button :deep(.cdx-icon) {
+  /* Match section ⋯ (page-default medium); card grid compact type scales icons down. */
+  width: 1.25rem;
+  height: 1.25rem;
   color: var(--color-neutral);
 }
 

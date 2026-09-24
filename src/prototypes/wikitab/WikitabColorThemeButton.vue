@@ -63,16 +63,43 @@ defineExpose({
 
 <style scoped>
 .wikitab-color-theme-controls {
+  --wikitab-color-controls-inset: var(--spacing-100);
+
   position: fixed;
   z-index: 5;
-  right: var(--spacing-100);
-  bottom: var(--spacing-100);
+  right: var(--wikitab-color-controls-inset);
+  bottom: var(--wikitab-color-controls-inset);
+  box-sizing: border-box;
   display: flex;
   flex-shrink: 0;
+  align-items: center;
+  height: 2.75rem;
+  border-radius: 2px;
+  overflow: hidden;
+  background-color: var(--wikitab-theme-bg, var(--background-color-base));
+}
+
+/*
+ * Below Codex desktop minimum (1120px — `--min-width-breakpoint-desktop`): subtle border.
+ * Media queries cannot use `var()`; literal matches VectorChromeHeader / token value.
+ */
+@media (max-width: 1120px) {
+  .wikitab-color-theme-controls {
+    border: var(--border-width-base, 1px) solid
+      var(--wikitab-theme-border, var(--border-color-subtle));
+  }
+}
+
+/* Mobile + compact desktop (≤767px): tighter corner inset. */
+@media (max-width: 767px) {
+  .wikitab-color-theme-controls {
+    --wikitab-color-controls-inset: var(--spacing-50);
+  }
 }
 
 .wikitab-color-theme-button {
   flex-shrink: 0;
   width: 2.75rem;
+  height: 2.75rem;
 }
 </style>

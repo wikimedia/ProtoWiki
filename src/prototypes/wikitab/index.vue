@@ -1,14 +1,28 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
 import tabularWordmark from './assets/tabular-wikipedia-wordmark.svg'
 
 import WikitabColorThemeButton from './WikitabColorThemeButton.vue'
 import WikitabColorThemePicker from './WikitabColorThemePicker.vue'
+import WikitabConfigureButton from './WikitabConfigureButton.vue'
+import WikitabConfigurePanel from './WikitabConfigurePanel.vue'
+import WikitabSavedArticlesButton from './WikitabSavedArticlesButton.vue'
+import WikitabSavedArticlesPanel from './WikitabSavedArticlesPanel.vue'
+import WikitabSavedSection from './WikitabSavedSection.vue'
 import WikitabSearch from './WikitabSearch.vue'
 import WikitabSearchPage from './WikitabSearchPage.vue'
 import WikitabSection from './WikitabSection.vue'
+import type { WikitabSearchArticle } from './data/fetchWikitabSearchArticles'
+import {
+  WIKITAB_HOME_MODULE_ORDER,
+  WIKITAB_SAVED_MODULE_ID,
+  type WikitabCardData,
+  type WikitabModuleId,
+  type WikitabSectionId,
+} from './sections'
+import type { WikitabSectionState } from './useWikitabFeed'
 import {
   colorThemeCycleId,
   colorThemeIsAccentOnWhite,
@@ -20,7 +34,15 @@ import {
 import { useWikitabColorTheme } from './useWikitabColorTheme'
 import { useWikitabFeed } from './useWikitabFeed'
 import { useWikitabHiddenArticles } from './useWikitabHiddenArticles'
+import { useWikitabHiddenSections } from './useWikitabHiddenSections'
 import { useWikitabPinned } from './useWikitabPinned'
+import {
+  enrichSavedModuleArticles,
+  snapshotSavedModuleArticles,
+  useWikitabSavedArticles,
+} from './useWikitabSavedArticles'
+import { articleTitleKey } from './data/wikitabHtml'
+import type { WikitabSavedArticle } from './data/wikitabConfig'
 import { bumpWikitabSearchMountKey, useWikitabSearchMountKey } from './useWikitabSearchMount'
 import { useWikitabSearchTab } from './useWikitabSearchTab'
 
@@ -39,14 +61,49 @@ const searchMountKey = useWikitabSearchMountKey()
 const isSearchMode = computed(() => searchQuery.value.length > 0)
 const feedEnabled = computed(() => !isSearchMode.value)
 
-const { sections, error, isSectionLoading } = useWikitabFeed({ enabled: feedEnabled })
-const { isPinned, togglePin, orderSections } = useWikitabPinned()
+const { hiddenIds, isHidden, hideSection, showSection } = useWikitabHiddenSections()
+const feedHiddenSectionIds = computed(() =>
+  hiddenIds.value.filter((id): id is WikitabSectionId => id !== WIKITAB_SAVED_MODULE_ID),
+)
+const { sections, error, isSectionLoading } = useWikitabFeed({
+  enabled: feedEnabled,
+  hiddenSectionIds: feedHiddenSectionIds,
+})
+const { pinnedIds, isPinned, togglePin, orderSections } = useWikitabPinned()
 const { filterCards, hideArticle } = useWikitabHiddenArticles()
+const { savedArticles, isSaved, toggleSave, unsaveArticle, persistEnrichedModuleArticles } =
+  useWikitabSavedArticles()
+
+/** Snapshot for the home Saved module — refreshed on load, search exit, and overlay close. */
+const savedModuleArticles = ref<WikitabSavedArticle[]>(snapshotSavedModuleArticles())
+let savedModuleAbort: AbortController | null = null
+
+async function refreshSavedModule(): Promise<void> {
+  savedModuleAbort?.abort()
+  savedModuleAbort = new AbortController()
+  const { signal } = savedModuleAbort
+
+  savedModuleArticles.value = snapshotSavedModuleArticles()
+  if (!savedModuleArticles.value.length) return
+
+  try {
+    const enriched = await enrichSavedModuleArticles(savedModuleArticles.value, signal)
+    if (signal.aborted) return
+    savedModuleArticles.value = enriched
+    persistEnrichedModuleArticles(enriched)
+  } catch (err) {
+    if ((err as Error)?.name === 'AbortError') return
+  }
+}
 const { colorThemeId, themeStyle, setColorTheme } = useWikitabColorTheme()
 const { activeTab: searchTab } = useWikitabSearchTab()
 
 const colorPickerOpen = ref(false)
+const configureOpen = ref(false)
+const savedPanelOpen = ref(false)
 const colorThemeButton = ref<InstanceType<typeof WikitabColorThemeButton> | null>(null)
+const configureButton = ref<InstanceType<typeof WikitabConfigureButton> | null>(null)
+const savedArticlesButton = ref<InstanceType<typeof WikitabSavedArticlesButton> | null>(null)
 
 async function openColorPicker(): Promise<void> {
   colorPickerOpen.value = true
@@ -58,6 +115,54 @@ async function closeColorPicker(): Promise<void> {
   colorThemeButton.value?.focusPalette()
 }
 
+async function openConfigure(): Promise<void> {
+  configureOpen.value = true
+}
+
+async function closeConfigure(): Promise<void> {
+  configureOpen.value = false
+  await nextTick()
+  configureButton.value?.focusButton()
+}
+
+async function openSavedPanel(): Promise<void> {
+  savedPanelOpen.value = true
+}
+
+async function closeSavedPanel(): Promise<void> {
+  savedPanelOpen.value = false
+  await nextTick()
+  savedArticlesButton.value?.focusButton()
+}
+
+function toggleSaveFromCard(card: WikitabCardData): void {
+  const title = card.linkTitle ?? card.title ?? ''
+  if (!title) return
+  toggleSave({
+    title,
+    thumbnailUrl: card.thumbnailUrl,
+    description: card.description,
+  })
+}
+
+function toggleSaveFromSavedModule(card: WikitabCardData): void {
+  const title = card.linkTitle ?? card.title ?? ''
+  if (!title) return
+  const key = articleTitleKey(title)
+  if (!key || !isSaved(title)) return
+
+  unsaveArticle(title)
+  savedModuleArticles.value = savedModuleArticles.value.filter((article) => article.titleKey !== key)
+}
+
+function toggleSaveFromSearch(article: WikitabSearchArticle): void {
+  toggleSave({
+    title: article.title,
+    thumbnailUrl: article.thumbnailUrl,
+    description: article.description ?? article.extract,
+  })
+}
+
 function selectColorTheme(id: WikitabColorThemeId): void {
   setColorTheme(id)
 }
@@ -66,16 +171,78 @@ function cycleColorTheme(direction: 'prev' | 'next'): void {
   setColorTheme(colorThemeCycleId(colorThemeId.value, direction))
 }
 
-const showColorThemeButton = computed(
-  () => !colorPickerOpen.value && (!isSearchMode.value || searchTab.value !== 'images'),
+const overlayOpen = computed(
+  () => colorPickerOpen.value || configureOpen.value || savedPanelOpen.value,
 )
 
-const orderedSections = computed(() =>
-  orderSections(sections.value).map((section) => ({
-    ...section,
-    items: filterCards(section.items),
-  })),
+const showConfigureButton = computed(() => !overlayOpen.value)
+const showSavedArticlesButton = computed(() => !overlayOpen.value)
+
+const showColorThemeButton = computed(
+  () => !overlayOpen.value && (!isSearchMode.value || searchTab.value !== 'images'),
 )
+
+const visibleSections = computed(() =>
+  orderSections(sections.value)
+    .filter((section) => !isHidden(section.spec.id))
+    .map((section) => ({
+      ...section,
+      items: filterCards(section.items),
+    })),
+)
+
+const showSavedModule = computed(
+  () => !isHidden(WIKITAB_SAVED_MODULE_ID) && savedModuleArticles.value.length > 0,
+)
+
+type HomeModuleEntry =
+  | { kind: 'saved' }
+  | { kind: 'feed'; section: WikitabSectionState & { items: WikitabCardData[] } }
+
+const orderedHomeModules = computed((): HomeModuleEntry[] => {
+  const modules: HomeModuleEntry[] = []
+  const pinnedSet = new Set<WikitabModuleId>(pinnedIds.value)
+
+  function appendModule(id: WikitabModuleId): void {
+    if (id === WIKITAB_SAVED_MODULE_ID) {
+      if (showSavedModule.value) modules.push({ kind: 'saved' })
+      return
+    }
+
+    const section = visibleSections.value.find((entry) => entry.spec.id === id)
+    if (section) modules.push({ kind: 'feed', section })
+  }
+
+  for (const id of pinnedIds.value) {
+    appendModule(id)
+  }
+
+  for (const id of WIKITAB_HOME_MODULE_ORDER) {
+    if (!pinnedSet.has(id)) appendModule(id)
+  }
+
+  return modules
+})
+
+onMounted(() => {
+  void refreshSavedModule()
+})
+
+onUnmounted(() => {
+  savedModuleAbort?.abort()
+})
+
+watch(isSearchMode, (searchMode, wasSearchMode) => {
+  if (wasSearchMode && !searchMode) {
+    void refreshSavedModule()
+  }
+})
+
+watch(overlayOpen, (open, wasOpen) => {
+  if (wasOpen && !open) {
+    void refreshSavedModule()
+  }
+})
 
 watch(searchQuery, (next, prev) => {
   if (prev.length > 0 && next.length === 0) {
@@ -96,7 +263,26 @@ watch(searchQuery, (next, prev) => {
     }"
     :style="themeStyle"
   >
-    <div v-show="!colorPickerOpen" class="wikitab__main" :aria-hidden="colorPickerOpen">
+    <div
+      v-show="!overlayOpen"
+      v-if="showConfigureButton || showSavedArticlesButton"
+      class="wikitab__page-chrome"
+    >
+      <WikitabConfigureButton
+        v-if="showConfigureButton"
+        ref="configureButton"
+        :aria-expanded="configureOpen"
+        @open="openConfigure"
+      />
+      <WikitabSavedArticlesButton
+        v-if="showSavedArticlesButton"
+        ref="savedArticlesButton"
+        :aria-expanded="savedPanelOpen"
+        @open="openSavedPanel"
+      />
+    </div>
+
+    <div v-show="!overlayOpen" class="wikitab__main" :aria-hidden="overlayOpen">
       <header class="wikitab__hero">
         <div class="wikitab__hero-top">
           <h1 class="wikitab__wordmark">
@@ -121,21 +307,36 @@ watch(searchQuery, (next, prev) => {
           v-if="isSearchMode"
           class="wikitab__search-page"
           :search-query="searchQuery"
+          :is-article-saved="isSaved"
+          @toggle-save-article="toggleSaveFromSearch"
         />
       </header>
 
       <div v-if="!isSearchMode" class="wikitab__sections">
-        <WikitabSection
-          v-for="section in orderedSections"
-          :key="section.spec.id"
-          :spec="section.spec"
-          :items="section.items"
-          :loading="isSectionLoading(section.spec.id)"
-          :error="error"
-          :pinned="isPinned(section.spec.id)"
-          @toggle-pin="togglePin(section.spec.id)"
-          @hide-article="hideArticle"
-        />
+        <template v-for="entry in orderedHomeModules" :key="entry.kind === 'saved' ? 'saved' : entry.section.spec.id">
+          <WikitabSavedSection
+            v-if="entry.kind === 'saved'"
+            :saved-articles="savedModuleArticles"
+            :pinned="isPinned(WIKITAB_SAVED_MODULE_ID)"
+            :is-article-saved="isSaved"
+            @toggle-pin="togglePin(WIKITAB_SAVED_MODULE_ID)"
+            @hide-section="hideSection(WIKITAB_SAVED_MODULE_ID)"
+            @toggle-save="toggleSaveFromSavedModule"
+          />
+          <WikitabSection
+            v-else
+            :spec="entry.section.spec"
+            :items="entry.section.items"
+            :loading="isSectionLoading(entry.section.spec.id)"
+            :error="error"
+            :pinned="isPinned(entry.section.spec.id)"
+            :is-article-saved="isSaved"
+            @toggle-pin="togglePin(entry.section.spec.id)"
+            @hide-section="hideSection(entry.section.spec.id)"
+            @hide-article="hideArticle"
+            @toggle-save="toggleSaveFromCard"
+          />
+        </template>
       </div>
     </div>
 
@@ -148,11 +349,27 @@ watch(searchQuery, (next, prev) => {
       @next="cycleColorTheme('next')"
     />
 
+    <WikitabConfigurePanel
+      v-if="configureOpen"
+      :is-hidden="isHidden"
+      @close="closeConfigure"
+      @show="showSection"
+      @hide="hideSection"
+    />
+
     <WikitabColorThemePicker
       v-if="colorPickerOpen"
       :selected-id="colorThemeId ?? DEFAULT_COLOR_THEME_ID"
       @close="closeColorPicker"
       @select="selectColorTheme"
+    />
+
+    <WikitabSavedArticlesPanel
+      v-if="savedPanelOpen"
+      :saved-articles="savedArticles"
+      :is-article-saved="isSaved"
+      @close="closeSavedPanel"
+      @toggle-save="toggleSaveFromCard"
     />
   </div>
 </template>
@@ -160,6 +377,7 @@ watch(searchQuery, (next, prev) => {
 <style scoped>
 .wikitab {
   --wikitab-page-gutter: var(--spacing-100);
+  --wikitab-chrome-inset: var(--spacing-50);
 
   display: flex;
   flex-direction: column;
@@ -177,7 +395,26 @@ watch(searchQuery, (next, prev) => {
   width: 100%;
 }
 
+/*
+ * Top chrome (configure, saved) sits in document flow at the page top and scrolls
+ * away. Sibling of __main (not inside it) so desktop `align-items: center` on
+ * __main cannot shrink this row. Full-bleed to the viewport; tight corner inset.
+ */
+.wikitab__page-chrome {
+  display: flex;
+  flex-shrink: 0;
+  align-self: stretch;
+  justify-content: space-between;
+  align-items: center;
+  box-sizing: border-box;
+  width: calc(100% + 2 * var(--wikitab-page-gutter));
+  margin-inline: calc(-1 * var(--wikitab-page-gutter));
+  padding-top: var(--wikitab-chrome-inset);
+  padding-inline: var(--wikitab-chrome-inset);
+}
+
 [data-skin='desktop'] .wikitab__main {
+  align-self: stretch;
   align-items: center;
 }
 
@@ -262,8 +499,11 @@ watch(searchQuery, (next, prev) => {
 }
 
 [data-skin='desktop'] .wikitab__hero {
-  padding-top: calc(var(--spacing-400) * 2);
-  padding-bottom: calc(var(--spacing-400) * 1);
+  padding-bottom: calc(var(--spacing-400) + var(--spacing-200));
+}
+
+[data-skin='desktop'] .wikitab__hero-top {
+  padding-top: calc(var(--spacing-400) + var(--spacing-200));
 }
 
 [data-skin='desktop'] .wikitab__sections {
@@ -282,7 +522,11 @@ watch(searchQuery, (next, prev) => {
 }
 
 [data-skin='mobile'] .wikitab__hero {
-  padding-block: var(--spacing-400);
+  padding-bottom: calc(var(--spacing-400) + var(--spacing-200));
+}
+
+[data-skin='mobile'] .wikitab__hero-top {
+  padding-top: var(--spacing-300);
 }
 
 [data-skin='mobile'] .wikitab__sections {
@@ -340,12 +584,29 @@ watch(searchQuery, (next, prev) => {
   color: var(--wikitab-theme-fg);
 }
 
-.wikitab--themed :deep(.wikitab-color-theme-picker__close .cdx-icon) {
+.wikitab--themed :deep(.wikitab-color-theme-picker__close .cdx-icon),
+.wikitab--themed :deep(.wikitab-configure-panel__close .cdx-icon),
+.wikitab--themed :deep(.wikitab-saved-articles-panel__close .cdx-icon) {
   color: var(--wikitab-theme-fg);
 }
 
-/* Section ⋯ and palette — same quiet icon color (Codex neutral, not theme-subtle). */
+.wikitab--themed :deep(.wikitab-saved-section__heading) {
+  color: var(--wikitab-theme-fg);
+}
+
+.wikitab--themed :deep(.wikitab-saved-section__pin) {
+  color: var(--wikitab-theme-fg);
+}
+
+.wikitab--themed.wikitab--tinted-subtle :deep(.wikitab-saved-section) {
+  --color-subtle: var(--wikitab-theme-subtle);
+}
+
+/* Section ⋯, configure, saved, and palette — same quiet icon color (Codex neutral, not theme-subtle). */
 .wikitab--themed :deep(.wikitab-section__menu .cdx-icon),
+.wikitab--themed :deep(.wikitab-saved-section__menu .cdx-icon),
+.wikitab--themed :deep(.wikitab-configure-button .cdx-icon),
+.wikitab--themed :deep(.wikitab-saved-articles-button .cdx-icon),
 .wikitab--themed :deep(.wikitab-color-theme-button .cdx-icon) {
   color: var(--color-neutral);
 }
@@ -357,7 +618,14 @@ watch(searchQuery, (next, prev) => {
  */
 .wikitab--themed :deep(.wikitab-section__menu .cdx-button.cdx-button--weight-quiet),
 .wikitab--themed :deep(.wikitab-section__more-button.cdx-button--weight-quiet),
+.wikitab--themed :deep(.wikitab-saved-section__menu .cdx-button.cdx-button--weight-quiet),
+.wikitab--themed :deep(.wikitab-saved-section__more-button.cdx-button--weight-quiet),
+.wikitab--themed :deep(.wikitab-saved-articles-panel__more-button.cdx-button--weight-quiet),
+.wikitab--themed :deep(.wikitab-configure-button.cdx-button--weight-quiet),
+.wikitab--themed :deep(.wikitab-saved-articles-button.cdx-button--weight-quiet),
 .wikitab--themed :deep(.wikitab-color-theme-button.cdx-button--weight-quiet),
+.wikitab--themed :deep(.wikitab-configure-panel__close.cdx-button--weight-quiet),
+.wikitab--themed :deep(.wikitab-saved-articles-panel__close.cdx-button--weight-quiet),
 .wikitab--themed :deep(.wikitab-color-theme-picker__close.cdx-button--weight-quiet) {
   mix-blend-mode: normal;
   background-color: transparent;
@@ -367,7 +635,14 @@ watch(searchQuery, (next, prev) => {
 
 .wikitab--themed :deep(.wikitab-section__menu .cdx-button.cdx-button--weight-quiet:hover),
 .wikitab--themed :deep(.wikitab-section__more-button.cdx-button--weight-quiet:hover),
+.wikitab--themed :deep(.wikitab-saved-section__menu .cdx-button.cdx-button--weight-quiet:hover),
+.wikitab--themed :deep(.wikitab-saved-section__more-button.cdx-button--weight-quiet:hover),
+.wikitab--themed :deep(.wikitab-saved-articles-panel__more-button.cdx-button--weight-quiet:hover),
+.wikitab--themed :deep(.wikitab-configure-button.cdx-button--weight-quiet:hover),
+.wikitab--themed :deep(.wikitab-saved-articles-button.cdx-button--weight-quiet:hover),
 .wikitab--themed :deep(.wikitab-color-theme-button.cdx-button--weight-quiet:hover),
+.wikitab--themed :deep(.wikitab-configure-panel__close.cdx-button--weight-quiet:hover),
+.wikitab--themed :deep(.wikitab-saved-articles-panel__close.cdx-button--weight-quiet:hover),
 .wikitab--themed :deep(.wikitab-color-theme-picker__close.cdx-button--weight-quiet:hover) {
   background-color: var(--wikitab-theme-quiet-hover-bg);
 }
@@ -378,8 +653,27 @@ watch(searchQuery, (next, prev) => {
 .wikitab--themed :deep(.wikitab-section__more-button.cdx-button--weight-quiet:active),
 .wikitab--themed
   :deep(.wikitab-section__more-button.cdx-button--weight-quiet.cdx-button--is-active),
+.wikitab--themed :deep(.wikitab-saved-section__menu .cdx-button.cdx-button--weight-quiet:active),
+.wikitab--themed
+  :deep(.wikitab-saved-section__menu .cdx-button.cdx-button--weight-quiet.cdx-button--is-active),
+.wikitab--themed :deep(.wikitab-saved-section__more-button.cdx-button--weight-quiet:active),
+.wikitab--themed
+  :deep(.wikitab-saved-section__more-button.cdx-button--weight-quiet.cdx-button--is-active),
+.wikitab--themed :deep(.wikitab-saved-articles-panel__more-button.cdx-button--weight-quiet:active),
+.wikitab--themed
+  :deep(.wikitab-saved-articles-panel__more-button.cdx-button--weight-quiet.cdx-button--is-active),
+.wikitab--themed :deep(.wikitab-configure-button.cdx-button--weight-quiet:active),
+.wikitab--themed :deep(.wikitab-configure-button.cdx-button--weight-quiet.cdx-button--is-active),
+.wikitab--themed :deep(.wikitab-saved-articles-button.cdx-button--weight-quiet:active),
+.wikitab--themed :deep(.wikitab-saved-articles-button.cdx-button--weight-quiet.cdx-button--is-active),
 .wikitab--themed :deep(.wikitab-color-theme-button.cdx-button--weight-quiet:active),
 .wikitab--themed :deep(.wikitab-color-theme-button.cdx-button--weight-quiet.cdx-button--is-active),
+.wikitab--themed :deep(.wikitab-configure-panel__close.cdx-button--weight-quiet:active),
+.wikitab--themed
+  :deep(.wikitab-configure-panel__close.cdx-button--weight-quiet.cdx-button--is-active),
+.wikitab--themed :deep(.wikitab-saved-articles-panel__close.cdx-button--weight-quiet:active),
+.wikitab--themed
+  :deep(.wikitab-saved-articles-panel__close.cdx-button--weight-quiet.cdx-button--is-active),
 .wikitab--themed :deep(.wikitab-color-theme-picker__close.cdx-button--weight-quiet:active),
 .wikitab--themed
   :deep(.wikitab-color-theme-picker__close.cdx-button--weight-quiet.cdx-button--is-active) {

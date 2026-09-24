@@ -8,6 +8,7 @@ import WikitabSearchImageGrid from './WikitabSearchImageGrid.vue'
 import WikitabSearchImageSkeletonGrid from './WikitabSearchImageSkeletonGrid.vue'
 import WikitabSearchLoadingCard from './WikitabSearchLoadingCard.vue'
 import WikitabSearchResultCard from './WikitabSearchResultCard.vue'
+import type { WikitabSearchArticle } from './data/fetchWikitabSearchArticles'
 import { useInfiniteScroll } from './useInfiniteScroll'
 import { useWikitabSearchActivity } from './useWikitabSearchActivity'
 import { useWikitabSearchContribute } from './useWikitabSearchContribute'
@@ -18,6 +19,11 @@ import { useWikitabSearchImageColumnCount } from './useWikitabSearchImageColumns
 
 const props = defineProps<{
   searchQuery: string
+  isArticleSaved: (title: string) => boolean
+}>()
+
+const emit = defineEmits<{
+  'toggle-save-article': [article: WikitabSearchArticle]
 }>()
 
 const searchQueryRef = toRef(props, 'searchQuery')
@@ -160,6 +166,8 @@ const INITIAL_IMAGE_SKELETON_COUNT = 16
             :article="article"
             :search-query="searchQuery"
             :thumbnail-backfill-pending="thumbnailBackfillPendingPageids.has(article.pageid)"
+            :is-article-saved="isArticleSaved(article.title)"
+            @toggle-save="emit('toggle-save-article', article)"
           />
 
           <template v-if="(loading || loadingRelated) && articles.length > 0">

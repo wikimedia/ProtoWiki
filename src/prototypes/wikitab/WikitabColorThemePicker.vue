@@ -65,8 +65,8 @@ onUnmounted(() => {
           class="wikitab-color-theme-picker__card"
           :class="{
             'wikitab-color-theme-picker__card--selected': props.selectedId === item.id,
-            'wikitab-color-theme-picker__card--light-hover':
-              colorThemeCardStyle(item.id).lightHover,
+            'wikitab-color-theme-picker__card--light-hover': colorThemeCardStyle(item.id)
+              .lightHover,
           }"
           :style="colorThemeCardStyle(item.id).style"
           :aria-pressed="props.selectedId === item.id"
@@ -119,8 +119,9 @@ onUnmounted(() => {
 
 .wikitab-color-theme-picker__head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--spacing-50);
+  padding-top: var(--spacing-200);
 }
 
 .wikitab-color-theme-picker__title {
@@ -137,7 +138,9 @@ onUnmounted(() => {
 .wikitab-color-theme-picker__close {
   flex-shrink: 0;
   width: 2.75rem;
-  margin-top: var(--spacing-25);
+  min-width: 2.75rem;
+  height: 2.75rem;
+  min-height: 2.75rem;
 }
 
 .wikitab-color-theme-picker__grid {
@@ -192,13 +195,47 @@ onUnmounted(() => {
   margin-inline-start: var(--spacing-50);
 }
 
-[data-skin='desktop'] .wikitab-color-theme-picker__column {
-  max-width: 640px;
+@media (max-width: 639px) {
+  .wikitab-color-theme-picker {
+    padding: 0;
+  }
+
+  .wikitab-color-theme-picker__column {
+    padding-top: var(--spacing-150);
+  }
+
+  .wikitab-color-theme-picker__head {
+    padding-top: 0;
+    padding-inline: var(--spacing-100);
+  }
+
+  .wikitab-color-theme-picker__grid {
+    padding-inline: var(--spacing-100);
+  }
+}
+
+@media (min-width: 640px) and (max-width: 767px) {
+  [data-skin='desktop'] .wikitab-color-theme-picker {
+    padding-top: 0;
+  }
+
+  [data-skin='desktop'] .wikitab-color-theme-picker__column {
+    max-width: 640px;
+    padding-top: var(--spacing-150);
+  }
+
+  [data-skin='desktop'] .wikitab-color-theme-picker__head {
+    padding-top: 0;
+  }
 }
 
 @media (min-width: 768px) {
   [data-skin='desktop'] .wikitab-color-theme-picker {
     --wikitab-page-gutter: var(--spacing-400);
+  }
+
+  [data-skin='desktop'] .wikitab-color-theme-picker__column {
+    max-width: 640px;
   }
 }
 </style>

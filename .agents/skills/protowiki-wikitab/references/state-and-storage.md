@@ -20,12 +20,12 @@ is the anti-pattern.
 Current fields:
 
 - `pinnedSectionIds` — most recently pinned first
+- `hiddenSectionIds` — section ids hidden from the home feed and skipped for
+  fetching (`useWikitabHiddenSections.ts`)
 - `hiddenArticleTitleKeys` — normalized article titles hidden from Trending on
   the home feed (`useWikitabHiddenArticles.ts`)
 - `dismissedActivityRevids` — Activity-tab revision ids permanently dismissed
   via the card ellipsis menu (`useWikitabDismissedActivity.ts`)
-
-More options (hidden sections, layout prefs, …) land here as features need them.
 
 ## Cache-only feed storage (`wikitab-feed-cache-v*`)
 

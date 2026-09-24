@@ -4,21 +4,21 @@ import {
   patchWikitabConfig,
   WIKITAB_CONFIG_STORAGE_KEY,
 } from './data/wikitabConfig'
-import type { WikitabSectionId } from './sections'
+import { WIKITAB_SAVED_MODULE_ID, type WikitabModuleId, type WikitabSectionId } from './sections'
 import type { WikitabSectionState } from './useWikitabFeed'
 
 export function useWikitabPinned() {
-  const pinnedIds = ref<WikitabSectionId[]>(loadWikitabConfig().pinnedSectionIds)
+  const pinnedIds = ref<WikitabModuleId[]>(loadWikitabConfig().pinnedSectionIds)
 
   function syncFromStorage(): void {
     pinnedIds.value = loadWikitabConfig().pinnedSectionIds
   }
 
-  function isPinned(id: WikitabSectionId): boolean {
+  function isPinned(id: WikitabModuleId): boolean {
     return pinnedIds.value.includes(id)
   }
 
-  function togglePin(id: WikitabSectionId): void {
+  function togglePin(id: WikitabModuleId): void {
     if (isPinned(id)) {
       pinnedIds.value = pinnedIds.value.filter((pinnedId) => pinnedId !== id)
     } else {
@@ -29,8 +29,9 @@ export function useWikitabPinned() {
   }
 
   function orderSections(sections: WikitabSectionState[]): WikitabSectionState[] {
-    const pinnedSet = new Set(pinnedIds.value)
+    const pinnedSet = new Set<WikitabModuleId>(pinnedIds.value)
     const pinned = pinnedIds.value
+      .filter((id): id is WikitabSectionId => id !== WIKITAB_SAVED_MODULE_ID)
       .map((id) => sections.find((section) => section.spec.id === id))
       .filter((section): section is WikitabSectionState => section !== undefined)
     const unpinned = sections.filter((section) => !pinnedSet.has(section.spec.id))

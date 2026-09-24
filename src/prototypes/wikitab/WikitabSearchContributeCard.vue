@@ -201,8 +201,4 @@ const taskIcon = computed(() => resolveEditOpportunityIcon(props.item.need))
   font-weight: var(--font-weight-bold);
   color: var(--color-progressive);
 }
-
-[data-skin='mobile'] .wikitab-search-contribute-card {
-  padding-inline: 0;
-}
 </style>

@@ -8,6 +8,8 @@ import {
   CdxTooltip as vTooltip,
 } from '@wikimedia/codex'
 import {
+  cdxIconBookmark,
+  cdxIconBookmarkOutline,
   cdxIconChartLine,
   cdxIconEllipsis,
   cdxIconHelpNotice,
@@ -25,6 +27,11 @@ const props = defineProps<{
   article: WikitabSearchArticle
   searchQuery: string
   thumbnailBackfillPending?: boolean
+  isArticleSaved: boolean
+}>()
+
+const emit = defineEmits<{
+  'toggle-save': []
 }>()
 
 const { navigateToSearch } = useWikitabSearchNavigation()
@@ -71,15 +78,21 @@ const extractHtml = computed(() =>
 const selection = ref<string | number | null>(null)
 const whyDialogOpen = ref(false)
 
-const menuItems = [
+const menuItems = computed(() => [
+  {
+    value: 'save',
+    label: props.isArticleSaved ? 'Unsave article' : 'Save article',
+    icon: props.isArticleSaved ? cdxIconBookmark : cdxIconBookmarkOutline,
+  },
   { value: 'why', label: 'Why am I seeing this?', icon: cdxIconHelpNotice },
-]
+])
 
 const relationExplanation = computed(() =>
   formatSearchArticleRelationExplanation(props.article, props.searchQuery),
 )
 
 watch(selection, (value) => {
+  if (value === 'save') emit('toggle-save')
   if (value === 'why') whyDialogOpen.value = true
   if (value !== null) selection.value = null
 })

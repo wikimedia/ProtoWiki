@@ -11,7 +11,10 @@ import type { WikitabCardData, WikitabSectionSpec } from './sections'
  * `reserved` immediately and `ready` only once that page has fully resolved, so
  * a scroll gesture always has somewhere to go and the layout never shifts.
  */
-export function useSectionReveal(spec: WikitabSectionSpec, items: Ref<WikitabCardData[]>) {
+export function useSectionReveal(
+  spec: Pick<WikitabSectionSpec, 'initialCount' | 'pageSize'>,
+  items: Ref<WikitabCardData[]>,
+) {
   const reserved = ref(spec.initialCount)
   const ready = ref(0)
   const revealing = ref(false)
@@ -52,10 +55,29 @@ export function useSectionReveal(spec: WikitabSectionSpec, items: Ref<WikitabCar
 
   watch(
     items,
-    (list) => {
-      if (!list.length) return
-      // A section shorter than its initial slots gives the extras back.
-      reserved.value = Math.min(reserved.value, list.length)
+    (list, prevList) => {
+      if (!list.length) {
+        reserved.value = 0
+        ready.value = 0
+        return
+      }
+
+      const prevLength = prevList?.length ?? 0
+
+      if (list.length < reserved.value) {
+        // Items removed — drop reserved slots that no longer exist.
+        reserved.value = list.length
+      } else if (list.length > prevLength && reserved.value >= prevLength) {
+        // Was showing the full list; reveal new items without requiring "Show more".
+        reserved.value =
+          prevLength < spec.initialCount
+            ? Math.min(spec.initialCount, list.length)
+            : list.length
+      } else {
+        // First paint, or the list grew but some slots were still unrevealed.
+        reserved.value = Math.min(reserved.value, list.length)
+      }
+
       ready.value = 0
       void prepare(0, reserved.value)
     },

@@ -1,45 +1,92 @@
-import { WIKITAB_SECTIONS, type WikitabSectionId } from '../sections'
+import {
+  WIKITAB_SAVED_MODULE_ID,
+  WIKITAB_SECTIONS,
+  type WikitabModuleId,
+  type WikitabSectionId,
+} from '../sections'
 import { normalizeColorThemeId, type WikitabColorThemeId } from './wikitabColorThemes'
 import { articleTitleKey } from './wikitabHtml'
 
 /** Bump the suffix on breaking shape changes; add fields in-place until then. */
 export const WIKITAB_CONFIG_STORAGE_KEY = 'wikitab-config-v1'
 
+export interface WikitabSavedArticle {
+  /** Canonical lowercase key via `articleTitleKey()`. */
+  titleKey: string
+  /** Display title (spaces, not underscores). */
+  title: string
+  thumbnailUrl?: string
+  description?: string
+  /** Unix ms — most recently saved first. */
+  savedAt: number
+}
+
 export interface WikitabConfig {
-  /** Most recently pinned first. */
-  pinnedSectionIds: WikitabSectionId[]
+  /** Most recently pinned first. Includes `saved` and feed section ids. */
+  pinnedSectionIds: WikitabModuleId[]
+  /** Module ids hidden from the home feed; feed ids are also skipped for fetching. */
+  hiddenSectionIds: WikitabModuleId[]
   /** Normalized article title keys hidden from the home feed (read from localStorage). */
   hiddenArticleTitleKeys: string[]
   /** Activity-tab revision ids dismissed permanently from the feed. */
   dismissedActivityRevids: number[]
   /** Page background theme; null keeps Codex `--background-color-base`. */
   colorThemeId: WikitabColorThemeId | null
+  /** Most recently saved first. */
+  savedArticles: WikitabSavedArticle[]
 }
 
 const DEFAULT_WIKITAB_CONFIG: WikitabConfig = {
   pinnedSectionIds: [],
+  hiddenSectionIds: [],
   hiddenArticleTitleKeys: [],
   dismissedActivityRevids: [],
   colorThemeId: null,
+  savedArticles: [],
 }
 
-const VALID_IDS = new Set<WikitabSectionId>(WIKITAB_SECTIONS.map((section) => section.id))
+const VALID_FEED_SECTION_IDS = new Set<WikitabSectionId>(
+  WIKITAB_SECTIONS.map((section) => section.id),
+)
 
-function isSectionId(value: string): value is WikitabSectionId {
-  return VALID_IDS.has(value as WikitabSectionId)
+const VALID_MODULE_IDS = new Set<WikitabModuleId>([
+  ...VALID_FEED_SECTION_IDS,
+  WIKITAB_SAVED_MODULE_ID,
+])
+
+function isModuleId(value: string): value is WikitabModuleId {
+  return VALID_MODULE_IDS.has(value as WikitabModuleId)
 }
 
 /** Unknown and duplicate ids are dropped; order is preserved. */
-export function normalizePinnedSectionIds(raw: unknown): WikitabSectionId[] {
+export function normalizePinnedSectionIds(raw: unknown): WikitabModuleId[] {
   if (!Array.isArray(raw)) return []
 
-  const seen = new Set<WikitabSectionId>()
-  const ids: WikitabSectionId[] = []
+  const seen = new Set<WikitabModuleId>()
+  const ids: WikitabModuleId[] = []
 
   for (const item of raw) {
     if (typeof item !== 'string') continue
     const id = item.trim()
-    if (!id || !isSectionId(id) || seen.has(id)) continue
+    if (!id || !isModuleId(id) || seen.has(id)) continue
+    seen.add(id)
+    ids.push(id)
+  }
+
+  return ids
+}
+
+/** Unknown and duplicate ids are dropped; order is preserved. */
+export function normalizeHiddenSectionIds(raw: unknown): WikitabModuleId[] {
+  if (!Array.isArray(raw)) return []
+
+  const seen = new Set<WikitabModuleId>()
+  const ids: WikitabModuleId[] = []
+
+  for (const item of raw) {
+    if (typeof item !== 'string') continue
+    const id = item.trim()
+    if (!id || !isModuleId(id) || seen.has(id)) continue
     seen.add(id)
     ids.push(id)
   }
@@ -82,13 +129,54 @@ export function normalizeDismissedActivityRevids(raw: unknown): number[] {
   return revids
 }
 
-function normalizePinnedFromCommaList(raw: string): WikitabSectionId[] {
-  const seen = new Set<WikitabSectionId>()
-  const ids: WikitabSectionId[] = []
+/** Unknown and duplicate entries are dropped; most recent `savedAt` wins per titleKey. */
+export function normalizeSavedArticles(raw: unknown): WikitabSavedArticle[] {
+  if (!Array.isArray(raw)) return []
+
+  const byKey = new Map<string, WikitabSavedArticle>()
+
+  for (const item of raw) {
+    if (typeof item !== 'object' || item === null) continue
+    const record = item as Record<string, unknown>
+    const title = typeof record.title === 'string' ? record.title.trim() : ''
+    const titleKey = articleTitleKey(typeof record.titleKey === 'string' ? record.titleKey : title)
+    if (!titleKey || !title) continue
+
+    const savedAt =
+      typeof record.savedAt === 'number' && Number.isFinite(record.savedAt)
+        ? record.savedAt
+        : Date.now()
+    const thumbnailUrl =
+      typeof record.thumbnailUrl === 'string' && record.thumbnailUrl.trim()
+        ? record.thumbnailUrl.trim()
+        : undefined
+    const description =
+      typeof record.description === 'string' && record.description.trim()
+        ? record.description.trim()
+        : undefined
+
+    const existing = byKey.get(titleKey)
+    if (existing && existing.savedAt >= savedAt) continue
+
+    byKey.set(titleKey, {
+      titleKey,
+      title: title.replace(/_/g, ' '),
+      thumbnailUrl,
+      description,
+      savedAt,
+    })
+  }
+
+  return [...byKey.values()].sort((a, b) => b.savedAt - a.savedAt)
+}
+
+function normalizePinnedFromCommaList(raw: string): WikitabModuleId[] {
+  const seen = new Set<WikitabModuleId>()
+  const ids: WikitabModuleId[] = []
 
   for (const part of raw.split(',')) {
     const id = part.trim()
-    if (!id || !isSectionId(id) || seen.has(id)) continue
+    if (!id || !isModuleId(id) || seen.has(id)) continue
     seen.add(id)
     ids.push(id)
   }
@@ -105,18 +193,22 @@ function normalizeConfig(raw: unknown): WikitabConfig {
 
   return {
     pinnedSectionIds: normalizePinnedSectionIds(record.pinnedSectionIds),
+    hiddenSectionIds: normalizeHiddenSectionIds(record.hiddenSectionIds),
     hiddenArticleTitleKeys: normalizeHiddenArticleTitleKeys(record.hiddenArticleTitleKeys),
     dismissedActivityRevids: normalizeDismissedActivityRevids(record.dismissedActivityRevids),
     colorThemeId: normalizeColorThemeId(record.colorThemeId),
+    savedArticles: normalizeSavedArticles(record.savedArticles),
   }
 }
 
 function cloneConfig(config: WikitabConfig): WikitabConfig {
   return {
     pinnedSectionIds: [...config.pinnedSectionIds],
+    hiddenSectionIds: [...config.hiddenSectionIds],
     hiddenArticleTitleKeys: [...config.hiddenArticleTitleKeys],
     dismissedActivityRevids: [...config.dismissedActivityRevids],
     colorThemeId: config.colorThemeId,
+    savedArticles: config.savedArticles.map((article) => ({ ...article })),
   }
 }
 
@@ -140,7 +232,7 @@ function persistConfig(config: WikitabConfig): void {
   }
 }
 
-function readLegacyPinnedFromUrl(): WikitabSectionId[] {
+function readLegacyPinnedFromUrl(): WikitabModuleId[] {
   if (typeof window === 'undefined') return []
 
   const raw = new URLSearchParams(window.location.search).get('pinned')

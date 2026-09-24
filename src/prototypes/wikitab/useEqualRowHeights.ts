@@ -1,4 +1,4 @@
-import { onMounted, onUnmounted, watch, type ComputedRef, type Ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, watch, type ComputedRef, type Ref } from 'vue'
 
 /**
  * Keeps cards in each visual row the same height — pairs on desktop, the whole
@@ -14,6 +14,7 @@ export function useEqualRowHeights(options: {
   watchKeys: ComputedRef<unknown>[]
 }): void {
   let observer: ResizeObserver | null = null
+  let rafId = 0
 
   function cardElements(): HTMLElement[] {
     const root = options.container.value
@@ -27,10 +28,13 @@ export function useEqualRowHeights(options: {
     const items = cardElements()
     for (const item of items) {
       item.style.minHeight = ''
-      item.style.height = ''
+      item.style.height = 'auto'
     }
 
     if (!items.length) return
+
+    // Reflow after clearing inline heights so wrapped text is measured at full height.
+    void items[0].offsetHeight
 
     const floor = options.cardHeight.value
     const cols = options.columns.value
@@ -46,10 +50,24 @@ export function useEqualRowHeights(options: {
       const rowHeight = `${max}px`
       for (const el of row) {
         // Definite height so the bordered CdxCard can fill the slot (not just min-height).
-        el.style.height = rowHeight
-        el.style.minHeight = rowHeight
+        if (el.style.height !== rowHeight) el.style.height = rowHeight
+        if (el.style.minHeight !== rowHeight) el.style.minHeight = rowHeight
       }
     }
+  }
+
+  /**
+   * Cards often paint on the same tick as `ready` flips; measuring immediately
+   * can lock a row before title/description wrapping finishes, clipping text
+   * until a viewport resize retriggers equalization.
+   */
+  function scheduleEqualize(): void {
+    cancelAnimationFrame(rafId)
+    void nextTick(() => {
+      rafId = requestAnimationFrame(() => {
+        rafId = requestAnimationFrame(equalize)
+      })
+    })
   }
 
   function observeCards(): void {
@@ -66,15 +84,22 @@ export function useEqualRowHeights(options: {
     observer?.disconnect()
     if (!options.container.value || !options.enabled.value) return
 
-    observer = new ResizeObserver(() => equalize())
+    observer = new ResizeObserver(() => scheduleEqualize())
     observer.observe(options.container.value)
     observeCards()
-    equalize()
+    scheduleEqualize()
+    void document.fonts.ready.then(scheduleEqualize)
   }
 
   onMounted(setup)
-  onUnmounted(() => observer?.disconnect())
+  onUnmounted(() => {
+    cancelAnimationFrame(rafId)
+    observer?.disconnect()
+  })
 
   watch([options.container, options.columns, options.cardHeight, options.enabled], setup)
-  watch(options.watchKeys, equalize)
+  watch(options.watchKeys, () => {
+    observeCards()
+    scheduleEqualize()
+  })
 }

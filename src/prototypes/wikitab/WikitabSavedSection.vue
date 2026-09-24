@@ -2,27 +2,21 @@
 import { computed, ref, watch } from 'vue'
 import { CdxButton, CdxIcon, CdxMenuButton } from '@wikimedia/codex'
 import { cdxIconEllipsis, cdxIconEyeClosed, cdxIconHelpNotice, cdxIconPushPin } from '@wikimedia/codex-icons'
+
 import { useSkin } from '@/composables/useSkin'
 import WikitabCard from './WikitabCard.vue'
+import { articleUrl } from './data/wikitabHtml'
+import type { WikitabSavedArticle } from './data/wikitabConfig'
+import { WIKITAB_SAVED_MODULE_SPEC, type WikitabCardData } from './sections'
 import { useEqualRowHeights } from './useEqualRowHeights'
 import { usePreventHorizontalSwipeNavigation } from './usePreventHorizontalSwipeNavigation'
 import { useRevealOnScrollEnd } from './useRevealOnScrollEnd'
 import { useSectionReveal } from './useSectionReveal'
-import type { WikitabCardData, WikitabSectionId, WikitabSectionSpec } from './sections'
 
-const ARTICLE_SECTION_IDS = new Set<WikitabSectionId>([
-  'trending',
-  'news',
-  'dyk',
-  'otd',
-  'births',
-])
+const spec = WIKITAB_SAVED_MODULE_SPEC
 
 const props = defineProps<{
-  spec: WikitabSectionSpec
-  items: WikitabCardData[]
-  loading: boolean
-  error: string | null
+  savedArticles: WikitabSavedArticle[]
   pinned: boolean
   isArticleSaved: (title: string) => boolean
 }>()
@@ -30,7 +24,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   'toggle-pin': []
   'hide-section': []
-  'hide-article': [title: string]
   'toggle-save': [card: WikitabCardData]
 }>()
 
@@ -38,14 +31,23 @@ function cardArticleTitle(card: WikitabCardData): string {
   return card.linkTitle ?? card.title ?? ''
 }
 
-const items = computed(() => props.items)
-const { reserved, ready, revealing, hasMore, revealMore } = useSectionReveal(props.spec, items)
+const items = computed((): WikitabCardData[] =>
+  props.savedArticles.map((article) => ({
+    key: article.titleKey,
+    href: articleUrl(article.title),
+    linkTitle: article.title,
+    title: article.title,
+    description: article.description,
+    thumbnailUrl: article.thumbnailUrl,
+  })),
+)
+
+const { reserved, ready, revealing, hasMore, revealMore } = useSectionReveal(spec, items)
 
 const skin = useSkin()
-
 const scroller = ref<HTMLElement | null>(null)
 const sentinel = ref<HTMLElement | null>(null)
-const observeScrollEnd = computed(() => skin.value === 'mobile' && !props.error && hasMore.value)
+const observeScrollEnd = computed(() => skin.value === 'mobile' && hasMore.value)
 
 useRevealOnScrollEnd({
   scroller,
@@ -64,32 +66,24 @@ const rowColumns = computed(() => (skin.value === 'desktop' ? 2 : 1))
 useEqualRowHeights({
   container: scroller,
   columns: rowColumns,
-  cardHeight: computed(() => props.spec.cardHeight),
-  enabled: computed(() => !props.error),
+  cardHeight: computed(() => spec.cardHeight),
+  enabled: computed(() => items.value.length > 0),
   watchKeys: [
     computed(() => reserved.value),
     computed(() => ready.value),
-    computed(() => props.items.length),
-    computed(() => props.loading),
+    computed(() => items.value.length),
   ],
 })
 
 const slots = computed(() =>
   Array.from({ length: reserved.value }, (_, index) => ({
-    card: props.items[index],
+    card: items.value[index],
     loading: index >= ready.value,
   })),
 )
 
-/*
- * The row is always rendered so the sections below never move; only the control
- * inside it comes and goes. While the feed is still loading we can't yet know
- * whether a section has more, so it shows as disabled rather than hidden.
- */
-const isEmpty = computed(() => !props.loading && !props.error && props.items.length === 0)
-
-const canShowMore = computed(() => props.loading || hasMore.value)
-const showMoreDisabled = computed(() => props.loading || revealing.value)
+const canShowMore = computed(() => hasMore.value)
+const showMoreDisabled = computed(() => revealing.value)
 
 const selection = ref<string | number | null>(null)
 const menuItems = computed(() => [
@@ -106,7 +100,7 @@ const menuItems = computed(() => [
 ])
 const footerItem = computed(() => ({
   value: 'about',
-  label: `About ${props.spec.heading}`,
+  label: `About ${spec.heading}`,
   icon: cdxIconHelpNotice,
 }))
 
@@ -118,20 +112,20 @@ watch(selection, (value) => {
 </script>
 
 <template>
-  <section class="wikitab-section" :style="{ '--wikitab-card-height': `${spec.cardHeight}px` }">
-    <div class="wikitab-section__head">
-      <div class="wikitab-section__title">
+  <section class="wikitab-saved-section" :style="{ '--wikitab-card-height': `${spec.cardHeight}px` }">
+    <div class="wikitab-saved-section__head">
+      <div class="wikitab-saved-section__title">
         <CdxIcon
           v-if="pinned"
-          class="wikitab-section__pin"
+          class="wikitab-saved-section__pin"
           :icon="cdxIconPushPin"
           icon-label="Pinned to top"
         />
-        <h2 class="wikitab-section__heading">{{ spec.heading }}</h2>
+        <h2 class="wikitab-saved-section__heading">{{ spec.heading }}</h2>
       </div>
       <CdxMenuButton
         v-model:selected="selection"
-        class="wikitab-section__menu"
+        class="wikitab-saved-section__menu"
         weight="quiet"
         :menu-items="menuItems"
         :footer="footerItem"
@@ -141,39 +135,27 @@ watch(selection, (value) => {
       </CdxMenuButton>
     </div>
 
-    <p v-if="error" class="wikitab-section__error">
-      <small>{{ error }}</small>
-    </p>
-
-    <p v-else-if="isEmpty" class="wikitab-section__empty">
-      <small>Nothing to show right now.</small>
-    </p>
-
-    <div v-else ref="scroller" class="wikitab-section__cards">
+    <div ref="scroller" class="wikitab-saved-section__cards">
       <WikitabCard
         v-for="(slot, index) in slots"
-        :key="index"
-        class="wikitab-section__card"
+        :key="slot.card?.key ?? index"
+        class="wikitab-saved-section__card"
         :variant="spec.variant"
         :height="spec.cardHeight"
         :thumbnail-size="spec.thumbnailSize"
         :card="slot.card"
-        :supporting-icon="spec.supportingIcon"
-        :full-hook="spec.fullHook"
         :loading="slot.loading"
-        :show-article-menu="ARTICLE_SECTION_IDS.has(spec.id) && !slot.loading && !!slot.card"
-        :hide-menu-section-heading="!slot.loading && slot.card ? spec.heading : undefined"
+        :show-article-menu="!slot.loading && !!slot.card"
         :is-saved="slot.card ? isArticleSaved(cardArticleTitle(slot.card)) : false"
-        @hide-article="emit('hide-article', $event)"
         @toggle-save="slot.card && emit('toggle-save', slot.card)"
       />
-      <div ref="sentinel" class="wikitab-section__sentinel" aria-hidden="true" />
+      <div ref="sentinel" class="wikitab-saved-section__sentinel" aria-hidden="true" />
     </div>
 
-    <div class="wikitab-section__more">
+    <div class="wikitab-saved-section__more">
       <CdxButton
         v-if="canShowMore"
-        class="wikitab-section__more-button"
+        class="wikitab-saved-section__more-button"
         action="progressive"
         weight="quiet"
         :disabled="showMoreDisabled"
@@ -186,12 +168,12 @@ watch(selection, (value) => {
 </template>
 
 <style scoped>
-.wikitab-section {
+.wikitab-saved-section {
   display: flex;
   flex-direction: column;
 }
 
-.wikitab-section__head {
+.wikitab-saved-section__head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -199,20 +181,20 @@ watch(selection, (value) => {
   margin-bottom: var(--spacing-50);
 }
 
-.wikitab-section__title {
+.wikitab-saved-section__title {
   display: flex;
   align-items: center;
   gap: var(--spacing-25);
   min-width: 0;
 }
 
-.wikitab-section__pin {
+.wikitab-saved-section__pin {
   flex-shrink: 0;
   width: 18px;
   height: 18px;
 }
 
-.wikitab-section__heading {
+.wikitab-saved-section__heading {
   margin: 0;
   font-family: var(--font-family-base);
   font-size: var(--font-size-large);
@@ -221,44 +203,28 @@ watch(selection, (value) => {
   color: var(--color-base);
 }
 
-/* MenuButton sizes to the trigger width by default; grow with content. */
-.wikitab-section__menu :deep(.cdx-menu) {
+.wikitab-saved-section__menu :deep(.cdx-menu) {
   width: max-content !important;
   min-width: 12rem;
 }
 
-.wikitab-section__menu :deep(.cdx-menu-item__text__label) {
+.wikitab-saved-section__menu :deep(.cdx-menu-item__text__label) {
   white-space: nowrap;
 }
 
-/* Holds the reserved height rather than collapsing the section. */
-.wikitab-section__error,
-.wikitab-section__empty {
-  display: flex;
-  align-items: center;
-  margin: 0;
-  min-height: var(--wikitab-card-height);
-  color: var(--color-subtle);
-}
-
-.wikitab-section__sentinel {
+.wikitab-saved-section__sentinel {
   flex: 0 0 1px;
   width: 1px;
 }
 
-.wikitab-section__more {
+.wikitab-saved-section__more {
   display: flex;
   justify-content: center;
-  /* Reserved even when empty, so revealing or exhausting a section shifts nothing. */
   min-height: var(--line-height-small);
   margin-top: var(--spacing-100);
 }
 
-/*
- * Home feed card compact type (14px body / 12px small). Codex tokens are rem-based, so
- * shadow them on the card grid only — hero search and section headings keep defaults.
- */
-.wikitab-section__cards {
+.wikitab-saved-section__cards {
   --font-size-small: 0.75rem;
   --font-size-medium: 0.875rem;
   --font-size-large: 1rem;
@@ -267,62 +233,51 @@ watch(selection, (value) => {
   --line-height-large: 1.375rem;
 }
 
-/* Desktop: a two-column grid inside the centred column. */
-[data-skin='desktop'] .wikitab-section__cards {
+[data-skin='desktop'] .wikitab-saved-section__cards {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
   gap: var(--spacing-100);
 }
 
-/* Grid items default to min-height: auto; row heights come from useEqualRowHeights. */
-[data-skin='desktop'] .wikitab-section__card {
+[data-skin='desktop'] .wikitab-saved-section__card {
   min-height: 0;
 }
 
-.wikitab-section__card:has(.wikitab-card--has-menu [aria-expanded='true']) {
+.wikitab-saved-section__card:has(.wikitab-card--has-menu [aria-expanded='true']) {
   overflow: visible;
   z-index: 3;
 }
 
-[data-skin='desktop'] .wikitab-section__sentinel {
+[data-skin='desktop'] .wikitab-saved-section__sentinel {
   display: none;
 }
 
-/*
- * Mobile: one horizontally scrolling row that deliberately bleeds past the right
- * edge, so it reads as continuable rather than complete.
- */
-[data-skin='mobile'] .wikitab-section__cards {
+[data-skin='mobile'] .wikitab-saved-section__cards {
   display: flex;
   align-items: stretch;
   gap: var(--spacing-100);
-  /* Cancel the page gutter so the row scrolls edge to edge, then reinstate it
-     as padding so the first card still lines up with the heading. */
   margin-inline: calc(var(--wikitab-page-gutter) * -1);
   padding-inline: var(--wikitab-page-gutter);
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
-  /* Without this, snapping to a card's start edge scrolls straight past the
-     row's start padding and the first card sits flush to the viewport edge. */
   scroll-padding-inline-start: var(--wikitab-page-gutter);
   scrollbar-width: none;
 }
 
-[data-skin='mobile'] .wikitab-section__cards::-webkit-scrollbar {
+[data-skin='mobile'] .wikitab-saved-section__cards::-webkit-scrollbar {
   display: none;
 }
 
-[data-skin='mobile'] .wikitab-section__card {
+[data-skin='mobile'] .wikitab-saved-section__card {
   flex: 0 0 320px;
   align-self: stretch;
   min-height: var(--wikitab-card-height);
   scroll-snap-align: start;
 }
 
-/* Mobile reveals on scroll, so the button would be redundant. */
-[data-skin='mobile'] .wikitab-section__more {
+[data-skin='mobile'] .wikitab-saved-section__more {
   display: none;
 }
 </style>

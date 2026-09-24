@@ -1,6 +1,6 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
-import type { WikitabCardData, WikitabFeed } from '../sections'
+import { WIKITAB_SECTIONS, type WikitabCardData, type WikitabFeed, type WikitabSectionId } from '../sections'
 import { fetchActiveDiscussions } from './fetchActiveDiscussions'
 import { fetchBirthsOnThisDay } from './fetchBirthsOnThisDay'
 import {
@@ -41,6 +41,33 @@ interface InFlightProgressive {
 
 /** Deduplicates concurrent and repeat calls within a single page session. */
 const inFlight = new Map<string, InFlightProgressive>()
+
+const ALL_SECTION_IDS = new Set<WikitabSectionId>(WIKITAB_SECTIONS.map((section) => section.id))
+
+const FEATURED_SECTION_IDS: readonly WikitabSectionId[] = ['trending', 'news', 'dyk']
+
+export interface FetchDailyFeedOptions {
+  enabledSections?: ReadonlySet<WikitabSectionId>
+}
+
+function emptyFeed(): WikitabFeed {
+  return {
+    trending: [],
+    news: [],
+    dyk: [],
+    discussions: [],
+    otd: [],
+    births: [],
+  }
+}
+
+function resolveEnabledSections(options?: FetchDailyFeedOptions): ReadonlySet<WikitabSectionId> {
+  return options?.enabledSections ?? ALL_SECTION_IDS
+}
+
+function needsFeaturedFetch(enabled: ReadonlySet<WikitabSectionId>): boolean {
+  return FEATURED_SECTION_IDS.some((id) => enabled.has(id))
+}
 
 function feedUrl(day: string): string {
   const [year, month, date] = day.split('-')
@@ -181,46 +208,126 @@ async function requestFeedProgressive(
   day: string,
   onUpdate: (feed: WikitabFeed) => void,
   signal?: AbortSignal,
+  options?: FetchDailyFeedOptions,
 ): Promise<WikitabFeed> {
-  const payload = await fetchFeaturedPayload(day, signal)
-  const trending = await resolveTrending(payload, day, signal)
-  const feed = { ...mapFeaturedFeed(payload, day), trending }
-  onUpdate(feed)
+  const enabled = resolveEnabledSections(options)
+  const feed = emptyFeed()
 
-  await Promise.all([
-    fetchMainPageOtd(signal).then(
-      (otd) => {
-        feed.otd = otd
-        onUpdate({ ...feed })
-      },
-      () => {
-        feed.otd = []
-        onUpdate({ ...feed })
-      },
-    ),
-    fetchBirthsOnThisDay(day, signal).then(
-      (births) => {
-        feed.births = births
-        onUpdate({ ...feed })
-      },
-      () => {
-        feed.births = []
-        onUpdate({ ...feed })
-      },
-    ),
-    fetchActiveDiscussions(signal).then(
-      (discussions) => {
-        feed.discussions = discussions
-        onUpdate({ ...feed })
-      },
-      () => {
-        feed.discussions = []
-        onUpdate({ ...feed })
-      },
-    ),
-  ])
+  if (!needsFeaturedFetch(enabled)) {
+    onUpdate({ ...feed })
+  } else {
+    const payload = await fetchFeaturedPayload(day, signal)
+    const trending = enabled.has('trending')
+      ? await resolveTrending(payload, day, signal)
+      : []
+    Object.assign(feed, mapFeaturedFeed(payload, day), { trending })
+    if (!enabled.has('news')) feed.news = []
+    if (!enabled.has('dyk')) feed.dyk = []
+    onUpdate({ ...feed })
+  }
+
+  const secondaryTasks: Promise<void>[] = []
+
+  if (enabled.has('otd')) {
+    secondaryTasks.push(
+      fetchMainPageOtd(signal).then(
+        (otd) => {
+          feed.otd = otd
+          onUpdate({ ...feed })
+        },
+        () => {
+          feed.otd = []
+          onUpdate({ ...feed })
+        },
+      ),
+    )
+  }
+
+  if (enabled.has('births')) {
+    secondaryTasks.push(
+      fetchBirthsOnThisDay(day, signal).then(
+        (births) => {
+          feed.births = births
+          onUpdate({ ...feed })
+        },
+        () => {
+          feed.births = []
+          onUpdate({ ...feed })
+        },
+      ),
+    )
+  }
+
+  if (enabled.has('discussions')) {
+    secondaryTasks.push(
+      fetchActiveDiscussions(signal).then(
+        (discussions) => {
+          feed.discussions = discussions
+          onUpdate({ ...feed })
+        },
+        () => {
+          feed.discussions = []
+          onUpdate({ ...feed })
+        },
+      ),
+    )
+  }
+
+  await Promise.all(secondaryTasks)
 
   return { ...feed }
+}
+
+async function fetchFeaturedSectionSlice(
+  sectionId: WikitabSectionId,
+  day: string,
+  signal?: AbortSignal,
+): Promise<WikitabCardData[]> {
+  const payload = await fetchFeaturedPayload(day, signal)
+
+  switch (sectionId) {
+    case 'trending':
+      return resolveTrending(payload, day, signal)
+    case 'news':
+      return mapNews(payload)
+    case 'dyk':
+      return mapDyk(payload)
+    default:
+      return []
+  }
+}
+
+/** Fetches one section's feed slice — for late unhide after initial load. */
+export async function fetchWikitabSectionFeed(
+  sectionId: WikitabSectionId,
+  signal?: AbortSignal,
+): Promise<WikitabCardData[]> {
+  const day = utcDayKey()
+
+  if (FEATURED_SECTION_IDS.includes(sectionId)) {
+    const pending = inFlight.get(day)
+    if (pending?.lastFeed?.[sectionId]?.length) {
+      return pending.lastFeed[sectionId]
+    }
+
+    const cached = readCachedFeed(day)
+    if (cached?.[sectionId]?.length) {
+      return cached[sectionId]
+    }
+
+    return fetchFeaturedSectionSlice(sectionId, day, signal)
+  }
+
+  switch (sectionId) {
+    case 'otd':
+      return fetchMainPageOtd(signal).catch(() => [])
+    case 'births':
+      return fetchBirthsOnThisDay(day, signal).catch(() => [])
+    case 'discussions':
+      return fetchActiveDiscussions(signal).catch(() => [])
+    default:
+      return []
+  }
 }
 
 function notifyListeners(entry: InFlightProgressive, feed: WikitabFeed): void {
@@ -237,8 +344,10 @@ function notifyListeners(entry: InFlightProgressive, feed: WikitabFeed): void {
 export function fetchDailyFeedProgressive(
   onUpdate: (feed: WikitabFeed) => void,
   signal?: AbortSignal,
+  options?: FetchDailyFeedOptions,
 ): Promise<WikitabFeed> {
   const day = utcDayKey()
+  const enabled = resolveEnabledSections(options)
 
   const cached = readCachedFeed(day)
   if (cached) {
@@ -253,6 +362,12 @@ export function fetchDailyFeedProgressive(
     return pending.promise
   }
 
+  if (!needsFeaturedFetch(enabled) && !enabled.has('otd') && !enabled.has('births') && !enabled.has('discussions')) {
+    const feed = emptyFeed()
+    onUpdate(feed)
+    return Promise.resolve(feed)
+  }
+
   const entry: InFlightProgressive = {
     promise: Promise.resolve({} as WikitabFeed),
     listeners: new Set([onUpdate]),
@@ -263,6 +378,7 @@ export function fetchDailyFeedProgressive(
     day,
     (feed) => notifyListeners(entry, feed),
     signal,
+    options,
   )
     .then((feed) => {
       // Skip caching when Trending is still empty so the next tab open can retry.

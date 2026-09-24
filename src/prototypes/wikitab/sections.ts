@@ -2,6 +2,10 @@ import { cdxIconCalendar, cdxIconChartLine, type Icon } from '@wikimedia/codex-i
 
 export type WikitabSectionId = 'trending' | 'otd' | 'births' | 'dyk' | 'news' | 'discussions'
 
+export const WIKITAB_SAVED_MODULE_ID = 'saved' as const
+
+export type WikitabModuleId = WikitabSectionId | typeof WIKITAB_SAVED_MODULE_ID
+
 /**
  * Which card layout a section renders. Drives the real card, its placeholder,
  * and the loading mode (see `WikitabCard.vue`):
@@ -98,6 +102,35 @@ export const WIKITAB_SECTIONS: readonly WikitabSectionSpec[] = [
     thumbnailSize: 96,
     supportingIcon: cdxIconCalendar,
   },
+]
+
+/** Default home-feed module order when nothing is pinned. Saved follows Trending. */
+export const WIKITAB_HOME_MODULE_ORDER: readonly WikitabModuleId[] = [
+  'trending',
+  WIKITAB_SAVED_MODULE_ID,
+  ...WIKITAB_SECTIONS.filter((section) => section.id !== 'trending').map(
+    (section) => section.id,
+  ),
+]
+
+/** Home Saved module — same paging contract as feed sections. */
+export const WIKITAB_SAVED_MODULE_SPEC = {
+  id: WIKITAB_SAVED_MODULE_ID,
+  heading: 'Saved',
+  initialCount: 4,
+  pageSize: 6,
+  cardHeight: 122,
+  variant: 'thumbnail' as WikitabCardVariant,
+  thumbnailSize: 96,
+}
+
+/** Configure-panel rows: Saved first, then daily feed sections. */
+export const WIKITAB_CONFIGURE_MODULES: ReadonlyArray<{
+  id: WikitabModuleId
+  heading: string
+}> = [
+  { id: WIKITAB_SAVED_MODULE_ID, heading: WIKITAB_SAVED_MODULE_SPEC.heading },
+  ...WIKITAB_SECTIONS.map((section) => ({ id: section.id, heading: section.heading })),
 ]
 
 export interface WikitabSupportingSignal {
