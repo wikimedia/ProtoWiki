@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, toRef, watch } from 'vue'
 import { CdxButton, CdxIcon, CdxMenuButton } from '@wikimedia/codex'
-import { cdxIconEllipsis, cdxIconEyeClosed, cdxIconHelpNotice, cdxIconPushPin } from '@wikimedia/codex-icons'
+import {
+  cdxIconEllipsis,
+  cdxIconEyeClosed,
+  cdxIconHelpNotice,
+  cdxIconPushPin,
+  cdxIconReload,
+} from '@wikimedia/codex-icons'
 import { useSkin } from '@/composables/useSkin'
 import WikitabCard from './WikitabCard.vue'
 import { useEqualRowHeights } from './useEqualRowHeights'
@@ -29,6 +35,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'toggle-pin': []
+  'refresh-section': []
   'hide-section': []
   'hide-article': [title: string]
   'toggle-save': [card: WikitabCardData]
@@ -99,6 +106,11 @@ const showMoreDisabled = computed(() => props.loading || revealing.value)
 const selection = ref<string | number | null>(null)
 const menuItems = computed(() => [
   {
+    value: 'refresh',
+    label: 'Refresh',
+    icon: cdxIconReload,
+  },
+  {
     value: 'pin',
     label: props.pinned ? 'Unpin from top' : 'Pin to top',
     icon: cdxIconPushPin,
@@ -117,6 +129,7 @@ const footerItem = computed(() => ({
 
 watch(selection, (value) => {
   if (value === 'pin') emit('toggle-pin')
+  if (value === 'refresh') emit('refresh-section')
   if (value === 'hide') emit('hide-section')
   if (value !== null) selection.value = null
 })

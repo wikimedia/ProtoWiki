@@ -40,7 +40,7 @@ const menuItems = computed(() => {
   if (props.showArticleMenu) {
     items.push({
       value: 'save',
-      label: props.isSaved ? 'Unsave article' : 'Save article',
+      label: props.isSaved ? 'Unsave' : 'Save',
       icon: props.isSaved ? cdxIconBookmark : cdxIconBookmarkOutline,
     })
   }

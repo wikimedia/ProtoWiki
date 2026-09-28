@@ -293,6 +293,10 @@ export class WikitabSearchContributeFeed {
 
     if (options.seenPageids) {
       for (const pageid of options.seenPageids) this.emittedPageids.add(pageid)
+      if (this.emittedPageids.size > 0) {
+        this.directPhaseDone = true
+        this.directIndex = seeds.length
+      }
     }
 
     for (const seed of seeds) {
@@ -361,6 +365,7 @@ export class WikitabSearchContributeFeed {
       )
 
       if (item) {
+        if (this.emittedPageids.has(item.pageid)) continue
         this.emittedPageids.add(item.pageid)
         return item
       }
@@ -386,6 +391,7 @@ export class WikitabSearchContributeFeed {
 
     const item = await resolveContributeItem(summary, pooled.relatedToTitle, signal)
     if (item) {
+      if (this.emittedPageids.has(item.pageid)) return null
       this.emittedPageids.add(item.pageid)
       return item
     }

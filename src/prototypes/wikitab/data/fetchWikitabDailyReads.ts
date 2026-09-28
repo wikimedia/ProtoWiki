@@ -1,7 +1,7 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import { pickSavedArticleSeeds } from './pickSavedArticleSeeds'
-import type { WikitabSavedArticle } from './wikitabConfig'
+import { loadWikitabConfig, type WikitabSavedArticle } from './wikitabConfig'
 import { filterDisambiguationPageIds } from './filterDisambiguationPages'
 import { fetchWikitabPageSummary } from './fetchWikitabPageSummary'
 import type { WikitabCardData } from '../sections'
@@ -22,6 +22,7 @@ interface RawPage {
 
 interface RawQueryResponse {
   query?: { pages?: Record<string, RawPage> }
+  continue?: { gsroffset?: number }
 }
 
 interface DailyReadsHit {
@@ -34,7 +35,11 @@ interface DailyReadsHit {
 
 interface DailyReadsSeedQueue {
   seedTitle: string
+  /** API title used for morelike queries (may differ from display seedTitle). */
+  searchTitle: string
   pending: DailyReadsHit[]
+  /** Next generator offset, or null when Cirrus has no further pages. */
+  nextOffset: number | null
 }
 
 interface DailyReadsMergedHit {
@@ -86,10 +91,16 @@ export function pickDailyReadSeeds(
   return pickSavedArticleSeeds(articles, day, MAX_SEEDS, 'daily-reads')
 }
 
+interface MorelikeBatch {
+  pages: RawPage[]
+  nextOffset: number | null
+}
+
 async function fetchMorelikePages(
   seedTitle: string,
+  offset: number,
   signal: AbortSignal | undefined,
-): Promise<RawPage[]> {
+): Promise<MorelikeBatch> {
   const query = new URLSearchParams({
     action: 'query',
     format: 'json',
@@ -105,6 +116,10 @@ async function fetchMorelikePages(
     pithumbsize: String(THUMBNAIL_SIZE),
   })
 
+  if (offset > 0) {
+    query.set('gsroffset', String(offset))
+  }
+
   const response = await fetchWikimedia(`https://${EN_WIKI_HOST}/w/api.php?${query.toString()}`, {
     signal,
     headers: wikimediaApiFetchHeaders('wikitab-daily-reads-morelike'),
@@ -115,7 +130,13 @@ async function fetchMorelikePages(
   }
 
   const data = (await response.json()) as RawQueryResponse
-  return sortPagesByGeneratorIndex(Object.values(data.query?.pages ?? {}))
+  const nextOffset =
+    typeof data.continue?.gsroffset === 'number' ? data.continue.gsroffset : null
+
+  return {
+    pages: sortPagesByGeneratorIndex(Object.values(data.query?.pages ?? {})),
+    nextOffset,
+  }
 }
 
 function mapPage(raw: RawPage): DailyReadsHit | null {
@@ -175,6 +196,7 @@ function dailyMergeRng(day: string, savedArticles: readonly WikitabSavedArticle[
 export class DailyReadsFeed {
   private readonly queues: DailyReadsSeedQueue[] = []
   private readonly seenPageids = new Set<number>()
+  private readonly excludedTitleKeys = new Set<string>()
   private readonly rng: () => number
   private pendingSeedLoads = 0
   private seedLoadsDone = false
@@ -194,7 +216,12 @@ export class DailyReadsFeed {
     this.rng = dailyMergeRng(day, savedArticles)
 
     const seeds = pickDailyReadSeeds(savedArticles, day)
-    const excludedTitleKeys = new Set(savedArticles.map((article) => article.titleKey))
+    for (const article of savedArticles) {
+      this.excludedTitleKeys.add(article.titleKey)
+    }
+    for (const titleKey of loadWikitabConfig().hiddenArticleTitleKeys) {
+      this.excludedTitleKeys.add(titleKey)
+    }
 
     if (!seeds.length) {
       this.seedLoadsDone = true
@@ -202,13 +229,18 @@ export class DailyReadsFeed {
     }
 
     for (const seed of seeds) {
-      this.queues.push({ seedTitle: seed.title, pending: [] })
+      this.queues.push({
+        seedTitle: seed.title,
+        searchTitle: seed.title,
+        pending: [],
+        nextOffset: 0,
+      })
     }
 
     this.pendingSeedLoads = seeds.length
 
     seeds.forEach((seed, queueIndex) => {
-      void this.loadSeed(seed, excludedTitleKeys, signal, queueIndex)
+      void this.loadSeed(seed, signal, queueIndex)
         .catch((cause) => {
           if ((cause as Error)?.name === 'AbortError') return
           this.loadError ??= cause instanceof Error ? cause : new Error(String(cause))
@@ -253,9 +285,15 @@ export class DailyReadsFeed {
   }
 
   hasPending(): boolean {
-    return this.queues.some((queue) =>
-      queue.pending.some((hit) => !this.seenPageids.has(hit.pageid)),
-    )
+    if (
+      this.queues.some((queue) =>
+        queue.pending.some((hit) => !this.seenPageids.has(hit.pageid)),
+      )
+    ) {
+      return true
+    }
+
+    return this.queues.some((queue) => queue.nextOffset !== null)
   }
 
   private notifyWaiters(): void {
@@ -345,13 +383,10 @@ export class DailyReadsFeed {
     })
   }
 
-  private async loadSeed(
-    seed: WikitabSavedArticle,
-    excludedTitleKeys: Set<string>,
+  private async mapEligibleHits(
+    pages: RawPage[],
     signal: AbortSignal | undefined,
-    queueIndex: number,
-  ): Promise<void> {
-    const pages = await fetchMorelikePages(seed.title, signal)
+  ): Promise<DailyReadsHit[]> {
     const hits: DailyReadsHit[] = []
 
     for (const page of pages) {
@@ -359,22 +394,73 @@ export class DailyReadsFeed {
       if (!hit) continue
 
       const titleKey = articleTitleKey(hit.title)
-      if (!titleKey || excludedTitleKeys.has(titleKey)) continue
+      if (!titleKey || this.excludedTitleKeys.has(titleKey)) continue
 
       hits.push(hit)
     }
 
-    const queue = this.queues[queueIndex]
-    if (!queue) return
-
-    if (!hits.length) return
+    if (!hits.length) return []
 
     const disambiguationIds = await filterDisambiguationPageIds(
       hits.map((hit) => hit.pageid),
       { signal },
     )
 
-    queue.pending = hits.filter((hit) => !disambiguationIds.has(hit.pageid))
+    return hits.filter((hit) => !disambiguationIds.has(hit.pageid))
+  }
+
+  private appendHitsToQueue(queue: DailyReadsSeedQueue, hits: DailyReadsHit[]): number {
+    const pendingIds = new Set(queue.pending.map((hit) => hit.pageid))
+    let added = 0
+
+    for (const hit of hits) {
+      if (this.seenPageids.has(hit.pageid)) continue
+      if (pendingIds.has(hit.pageid)) continue
+      queue.pending.push(hit)
+      pendingIds.add(hit.pageid)
+      added++
+    }
+
+    return added
+  }
+
+  private async loadSeed(
+    seed: WikitabSavedArticle,
+    signal: AbortSignal | undefined,
+    queueIndex: number,
+  ): Promise<void> {
+    const queue = this.queues[queueIndex]
+    if (!queue) return
+
+    const { pages, nextOffset } = await fetchMorelikePages(seed.title, 0, signal)
+    queue.nextOffset = nextOffset
+
+    const hits = await this.mapEligibleHits(pages, signal)
+    this.appendHitsToQueue(queue, hits)
+  }
+
+  /** Fetch the next morelike page for a seed when its queue runs dry. */
+  private async refillQueue(queueIndex: number, signal: AbortSignal | undefined): Promise<boolean> {
+    const queue = this.queues[queueIndex]
+    if (!queue || queue.nextOffset === null) return false
+
+    const offset = queue.nextOffset
+    const { pages, nextOffset } = await fetchMorelikePages(queue.searchTitle, offset, signal)
+    queue.nextOffset = nextOffset
+
+    const hits = await this.mapEligibleHits(pages, signal)
+    return this.appendHitsToQueue(queue, hits) > 0
+  }
+
+  private async refillAnyQueue(signal: AbortSignal | undefined): Promise<boolean> {
+    for (let index = 0; index < this.queues.length; index++) {
+      const queue = this.queues[index]
+      while (queue.nextOffset !== null) {
+        const added = await this.refillQueue(index, signal)
+        if (added) return true
+      }
+    }
+    return false
   }
 
   /** Next shuffled card, enriched via REST `/page/summary/`. */
@@ -390,6 +476,8 @@ export class DailyReadsFeed {
 
       const merged = this.takeOneRandom()
       if (merged) return enrichDailyReadsCard(merged, signal)
+
+      if (await this.refillAnyQueue(signal)) continue
 
       return null
     }

@@ -72,6 +72,23 @@ export function normalizeFeedHtml(html: string): string {
   return root.innerHTML.trim()
 }
 
+/** Replace `<a>` tags with their text content — for attribution lines that should not link out. */
+export function unwrapLinksInHtml(html: string): string {
+  const root = parseFragment(html)
+
+  for (const anchor of Array.from(root.querySelectorAll('a'))) {
+    const parent = anchor.parentNode
+    if (!parent) continue
+
+    while (anchor.firstChild) {
+      parent.insertBefore(anchor.firstChild, anchor)
+    }
+    parent.removeChild(anchor)
+  }
+
+  return root.innerHTML.trim()
+}
+
 /**
  * The page a hook or story is "about" — the bolded link the feed uses to mark
  * its subject, falling back to the first link. Used to fetch a thumbnail.

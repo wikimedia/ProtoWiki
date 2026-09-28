@@ -28,10 +28,18 @@ interface FeedSummary {
   content_urls?: { desktop?: { page?: string } }
 }
 
-interface FeaturedFeedResponse {
+export interface FeaturedFeedResponse {
   mostread?: { date?: string; articles?: FeedSummary[] }
   dyk?: { html?: string; text?: string }[]
   news?: { story?: string; links?: FeedSummary[] }[]
+  image?: {
+    thumbnail?: { source?: string; width?: number; height?: number }
+    image?: { source?: string; width?: number; height?: number }
+    file_page?: string
+    description?: { html?: string }
+    artist?: { html?: string }
+    license?: { type?: string; url?: string }
+  }
 }
 
 interface InFlightProgressive {
@@ -184,7 +192,7 @@ async function fetchFeaturedPayload(
   return (await response.json()) as FeaturedFeedResponse
 }
 
-function getFeaturedPayload(day: string, signal?: AbortSignal): Promise<FeaturedFeedResponse> {
+export function getFeaturedPayload(day: string, signal?: AbortSignal): Promise<FeaturedFeedResponse> {
   const existing = featuredPayloadByDay.get(day)
   if (existing) return existing
 
@@ -313,27 +321,40 @@ async function fetchFeaturedSectionSlice(
   }
 }
 
+export interface FetchWikitabSectionFeedOptions {
+  /** Skip session and localStorage caches — used by manual section refresh. */
+  force?: boolean
+}
+
 /** Fetches one section's feed slice — for late unhide after initial load. */
 export async function fetchWikitabSectionFeed(
   sectionId: WikitabSectionId,
   signal?: AbortSignal,
+  options?: FetchWikitabSectionFeedOptions,
 ): Promise<WikitabCardData[]> {
   const day = utcDayKey()
+  const force = options?.force === true
 
   if (FEATURED_SECTION_IDS.includes(sectionId)) {
-    const pending = inFlight.get(day)
-    if (pending?.lastFeed?.[sectionId]?.length) {
-      return pending.lastFeed[sectionId]
-    }
+    if (!force) {
+      const pending = inFlight.get(day)
+      if (pending?.lastFeed?.[sectionId]?.length) {
+        return pending.lastFeed[sectionId]
+      }
 
-    const cachedSlice = readCachedSectionSlice(day, sectionId)
-    if (cachedSlice) return cachedSlice
+      const cachedSlice = readCachedSectionSlice(day, sectionId)
+      if (cachedSlice) return cachedSlice
+    } else {
+      featuredPayloadByDay.delete(day)
+    }
 
     return fetchFeaturedSectionSlice(sectionId, day, signal)
   }
 
-  const cachedSlice = readCachedSectionSlice(day, sectionId)
-  if (cachedSlice) return cachedSlice
+  if (!force) {
+    const cachedSlice = readCachedSectionSlice(day, sectionId)
+    if (cachedSlice) return cachedSlice
+  }
 
   switch (sectionId) {
     case 'otd':

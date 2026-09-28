@@ -1,4 +1,4 @@
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, type Ref } from 'vue'
 
 import { loadConfig } from '@/config'
 import { applyGlobalTheme, applyThemePreference } from '@/theme'
@@ -7,6 +7,7 @@ import {
   colorThemeCodexMode,
   colorThemePageStyle,
   isDefaultColorTheme,
+  isPotdColorTheme,
   WIKITAB_COLOR_THEME_STYLES,
   type WikitabColorThemeId,
 } from './data/wikitabColorThemes'
@@ -18,7 +19,7 @@ import {
   type WikitabConfig,
 } from './data/wikitabConfig'
 
-export function useWikitabColorTheme() {
+export function useWikitabColorTheme(potdImageUrl?: Ref<string | null>) {
   let lastAppliedRevision = 0
 
   function trackRevision(config: WikitabConfig): void {
@@ -37,7 +38,14 @@ export function useWikitabColorTheme() {
 
   const themeStyle = computed(() => {
     if (isDefaultColorTheme(colorThemeId.value)) return {}
-    return colorThemePageStyle(colorThemeId.value!)
+
+    const style = { ...colorThemePageStyle(colorThemeId.value!) }
+
+    if (isPotdColorTheme(colorThemeId.value) && potdImageUrl?.value) {
+      style['--wikitab-potd-background-image'] = `url(${potdImageUrl.value})`
+    }
+
+    return style
   })
 
   function syncFromStorage(config: WikitabConfig): void {
@@ -103,6 +111,10 @@ export function useWikitabColorTheme() {
     },
     { immediate: true, flush: 'post' },
   )
+
+  if (potdImageUrl) {
+    watch(potdImageUrl, syncDocumentBackground)
+  }
 
   onMounted(() => {
     window.addEventListener('storage', onStorage)

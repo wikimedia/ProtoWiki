@@ -25,6 +25,27 @@ export function buildSuggestedEditsSavedFingerprint(titleKeys: readonly string[]
 
 export { isCacheBypassed }
 
+function pageidFromCardKey(key: string): number | null {
+  const match = key.match(/^suggested-edits:(\d+)$/)
+  return match ? Number(match[1]) : null
+}
+
+function dedupeCachedItems(items: WikitabCardData[]): WikitabCardData[] {
+  const seen = new Set<number>()
+  const deduped: WikitabCardData[] = []
+
+  for (const item of items) {
+    const pageid = pageidFromCardKey(item.key)
+    if (pageid !== null) {
+      if (seen.has(pageid)) continue
+      seen.add(pageid)
+    }
+    deduped.push(item)
+  }
+
+  return deduped
+}
+
 export function readCachedSuggestedEdits(
   day: string,
   savedFingerprint: string,
@@ -41,7 +62,7 @@ export function readCachedSuggestedEdits(
     }
 
     return {
-      items: entry.items.map((item) => ({ ...item })),
+      items: dedupeCachedItems(entry.items.map((item) => ({ ...item }))),
       hasMore: entry.hasMore === true,
     }
   } catch {

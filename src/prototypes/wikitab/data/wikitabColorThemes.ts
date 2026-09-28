@@ -3,6 +3,7 @@ import { wikitabColor, type WikitabPaletteFamily, type WikitabPaletteStep } from
 const INVERTED_FG = 'var(--color-inverted-fixed)'
 
 export type WikitabColorThemeId =
+  | 'picture-of-the-day'
   | 'default-white'
   | 'red-white'
   | 'orange-white'
@@ -51,13 +52,26 @@ export type WikitabColorThemeStyle = {
   codexMode?: 'light' | 'dark'
   /** White page with only the link accent swapped — neutral skeletons / placeholders. */
   accentOnWhite?: boolean
+  /** Full-page background from today's Picture of the day (featured feed `image`). */
+  usesPotdBackground?: boolean
+  /** Opacity of the POTD photo layer (0–1). Defaults to 0.5 when omitted. */
+  potdBackgroundOpacity?: number
+  /** POTD photo opacity while the attribution card is open. Defaults to 0.85. */
+  potdBackgroundExpandedOpacity?: number
 }
+
+export const POTD_COLOR_THEME_ID = 'picture-of-the-day' satisfies WikitabColorThemeId
 
 export const DEFAULT_COLOR_THEME_ID = 'default-white' satisfies WikitabColorThemeId
 
 /** Un-tinted page — same as a missing / null stored preference. */
 export function isDefaultColorTheme(id: WikitabColorThemeId | null | undefined): boolean {
   return id === null || id === undefined || id === DEFAULT_COLOR_THEME_ID
+}
+
+export function isPotdColorTheme(id: WikitabColorThemeId | null | undefined): boolean {
+  if (id == null) return false
+  return WIKITAB_COLOR_THEME_STYLES[id].usesPotdBackground === true
 }
 
 /** White page chrome with only the progressive / link accent swapped. */
@@ -97,6 +111,7 @@ export const WIKITAB_COLOR_THEME_ITEMS: {
   id: WikitabColorThemeId
   label: string
 }[] = [
+  { id: 'picture-of-the-day', label: 'Picture of the day' },
   { id: 'default-white', label: 'Default' },
   ...WHITE_PROGRESSIVE_THEME_ITEMS.map(({ id, label }) => ({ id, label })),
   { id: 'black', label: 'Dark' },
@@ -143,6 +158,17 @@ export function colorThemeCycleId(
  *   progressive.
  */
 export const WIKITAB_COLOR_THEME_STYLES: Record<WikitabColorThemeId, WikitabColorThemeStyle> = {
+  'picture-of-the-day': {
+    bg: '#101418',
+    border: wikitabColor('gray', 800),
+    fg: INVERTED_FG,
+    progressive: null,
+    lightHover: false,
+    codexMode: 'dark',
+    usesPotdBackground: true,
+    potdBackgroundOpacity: 0.5,
+    potdBackgroundExpandedOpacity: 0.85,
+  },
   'default-white': {
     /* Fixed white — `--background-color-base` follows Codex dark mode and the swatch
        would inherit the active theme’s document mode (e.g. Black → unreadable). */
@@ -263,6 +289,7 @@ export const WIKITAB_COLOR_THEME_STYLES: Record<WikitabColorThemeId, WikitabColo
 }
 
 const LEGACY_THEME_ALIASES: Record<string, WikitabColorThemeId> = {
+  'picture-of-the-day-light': 'picture-of-the-day',
   'gray-bold': 'off-black',
   'red-bold': 'red-light',
   'red-dark': 'red-light',
@@ -312,6 +339,12 @@ export function colorThemeCodexMode(theme: WikitabColorThemeStyle): 'light' | 'd
   return theme.codexMode ?? (theme.lightHover ? 'light' : 'dark')
 }
 
+/** Subtle text on in-card surfaces — gray-500 on light cards; inherit Codex dark subtle. */
+function colorThemeCardSubtleFg(theme: WikitabColorThemeStyle): string {
+  if (colorThemeCodexMode(theme) === 'dark') return 'var(--color-subtle)'
+  return wikitabColor('gray', 500)
+}
+
 export function colorThemeUsesLightCards(id: WikitabColorThemeId): boolean {
   return WIKITAB_COLOR_THEME_STYLES[id].lightCards === true
 }
@@ -334,8 +367,13 @@ export function colorThemeUsesTintProgressive(id: WikitabColorThemeId): boolean 
   return colorThemeUsesWhitePageProgressive(WIKITAB_COLOR_THEME_STYLES[id])
 }
 
+/** True when {@link colorThemePageStyle} sets `--wikitab-theme-card-progressive*`. */
 export function colorThemeRemapsCardProgressive(id: WikitabColorThemeId): boolean {
-  return colorThemeUsesTintProgressive(id)
+  const theme = WIKITAB_COLOR_THEME_STYLES[id]
+  if (theme.lightCards) return true
+  if (theme.progressive !== null) return true
+  if (theme.lightHover) return true
+  return false
 }
 
 /** Hue page tints only — not neutral Dark, Off black, or Gray. */
@@ -370,18 +408,29 @@ export type ColorThemeCardStyle = {
     backgroundColor: string
     borderColor: string
     color: string
+    backgroundImage?: string
+    backgroundSize?: string
+    backgroundPosition?: string
   }
 }
 
-export function colorThemeCardStyle(id: WikitabColorThemeId): ColorThemeCardStyle {
+export function colorThemeCardStyle(
+  id: WikitabColorThemeId,
+  potdImageUrl?: string | null,
+): ColorThemeCardStyle {
   const colors = WIKITAB_COLOR_THEME_STYLES[id]
+  const style: ColorThemeCardStyle['style'] = {
+    backgroundColor: colors.bg,
+    borderColor: colors.border,
+    color: colors.fg,
+  }
+  if (isPotdColorTheme(id) && potdImageUrl) {
+    style['--wikitab-potd-picker-image'] = `url(${potdImageUrl})`
+    style['--wikitab-potd-picker-image-opacity'] = String(colors.potdBackgroundOpacity ?? 0.5)
+  }
   return {
     lightHover: colors.lightHover,
-    style: {
-      backgroundColor: colors.bg,
-      borderColor: colors.border,
-      color: colors.fg,
-    },
+    style,
   }
 }
 
@@ -529,8 +578,8 @@ export function colorThemePageStyle(id: WikitabColorThemeId): Record<string, str
     '--wikitab-theme-border': theme.border,
     '--wikitab-theme-fg': colorThemeChromeFg(theme),
     '--wikitab-theme-subtle': colorThemeSubtleFg(theme),
-    /* Neutral Codex subtle for white card surfaces inside a tinted page. */
-    '--wikitab-codex-subtle': wikitabColor('gray', 500),
+    /* Card description / supporting text — matches Codex mode (see index.vue card remap). */
+    '--wikitab-codex-subtle': colorThemeCardSubtleFg(theme),
   }
 
   if (theme.lightCards) {
@@ -548,13 +597,18 @@ export function colorThemePageStyle(id: WikitabColorThemeId): Record<string, str
     /* Gray — null progressive alone does not survive card-scoped remaps in index.vue. */
     appendProgressiveTokens(style, CODEX_LIGHT_PROGRESSIVE)
     appendThemeCardProgressiveTokens(style, CODEX_LIGHT_PROGRESSIVE)
-  } else {
-    /* black / off-black — white cards keep Codex blue links. */
-    appendThemeCardProgressiveTokens(style, CODEX_LIGHT_PROGRESSIVE)
   }
+  /* Dark themes (POTD, Dark, Off black): card links inherit Codex dark progressive. */
 
   appendQuietHoverTokens(style, theme)
   appendSkeletonTokens(style, theme)
+
+  if (theme.usesPotdBackground) {
+    style['--wikitab-potd-background-opacity'] = String(theme.potdBackgroundOpacity ?? 0.5)
+    style['--wikitab-potd-background-opacity-expanded'] = String(
+      theme.potdBackgroundExpandedOpacity ?? 0.85,
+    )
+  }
 
   return style
 }

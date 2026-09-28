@@ -79,7 +79,7 @@ const whyDialogOpen = ref(false)
 const menuItems = computed(() => [
   {
     value: 'save',
-    label: props.isArticleSaved ? 'Unsave article' : 'Save article',
+    label: props.isArticleSaved ? 'Unsave' : 'Save',
     icon: props.isArticleSaved ? cdxIconBookmark : cdxIconBookmarkOutline,
   },
   { value: 'why', label: 'Why am I seeing this?', icon: cdxIconHelpNotice },

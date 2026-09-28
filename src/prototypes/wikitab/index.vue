@@ -6,6 +6,7 @@ import tabularWordmark from './assets/tabular-wikipedia-wordmark.svg'
 
 import WikitabColorThemeButton from './WikitabColorThemeButton.vue'
 import WikitabColorThemePicker from './WikitabColorThemePicker.vue'
+import WikitabPotdAttribution from './WikitabPotdAttribution.vue'
 import WikitabConfigureButton from './WikitabConfigureButton.vue'
 import WikitabConfigurePanel from './WikitabConfigurePanel.vue'
 import WikitabSavedArticlesButton from './WikitabSavedArticlesButton.vue'
@@ -31,12 +32,15 @@ import type { WikitabSectionState } from './useWikitabFeed'
 import {
   colorThemeCycleId,
   colorThemeIsAccentOnWhite,
+  colorThemeRemapsCardProgressive,
   colorThemeUsesTintedPageSubtle,
   DEFAULT_COLOR_THEME_ID,
   isDefaultColorTheme,
+  isPotdColorTheme,
   type WikitabColorThemeId,
 } from './data/wikitabColorThemes'
 import { useWikitabColorTheme } from './useWikitabColorTheme'
+import { useWikitabPotdBackground } from './useWikitabPotdBackground'
 import { useWikitabFeed } from './useWikitabFeed'
 import { useWikitabHiddenArticles } from './useWikitabHiddenArticles'
 import { useWikitabHiddenSections } from './useWikitabHiddenSections'
@@ -87,6 +91,7 @@ const {
   isSectionLoading,
   prepareForOrderedLoad,
   loadSection: loadFeedSection,
+  reloadSection: reloadFeedSection,
 } = useWikitabFeed({
   enabled: feedEnabled,
   hiddenSectionIds: feedHiddenSectionIds,
@@ -99,6 +104,7 @@ const { savedArticles, isSaved, toggleSave, unsaveArticle, persistEnrichedModule
 const {
   items: dailyReadsItems,
   loading: dailyReadsLoading,
+  fillingInitial: dailyReadsFillingInitial,
   loadingMore: dailyReadsLoadingMore,
   hasMore: dailyReadsHasMore,
   error: dailyReadsError,
@@ -267,7 +273,37 @@ async function refreshHomeModulesInOrder(): Promise<void> {
   }
 }
 
-const { colorThemeId, themeStyle, setColorTheme } = useWikitabColorTheme()
+/** Refresh one home module from its section menu. */
+async function refreshHomeModule(moduleId: WikitabModuleId): Promise<void> {
+  if (isSearchMode.value) return
+
+  if (moduleId === WIKITAB_SAVED_MODULE_ID) {
+    await refreshSavedModule()
+    return
+  }
+
+  if (moduleId === WIKITAB_DAILY_READS_MODULE_ID) {
+    await refreshDailyReads(savedModuleArticles.value, { force: true })
+    return
+  }
+
+  if (moduleId === WIKITAB_SUGGESTED_EDITS_MODULE_ID) {
+    suggestedEditsPending.value = true
+    try {
+      await refreshSuggestedEdits(savedModuleArticles.value, { force: true })
+    } finally {
+      suggestedEditsPending.value = false
+    }
+    return
+  }
+
+  if (isFeedSectionId(moduleId)) {
+    await reloadFeedSection(moduleId)
+  }
+}
+
+const { potd, potdImageUrl } = useWikitabPotdBackground()
+const { colorThemeId, themeStyle, setColorTheme } = useWikitabColorTheme(potdImageUrl)
 const { activeTab: searchTab } = useWikitabSearchTab()
 
 const colorPickerOpen = ref(false)
@@ -354,6 +390,20 @@ const showColorThemeButton = computed(
   () => !overlayOpen.value && (!isSearchMode.value || searchTab.value !== 'images'),
 )
 
+const showPotdBackground = computed(
+  () => !isSearchMode.value && isPotdColorTheme(colorThemeId.value),
+)
+
+const showPotdAttribution = computed(
+  () => !overlayOpen.value && showPotdBackground.value,
+)
+
+const potdAttributionOpen = ref(false)
+
+const potdAttributionFocus = computed(
+  () => potdAttributionOpen.value && showPotdBackground.value,
+)
+
 const visibleSections = computed(() =>
   orderSections(sections.value)
     .filter((section) => !isHidden(section.spec.id))
@@ -375,7 +425,9 @@ const showDailyReadsModule = computed(
   () =>
     !isHidden(WIKITAB_DAILY_READS_MODULE_ID) &&
     savedModuleArticles.value.length > 0 &&
-    (dailyReadsLoading.value || visibleDailyReadsItems.value.length > 0),
+    (dailyReadsLoading.value ||
+      dailyReadsFillingInitial.value ||
+      visibleDailyReadsItems.value.length > 0),
 )
 
 const visibleSuggestedEditsItems = computed(() => filterCards(suggestedEditsItems.value))
@@ -479,14 +531,18 @@ watch(searchQuery, (next, prev) => {
     :class="{
       'wikitab--search': isSearchMode,
       'wikitab--themed': !isDefaultColorTheme(colorThemeId),
+      'wikitab--potd-background': showPotdBackground,
+      'wikitab--potd-attribution-open': potdAttributionFocus,
       'wikitab--accent-on-white': colorThemeIsAccentOnWhite(colorThemeId),
       'wikitab--tinted-subtle':
         colorThemeId != null && colorThemeUsesTintedPageSubtle(colorThemeId),
+      'wikitab--remaps-card-progressive':
+        colorThemeId != null && colorThemeRemapsCardProgressive(colorThemeId),
     }"
     :style="themeStyle"
   >
     <div
-      v-show="!overlayOpen"
+      v-show="!overlayOpen && !potdAttributionFocus"
       v-if="showConfigureButton || showSavedArticlesButton"
       class="wikitab__page-chrome"
     >
@@ -504,7 +560,11 @@ watch(searchQuery, (next, prev) => {
       />
     </div>
 
-    <div v-show="!overlayOpen" class="wikitab__main" :aria-hidden="overlayOpen">
+    <div
+      v-show="!overlayOpen && !potdAttributionFocus"
+      class="wikitab__main"
+      :aria-hidden="overlayOpen || potdAttributionFocus"
+    >
       <header class="wikitab__hero">
         <div class="wikitab__hero-top">
           <h1 class="wikitab__wordmark">
@@ -554,6 +614,7 @@ watch(searchQuery, (next, prev) => {
             :pinned="isPinned(WIKITAB_SAVED_MODULE_ID)"
             :is-article-saved="isSaved"
             @toggle-pin="togglePin(WIKITAB_SAVED_MODULE_ID)"
+            @refresh-section="refreshHomeModule(WIKITAB_SAVED_MODULE_ID)"
             @hide-section="hideSection(WIKITAB_SAVED_MODULE_ID)"
             @toggle-save="toggleSaveFromSavedModule"
           />
@@ -561,12 +622,14 @@ watch(searchQuery, (next, prev) => {
             v-else-if="entry.kind === 'daily-reads'"
             :items="visibleDailyReadsItems"
             :loading="dailyReadsLoading"
+            :filling-initial="dailyReadsFillingInitial"
             :loading-more="dailyReadsLoadingMore"
             :has-more="dailyReadsHasMore"
             :error="dailyReadsError"
             :pinned="isPinned(WIKITAB_DAILY_READS_MODULE_ID)"
             :is-article-saved="isSaved"
             @toggle-pin="togglePin(WIKITAB_DAILY_READS_MODULE_ID)"
+            @refresh-section="refreshHomeModule(WIKITAB_DAILY_READS_MODULE_ID)"
             @hide-section="hideSection(WIKITAB_DAILY_READS_MODULE_ID)"
             @hide-article="hideArticle"
             @toggle-save="toggleSaveFromCard"
@@ -584,6 +647,7 @@ watch(searchQuery, (next, prev) => {
             :pinned="isPinned(WIKITAB_SUGGESTED_EDITS_MODULE_ID)"
             :is-article-saved="isSaved"
             @toggle-pin="togglePin(WIKITAB_SUGGESTED_EDITS_MODULE_ID)"
+            @refresh-section="refreshHomeModule(WIKITAB_SUGGESTED_EDITS_MODULE_ID)"
             @hide-section="hideSection(WIKITAB_SUGGESTED_EDITS_MODULE_ID)"
             @hide-article="hideArticle"
             @toggle-save="toggleSaveFromCard"
@@ -598,6 +662,7 @@ watch(searchQuery, (next, prev) => {
             :pinned="isPinned(entry.section.spec.id)"
             :is-article-saved="isSaved"
             @toggle-pin="togglePin(entry.section.spec.id)"
+            @refresh-section="refreshHomeModule(entry.section.spec.id)"
             @hide-section="hideSection(entry.section.spec.id)"
             @hide-article="hideArticle"
             @toggle-save="toggleSaveFromCard"
@@ -606,8 +671,14 @@ watch(searchQuery, (next, prev) => {
       </div>
     </div>
 
+    <WikitabPotdAttribution
+      v-if="showPotdAttribution"
+      :potd="potd"
+      @open-change="potdAttributionOpen = $event"
+    />
+
     <WikitabColorThemeButton
-      v-if="showColorThemeButton"
+      v-if="showColorThemeButton && !potdAttributionFocus"
       ref="colorThemeButton"
       :aria-expanded="colorPickerOpen"
       @open="openColorPicker"
@@ -616,7 +687,7 @@ watch(searchQuery, (next, prev) => {
     />
 
     <WikitabConfigurePanel
-      v-if="configureOpen"
+      v-if="configureOpen && !potdAttributionFocus"
       :is-hidden="isHidden"
       @close="closeConfigure"
       @show="showSection"
@@ -624,14 +695,15 @@ watch(searchQuery, (next, prev) => {
     />
 
     <WikitabColorThemePicker
-      v-if="colorPickerOpen"
+      v-if="colorPickerOpen && !potdAttributionFocus"
       :selected-id="colorThemeId ?? DEFAULT_COLOR_THEME_ID"
+      :potd-image-url="potdImageUrl"
       @close="closeColorPicker"
       @select="selectColorTheme"
     />
 
     <WikitabSavedArticlesPanel
-      v-if="savedPanelOpen"
+      v-if="savedPanelOpen && !potdAttributionFocus"
       :saved-articles="savedArticles"
       :is-article-saved="isSaved"
       @close="closeSavedPanel"
@@ -729,6 +801,40 @@ watch(searchQuery, (next, prev) => {
 
 [data-theme='dark'] .wikitab__wordmark-img {
   filter: brightness(0) invert(1);
+}
+
+.wikitab--potd-background {
+  isolation: isolate;
+}
+
+.wikitab--potd-background::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--wikitab-potd-background-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: var(--wikitab-potd-background-opacity, 0.5);
+  transition: opacity 0.2s ease;
+}
+
+.wikitab--potd-background.wikitab--potd-attribution-open::before {
+  opacity: var(--wikitab-potd-background-opacity-expanded, 0.85);
+}
+
+@media (min-width: 640px) {
+  .wikitab--potd-background::before {
+    position: fixed;
+  }
+}
+
+.wikitab--potd-background > .wikitab__page-chrome,
+.wikitab--potd-background > .wikitab__main {
+  position: relative;
+  z-index: 1;
 }
 
 .wikitab__search {
@@ -878,7 +984,8 @@ watch(searchQuery, (next, prev) => {
 
 .wikitab--themed :deep(.wikitab-card),
 .wikitab--themed :deep(.wikitab-search-activity-card),
-.wikitab--themed :deep(.wikitab-search-contribute-card) {
+.wikitab--themed :deep(.wikitab-search-contribute-card),
+.wikitab--themed :deep(.wikitab-potd-attribution__card) {
   --color-subtle: var(--wikitab-codex-subtle);
 }
 
@@ -923,7 +1030,9 @@ watch(searchQuery, (next, prev) => {
 .wikitab--themed :deep(.wikitab-suggested-edits-section__menu .cdx-icon),
 .wikitab--themed :deep(.wikitab-configure-button .cdx-icon),
 .wikitab--themed :deep(.wikitab-saved-articles-button .cdx-icon),
-.wikitab--themed :deep(.wikitab-color-theme-button .cdx-icon) {
+.wikitab--themed :deep(.wikitab-color-theme-button .cdx-icon),
+.wikitab--themed :deep(.wikitab-potd-attribution__open .cdx-icon),
+.wikitab--themed :deep(.wikitab-potd-attribution__close .cdx-icon) {
   color: var(--color-neutral);
 }
 
@@ -946,7 +1055,9 @@ watch(searchQuery, (next, prev) => {
 .wikitab--themed :deep(.wikitab-color-theme-button.cdx-button--weight-quiet),
 .wikitab--themed :deep(.wikitab-configure-panel__close.cdx-button--weight-quiet),
 .wikitab--themed :deep(.wikitab-saved-articles-panel__close.cdx-button--weight-quiet),
-.wikitab--themed :deep(.wikitab-color-theme-picker__close.cdx-button--weight-quiet) {
+.wikitab--themed :deep(.wikitab-color-theme-picker__close.cdx-button--weight-quiet),
+.wikitab--themed :deep(.wikitab-potd-attribution__open.cdx-button--weight-quiet),
+.wikitab--themed :deep(.wikitab-potd-attribution__close.cdx-button--weight-quiet) {
   mix-blend-mode: normal;
   background-color: transparent;
   border-color: transparent;
@@ -967,7 +1078,9 @@ watch(searchQuery, (next, prev) => {
 .wikitab--themed :deep(.wikitab-color-theme-button.cdx-button--weight-quiet:hover),
 .wikitab--themed :deep(.wikitab-configure-panel__close.cdx-button--weight-quiet:hover),
 .wikitab--themed :deep(.wikitab-saved-articles-panel__close.cdx-button--weight-quiet:hover),
-.wikitab--themed :deep(.wikitab-color-theme-picker__close.cdx-button--weight-quiet:hover) {
+.wikitab--themed :deep(.wikitab-color-theme-picker__close.cdx-button--weight-quiet:hover),
+.wikitab--themed :deep(.wikitab-potd-attribution__open.cdx-button--weight-quiet:hover),
+.wikitab--themed :deep(.wikitab-potd-attribution__close.cdx-button--weight-quiet:hover) {
   background-color: var(--wikitab-theme-quiet-hover-bg);
 }
 
@@ -1012,7 +1125,13 @@ watch(searchQuery, (next, prev) => {
   :deep(.wikitab-saved-articles-panel__close.cdx-button--weight-quiet.cdx-button--is-active),
 .wikitab--themed :deep(.wikitab-color-theme-picker__close.cdx-button--weight-quiet:active),
 .wikitab--themed
-  :deep(.wikitab-color-theme-picker__close.cdx-button--weight-quiet.cdx-button--is-active) {
+  :deep(.wikitab-color-theme-picker__close.cdx-button--weight-quiet.cdx-button--is-active),
+.wikitab--themed :deep(.wikitab-potd-attribution__open.cdx-button--weight-quiet:active),
+.wikitab--themed
+  :deep(.wikitab-potd-attribution__open.cdx-button--weight-quiet.cdx-button--is-active),
+.wikitab--themed :deep(.wikitab-potd-attribution__close.cdx-button--weight-quiet:active),
+.wikitab--themed
+  :deep(.wikitab-potd-attribution__close.cdx-button--weight-quiet.cdx-button--is-active) {
   background-color: var(--wikitab-theme-quiet-active-bg);
 }
 
@@ -1043,9 +1162,9 @@ watch(searchQuery, (next, prev) => {
  * Search result cards are excluded — transparent on the page tint (Articles tab),
  * so they inherit page-scope progressive (white on Blue bold, Purple bold, etc.).
  */
-.wikitab--themed :deep(.wikitab-card),
-.wikitab--themed :deep(.wikitab-search-activity-card),
-.wikitab--themed :deep(.wikitab-search-contribute-card) {
+.wikitab--themed.wikitab--remaps-card-progressive :deep(.wikitab-card),
+.wikitab--themed.wikitab--remaps-card-progressive :deep(.wikitab-search-activity-card),
+.wikitab--themed.wikitab--remaps-card-progressive :deep(.wikitab-search-contribute-card) {
   --color-progressive: var(--wikitab-theme-card-progressive, var(--color-progressive));
   --color-progressive--hover: var(
     --wikitab-theme-card-progressive--hover,
@@ -1161,4 +1280,5 @@ watch(searchQuery, (next, prev) => {
   ) {
   background-color: var(--wikitab-theme-quiet-active-bg);
 }
+
 </style>

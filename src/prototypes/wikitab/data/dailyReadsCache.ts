@@ -5,7 +5,7 @@ import { isCacheBypassed, utcDayKey } from './feedCache'
  * Cache only — nothing here is authoritative. Clearing it costs one refetch and
  * nothing else. User preferences live in `wikitabConfig.ts`, not here.
  */
-const CACHE_KEY = 'wikitab-daily-reads-cache-v3'
+const CACHE_KEY = 'wikitab-daily-reads-cache-v5'
 
 interface CacheEntry {
   day: string

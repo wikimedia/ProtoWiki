@@ -1,6 +1,21 @@
-import { computed, onUnmounted, ref, shallowRef, watch, type Ref } from 'vue'
+import {
+  computed,
+  onUnmounted,
+  ref,
+  shallowRef,
+  triggerRef,
+  watch,
+  type Ref,
+  type ShallowRef,
+} from 'vue'
 import { fetchDailyFeedProgressive, fetchWikitabSectionFeed } from './data/fetchDailyFeed'
-import { persistPartialFeed, readCachedFeed, readCachedSectionSlice, utcDayKey } from './data/feedCache'
+import {
+  clearCachedSectionSlice,
+  persistPartialFeed,
+  readCachedFeed,
+  readCachedSectionSlice,
+  utcDayKey,
+} from './data/feedCache'
 import {
   WIKITAB_SECTIONS,
   type WikitabCardData,
@@ -27,6 +42,27 @@ function isSecondarySection(id: WikitabSectionId): boolean {
 function enabledSectionsFromHidden(hiddenSectionIds: readonly WikitabSectionId[]): Set<WikitabSectionId> {
   const hidden = new Set(hiddenSectionIds)
   return new Set(ALL_SECTION_IDS.filter((id) => !hidden.has(id)))
+}
+
+function emptyFeed(): WikitabFeed {
+  return {
+    trending: [],
+    news: [],
+    dyk: [],
+    discussions: [],
+    otd: [],
+    births: [],
+  }
+}
+
+function patchFeedSlice(
+  feedRef: ShallowRef<WikitabFeed | null>,
+  sectionId: WikitabSectionId,
+  items: WikitabCardData[],
+): void {
+  if (!feedRef.value) feedRef.value = emptyFeed()
+  feedRef.value[sectionId] = items
+  triggerRef(feedRef)
 }
 
 export function isSectionFeedLoading(
@@ -59,25 +95,20 @@ export function useWikitabFeed(
     return enabledSectionsFromHidden(options.hiddenSectionIds?.value ?? [])
   }
 
-  async function fetchUnhiddenSection(id: WikitabSectionId, signal: AbortSignal): Promise<void> {
+  async function fetchUnhiddenSection(
+    id: WikitabSectionId,
+    signal: AbortSignal,
+    options?: { force?: boolean },
+  ): Promise<void> {
     loadingSectionIds.value = new Set([...loadingSectionIds.value, id])
 
     try {
-      const items = await fetchWikitabSectionFeed(id, signal)
+      const items = await fetchWikitabSectionFeed(id, signal, options)
       if (signal.aborted) return
 
       fetchedSections.value = new Set([...fetchedSections.value, id])
-      feed.value = {
-        trending: [],
-        news: [],
-        dyk: [],
-        discussions: [],
-        otd: [],
-        births: [],
-        ...feed.value,
-        [id]: items,
-      }
-      persistPartialFeed(utcDayKey(), feed.value)
+      patchFeedSlice(feed, id, items)
+      persistPartialFeed(utcDayKey(), feed.value!)
     } finally {
       if (signal.aborted) return
       const next = new Set(loadingSectionIds.value)
@@ -107,6 +138,39 @@ export function useWikitabFeed(
       feedPhase.value = [...enabled].every((id) => fetched.has(id)) ? 'complete' : 'featured'
     } else {
       feed.value = null
+    }
+  }
+
+  /** Force-refetch one feed section — used by the section Refresh menu item. */
+  async function reloadSection(sectionId: WikitabSectionId): Promise<void> {
+    if (options.enabled && !options.enabled.value) return
+    if (!currentEnabledSections().has(sectionId)) return
+
+    const day = utcDayKey()
+    clearCachedSectionSlice(day, sectionId)
+
+    const nextFetched = new Set(fetchedSections.value)
+    nextFetched.delete(sectionId)
+    fetchedSections.value = nextFetched
+
+    loadingSectionIds.value = new Set([...loadingSectionIds.value, sectionId])
+    patchFeedSlice(feed, sectionId, [])
+
+    if (!controller) controller = new AbortController()
+    const { signal } = controller
+
+    try {
+      await fetchUnhiddenSection(sectionId, signal, { force: true })
+      if (signal.aborted) return
+
+      error.value = null
+      const enabled = currentEnabledSections()
+      const allFetched = [...enabled].every((id) => fetchedSections.value.has(id))
+      feedPhase.value = allFetched ? 'complete' : 'featured'
+    } catch (cause) {
+      if (signal.aborted || (cause as Error)?.name === 'AbortError') return
+      error.value = 'Could not load the feed.'
+      feedPhase.value = 'error'
     }
   }
 
@@ -251,5 +315,6 @@ export function useWikitabFeed(
     reload: load,
     prepareForOrderedLoad,
     loadSection,
+    reloadSection,
   }
 }

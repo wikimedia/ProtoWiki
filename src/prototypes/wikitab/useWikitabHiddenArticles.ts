@@ -13,6 +13,18 @@ function cardArticleTitleKey(card: WikitabCardData): string | null {
   return articleTitleKey(title)
 }
 
+interface FilteredItemsCacheEntry {
+  epoch: number
+  items: WikitabCardData[]
+}
+
+const filteredItemsCache = new WeakMap<WikitabCardData[], FilteredItemsCacheEntry>()
+let filterCacheEpoch = 0
+
+function invalidateFilterCache(): void {
+  filterCacheEpoch++
+}
+
 export function useWikitabHiddenArticles() {
   const hiddenKeys = ref<string[]>(loadWikitabConfig().hiddenArticleTitleKeys)
 
@@ -20,6 +32,7 @@ export function useWikitabHiddenArticles() {
 
   function syncFromStorage(): void {
     hiddenKeys.value = loadWikitabConfig().hiddenArticleTitleKeys
+    invalidateFilterCache()
   }
 
   function hideArticle(title: string): void {
@@ -28,15 +41,21 @@ export function useWikitabHiddenArticles() {
 
     hiddenKeys.value = [...hiddenKeys.value, key]
     patchWikitabConfig({ hiddenArticleTitleKeys: hiddenKeys.value })
+    invalidateFilterCache()
   }
 
   function filterCards(items: WikitabCardData[]): WikitabCardData[] {
     if (!hiddenKeys.value.length) return items
 
-    return items.filter((card) => {
+    const cached = filteredItemsCache.get(items)
+    if (cached && cached.epoch === filterCacheEpoch) return cached.items
+
+    const filtered = items.filter((card) => {
       const key = cardArticleTitleKey(card)
       return !key || !hiddenSet.value.has(key)
     })
+    filteredItemsCache.set(items, { epoch: filterCacheEpoch, items: filtered })
+    return filtered
   }
 
   function onStorage(event: StorageEvent): void {

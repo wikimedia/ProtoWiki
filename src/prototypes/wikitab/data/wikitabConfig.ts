@@ -32,6 +32,8 @@ export interface WikitabConfig {
   hiddenArticleTitleKeys: string[]
   /** Activity-tab revision ids dismissed permanently from the feed. */
   dismissedActivityRevids: number[]
+  /** UTC day key when the POTD attribution card was last opened; null when collapsed. */
+  potdAttributionExpandedDay: string | null
   /** Page background theme; null keeps Codex `--background-color-base`. */
   colorThemeId: WikitabColorThemeId | null
   /** Most recently saved first. */
@@ -45,6 +47,7 @@ const DEFAULT_WIKITAB_CONFIG: WikitabConfig = {
   hiddenSectionIds: [],
   hiddenArticleTitleKeys: [],
   dismissedActivityRevids: [],
+  potdAttributionExpandedDay: null,
   colorThemeId: null,
   savedArticles: [],
   configRevision: 0,
@@ -120,6 +123,22 @@ export function normalizeHiddenArticleTitleKeys(raw: unknown): string[] {
 }
 
 /** Unknown and duplicate revids are dropped; order is preserved. */
+export function normalizePotdAttributionExpandedDay(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null
+  const day = raw.trim()
+  return day.length > 0 ? day : null
+}
+
+function normalizePotdAttributionExpandedDayFromRecord(
+  record: Record<string, unknown>,
+): string | null {
+  if ('potdAttributionExpandedDay' in record) {
+    return normalizePotdAttributionExpandedDay(record.potdAttributionExpandedDay)
+  }
+  /* Legacy `potdAttributionDismissedDay`: null meant open. Default is now collapsed. */
+  return null
+}
+
 export function normalizeDismissedActivityRevids(raw: unknown): number[] {
   if (!Array.isArray(raw)) return []
 
@@ -208,6 +227,7 @@ function normalizeConfig(raw: unknown): WikitabConfig {
     hiddenSectionIds: normalizeHiddenSectionIds(record.hiddenSectionIds),
     hiddenArticleTitleKeys: normalizeHiddenArticleTitleKeys(record.hiddenArticleTitleKeys),
     dismissedActivityRevids: normalizeDismissedActivityRevids(record.dismissedActivityRevids),
+    potdAttributionExpandedDay: normalizePotdAttributionExpandedDayFromRecord(record),
     colorThemeId: normalizeColorThemeId(record.colorThemeId),
     savedArticles: normalizeSavedArticles(record.savedArticles),
     configRevision: normalizeConfigRevision(record.configRevision),
@@ -220,6 +240,7 @@ function cloneConfig(config: WikitabConfig): WikitabConfig {
     hiddenSectionIds: [...config.hiddenSectionIds],
     hiddenArticleTitleKeys: [...config.hiddenArticleTitleKeys],
     dismissedActivityRevids: [...config.dismissedActivityRevids],
+    potdAttributionExpandedDay: config.potdAttributionExpandedDay,
     colorThemeId: config.colorThemeId,
     savedArticles: config.savedArticles.map((article) => ({ ...article })),
     configRevision: config.configRevision,

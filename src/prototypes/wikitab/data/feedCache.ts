@@ -117,6 +117,18 @@ const FEED_SLICE_KEYS: (keyof WikitabFeed)[] = [
  * Merge non-empty section slices into the day cache. Skips when Trending is
  * still empty so a later tab open can retry early-UTC gaps.
  */
+/** Drop one section slice from the day cache before a manual refresh. */
+export function clearCachedSectionSlice(day: string, sectionId: WikitabSectionId): void {
+  const entry = readRawCacheEntry()
+  if (!entry || entry.day !== day) return
+
+  const feed = { ...entry.feed, [sectionId]: [] as WikitabFeed[WikitabSectionId] }
+  const sliceFetchedAt = { ...entry.sliceFetchedAt }
+  if (sectionId === 'discussions') delete sliceFetchedAt.discussions
+
+  writeCacheEntry({ day, feed, sliceFetchedAt })
+}
+
 export function persistPartialFeed(day: string, feed: WikitabFeed): void {
   if (isCacheBypassed()) return
   if (feed.trending.length === 0) return

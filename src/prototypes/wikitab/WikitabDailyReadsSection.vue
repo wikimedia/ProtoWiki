@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { CdxButton, CdxIcon, CdxMenuButton } from '@wikimedia/codex'
-import { cdxIconEllipsis, cdxIconEyeClosed, cdxIconHelpNotice, cdxIconPushPin } from '@wikimedia/codex-icons'
+import {
+  cdxIconEllipsis,
+  cdxIconEyeClosed,
+  cdxIconHelpNotice,
+  cdxIconPushPin,
+  cdxIconReload,
+} from '@wikimedia/codex-icons'
 
 import { useSkin } from '@/composables/useSkin'
 import WikitabCard from './WikitabCard.vue'
@@ -15,6 +21,7 @@ const spec = WIKITAB_DAILY_READS_MODULE_SPEC
 const props = defineProps<{
   items: WikitabCardData[]
   loading: boolean
+  fillingInitial: boolean
   loadingMore: boolean
   hasMore: boolean
   error: string | null
@@ -24,6 +31,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'toggle-pin': []
+  'refresh-section': []
   'hide-section': []
   'hide-article': [title: string]
   'toggle-save': [card: WikitabCardData]
@@ -44,11 +52,30 @@ const reserved = ref(spec.initialCount)
 const bufferedHasMore = computed(() => props.items.length > reserved.value)
 const fetchHasMore = computed(() => props.hasMore)
 
-const isInitialLoading = computed(() => props.loading && props.items.length === 0)
+const isInitialLoading = computed(
+  () => props.items.length === 0 && (props.loading || props.fillingInitial),
+)
+
+const needsInitialTopUp = computed(
+  () => props.hasMore && props.items.length > 0 && props.items.length < spec.initialCount,
+)
 
 const canFetchMore = computed(
-  () => fetchHasMore.value && !props.loading && reserved.value >= props.items.length,
+  () =>
+    fetchHasMore.value &&
+    !props.loading &&
+    !props.fillingInitial &&
+    reserved.value >= props.items.length,
 )
+
+function shouldClampReserved(): boolean {
+  return (
+    !props.loading &&
+    !props.fillingInitial &&
+    !props.loadingMore &&
+    (!props.hasMore || props.items.length >= spec.initialCount)
+  )
+}
 
 const observeScrollEnd = computed(
   () =>
@@ -95,7 +122,8 @@ const slots = computed(() => {
   return Array.from({ length: reserved.value }, (_, index) => ({
     card: props.items[index],
     loading:
-      (props.loading || props.loadingMore) && index >= props.items.length,
+      index >= props.items.length &&
+      (props.fillingInitial || props.loadingMore || needsInitialTopUp.value),
   }))
 })
 
@@ -103,13 +131,50 @@ watch(
   () => props.loadingMore,
   (loadingMore, wasLoadingMore) => {
     if (wasLoadingMore && !loadingMore) {
+      reserved.value = props.items.length
+    }
+  },
+)
+
+watch(
+  () => props.hasMore,
+  () => {
+    if (shouldClampReserved() && props.items.length < reserved.value) {
+      reserved.value = props.items.length
+    }
+  },
+)
+
+watch(
+  () => props.fillingInitial,
+  (filling, wasFilling) => {
+    if (wasFilling && !filling && shouldClampReserved()) {
       reserved.value = Math.min(reserved.value, props.items.length)
     }
   },
 )
 
+watch(
+  () => props.items.length,
+  (length) => {
+    if (!shouldClampReserved()) return
+    if (length < reserved.value) {
+      reserved.value = length
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  () => props.items.length === 0 && (props.loading || props.fillingInitial),
+  (isRefreshing) => {
+    if (isRefreshing) reserved.value = spec.initialCount
+  },
+)
+
 const isEmpty = computed(
-  () => !props.loading && !props.error && props.items.length === 0,
+  () =>
+    !props.loading && !props.fillingInitial && !props.error && props.items.length === 0,
 )
 
 const canShowMore = computed(
@@ -122,11 +187,20 @@ const canShowMore = computed(
 )
 
 const showMoreDisabled = computed(
-  () => props.loading || isInitialLoading.value || props.loadingMore,
+  () =>
+    props.loading ||
+    props.fillingInitial ||
+    isInitialLoading.value ||
+    props.loadingMore,
 )
 
 const selection = ref<string | number | null>(null)
 const menuItems = computed(() => [
+  {
+    value: 'refresh',
+    label: 'Refresh',
+    icon: cdxIconReload,
+  },
   {
     value: 'pin',
     label: props.pinned ? 'Unpin from top' : 'Pin to top',
@@ -146,6 +220,7 @@ const footerItem = computed(() => ({
 
 watch(selection, (value) => {
   if (value === 'pin') emit('toggle-pin')
+  if (value === 'refresh') emit('refresh-section')
   if (value === 'hide') emit('hide-section')
   if (value !== null) selection.value = null
 })

@@ -6,12 +6,14 @@ import { cdxIconCheck, cdxIconClose } from '@wikimedia/codex-icons'
 
 import {
   colorThemeCardStyle,
+  isPotdColorTheme,
   WIKITAB_COLOR_THEME_ITEMS,
   type WikitabColorThemeId,
 } from './data/wikitabColorThemes'
 
 const props = defineProps<{
   selectedId: WikitabColorThemeId | null
+  potdImageUrl?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -65,10 +67,13 @@ onUnmounted(() => {
           class="wikitab-color-theme-picker__card"
           :class="{
             'wikitab-color-theme-picker__card--selected': props.selectedId === item.id,
-            'wikitab-color-theme-picker__card--light-hover': colorThemeCardStyle(item.id)
-              .lightHover,
+            'wikitab-color-theme-picker__card--light-hover': colorThemeCardStyle(
+              item.id,
+              props.potdImageUrl,
+            ).lightHover,
+            'wikitab-color-theme-picker__card--potd': isPotdColorTheme(item.id),
           }"
-          :style="colorThemeCardStyle(item.id).style"
+          :style="colorThemeCardStyle(item.id, props.potdImageUrl).style"
           :aria-pressed="props.selectedId === item.id"
           @click="selectTheme(item.id)"
         >
@@ -183,6 +188,29 @@ onUnmounted(() => {
 
 .wikitab-color-theme-picker__card--selected {
   box-shadow: inset 0 0 0 2px currentColor;
+}
+
+.wikitab-color-theme-picker__card--potd {
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.wikitab-color-theme-picker__card--potd::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--wikitab-potd-picker-image);
+  background-size: cover;
+  background-position: center;
+  opacity: var(--wikitab-potd-picker-image-opacity, 0.5);
+}
+
+.wikitab-color-theme-picker__card--potd .wikitab-color-theme-picker__card-label,
+.wikitab-color-theme-picker__card--potd .wikitab-color-theme-picker__card-check {
+  position: relative;
+  z-index: 1;
 }
 
 .wikitab-color-theme-picker__card-label {

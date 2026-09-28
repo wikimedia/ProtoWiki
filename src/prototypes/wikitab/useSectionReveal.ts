@@ -3,6 +3,21 @@ import { resolveDykThumbnails } from './data/resolveDykThumbnails'
 import { preloadImages } from './preloadImages'
 import type { WikitabCardData, WikitabSectionSpec } from './sections'
 
+function itemsUnchanged(
+  list: WikitabCardData[],
+  prevList: WikitabCardData[] | undefined,
+): boolean {
+  if (list === prevList) return true
+  if (!prevList || list.length !== prevList.length) return false
+
+  for (let i = 0; i < list.length; i++) {
+    if (list[i].key !== prevList[i].key) return false
+    if (list[i].thumbnailUrl !== prevList[i].thumbnailUrl) return false
+  }
+
+  return true
+}
+
 /**
  * How much of a section is reserved on screen versus actually paintable.
  *
@@ -68,6 +83,8 @@ export function useSectionReveal(
   watch(
     items,
     (list, prevList) => {
+      if (itemsUnchanged(list, prevList)) return
+
       if (!list.length) {
         applyEmptyListState()
         return

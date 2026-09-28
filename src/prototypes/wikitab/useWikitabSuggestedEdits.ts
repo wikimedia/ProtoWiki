@@ -137,16 +137,28 @@ export function useWikitabSuggestedEdits() {
     return activeFeed !== null
   }
 
+  function isDuplicateCard(card: WikitabCardData): boolean {
+    const pageid = cardPageid(card)
+    if (pageid === null) return false
+    return items.value.some((existing) => cardPageid(existing) === pageid)
+  }
+
   async function appendOne(signal: AbortSignal | undefined): Promise<WikitabCardData | null> {
     if (!activeFeed) return null
 
-    const card = await activeFeed.takeNext(signal)
-    if (!card) return null
+    const maxAttempts = 24
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const card = await activeFeed.takeNext(signal)
+      if (!card) return null
+      if (isDuplicateCard(card)) continue
 
-    items.value = [...items.value, card]
-    scheduleThumbnailBackfill(card, signal ?? new AbortController().signal)
-    persistCache()
-    return card
+      items.value = [...items.value, card]
+      scheduleThumbnailBackfill(card, signal ?? new AbortController().signal)
+      persistCache()
+      return card
+    }
+
+    return null
   }
 
   async function appendMany(count: number, signal: AbortSignal | undefined): Promise<void> {
@@ -166,20 +178,29 @@ export function useWikitabSuggestedEdits() {
     }
   }
 
-  async function refresh(savedArticles: readonly WikitabSavedArticle[] = []): Promise<void> {
+  async function refresh(
+    savedArticles: readonly WikitabSavedArticle[] = [],
+    options?: { force?: boolean },
+  ): Promise<void> {
     if (!savedArticles.length) {
       controller?.abort()
       clearState()
       return
     }
 
+    const force = options?.force === true
     const day = utcDayKey()
     const savedFingerprint = buildSuggestedEditsSavedFingerprint(
       savedArticles.map((article) => article.titleKey),
     )
     const key = sessionCacheKey(day, savedFingerprint)
 
-    if (!isCacheBypassed() && loadedSessionKey === key && items.value.length > 0) {
+    if (
+      !force &&
+      !isCacheBypassed() &&
+      loadedSessionKey === key &&
+      items.value.length > 0
+    ) {
       hasMore.value = activeFeed?.hasPending() ?? hasMore.value
       error.value = null
       return
@@ -194,10 +215,12 @@ export function useWikitabSuggestedEdits() {
     savedArticlesSnapshot = savedArticles.map((article) => ({ ...article }))
     cacheContext = { day, savedFingerprint }
 
-    const cached = readCachedSuggestedEdits(day, savedFingerprint)
-    if (cached) {
-      applyCachedItems(cached.items, cached.hasMore, day, savedFingerprint)
-      return
+    if (!force) {
+      const cached = readCachedSuggestedEdits(day, savedFingerprint)
+      if (cached) {
+        applyCachedItems(cached.items, cached.hasMore, day, savedFingerprint)
+        return
+      }
     }
 
     loading.value = true

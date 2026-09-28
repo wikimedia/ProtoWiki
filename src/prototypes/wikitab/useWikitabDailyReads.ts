@@ -12,7 +12,8 @@ import {
   type DailyReadsFeed,
 } from './data/fetchWikitabDailyReads'
 import { fetchWikitabPageSummary } from './data/fetchWikitabPageSummary'
-import type { WikitabSavedArticle } from './data/wikitabConfig'
+import { loadWikitabConfig, type WikitabSavedArticle } from './data/wikitabConfig'
+import { articleTitleKey } from './data/wikitabHtml'
 import { WIKITAB_DAILY_READS_MODULE_SPEC, type WikitabCardData } from './sections'
 
 const { initialCount, pageSize } = WIKITAB_DAILY_READS_MODULE_SPEC
@@ -35,9 +36,22 @@ function sessionCacheKey(day: string, savedFingerprint: string): string {
   return `${day}:${savedFingerprint}`
 }
 
+function visibleDailyReadsCount(cards: readonly WikitabCardData[]): number {
+  const hidden = loadWikitabConfig().hiddenArticleTitleKeys
+  if (!hidden.length) return cards.length
+
+  const hiddenSet = new Set(hidden)
+  return cards.filter((card) => {
+    const title = card.linkTitle ?? card.title ?? ''
+    const key = articleTitleKey(title)
+    return !key || !hiddenSet.has(key)
+  }).length
+}
+
 export function useWikitabDailyReads() {
   const items = ref<WikitabCardData[]>([])
   const loading = ref(false)
+  const fillingInitial = ref(false)
   const loadingMore = ref(false)
   const hasMore = ref(false)
   const error = ref<string | null>(null)
@@ -113,6 +127,7 @@ export function useWikitabDailyReads() {
   function clearState(): void {
     items.value = []
     loading.value = false
+    fillingInitial.value = false
     loadingMore.value = false
     hasMore.value = false
     error.value = null
@@ -135,16 +150,28 @@ export function useWikitabDailyReads() {
     return true
   }
 
+  function isDuplicateCard(card: WikitabCardData): boolean {
+    const pageid = cardPageid(card)
+    if (pageid === null) return false
+    return items.value.some((existing) => cardPageid(existing) === pageid)
+  }
+
   async function appendOne(signal: AbortSignal | undefined): Promise<WikitabCardData | null> {
     if (!activeFeed) return null
 
-    const card = await activeFeed.takeNext(signal)
-    if (!card) return null
+    const maxAttempts = 24
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const card = await activeFeed.takeNext(signal)
+      if (!card) return null
+      if (isDuplicateCard(card)) continue
 
-    items.value = [...items.value, card]
-    scheduleThumbnailBackfill(card, signal ?? new AbortController().signal)
-    persistCache()
-    return card
+      items.value = [...items.value, card]
+      scheduleThumbnailBackfill(card, signal ?? new AbortController().signal)
+      persistCache()
+      return card
+    }
+
+    return null
   }
 
   async function appendMany(count: number, signal: AbortSignal | undefined): Promise<void> {
@@ -154,26 +181,80 @@ export function useWikitabDailyReads() {
     }
   }
 
+  async function fillInitialSlots(signal: AbortSignal): Promise<void> {
+    fillingInitial.value = true
+
+    try {
+      while (visibleDailyReadsCount(items.value) < initialCount) {
+        const card = await appendOne(signal)
+        if (!card) break
+      }
+    } finally {
+      fillingInitial.value = false
+    }
+  }
+
+  async function topUpInitialSlots(signal: AbortSignal): Promise<void> {
+    if (visibleDailyReadsCount(items.value) >= initialCount) return
+
+    try {
+      await withFeedLock(async () => {
+        if (!(await ensureActiveFeed(signal))) {
+          hasMore.value = false
+          return
+        }
+
+        await fillInitialSlots(signal)
+        if (signal.aborted) return
+
+        hasMore.value = activeFeed?.hasPending() ?? false
+        if (!activeFeed?.hasPending()) activeFeed = null
+        persistCache()
+      })
+    } catch (cause) {
+      if (signal.aborted || (cause as Error)?.name === 'AbortError') return
+    }
+  }
+
   /**
    * Load Daily reads for the Saved-module snapshot. Uses session + localStorage
    * cache keyed by `{ utcDay, savedFingerprint }`; network only on cache miss.
    */
-  async function refresh(savedArticles: readonly WikitabSavedArticle[] = []): Promise<void> {
+  async function refresh(
+    savedArticles: readonly WikitabSavedArticle[] = [],
+    options?: { force?: boolean },
+  ): Promise<void> {
     if (!savedArticles.length) {
       controller?.abort()
       clearState()
       return
     }
 
+    const force = options?.force === true
     const day = utcDayKey()
     const savedFingerprint = buildDailyReadsSavedFingerprint(
       savedArticles.map((article) => article.titleKey),
     )
     const key = sessionCacheKey(day, savedFingerprint)
 
-    if (!isCacheBypassed() && loadedSessionKey === key && items.value.length > 0) {
+    savedArticlesSnapshot = savedArticles.map((article) => ({ ...article }))
+    cacheContext = { day, savedFingerprint }
+
+    if (
+      !force &&
+      !isCacheBypassed() &&
+      loadedSessionKey === key &&
+      items.value.length > 0
+    ) {
       hasMore.value = activeFeed?.hasPending() ?? hasMore.value
       error.value = null
+
+      if (visibleDailyReadsCount(items.value) < initialCount) {
+        controller?.abort()
+        const local = new AbortController()
+        controller = local
+        await topUpInitialSlots(local.signal)
+      }
       return
     }
 
@@ -183,13 +264,17 @@ export function useWikitabDailyReads() {
     const { signal } = local
 
     activeFeed = null
-    savedArticlesSnapshot = savedArticles.map((article) => ({ ...article }))
-    cacheContext = { day, savedFingerprint }
 
-    const cached = readCachedDailyReads(day, savedFingerprint)
-    if (cached) {
-      applyCachedItems(cached.items, cached.hasMore, day, savedFingerprint)
-      return
+    if (!force) {
+      const cached = readCachedDailyReads(day, savedFingerprint)
+      if (cached) {
+        applyCachedItems(cached.items, cached.hasMore, day, savedFingerprint)
+
+        if (visibleDailyReadsCount(cached.items) < initialCount) {
+          await topUpInitialSlots(signal)
+        }
+        return
+      }
     }
 
     loading.value = true
@@ -202,7 +287,8 @@ export function useWikitabDailyReads() {
     try {
       await withFeedLock(async () => {
         activeFeed = createDailyReadsFeed(savedArticlesSnapshot, day, signal)
-        await appendMany(initialCount, signal)
+        loading.value = false
+        await fillInitialSlots(signal)
       })
 
       if (signal.aborted) return
@@ -222,7 +308,7 @@ export function useWikitabDailyReads() {
 
   /** Fetch the next page from the feed opened at refresh time. */
   async function loadMore(): Promise<void> {
-    if (loadingMore.value || loading.value) return
+    if (loadingMore.value || loading.value || fillingInitial.value) return
     if (!savedArticlesSnapshot.length || !cacheContext) {
       hasMore.value = false
       return
@@ -263,8 +349,19 @@ export function useWikitabDailyReads() {
   function abort(): void {
     controller?.abort()
     loading.value = false
+    fillingInitial.value = false
     loadingMore.value = false
   }
 
-  return { items, loading, loadingMore, hasMore, error, refresh, loadMore, abort }
+  return {
+    items,
+    loading,
+    fillingInitial,
+    loadingMore,
+    hasMore,
+    error,
+    refresh,
+    loadMore,
+    abort,
+  }
 }
