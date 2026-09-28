@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
 
-import { CdxButton, CdxIcon, CdxToggleSwitch } from '@wikimedia/codex'
+import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconClose } from '@wikimedia/codex-icons'
 
-import { WIKITAB_CONFIGURE_MODULES, type WikitabModuleId } from './sections'
+import WikitabConfigureModuleList from './WikitabConfigureModuleList.vue'
+import type { WikitabModuleId } from './sections'
 
 const props = defineProps<{
+  moduleOrder: WikitabModuleId[]
   isHidden: (id: WikitabModuleId) => boolean
 }>()
 
@@ -14,15 +16,11 @@ const emit = defineEmits<{
   close: []
   show: [id: WikitabModuleId]
   hide: [id: WikitabModuleId]
+  reorder: [order: WikitabModuleId[]]
 }>()
 
 function onKeydown(event: KeyboardEvent): void {
   if (event.key === 'Escape') emit('close')
-}
-
-function onToggle(id: WikitabModuleId, visible: boolean): void {
-  if (visible) emit('show', id)
-  else emit('hide', id)
 }
 
 const SCROLL_LOCK_CLASS = 'wikitab-configure-open'
@@ -54,20 +52,13 @@ onUnmounted(() => {
         </CdxButton>
       </header>
 
-      <ul class="wikitab-configure-panel__list">
-        <li
-          v-for="module in WIKITAB_CONFIGURE_MODULES"
-          :key="module.id"
-          class="wikitab-configure-panel__row"
-        >
-          <CdxToggleSwitch
-            :model-value="!props.isHidden(module.id)"
-            @update:model-value="onToggle(module.id, $event)"
-          >
-            {{ module.heading }}
-          </CdxToggleSwitch>
-        </li>
-      </ul>
+      <WikitabConfigureModuleList
+        :order="props.moduleOrder"
+        :is-hidden="props.isHidden"
+        @show="emit('show', $event)"
+        @hide="emit('hide', $event)"
+        @reorder="emit('reorder', $event)"
+      />
     </div>
   </div>
 </template>
@@ -97,17 +88,21 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-150);
-  width: min(100%, 17.5rem);
-  max-width: 17.5rem;
+  box-sizing: border-box;
+  width: min(100%, 640px);
+  max-width: 640px;
   margin-inline: auto;
+  padding-top: var(--wikitab-chrome-inset);
 }
 
 .wikitab-configure-panel__head {
   display: flex;
   align-items: center;
   gap: var(--spacing-50);
+  box-sizing: border-box;
   width: 100%;
-  padding-top: var(--spacing-200);
+  min-height: 2.75rem;
+  padding-top: 0;
 }
 
 .wikitab-configure-panel__title {
@@ -124,78 +119,43 @@ onUnmounted(() => {
 .wikitab-configure-panel__close {
   flex-shrink: 0;
   width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2.75rem;
+  min-height: 2.75rem;
 }
 
-.wikitab-configure-panel__list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-100);
-  margin: 0;
-  padding: 0 0 var(--spacing-400);
-  list-style: none;
-}
-
-.wikitab-configure-panel__row {
-  margin: 0;
-}
-
-.wikitab-configure-panel__row :deep(.cdx-toggle-switch) {
-  box-sizing: border-box;
-  display: flex;
-  width: 100%;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.wikitab-configure-panel__row :deep(.cdx-toggle-switch__label) {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.wikitab-configure-panel__row :deep(.cdx-toggle-switch__switch) {
-  flex-shrink: 0;
-}
-
-@media (max-width: 639px) {
+@media (max-width: 767px) {
   .wikitab-configure-panel {
     padding: 0;
   }
 
   .wikitab-configure-panel__column {
     width: 100%;
+    min-width: 0;
     max-width: none;
-    padding-top: var(--spacing-150);
   }
 
   .wikitab-configure-panel__head {
-    padding-top: 0;
     padding-inline: var(--spacing-100);
-  }
-
-  .wikitab-configure-panel__list {
-    padding-inline: var(--spacing-100);
-  }
-}
-
-@media (min-width: 640px) and (max-width: 767px) {
-  [data-skin='desktop'] .wikitab-configure-panel {
-    padding-top: 0;
-  }
-
-  [data-skin='desktop'] .wikitab-configure-panel__column {
-    width: min(100%, 17.5rem);
-    max-width: 17.5rem;
-    padding-top: var(--spacing-150);
-  }
-
-  [data-skin='desktop'] .wikitab-configure-panel__head {
-    padding-top: 0;
   }
 }
 
 @media (min-width: 768px) {
   [data-skin='desktop'] .wikitab-configure-panel {
     --wikitab-page-gutter: var(--spacing-400);
+    padding-inline: 0;
+    padding-block-start: var(--spacing-100);
+    padding-block-end: 0;
+  }
+
+  [data-skin='desktop'] .wikitab-configure-panel__column {
+    padding-top: 0;
+    padding-inline: var(--wikitab-page-gutter);
+  }
+
+  [data-skin='desktop'] .wikitab-configure-panel__head {
+    padding-top: var(--spacing-200);
+    padding-inline: 0;
   }
 }
 </style>

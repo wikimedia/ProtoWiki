@@ -5,12 +5,14 @@ export type WikitabSectionId = 'trending' | 'otd' | 'births' | 'dyk' | 'news' | 
 export const WIKITAB_SAVED_MODULE_ID = 'saved' as const
 export const WIKITAB_DAILY_READS_MODULE_ID = 'daily-reads' as const
 export const WIKITAB_SUGGESTED_EDITS_MODULE_ID = 'suggested-edits' as const
+export const WIKITAB_REVIEW_CHANGES_MODULE_ID = 'review-changes' as const
 
 export type WikitabModuleId =
   | WikitabSectionId
   | typeof WIKITAB_SAVED_MODULE_ID
   | typeof WIKITAB_DAILY_READS_MODULE_ID
   | typeof WIKITAB_SUGGESTED_EDITS_MODULE_ID
+  | typeof WIKITAB_REVIEW_CHANGES_MODULE_ID
 
 /**
  * Which card layout a section renders. Drives the real card, its placeholder,
@@ -116,9 +118,12 @@ export const WIKITAB_HOME_MODULE_ORDER: readonly WikitabModuleId[] = [
   WIKITAB_DAILY_READS_MODULE_ID,
   WIKITAB_SUGGESTED_EDITS_MODULE_ID,
   'trending',
-  ...WIKITAB_SECTIONS.filter((section) => section.id !== 'trending').map(
-    (section) => section.id,
-  ),
+  'news',
+  'dyk',
+  'discussions',
+  WIKITAB_REVIEW_CHANGES_MODULE_ID,
+  'otd',
+  'births',
 ]
 
 /** Home Saved module — same paging contract as feed sections. */
@@ -155,6 +160,14 @@ export const WIKITAB_SUGGESTED_EDITS_MODULE_SPEC = {
   thumbnailSize: 96,
 }
 
+/** Home Review changes module — merged edits from daily-random saved article seeds. */
+export const WIKITAB_REVIEW_CHANGES_MODULE_SPEC = {
+  id: WIKITAB_REVIEW_CHANGES_MODULE_ID,
+  heading: 'Review changes',
+  initialCount: 2,
+  pageSize: 4,
+}
+
 /** Configure-panel rows: saved-adjacent modules first, then daily feed sections. */
 export const WIKITAB_CONFIGURE_MODULES: ReadonlyArray<{
   id: WikitabModuleId
@@ -166,8 +179,32 @@ export const WIKITAB_CONFIGURE_MODULES: ReadonlyArray<{
     id: WIKITAB_SUGGESTED_EDITS_MODULE_ID,
     heading: WIKITAB_SUGGESTED_EDITS_MODULE_SPEC.heading,
   },
-  ...WIKITAB_SECTIONS.map((section) => ({ id: section.id, heading: section.heading })),
+  ...WIKITAB_SECTIONS.slice(0, 4).map((section) => ({ id: section.id, heading: section.heading })),
+  {
+    id: WIKITAB_REVIEW_CHANGES_MODULE_ID,
+    heading: WIKITAB_REVIEW_CHANGES_MODULE_SPEC.heading,
+  },
+  ...WIKITAB_SECTIONS.slice(4).map((section) => ({ id: section.id, heading: section.heading })),
 ]
+
+const WIKITAB_MODULE_HEADINGS = Object.fromEntries(
+  WIKITAB_CONFIGURE_MODULES.map((module) => [module.id, module.heading]),
+) as Record<WikitabModuleId, string>
+
+export function wikitabModuleHeading(id: WikitabModuleId): string {
+  return WIKITAB_MODULE_HEADINGS[id]
+}
+
+/** Registry default when no custom order is stored. */
+export function defaultModuleOrder(): WikitabModuleId[] {
+  return WIKITAB_CONFIGURE_MODULES.map((module) => module.id)
+}
+
+/** Stored order when non-empty; otherwise the registry default. */
+export function resolveModuleOrder(stored: readonly WikitabModuleId[]): WikitabModuleId[] {
+  if (!stored.length) return defaultModuleOrder()
+  return [...stored]
+}
 
 export interface WikitabSupportingSignal {
   icon: Icon
@@ -197,6 +234,18 @@ export interface WikitabCardData {
    * where the feed gives no thumbnail and it has to be fetched per page.
    */
   thumbnailTitle?: string
+  /** Active discussions — stable thread id for saves. */
+  threadId?: string
+  /** Active discussions — noticeboard page title. */
+  noticeboardPage?: string
+  /** Active discussions — comment count for saves. */
+  commentCount?: number
+  /** Suggested edits / Contribute — page id and task need for saves. */
+  pageid?: number
+  suggestionNeed?: string
+  suggestionBody?: string
+  suggestionLabel?: string
+  editHref?: string
 }
 
 export type WikitabFeed = Record<WikitabSectionId, WikitabCardData[]>

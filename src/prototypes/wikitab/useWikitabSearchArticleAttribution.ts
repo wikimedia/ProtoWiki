@@ -1,6 +1,5 @@
 import { computed, onScopeDispose, ref, watch, type Ref } from 'vue'
 
-import { fetchAttributionSignals } from '@/components/attribution/fetchAttributionSignals'
 import {
   formatCompactCount,
   formatLastUpdatedTooltip,
@@ -10,12 +9,10 @@ import {
 } from '@/components/attribution/formatAttribution'
 import { AttributionApiError, type AttributionTrustAndRelevance } from '@/components/attribution/types'
 
-interface CachedAttribution {
-  trust: AttributionTrustAndRelevance | undefined
-}
-
-const cache = new Map<string, CachedAttribution>()
-const inflight = new Map<string, Promise<CachedAttribution>>()
+import {
+  fetchSearchArticleAttributionTrust,
+  peekCachedSearchArticleAttribution,
+} from './data/wikitabSearchArticleAttribution'
 
 function formatReferenceCount(count: number): string {
   return count < 1000 ? String(count) : formatCompactCount(count)
@@ -47,32 +44,6 @@ function labelsFromTrust(trust: AttributionTrustAndRelevance | undefined): {
         : null,
     lastUpdatedTooltipText: lastUpdated ? formatLastUpdatedTooltip(lastUpdated) : null,
   }
-}
-
-async function loadAttribution(title: string, signal: AbortSignal): Promise<CachedAttribution> {
-  const cached = cache.get(title)
-  if (cached) return cached
-
-  const pending = inflight.get(title)
-  if (pending) return pending
-
-  const promise = fetchAttributionSignals(title, {
-    expand: ['trust_and_relevance'],
-    signal,
-  })
-    .then((signals) => {
-      const entry: CachedAttribution = { trust: signals.trust_and_relevance }
-      cache.set(title, entry)
-      inflight.delete(title)
-      return entry
-    })
-    .catch((err) => {
-      inflight.delete(title)
-      throw err
-    })
-
-  inflight.set(title, promise)
-  return promise
 }
 
 export function useWikitabSearchArticleAttribution(title: Ref<string>): {
@@ -118,9 +89,9 @@ export function useWikitabSearchArticleAttribution(title: Ref<string>): {
       return
     }
 
-    const cached = cache.get(trimmed)
-    if (cached) {
-      applyLabels(cached.trust)
+    const cachedTrust = peekCachedSearchArticleAttribution(trimmed)
+    if (cachedTrust !== null) {
+      applyLabels(cachedTrust)
       loading.value = false
       return
     }
@@ -132,9 +103,9 @@ export function useWikitabSearchArticleAttribution(title: Ref<string>): {
     loading.value = true
 
     try {
-      const entry = await loadAttribution(trimmed, signal)
+      const trust = await fetchSearchArticleAttributionTrust(trimmed, signal)
       if (signal.aborted) return
-      applyLabels(entry.trust)
+      applyLabels(trust)
     } catch (err) {
       if (signal.aborted || (err instanceof AttributionApiError && err.code === 'aborted')) return
       pageViewsLabel.value = null

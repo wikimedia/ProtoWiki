@@ -1,5 +1,6 @@
 import { pickSavedArticleSeeds } from './pickSavedArticleSeeds'
-import type { WikitabSavedArticle } from './wikitabConfig'
+import { uniqueArticleSeedsFromSavedItems } from './savedCardHelpers'
+import type { WikitabSavedItem } from './wikitabConfig'
 import {
   contributeItemToCard,
   createContributeFeedFromSeeds,
@@ -29,22 +30,22 @@ export class SuggestedEditsFeed {
 }
 
 export function createSuggestedEditsFeed(
-  savedArticles: readonly WikitabSavedArticle[],
+  savedItems: readonly WikitabSavedItem[],
   day: string,
   signal?: AbortSignal,
   seenPageids?: Iterable<number>,
 ): SuggestedEditsFeed | null {
   void signal
 
-  const seeds = pickSavedArticleSeeds(savedArticles, day, MAX_SEEDS, 'suggested-edits')
+  const articleSeeds = uniqueArticleSeedsFromSavedItems(savedItems)
+  const seeds = pickSavedArticleSeeds(articleSeeds, day, MAX_SEEDS, 'suggested-edits')
   if (!seeds.length) return null
 
-  const contributeSeeds: WikitabContributeSeed[] = seeds.map((article) => ({
-    title: article.title,
-    thumbnailUrl: article.thumbnailUrl,
+  const contributeSeeds: WikitabContributeSeed[] = seeds.map((seed) => ({
+    title: seed.title,
   }))
 
-  const excludedTitleKeys = new Set(savedArticles.map((article) => article.titleKey))
+  const excludedTitleKeys = new Set(savedItems.map((saved) => saved.articleTitleKey))
 
   const inner = createContributeFeedFromSeeds(contributeSeeds, {
     excludedTitleKeys,

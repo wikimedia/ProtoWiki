@@ -120,13 +120,17 @@ onUnmounted(() => {
   gap: var(--spacing-150);
   width: 100%;
   margin-inline: auto;
+  padding-top: var(--wikitab-chrome-inset);
 }
 
 .wikitab-color-theme-picker__head {
   display: flex;
   align-items: center;
   gap: var(--spacing-50);
-  padding-top: var(--spacing-200);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 2.75rem;
+  padding-top: 0;
 }
 
 .wikitab-color-theme-picker__title {
@@ -228,12 +232,7 @@ onUnmounted(() => {
     padding: 0;
   }
 
-  .wikitab-color-theme-picker__column {
-    padding-top: var(--spacing-150);
-  }
-
   .wikitab-color-theme-picker__head {
-    padding-top: 0;
     padding-inline: var(--spacing-100);
   }
 
@@ -244,26 +243,43 @@ onUnmounted(() => {
 
 @media (min-width: 640px) and (max-width: 767px) {
   [data-skin='desktop'] .wikitab-color-theme-picker {
-    padding-top: 0;
+    padding: 0;
   }
 
   [data-skin='desktop'] .wikitab-color-theme-picker__column {
     max-width: 640px;
-    padding-top: var(--spacing-150);
   }
 
   [data-skin='desktop'] .wikitab-color-theme-picker__head {
-    padding-top: 0;
+    padding-inline: var(--spacing-100);
+  }
+
+  [data-skin='desktop'] .wikitab-color-theme-picker__grid {
+    padding-inline: var(--spacing-100);
   }
 }
 
 @media (min-width: 768px) {
   [data-skin='desktop'] .wikitab-color-theme-picker {
     --wikitab-page-gutter: var(--spacing-400);
+    padding-inline: 0;
+    padding-block-start: var(--spacing-100);
+    padding-block-end: 0;
   }
 
   [data-skin='desktop'] .wikitab-color-theme-picker__column {
     max-width: 640px;
+    padding-top: 0;
+    padding-inline: var(--wikitab-page-gutter);
+  }
+
+  [data-skin='desktop'] .wikitab-color-theme-picker__head {
+    padding-top: var(--spacing-200);
+    padding-inline: 0;
+  }
+
+  [data-skin='desktop'] .wikitab-color-theme-picker__grid {
+    padding-inline: 0;
   }
 }
 </style>

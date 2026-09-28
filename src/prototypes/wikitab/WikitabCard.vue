@@ -18,12 +18,16 @@ const props = defineProps<{
   thumbnailSize: number
   card?: WikitabCardData
   supportingIcon?: Icon
+  /** Inline glyph before a text-variant html hook (saved Snippets). */
+  hookLeadingIcon?: Icon
   fullHook?: boolean
   loading?: boolean
   showArticleMenu?: boolean
   isSaved?: boolean
   /** When set, adds a "Hide from {heading}" row (feed sections, including discussions). */
   hideMenuSectionHeading?: string
+  /** Suggested-edits task row — progressive colour + bold label. */
+  supportingProgressive?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -143,6 +147,7 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
       'wikitab-card--thumbnail-pending': loading && variant === 'thumbnail',
       'wikitab-card--has-menu': showCardMenu,
       'wikitab-card--menu-on-hover': menuRevealOnInteraction,
+      'wikitab-card--progressive-supporting': supportingProgressive,
     }"
     :style="cardStyle"
   >
@@ -188,13 +193,21 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
         {{ card.description }}
       </template>
       <template v-else-if="variant === 'text' && card?.html" #description>
-        <!-- eslint-disable-next-line vue/no-v-html -->
-        <span class="wikitab-card__hook" v-html="card.html" />
+        <span class="wikitab-card__hook">
+          <CdxIcon
+            v-if="hookLeadingIcon"
+            class="wikitab-card__hook-icon"
+            :icon="hookLeadingIcon"
+            size="x-small"
+          />
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <span class="wikitab-card__hook-text" v-html="card.html" />
+        </span>
       </template>
       <template v-else-if="variant === 'text' && card?.description" #description>
         {{ card.description }}
       </template>
-      <template v-if="card?.supportingSignals?.length" #supporting-text>
+      <template v-if="card?.supportingSignals?.length || card?.supportingTextEnd" #supporting-text>
         <span
           class="wikitab-card__supporting"
           :class="{ 'wikitab-card__supporting--split': card.supportingTextEnd }"
@@ -294,8 +307,25 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
   min-height: 0;
 }
 
+/*
+ * Quiet MenuButton is a 32×32 hit target, inset from the card corner — reserve
+ * that width so titles truncate before reaching the ⋯.
+ */
+.wikitab-card--has-menu {
+  --wikitab-card-menu-reserve: calc(2rem + var(--spacing-75));
+}
+
 .wikitab-card--has-menu :deep(.cdx-card__text__title) {
-  padding-inline-end: var(--spacing-200);
+  box-sizing: border-box;
+  padding-inline-end: var(--wikitab-card-menu-reserve);
+  overflow: hidden;
+}
+
+.wikitab-card--has-menu:not(.wikitab-card--clamped) :deep(.cdx-card__text__title) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 /*
@@ -506,7 +536,7 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
 .wikitab-card__supporting-start {
   display: inline-flex;
   align-items: baseline;
-  gap: var(--spacing-25);
+  gap: var(--spacing-100);
   min-width: 0;
 }
 
@@ -529,6 +559,16 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
   translate: 0 0.0625em;
 }
 
+/* Suggested-edits task label — matches Contribute tab (progressive + bold). */
+.wikitab-card--progressive-supporting .wikitab-card__supporting-label {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-progressive);
+}
+
+.wikitab-card--progressive-supporting .wikitab-card__supporting-signal :deep(.cdx-icon) {
+  color: var(--color-progressive);
+}
+
 /*
  * Clamping keeps the fixed height honest. Layout only — typography comes from
  * Codex's card text styles.
@@ -542,6 +582,13 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
   overflow: hidden;
 }
 
+/* Saved image cards — caption-only (no title slot), same depth as text cards. */
+.wikitab-card--clamped.wikitab-card--thumbnail
+  :deep(.cdx-card__text__title:empty + .cdx-card__text__description) {
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+}
+
 .wikitab-card--clamped.wikitab-card--text :deep(.cdx-card__text__description) {
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -551,11 +598,35 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
 }
 
 .wikitab-card__hook {
-  display: block;
+  display: inline;
+  min-width: 0;
+}
+
+.wikitab-card__hook-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  vertical-align: -0.125em;
+  width: 1.125em;
+  height: 1.125em;
+  margin-inline-end: var(--spacing-25);
+  color: var(--color-subtle);
+  line-height: 1;
+}
+
+.wikitab-card__hook-icon :deep(svg) {
+  width: 100%;
+  height: 100%;
+}
+
+.wikitab-card__hook-text {
+  display: inline;
+  min-width: 0;
 }
 
 /* Above the card-wide overlay, so an inline link still wins the click. */
-.wikitab-card__hook :deep(a) {
+.wikitab-card__hook-text :deep(a) {
   position: relative;
   z-index: 2;
 }

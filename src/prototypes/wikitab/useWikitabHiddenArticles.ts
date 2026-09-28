@@ -4,6 +4,7 @@ import {
   patchWikitabConfig,
   WIKITAB_CONFIG_STORAGE_KEY,
 } from './data/wikitabConfig'
+import type { WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
 import { articleTitleKey } from './data/wikitabHtml'
 import type { WikitabCardData } from './sections'
 
@@ -58,6 +59,15 @@ export function useWikitabHiddenArticles() {
     return filtered
   }
 
+  function filterActivityItems(items: WikitabSearchActivityItem[]): WikitabSearchActivityItem[] {
+    if (!hiddenKeys.value.length) return items
+
+    return items.filter((item) => {
+      const key = articleTitleKey(item.title)
+      return !key || !hiddenSet.value.has(key)
+    })
+  }
+
   function onStorage(event: StorageEvent): void {
     if (event.key !== WIKITAB_CONFIG_STORAGE_KEY) return
     syncFromStorage()
@@ -71,5 +81,5 @@ export function useWikitabHiddenArticles() {
     window.removeEventListener('storage', onStorage)
   })
 
-  return { hideArticle, filterCards }
+  return { hideArticle, filterCards, filterActivityItems }
 }

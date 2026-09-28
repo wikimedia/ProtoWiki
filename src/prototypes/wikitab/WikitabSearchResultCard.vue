@@ -267,8 +267,13 @@ watch(selection, (value) => {
 
 .wikitab-search-result-card__title {
   margin: 0;
-  /* Reserve space for the corner menu; body text runs to the card edge. */
-  padding-inline-end: var(--spacing-200);
+  /* Reserve the corner ⋯ menu (32×32 + inset). */
+  padding-inline-end: calc(2rem + var(--spacing-75));
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .wikitab-search-result-card__title a {

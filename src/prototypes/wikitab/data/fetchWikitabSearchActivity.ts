@@ -580,7 +580,10 @@ export class WikitabSearchActivityFeed {
   private thumbnailByTitle = new Map<string, string>()
   private readonly editorKindByUser = new Map<string, EditorKind>()
 
-  constructor(titles: WikitabSearchTopTitle[]) {
+  constructor(
+    titles: WikitabSearchTopTitle[],
+    options: { seenRevids?: Iterable<number> } = {},
+  ) {
     this.pageStates = titles.map((title) => ({
       pageid: title.pageid,
       title: title.title,
@@ -591,6 +594,10 @@ export class WikitabSearchActivityFeed {
     for (const title of titles) {
       const url = normalizeThumbnailUrl(title.thumbnailUrl)
       if (url) this.thumbnailByTitle.set(titleKey(title.title), url)
+    }
+
+    for (const revid of options.seenRevids ?? []) {
+      this.seenRevids.add(revid)
     }
   }
 

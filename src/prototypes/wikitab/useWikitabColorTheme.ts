@@ -52,16 +52,32 @@ export function useWikitabColorTheme(potdImageUrl?: Ref<string | null>) {
     colorThemeId.value = config.colorThemeId
   }
 
+  function rollbackColorTheme(fallback: WikitabColorThemeId | null): void {
+    colorThemeId.value = loadWikitabConfig().colorThemeId ?? fallback
+  }
+
+  function persistColorTheme(next: WikitabColorThemeId | null): boolean {
+    const result = patchWikitabConfig({ colorThemeId: next })
+    if (!result.persisted) return false
+    trackRevision(result.config)
+    return true
+  }
+
   function setColorTheme(id: WikitabColorThemeId): void {
     const next = isDefaultColorTheme(id) ? null : id
+    const previous = colorThemeId.value
     colorThemeId.value = next
-    trackRevision(patchWikitabConfig({ colorThemeId: next }))
+
+    if (!persistColorTheme(next)) {
+      rollbackColorTheme(previous)
+      return
+    }
 
     // Another open Wikitab tab can clobber localStorage with a stale read-modify-write.
     queueMicrotask(() => {
       if (colorThemeId.value !== next) return
       if (loadWikitabConfig().colorThemeId === next) return
-      trackRevision(patchWikitabConfig({ colorThemeId: next }))
+      if (!persistColorTheme(next)) rollbackColorTheme(previous)
     })
   }
 

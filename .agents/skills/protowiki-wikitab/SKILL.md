@@ -120,12 +120,18 @@ When adding a section: if thumbnails are guaranteed from the feed, use
 
 One engine, two triggers:
 
-- **Desktop** — "Show more" reveals `min(pageSize, remaining)`. Hidden once
-  exhausted, `color-disabled` while a page resolves.
+- **Desktop (finite feed sections)** — "Show more" reveals `min(pageSize,
+  remaining)`. Hidden once the day's slice is exhausted; `color-disabled` while a
+  page resolves. The `__more` row keeps its min-height so sections below do not
+  jump.
+- **Desktop (infinite home modules — Daily reads, Suggested edits)** — "Show
+  more" is **never hidden** while cards are showing (hidden only on error, or
+  Daily reads empty). Disabled only during load; still clickable after
+  exhaustion to retry `loadMore()` (recreates the feed via `ensureActiveFeed`).
 - **Mobile** — no button. `useRevealOnScrollEnd.ts` observes a sentinel at the
   end of the horizontal scroller (`root` = the scroller, `rootMargin` about one
-  card wide) and reveals as it approaches. Torn down when exhausted, so
-  scrolling just ends.
+  card wide) and reveals as it approaches. Finite sections tear down the observer
+  when exhausted; infinite modules keep scrolling while cards exist.
 
 `revealMore()` ignores calls while a page is in flight, so a fast flick can't
 queue several pages.
@@ -223,8 +229,8 @@ you touch the card's stacking.
   `cdxIconSpeechBubbles` + `"{n} comments"` at row start, compact relative time at row end.
   Links to the
   noticeboard URL with a `#` fragment to the thread. Default registry order:
-  Trending → In the news → Did you know → Active discussions → On this day →
-  Birthdays. No thumbnails, no per-card follow-up fetches.
+  Trending → In the news → Did you know → Active discussions → Review changes →
+  On this day → Birthdays. No thumbnails, no per-card follow-up fetches.
 
 `data/wikitabHtml.ts` normalises feed HTML. Note the asymmetry it exists for:
 `news` stories use relative `./Page_Title` hrefs, which would otherwise resolve
@@ -232,66 +238,114 @@ against our own origin, while `dyk` hooks use absolute ones.
 
 ## Saved-adjacent home modules
 
-Three home modules sit beside the daily feed — not in `WIKITAB_SECTIONS` or
-`useWikitabFeed`. All use the same paging contract as feed sections
-(`initialCount` 4, `pageSize` 6, thumbnail cards at 122/96). Default home order
-(`WIKITAB_HOME_MODULE_ORDER`): Saved → Daily reads → Suggested edits → Trending
-→ remaining feed sections. All appear in Configure and support pin / hide.
+Four home modules sit beside the daily feed — not in `WIKITAB_SECTIONS` or
+`useWikitabFeed`. Saved, Daily reads, and Suggested edits use the feed paging
+contract (`initialCount` 4 / `pageSize` 6 for Saved and Daily reads; Suggested
+edits uses `initialCount` 2 / `pageSize` 4). Default home order
+(`WIKITAB_HOME_MODULE_ORDER` / `defaultModuleOrder()`): Saved → Daily reads →
+Suggested edits → Trending → In the news → Did you know → Active discussions →
+Review changes → On this day → Birthdays. All appear in Configure and support
+pin / hide / drag reorder.
 
-**Saved** (`saved`) — home feed cards come from a **snapshot**
-(`savedModuleArticles` in `index.vue`), not live `savedArticles`. The section is
-hidden until a refresh runs (mount, search exit, overlay close) and only then
-reflects what was saved at that moment — saving your first article mid-session
-does not surface the module. Snapshot + REST summary enrichment via
-`useWikitabSavedArticles.ts`, `WikitabSavedSection.vue`. Unsaving every article
-during the session clears the snapshot immediately.
+**Configure module order** — `WikitabConfigureModuleList.vue` (ported from
+wikita-lite) renders a quiet `cdxIconDraggableVertical` handle left of each
+toggle row. Pointer drag uses transform-based row sliding; keyboard
+ArrowUp/ArrowDown moves one slot. Order persists in `WikitabConfig.moduleOrderIds`
+via `useWikitabModuleOrder.ts` (`resolveModuleOrder`, cross-tab `storage` sync).
+Home display and load order use `buildEffectiveHomeOrder(pinnedIds, resolvedOrder)`
+— pinning still pulls modules to the top; custom order applies to unpinned slots.
+
+**Saving** — six explicit saved types in `wikitab-config-v3` (`data/wikitabConfig.ts`
+→ `savedItems: WikitabSavedItem[]`). No cross-source dedup — Unsave only when
+that item's own id is saved.
+
+| Type | Sources | Stable id |
+| ---- | ------- | --------- |
+| **Article** | Trending, Birthdays, Search Articles, Daily reads | Per-source (`search:{titleKey}`, `daily-reads:{pageid}`, trending title, …) |
+| **Snippet** | Did you know, On this day, In the news | Feed `card.key` (`dyk-{n}`, …) — **preserves full feed presentation** (html hook, `fullHook`, inline-end thumbnail) |
+| **Suggestion** | Suggested edits home, Contribute tab | `suggestion:{pageid}:{need}` |
+| **Change** | Review changes home, Activity tab | `change:{revid}` |
+| **Discussion** | Active discussions | `discussion:{threadId}` |
+| **Image** | Search Images tab | `image:{pageid}` (Commons file page id) |
+
+Article / Snippet / Suggestion / Change carry `articleTitleKey` for recommendations;
+Discussion uses the noticeboard page titleKey; Image uses the Commons file titleKey.
+Discussion, Change, and Image are **excluded from article seeds**.
+`savedAt` sorts the list (most recent first) but is **not shown** on cards.
+Legacy v1 `savedArticles` and v2 `savedCards` migrate on load (`savedItemMigration.ts`).
+Helpers: `data/savedCardHelpers.ts`, `data/wikitabSavedItems.ts`,
+`data/wikitabSavedIcons.ts`; composable: `useWikitabSavedArticles.ts`.
+
+**Saved** (`saved`) — home feed cards and the Saved overlay panel come from a
+**snapshot** (`savedModuleItems` in `index.vue`), not live `savedItems`. Renders
+each entry through `WikitabSavedItemSlot.vue` with per-type layout: normalized
+Article / Discussion cards, preserved Snippet feed presentation, Contribute-style
+Suggestion, Activity-style Change, standard thumbnail card for Image (no `#title`
+slot — Commons ImageDescription in `#description`, file name as fallback;
+license/artist with `cdxIconImage` in supporting text; links to Commons). Hidden until a refresh runs (mount, search exit,
+overlay close); saving mid-session does not surface the module. Article items may
+get REST summary enrichment for missing thumbnail/description; other types skip
+enrich. Unsaving every item during the session clears the snapshot immediately.
+
+**Saved type tabs** — when the snapshot contains **two or more** saved types,
+`WikitabSavedItemTabs.vue` renders below the heading on both the home Saved module
+(`WikitabSavedSection.vue`) and the Saved overlay panel
+(`WikitabSavedArticlesPanel.vue`). Labels: **All**, **Articles**, **Snippets**,
+**Suggestions**, **Edits** (internal `change`), **Discussions**, **Images** — only types
+present are shown, in that order. Uses Codex **framed** `CdxTabs` restyled via CSS
+to look like framed toggle buttons on a transparent background. Tab choice is
+session-only; card paging (`useSectionReveal` on home, manual `reserved` in the
+panel) runs on the filtered list. Helpers: `data/wikitabSavedItemTabs.ts`;
+composable: `useWikitabSavedItemTabFilter.ts`.
 
 **Daily reads** (`daily-reads`) — morelike suggestions seeded from up to **four**
-saved pages picked by a **deterministic daily shuffle** (UTC day +
-sorted `titleKey`s → seeded Fisher-Yates). Hidden when the Saved-module
-snapshot has no articles (so saving your first page mid-session does not
-surface an empty section), and hidden again once a refresh completes with
-zero suggestions. Action API `generator=search` with `gsrsearch=morelike:{title}` per
-seed (`DailyReadsFeed` in `data/fetchWikitabDailyReads.ts`); seeds load in
-parallel but cards resolve **one at a time** via `takeNext()` — a daily-seeded
-random shuffle across all seed queues (stable for the UTC day, mixed on screen).
-Each card is
-enriched with REST `/page/summary/` before paint (better thumbnails than
-pageimages alone); a non-blocking summary backfill runs if a thumbnail is still
-missing. Cards are thumbnail variant with
-`supportingText: "Related to {seed title}"`. Excludes disambiguation pages,
-duplicate `pageid`s, and all saved titles. Hidden-article keys are filtered
-client-side via `filterCards` in `index.vue`. Cards paint as they resolve — no
-batch `preloadImages` gate (`WikitabDailyReadsSection.vue` does not use
-`useSectionReveal`).
-
-Cached under `wikitab-daily-reads-cache-v3` keyed by `{ utcDay, savedFingerprint }`
-(`data/dailyReadsCache.ts`); entries store the loaded card list plus a `hasMore`
-flag.
+**unique article titleKeys** from **Article, Snippet, and Suggestion** saves,
+picked by a **deterministic daily shuffle** (UTC day + sorted titleKeys → seeded
+Fisher-Yates). Hidden when the Saved-module snapshot is empty. Action API `generator=search` with
+`gsrsearch=morelike:{title}` per seed (`DailyReadsFeed` in
+`data/fetchWikitabDailyReads.ts`); seeds load in parallel but cards resolve **one
+at a time** via `takeNext()`. Excludes disambiguation pages, duplicate `pageid`s,
+and all saved `articleTitleKey`s. Cards are thumbnail variant with
+`supportingText: "Related to {seed title}"`. Cached under
+`wikitab-daily-reads-cache-v3` keyed by `{ utcDay, savedFingerprint }`
+(`data/dailyReadsCache.ts`).
 
 **Suggested edits** (`suggested-edits`) — edit-opportunity cards from the same
-Microtask `POST /quality-check` pipeline as the search **Contribute** tab
-(`fetchWikitabSearchContribute.ts`), seeded from up to **six** saved pages via a
-**deterministic daily shuffle** with a separate salt from Daily reads
+Microtask `POST /quality-check` pipeline as the search **Contribute** tab, seeded
+from up to **six unique article titleKeys** (Article + Snippet + Suggestion saves)
+via a separate daily shuffle salt
 (`pickSavedArticleSeeds.ts` → `SuggestedEditsFeed` in
-`data/fetchWikitabSuggestedEdits.ts`). Direct phase quality-checks saved seeds;
-morelike expansion skips titles already in the saved list. Cards map to
-`WikitabCardData` via `contributeItemToCard()` (Visual Editor link, task body,
-`supportingSignals` for task icon + label, optional `Related to {seed}` end
-text). Same visibility rules as Daily reads — hidden when the snapshot is empty
-or when a completed fetch yields zero cards. Same composable / section pattern as
-Daily reads (`useWikitabSuggestedEdits.ts`, `WikitabSuggestedEditsSection.vue` —
-local `reserved` display slots, no `useSectionReveal`). Cached under
-`wikitab-suggested-edits-cache-v1` (`data/suggestedEditsCache.ts`).
+`data/fetchWikitabSuggestedEdits.ts`). Morelike expansion skips titles already in
+the saved list. Same visibility rules as Daily reads. Paging: **2 initial cards**,
+**+4 per reveal**. Cached under `wikitab-suggested-edits-cache-v1`
+(`data/suggestedEditsCache.ts`).
 
-A render triggered on mount, search exit, or overlay close calls
-`refreshHomeSavedModules()` in `index.vue`, which refreshes Saved, Daily reads,
-and Suggested edits from the **same snapshot**. Network runs only on cache miss
-(saved list or UTC day changed); session memory skips even localStorage when the
-key matches. Only the first `initialCount` cards fetch on load — further pages
-load on **Show more** (`loadMore()` in each composable), continuing the same seed
-feed from refresh time (not the live saved list). A full refresh after save/unsave
-waits for overlay close, search exit, or a new tab. `?nocache=1` bypasses caches.
+**Review changes** (`review-changes`) — merged edit-revision cards from the same
+Action API revision pipeline as the search **Activity** tab
+(`WikitabSearchActivityFeed` in `data/fetchWikitabSearchActivity.ts`), seeded from
+up to **six unique article titleKeys** (Article + Snippet + Suggestion saves) via
+daily shuffle salt `'review-changes'` (`pickSavedArticleSeeds.ts` →
+`ReviewChangesFeed` in `data/fetchWikitabReviewChanges.ts`). Seed titles resolve
+to `pageid`s via Action API `query` + `pageimages`; thumbnails prefer Article and
+Suggestion saved items. Same visibility rules as Daily reads / Suggested edits.
+Paging: **2 initial cards**, **+4 per reveal**. Cards reuse
+`WikitabSearchActivityCard.vue` (diff delta, chips, Save/Unsave, Thank / Dismiss).
+Dismissed revision ids share `WikitabConfig.dismissedActivityRevids` with the search
+Activity tab. Cached under `wikitab-review-changes-cache-v1`
+(`data/reviewChangesCache.ts`). Composable: `useWikitabReviewChanges.ts`; section:
+`WikitabReviewChangesSection.vue`.
+
+**Infinite-module pagination** — Daily reads, Suggested edits, and Review changes
+differ from finite feed sections (`WikitabSection`): desktop "Show more" stays
+visible while cards are on screen; cached `hasMore: false` only records the last
+fetch state and does not remove the control. Clicks after exhaustion still call
+`loadMore()`.
+
+A render triggered on mount, search exit, or overlay close refreshes Saved, Daily
+reads, Suggested edits, and Review changes from the **same snapshot**. Network runs
+only on cache miss (saved list or UTC day changed). A full refresh after
+save/unsave waits for overlay close, search exit, or a new tab. `?nocache=1`
+bypasses caches.
 
 ## State and storage
 
@@ -307,7 +361,8 @@ fields without over-building a schema.
 `WikitabConfig.pinnedSectionIds` in localStorage, wired through
 `useWikitabPinned.ts` (`togglePin`, `orderSections`, cross-tab `storage`
 sync). Pinned ids come first (most recently pinned at the very top), then
-unpinned sections in registry order. Pinned sections show `cdxIconPushPin`
+unpinned sections in `moduleOrderIds` order (registry default when unset).
+Pinned sections show `cdxIconPushPin`
 beside the heading; the ellipsis menu toggles "Pin to top" / "Unpin from top".
 Pinning reorders by `spec.id` and does not affect the no-jump loading contract.
 
@@ -533,6 +588,11 @@ description page.
   column. `useWikitabSearchImageDecode.ts` tracks per-`pageid` decode;
   `WikitabSearchImageGrid.vue` reveals slots top-to-bottom only when every
   image above in that column has finished decoding (including the 1.5s cap).
+- **Card menu** — top-right `CdxMenuButton` (`cdxIconEllipsis`, quiet) exposes
+  **Save / Unsave** (`image:{pageid}` in `savedItems`) and **Hide**
+  (`hiddenCommonsImagePageIds` — separate from save). License/artist overlay in
+  the bottom-left uses `formatImageAttribution()` from
+  `fetchWikitabSearchImages.ts` (same string as saved Image supporting text).
 
 Implementation: `data/fetchWikitabSearchImages.ts`,
 `useWikitabSearchImages.ts`, `useWikitabSearchImageColumns.ts`,

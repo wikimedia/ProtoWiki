@@ -23,14 +23,26 @@ export function useWikitabPotdAttributionDismiss() {
   const isDismissed = computed(() => expandedDay.value !== utcDayKey())
 
   function dismiss(): void {
+    const previous = expandedDay.value
     expandedDay.value = null
-    trackRevision(patchWikitabConfig({ potdAttributionExpandedDay: null }).configRevision)
+    const result = patchWikitabConfig({ potdAttributionExpandedDay: null })
+    if (!result.persisted) {
+      expandedDay.value = previous
+      return
+    }
+    trackRevision(result.config.configRevision)
   }
 
   function open(): void {
+    const previous = expandedDay.value
     const day = utcDayKey()
     expandedDay.value = day
-    trackRevision(patchWikitabConfig({ potdAttributionExpandedDay: day }).configRevision)
+    const result = patchWikitabConfig({ potdAttributionExpandedDay: day })
+    if (!result.persisted) {
+      expandedDay.value = previous
+      return
+    }
+    trackRevision(result.config.configRevision)
   }
 
   function onStorage(event: StorageEvent): void {

@@ -20,15 +20,19 @@ const props = withDefaults(
     columnCount: number
     loadingMore?: boolean
     scrollEnabled?: boolean
+    isImageSaved?: (pageid: number) => boolean
   }>(),
   {
     loadingMore: false,
     scrollEnabled: false,
+    isImageSaved: () => false,
   },
 )
 
 const emit = defineEmits<{
   reach: []
+  hide: [pageid: number]
+  'toggle-save-image': [image: WikitabSearchImage]
 }>()
 
 const columnSentinels = ref<(HTMLElement | null)[]>([])
@@ -123,7 +127,10 @@ function setColumnSentinel(columnIndex: number, el: Element | ComponentPublicIns
         <WikitabSearchImageCard
           v-if="slot.kind === 'image' && isSlotRevealed(column, slotIndex)"
           :image="slot.image"
+          :is-saved="isImageSaved(slot.image.pageid)"
           @decoded="markDecoded(slot.image.pageid)"
+          @hide="emit('hide', $event)"
+          @toggle-save="emit('toggle-save-image', slot.image)"
         />
         <WikitabSearchLoadingCard
           v-else

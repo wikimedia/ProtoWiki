@@ -4,6 +4,8 @@ import { CdxIcon, CdxInfoChip, CdxMenuButton, CdxThumbnail } from '@wikimedia/co
 import {
   cdxIconAlert,
   cdxIconArticle,
+  cdxIconBookmark,
+  cdxIconBookmarkOutline,
   cdxIconCheck,
   cdxIconEditUndo,
   cdxIconEllipsis,
@@ -18,22 +20,44 @@ import { useSkin } from '@/composables/useSkin'
 
 import type { EditorKind, WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
 
-const props = defineProps<{
-  item: WikitabSearchActivityItem
-}>()
+const props = withDefaults(
+  defineProps<{
+    item: WikitabSearchActivityItem
+    showThumbnail?: boolean
+    showSaveMenu?: boolean
+    isSaved?: boolean
+  }>(),
+  {
+    showThumbnail: true,
+    showSaveMenu: false,
+    isSaved: false,
+  },
+)
 
 const emit = defineEmits<{
   dismiss: [revid: number]
+  'toggle-save': []
 }>()
 
 const selection = ref<string | number | null>(null)
 
-const menuItems = [
-  { value: 'thank', label: 'Thank', icon: cdxIconHeartOutline },
-  { value: 'dismiss', label: 'Dismiss', icon: cdxIconCheck },
-]
+const menuItems = computed(() => {
+  const items = [
+    { value: 'thank', label: 'Thank', icon: cdxIconHeartOutline },
+    { value: 'dismiss', label: 'Dismiss', icon: cdxIconCheck },
+  ]
+  if (props.showSaveMenu) {
+    items.unshift({
+      value: 'save',
+      label: props.isSaved ? 'Unsave' : 'Save',
+      icon: props.isSaved ? cdxIconBookmark : cdxIconBookmarkOutline,
+    })
+  }
+  return items
+})
 
 watch(selection, (value) => {
+  if (value === 'save') emit('toggle-save')
   if (value === 'thank') {
     window.open(props.item.thankUrl, '_blank', 'noopener,noreferrer')
   }
@@ -92,10 +116,18 @@ const editorIcon = computed(() => EDITOR_ICONS[props.item.editorKind])
 
 const skin = useSkin()
 const showNestedLinks = computed(() => skin.value !== 'mobile')
+/** Desktop: hide ⋯ until hover/focus; mobile has no hover. */
+const menuRevealOnInteraction = computed(() => skin.value === 'desktop')
 </script>
 
 <template>
-  <div class="wikitab-search-activity-card">
+  <div
+    class="wikitab-search-activity-card"
+    :class="{
+      'wikitab-search-activity-card--no-thumbnail': !showThumbnail,
+      'wikitab-search-activity-card--menu-on-hover': menuRevealOnInteraction,
+    }"
+  >
     <div class="wikitab-search-activity-card__menu">
       <CdxMenuButton
         v-model:selected="selection"
@@ -131,7 +163,11 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
     </div>
 
     <div class="wikitab-search-activity-card__body">
-      <CdxThumbnail class="wikitab-search-activity-card__thumbnail" :thumbnail="thumbnail" />
+      <CdxThumbnail
+        v-if="showThumbnail"
+        class="wikitab-search-activity-card__thumbnail"
+        :thumbnail="thumbnail"
+      />
 
       <div class="wikitab-search-activity-card__content">
         <p class="wikitab-search-activity-card__title">
@@ -211,7 +247,7 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
   min-width: 0;
   padding-block: var(--spacing-75);
   padding-inline: var(--spacing-75);
-  border: var(--border-width-base) solid var(--border-color-subtle);
+  border: var(--border-width-base) solid var(--border-color-base);
   border-radius: var(--border-radius-base);
   background-color: var(--background-color-base);
   transition-property: background-color, color, border-color, box-shadow;
@@ -234,7 +270,22 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
   position: absolute;
   top: var(--spacing-35);
   inset-inline-end: var(--spacing-35);
-  z-index: 2;
+  z-index: 3;
+}
+
+.wikitab-search-activity-card--menu-on-hover .wikitab-search-activity-card__menu {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s;
+}
+
+.wikitab-search-activity-card--menu-on-hover:hover .wikitab-search-activity-card__menu,
+.wikitab-search-activity-card--menu-on-hover:focus-within
+  .wikitab-search-activity-card__menu,
+.wikitab-search-activity-card--menu-on-hover:has([aria-expanded='true'])
+  .wikitab-search-activity-card__menu {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .wikitab-search-activity-card__menu-button :deep(.cdx-icon) {
@@ -267,6 +318,11 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
   min-height: 96px;
 }
 
+.wikitab-search-activity-card--no-thumbnail .wikitab-search-activity-card__body,
+.wikitab-search-activity-card--no-thumbnail .wikitab-search-activity-card__content {
+  min-height: 0;
+}
+
 .wikitab-search-activity-card__thumbnail {
   flex-shrink: 0;
   width: 96px;
@@ -291,6 +347,7 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
   flex: 1 1 auto;
   flex-direction: column;
   align-self: stretch;
+  box-sizing: border-box;
   min-width: 0;
   min-height: 96px;
 }
@@ -319,10 +376,17 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
 
 .wikitab-search-activity-card__title {
   margin: 0;
+  /* Reserve the corner ⋯ menu (32×32 + inset). */
+  padding-inline-end: calc(2rem + var(--spacing-75));
+  overflow: hidden;
   font-size: var(--font-size-medium);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-small);
   color: var(--color-base);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .wikitab-search-activity-card__title-link,
@@ -354,6 +418,7 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
   gap: var(--spacing-25);
   margin: var(--spacing-25) 0 0;
   min-width: 0;
+  padding-inline-end: calc(2rem + var(--spacing-75));
 }
 
 .wikitab-search-activity-card__diff-size {
@@ -389,12 +454,12 @@ const showNestedLinks = computed(() => skin.value !== 'mobile')
 }
 
 .wikitab-search-activity-card__supporting {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: first baseline;
-  justify-content: space-between;
   gap: var(--spacing-25);
   box-sizing: border-box;
-  width: 100%;
+  align-self: stretch;
   order: 11;
   margin: var(--spacing-50) 0 0;
   font-size: var(--font-size-small);

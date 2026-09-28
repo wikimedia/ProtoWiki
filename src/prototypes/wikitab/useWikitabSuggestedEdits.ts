@@ -12,7 +12,8 @@ import {
   utcDayKey,
   writeCachedSuggestedEdits,
 } from './data/suggestedEditsCache'
-import type { WikitabSavedArticle } from './data/wikitabConfig'
+import type { WikitabSavedItem } from './data/wikitabConfig'
+import { cloneSavedItems, uniqueArticleSeedsFromSavedItems } from './data/savedCardHelpers'
 import { WIKITAB_SUGGESTED_EDITS_MODULE_SPEC, type WikitabCardData } from './sections'
 
 const { initialCount, pageSize } = WIKITAB_SUGGESTED_EDITS_MODULE_SPEC
@@ -42,11 +43,13 @@ export function useWikitabSuggestedEdits() {
   const loadingMore = ref(false)
   const hasMore = ref(false)
   const error = ref<string | null>(null)
+  /** True once a refresh has settled for the current saved snapshot. */
+  const isLoaded = ref(false)
 
   let controller: AbortController | null = null
   let activeFeed: SuggestedEditsFeed | null = null
   let cacheContext: { day: string; savedFingerprint: string } | null = null
-  let savedArticlesSnapshot: WikitabSavedArticle[] = []
+  let savedItemsSnapshot: WikitabSavedItem[] = []
   let loadedSessionKey: string | null = null
   let feedLock: Promise<void> = Promise.resolve()
 
@@ -109,6 +112,7 @@ export function useWikitabSuggestedEdits() {
     loadingMore.value = false
     error.value = null
     hasMore.value = cachedHasMore || cached.length > initialCount
+    isLoaded.value = true
   }
 
   function clearState(): void {
@@ -118,18 +122,19 @@ export function useWikitabSuggestedEdits() {
     loadingMore.value = false
     hasMore.value = false
     error.value = null
+    isLoaded.value = false
     activeFeed = null
     cacheContext = null
-    savedArticlesSnapshot = []
+    savedItemsSnapshot = []
     loadedSessionKey = null
   }
 
   async function ensureActiveFeed(signal: AbortSignal | undefined): Promise<boolean> {
     if (activeFeed) return true
-    if (!cacheContext || !savedArticlesSnapshot.length) return false
+    if (!cacheContext || !savedItemsSnapshot.length) return false
 
     activeFeed = createSuggestedEditsFeed(
-      savedArticlesSnapshot,
+      savedItemsSnapshot,
       cacheContext.day,
       signal,
       seenPageidsFromCards(items.value),
@@ -179,10 +184,10 @@ export function useWikitabSuggestedEdits() {
   }
 
   async function refresh(
-    savedArticles: readonly WikitabSavedArticle[] = [],
+    savedItems: readonly WikitabSavedItem[] = [],
     options?: { force?: boolean },
   ): Promise<void> {
-    if (!savedArticles.length) {
+    if (!savedItems.length) {
       controller?.abort()
       clearState()
       return
@@ -190,8 +195,9 @@ export function useWikitabSuggestedEdits() {
 
     const force = options?.force === true
     const day = utcDayKey()
+    const articleSeeds = uniqueArticleSeedsFromSavedItems(savedItems)
     const savedFingerprint = buildSuggestedEditsSavedFingerprint(
-      savedArticles.map((article) => article.titleKey),
+      articleSeeds.map((seed) => seed.titleKey),
     )
     const key = sessionCacheKey(day, savedFingerprint)
 
@@ -203,6 +209,7 @@ export function useWikitabSuggestedEdits() {
     ) {
       hasMore.value = activeFeed?.hasPending() ?? hasMore.value
       error.value = null
+      isLoaded.value = true
       return
     }
 
@@ -212,7 +219,7 @@ export function useWikitabSuggestedEdits() {
     const { signal } = local
 
     activeFeed = null
-    savedArticlesSnapshot = savedArticles.map((article) => ({ ...article }))
+    savedItemsSnapshot = cloneSavedItems(savedItems)
     cacheContext = { day, savedFingerprint }
 
     if (!force) {
@@ -229,10 +236,11 @@ export function useWikitabSuggestedEdits() {
     items.value = []
     loadedSessionKey = key
     hasMore.value = false
+    isLoaded.value = false
 
     try {
       await withFeedLock(async () => {
-        activeFeed = createSuggestedEditsFeed(savedArticlesSnapshot, day, signal)
+        activeFeed = createSuggestedEditsFeed(savedItemsSnapshot, day, signal)
         if (!activeFeed) return
 
         loading.value = false
@@ -243,12 +251,14 @@ export function useWikitabSuggestedEdits() {
 
       hasMore.value = activeFeed?.hasPending() ?? false
       persistCache()
+      isLoaded.value = true
     } catch (cause) {
       if (signal.aborted || (cause as Error)?.name === 'AbortError') return
       error.value = 'Could not load suggestions.'
       items.value = []
       loadedSessionKey = null
       activeFeed = null
+      isLoaded.value = true
     } finally {
       if (controller === local) loading.value = false
     }
@@ -256,7 +266,7 @@ export function useWikitabSuggestedEdits() {
 
   async function loadMore(): Promise<void> {
     if (loadingMore.value || loading.value || fillingInitial.value) return
-    if (!savedArticlesSnapshot.length || !cacheContext) {
+    if (!savedItemsSnapshot.length || !cacheContext) {
       hasMore.value = false
       return
     }
@@ -277,6 +287,8 @@ export function useWikitabSuggestedEdits() {
           return
         }
 
+        // Do not gate on hasPending() here — a recreated feed has empty queues
+        // until start/refill; appendMany waits via takeNext().
         await appendMany(pageSize, signal)
         if (signal?.aborted) return
 
@@ -305,6 +317,7 @@ export function useWikitabSuggestedEdits() {
     loadingMore,
     hasMore,
     error,
+    isLoaded,
     refresh,
     loadMore,
     abort,

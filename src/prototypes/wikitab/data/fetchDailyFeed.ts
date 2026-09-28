@@ -12,7 +12,13 @@ import {
   utcDayKey,
 } from './feedCache'
 import { fetchMainPageOtd } from './fetchMainPageOtd'
-import { EN_WIKI_HOST, articleUrl, normalizeFeedHtml, primaryLinkTitle } from './wikitabHtml'
+import {
+  EN_WIKI_HOST,
+  articleUrl,
+  expandDykHookHtml,
+  normalizeFeedHtml,
+  primaryLinkTitle,
+} from './wikitabHtml'
 
 interface FeedThumbnail {
   source?: string
@@ -133,7 +139,7 @@ function mapDyk(response: FeaturedFeedResponse): WikitabCardData[] {
       const subject = primaryLinkTitle(html)
       return {
         key: `dyk-${index}`,
-        html: normalizeFeedHtml(html),
+        html: expandDykHookHtml(normalizeFeedHtml(html)),
         href: subject ? articleUrl(subject) : undefined,
         linkTitle: subject,
         thumbnailTitle: subject,

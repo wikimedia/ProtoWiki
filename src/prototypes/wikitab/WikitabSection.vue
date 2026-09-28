@@ -14,14 +14,20 @@ import { useEqualRowHeights } from './useEqualRowHeights'
 import { usePreventHorizontalSwipeNavigation } from './usePreventHorizontalSwipeNavigation'
 import { useRevealOnScrollEnd } from './useRevealOnScrollEnd'
 import { useSectionReveal } from './useSectionReveal'
+import {
+  discussionSavedId,
+  type SaveItemPayload,
+} from './data/savedCardHelpers'
 import type { WikitabCardData, WikitabSectionId, WikitabSectionSpec } from './sections'
 
-const ARTICLE_SECTION_IDS = new Set<WikitabSectionId>([
-  'trending',
-  'news',
-  'dyk',
-  'otd',
-  'births',
+const ARTICLE_SECTION_IDS = new Set<WikitabSectionId>(['trending', 'births'])
+const SNIPPET_SECTION_IDS = new Set<WikitabSectionId>(['dyk', 'otd', 'news'])
+const DISCUSSION_SECTION_IDS = new Set<WikitabSectionId>(['discussions'])
+
+const SAVE_SECTION_IDS = new Set<WikitabSectionId>([
+  ...ARTICLE_SECTION_IDS,
+  ...SNIPPET_SECTION_IDS,
+  ...DISCUSSION_SECTION_IDS,
 ])
 
 const props = defineProps<{
@@ -30,7 +36,7 @@ const props = defineProps<{
   loading: boolean
   error: string | null
   pinned: boolean
-  isArticleSaved: (title: string) => boolean
+  isCardSaved: (id: string) => boolean
 }>()
 
 const emit = defineEmits<{
@@ -38,11 +44,28 @@ const emit = defineEmits<{
   'refresh-section': []
   'hide-section': []
   'hide-article': [title: string]
-  'toggle-save': [card: WikitabCardData]
+  'toggle-save': [payload: SaveItemPayload]
 }>()
 
-function cardArticleTitle(card: WikitabCardData): string {
-  return card.linkTitle ?? card.title ?? ''
+function savedIdForCard(card: WikitabCardData): string {
+  if (props.spec.id === 'discussions' && card.threadId) {
+    return discussionSavedId(card.threadId)
+  }
+  return card.key
+}
+
+function savePayloadForCard(card: WikitabCardData): SaveItemPayload {
+  if (SNIPPET_SECTION_IDS.has(props.spec.id)) {
+    return {
+      kind: 'snippet',
+      card,
+      spec: props.spec,
+    }
+  }
+  if (DISCUSSION_SECTION_IDS.has(props.spec.id)) {
+    return { kind: 'discussion', card }
+  }
+  return { kind: 'article', card }
 }
 
 const items = computed(() => props.items)
@@ -179,11 +202,11 @@ watch(selection, (value) => {
         :supporting-icon="spec.supportingIcon"
         :full-hook="spec.fullHook"
         :loading="slot.loading"
-        :show-article-menu="ARTICLE_SECTION_IDS.has(spec.id) && !slot.loading && !!slot.card"
+        :show-article-menu="SAVE_SECTION_IDS.has(spec.id) && !slot.loading && !!slot.card"
         :hide-menu-section-heading="!slot.loading && slot.card ? spec.heading : undefined"
-        :is-saved="slot.card ? isArticleSaved(cardArticleTitle(slot.card)) : false"
+        :is-saved="slot.card ? isCardSaved(savedIdForCard(slot.card)) : false"
         @hide-article="emit('hide-article', $event)"
-        @toggle-save="slot.card && emit('toggle-save', slot.card)"
+        @toggle-save="slot.card && emit('toggle-save', savePayloadForCard(slot.card))"
       />
       <div ref="sentinel" class="wikitab-section__sentinel" aria-hidden="true" />
     </div>

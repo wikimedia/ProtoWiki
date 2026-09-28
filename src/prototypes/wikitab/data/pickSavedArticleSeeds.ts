@@ -1,4 +1,4 @@
-import type { WikitabSavedArticle } from './wikitabConfig'
+import type { WikitabSavedArticleSeed } from './savedCardHelpers'
 
 function hashString(input: string): number {
   let hash = 2166136261
@@ -21,19 +21,19 @@ function mulberry32(seed: number): () => number {
 
 /** Deterministic daily shuffle — salt separates modules picking different seeds. */
 export function pickSavedArticleSeeds(
-  articles: readonly WikitabSavedArticle[],
+  seeds: readonly WikitabSavedArticleSeed[],
   day: string,
   maxSeeds: number,
   salt: string,
-): WikitabSavedArticle[] {
-  if (!articles.length) return []
+): WikitabSavedArticleSeed[] {
+  if (!seeds.length) return []
 
-  const fingerprint = articles
-    .map((article) => article.titleKey)
+  const fingerprint = seeds
+    .map((seed) => seed.titleKey)
     .sort()
     .join('|')
   const rng = mulberry32(hashString(`${salt}:${day}:${fingerprint}`))
-  const copy = [...articles]
+  const copy = [...seeds]
 
   for (let i = copy.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1))

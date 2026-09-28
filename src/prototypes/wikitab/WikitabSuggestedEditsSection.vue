@@ -11,7 +11,9 @@ import {
 
 import { useSkin } from '@/composables/useSkin'
 import WikitabCard from './WikitabCard.vue'
+import { suggestionSavedId } from './data/savedCardHelpers'
 import { WIKITAB_SUGGESTED_EDITS_MODULE_SPEC, type WikitabCardData } from './sections'
+import type { SaveItemPayload } from './data/savedCardHelpers'
 import { useEqualRowHeights } from './useEqualRowHeights'
 import { usePreventHorizontalSwipeNavigation } from './usePreventHorizontalSwipeNavigation'
 import { useRevealOnScrollEnd } from './useRevealOnScrollEnd'
@@ -27,7 +29,7 @@ const props = defineProps<{
   hasMore: boolean
   error: string | null
   pinned: boolean
-  isArticleSaved: (title: string) => boolean
+  isCardSaved: (id: string) => boolean
 }>()
 
 const emit = defineEmits<{
@@ -35,13 +37,9 @@ const emit = defineEmits<{
   'refresh-section': []
   'hide-section': []
   'hide-article': [title: string]
-  'toggle-save': [card: WikitabCardData]
+  'toggle-save': [payload: SaveItemPayload]
   'load-more': []
 }>()
-
-function cardArticleTitle(card: WikitabCardData): string {
-  return card.title ?? card.linkTitle ?? ''
-}
 
 const skin = useSkin()
 const scroller = ref<HTMLElement | null>(null)
@@ -51,7 +49,6 @@ const sentinel = ref<HTMLElement | null>(null)
 const reserved = ref(spec.initialCount)
 
 const bufferedHasMore = computed(() => props.items.length > reserved.value)
-const fetchHasMore = computed(() => props.hasMore)
 
 const isInitialLoading = computed(
   () =>
@@ -59,20 +56,43 @@ const isInitialLoading = computed(
     (props.loading || props.pending || props.fillingInitial),
 )
 
-const canFetchMore = computed(
+const isEmpty = computed(
   () =>
-    fetchHasMore.value &&
     !props.loading &&
+    !props.pending &&
     !props.fillingInitial &&
-    reserved.value >= props.items.length,
+    !props.error &&
+    props.items.length === 0,
 )
+
+function shouldClampReserved(): boolean {
+  return (
+    !props.loading &&
+    !props.pending &&
+    !props.fillingInitial &&
+    !props.loadingMore &&
+    (!props.hasMore || props.items.length >= spec.initialCount)
+  )
+}
+
+function syncReservedToItems(length: number): void {
+  if (length > 0 && reserved.value === 0) {
+    reserved.value = Math.min(length, spec.initialCount)
+    return
+  }
+  if (!shouldClampReserved()) return
+  if (length < reserved.value) {
+    reserved.value = length
+  }
+}
 
 const observeScrollEnd = computed(
   () =>
     skin.value === 'mobile' &&
     !props.error &&
     !isInitialLoading.value &&
-    (bufferedHasMore.value || canFetchMore.value),
+    !props.pending &&
+    (bufferedHasMore.value || props.items.length > 0),
 )
 
 useRevealOnScrollEnd({
@@ -116,11 +136,22 @@ const slots = computed(() => {
   }))
 })
 
+watch(() => props.items.length, syncReservedToItems, { immediate: true })
+
 watch(
   () => props.loadingMore,
   (loadingMore, wasLoadingMore) => {
     if (wasLoadingMore && !loadingMore) {
       reserved.value = Math.min(reserved.value, props.items.length)
+    }
+  },
+)
+
+watch(
+  () => props.hasMore,
+  () => {
+    if (shouldClampReserved() && props.items.length < reserved.value) {
+      reserved.value = props.items.length
     }
   },
 )
@@ -136,17 +167,16 @@ watch(
 
 const canShowMore = computed(
   () =>
-    props.loading ||
-    isInitialLoading.value ||
-    bufferedHasMore.value ||
-    canFetchMore.value ||
-    props.loadingMore,
+    !props.error &&
+    !isEmpty.value &&
+    (props.items.length > 0 || props.loadingMore),
 )
 
 const showMoreDisabled = computed(
   () =>
     props.loading ||
     props.fillingInitial ||
+    props.pending ||
     isInitialLoading.value ||
     props.loadingMore,
 )
@@ -185,14 +215,16 @@ watch(selection, (value) => {
 function revealMore(): void {
   if (showMoreDisabled.value) return
 
-  if (bufferedHasMore.value) {
-    reserved.value = Math.min(reserved.value + spec.pageSize, props.items.length)
-    return
-  }
+  const targetReserved = reserved.value + spec.pageSize
+  reserved.value = Math.min(targetReserved, props.items.length)
 
-  if (canFetchMore.value) {
-    reserved.value += spec.pageSize
-    emit('load-more')
+  if (reserved.value < targetReserved) {
+    reserved.value = targetReserved
+    if (props.hasMore) {
+      emit('load-more')
+      return
+    }
+    reserved.value = props.items.length
   }
 }
 </script>
@@ -228,6 +260,10 @@ function revealMore(): void {
       <small>{{ error }}</small>
     </p>
 
+    <p v-else-if="isEmpty" class="wikitab-suggested-edits-section__empty">
+      <small>Nothing to show right now.</small>
+    </p>
+
     <div v-else ref="scroller" class="wikitab-suggested-edits-section__cards">
       <WikitabCard
         v-for="(slot, index) in slots"
@@ -237,12 +273,17 @@ function revealMore(): void {
         :height="spec.cardHeight"
         :thumbnail-size="spec.thumbnailSize"
         :card="slot.card"
+        supporting-progressive
         :loading="slot.loading"
         :show-article-menu="!slot.loading && !!slot.card"
         :hide-menu-section-heading="!slot.loading && slot.card ? spec.heading : undefined"
-        :is-saved="slot.card ? isArticleSaved(cardArticleTitle(slot.card)) : false"
+        :is-saved="
+          slot.card && slot.card.pageid !== undefined && slot.card.suggestionNeed
+            ? isCardSaved(suggestionSavedId(slot.card.pageid, slot.card.suggestionNeed))
+            : false
+        "
         @hide-article="emit('hide-article', $event)"
-        @toggle-save="slot.card && emit('toggle-save', slot.card)"
+        @toggle-save="slot.card && emit('toggle-save', { kind: 'suggestion', card: slot.card })"
       />
       <div ref="sentinel" class="wikitab-suggested-edits-section__sentinel" aria-hidden="true" />
     </div>
@@ -298,7 +339,8 @@ function revealMore(): void {
   color: var(--color-base);
 }
 
-.wikitab-suggested-edits-section__error {
+.wikitab-suggested-edits-section__error,
+.wikitab-suggested-edits-section__empty {
   display: flex;
   align-items: center;
   margin: 0;
@@ -374,4 +416,5 @@ function revealMore(): void {
   overflow: visible;
   z-index: 3;
 }
+
 </style>

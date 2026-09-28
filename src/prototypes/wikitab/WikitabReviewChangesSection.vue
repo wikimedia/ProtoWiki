@@ -10,19 +10,21 @@ import {
 } from '@wikimedia/codex-icons'
 
 import { useSkin } from '@/composables/useSkin'
-import WikitabCard from './WikitabCard.vue'
-import type { SaveItemPayload } from './data/savedCardHelpers'
-import { WIKITAB_DAILY_READS_MODULE_SPEC, type WikitabCardData } from './sections'
-import { useEqualRowHeights } from './useEqualRowHeights'
+import { changeSavedId } from './data/savedCardHelpers'
+import type { WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
+import { WIKITAB_REVIEW_CHANGES_MODULE_SPEC } from './sections'
+import WikitabSearchActivityCard from './WikitabSearchActivityCard.vue'
+import WikitabSearchLoadingCard from './WikitabSearchLoadingCard.vue'
 import { usePreventHorizontalSwipeNavigation } from './usePreventHorizontalSwipeNavigation'
 import { useRevealOnScrollEnd } from './useRevealOnScrollEnd'
 
-const spec = WIKITAB_DAILY_READS_MODULE_SPEC
+const spec = WIKITAB_REVIEW_CHANGES_MODULE_SPEC
 
 const props = defineProps<{
-  items: WikitabCardData[]
+  items: WikitabSearchActivityItem[]
   loading: boolean
   fillingInitial: boolean
+  pending: boolean
   loadingMore: boolean
   hasMore: boolean
   error: string | null
@@ -34,9 +36,9 @@ const emit = defineEmits<{
   'toggle-pin': []
   'refresh-section': []
   'hide-section': []
-  'hide-article': [title: string]
-  'toggle-save': [payload: SaveItemPayload]
   'load-more': []
+  dismiss: [revid: number]
+  'toggle-save': [item: WikitabSearchActivityItem]
 }>()
 
 const skin = useSkin()
@@ -49,33 +51,47 @@ const reserved = ref(spec.initialCount)
 const bufferedHasMore = computed(() => props.items.length > reserved.value)
 
 const isInitialLoading = computed(
-  () => props.items.length === 0 && (props.loading || props.fillingInitial),
-)
-
-const needsInitialTopUp = computed(
-  () => props.hasMore && props.items.length > 0 && props.items.length < spec.initialCount,
+  () =>
+    props.items.length === 0 &&
+    (props.loading || props.pending || props.fillingInitial),
 )
 
 const isEmpty = computed(
   () =>
-    !props.loading && !props.fillingInitial && !props.error && props.items.length === 0,
+    !props.loading &&
+    !props.pending &&
+    !props.fillingInitial &&
+    !props.error &&
+    props.items.length === 0,
 )
 
 function shouldClampReserved(): boolean {
   return (
     !props.loading &&
+    !props.pending &&
     !props.fillingInitial &&
     !props.loadingMore &&
     (!props.hasMore || props.items.length >= spec.initialCount)
   )
 }
 
+function syncReservedToItems(length: number): void {
+  if (length > 0 && reserved.value === 0) {
+    reserved.value = Math.min(length, spec.initialCount)
+    return
+  }
+  if (!shouldClampReserved()) return
+  if (length < reserved.value) {
+    reserved.value = length
+  }
+}
+
 const observeScrollEnd = computed(
   () =>
     skin.value === 'mobile' &&
     !props.error &&
-    !isEmpty.value &&
     !isInitialLoading.value &&
+    !props.pending &&
     (bufferedHasMore.value || props.items.length > 0),
 )
 
@@ -91,41 +107,30 @@ usePreventHorizontalSwipeNavigation({
   enabled: computed(() => skin.value === 'mobile'),
 })
 
-const rowColumns = computed(() => (skin.value === 'desktop' ? 2 : 1))
-
-useEqualRowHeights({
-  container: scroller,
-  columns: rowColumns,
-  cardHeight: computed(() => spec.cardHeight),
-  enabled: computed(() => !props.error && !isInitialLoading.value),
-  watchKeys: [
-    computed(() => reserved.value),
-    computed(() => props.items.length),
-    computed(() => props.loading),
-  ],
-})
-
 const slots = computed(() => {
   if (isInitialLoading.value) {
-    return Array.from({ length: spec.initialCount }, () => ({
-      card: undefined as WikitabCardData | undefined,
+    return Array.from({ length: spec.initialCount }, (_, index) => ({
+      item: undefined as WikitabSearchActivityItem | undefined,
       loading: true,
+      key: `loading-${index}`,
     }))
   }
 
   return Array.from({ length: reserved.value }, (_, index) => ({
-    card: props.items[index],
+    item: props.items[index],
     loading:
-      index >= props.items.length &&
-      (props.fillingInitial || props.loadingMore || needsInitialTopUp.value),
+      (props.fillingInitial || props.loadingMore) && index >= props.items.length,
+    key: props.items[index]?.revid ?? `slot-${index}`,
   }))
 })
+
+watch(() => props.items.length, syncReservedToItems, { immediate: true })
 
 watch(
   () => props.loadingMore,
   (loadingMore, wasLoadingMore) => {
     if (wasLoadingMore && !loadingMore) {
-      reserved.value = props.items.length
+      reserved.value = Math.min(reserved.value, props.items.length)
     }
   },
 )
@@ -140,38 +145,26 @@ watch(
 )
 
 watch(
-  () => props.fillingInitial,
-  (filling, wasFilling) => {
-    if (wasFilling && !filling && shouldClampReserved()) {
-      reserved.value = Math.min(reserved.value, props.items.length)
-    }
-  },
-)
-
-watch(
-  () => props.items.length,
-  (length) => {
-    if (!shouldClampReserved()) return
-    if (length < reserved.value) {
-      reserved.value = length
-    }
-  },
-  { immediate: true },
-)
-
-watch(
-  () => props.items.length === 0 && (props.loading || props.fillingInitial),
+  () =>
+    props.items.length === 0 &&
+    (props.loading || props.pending || props.fillingInitial),
   (isRefreshing) => {
     if (isRefreshing) reserved.value = spec.initialCount
   },
 )
 
-const canShowMore = computed(() => !props.error && !isEmpty.value)
+const canShowMore = computed(
+  () =>
+    !props.error &&
+    !isEmpty.value &&
+    (props.items.length > 0 || props.loadingMore),
+)
 
 const showMoreDisabled = computed(
   () =>
     props.loading ||
     props.fillingInitial ||
+    props.pending ||
     isInitialLoading.value ||
     props.loadingMore,
 )
@@ -210,34 +203,35 @@ watch(selection, (value) => {
 function revealMore(): void {
   if (showMoreDisabled.value) return
 
-  if (bufferedHasMore.value) {
-    reserved.value = Math.min(reserved.value + spec.pageSize, props.items.length)
-    return
-  }
+  const targetReserved = reserved.value + spec.pageSize
+  reserved.value = Math.min(targetReserved, props.items.length)
 
-  reserved.value += spec.pageSize
-  emit('load-more')
+  if (reserved.value < targetReserved) {
+    reserved.value = targetReserved
+    if (props.hasMore) {
+      emit('load-more')
+      return
+    }
+    reserved.value = props.items.length
+  }
 }
 </script>
 
 <template>
-  <section
-    class="wikitab-daily-reads-section"
-    :style="{ '--wikitab-card-height': `${spec.cardHeight}px` }"
-  >
-    <div class="wikitab-daily-reads-section__head">
-      <div class="wikitab-daily-reads-section__title">
+  <section class="wikitab-review-changes-section">
+    <div class="wikitab-review-changes-section__head">
+      <div class="wikitab-review-changes-section__title">
         <CdxIcon
           v-if="pinned"
-          class="wikitab-daily-reads-section__pin"
+          class="wikitab-review-changes-section__pin"
           :icon="cdxIconPushPin"
           icon-label="Pinned to top"
         />
-        <h2 class="wikitab-daily-reads-section__heading">{{ spec.heading }}</h2>
+        <h2 class="wikitab-review-changes-section__heading">{{ spec.heading }}</h2>
       </div>
       <CdxMenuButton
         v-model:selected="selection"
-        class="wikitab-daily-reads-section__menu"
+        class="wikitab-review-changes-section__menu"
         weight="quiet"
         :menu-items="menuItems"
         :footer="footerItem"
@@ -247,38 +241,39 @@ function revealMore(): void {
       </CdxMenuButton>
     </div>
 
-    <p v-if="error" class="wikitab-daily-reads-section__error">
+    <p v-if="error" class="wikitab-review-changes-section__error">
       <small>{{ error }}</small>
     </p>
 
-    <p v-else-if="isEmpty" class="wikitab-daily-reads-section__empty">
+    <p v-else-if="isEmpty" class="wikitab-review-changes-section__empty">
       <small>Nothing to show right now.</small>
     </p>
 
-    <div v-else ref="scroller" class="wikitab-daily-reads-section__cards">
-      <WikitabCard
-        v-for="(slot, index) in slots"
-        :key="slot.card?.key ?? index"
-        class="wikitab-daily-reads-section__card"
-        :variant="spec.variant"
-        :height="spec.cardHeight"
-        :thumbnail-size="spec.thumbnailSize"
-        :card="slot.card"
-        :supporting-icon="spec.supportingIcon"
-        :loading="slot.loading"
-        :show-article-menu="!slot.loading && !!slot.card"
-        :hide-menu-section-heading="!slot.loading && slot.card ? spec.heading : undefined"
-        :is-saved="slot.card ? isCardSaved(slot.card.key) : false"
-        @hide-article="emit('hide-article', $event)"
-        @toggle-save="slot.card && emit('toggle-save', { kind: 'article', card: slot.card })"
-      />
-      <div ref="sentinel" class="wikitab-daily-reads-section__sentinel" aria-hidden="true" />
+    <div v-else ref="scroller" class="wikitab-review-changes-section__cards">
+      <template v-for="slot in slots" :key="slot.key">
+        <WikitabSearchLoadingCard
+          v-if="slot.loading"
+          class="wikitab-review-changes-section__card"
+          variant="activity"
+        />
+        <WikitabSearchActivityCard
+          v-else-if="slot.item"
+          class="wikitab-review-changes-section__card"
+          :item="slot.item"
+          :show-thumbnail="false"
+          show-save-menu
+          :is-saved="isCardSaved(changeSavedId(slot.item.revid))"
+          @dismiss="emit('dismiss', $event)"
+          @toggle-save="emit('toggle-save', slot.item)"
+        />
+      </template>
+      <div ref="sentinel" class="wikitab-review-changes-section__sentinel" aria-hidden="true" />
     </div>
 
-    <div class="wikitab-daily-reads-section__more">
+    <div class="wikitab-review-changes-section__more">
       <CdxButton
         v-if="canShowMore"
-        class="wikitab-daily-reads-section__more-button"
+        class="wikitab-review-changes-section__more-button"
         action="progressive"
         weight="quiet"
         :disabled="showMoreDisabled"
@@ -291,12 +286,12 @@ function revealMore(): void {
 </template>
 
 <style scoped>
-.wikitab-daily-reads-section {
+.wikitab-review-changes-section {
   display: flex;
   flex-direction: column;
 }
 
-.wikitab-daily-reads-section__head {
+.wikitab-review-changes-section__head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -304,20 +299,20 @@ function revealMore(): void {
   margin-bottom: var(--spacing-50);
 }
 
-.wikitab-daily-reads-section__title {
+.wikitab-review-changes-section__title {
   display: flex;
   align-items: center;
   gap: var(--spacing-25);
   min-width: 0;
 }
 
-.wikitab-daily-reads-section__pin {
+.wikitab-review-changes-section__pin {
   flex-shrink: 0;
   width: 18px;
   height: 18px;
 }
 
-.wikitab-daily-reads-section__heading {
+.wikitab-review-changes-section__heading {
   margin: 0;
   font-family: var(--font-family-base);
   font-size: var(--font-size-large);
@@ -326,28 +321,28 @@ function revealMore(): void {
   color: var(--color-base);
 }
 
-.wikitab-daily-reads-section__error,
-.wikitab-daily-reads-section__empty {
+.wikitab-review-changes-section__error,
+.wikitab-review-changes-section__empty {
   display: flex;
   align-items: center;
   margin: 0;
-  min-height: var(--wikitab-card-height);
+  min-height: 120px;
   color: var(--color-subtle);
 }
 
-.wikitab-daily-reads-section__sentinel {
+.wikitab-review-changes-section__sentinel {
   flex: 0 0 1px;
   width: 1px;
 }
 
-.wikitab-daily-reads-section__more {
+.wikitab-review-changes-section__more {
   display: flex;
   justify-content: center;
   min-height: var(--line-height-small);
   margin-top: var(--spacing-100);
 }
 
-.wikitab-daily-reads-section__cards {
+.wikitab-review-changes-section__cards {
   --font-size-small: 0.75rem;
   --font-size-medium: 0.875rem;
   --font-size-large: 1rem;
@@ -356,18 +351,29 @@ function revealMore(): void {
   --line-height-large: 1.375rem;
 }
 
-[data-skin='desktop'] .wikitab-daily-reads-section__cards {
+[data-skin='desktop'] .wikitab-review-changes-section__cards {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
   gap: var(--spacing-100);
 }
 
-[data-skin='desktop'] .wikitab-daily-reads-section__card {
+[data-skin='desktop'] .wikitab-review-changes-section__card:not(.wikitab-search-loading-card) {
   min-height: 0;
 }
 
-[data-skin='mobile'] .wikitab-daily-reads-section__cards {
+/*
+ * No-thumbnail activity cards: optional chip + title, delta, summary, supporting.
+ * Desktop grid used to zero min-height on all slots, collapsing these skeletons.
+ */
+.wikitab-review-changes-section__cards :deep(.wikitab-search-loading-card--activity) {
+  min-height: calc(
+    2 * var(--spacing-75) + var(--spacing-50) + 1.5rem + 4 * var(--line-height-small) +
+      var(--spacing-25) + var(--spacing-50)
+  );
+}
+
+[data-skin='mobile'] .wikitab-review-changes-section__cards {
   display: flex;
   align-items: stretch;
   gap: var(--spacing-100);
@@ -380,26 +386,25 @@ function revealMore(): void {
   scrollbar-width: none;
 }
 
-[data-skin='mobile'] .wikitab-daily-reads-section__cards::-webkit-scrollbar {
+[data-skin='mobile'] .wikitab-review-changes-section__cards::-webkit-scrollbar {
   display: none;
 }
 
-[data-skin='mobile'] .wikitab-daily-reads-section__card {
+[data-skin='mobile'] .wikitab-review-changes-section__card {
   flex: 0 0 320px;
   align-self: stretch;
-  min-height: var(--wikitab-card-height);
   scroll-snap-align: start;
 }
 
-[data-skin='desktop'] .wikitab-daily-reads-section__sentinel {
+[data-skin='desktop'] .wikitab-review-changes-section__sentinel {
   display: none;
 }
 
-[data-skin='mobile'] .wikitab-daily-reads-section__more {
+[data-skin='mobile'] .wikitab-review-changes-section__more {
   display: none;
 }
 
-.wikitab-daily-reads-section__card:has(.wikitab-card--has-menu [aria-expanded='true']) {
+.wikitab-review-changes-section__card:has([aria-expanded='true']) {
   overflow: visible;
   z-index: 3;
 }

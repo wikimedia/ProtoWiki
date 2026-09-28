@@ -72,6 +72,11 @@ export function normalizeFeedHtml(html: string): string {
   return root.innerHTML.trim()
 }
 
+/** Wikifeeds DYK hooks start with `...`; Main Page shows "Did you know" instead. */
+export function expandDykHookHtml(html: string): string {
+  return html.replace(/^\.\.\.\s*/, 'Did you know ')
+}
+
 /** Replace `<a>` tags with their text content — for attribution lines that should not link out. */
 export function unwrapLinksInHtml(html: string): string {
   const root = parseFragment(html)

@@ -333,16 +333,19 @@ const PROGRESSIVE_ON_TINT = '#ffffff'
 /** Codex light-mode default — card links on neutral lightCards themes. */
 const CODEX_LIGHT_PROGRESSIVE = '#3366cc'
 
+/** Codex light-mode `--color-subtle` — white card description / supporting text. */
+const CODEX_LIGHT_SUBTLE = '#54595d'
+
 /** Codex document theme to pair with this page tint (bold → dark, light → light). */
 export function colorThemeCodexMode(theme: WikitabColorThemeStyle): 'light' | 'dark' {
   if (theme.lightCards) return 'light'
   return theme.codexMode ?? (theme.lightHover ? 'light' : 'dark')
 }
 
-/** Subtle text on in-card surfaces — gray-500 on light cards; inherit Codex dark subtle. */
+/** Subtle text on white card surfaces — match Default (Codex gray-600); dark themes inherit. */
 function colorThemeCardSubtleFg(theme: WikitabColorThemeStyle): string {
   if (colorThemeCodexMode(theme) === 'dark') return 'var(--color-subtle)'
-  return wikitabColor('gray', 500)
+  return CODEX_LIGHT_SUBTLE
 }
 
 export function colorThemeUsesLightCards(id: WikitabColorThemeId): boolean {

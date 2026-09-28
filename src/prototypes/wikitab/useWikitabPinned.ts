@@ -4,20 +4,9 @@ import {
   patchWikitabConfig,
   WIKITAB_CONFIG_STORAGE_KEY,
 } from './data/wikitabConfig'
-import {
-  WIKITAB_DAILY_READS_MODULE_ID,
-  WIKITAB_SAVED_MODULE_ID,
-  WIKITAB_SUGGESTED_EDITS_MODULE_ID,
-  type WikitabModuleId,
-  type WikitabSectionId,
-} from './sections'
-
-const FEED_ONLY_PIN_EXCLUSIONS = new Set<WikitabModuleId>([
-  WIKITAB_SAVED_MODULE_ID,
-  WIKITAB_DAILY_READS_MODULE_ID,
-  WIKITAB_SUGGESTED_EDITS_MODULE_ID,
-])
+import { type WikitabModuleId, type WikitabSectionId } from './sections'
 import type { WikitabSectionState } from './useWikitabFeed'
+import { buildEffectiveHomeOrder } from './useWikitabModuleOrder'
 
 export function useWikitabPinned() {
   const pinnedIds = ref<WikitabModuleId[]>(loadWikitabConfig().pinnedSectionIds)
@@ -34,21 +23,25 @@ export function useWikitabPinned() {
     if (isPinned(id)) {
       pinnedIds.value = pinnedIds.value.filter((pinnedId) => pinnedId !== id)
     } else {
-      pinnedIds.value = [id, ...pinnedIds.value.filter((pinnedId) => pinnedId !== id)]
+      pinnedIds.value = [...pinnedIds.value.filter((pinnedId) => pinnedId !== id), id]
     }
 
     patchWikitabConfig({ pinnedSectionIds: pinnedIds.value })
   }
 
-  function orderSections(sections: WikitabSectionState[]): WikitabSectionState[] {
-    const pinnedSet = new Set<WikitabModuleId>(pinnedIds.value)
-    const pinned = pinnedIds.value
-      .filter((id): id is WikitabSectionId => !FEED_ONLY_PIN_EXCLUSIONS.has(id))
-      .map((id) => sections.find((section) => section.spec.id === id))
-      .filter((section): section is WikitabSectionState => section !== undefined)
-    const unpinned = sections.filter((section) => !pinnedSet.has(section.spec.id))
+  function orderSections(
+    sections: WikitabSectionState[],
+    baseOrder: readonly WikitabModuleId[],
+  ): WikitabSectionState[] {
+    const sectionById = new Map(sections.map((section) => [section.spec.id, section]))
+    const ordered: WikitabSectionState[] = []
 
-    return [...pinned, ...unpinned]
+    for (const id of buildEffectiveHomeOrder(pinnedIds.value, baseOrder)) {
+      const section = sectionById.get(id as WikitabSectionId)
+      if (section) ordered.push(section)
+    }
+
+    return ordered
   }
 
   function onStorage(event: StorageEvent): void {

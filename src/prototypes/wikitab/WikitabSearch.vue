@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, useId, ref, toRef } from 'vue'
+import { computed, nextTick, onMounted, useId, ref, toRef } from 'vue'
 import { CdxMenu, CdxSearchInput } from '@wikimedia/codex'
 
 import { globalTheme } from '@/theme'
@@ -33,6 +33,14 @@ const showMenuPending = computed(() => loading.value && results.value.length ===
 
 const menuId = useId()
 const menuRef = ref<InstanceType<typeof CdxMenu> | null>(null)
+const searchInputRef = ref<InstanceType<typeof CdxSearchInput> | null>(null)
+
+onMounted(() => {
+  if (searchModeRef.value) return
+  void nextTick(() => {
+    searchInputRef.value?.focus()
+  })
+})
 
 type MenuWithHighlight = InstanceType<typeof CdxMenu> & {
   getHighlightedMenuItem?: () => { value: string | number } | null
@@ -64,6 +72,7 @@ function onKeydown(event: KeyboardEvent): void {
     :data-theme="globalTheme"
   >
     <CdxSearchInput
+      ref="searchInputRef"
       :model-value="query"
       class="wikitab-search__input"
       :use-button="true"
@@ -153,16 +162,12 @@ function onKeydown(event: KeyboardEvent): void {
   border: var(--border-width-base) solid var(--border-color-base);
   border-top: 0;
   border-radius: 0 0 var(--border-radius-base) var(--border-radius-base);
-  box-shadow:
-    0 4px 4px 0 var(--box-shadow-color-base, rgba(0, 0, 0, 0.06)),
-    0 0 8px 0 var(--box-shadow-color-base, rgba(0, 0, 0, 0.06));
 }
 
 /* :deep() — CdxMenu root does not receive parent scope id. */
 .wikitab-search :deep(.wikitab-search__menu) {
   position: static;
   border: 0;
-  box-shadow: none;
 }
 
 .wikitab-search__search-for strong {

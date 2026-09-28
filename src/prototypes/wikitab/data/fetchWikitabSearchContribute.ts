@@ -247,6 +247,11 @@ export function contributeItemToCard(item: WikitabSearchContributeItem): Wikitab
     title,
     description: item.description || undefined,
     thumbnailUrl: item.thumbnailUrl,
+    pageid: item.pageid,
+    suggestionNeed: item.need,
+    suggestionBody: item.body,
+    suggestionLabel: item.suggestionLabel,
+    editHref: item.editHref,
     supportingSignals: [
       {
         icon: cdxIconLightbulb,

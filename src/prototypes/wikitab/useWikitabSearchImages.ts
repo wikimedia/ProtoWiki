@@ -5,9 +5,12 @@ import {
   type WikitabSearchImage,
   type WikitabSearchImagesContinue,
 } from './data/fetchWikitabSearchImages'
+import { useWikitabHiddenImages } from './useWikitabHiddenImages'
 import { resetWikitabSearchImageDecode } from './useWikitabSearchImageDecode'
 
 export function useWikitabSearchImages(searchQuery: Ref<string>, enabled: Ref<boolean>) {
+  const { hiddenPageIds, isHidden, hideImage: persistHiddenImage } = useWikitabHiddenImages()
+
   const images = shallowRef<WikitabSearchImage[]>([])
   const loading = ref(false)
   const loadingMore = ref(false)
@@ -16,6 +19,11 @@ export function useWikitabSearchImages(searchQuery: Ref<string>, enabled: Ref<bo
   let continueParams: WikitabSearchImagesContinue | null = null
   let abortController: AbortController | null = null
   let loadedForQuery = ''
+
+  function filterHidden(items: WikitabSearchImage[]): WikitabSearchImage[] {
+    if (!hiddenPageIds.value.length) return items
+    return items.filter((item) => !isHidden(item.pageid))
+  }
 
   function reset(): void {
     images.value = []
@@ -27,13 +35,19 @@ export function useWikitabSearchImages(searchQuery: Ref<string>, enabled: Ref<bo
   }
 
   function appendImages(fresh: WikitabSearchImage[]): void {
-    if (!fresh.length) return
+    const visible = filterHidden(fresh)
+    if (!visible.length) return
 
     const seen = new Set(images.value.map((item) => item.pageid))
-    const next = fresh.filter((item) => !seen.has(item.pageid))
+    const next = visible.filter((item) => !seen.has(item.pageid))
     if (next.length) {
       images.value = [...images.value, ...next]
     }
+  }
+
+  function hideImage(pageid: number): void {
+    persistHiddenImage(pageid)
+    images.value = images.value.filter((item) => item.pageid !== pageid)
   }
 
   async function loadInitial(query: string): Promise<void> {
@@ -50,7 +64,7 @@ export function useWikitabSearchImages(searchQuery: Ref<string>, enabled: Ref<bo
       const result = await fetchWikitabSearchImages(fetchQuery, { signal })
       if (signal.aborted || searchQuery.value.trim() !== fetchQuery) return
 
-      images.value = result.images
+      images.value = filterHidden(result.images)
       continueParams = result.continueParams
       hasMore.value = continueParams !== null
       loadedForQuery = fetchQuery
@@ -101,6 +115,10 @@ export function useWikitabSearchImages(searchQuery: Ref<string>, enabled: Ref<bo
     loadedForQuery = ''
   })
 
+  watch(hiddenPageIds, () => {
+    images.value = images.value.filter((item) => !isHidden(item.pageid))
+  })
+
   watch(
     [enabled, searchQuery],
     ([isEnabled, query]) => {
@@ -123,5 +141,6 @@ export function useWikitabSearchImages(searchQuery: Ref<string>, enabled: Ref<bo
     loadingMore,
     hasMore,
     loadMore,
+    hideImage,
   }
 }

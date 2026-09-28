@@ -1,14 +1,46 @@
 <script setup lang="ts">
-import { computed, toRef } from 'vue'
-import { CdxIcon, CdxThumbnail } from '@wikimedia/codex'
+import { computed, ref, toRef, watch } from 'vue'
+import { CdxIcon, CdxMenuButton, CdxThumbnail } from '@wikimedia/codex'
+import {
+  cdxIconBookmark,
+  cdxIconBookmarkOutline,
+  cdxIconEllipsis,
+} from '@wikimedia/codex-icons'
 
 import { resolveEditOpportunityIcon } from './data/editOpportunityIcons'
 import type { WikitabSearchContributeItem } from './data/fetchWikitabSearchContribute'
 import { useThumbnailSlotReady } from './useThumbnailSlotReady'
 
-const props = defineProps<{
-  item: WikitabSearchContributeItem
+const props = withDefaults(
+  defineProps<{
+    item: WikitabSearchContributeItem
+    showSaveMenu?: boolean
+    isSaved?: boolean
+  }>(),
+  {
+    showSaveMenu: false,
+    isSaved: false,
+  },
+)
+
+const emit = defineEmits<{
+  'toggle-save': []
 }>()
+
+const selection = ref<string | number | null>(null)
+
+const menuItems = computed(() => [
+  {
+    value: 'save',
+    label: props.isSaved ? 'Unsave' : 'Save',
+    icon: props.isSaved ? cdxIconBookmark : cdxIconBookmarkOutline,
+  },
+])
+
+watch(selection, (value) => {
+  if (value === 'save') emit('toggle-save')
+  if (value !== null) selection.value = null
+})
 
 const thumbnailUrl = toRef(() => props.item.thumbnailUrl)
 const { showThumbnailPending } = useThumbnailSlotReady(thumbnailUrl)
@@ -22,6 +54,20 @@ const taskIcon = computed(() => resolveEditOpportunityIcon(props.item.need))
 
 <template>
   <div class="wikitab-search-contribute-card">
+    <div v-if="showSaveMenu" class="wikitab-search-contribute-card__menu">
+      <CdxMenuButton
+        v-model:selected="selection"
+        class="wikitab-search-contribute-card__menu-button"
+        weight="quiet"
+        :menu-items="menuItems"
+        :menu-config="{ renderInPlace: true }"
+        :aria-label="`${item.title} options`"
+        @click.stop
+      >
+        <CdxIcon :icon="cdxIconEllipsis" />
+      </CdxMenuButton>
+    </div>
+
     <a
       class="wikitab-search-contribute-card__link"
       :href="item.editHref"
@@ -84,6 +130,13 @@ const taskIcon = computed(() => resolveEditOpportunityIcon(props.item.need))
   border-color: var(--border-color-interactive--active, #202122);
 }
 
+.wikitab-search-contribute-card__menu {
+  position: absolute;
+  top: var(--spacing-50);
+  right: var(--spacing-50);
+  z-index: 3;
+}
+
 .wikitab-search-contribute-card__link {
   position: absolute;
   inset: 0;
@@ -117,7 +170,6 @@ const taskIcon = computed(() => resolveEditOpportunityIcon(props.item.need))
   height: 96px;
 }
 
-/* Placeholder thumbnails stay Codex neutral grey, not the page color theme. */
 .wikitab-search-contribute-card__thumbnail :deep(.cdx-thumbnail__placeholder) {
   background-color: var(--background-color-neutral-subtle);
 }
@@ -141,8 +193,11 @@ const taskIcon = computed(() => resolveEditOpportunityIcon(props.item.need))
   flex: 1 1 auto;
   flex-direction: column;
   align-self: stretch;
+  box-sizing: border-box;
   min-width: 0;
   min-height: 96px;
+  /* Reserve the corner ⋯ menu (32×32 + inset). */
+  padding-inline-end: calc(2rem + var(--spacing-75));
 }
 
 .wikitab-search-contribute-card__content::after {
@@ -155,10 +210,15 @@ const taskIcon = computed(() => resolveEditOpportunityIcon(props.item.need))
 
 .wikitab-search-contribute-card__title {
   margin: 0;
+  overflow: hidden;
   font-size: var(--font-size-medium);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-small);
   color: var(--color-base);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .wikitab-search-contribute-card__body-text {

@@ -12,7 +12,8 @@ import {
   type DailyReadsFeed,
 } from './data/fetchWikitabDailyReads'
 import { fetchWikitabPageSummary } from './data/fetchWikitabPageSummary'
-import { loadWikitabConfig, type WikitabSavedArticle } from './data/wikitabConfig'
+import { loadWikitabConfig, type WikitabSavedItem } from './data/wikitabConfig'
+import { cloneSavedItems, uniqueArticleSeedsFromSavedItems } from './data/savedCardHelpers'
 import { articleTitleKey } from './data/wikitabHtml'
 import { WIKITAB_DAILY_READS_MODULE_SPEC, type WikitabCardData } from './sections'
 
@@ -59,7 +60,7 @@ export function useWikitabDailyReads() {
   let controller: AbortController | null = null
   let activeFeed: DailyReadsFeed | null = null
   let cacheContext: { day: string; savedFingerprint: string } | null = null
-  let savedArticlesSnapshot: WikitabSavedArticle[] = []
+  let savedItemsSnapshot: WikitabSavedItem[] = []
   let loadedSessionKey: string | null = null
   let feedLock: Promise<void> = Promise.resolve()
 
@@ -133,16 +134,16 @@ export function useWikitabDailyReads() {
     error.value = null
     activeFeed = null
     cacheContext = null
-    savedArticlesSnapshot = []
+    savedItemsSnapshot = []
     loadedSessionKey = null
   }
 
   async function ensureActiveFeed(signal: AbortSignal | undefined): Promise<boolean> {
     if (activeFeed) return true
-    if (!cacheContext || !savedArticlesSnapshot.length) return false
+    if (!cacheContext || !savedItemsSnapshot.length) return false
 
     activeFeed = createDailyReadsFeed(
-      savedArticlesSnapshot,
+      savedItemsSnapshot,
       cacheContext.day,
       signal,
       seenPageidsFromCards(items.value),
@@ -221,10 +222,10 @@ export function useWikitabDailyReads() {
    * cache keyed by `{ utcDay, savedFingerprint }`; network only on cache miss.
    */
   async function refresh(
-    savedArticles: readonly WikitabSavedArticle[] = [],
+    savedItems: readonly WikitabSavedItem[] = [],
     options?: { force?: boolean },
   ): Promise<void> {
-    if (!savedArticles.length) {
+    if (!savedItems.length) {
       controller?.abort()
       clearState()
       return
@@ -232,12 +233,13 @@ export function useWikitabDailyReads() {
 
     const force = options?.force === true
     const day = utcDayKey()
+    const articleSeeds = uniqueArticleSeedsFromSavedItems(savedItems)
     const savedFingerprint = buildDailyReadsSavedFingerprint(
-      savedArticles.map((article) => article.titleKey),
+      articleSeeds.map((seed) => seed.titleKey),
     )
     const key = sessionCacheKey(day, savedFingerprint)
 
-    savedArticlesSnapshot = savedArticles.map((article) => ({ ...article }))
+    savedItemsSnapshot = cloneSavedItems(savedItems)
     cacheContext = { day, savedFingerprint }
 
     if (
@@ -286,7 +288,7 @@ export function useWikitabDailyReads() {
 
     try {
       await withFeedLock(async () => {
-        activeFeed = createDailyReadsFeed(savedArticlesSnapshot, day, signal)
+        activeFeed = createDailyReadsFeed(savedItemsSnapshot, day, signal)
         loading.value = false
         await fillInitialSlots(signal)
       })
@@ -309,7 +311,7 @@ export function useWikitabDailyReads() {
   /** Fetch the next page from the feed opened at refresh time. */
   async function loadMore(): Promise<void> {
     if (loadingMore.value || loading.value || fillingInitial.value) return
-    if (!savedArticlesSnapshot.length || !cacheContext) {
+    if (!savedItemsSnapshot.length || !cacheContext) {
       hasMore.value = false
       return
     }

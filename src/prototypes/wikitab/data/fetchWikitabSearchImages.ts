@@ -8,6 +8,7 @@
  */
 import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
+import { normalizeFeedHtml, unwrapLinksInHtml } from './wikitabHtml'
 
 const COMMONS_HOST = 'commons.wikimedia.org'
 const COMMONS_API = `https://${COMMONS_HOST}/w/api.php`
@@ -34,11 +35,67 @@ export interface WikitabSearchImage {
   thumbnailUrl: string
   filePageUrl: string
   mime: string
+  licenseType: string
+  licenseUrl: string
+  artistHtml: string
+  /** Plain-text caption from ImageDescription / ObjectName — used for saved card titles. */
+  description: string
 }
+
+type ExtMetadataField = { value?: string }
 
 function normalizeUrl(url: string | undefined): string | undefined {
   if (!url) return undefined
   return url.startsWith('//') ? `https:${url}` : url
+}
+
+function extMetadataValue(field: ExtMetadataField | undefined): string {
+  if (!field || typeof field.value !== 'string') return ''
+  return field.value.trim()
+}
+
+function htmlToPlainText(html: string): string {
+  if (!html) return ''
+  if (!html.includes('<')) return html.replace(/\s+/g, ' ').trim()
+
+  const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html')
+  return doc.body.textContent?.replace(/\s+/g, ' ').trim() ?? ''
+}
+
+function parseArtistHtml(raw: string): string {
+  if (!raw) return ''
+  return htmlToPlainText(unwrapLinksInHtml(normalizeFeedHtml(raw)))
+}
+
+function parseLicenseType(raw: string): string {
+  return htmlToPlainText(raw)
+}
+
+function parseImageMetadataText(raw: string): string {
+  if (!raw) return ''
+  return htmlToPlainText(unwrapLinksInHtml(normalizeFeedHtml(raw)))
+}
+
+/** Strip a leading language label such as "English: " from Commons metadata. */
+function stripImageMetadataLanguagePrefix(text: string): string {
+  return text.replace(/^[A-Za-z_-]+:\s*/, '').trim()
+}
+
+function resolveImageDescription(
+  imageDescriptionRaw: string,
+  objectNameRaw: string,
+  fileTitle: string,
+): string {
+  const imageDescription = stripImageMetadataLanguagePrefix(parseImageMetadataText(imageDescriptionRaw))
+  if (imageDescription) return imageDescription
+
+  const objectName = stripImageMetadataLanguagePrefix(parseImageMetadataText(objectNameRaw))
+  const fileName = imageDisplayTitle(fileTitle)
+  if (objectName && objectName !== fileName && !objectName.startsWith('File:')) {
+    return objectName
+  }
+
+  return ''
 }
 
 function commonsFilePageUrl(title: string): string {
@@ -56,6 +113,7 @@ function parseImagePage(page: {
     width?: number
     height?: number
     mime?: string
+    extmetadata?: Record<string, ExtMetadataField>
   }>
 }): WikitabSearchImage | null {
   if (typeof page.pageid !== 'number' || !page.title) return null
@@ -73,6 +131,16 @@ function parseImagePage(page: {
   const thumbnailUrl = normalizeUrl(info.thumburl ?? info.url)
   if (!thumbnailUrl) return null
 
+  const extmetadata = info.extmetadata ?? {}
+  const licenseType = parseLicenseType(extMetadataValue(extmetadata.LicenseShortName))
+  const licenseUrl = normalizeUrl(extMetadataValue(extmetadata.LicenseUrl)) ?? ''
+  const artistHtml = parseArtistHtml(extMetadataValue(extmetadata.Artist))
+  const description = resolveImageDescription(
+    extMetadataValue(extmetadata.ImageDescription),
+    extMetadataValue(extmetadata.ObjectName),
+    page.title,
+  )
+
   return {
     pageid: page.pageid,
     title: page.title,
@@ -81,7 +149,51 @@ function parseImagePage(page: {
     thumbnailUrl,
     filePageUrl: commonsFilePageUrl(page.title),
     mime,
+    licenseType,
+    licenseUrl,
+    artistHtml,
+    description,
   }
+}
+
+export function imageDisplayTitle(title: string): string {
+  const trimmed = title.trim()
+  return trimmed.startsWith('File:') ? trimmed.slice(5) : trimmed
+}
+
+export type ImageCardTitleFields = Pick<WikitabSearchImage, 'title' | 'description'>
+
+/** Human-readable card title — caption/description when available, else file name. */
+export function imageCardTitle(fields: ImageCardTitleFields): string {
+  const caption = fields.description.trim()
+  if (caption) return caption
+  return imageDisplayTitle(fields.title)
+}
+
+export type ImageAttributionFields = Pick<WikitabSearchImage, 'licenseType' | 'artistHtml'>
+
+function imageArtistText({ licenseType, artistHtml }: ImageAttributionFields): string {
+  let artist = artistHtml
+  if (licenseType && artist) {
+    const licensePrefix = new RegExp(
+      `^${licenseType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*,?\\s*`,
+      'i',
+    )
+    artist = artist.replace(licensePrefix, '').trim()
+  }
+  return artist
+}
+
+export function formatImageAttribution(fields: ImageAttributionFields): string {
+  const license = fields.licenseType.trim()
+  const artist = imageArtistText(fields)
+  if (license && artist) return `${license}, ${artist}`
+  return license || artist
+}
+
+export function imageHasAttribution(image: WikitabSearchImage | null | undefined): boolean {
+  if (!image) return false
+  return Boolean(image.licenseType || image.artistHtml)
 }
 
 export type WikitabSearchImagesContinue = Record<string, string>
@@ -102,7 +214,9 @@ export async function fetchWikitabSearchImages(
     gsrnamespace: '6',
     gsrlimit: String(WIKITAB_SEARCH_IMAGES_BATCH_SIZE),
     prop: 'imageinfo',
-    iiprop: 'url|size|mime',
+    iiprop: 'url|size|mime|extmetadata',
+    iiextmetadatalanguage: 'en',
+    iiextmetadatafilter: 'LicenseShortName|Artist|LicenseUrl|ImageDescription|ObjectName',
     iiurlwidth: String(THUMB_WIDTH),
   })
 
@@ -136,6 +250,7 @@ export async function fetchWikitabSearchImages(
             width?: number
             height?: number
             mime?: string
+            extmetadata?: Record<string, ExtMetadataField>
           }>
         }
       >

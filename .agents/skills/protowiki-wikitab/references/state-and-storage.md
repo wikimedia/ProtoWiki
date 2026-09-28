@@ -8,7 +8,7 @@ feed cache into user config, and do not persist transient view state.
 User preferences for this browser profile live in
 [`data/wikitabConfig.ts`](../../../../src/prototypes/wikitab/data/wikitabConfig.ts).
 
-- Storage key: `wikitab-config-v1` (bump the suffix on breaking shape changes)
+- Storage key: `wikitab-config-v3` (bump the suffix on breaking shape changes)
 - API: `loadWikitabConfig()`, `saveWikitabConfig()`, `patchWikitabConfig()`
 - Each field is normalized on read and write (unknown section ids dropped, etc.)
 
@@ -20,12 +20,28 @@ is the anti-pattern.
 Current fields:
 
 - `pinnedSectionIds` — most recently pinned first
+- `moduleOrderIds` — Configure-panel / home-feed order (`useWikitabModuleOrder.ts`);
+  empty uses `defaultModuleOrder()` from `sections.ts`; unknown ids dropped and
+  new modules appended on read
 - `hiddenSectionIds` — section ids hidden from the home feed and skipped for
   fetching (`useWikitabHiddenSections.ts`)
 - `hiddenArticleTitleKeys` — normalized article titles hidden from Trending on
   the home feed (`useWikitabHiddenArticles.ts`)
 - `dismissedActivityRevids` — Activity-tab revision ids permanently dismissed
   via the card ellipsis menu (`useWikitabDismissedActivity.ts`)
+- `savedItems` — typed saved entries (`WikitabSavedItem` discriminated union in
+  `data/wikitabSavedItems.ts`): **article**, **snippet**, **suggestion**,
+  **change**, **discussion**, **image**. Most recently saved first (`savedAt`). No
+  cross-source dedup — each source keeps its own stable id. Legacy v1
+  `savedArticles` and v2 `savedCards` migrate on load via
+  `savedItemMigration.ts` (v2 DYK/OTD/News → Snippet with html preserved;
+  Trending/Birthdays → normalized Article). Composable:
+  `useWikitabSavedArticles.ts`.
+
+**Article seeds for recommendations** — Daily reads, Suggested edits, and Review
+changes seed from **Article, Snippet, and Suggestion** items only
+(`uniqueArticleSeedsFromSavedItems` in `savedCardHelpers.ts`). Discussion,
+Change, and Image saves are excluded.
 
 ## Cache-only feed storage (`wikitab-feed-cache-v*`)
 
@@ -74,7 +90,9 @@ caches the loaded card list plus `hasMore` under `{ day, savedFingerprint }`.
 Refetch only when that key misses (saved pages changed, UTC day rolled, or first
 visit) and a Daily reads render is triggered via `refreshHomeSavedModules()` —
 not on every save during the session. Only the first batch loads on refresh;
-additional cards fetch on Show more. Same `?nocache=1` bypass as the feed cache.
+additional cards fetch on Show more. Cached `hasMore: false` reflects the last
+fetch only — it does not hide desktop "Show more"; clicks can still retry
+`loadMore()`. Same `?nocache=1` bypass as the feed cache.
 
 ## Cache-only Suggested edits storage (`wikitab-suggested-edits-cache-v*`)
 
@@ -82,7 +100,9 @@ additional cards fetch on Show more. Same `?nocache=1` bypass as the feed cache.
 mirrors Daily reads: `{ day, savedFingerprint, items, hasMore }`. Same refresh
 cadence via `refreshHomeSavedModules()` and the Saved-module snapshot. Resumable
 partial loads — `hasMore: true` lets `loadMore()` recreate the Contribute feed
-with `seenPageidsFromCards()` so cached cards are not duplicated.
+with `seenPageidsFromCards()` so cached cards are not duplicated. Cached
+`hasMore: false` does not remove desktop "Show more" — same retry contract as
+Daily reads.
 
 ## Transient component state
 
@@ -111,7 +131,7 @@ is stripped via `history.replaceState`.
 
 ## Cross-tab sync
 
-`useWikitabPinned.ts`, `useWikitabHiddenArticles.ts`, and
+`useWikitabPinned.ts`, `useWikitabModuleOrder.ts`, `useWikitabHiddenArticles.ts`, and
 `useWikitabDismissedActivity.ts` listen for the `storage` event on
 `WIKITAB_CONFIG_STORAGE_KEY` so pin / hide / dismiss changes in one tab update
 open tabs.

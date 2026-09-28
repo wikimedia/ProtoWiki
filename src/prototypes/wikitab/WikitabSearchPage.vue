@@ -8,6 +8,15 @@ import WikitabSearchImageGrid from './WikitabSearchImageGrid.vue'
 import WikitabSearchImageSkeletonGrid from './WikitabSearchImageSkeletonGrid.vue'
 import WikitabSearchLoadingCard from './WikitabSearchLoadingCard.vue'
 import WikitabSearchResultCard from './WikitabSearchResultCard.vue'
+import {
+  changeSavedId,
+  imageSavedId,
+  searchSavedCardId,
+  suggestionSavedId,
+} from './data/savedCardHelpers'
+import type { WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
+import type { WikitabSearchContributeItem } from './data/fetchWikitabSearchContribute'
+import type { WikitabSearchImage } from './data/fetchWikitabSearchImages'
 import type { WikitabSearchArticle } from './data/fetchWikitabSearchArticles'
 import { useInfiniteScroll } from './useInfiniteScroll'
 import { useWikitabSearchActivity } from './useWikitabSearchActivity'
@@ -19,11 +28,14 @@ import { useWikitabSearchImageColumnCount } from './useWikitabSearchImageColumns
 
 const props = defineProps<{
   searchQuery: string
-  isArticleSaved: (title: string) => boolean
+  isCardSaved: (id: string) => boolean
 }>()
 
 const emit = defineEmits<{
   'toggle-save-article': [article: WikitabSearchArticle]
+  'toggle-save-activity': [item: WikitabSearchActivityItem]
+  'toggle-save-contribute': [item: WikitabSearchContributeItem]
+  'toggle-save-image': [image: WikitabSearchImage]
 }>()
 
 const searchQueryRef = toRef(props, 'searchQuery')
@@ -62,6 +74,7 @@ const {
   loadingMore: imagesLoadingMore,
   hasMore: imagesHasMore,
   loadMore: loadMoreImages,
+  hideImage,
 } = useWikitabSearchImages(searchQueryRef, imagesEnabled)
 
 const {
@@ -166,7 +179,7 @@ const INITIAL_IMAGE_SKELETON_COUNT = 16
             :article="article"
             :search-query="searchQuery"
             :thumbnail-backfill-pending="thumbnailBackfillPendingPageids.has(article.pageid)"
-            :is-article-saved="isArticleSaved(article.title)"
+            :is-article-saved="isCardSaved(searchSavedCardId(article.title))"
             @toggle-save="emit('toggle-save-article', article)"
           />
 
@@ -213,7 +226,10 @@ const INITIAL_IMAGE_SKELETON_COUNT = 16
             :column-count="imageColumnCount"
             :loading-more="imagesLoadingMore"
             :scroll-enabled="imagesScrollEnabled"
+            :is-image-saved="(pageid) => isCardSaved(imageSavedId(pageid))"
             @reach="loadMoreImages"
+            @hide="hideImage"
+            @toggle-save-image="emit('toggle-save-image', $event)"
           />
         </div>
       </CdxTab>
@@ -243,7 +259,10 @@ const INITIAL_IMAGE_SKELETON_COUNT = 16
             <WikitabSearchActivityCard
               v-if="slot.kind === 'resolved'"
               :item="slot.item"
+              show-save-menu
+              :is-saved="isCardSaved(changeSavedId(slot.item.revid))"
               @dismiss="dismissActivity"
+              @toggle-save="emit('toggle-save-activity', slot.item)"
             />
           </template>
 
@@ -295,7 +314,13 @@ const INITIAL_IMAGE_SKELETON_COUNT = 16
             v-for="slot in contributeSlots"
             :key="slot.kind === 'resolved' ? slot.item.pageid : slot.kind"
           >
-            <WikitabSearchContributeCard v-if="slot.kind === 'resolved'" :item="slot.item" />
+            <WikitabSearchContributeCard
+              v-if="slot.kind === 'resolved'"
+              :item="slot.item"
+              show-save-menu
+              :is-saved="isCardSaved(suggestionSavedId(slot.item.pageid, slot.item.need))"
+              @toggle-save="emit('toggle-save-contribute', slot.item)"
+            />
           </template>
 
           <template v-if="contributeLoadingTail">
@@ -401,6 +426,8 @@ const INITIAL_IMAGE_SKELETON_COUNT = 16
  * screen edge, with 2px inset on each side. Tabs and other tab panels stay put.
  */
 .wikitab-search-page__list--images {
+  --font-size-small: 0.75rem;
+
   gap: 0;
   box-sizing: border-box;
   width: 100vw;

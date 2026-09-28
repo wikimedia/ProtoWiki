@@ -130,6 +130,9 @@ function mapDiscussionToCard(discussion: ActiveDiscussion): WikitabCardData {
     supportingTextEnd: relative,
     href: noticeboardUrl(discussion.noticeboardPage, discussion.threadId),
     linkTitle: discussion.title,
+    threadId: discussion.threadId,
+    noticeboardPage: discussion.noticeboardPage,
+    commentCount: discussion.commentCount,
   }
 }
 

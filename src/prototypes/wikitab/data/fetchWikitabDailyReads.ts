@@ -1,7 +1,11 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import { pickSavedArticleSeeds } from './pickSavedArticleSeeds'
-import { loadWikitabConfig, type WikitabSavedArticle } from './wikitabConfig'
+import {
+  uniqueArticleSeedsFromSavedItems,
+  type WikitabSavedArticleSeed,
+} from './savedCardHelpers'
+import { loadWikitabConfig, type WikitabSavedItem } from './wikitabConfig'
 import { filterDisambiguationPageIds } from './filterDisambiguationPages'
 import { fetchWikitabPageSummary } from './fetchWikitabPageSummary'
 import type { WikitabCardData } from '../sections'
@@ -83,12 +87,12 @@ function displayTitle(title: string): string {
   return title.trim().replace(/_/g, ' ')
 }
 
-/** Pick up to four saved articles using a deterministic daily shuffle. */
+/** Pick up to four unique saved article seeds using a deterministic daily shuffle. */
 export function pickDailyReadSeeds(
-  articles: readonly WikitabSavedArticle[],
+  seeds: readonly WikitabSavedArticleSeed[],
   day: string,
-): WikitabSavedArticle[] {
-  return pickSavedArticleSeeds(articles, day, MAX_SEEDS, 'daily-reads')
+): WikitabSavedArticleSeed[] {
+  return pickSavedArticleSeeds(seeds, day, MAX_SEEDS, 'daily-reads')
 }
 
 interface MorelikeBatch {
@@ -184,9 +188,9 @@ async function enrichDailyReadsCard(
   return card
 }
 
-function dailyMergeRng(day: string, savedArticles: readonly WikitabSavedArticle[]): () => number {
-  const fingerprint = savedArticles
-    .map((article) => article.titleKey)
+function dailyMergeRng(day: string, seeds: readonly WikitabSavedArticleSeed[]): () => number {
+  const fingerprint = seeds
+    .map((seed) => seed.titleKey)
     .sort()
     .join('|')
   return mulberry32(hashString(`${day}:${fingerprint}:merge`))
@@ -204,7 +208,8 @@ export class DailyReadsFeed {
   private readonly wakeups: Array<() => void> = []
 
   constructor(
-    savedArticles: readonly WikitabSavedArticle[],
+    articleSeeds: readonly WikitabSavedArticleSeed[],
+    excludedTitleKeys: Iterable<string>,
     day: string,
     signal: AbortSignal | undefined,
     seenPageids?: Iterable<number>,
@@ -213,11 +218,11 @@ export class DailyReadsFeed {
       for (const pageid of seenPageids) this.seenPageids.add(pageid)
     }
 
-    this.rng = dailyMergeRng(day, savedArticles)
+    this.rng = dailyMergeRng(day, articleSeeds)
 
-    const seeds = pickDailyReadSeeds(savedArticles, day)
-    for (const article of savedArticles) {
-      this.excludedTitleKeys.add(article.titleKey)
+    const seeds = pickDailyReadSeeds(articleSeeds, day)
+    for (const titleKey of excludedTitleKeys) {
+      this.excludedTitleKeys.add(titleKey)
     }
     for (const titleKey of loadWikitabConfig().hiddenArticleTitleKeys) {
       this.excludedTitleKeys.add(titleKey)
@@ -425,7 +430,7 @@ export class DailyReadsFeed {
   }
 
   private async loadSeed(
-    seed: WikitabSavedArticle,
+    seed: WikitabSavedArticleSeed,
     signal: AbortSignal | undefined,
     queueIndex: number,
   ): Promise<void> {
@@ -485,10 +490,12 @@ export class DailyReadsFeed {
 }
 
 export function createDailyReadsFeed(
-  savedArticles: readonly WikitabSavedArticle[],
+  savedItems: readonly WikitabSavedItem[],
   day: string,
   signal?: AbortSignal,
   seenPageids?: Iterable<number>,
 ): DailyReadsFeed {
-  return new DailyReadsFeed(savedArticles, day, signal, seenPageids)
+  const articleSeeds = uniqueArticleSeedsFromSavedItems(savedItems)
+  const excludedTitleKeys = savedItems.map((saved) => saved.articleTitleKey)
+  return new DailyReadsFeed(articleSeeds, excludedTitleKeys, day, signal, seenPageids)
 }
