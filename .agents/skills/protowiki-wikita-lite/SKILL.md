@@ -98,17 +98,15 @@ English (no param) behaves exactly as before.
   featured content only when no native source works, and the UI labels it
   ("Machine translated from English Wikipedia"). Plain `fetch` only: MinT's
   CORS preflight rejects `Api-User-Agent`.
-- **UI strings** — `wikita-lite/i18n.ts` (`localized()` / `MESSAGES` /
-  `format()`): module titles, tabs, greetings, "Show more", empty states. Other
-  copy stays English. `src/lib/contentFormat.ts` localizes relative times and
-  counts.
+- **UI strings** — every interface string goes through `t()` from `@/i18n`
+  (catalogs in `src/i18n/locales/<lang>/`); `?uselang=` overrides the interface
+  language. See the [`protowiki-i18n`](../protowiki-i18n/SKILL.md) skill.
 - **Caches** — `readVersionedStore` / `writeVersionedStore` and the page /
   LiftWing caches use `langScopedStorageKey()`, so languages never share
   entries.
-- **Adding a language** — add a `wikiCapabilities` entry and a block in
-  `i18n.ts` (plus local namespace prefixes in `enwikiTitle.ts`). RTL languages
-  also need the RTL pass (Codex bidi CSS, `<html dir>`, logical CSS), which
-  hasn't been done yet.
+- **Adding a language** — see `protowiki-i18n` (catalogs + `wikiCapabilities`
+  entry + namespace prefixes). Supported today: en, fr, es. RTL languages also
+  need the RTL pass, which hasn't been done yet.
 
 ## API identity
 

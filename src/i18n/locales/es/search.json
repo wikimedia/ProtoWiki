@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"placeholder": "Buscar en Wikipedia",
+	"dialogLabel": "Buscar en Wikipedia",
+	"close": "Cerrar la búsqueda",
+	"loading": "Cargando resultados de búsqueda"
+}

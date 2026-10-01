@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"configureTitle": "Configurar",
+	"dismissedModules": "Módulos ocultos",
+	"restore": "Restaurar",
+	"done": "Listo",
+	"useDefaultSettings": "Usar mi configuración predeterminada",
+	"homeLayoutTitle": "Diseño de la página de inicio",
+	"homeLayoutSubtitle": "Arrastra las secciones para reordenarlas",
+	"loadingArticle": "Cargando el artículo",
+	"articleLoadError": "No se pudo cargar este artículo: $1"
+}

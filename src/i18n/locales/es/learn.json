@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"mentorDescription": "Hazle a tu mentor una pregunta sobre cómo editar.",
+	"mentorLastActive": "Última actividad hace {{PLURAL:$1|$1 hora|$1 horas}}",
+	"guideTitle": "Cómo editar una página",
+	"guideDescription": "Introducción a la edición en Wikipedia.",
+	"guideSupportingText": "Guía",
+	"videoTitle": "¿Qué diferencia a Wikipedia de otras redes sociales?",
+	"videoDescription": "Introducción a la edición en Wikipedia.",
+	"videoSupportingText": "Vídeo de Wikiminute",
+	"videoMediaAlt": "Miniatura del vídeo de Wikiminute: ¿Qué diferencia a Wikipedia de las redes sociales?"
+}

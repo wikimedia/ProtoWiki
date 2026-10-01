@@ -15,7 +15,7 @@ import './styles/dark.css'
 import { initTheming } from './theme'
 import { initAppPlatform } from './app-platform'
 import { loadConfig } from './config'
-import { getUiLang } from './i18n'
+import { codexI18n, getUiLang } from './i18n'
 
 import '@/composables/useConfig'
 
@@ -90,4 +90,4 @@ if (import.meta.hot) {
   handleHotUpdate(router)
 }
 
-createApp(App).use(router).mount('#app')
+createApp(App).use(router).provide('CdxI18nFunction', codexI18n).mount('#app')

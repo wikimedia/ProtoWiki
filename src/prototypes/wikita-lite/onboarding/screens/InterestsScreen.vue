@@ -14,6 +14,7 @@ import { t } from '@/i18n'
 import InterestSuggestions from '../components/InterestSuggestions.vue'
 import { useInterestSuggestions } from '../data/useInterestSuggestions'
 import { fetchTitleSearchResults } from '@/components/search/titleSearch'
+import { getContentLang } from '@/lib/contentLang'
 import { normalizeTitleKey } from '../data/titleKey'
 import type { FlowState } from '../data/useWikitaLiteOnboardingFlow'
 
@@ -98,6 +99,7 @@ async function fetchMenu(term: string): Promise<void> {
   try {
     const pages = await fetchTitleSearchResults(trimmed, {
       signal: abortController.signal,
+      lang: getContentLang(),
       clientTag: 'wikita-lite-onboarding-interests',
     })
     const existing = new Set(interests.value.map((item) => item.toLowerCase()))

@@ -12,7 +12,11 @@ import {
 import { fetchPageSummary, type PageSummary } from './pageSummary'
 import type { HomeBornOnThisDay, HomeDidYouKnow, HomeFeatured, HomeFeaturedTab } from './types'
 import { normalizeQid } from './wikidataApi'
-import { fetchMainPageFeatured, fetchMainPageHooks } from './fetchMainPageSection'
+import {
+  fetchFeaturedTitleFromWikitext,
+  fetchMainPageFeatured,
+  fetchMainPageHooks,
+} from './fetchMainPageSection'
 import { wikiCapabilities } from './wikiCapabilities'
 import { getContentLang, isDefaultContentLang } from '@/lib/contentLang'
 import { mintTranslate } from '@/lib/mint'
@@ -300,19 +304,27 @@ async function resolveFeaturedArticle(
   const fromFeed = parseTfa(tfa)
   if (fromFeed || isDefaultContentLang()) return fromFeed
 
-  const { featuredPage, mintFallback } = wikiCapabilities()
-  if (featuredPage) {
-    const native = await fetchMainPageFeatured(featuredPage, signal).catch(() => undefined)
-    if (native) {
-      const fields = await pageCardFields(native.title, signal)
-      return {
-        title: fields.title,
-        enwikiTitle: native.title,
-        description: fields.description ?? native.extract,
-        thumbnailUrl: fields.thumbnailUrl,
-        articleUrl: fields.articleUrl,
-        itemId: fields.itemId,
-      }
+  const { featuredPage, featuredTitleSource, mintFallback } = wikiCapabilities()
+  const native = featuredTitleSource
+    ? await fetchFeaturedTitleFromWikitext(
+        featuredTitleSource.wikitext,
+        featuredTitleSource.param,
+        signal,
+      )
+        .then((title) => (title ? { title, extract: '' } : undefined))
+        .catch(() => undefined)
+    : featuredPage
+      ? await fetchMainPageFeatured(featuredPage, signal).catch(() => undefined)
+      : undefined
+  if (native) {
+    const fields = await pageCardFields(native.title, signal)
+    return {
+      title: fields.title,
+      enwikiTitle: native.title,
+      description: fields.description ?? native.extract,
+      thumbnailUrl: fields.thumbnailUrl,
+      articleUrl: fields.articleUrl,
+      itemId: fields.itemId,
     }
   }
 

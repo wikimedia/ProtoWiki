@@ -82,6 +82,33 @@ export async function fetchMainPageFeatured(
   return undefined
 }
 
+/** Featured title from a template parameter (`| título = …`) in expanded wikitext. */
+export async function fetchFeaturedTitleFromWikitext(
+  wikitext: string,
+  param: string,
+  signal?: AbortSignal,
+): Promise<string | undefined> {
+  const url = wikiActionUrl({
+    action: 'expandtemplates',
+    text: wikitext,
+    prop: 'wikitext',
+    formatversion: '2',
+  })
+  const response = await fetchWikimedia(url, {
+    signal,
+    headers: wikimediaApiFetchHeaders('wikita-lite-main-page-section'),
+  })
+  if (!response.ok) return undefined
+
+  const json = (await response.json()) as { expandtemplates?: { wikitext?: string } }
+  // msgnw escapes the source as HTML entities.
+  const source = new DOMParser().parseFromString(json.expandtemplates?.wikitext ?? '', 'text/html')
+    .documentElement.textContent ?? ''
+  const escaped = param.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const match = source.match(new RegExp(`\\|\\s*${escaped}\\s*=\\s*([^\\n|}]+)`))
+  return match?.[1].trim() || undefined
+}
+
 export async function fetchMainPageHooks(
   page: string,
   signal?: AbortSignal,

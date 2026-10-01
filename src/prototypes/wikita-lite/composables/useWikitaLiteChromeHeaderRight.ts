@@ -10,7 +10,7 @@ const DEFAULT_SEARCH: HeaderButtonItem = {
   type: 'button',
   icon: 'search',
   get label() {
-    return t('data.headerSearch')
+    return t('chrome.search')
   },
 }
 
@@ -18,7 +18,7 @@ const DEFAULT_BELL: HeaderButtonItem = {
   type: 'button',
   icon: 'bell-outline',
   get label() {
-    return t('data.headerNotifications')
+    return t('chrome.notifications')
   },
 }
 
@@ -26,7 +26,7 @@ const DEFAULT_USER: HeaderButtonItem = {
   type: 'button',
   icon: 'user-avatar-outline',
   get label() {
-    return t('data.headerUserMenu')
+    return t('chrome.userMenu')
   },
 }
 

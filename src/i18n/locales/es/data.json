@@ -1,0 +1,21 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"layoutFurtherReading": "Lecturas del día",
+	"layoutSuggestedEdits": "Ediciones sugeridas",
+	"layoutMentor": "Tu mentor",
+	"layoutImpact": "Tu impacto",
+	"layoutSaved": "Páginas guardadas",
+	"layoutTrending": "Tendencias",
+	"layoutFeatured": "Artículo destacado",
+	"layoutDidYouKnow": "¿Sabías que…?",
+	"layoutRecentActivity": "Revisar cambios",
+	"layoutActiveDiscussions": "Discusiones activas",
+	"yearsOld": "{{PLURAL:$1|$1 año|$1 años}}",
+	"newList": "Lista nueva",
+	"translationLoadError": "No se pudieron cargar las sugerencias de traducción.",
+	"editedPagesMissingUsername": "Escribe un nombre de usuario",
+	"editedPagesUserNotFound": "No se encontró el usuario «$1»",
+	"editedPagesNoEdits": "«$1» no ha editado ningún artículo recientemente"
+}

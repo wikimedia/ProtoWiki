@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"featured": "Artículo destacado",
+	"articleOfTheDay": "Artículo del día",
+	"didYouKnow": "¿Sabías que…?",
+	"bornOnThisDay": "Nacieron un día como hoy",
+	"trending": "Tendencias",
+	"saved": "Guardados",
+	"furtherReading": "Lecturas del día",
+	"mentor": "Tu mentor",
+	"mentions": "Menciones",
+	"suggestedEdits": "Ediciones sugeridas",
+	"recentChanges": "Cambios recientes",
+	"reviewChanges": "Revisar cambios",
+	"activeDiscussions": "Discusiones activas",
+	"translateArticles": "Traducir artículos",
+	"learn": "Aprender",
+	"impact": "Tu impacto",
+	"mentorUnassigned": "Un mentor para editar"
+}

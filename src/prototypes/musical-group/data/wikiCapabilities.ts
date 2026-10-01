@@ -11,6 +11,13 @@ import { enwikiArticleUrl } from './enwikiTitle'
 export interface WikiCapabilities {
   /** Main-page subpage holding today's featured article, when the feed has no `tfa`. */
   featuredPage?: string
+  /**
+   * Alternative to `featuredPage` for wikis whose main-page summary doesn't
+   * link the article itself: wikitext (expanded with `expandtemplates`, so
+   * `{{msgnw:…}}` yields a template's source) and the parameter naming the
+   * featured article.
+   */
+  featuredTitleSource?: { wikitext: string; param: string }
   /** Main-page subpage listing today's "Did you know" hooks, when the feed has no `dyk`. */
   didYouKnowPage?: string
   /**
@@ -56,6 +63,26 @@ const CAPABILITIES: Record<string, WikiCapabilities> = {
     ],
     usernamePolicyPage: "Wikipédia:Nom d'utilisateur",
     editingGuidePage: 'Aide:Premiers pas',
+  },
+  es: {
+    // The Portada rotates lettered subtemplates; its summary bolds a phrase
+    // that links elsewhere, so read the template's `título` instead.
+    featuredTitleSource: {
+      wikitext: '{{msgnw:Plantilla:Portada:Destacado/{{Portada:Destacado/Letra}}}}',
+      param: 'título',
+    },
+    // eswiki's Portada has no "¿Sabías que…?" section.
+    mintFallback: true,
+    discussionPages: [
+      'Wikipedia:Café/Archivo/Ayuda/Actual',
+      'Wikipedia:Café/Archivo/Miscelánea/Actual',
+      'Wikipedia:Café/Archivo/Propuestas/Actual',
+      'Wikipedia:Café/Archivo/Políticas/Actual',
+      'Wikipedia:Café/Archivo/Técnica/Actual',
+      'Wikipedia:Café/Archivo/Noticias/Actual',
+    ],
+    usernamePolicyPage: 'Wikipedia:Nombres de usuario',
+    editingGuidePage: 'Ayuda:Introducción',
   },
 }
 

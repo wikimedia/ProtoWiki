@@ -149,3 +149,16 @@ export function messageGroup<K extends string>(
   }
   return group
 }
+
+/**
+ * Codex's own strings ("(optional)", close buttons, chip announcements),
+ * provided as `CdxI18nFunction` in main.ts. `cdx-label-optional-flag` reads
+ * `codex.labelOptionalFlag`. English returns `undefined` so Codex keeps its
+ * built-in defaults; so does any key without a translation.
+ */
+export function codexI18n(key: string, ...params: MessageParam[]): string | undefined {
+  if (getUiLang() === DEFAULT_CONTENT_LANG || !key.startsWith('cdx-')) return undefined
+  const name = key.slice(4).replace(/-([a-z0-9])/g, (_match, char: string) => char.toUpperCase())
+  const messageKey = `codex.${name}`
+  return catalogs[getUiLang()]?.[messageKey] !== undefined ? t(messageKey, ...params) : undefined
+}

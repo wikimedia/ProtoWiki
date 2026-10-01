@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"chipInputChipAdded": "Codex `cdx-chip-input-chip-added`: screen-reader announcement. $1 = chip text.",
+	"chipInputChipRemoved": "Codex `cdx-chip-input-chip-removed`. $1 = chip text.",
+	"dialogCloseButtonLabel": "Codex `cdx-dialog-close-button-label`.",
+	"inputChipAriaDescription": "Codex `cdx-input-chip-aria-description`: screen-reader hint on a chip.",
+	"labelOptionalFlag": "Codex `cdx-label-optional-flag`: shown after an optional field label.",
+	"messageDismissButtonLabel": "Codex `cdx-message-dismiss-button-label`.",
+	"popoverCloseButtonLabel": "Codex `cdx-popover-close-button-label`.",
+	"searchInputSearchButtonLabel": "Codex `cdx-search-input-search-button-label`.",
+	"typeaheadSearchSearchResultsLabel": "Codex `cdx-typeahead-search-search-results-label`."
+}

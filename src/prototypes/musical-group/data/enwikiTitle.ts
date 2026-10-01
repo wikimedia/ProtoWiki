@@ -12,6 +12,7 @@ const EN_WIKI_PREFIXES = ['File:', 'Category:', 'Help:', 'Wikipedia:', 'Template
 /** Local namespace names (hrefs use these); canonical English ones always apply too. */
 const LOCAL_NAMESPACE_PREFIXES: Record<string, string[]> = {
   fr: ['Fichier:', 'Catégorie:', 'Aide:', 'Wikipédia:', 'Modèle:', 'Portail:', 'Spécial:', 'Projet:'],
+  es: ['Archivo:', 'Categoría:', 'Ayuda:', 'Plantilla:', 'Especial:', 'Anexo:', 'Wikiproyecto:', 'Usuario:'],
 }
 
 function nonArticlePrefixes(): string[] {

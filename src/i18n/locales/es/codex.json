@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"chipInputChipAdded": "Se añadió el elemento $1.",
+	"chipInputChipRemoved": "Se quitó el elemento $1.",
+	"dialogCloseButtonLabel": "Cerrar",
+	"inputChipAriaDescription": "Pulsa Intro para editar o Suprimir para quitar",
+	"labelOptionalFlag": "(opcional)",
+	"messageDismissButtonLabel": "Cerrar",
+	"popoverCloseButtonLabel": "Cerrar",
+	"searchInputSearchButtonLabel": "Buscar",
+	"typeaheadSearchSearchResultsLabel": "Resultados de búsqueda"
+}

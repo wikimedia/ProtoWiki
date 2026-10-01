@@ -6,6 +6,8 @@ import { articleOpener } from '@/components/article/shared/articleOpener'
 import { sameWikiTitle } from '@/components/article/shared/wikiTitle'
 import { fetchTitleSearchResults } from '@/components/search/titleSearch'
 import { wikiArticleUrl } from '@/config'
+import { t } from '@/i18n'
+import { contentWikiHost } from '@/lib/contentLang'
 import type { Skin, Theme } from '@/theme'
 
 interface Props {
@@ -32,8 +34,9 @@ interface Emits {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  host: 'en.wikipedia.org',
-  placeholder: 'Search Wikipedia',
+  // Factories so `?lang=` / `?uselang=` apply (both English by default).
+  host: () => contentWikiHost(),
+  placeholder: () => t('search.placeholder'),
   limit: 10,
   skin: undefined,
   theme: undefined,
