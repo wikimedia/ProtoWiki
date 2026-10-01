@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"title": "Title of the Personalization dialog, where the user picks which activity shapes their Home recommendations.",
+	"subtitle": "Subtitle of the Personalization dialog. \"Home\" is the Wikita-lite Home page.",
+	"openButton": "Label (and accessible name) of the header button on Daily reads, Suggested edits and Review changes pages that opens the Personalization dialog."
+}

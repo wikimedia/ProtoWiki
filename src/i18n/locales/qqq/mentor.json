@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"unassignedDescription": "Mentor module body before a mentor is assigned.",
+	"unassignedCta": "Mentor module button before a mentor is assigned.",
+	"assignmentNotice": "Mentor module notice once a mentor is assigned.",
+	"assignedCta": "Mentor module button once a mentor is assigned.",
+	"profileBio": "Sample self-introduction of the (fictional) assigned mentor, written in the first person by the mentor \"Sam\" (username Samwalton9). Keep the name.",
+	"editingSince": "Mentor profile supporting line. $1 = year the mentor started editing (e.g. 2011). Subject is the mentor."
+}

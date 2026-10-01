@@ -9,6 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "type-check": "vue-tsc --noEmit",
+    "i18n:check": "node scripts/check-i18n.mjs",
     "format": "prettier --write \"src/**/*.{ts,vue,css}\"",
     "lint": "eslint . --ext .ts,.vue",
     "snapshot:wiki-skins": "bash scripts/snapshot-wiki-skins.sh"

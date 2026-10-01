@@ -9,6 +9,8 @@ import {
   type MenuItemValue,
 } from '@wikimedia/codex'
 
+import { t } from '@/i18n'
+
 import InterestSuggestions from '../components/InterestSuggestions.vue'
 import { useInterestSuggestions } from '../data/useInterestSuggestions'
 import { fetchTitleSearchResults } from '@/components/search/titleSearch'
@@ -133,7 +135,7 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="ob-page">
-    <h1 class="ob-title">What are 3 of your interests?</h1>
+    <h1 class="ob-title">{{ t('onboarding.interestsTitle') }}</h1>
 
     <div class="ob-body">
       <div class="interests__fields">
@@ -143,7 +145,7 @@ onBeforeUnmount(() => {
             :status="poolLimitReached ? 'success' : 'default'"
             :messages="{}"
           >
-            <template #label>Your interests</template>
+            <template #label>{{ t('onboarding.interestsLabel') }}</template>
 
             <CdxMultiselectLookup
               v-model:input-chips="inputChips"
@@ -152,11 +154,11 @@ onBeforeUnmount(() => {
               :menu-items="menuItems"
               :menu-config="menuConfig"
               :separate-input="hasInterests"
-              placeholder="Search articles or topics"
-              aria-label="Search articles or topics"
+              :placeholder="t('onboarding.interestsSearch')"
+              :aria-label="t('onboarding.interestsSearch')"
               @input="onSearchInput"
             >
-              <template #no-results>No results found.</template>
+              <template #no-results>{{ t('onboarding.noResults') }}</template>
             </CdxMultiselectLookup>
           </CdxField>
 
@@ -164,7 +166,7 @@ onBeforeUnmount(() => {
             <Transition name="interests-message">
               <div v-show="poolLimitReached" class="interests__message">
                 <CdxMessage type="success" inline>
-                  All set! Your Home is personalized and ready.
+                  {{ t('onboarding.interestsDone') }}
                 </CdxMessage>
               </div>
             </Transition>

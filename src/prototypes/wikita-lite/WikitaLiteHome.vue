@@ -4,6 +4,7 @@ import { computed, watch } from 'vue'
 import { CdxProgressBar, CdxTab, CdxTabs } from '@wikimedia/codex'
 
 import { useConfig } from '@/composables/useConfig'
+import { t } from '@/i18n'
 
 import { useWikitaSaveFeedback } from '../musical-group/composables/useWikitaSaveFeedback'
 import {
@@ -669,14 +670,14 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
             v-if="editTab.showLoadingBar('impact') && !impactHasContent"
             class="wikita-lite-home__loading"
           >
-            <CdxProgressBar inline aria-label="Loading your impact" />
+            <CdxProgressBar inline :aria-label="t('home.loadingImpact')" />
           </div>
           <ImpactModule v-if="impactHasContent" v-bind="impactCardProps" />
           <div
             v-if="editTab.showLoadingBar('impact') && impactHasContent"
             class="wikita-lite-home__loading"
           >
-            <CdxProgressBar inline aria-label="Loading your impact" />
+            <CdxProgressBar inline :aria-label="t('home.loadingImpact')" />
           </div>
         </WikitaLiteModule>
 
@@ -960,14 +961,14 @@ getBookmarkChangeSkipFeeds = (): PersonalizedFeedId[] => {
             v-if="contributeTab.showLoadingBar('impact') && !impactHasContent"
             class="wikita-lite-home__loading"
           >
-            <CdxProgressBar inline aria-label="Loading your impact" />
+            <CdxProgressBar inline :aria-label="t('home.loadingImpact')" />
           </div>
           <ImpactModule v-if="impactHasContent" v-bind="impactCardProps" />
           <div
             v-if="contributeTab.showLoadingBar('impact') && impactHasContent"
             class="wikita-lite-home__loading"
           >
-            <CdxProgressBar inline aria-label="Loading your impact" />
+            <CdxProgressBar inline :aria-label="t('home.loadingImpact')" />
           </div>
         </WikitaLiteModule>
 

@@ -1,4 +1,5 @@
 import { normalizeWikiUsername, wikimediaApiFetchHeaders } from '@/config'
+import { t } from '@/i18n'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 
 import { wikiActionUrl } from '../../musical-group/data/enwikiTitle'
@@ -33,7 +34,7 @@ export async function fetchUserEditedPages(
 ): Promise<string[]> {
   const username = normalizeWikiUsername(rawUsername)
   if (!username) {
-    throw new FetchUserEditedPagesError('Enter a username', 'missing_username')
+    throw new FetchUserEditedPagesError(t('data.editedPagesMissingUsername'), 'missing_username')
   }
 
   assertNotAborted(signal)
@@ -55,7 +56,7 @@ export async function fetchUserEditedPages(
   }
   const userInfo = usersJson.query?.users?.[0]
   if (!userInfo || userInfo.missing) {
-    throw new FetchUserEditedPagesError(`User "${username}" not found`, 'user_not_found')
+    throw new FetchUserEditedPagesError(t('data.editedPagesUserNotFound', username), 'user_not_found')
   }
 
   assertNotAborted(signal)
@@ -91,7 +92,7 @@ export async function fetchUserEditedPages(
 
   if (!titles.length) {
     throw new FetchUserEditedPagesError(
-      `User "${username}" has no recent article edits`,
+      t('data.editedPagesNoEdits', username),
       'no_edits',
     )
   }

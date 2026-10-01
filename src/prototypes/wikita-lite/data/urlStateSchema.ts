@@ -15,6 +15,7 @@ import {
   type SuggestionPreferences,
 } from '../../musical-group/data/suggestionPreferences'
 import { backfillReadingListSavedAt } from '@/config'
+import { DEFAULT_CONTENT_LANG, parseContentLang } from '@/lib/contentLang'
 
 import { normalizeEnwikiTitle } from '../../musical-group/data/enwikiTitle'
 import { normalizeInterestTitles } from '../../musical-group/data/interests'
@@ -109,6 +110,10 @@ export interface WikitaLiteUrlState {
   theme: ConfigTheme
   skin: ConfigWebSkin
   platform: ConfigAppPlatform
+  /** Content wiki language (`fr` → fr.wikipedia.org). */
+  lang: string
+  /** Interface language override (`?uselang=`); empty = follow `lang`. */
+  uselang: string
   langs: string[]
   displayName: string
   saved: string[]
@@ -151,6 +156,8 @@ export type WikitaLiteUrlStatePatch = Partial<{
   theme: ConfigTheme | null
   skin: ConfigWebSkin | null
   platform: ConfigAppPlatform | null
+  lang: string | null
+  uselang: string | null
   langs: string[] | null
   displayName: string | null
   saved: string[] | null
@@ -192,6 +199,8 @@ export function defaultWikitaLiteUrlState(): WikitaLiteUrlState {
     theme: DEFAULT_CONFIG.theme,
     skin: DEFAULT_CONFIG.webSkin,
     platform: DEFAULT_CONFIG.appPlatform,
+    lang: DEFAULT_CONTENT_LANG,
+    uselang: '',
     langs: [...DEFAULT_KNOWN_LANGUAGES],
     displayName: '',
     saved: [],
@@ -360,10 +369,15 @@ export function parseWikitaLiteQuery(query: LocationQuery): WikitaLiteUrlState {
     ? (platformRaw as ConfigAppPlatform)
     : defaults.platform
 
+  const lang = parseContentLang(firstString(query.lang))
+
   const langsRaw = firstString(query.langs)
+  // Translation targets default to the content wiki's language when it isn't English.
   const langs = langsRaw
     ? langsRaw.split('|').map((code) => code.trim().toLowerCase()).filter(Boolean)
-    : defaults.langs
+    : lang !== DEFAULT_CONTENT_LANG
+      ? [lang]
+      : defaults.langs
 
   const title = firstString(query.title).trim()
   const personalizationReturnRaw = firstString(query.personalizationReturn).trim()
@@ -392,6 +406,8 @@ export function parseWikitaLiteQuery(query: LocationQuery): WikitaLiteUrlState {
     theme,
     skin,
     platform,
+    lang,
+    uselang: firstString(query.uselang) ? parseContentLang(firstString(query.uselang)) : '',
     langs,
     displayName: firstString(query.displayName).trim(),
     saved: stringArray(query.saved).map((t) => normalizeEnwikiTitle(t) ?? t),
@@ -512,6 +528,9 @@ export function serializeWikitaLiteState(
   if (state.theme !== DEFAULT_CONFIG.theme) next.theme = state.theme
   if (state.skin !== DEFAULT_CONFIG.webSkin) next.skin = state.skin
   if (state.platform !== DEFAULT_CONFIG.appPlatform) next.platform = state.platform
+
+  if (state.lang !== DEFAULT_CONTENT_LANG) next.lang = state.lang
+  if (state.uselang) next.uselang = state.uselang
 
   const langsKey = state.langs.join('|')
   const defaultLangsKey = DEFAULT_KNOWN_LANGUAGES.join('|')
@@ -649,6 +668,8 @@ export function mergeWikitaLiteQuery(
     ...(patch.theme !== undefined && patch.theme !== null ? { theme: patch.theme } : {}),
     ...(patch.skin !== undefined && patch.skin !== null ? { skin: patch.skin } : {}),
     ...(patch.platform !== undefined && patch.platform !== null ? { platform: patch.platform } : {}),
+    ...(patch.lang !== undefined && patch.lang !== null ? { lang: parseContentLang(patch.lang) } : {}),
+    ...(patch.uselang !== undefined && patch.uselang !== null ? { uselang: patch.uselang } : {}),
     ...(patch.langs !== undefined && patch.langs !== null ? { langs: patch.langs } : {}),
     ...(patch.displayName !== undefined && patch.displayName !== null
       ? { displayName: patch.displayName }
@@ -722,6 +743,8 @@ export function stripWikitaLiteQuery(query: LocationQuery): LocationQueryRaw {
     'theme',
     'skin',
     'platform',
+    'lang',
+    'uselang',
     'langs',
     'displayName',
     'saved',

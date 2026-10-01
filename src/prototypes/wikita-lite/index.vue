@@ -3,6 +3,7 @@ import { computed, onMounted, shallowRef, watch, type Component } from 'vue'
 
 import MobileWrapper from '@/components/MobileWrapper.vue'
 import { useConfig } from '@/composables/useConfig'
+import { isDefaultContentLang } from '@/lib/contentLang'
 
 import { useWikitaLiteCreateAccountOpener } from './composables/useWikitaLiteCreateAccountOpener'
 import { provideWikitaLiteSaveFeedback } from './composables/useWikitaLiteSaveFeedback'
@@ -14,6 +15,7 @@ import WikitaLiteLeavePrototypeDialog from './components/WikitaLiteLeavePrototyp
 import WikitaLitePrototypeSplash from './components/WikitaLitePrototypeSplash.vue'
 import WikitaLiteShell from './components/WikitaLiteShell.vue'
 import WikitaLiteHome from './WikitaLiteHome.vue'
+import { MESSAGES, format } from './i18n'
 
 definePage({
   meta: {
@@ -28,7 +30,7 @@ provideWikitaLiteSaveFeedback()
 // "Create account" in the desktop chrome opens this prototype's own flow.
 useWikitaLiteCreateAccountOpener()
 
-const { pageTitle: configPageTitle } = useConfig()
+const { pageTitle: configPageTitle, displayName: configDisplayName, user: configUser } = useConfig()
 const { isOnboarded, state } = useWikitaLiteUrlState()
 const { showSplash } = useWikitaLitePrototypeSplash()
 const { onLeaveCapture } = useWikitaLiteLeavePrototype()
@@ -66,7 +68,10 @@ if (showOnboarding.value) {
 
 const pageTitle = computed(() => {
   const name = state.value.displayName || state.value.username
-  if (name) return `Hello, ${name}!`
+  if (name) return format(MESSAGES.helloNamed, name)
+  if (!isDefaultContentLang() && configUser.value !== 'logged-out') {
+    return format(MESSAGES.helloNamed, configDisplayName.value)
+  }
   return configPageTitle.value
 })
 </script>

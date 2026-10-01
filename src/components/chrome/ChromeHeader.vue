@@ -6,6 +6,7 @@ import type { HeaderItem } from '@/components/header/headerItems'
 import type { ChromeNavTool } from './headerNavTools'
 import MinervaChromeHeader from './MinervaChromeHeader.vue'
 import VectorChromeHeader from './VectorChromeHeader.vue'
+import { t } from '@/i18n'
 import { globalSkin, globalTheme } from '@/theme'
 import type { Skin, Theme } from '@/theme'
 
@@ -22,7 +23,7 @@ interface Props {
   wordmarkSrc?: string
   /** Desktop tagline image URL beneath the wordmark. */
   taglineSrc?: string
-  /** Minerva wordmark; defaults to **`wordmarkSrc`** then EN constant. */
+  /** Minerva wordmark; defaults to **`wordmarkSrc`** then the UI-language wordmark. */
   mobileWordmarkSrc?: string
   /** Subset/order of mocked Vector tool icons (**desktop only**). */
   navTools?: ChromeNavTool[]
@@ -98,7 +99,7 @@ const minervaMiddle = computed((): HeaderItem[] | undefined => {
                 {
                   class: 'minerva-chrome-header__brand',
                   to: '/',
-                  'aria-label': 'Visit the main page',
+                  'aria-label': t('chrome.visitMainPage'),
                 },
                 logo,
               )

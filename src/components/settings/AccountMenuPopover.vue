@@ -4,6 +4,8 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { CdxMenu, type MenuItemData, type MenuItemValue } from '@wikimedia/codex'
 import { cdxIconLogIn, cdxIconUserAvatar } from '@wikimedia/codex-icons'
 
+import { t } from '@/i18n'
+
 const emit = defineEmits<{ 'create-account': [] }>()
 
 const root = ref<HTMLElement | null>(null)
@@ -12,8 +14,8 @@ const open = ref(false)
 const selected = ref<MenuItemValue | null>(null)
 
 const menuItems: MenuItemData[] = [
-  { value: 'create-account', label: 'Create account', icon: cdxIconUserAvatar },
-  { value: 'log-in', label: 'Log in', icon: cdxIconLogIn },
+  { value: 'create-account', label: t('chrome.createAccount'), icon: cdxIconUserAvatar },
+  { value: 'log-in', label: t('chrome.logIn'), icon: cdxIconLogIn },
 ]
 
 function toggle(): void {

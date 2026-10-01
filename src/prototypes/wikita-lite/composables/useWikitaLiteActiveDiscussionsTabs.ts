@@ -1,8 +1,9 @@
 import { computed, ref, toValue, watch, type MaybeRefOrGetter } from 'vue'
 
-import { ENWIKI_ACTIVE_DISCUSSION_PAGES } from '../../musical-group/data/fetchActiveDiscussions'
+import { activeDiscussionPages } from '../../musical-group/data/fetchActiveDiscussions'
 import type { HomeActiveDiscussion } from '../../musical-group/data/types'
 import { activeDiscussionTabLabel } from '../data/activeDiscussionLabels'
+import { MESSAGES } from '../i18n'
 
 export interface ActiveDiscussionsTab {
   id: string
@@ -18,9 +19,9 @@ export function useWikitaLiteActiveDiscussionsTabs(options: {
     const items = toValue(options.items)
     const presentPages = new Set(items.map((item) => item.noticeboardPage))
 
-    const result: ActiveDiscussionsTab[] = [{ id: 'all', label: 'All' }]
+    const result: ActiveDiscussionsTab[] = [{ id: 'all', label: MESSAGES.allTab }]
 
-    for (const page of ENWIKI_ACTIVE_DISCUSSION_PAGES) {
+    for (const page of activeDiscussionPages()) {
       if (!presentPages.has(page)) continue
       const sample = items.find((item) => item.noticeboardPage === page)
       if (!sample) continue

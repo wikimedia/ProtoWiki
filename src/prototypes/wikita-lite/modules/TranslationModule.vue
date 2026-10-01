@@ -10,6 +10,7 @@ import type { HomeTranslationSuggestion } from '../../musical-group/data/types'
 import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
 import WikitaLiteCardSkeletons from '../components/WikitaLiteCardSkeletons.vue'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
+import { MESSAGES, format, t } from '../i18n'
 
 interface Props {
   standalone?: boolean
@@ -59,7 +60,7 @@ function cardThumbnail(url?: string) {
   <div class="translation-module">
     <div v-if="standalone && error && !displayItems.length" class="translation-module__error">
       <p>{{ error }}</p>
-      <CdxButton weight="quiet" @click="$emit('retry')">Try again</CdxButton>
+      <CdxButton weight="quiet" @click="$emit('retry')">{{ t('common.tryAgain') }}</CdxButton>
     </div>
 
     <div
@@ -83,7 +84,7 @@ function cardThumbnail(url?: string) {
         </template>
         <template #supporting-text>
           <WikitaLiteSupportingRow :icon="cdxIconLanguage">
-            Translate to {{ suggestion.targetLanguageLabel }}
+            {{ format(MESSAGES.translateTo, suggestion.targetLanguageLabel) }}
           </WikitaLiteSupportingRow>
         </template>
       </CdxCard>
@@ -97,20 +98,20 @@ function cardThumbnail(url?: string) {
       :to="moreTo"
       class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled wikita-lite-button-link"
     >
-      Show more suggestions
+      {{ MESSAGES.showMoreSuggestions }}
     </RouterLink>
 
     <CdxProgressBar
       v-if="standalone && (loading || loadingMore)"
       inline
-      aria-label="Loading translation suggestions"
+      :aria-label="t('home.loadingTranslationSuggestions')"
     />
 
     <p
       v-if="standalone && !displayItems.length && !loading && !loadingMore && !error"
       class="translation-module__empty"
     >
-      No translation suggestions right now.
+      {{ t('home.emptyTranslationSuggestions') }}
     </p>
   </div>
 </template>

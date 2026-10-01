@@ -22,6 +22,7 @@ import WikitaLiteCardSkeletons from '../components/WikitaLiteCardSkeletons.vue'
 import WikitaLiteCardWithAction from '../components/WikitaLiteCardWithAction.vue'
 import WikitaLiteShowMore from '../components/WikitaLiteShowMore.vue'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
+import { MESSAGES, t } from '../i18n'
 
 interface Props {
   standalone?: boolean
@@ -73,7 +74,7 @@ function saveIcon(itemId: string, title: string) {
 }
 
 function saveLabel(title: string): string {
-  return relatedReadingSaved(title) ? 'Saved' : 'Save'
+  return relatedReadingSaved(title) ? t('common.savedState') : t('common.save')
 }
 
 function cardThumbnail(url?: string) {
@@ -99,12 +100,12 @@ const showMoreControl = computed(
 
 <template>
   <div class="trending-module">
-    <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading trending" />
+    <CdxProgressBar v-if="standalone && loading" inline :aria-label="t('home.loadingTrending')" />
 
     <template v-else-if="error">
       <div class="trending-module__error">
         <p>{{ error }}</p>
-        <CdxButton weight="quiet" @click="$emit('retry')">Try again</CdxButton>
+        <CdxButton weight="quiet" @click="$emit('retry')">{{ t('common.tryAgain') }}</CdxButton>
       </div>
     </template>
 
@@ -161,11 +162,11 @@ const showMoreControl = computed(
         :expandable="expandable"
         @expand="$emit('expand')"
       >
-        Show more trending
+        {{ MESSAGES.showMoreTrending }}
       </WikitaLiteShowMore>
 
       <p v-if="standalone && !displayItems.length" class="trending-module__empty">
-        No trending articles are available right now.
+        {{ MESSAGES.emptyTrending }}
       </p>
     </template>
   </div>

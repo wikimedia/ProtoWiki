@@ -8,12 +8,13 @@ import {
   cdxIconLogoWikimedia,
 } from '@wikimedia/codex-icons'
 
+import { messageParts, t } from '@/i18n'
 import { globalSkin, globalTheme } from '@/theme'
 import type { Skin, Theme } from '@/theme'
+import { wikipediaWordmarkSrc } from './wikipediaWordmark'
 
-/** EN mobile wordmark — matches MinervaChromeHeader default wordmark. */
-const WIKIPEDIA_WORDMARK_EN =
-  'https://en.wikipedia.org/static/images/mobile/copyright/wikipedia-wordmark-en-25.svg'
+/** Mobile wordmark in the UI language — matches MinervaChromeHeader default wordmark. */
+const mobileWordmarkSrc = wikipediaWordmarkSrc()
 
 interface Props {
   /** Local skin override for this subtree. Sets `data-skin` on the root. */
@@ -33,45 +34,47 @@ const props = withDefaults(defineProps<Props>(), {
   skin: undefined,
   theme: undefined,
   lastEditedNotice: true,
-  username: 'Username',
+  username: undefined,
 })
 
 const effectiveSkin = computed<Skin>(() => props.skin ?? globalSkin.value)
 const effectiveTheme = computed<Theme>(() => props.theme ?? globalTheme.value)
 const isDesktop = computed(() => effectiveSkin.value === 'desktop')
 const showLastEditedMobile = computed(() => props.lastEditedNotice && !isDesktop.value)
-const lastEditedByLabel = computed(() => (props.username ?? '').trim() || 'Username')
+const lastEditedByLabel = computed(
+  () => (props.username ?? '').trim() || t('chrome.footerUsernamePlaceholder'),
+)
 
 const links = [
   {
     href: 'https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Privacy_policy',
-    label: 'Privacy policy',
+    label: t('chrome.footerPrivacyPolicy'),
   },
-  { href: 'https://en.wikipedia.org/wiki/Wikipedia:About', label: 'About Wikipedia' },
+  { href: 'https://en.wikipedia.org/wiki/Wikipedia:About', label: t('chrome.footerAbout') },
   {
     href: 'https://en.wikipedia.org/wiki/Wikipedia:General_disclaimer',
-    label: 'Disclaimers',
+    label: t('chrome.footerDisclaimers'),
   },
   {
     href: 'https://en.wikipedia.org/wiki/Wikipedia:Contact_us',
-    label: 'Contact Wikipedia',
+    label: t('chrome.footerContact'),
   },
   {
     href: 'https://foundation.wikimedia.org/wiki/Special:MyLanguage/Legal:Wikimedia_Foundation_Legal_and_Safety_Contact_Information',
-    label: 'Legal & safety contacts',
+    label: t('chrome.footerLegalContacts'),
   },
   {
     href: 'https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Universal_Code_of_Conduct',
-    label: 'Code of Conduct',
+    label: t('chrome.footerCodeOfConduct'),
   },
-  { href: 'https://developer.wikimedia.org/', label: 'Developers' },
+  { href: 'https://developer.wikimedia.org/', label: t('chrome.footerDevelopers') },
   {
     href: 'https://stats.wikimedia.org/#/en.wikipedia.org',
-    label: 'Statistics',
+    label: t('chrome.footerStatistics'),
   },
   {
     href: 'https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Cookie_statement',
-    label: 'Cookie statement',
+    label: t('chrome.footerCookieStatement'),
   },
 ]
 
@@ -86,9 +89,9 @@ const mobileFooterLinks = [
   links[8],
   {
     href: 'https://foundation.m.wikimedia.org/wiki/Special:MyLanguage/Policy:Terms_of_Use',
-    label: 'Terms of Use',
+    label: t('chrome.footerTermsOfUse'),
   },
-  { href: '#', label: 'Desktop view' },
+  { href: '#', label: t('chrome.footerDesktopView') },
 ]
 </script>
 
@@ -105,36 +108,46 @@ const mobileFooterLinks = [
         <div class="chrome-footer__inner">
           <template v-if="props.lastEditedNotice">
             <p class="chrome-footer__last-edited-desktop">
-              This page was last edited on 8 May 2026, at 04:34.
+              {{ t('chrome.footerLastEditedDesktop') }}
             </p>
             <p class="chrome-footer__license-desktop">
-              Text is available under the
-              <a
-                href="https://creativecommons.org/licenses/by-sa/4.0/"
-                rel="noopener noreferrer"
-                title="Creative Commons Attribution-ShareAlike 4.0"
+              <template
+                v-for="(part, index) in messageParts('chrome.footerLicense')"
+                :key="index"
               >
-                Creative Commons Attribution-ShareAlike 4.0 License
-              </a>; additional terms may apply. By using this site, you agree to the
-              <a
-                href="https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Terms_of_Use"
-                rel="noopener noreferrer"
-                >Terms of Use</a>
-              and the
-              <a
-                href="https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Privacy_policy"
-                rel="noopener noreferrer"
-                >Privacy Policy</a>. Wikimedia Foundation, Inc. is a non-profit organization.
+                <a
+                  v-if="part === 1"
+                  href="https://creativecommons.org/licenses/by-sa/4.0/"
+                  rel="noopener noreferrer"
+                  :title="t('chrome.footerLicenseTitle')"
+                  >{{ t('chrome.footerLicenseName') }}</a
+                >
+                <a
+                  v-else-if="part === 2"
+                  href="https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Terms_of_Use"
+                  rel="noopener noreferrer"
+                  >{{ t('chrome.footerLicenseTermsOfUse') }}</a
+                >
+                <a
+                  v-else-if="part === 3"
+                  href="https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Privacy_policy"
+                  rel="noopener noreferrer"
+                  >{{ t('chrome.footerLicensePrivacyPolicy') }}</a
+                >
+                <template v-else>{{ part }}</template>
+              </template>
             </p>
           </template>
 
-          <p class="chrome-footer__credit">This is a prototype made with ProtoWiki.</p>
+          <p class="chrome-footer__credit">{{ t('chrome.footerPrototypeCredit') }}</p>
 
           <ul class="chrome-footer__links">
             <li v-for="link in links" :key="link.href">
               <a :href="link.href" rel="noopener">{{ link.label }}</a>
             </li>
-            <li><a href="#">Mobile view</a></li>
+            <li>
+              <a href="#">{{ t('chrome.footerMobileView') }}</a>
+            </li>
           </ul>
         </div>
       </template>
@@ -148,7 +161,13 @@ const mobileFooterLinks = [
         >
           <CdxIcon class="chrome-footer__last-edited-icon" :icon="cdxIconHistory" size="small" />
           <span class="chrome-footer__last-edited-text">
-            Last edited 1 month ago by <strong>{{ lastEditedByLabel }}</strong>
+            <template
+              v-for="(part, index) in messageParts('chrome.footerLastEditedMobile')"
+              :key="index"
+            >
+              <strong v-if="part === 1">{{ lastEditedByLabel }}</strong>
+              <template v-else>{{ part }}</template>
+            </template>
           </span>
           <CdxIcon
             class="chrome-footer__last-edited-chevron"
@@ -162,10 +181,10 @@ const mobileFooterLinks = [
             <div class="chrome-footer__brand-lockup">
               <img
                 class="chrome-footer__mobile-wordmark"
-                :src="WIKIPEDIA_WORDMARK_EN"
+                :src="mobileWordmarkSrc"
                 width="120"
                 height="18"
-                alt="Wikipedia"
+                :alt="t('chrome.wordmarkAlt')"
               />
             </div>
             <div class="chrome-footer__badge-cluster">
@@ -188,7 +207,7 @@ const mobileFooterLinks = [
 
           <div class="chrome-footer__inset-rule" aria-hidden="true" />
 
-          <p class="chrome-footer__license-short">This is a prototype made with ProtoWiki.</p>
+          <p class="chrome-footer__license-short">{{ t('chrome.footerPrototypeCredit') }}</p>
 
           <ul class="chrome-footer__links chrome-footer__links--mobile">
             <li v-for="link in mobileFooterLinks" :key="`${link.href}-${link.label}`">

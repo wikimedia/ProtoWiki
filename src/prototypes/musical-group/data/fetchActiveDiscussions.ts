@@ -7,16 +7,14 @@ import { isCacheBypassed, utcDayKey } from './cacheKeys'
 import { enwikiArticleUrl, normalizeEnwikiTitle, wikiActionUrl } from './enwikiTitle'
 import { getCachedActiveDiscussions, setCachedActiveDiscussions } from './homeTabCache'
 import type { HomeActiveDiscussion } from './types'
+import { wikiCapabilities } from './wikiCapabilities'
+import { t } from '@/i18n'
+import { formatElapsed, usesLocalizedFormat } from '@/lib/contentFormat'
 
-/** Production enwiki noticeboards from wgPersonalDashboardActiveDiscussionsPages (T420785). */
-export const ENWIKI_ACTIVE_DISCUSSION_PAGES = [
-  'Wikipedia:Help desk',
-  'Wikipedia:Village pump (miscellaneous)',
-  'Wikipedia:Village pump (technical)',
-  'Wikipedia:Village pump (idea_lab)',
-  'Wikipedia:Village pump (policy)',
-  'Wikipedia:Village pump (proposals)',
-] as const
+/** Noticeboards for the content wiki (enwiki: wgPersonalDashboardActiveDiscussionsPages, T420785). */
+export function activeDiscussionPages(): readonly string[] {
+  return wikiCapabilities().discussionPages
+}
 
 const FETCH_CONCURRENCY = 3
 /** Minimum threads to retain per noticeboard so tab previews can show two cards. */
@@ -49,6 +47,7 @@ function formatRelativeTime(isoTimestamp: string): string {
   const then = parseMediaWikiTimestamp(isoTimestamp).getTime()
   if (Number.isNaN(then)) return '—'
   const diffMs = Date.now() - then
+  if (usesLocalizedFormat()) return formatElapsed(diffMs)
   if (diffMs < 0) return 'just now'
 
   const minutes = Math.floor(diffMs / (1000 * 60))
@@ -156,10 +155,7 @@ async function fetchNoticeboardResult(
     if ((err as Error)?.name === 'AbortError') throw err
     return {
       discussions: [],
-      error:
-        err instanceof Error
-          ? err
-          : new Error(`Could not load discussions from ${noticeboardPage}`),
+      error: err instanceof Error ? err : new Error(t('feed.errorDiscussions', noticeboardPage)),
     }
   }
 }
@@ -203,7 +199,7 @@ export async function fetchActiveDiscussions(
   }
 
   const results = await mapWithConcurrency(
-    [...ENWIKI_ACTIVE_DISCUSSION_PAGES],
+    [...activeDiscussionPages()],
     FETCH_CONCURRENCY,
     (page) => fetchNoticeboardResult(page, signal),
     signal,

@@ -11,6 +11,7 @@ import {
   cdxIconUserTalk,
 } from '@wikimedia/codex-icons'
 
+import { messageParts, t } from '@/i18n'
 import type { ImpactData } from '../../template-homepage/impact/data/impactTypes'
 import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardListClasses'
 import { useWikitaLiteRoute } from '../composables/useWikitaLiteRoute'
@@ -29,7 +30,7 @@ interface Props extends ImpactData {
 const props = withDefaults(defineProps<Props>(), {
   standalone: false,
   empty: false,
-  viewLabel: 'On articles you\'ve edited',
+  viewLabel: undefined,
   sparklineData: () => [],
   recentActivityData: () => [],
   mostViewed: () => [],
@@ -40,7 +41,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
 
-const viewsTitle = computed(() => `${props.viewCount} views`)
+const viewsTitle = computed(() => t('impact.viewsTitle', String(props.viewCount)))
+const viewLabelText = computed(() => props.viewLabel ?? t('impact.viewLabel'))
 
 function formatStat(value: number | string | undefined): string {
   if (value === undefined || value === '') return '–'
@@ -62,18 +64,20 @@ function formatStat(value: number | string | undefined): string {
 
     <div v-if="empty" class="impact-module__empty">
       <div class="impact-module__empty-copy">
-        <p class="impact-module__empty-headline">0 edits to articles so far.</p>
+        <p class="impact-module__empty-headline">{{ t('impact.emptyHeadlineSentence') }}</p>
         <p class="impact-module__empty-body">
-          Help extend free knowledge to the world by editing topics that matter most to you.
+          {{ t('impact.emptyBody') }}
         </p>
         <p class="impact-module__empty-caption">
-          Start with a few <strong>suggested edits</strong>, then see how many people are viewing
-          your contributions here.
+          <template v-for="(part, index) in messageParts('impact.startWith')" :key="index">
+            <strong v-if="part === 1">{{ t('impact.suggestedEdits') }}</strong>
+            <template v-else>{{ part }}</template>
+          </template>
         </p>
       </div>
       <RouterLink v-slot="{ navigate }" :to="wikitaLiteRoute(HELP_WANTED_PAGE)" custom>
         <CdxButton class="impact-module__empty-cta" weight="normal" @click="navigate">
-          See all suggestions
+          {{ t('impact.seeAllSuggestions') }}
         </CdxButton>
       </RouterLink>
     </div>
@@ -81,30 +85,30 @@ function formatStat(value: number | string | undefined): string {
     <template v-else>
       <CdxCard :icon="cdxIconChartLine" :class="['impact-module__card', cardClass]">
         <template #title>{{ viewsTitle }}</template>
-        <template #description>{{ viewLabel }}</template>
+        <template #description>{{ viewLabelText }}</template>
       </CdxCard>
 
       <div class="impact-module__row">
         <CdxCard :icon="cdxIconEdit" :class="['impact-module__card', 'impact-module__card--half', cardClass]">
           <template #title>{{ formatStat(totalEdits) }}</template>
-          <template #description>Total edits</template>
+          <template #description>{{ t('impact.totalEdits') }}</template>
         </CdxCard>
 
         <CdxCard :icon="cdxIconUserTalk" :class="['impact-module__card', 'impact-module__card--half', cardClass]">
           <template #title>{{ formatStat(thanksReceived) }}</template>
-          <template #description>Thanks received</template>
+          <template #description>{{ t('impact.thanksReceived') }}</template>
         </CdxCard>
       </div>
 
       <div class="impact-module__row">
         <CdxCard :icon="cdxIconChartBar" :class="['impact-module__card', 'impact-module__card--half', cardClass]">
           <template #title>{{ formatStat(longestStreak) }}</template>
-          <template #description>Longest editing streak</template>
+          <template #description>{{ t('impact.longestEditingStreak') }}</template>
         </CdxCard>
 
         <CdxCard :icon="cdxIconCheckAll" :class="['impact-module__card', 'impact-module__card--half', cardClass]">
           <template #title>{{ formatStat(editsReviewed) }}</template>
-          <template #description>Edits reviewed</template>
+          <template #description>{{ t('impact.editsReviewed') }}</template>
         </CdxCard>
       </div>
     </template>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { t } from '@/i18n'
+
 import { provideWikitaLiteSaveFeedback } from '../wikita-lite/composables/useWikitaLiteSaveFeedback'
 import { useWikitaLiteFurtherReadingPage } from '../wikita-lite/composables/useWikitaLiteFurtherReadingPage'
 import WikitaLiteConfigureButton from '../wikita-lite/components/WikitaLiteConfigureButton.vue'
@@ -26,7 +28,7 @@ const { relatedItems, relatedLoading, relatedLoadingMore, loadSentinel } =
       <template #actions>
         <WikitaLiteConfigureButton
           :to="PERSONALIZATION_PAGE"
-          label="Personalization"
+          :label="t('personalization.openButton')"
         />
       </template>
     </MobileSubpageHeader>

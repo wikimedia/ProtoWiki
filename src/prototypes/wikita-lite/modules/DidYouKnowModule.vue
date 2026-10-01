@@ -12,6 +12,7 @@ import WikitaLiteCardSkeletons from '../components/WikitaLiteCardSkeletons.vue'
 import WikitaLiteShowMore from '../components/WikitaLiteShowMore.vue'
 import { useWikitaLiteOverflowShowMore } from '../composables/useWikitaLiteOverflowShowMore'
 import { WIKITA_LITE_CARD_CLASS_THUMBNAIL_POSITION_END, WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE } from '../wikita-lite-card'
+import { MESSAGES, t } from '../i18n'
 
 interface Props {
   standalone?: boolean
@@ -57,6 +58,9 @@ function titleSegments(item: HomeDidYouKnow) {
   return splitTitleEmphasis(item.text, item.emphasis)
 }
 
+/** MinT fallback hooks (wikis without their own "Did you know") say so once. */
+const hasMachineTranslation = computed(() => displayItems.value.some((item) => item.machineTranslated))
+
 const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
 
 const showMoreLink = useWikitaLiteOverflowShowMore({
@@ -76,7 +80,7 @@ const showMoreControl = computed(
 
 <template>
   <div class="did-you-know-module">
-    <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading Did you know" />
+    <CdxProgressBar v-if="standalone && loading" inline :aria-label="t('home.loadingDidYouKnow')" />
 
     <template v-else>
       <div
@@ -104,6 +108,9 @@ const showMoreControl = computed(
         <WikitaLiteCardSkeletons :count="skeletons" />
       </div>
 
+      <p v-if="hasMachineTranslation" class="did-you-know-module__mt-note">
+        {{ MESSAGES.machineTranslated }}
+      </p>
       <slot name="after-cards" />
 
       <WikitaLiteShowMore
@@ -112,11 +119,11 @@ const showMoreControl = computed(
         :expandable="expandable"
         @expand="$emit('expand')"
       >
-        Show more
+        {{ MESSAGES.showMore }}
       </WikitaLiteShowMore>
 
       <p v-if="standalone && !displayItems.length" class="did-you-know-module__empty">
-        No Did you know hooks are available right now.
+        {{ MESSAGES.emptyDidYouKnow }}
       </p>
     </template>
   </div>
@@ -146,6 +153,14 @@ const showMoreControl = computed(
 
 .did-you-know-module :deep(.cdx-card__text__title strong) {
   font-weight: var(--font-weight-bold, 700);
+}
+
+.did-you-know-module__mt-note {
+  margin: 0;
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-small, 0.875rem);
+  line-height: var(--line-height-small, 1.375);
+  color: var(--color-subtle, #54595d);
 }
 
 .did-you-know-module__empty {

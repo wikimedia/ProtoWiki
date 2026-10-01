@@ -1,12 +1,20 @@
 <template>
   <p class="hcaptcha-disclaimer">
-    This site is protected by hCaptcha and its
-    <a href="https://www.hcaptcha.com/privacy" target="_blank" rel="noopener">Privacy Policy</a>
-    and
-    <a href="https://www.hcaptcha.com/terms" target="_blank" rel="noopener">Terms of Service</a>
-    apply.
+    <template v-for="part in messageParts('createAccount.hcaptcha')" :key="String(part)">
+      <a v-if="part === 1" href="https://www.hcaptcha.com/privacy" target="_blank" rel="noopener">{{
+        t('createAccount.hcaptchaPrivacy')
+      }}</a>
+      <a v-else-if="part === 2" href="https://www.hcaptcha.com/terms" target="_blank" rel="noopener">{{
+        t('createAccount.hcaptchaTerms')
+      }}</a>
+      <template v-else>{{ part }}</template>
+    </template>
   </p>
 </template>
+
+<script setup lang="ts">
+import { messageParts, t } from '@/i18n'
+</script>
 
 <style scoped>
 .hcaptcha-disclaimer {

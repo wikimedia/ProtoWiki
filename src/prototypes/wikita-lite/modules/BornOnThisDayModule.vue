@@ -16,6 +16,7 @@ import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardLi
 import { useWikitaLiteOverflowShowMore } from '../composables/useWikitaLiteOverflowShowMore'
 import { WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE } from '../wikita-lite-card'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
+import { MESSAGES, t } from '../i18n'
 
 interface Props {
   standalone?: boolean
@@ -61,7 +62,7 @@ const showMoreLink = useWikitaLiteOverflowShowMore({
 
 <template>
   <div class="born-on-this-day-module">
-    <CdxProgressBar v-if="loading" inline aria-label="Loading Born on this day" />
+    <CdxProgressBar v-if="loading" inline :aria-label="t('home.loadingBornOnThisDay')" />
 
     <template v-else>
       <div :class="['born-on-this-day-module__cards', groupClass]">
@@ -92,11 +93,11 @@ const showMoreLink = useWikitaLiteOverflowShowMore({
         :to="moreTo"
         class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled wikita-lite-button-link"
       >
-        Show more
+        {{ MESSAGES.showMore }}
       </RouterLink>
 
       <p v-if="standalone && !displayItems.length" class="born-on-this-day-module__empty">
-        No birthdays are available right now.
+        {{ t('home.emptyBornOnThisDay') }}
       </p>
     </template>
   </div>

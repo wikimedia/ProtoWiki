@@ -9,6 +9,7 @@ import {
 } from '@wikimedia/codex'
 
 import { useConfig } from '@/composables/useConfig'
+import { t } from '@/i18n'
 
 import { fetchInterestSearchResults } from '../../musical-group/data/fetchInterestSearchResults'
 import type { SuggestionPreferences } from '../../musical-group/data/suggestionPreferences'
@@ -35,11 +36,11 @@ const watchlistCount = computed(() => currentUserPageLists.value.watchlist.lengt
 const editedCount = computed(() => currentUserPageLists.value.editedPages.length)
 
 function pagesLabel(count: number): string {
-  return count === 1 ? '1 page' : `${count} pages`
+  return t('components.pageCount', count)
 }
 
 function editsLabel(count: number): string {
-  return count === 1 ? '1 edit' : `${count} edits`
+  return t('components.editCount', count)
 }
 
 function updatePreference(key: keyof SuggestionPreferences, value: boolean): void {
@@ -122,7 +123,7 @@ onBeforeUnmount(() => {
   <div class="wikita-lite-personalization-panel">
     <div class="wikita-lite-personalization-panel__toggles">
       <WikitaLitePersonalizationToggleRow
-        label="Interests or topics"
+        :label="t('components.interestsOrTopics')"
         :count-label="pagesLabel(interestCount)"
         :count-active="interestCount > 0"
         :model-value="preferences.useInterests"
@@ -140,16 +141,16 @@ onBeforeUnmount(() => {
           :menu-items="menuItems"
           :menu-config="menuConfig"
           :separate-input="savedInterests.length > 0"
-          placeholder="Search articles or topics"
-          aria-label="Search articles or topics"
+          :placeholder="t('components.searchArticlesOrTopics')"
+          :aria-label="t('components.searchArticlesOrTopics')"
           @input="onSearchInput"
         >
-          <template #no-results>No results found.</template>
+          <template #no-results>{{ t('components.noResults') }}</template>
         </CdxMultiselectLookup>
       </div>
 
       <WikitaLitePersonalizationToggleRow
-        label="Saved pages"
+        :label="t('components.savedPages')"
         :count-label="pagesLabel(savedCount)"
         :count-active="savedCount > 0"
         :model-value="preferences.useSavedPages"
@@ -157,7 +158,7 @@ onBeforeUnmount(() => {
       />
 
       <WikitaLitePersonalizationToggleRow
-        label="Watchlist"
+        :label="t('components.watchlist')"
         :count-label="pagesLabel(watchlistCount)"
         :count-active="watchlistCount > 0"
         :model-value="preferences.useWatchlist"
@@ -165,7 +166,7 @@ onBeforeUnmount(() => {
       />
 
       <WikitaLitePersonalizationToggleRow
-        label="Contributions"
+        :label="t('components.contributions')"
         :count-label="editsLabel(editedCount)"
         :count-active="editedCount > 0"
         :model-value="preferences.useEditingHistory"

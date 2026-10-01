@@ -19,11 +19,9 @@ import {
   type ArticleLanguageLink,
 } from './shared/articleLanguageLinks'
 import { useConfig } from '@/composables/useConfig'
+import { t } from '@/i18n'
 import { globalSkin, PROTOWIKI_CHROME_SKIN } from '@/theme'
 import type { Skin } from '@/theme'
-
-const LANGUAGES_LABEL = 'Languages'
-const DEFAULT_TAGLINE = 'From Wikipedia, the free encyclopedia'
 
 const internalLanguageLinks = DEFAULT_ARTICLE_LANGUAGE_LINKS
 
@@ -57,7 +55,7 @@ const { user } = useConfig()
 const isLoggedOut = computed(() => user.value === 'logged-out')
 
 const bookmarkLabel = computed(() =>
-  props.bookmarkAffordance === 'bookmark' ? 'Bookmark' : 'Watch',
+  props.bookmarkAffordance === 'bookmark' ? t('chrome.bookmark') : t('chrome.watch'),
 )
 const bookmarkIcon = computed(() =>
   props.bookmarkAffordance === 'bookmark' ? cdxIconBookmarkOutline : cdxIconUnStar,
@@ -66,10 +64,7 @@ const bookmarkIconLoggedOut = computed(() =>
   props.bookmarkAffordance === 'bookmark' ? cdxIconBookmarkOutline : cdxIconStar,
 )
 
-const languagesButtonLabel = computed(() => {
-  const n = props.languagesCount ?? 18
-  return n === 1 ? '1 language' : `${n} languages`
-})
+const languagesButtonLabel = computed(() => t('chrome.languagesCount', props.languagesCount ?? 18))
 
 const emit = defineEmits<{
   talkClick: []
@@ -146,22 +141,24 @@ watch(langSelection, (value) => {
     </div>
 
     <div class="article-header__toolbar">
-      <nav class="article-header__tabs" aria-label="Page tabs">
+      <nav class="article-header__tabs" :aria-label="t('chrome.pageTabs')">
         <a
           href="#"
           class="article-header__tab article-header__tab--active"
           aria-current="page"
           @click.prevent="$emit('articleClick')"
         >
-          Article
+          {{ t('chrome.articleTab') }}
         </a>
-        <a href="#" class="article-header__tab" @click.prevent="$emit('talkClick')"> Talk </a>
+        <a href="#" class="article-header__tab" @click.prevent="$emit('talkClick')">
+          {{ t('chrome.talk') }}
+        </a>
       </nav>
 
       <nav
         v-if="effectiveSkin === 'desktop'"
         class="article-header__actions"
-        aria-label="Page actions"
+        :aria-label="t('chrome.pageActions')"
       >
         <a
           href="#"
@@ -169,11 +166,13 @@ watch(langSelection, (value) => {
           aria-current="true"
           @click.prevent="$emit('readClick')"
         >
-          Read
+          {{ t('chrome.read') }}
         </a>
-        <a href="#" class="article-header__action" @click.prevent="$emit('editClick')"> Edit </a>
+        <a href="#" class="article-header__action" @click.prevent="$emit('editClick')">
+          {{ t('chrome.edit') }}
+        </a>
         <a href="#" class="article-header__action" @click.prevent="$emit('historyClick')">
-          View history
+          {{ t('chrome.viewHistory') }}
         </a>
         <CdxButton
           class="article-header__icon-btn"
@@ -190,7 +189,7 @@ watch(langSelection, (value) => {
       v-if="effectiveSkin === 'mobile'"
       class="article-header__icon-toolbar"
       :class="{ 'article-header__icon-toolbar--logged-out': isLoggedOut }"
-      aria-label="Page actions"
+      :aria-label="t('chrome.pageActions')"
     >
       <CdxMenuButton
         v-model:selected="langSelection"
@@ -198,7 +197,7 @@ watch(langSelection, (value) => {
         weight="quiet"
         :menu-items="languageMenuItems"
         :menu-config="{ visibleItemLimit: 8 }"
-        :aria-label="LANGUAGES_LABEL"
+        :aria-label="t('chrome.languages')"
       >
         <CdxIcon :icon="cdxIconLanguage" />
       </CdxMenuButton>
@@ -206,7 +205,7 @@ watch(langSelection, (value) => {
         <button
           type="button"
           class="article-header__icon-tool"
-          aria-label="Download"
+          :aria-label="t('chrome.download')"
           @click="$emit('downloadClick')"
         >
           <CdxIcon :icon="cdxIconDownload" />
@@ -223,7 +222,7 @@ watch(langSelection, (value) => {
         <button
           type="button"
           class="article-header__icon-tool"
-          aria-label="Edit"
+          :aria-label="t('chrome.edit')"
           @click="$emit('editClick')"
         >
           <CdxIcon :icon="cdxIconEdit" />
@@ -242,7 +241,7 @@ watch(langSelection, (value) => {
         <button
           type="button"
           class="article-header__icon-tool"
-          aria-label="View history"
+          :aria-label="t('chrome.viewHistory')"
           @click="$emit('historyClick')"
         >
           <CdxIcon :icon="cdxIconHistory" />
@@ -250,7 +249,7 @@ watch(langSelection, (value) => {
         <button
           type="button"
           class="article-header__icon-tool"
-          aria-label="Edit"
+          :aria-label="t('chrome.edit')"
           @click="$emit('editClick')"
         >
           <CdxIcon :icon="cdxIconEdit" />
@@ -258,7 +257,7 @@ watch(langSelection, (value) => {
         <button
           type="button"
           class="article-header__icon-tool article-header__icon-tool--more"
-          aria-label="More options"
+          :aria-label="t('chrome.moreOptions')"
           @click="$emit('moreClick')"
         >
           <CdxIcon :icon="cdxIconEllipsis" />
@@ -267,7 +266,7 @@ watch(langSelection, (value) => {
     </div>
 
     <p v-if="effectiveSkin === 'desktop'" class="article-header__tagline">
-      {{ DEFAULT_TAGLINE }}
+      {{ t('chrome.articleTagline') }}
     </p>
   </header>
 </template>

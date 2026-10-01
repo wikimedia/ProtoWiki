@@ -1,3 +1,5 @@
+import { langScopedStorageKey } from '@/lib/contentLang'
+
 export interface VersionedStore<TEntry> {
   version: number
   entries: Record<string, TEntry>
@@ -10,6 +12,9 @@ interface ParsedStore {
 }
 
 /**
+ * Stores are scoped to the content language (`?lang=`), so a French session
+ * never reads English cache entries.
+ *
  * Last parsed copy of each store, keyed by storage key. Reads compare the raw
  * string first (cheap next to `JSON.parse` + validation of the whole store),
  * so outside writes — another tab, `localStorage.clear()` — are still seen.
@@ -17,11 +22,12 @@ interface ParsedStore {
 const parsedStores = new Map<string, ParsedStore>()
 
 export function readVersionedStore<TEntry>(
-  storageKey: string,
+  baseStorageKey: string,
   version: number,
   isValidEntry: (entry: unknown) => entry is TEntry,
 ): Record<string, TEntry> {
   if (typeof window === 'undefined') return {}
+  const storageKey = langScopedStorageKey(baseStorageKey)
 
   try {
     const raw = window.localStorage.getItem(storageKey)
@@ -52,11 +58,12 @@ export function readVersionedStore<TEntry>(
 }
 
 export function writeVersionedStore<TEntry>(
-  storageKey: string,
+  baseStorageKey: string,
   version: number,
   entries: Record<string, TEntry>,
 ): void {
   if (typeof window === 'undefined') return
+  const storageKey = langScopedStorageKey(baseStorageKey)
 
   try {
     if (Object.keys(entries).length === 0) {

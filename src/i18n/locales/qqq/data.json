@@ -1,0 +1,24 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"layoutFurtherReading": "Home layout dialog: name of the Daily reads module.",
+	"layoutSuggestedEdits": "Home layout dialog: name of the Suggested edits module.",
+	"layoutMentor": "Home layout dialog: name of the Mentor module.",
+	"layoutImpact": "Home layout dialog: name of the Impact module.",
+	"layoutSaved": "Home layout dialog: name of the Saved pages module.",
+	"layoutTrending": "Home layout dialog: name of the Trending module.",
+	"layoutFeatured": "Home layout dialog: name of the Featured module (Wikipedia's featured content of the day).",
+	"layoutDidYouKnow": "Home layout dialog: name of the \"Did you know\" module (plural noun in English: the DYK hooks).",
+	"layoutRecentActivity": "Home layout dialog: name of the Review changes module.",
+	"layoutActiveDiscussions": "Home layout dialog: name of the Active discussions module.",
+	"yearsOld": "Born on this day card: age of the person. $1 = age in years.",
+	"headerSearch": "Accessible label of the search button in the header.",
+	"headerNotifications": "Accessible label of the notifications (bell) button in the header.",
+	"headerUserMenu": "Accessible label of the user menu button in the header.",
+	"newList": "Default name of a reading list created from the save sheet.",
+	"translationLoadError": "Error on the Translate articles module when suggestions fail to load.",
+	"editedPagesMissingUsername": "Personalization advanced section: error when fetching editing history without a username.",
+	"editedPagesUserNotFound": "Personalization advanced section: error when the username does not exist. $1 = username as typed.",
+	"editedPagesNoEdits": "Personalization advanced section: error when the user has no recent article edits. $1 = username."
+}

@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"placeholder": "Search field placeholder and accessible name.",
+	"dialogLabel": "Accessible name of the full-screen mobile search dialog.",
+	"close": "Back button that closes the full-screen search.",
+	"loading": "Accessible name of the progress bar shown while suggestions load."
+}

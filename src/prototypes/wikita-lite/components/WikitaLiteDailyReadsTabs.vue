@@ -3,6 +3,8 @@ import { nextTick, onMounted, ref, watch } from 'vue'
 
 import { CdxToggleButton } from '@wikimedia/codex'
 
+import { t } from '@/i18n'
+
 import { scrollTabIntoTrackView } from '../../musical-group/scrollTabIntoTrackView'
 
 interface FilterTab {
@@ -16,7 +18,7 @@ const props = withDefaults(
     ariaLabel?: string
   }>(),
   {
-    ariaLabel: 'Daily reads filters',
+    ariaLabel: () => t('components.dailyReadsFilters'),
   },
 )
 

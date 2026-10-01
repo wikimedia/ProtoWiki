@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"featured": "Featured",
+	"articleOfTheDay": "Article of the day",
+	"didYouKnow": "Did you know",
+	"bornOnThisDay": "Born on this day",
+	"trending": "Trending",
+	"saved": "Saved",
+	"furtherReading": "Daily reads",
+	"mentor": "Your mentor",
+	"mentions": "Mentions",
+	"suggestedEdits": "Suggested edits",
+	"recentChanges": "Recent changes",
+	"reviewChanges": "Review changes",
+	"activeDiscussions": "Active discussions",
+	"translateArticles": "Translate articles",
+	"learn": "Learn",
+	"impact": "Your impact",
+	"mentorUnassigned": "Mentor for editing"
+}

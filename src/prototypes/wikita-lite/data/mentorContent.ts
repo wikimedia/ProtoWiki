@@ -1,24 +1,41 @@
+import { t } from '@/i18n'
+
 /** Static Mentor module content — matches Figma T419358-Home. */
 
 export const MENTOR_MODULE_TITLES = {
-  unassigned: 'Mentor for editing',
-  assigned: 'Your mentor',
-} as const
+  get unassigned() {
+    return t('modules.mentorUnassigned')
+  },
+  get assigned() {
+    return t('modules.mentor')
+  },
+}
 
 export const MENTOR_UNASSIGNED = {
-  description:
-    'If you have questions about editing, an experienced editor can be assigned as your mentor to help you.',
-  cta: 'Get a mentor',
-} as const
+  get description() {
+    return t('mentor.unassignedDescription')
+  },
+  get cta() {
+    return t('mentor.unassignedCta')
+  },
+}
 
 export const MENTOR_ASSIGNED = {
-  assignmentNotice:
-    "We've assigned you an experienced editor to answer your questions about editing.",
-  cta: 'Ask your mentor a question about editing',
+  get assignmentNotice() {
+    return t('mentor.assignmentNotice')
+  },
+  get cta() {
+    return t('mentor.assignedCta')
+  },
   profile: {
     name: 'Samwalton9',
     initial: 'S',
-    bio: "Hi! I'm Sam. I like helping on articles about video games and TV shows mainly. I also do a lot of moderating! I've been editing for quite a long time now so I'm happy to answer any questions you might have.",
-    editingSince: 'Editing since 2011',
+    /** Prototype copy in the mentor's voice — translated; the username stays. */
+    get bio() {
+      return t('mentor.profileBio')
+    },
+    get editingSince() {
+      return t('mentor.editingSince', 2011)
+    },
   },
-} as const
+}

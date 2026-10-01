@@ -1,3 +1,4 @@
+import { langScopedStorageKey } from '@/lib/contentLang'
 const STORAGE_KEY = 'musical-group-liftwing-cache'
 const CACHE_VERSION = 1
 
@@ -19,7 +20,7 @@ function readPayload(): LiftWingCachePayload {
   if (typeof window === 'undefined') return memoryStore
 
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
+    const raw = window.localStorage.getItem(langScopedStorageKey(STORAGE_KEY))
     if (!raw) return memoryStore
 
     const parsed = JSON.parse(raw) as LiftWingCachePayload
@@ -38,7 +39,7 @@ function persistPayload(): void {
   if (typeof window === 'undefined') return
 
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(memoryStore))
+    window.localStorage.setItem(langScopedStorageKey(STORAGE_KEY), JSON.stringify(memoryStore))
   } catch {
     // Ignore quota failures.
   }
@@ -97,7 +98,7 @@ export function clearLiftWingCache(): void {
   memoryStore.revertRisk = {}
   if (typeof window === 'undefined') return
   try {
-    window.localStorage.removeItem(STORAGE_KEY)
+    window.localStorage.removeItem(langScopedStorageKey(STORAGE_KEY))
   } catch {
     // Ignore.
   }

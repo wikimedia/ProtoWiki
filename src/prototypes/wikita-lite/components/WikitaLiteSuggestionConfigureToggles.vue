@@ -2,6 +2,8 @@
 import { CdxButton, CdxIcon, CdxToggleSwitch } from '@wikimedia/codex'
 import { cdxIconAdd } from '@wikimedia/codex-icons'
 
+import { t } from '@/i18n'
+
 import WikitaLiteInterestChips from './WikitaLiteInterestChips.vue'
 
 interface Props {
@@ -36,7 +38,7 @@ const emit = defineEmits<{
       :disabled="disabled"
       @update:model-value="emit('update:useSavedPages', $event)"
     >
-      Show suggestions based on my saved pages
+      {{ t('components.suggestionsFromSaved') }}
     </CdxToggleSwitch>
     <CdxToggleSwitch
       :model-value="useEditingHistory"
@@ -44,7 +46,7 @@ const emit = defineEmits<{
       :disabled="disabled"
       @update:model-value="emit('update:useEditingHistory', $event)"
     >
-      Show suggestions based on my editing history
+      {{ t('components.suggestionsFromHistory') }}
     </CdxToggleSwitch>
     <div class="wikita-lite-suggestion-configure-toggles__interests-group">
       <CdxToggleSwitch
@@ -53,7 +55,7 @@ const emit = defineEmits<{
         :disabled="disabled"
         @update:model-value="emit('update:useInterests', $event)"
       >
-        Show suggestions based on my interests
+        {{ t('components.suggestionsFromInterests') }}
       </CdxToggleSwitch>
       <div
         class="wikita-lite-suggestion-configure-toggles__interests-actions"
@@ -70,7 +72,7 @@ const emit = defineEmits<{
           @click="emit('add-interest')"
         >
           <CdxIcon :icon="cdxIconAdd" />
-          Add interest
+          {{ t('components.addInterest') }}
         </CdxButton>
       </div>
     </div>

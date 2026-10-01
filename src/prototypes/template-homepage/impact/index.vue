@@ -3,6 +3,8 @@ import { computed, watch } from 'vue'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconReload } from '@wikimedia/codex-icons'
 
+import { t } from '@/i18n'
+
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 import { useConfig } from '@/composables/useConfig'
@@ -72,12 +74,16 @@ definePage({
 <template>
   <ChromeWrapper :last-edited-notice="false">
     <SpecialPageWrapper :title="null" class="impact-page">
-      <MobileSubpageHeader title="Your impact" :back-to="HOMEPAGE" back-label="Back to homepage">
+      <MobileSubpageHeader
+        :title="t('impact.yourImpact')"
+        :back-to="HOMEPAGE"
+        :back-label="t('impact.backToHomepage')"
+      >
         <template v-if="showRealRefresh" #actions>
           <CdxButton
             weight="quiet"
             :icon-only="true"
-            aria-label="Refresh impact data"
+            :aria-label="t('impact.refresh')"
             :disabled="realImpact.loading.value"
             @click="onRefreshClick"
           >

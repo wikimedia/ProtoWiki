@@ -5,6 +5,7 @@ import ChromeHeader from '@/components/chrome/ChromeHeader.vue'
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 import { useKeyboardInset } from '@/composables/useKeyboardInset'
+import { t } from '@/i18n'
 import { globalSkin } from '@/theme'
 
 import WikitaLitePrototypeMenuPopover from '../../components/WikitaLitePrototypeMenuPopover.vue'
@@ -60,14 +61,14 @@ async function onSubmit({ username, email }: { username: string; email: string }
         </template>
       </ChromeHeader>
     </template>
-    <SpecialPageWrapper v-if="isDesktop" class="account__page" title="Create account">
+    <SpecialPageWrapper v-if="isDesktop" class="account__page" :title="t('createAccount.title')">
       <div class="account__column">
         <CreateAccountForm @submit="onSubmit" />
       </div>
     </SpecialPageWrapper>
 
     <div v-else class="account">
-      <h1 class="account__title">Create account</h1>
+      <h1 class="account__title">{{ t('createAccount.title') }}</h1>
       <CreateAccountForm @submit="onSubmit" />
     </div>
   </ChromeWrapper>

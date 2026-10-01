@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+
 import {
   MODE_MODULE_ORDER,
   type SimplifiedModuleId,
@@ -20,17 +22,38 @@ export const CONFIGURABLE_HOME_MODULE_IDS = [
 
 export type ConfigurableHomeModuleId = (typeof CONFIGURABLE_HOME_MODULE_IDS)[number]
 
+/** Getters so each label reads the session's language (`?uselang=` / `?lang=`). */
 export const CONFIGURABLE_HOME_MODULE_LABELS: Record<ConfigurableHomeModuleId, string> = {
-  furtherReading: 'Daily reads',
-  suggestedEdits: 'Suggested edits',
-  mentor: 'Your mentor',
-  impact: 'Your impact',
-  saved: 'Saved pages',
-  trending: 'Trending',
-  featured: 'Featured',
-  didYouKnow: 'Did you knows',
-  recentActivity: 'Review changes',
-  activeDiscussions: 'Active discussions',
+  get furtherReading() {
+    return t('data.layoutFurtherReading')
+  },
+  get suggestedEdits() {
+    return t('data.layoutSuggestedEdits')
+  },
+  get mentor() {
+    return t('data.layoutMentor')
+  },
+  get impact() {
+    return t('data.layoutImpact')
+  },
+  get saved() {
+    return t('data.layoutSaved')
+  },
+  get trending() {
+    return t('data.layoutTrending')
+  },
+  get featured() {
+    return t('data.layoutFeatured')
+  },
+  get didYouKnow() {
+    return t('data.layoutDidYouKnow')
+  },
+  get recentActivity() {
+    return t('data.layoutRecentActivity')
+  },
+  get activeDiscussions() {
+    return t('data.layoutActiveDiscussions')
+  },
 }
 
 const DEFAULT_OFF_MODULE_IDS: ConfigurableHomeModuleId[] = [

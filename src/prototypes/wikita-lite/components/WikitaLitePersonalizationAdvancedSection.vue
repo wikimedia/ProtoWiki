@@ -5,6 +5,7 @@ import { CdxAccordion, CdxButton, CdxField, CdxTextInput } from '@wikimedia/code
 import type { ValidationStatusType } from '@wikimedia/codex'
 
 import { useConfig } from '@/composables/useConfig'
+import { t } from '@/i18n'
 import {
   backfillReadingListSavedAt,
   formatPageList,
@@ -26,8 +27,8 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
-  title: 'Advanced personalization',
-  description: 'Just for this prototype. Not part of the proposed design.',
+  title: () => t('components.advancedTitle'),
+  description: () => t('components.advancedDescription'),
 })
 
 const {
@@ -60,8 +61,7 @@ async function onFetchEditedPages(): Promise<void> {
     // `editedFrom`. `editedFrom` lets the impact module show this account's real impact.
     void patchState({ edited: titles, editedFrom: normalizeWikiUsername(fetchUsername.value) })
     fetchEditedPagesStatus.value = 'success'
-    fetchEditedPagesMessage.value =
-      titles.length === 1 ? 'Added 1 edited page.' : `Added ${titles.length} edited pages.`
+    fetchEditedPagesMessage.value = t('components.addedEditedPages', titles.length)
   } catch (error) {
     if ((error as Error).name === 'AbortError') return
     if (error instanceof FetchUserEditedPagesError && error.code === 'aborted') return
@@ -69,7 +69,7 @@ async function onFetchEditedPages(): Promise<void> {
     fetchEditedPagesMessage.value =
       error instanceof FetchUserEditedPagesError
         ? error.message
-        : 'Could not fetch editing history.'
+        : t('components.fetchHistoryError')
   } finally {
     fetchingEditedPages.value = false
   }
@@ -109,8 +109,8 @@ const readingListText = computed({
 
     <div class="wikita-lite-personalization-advanced__fields">
       <CdxField>
-        <template #label>Watchlist</template>
-        <template #description>Comma-separated article titles</template>
+        <template #label>{{ t('components.watchlist') }}</template>
+        <template #description>{{ t('components.commaSeparatedTitles') }}</template>
         <CdxTextInput v-model="watchlistText" />
       </CdxField>
 
@@ -118,13 +118,13 @@ const readingListText = computed({
         :status="fetchEditedPagesStatus"
         :messages="{ [fetchEditedPagesStatus]: fetchEditedPagesMessage }"
       >
-        <template #label>Fetch editing history from English Wikipedia user</template>
+        <template #label>{{ t('components.fetchHistoryLabel') }}</template>
         <div class="wikita-lite-personalization-advanced__fetch-row">
           <CdxTextInput
             v-model="fetchUsername"
             class="wikita-lite-personalization-advanced__fetch-input"
-            placeholder="Username"
-            aria-label="English Wikipedia username"
+            :placeholder="t('components.usernamePlaceholder')"
+            :aria-label="t('components.usernameLabel')"
             :disabled="fetchingEditedPages"
             @keydown.enter.prevent="onFetchEditedPages"
           />
@@ -133,20 +133,20 @@ const readingListText = computed({
             :disabled="fetchingEditedPages || !fetchUsername.trim()"
             @click="onFetchEditedPages"
           >
-            Fetch
+            {{ t('components.fetch') }}
           </CdxButton>
         </div>
       </CdxField>
 
       <CdxField>
-        <template #label>Edited pages</template>
-        <template #description>Comma-separated article titles</template>
+        <template #label>{{ t('components.editedPages') }}</template>
+        <template #description>{{ t('components.commaSeparatedTitles') }}</template>
         <CdxTextInput v-model="editedPagesText" />
       </CdxField>
 
       <CdxField>
-        <template #label>Override saved pages</template>
-        <template #description>Comma-separated article titles</template>
+        <template #label>{{ t('components.overrideSavedPages') }}</template>
+        <template #description>{{ t('components.commaSeparatedTitles') }}</template>
         <CdxTextInput v-model="readingListText" />
       </CdxField>
     </div>

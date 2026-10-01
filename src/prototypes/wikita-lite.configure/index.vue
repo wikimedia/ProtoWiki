@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import MobileWrapper from '@/components/MobileWrapper.vue'
+import { t } from '@/i18n'
 
 import WikitaLiteFullscreenDialogShell from '../wikita-lite/components/WikitaLiteFullscreenDialogShell.vue'
 import WikitaLiteHomeLayoutConfigureList from '../wikita-lite/components/WikitaLiteHomeLayoutConfigureList.vue'
@@ -39,8 +40,8 @@ async function onReorder(order: ConfigurableHomeModuleId[]): Promise<void> {
 <template>
   <MobileWrapper fluid>
     <WikitaLiteFullscreenDialogShell
-      title="Home layout"
-      subtitle="Drag to rearrange sections"
+      :title="t('pages.homeLayoutTitle')"
+      :subtitle="t('pages.homeLayoutSubtitle')"
       @close="closeConfigure"
     >
       <div class="wikita-lite-configure-home-layout">

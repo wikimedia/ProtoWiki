@@ -7,6 +7,13 @@ import { getCachedTrendingFeed, setCachedTrendingFeed } from './homeTabCache'
 import { fetchPageSummary, type PageSummary } from './pageSummary'
 import type { HomeTrending } from './types'
 import { normalizeQid } from './wikidataApi'
+import {
+  formatCompactNumber,
+  formatElapsed,
+  formatShortDate,
+  usesLocalizedFormat,
+} from '@/lib/contentFormat'
+import { format, MESSAGES } from '../../wikita-lite/i18n'
 
 const MAX_TRENDING = 10
 const SUMMARY_CONCURRENCY = 3
@@ -32,6 +39,7 @@ function formatRelativeTime(isoTimestamp: string): string {
   const then = parseMediaWikiTimestamp(isoTimestamp).getTime()
   if (Number.isNaN(then)) return '—'
   const diffMs = Date.now() - then
+  if (usesLocalizedFormat()) return formatElapsed(diffMs)
   if (diffMs < 0) return 'just now'
 
   const minutes = Math.floor(diffMs / (1000 * 60))
@@ -47,16 +55,17 @@ function formatRelativeTime(isoTimestamp: string): string {
 }
 
 function formatViewCount(total: number): string {
+  if (usesLocalizedFormat()) return formatCompactNumber(total)
   if (total >= 1_000_000) return `${(total / 1_000_000).toFixed(1)}M`
   if (total >= 1000) return `${(total / 1000).toFixed(1)}k`
   return total.toLocaleString()
 }
 
 function viewsPeriodLabel(mostreadDate?: string): string {
-  if (!mostreadDate) return 'today'
+  if (!mostreadDate) return MESSAGES.viewsToday
 
   const parsed = parseMediaWikiTimestamp(mostreadDate)
-  if (Number.isNaN(parsed.getTime())) return 'today'
+  if (Number.isNaN(parsed.getTime())) return MESSAGES.viewsToday
 
   const yesterday = new Date()
   yesterday.setUTCDate(yesterday.getUTCDate() - 1)
@@ -64,8 +73,9 @@ function viewsPeriodLabel(mostreadDate?: string): string {
     parsed.getUTCFullYear() === yesterday.getUTCFullYear() &&
     parsed.getUTCMonth() === yesterday.getUTCMonth() &&
     parsed.getUTCDate() === yesterday.getUTCDate()
-  if (isYesterday) return 'today'
+  if (isYesterday) return MESSAGES.viewsToday
 
+  if (usesLocalizedFormat()) return format(MESSAGES.viewsOnDate, formatShortDate(parsed))
   return `on ${parsed.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -94,7 +104,9 @@ function applySummaryToTrendingItem(
     articleUrl: summary.content_urls?.desktop?.page ?? item.articleUrl,
     itemId: normalizeQid(summary.wikibase_item) ?? item.itemId,
     lastEditedTimestamp: timestamp,
-    lastEditedLabel: timestamp ? `Updated ${formatRelativeTime(timestamp)}` : item.lastEditedLabel,
+    lastEditedLabel: timestamp
+      ? format(MESSAGES.updatedRelative, formatRelativeTime(timestamp))
+      : item.lastEditedLabel,
   }
 }
 
@@ -123,7 +135,7 @@ async function enrichMostreadArticle(
     articleUrl: summary?.content_urls?.desktop?.page ?? enwikiArticleUrl(enwikiTitle),
     itemId: normalizeQid(summary?.wikibase_item) ?? undefined,
     viewCount,
-    viewsLabel: `${formatViewCount(viewCount)} views ${viewsPeriod}`,
+    viewsLabel: format(MESSAGES.viewsLabel, formatViewCount(viewCount), viewsPeriod),
     lastEditedTimestamp: timestamp,
     lastEditedLabel: timestamp ? `Updated ${formatRelativeTime(timestamp)}` : 'Updated —',
     rank: article.rank,
@@ -196,7 +208,7 @@ export async function fetchTrendingFeed(signal?: AbortSignal): Promise<HomeTrend
 
   const { ok, json, status } = await fetchEnwikiFeaturedFeedDay(signal, 'musical-group-trending-feed')
   if (!ok) {
-    throw new Error(wikimediaFeedErrorMessage(status, 'Trending articles'))
+    throw new Error(wikimediaFeedErrorMessage(status, 'trending'))
   }
 
   const articles = json?.mostread?.articles

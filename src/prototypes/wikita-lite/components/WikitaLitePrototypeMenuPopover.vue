@@ -5,6 +5,8 @@ import { CdxIcon, CdxMenuButton } from '@wikimedia/codex'
 import type { ButtonSize, MenuItemValue } from '@wikimedia/codex'
 import { cdxIconMenu } from '@wikimedia/codex-icons'
 
+import { t } from '@/i18n'
+
 import { resetWikitaLitePrototype } from '../data/resetWikitaLitePrototype'
 
 interface Props {
@@ -17,7 +19,7 @@ withDefaults(defineProps<Props>(), {
 
 const menuSelected = ref<MenuItemValue | null>(null)
 
-const menuItems = [{ value: 'reset-everything', label: 'Reset prototype' }]
+const menuItems = [{ value: 'reset-everything', label: t('components.menuResetPrototype') }]
 
 watch(menuSelected, (value) => {
   if (value === 'reset-everything') {
@@ -34,7 +36,7 @@ watch(menuSelected, (value) => {
     :menu-items="menuItems"
     weight="quiet"
     :size="size"
-    aria-label="Main menu"
+    :aria-label="t('components.mainMenu')"
   >
     <CdxIcon :icon="cdxIconMenu" />
   </CdxMenuButton>

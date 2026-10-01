@@ -1,8 +1,9 @@
 import { wikimediaApiFetchHeaders } from '@/config'
+import { t } from '@/i18n'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 
 import { utcDayParts } from './cacheKeys'
-import { EN_WIKI_HOST } from './enwikiTitle'
+import { contentWikiHost } from './enwikiTitle'
 import { createSharedRequest, joinSharedRequest, type SharedRequest } from './sharedRequest'
 
 export interface FeaturedFeedDayResponse {
@@ -44,7 +45,7 @@ function featuredFeedUrl(date = new Date()): { url: string; dayKey: string } {
   const { yyyy, mm, dd, key } = utcDayParts(date)
   return {
     dayKey: key,
-    url: `https://${EN_WIKI_HOST}/api/rest_v1/feed/featured/${yyyy}/${mm}/${dd}`,
+    url: `https://${contentWikiHost()}/api/rest_v1/feed/featured/${yyyy}/${mm}/${dd}`,
   }
 }
 
@@ -83,17 +84,21 @@ export async function fetchEnwikiFeaturedFeedDay(
   return joinSharedRequest(request, signal)
 }
 
+/** Which feed failed — each has its own messages, since the sentence agrees with the noun. */
+export type WikimediaFeedResource = 'featured' | 'trending'
+
 export function wikimediaFeedErrorMessage(
   status: number | undefined,
-  resource: string,
+  resource: WikimediaFeedResource,
 ): string {
-  if (status === 429) {
-    return `${resource} is temporarily unavailable. Wikipedia may be rate-limiting requests — try again shortly.`
+  if (resource === 'trending') {
+    if (status === 429) return t('feed.errorTrendingRateLimited')
+    if (status) return t('feed.errorTrendingHttp', status)
+    return t('feed.errorTrendingOffline')
   }
-  if (status) {
-    return `${resource} could not be loaded (HTTP ${status}).`
-  }
-  return `${resource} could not be loaded. Check your connection and try again.`
+  if (status === 429) return t('feed.errorFeaturedRateLimited')
+  if (status) return t('feed.errorFeaturedHttp', status)
+  return t('feed.errorFeaturedOffline')
 }
 
 export function clearFeaturedFeedSessionCache(): void {

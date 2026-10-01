@@ -2,6 +2,8 @@
 import { CdxIcon } from '@wikimedia/codex'
 import { cdxIconHome } from '@wikimedia/codex-icons'
 
+import { t } from '@/i18n'
+
 defineProps<{
   homeActive?: boolean
 }>()
@@ -12,12 +14,12 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="wikita-lite-floating-nav" role="navigation" aria-label="Quick navigation">
+  <div class="wikita-lite-floating-nav" role="navigation" :aria-label="t('components.quickNavigation')">
     <button
       type="button"
       class="wikita-lite-floating-nav__btn"
       :class="{ 'wikita-lite-floating-nav__btn--active': homeActive }"
-      aria-label="Home"
+      :aria-label="t('components.home')"
       :aria-pressed="homeActive"
       @click="emit('go-home')"
     >

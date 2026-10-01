@@ -25,20 +25,16 @@ import {
 } from '@wikimedia/codex-icons'
 
 import { useConfig } from '@/composables/useConfig'
+import { t } from '@/i18n'
 import { createAccountOpener } from './createAccountOpener'
 import { DEFAULT_CHROME_NAV_TOOLS, type ChromeNavTool } from './headerNavTools'
+import { wikipediaTaglineSrc, wikipediaWordmarkSrc } from './wikipediaWordmark'
 import { globalTheme } from '@/theme'
 import type { Theme } from '@/theme'
 import MobileSearchOverlay from '@/components/search/MobileSearchOverlay.vue'
 import Search from '../Search.vue'
 
 const { user, displayName } = useConfig()
-
-/** Fallback EN CDN SVGs — override via **`wordmarkSrc`** / **`taglineSrc`**. */
-const WIKIPEDIA_WORDMARK_EN =
-  'https://en.wikipedia.org/static/images/mobile/copyright/wikipedia-wordmark-en-25.svg'
-const WIKIPEDIA_TAGLINE_EN =
-  'https://en.wikipedia.org/static/images/mobile/copyright/wikipedia-tagline-en-25.svg'
 
 /** Where "Create account" goes when the prototype has no flow of its own. */
 const CREATE_ACCOUNT_URL = 'https://en.wikipedia.org/w/index.php?title=Special:CreateAccount'
@@ -87,8 +83,9 @@ const effectiveTheme = computed<Theme>(() => props.theme ?? globalTheme.value)
 const trimmedUsername = computed(() => (props.username ?? '').trim())
 const isLoggedOut = computed(() => user.value === 'logged-out')
 
-const desktopWordmarkSrc = computed(() => props.wordmarkSrc ?? WIKIPEDIA_WORDMARK_EN)
-const desktopTaglineSrc = computed(() => props.taglineSrc ?? WIKIPEDIA_TAGLINE_EN)
+/** UI-language CDN SVGs by default — override via **`wordmarkSrc`** / **`taglineSrc`**. */
+const desktopWordmarkSrc = computed(() => props.wordmarkSrc ?? wikipediaWordmarkSrc())
+const desktopTaglineSrc = computed(() => props.taglineSrc ?? wikipediaTaglineSrc())
 
 const effectiveNavTools = computed(() =>
   props.navTools?.length ? props.navTools : DEFAULT_CHROME_NAV_TOOLS,
@@ -114,15 +111,15 @@ const userMenuLabel = computed(() => trimmedUsername.value || displayName.value)
  * selection so no entry renders a persistent checkmark.
  */
 const userMenuItems: MenuButtonItemData[] = [
-  { value: 'user-page', label: 'User page', icon: cdxIconUserAvatar },
-  { value: 'talk', label: 'Talk', icon: cdxIconUserTalk },
-  { value: 'sandbox', label: 'Sandbox', icon: cdxIconSandbox },
-  { value: 'preferences', label: 'Preferences', icon: cdxIconSettings },
-  { value: 'beta', label: 'Beta', icon: cdxIconLabFlask },
-  { value: 'contributions', label: 'Contributions', icon: cdxIconUserContributions },
-  { value: 'translations', label: 'Translations', icon: cdxIconLanguage },
-  { value: 'uploaded-media', label: 'Uploaded media', icon: cdxIconImageGallery },
-  { value: 'log-out', label: 'Log out', icon: cdxIconLogOut },
+  { value: 'user-page', label: t('chrome.userPage'), icon: cdxIconUserAvatar },
+  { value: 'talk', label: t('chrome.talk'), icon: cdxIconUserTalk },
+  { value: 'sandbox', label: t('chrome.sandbox'), icon: cdxIconSandbox },
+  { value: 'preferences', label: t('chrome.preferences'), icon: cdxIconSettings },
+  { value: 'beta', label: t('chrome.beta'), icon: cdxIconLabFlask },
+  { value: 'contributions', label: t('chrome.contributions'), icon: cdxIconUserContributions },
+  { value: 'translations', label: t('chrome.translations'), icon: cdxIconLanguage },
+  { value: 'uploaded-media', label: t('chrome.uploadedMedia'), icon: cdxIconImageGallery },
+  { value: 'log-out', label: t('chrome.logOut'), icon: cdxIconLogOut },
 ]
 
 const userMenuSelection = ref<MenuItemValue | null>(null)
@@ -150,7 +147,7 @@ function onCreateAccountClick(event: MouseEvent): void {
 
 <template>
   <header class="vector-chrome-header" data-skin="desktop" :data-theme="effectiveTheme">
-    <nav class="vector-chrome-header__nav" aria-label="Site">
+    <nav class="vector-chrome-header__nav" :aria-label="t('chrome.siteNavigation')">
       <div class="vector-chrome-header__start">
         <slot name="menu">
           <!-- Mock only — not interactive (FakeMediaWiki uses bare chrome / icon affordances). -->
@@ -159,7 +156,11 @@ function onCreateAccountClick(event: MouseEvent): void {
           </span>
         </slot>
 
-        <RouterLink class="vector-chrome-header__brand-link" to="/" aria-label="Visit the main page">
+        <RouterLink
+          class="vector-chrome-header__brand-link"
+          to="/"
+          :aria-label="t('chrome.visitMainPage')"
+        >
           <slot name="logo">
             <span class="vector-chrome-header__wordmarks">
               <img
@@ -167,7 +168,7 @@ function onCreateAccountClick(event: MouseEvent): void {
                 :src="desktopWordmarkSrc"
                 width="120"
                 height="18"
-                alt="Wikipedia"
+                :alt="t('chrome.wordmarkAlt')"
               />
               <img
                 class="vector-chrome-header__tagline-img"
@@ -190,7 +191,7 @@ function onCreateAccountClick(event: MouseEvent): void {
           type="submit"
           form="protowiki-search"
         >
-          Search
+          {{ t('chrome.search') }}
         </CdxButton>
       </div>
 
@@ -198,7 +199,7 @@ function onCreateAccountClick(event: MouseEvent): void {
         <CdxButton
           class="vector-chrome-header__search-icon-toggle"
           weight="quiet"
-          aria-label="Search"
+          :aria-label="t('chrome.search')"
           @click="searchOpen = true"
         >
           <CdxIcon :icon="cdxIconSearch" />
@@ -210,7 +211,7 @@ function onCreateAccountClick(event: MouseEvent): void {
               href="https://donate.wikimedia.org/"
               rel="noopener noreferrer"
             >
-              Donate
+              {{ t('chrome.donate') }}
             </a>
             <a
               class="vector-chrome-header__text-link"
@@ -218,14 +219,14 @@ function onCreateAccountClick(event: MouseEvent): void {
               rel="noopener noreferrer"
               @click="onCreateAccountClick"
             >
-              Create account
+              {{ t('chrome.createAccount') }}
             </a>
             <a
               class="vector-chrome-header__text-link"
               href="https://en.wikipedia.org/w/index.php?title=Special:UserLogin"
               rel="noopener noreferrer"
             >
-              Log in
+              {{ t('chrome.logIn') }}
             </a>
           </div>
           <a
@@ -246,33 +247,41 @@ function onCreateAccountClick(event: MouseEvent): void {
             @click="emit('home')"
           >
             <CdxIcon :icon="cdxIconHome" />
-            Home
+            {{ t('chrome.home') }}
           </CdxButton>
-          <CdxButton v-if="navHas('appearance')" weight="quiet" aria-label="Appearance">
+          <CdxButton
+            v-if="navHas('appearance')"
+            weight="quiet"
+            :aria-label="t('chrome.appearance')"
+          >
             <CdxIcon :icon="cdxIconAppearance" />
           </CdxButton>
           <CdxButton
             v-if="navHas('notifications')"
             weight="quiet"
-            aria-label="Notifications"
+            :aria-label="t('chrome.notifications')"
           >
             <CdxIcon :icon="cdxIconBell" />
           </CdxButton>
-          <CdxButton v-if="navHas('notices')" weight="quiet" aria-label="Notices">
+          <CdxButton v-if="navHas('notices')" weight="quiet" :aria-label="t('chrome.notices')">
             <CdxIcon :icon="cdxIconTray" />
           </CdxButton>
-          <CdxButton v-if="navHas('bookmarks')" weight="quiet" aria-label="Reading lists">
+          <CdxButton
+            v-if="navHas('bookmarks')"
+            weight="quiet"
+            :aria-label="t('chrome.readingLists')"
+          >
             <CdxIcon :icon="cdxIconBookmarkList" />
           </CdxButton>
           <CdxButton
             v-if="navHas('watchlist')"
             weight="quiet"
             class="vector-chrome-header__hide-narrow"
-            aria-label="Watchlist"
+            :aria-label="t('chrome.watchlist')"
           >
             <CdxIcon :icon="cdxIconWatchlist" />
           </CdxButton>
-          <CdxButton v-if="navHas('user')" weight="quiet" aria-label="User menu">
+          <CdxButton v-if="navHas('user')" weight="quiet" :aria-label="t('chrome.userMenu')">
             <CdxIcon :icon="cdxIconUserAvatar" />
           </CdxButton>
           <!-- The visible name is the accessible name, so no `aria-label`. -->

@@ -1,8 +1,10 @@
 import { formatWikimediaApiUserAgent, loadConfig, wikimediaApiFetchHeaders } from '@/config'
+import { getUiLang, t } from '@/i18n'
+import { formatCompactNumber, formatElapsed, usesLocalizedFormat } from '@/lib/contentFormat'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 
-import { EN_WIKI_HOST, enwikiTitlesMatch, fetchWikibaseItemId, normalizeEnwikiTitle, wikiActionUrl } from './enwikiTitle'
+import { contentWikiHost, enwikiTitlesMatch, fetchWikibaseItemId, normalizeEnwikiTitle, wikiActionUrl } from './enwikiTitle'
 import { isExcludedEditOpportunityNeed, resolveEditOpportunityCopy } from './editOpportunityCopy'
 import { fetchRecentChangeForItem } from './fetchRecentChanges'
 import { fetchWithTimeout } from './fetchWithTimeout'
@@ -20,6 +22,7 @@ import type {
   MusicalGroupOverviewSnippet,
 } from './types'
 import { normalizeQid } from './wikidataApi'
+import { getContentLang } from '@/lib/contentLang'
 
 const MICROTASK_QUALITY_CHECK_URL = 'https://microtask-generator.toolforge.org/quality-check'
 /** Related-reading candidates resolved in parallel per overview load. */
@@ -74,7 +77,7 @@ async function fetchEditOpportunity(
       method: 'POST',
       signal,
       headers: microtaskFetchHeaders(),
-      body: JSON.stringify({ lang: 'en', titles: [title] }),
+      body: JSON.stringify({ lang: getContentLang(), titles: [title] }),
     })
     if (!response.ok) return undefined
 
@@ -138,6 +141,7 @@ function formatRelativeTime(isoTimestamp: string): string {
   const then = parseMediaWikiTimestamp(isoTimestamp).getTime()
   if (Number.isNaN(then)) return '—'
   const diffMs = Date.now() - then
+  if (usesLocalizedFormat()) return formatElapsed(diffMs)
   if (diffMs < 0) return 'just now'
 
   const minutes = Math.floor(diffMs / (1000 * 60))
@@ -155,6 +159,7 @@ function formatRelativeTime(isoTimestamp: string): string {
 }
 
 function formatViewCount(total: number): string {
+  if (usesLocalizedFormat()) return formatCompactNumber(total)
   if (total >= 1_000_000) return `${(total / 1_000_000).toFixed(1)}M`
   if (total >= 1000) return `${(total / 1000).toFixed(1)}k`
   return total.toLocaleString()
@@ -177,7 +182,7 @@ function deadLinkExtractHtml(html: string): string {
 
 async function fetchPageSummary(title: string, signal?: AbortSignal): Promise<PageSummaryResponse | null> {
   const slug = encodeURIComponent(title.replace(/ /g, '_'))
-  const response = await fetchWikimedia(`https://${EN_WIKI_HOST}/api/rest_v1/page/summary/${slug}`, {
+  const response = await fetchWikimedia(`https://${contentWikiHost()}/api/rest_v1/page/summary/${slug}`, {
     signal,
     headers: wikimediaApiFetchHeaders('musical-group-page-summary'),
   })
@@ -255,9 +260,9 @@ async function tryRelatedCandidate(
     thumbnailUrl: summary?.thumbnail?.source,
     articleUrl:
       summary?.content_urls?.desktop?.page ??
-      `https://${EN_WIKI_HOST}/wiki/${pageviewsArticleSlug(relatedTitle)}`,
+      `https://${contentWikiHost()}/wiki/${pageviewsArticleSlug(relatedTitle)}`,
     lastEditedTimestamp: timestamp,
-    lastEditedLabel: timestamp ? `Updated ${relative}` : 'Updated —',
+    lastEditedLabel: t('common.updatedRelative', timestamp ? relative : '—'),
     viewCount: views.total,
     viewsLabel: views.label,
     relatedToTitle,
@@ -520,7 +525,7 @@ export async function fetchSnippetMentions(
       thumbnailUrl: summary?.thumbnail?.source,
       articleUrl:
         summary?.content_urls?.desktop?.page ??
-        `https://${EN_WIKI_HOST}/wiki/${pageviewsArticleSlug(candidate.title)}`,
+        `https://${contentWikiHost()}/wiki/${pageviewsArticleSlug(candidate.title)}`,
     })
   }
 
@@ -896,7 +901,7 @@ async function resolvePageviewsLabel(
   if (weekTotal > 0) {
     return {
       total: weekTotal,
-      label: `${formatViewCount(weekTotal)} views this week`,
+      label: t('feed.viewsThisWeek', formatViewCount(weekTotal)),
     }
   }
 
@@ -907,7 +912,7 @@ async function resolvePageviewsLabel(
   if (sevenTotal > 0) {
     return {
       total: sevenTotal,
-      label: `${formatViewCount(sevenTotal)} views in the last 7 days`,
+      label: t('feed.viewsLastDays', formatViewCount(sevenTotal), 7),
     }
   }
 
@@ -918,11 +923,15 @@ async function resolvePageviewsLabel(
   if (monthTotal > 0) {
     return {
       total: monthTotal,
-      label: `${formatViewCount(monthTotal)} views this month`,
+      label: t('feed.viewsThisMonth', formatViewCount(monthTotal)),
     }
   }
 
   return { total: 0, label: '—' }
+}
+
+function formatWordCount(count: number): string {
+  return usesLocalizedFormat() ? count.toLocaleString(getUiLang()) : count.toLocaleString()
 }
 
 function buildOverviewArticle(
@@ -943,13 +952,13 @@ function buildOverviewArticle(
     thumbnailUrl: summary.thumbnail?.source,
     articleUrl:
       summary.content_urls?.desktop?.page ??
-      `https://${EN_WIKI_HOST}/wiki/${pageviewsArticleSlug(title)}`,
+      `https://${contentWikiHost()}/wiki/${pageviewsArticleSlug(title)}`,
     lastEditedTimestamp: timestamp,
-    lastEditedLabel: timestamp ? `Updated ${relative}` : 'Updated —',
+    lastEditedLabel: t('common.updatedRelative', timestamp ? relative : '—'),
     viewCount: extras.views?.total ?? 0,
     viewsLabel: extras.views?.label ?? '—',
     wordCount,
-    wordCountLabel: wordCount ? `${wordCount.toLocaleString()} words` : '',
+    wordCountLabel: wordCount ? t('feed.wordCount', formatWordCount(wordCount), wordCount) : '',
   }
 }
 

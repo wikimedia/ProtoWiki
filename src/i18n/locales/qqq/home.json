@@ -1,0 +1,27 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"loadingImpact": "Accessible label of the progress bar while the \"Your impact\" module loads.",
+	"activeDiscussionFilters": "Accessible label of the row of filter buttons above the active discussions cards.",
+	"commentCount": "Supporting line on an active discussion card. $1 = number of comments in the discussion.",
+	"loadingBornOnThisDay": "Accessible label of the progress bar while the \"Born on this day\" module ({{msg|modules-bornOnThisDay}}) loads.",
+	"loadingDidYouKnow": "Accessible label of the progress bar while the \"Did you know\" module ({{msg|modules-didYouKnow}}) loads.",
+	"loadingFeatured": "Accessible label of the progress bar while the featured article module loads.",
+	"flagFirstEdit": "Chip on a recent change card: the edit is the first one made by its author.",
+	"flagNewEditor": "Chip on a recent change card: the edit was made by a newcomer.",
+	"flagNeedsReference": "Chip on a recent change card: the edit adds content whose references should be checked.",
+	"flagToneIssue": "Chip on a recent change card: the edit may not be written in a neutral, encyclopedic tone.",
+	"flagHighRevertRisk": "Chip on a recent change card: a model predicts the edit is likely to be reverted.",
+	"chipLatest": "Chip on a recent change card: this is the latest edit (revision) of the page. French: refers to \"modification\" (feminine).",
+	"chipReverted": "Chip on a recent change card: the edit has been reverted. French: refers to \"modification\" (feminine).",
+	"chipMajorChange": "Chip on a recent change card: the edit changed a large part of the page.",
+	"reviewMoreChanges": "Button/link under the review changes module that shows more recent changes.",
+	"loadingFurtherReading": "Accessible label of the progress bar while the reading suggestions ({{msg|modules-furtherReading}}) load.",
+	"savedJustNow": "Supporting line on a saved page card, saved less than a minute ago.",
+	"savedMinutesAgo": "Supporting line on a saved page card. $1 = number of minutes (1–59). Keep it short (abbreviated unit).",
+	"savedHoursAgo": "Supporting line on a saved page card. $1 = number of hours (1–23). Keep it short (abbreviated unit).",
+	"savedDaysAgo": "Supporting line on a saved page card. $1 = number of days. Keep it short (abbreviated unit).",
+	"savedEmpty": "Empty state of the Saved module. $1 = the bookmark (save) icon, rendered inline as an image; keep it right after the words for \"save icon\".",
+	"loadingTrending": "Accessible label of the progress bar while the trending module ({{msg|modules-trending}}) loads."
+}

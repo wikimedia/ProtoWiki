@@ -1,4 +1,5 @@
 import { useConfig } from '@/composables/useConfig'
+import { t } from '@/i18n'
 
 import {
   clearTranslationSuggestionsSessionCache,
@@ -78,7 +79,7 @@ export function useWikitaLiteTranslationPage() {
       items.value = []
       hasMore.value = false
       error.value =
-        err instanceof Error ? err.message : 'Could not load translation suggestions.'
+        err instanceof Error ? err.message : t('data.translationLoadError')
     }
   }
 
@@ -101,7 +102,7 @@ export function useWikitaLiteTranslationPage() {
       if ((err as Error).name === 'AbortError') return false
       if (!items.value.length) {
         error.value =
-          err instanceof Error ? err.message : 'Could not load translation suggestions.'
+          err instanceof Error ? err.message : t('data.translationLoadError')
       }
       hasMore.value = false
       return false

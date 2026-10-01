@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"mentorDescription": "Posez à votre mentor une question sur la modification.",
+	"mentorLastActive": "Actif il y a {{PLURAL:$1|$1 heure|$1 heures}}",
+	"guideTitle": "Comment modifier une page",
+	"guideDescription": "Introduction à la modification de Wikipédia.",
+	"guideSupportingText": "Guide",
+	"videoTitle": "Qu'est-ce qui distingue Wikipédia des autres réseaux sociaux ?",
+	"videoDescription": "Introduction à la modification de Wikipédia.",
+	"videoSupportingText": "Vidéo Wikiminute",
+	"videoMediaAlt": "Miniature de la vidéo Wikiminute : Qu'est-ce qui distingue Wikipédia des réseaux sociaux ?"
+}

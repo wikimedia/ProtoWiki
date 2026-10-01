@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 
 import { CdxDialog, CdxPopover } from '@wikimedia/codex'
 
+import { t } from '@/i18n'
 import { globalSkin } from '@/theme'
 
 import { useWikitaLiteLeavePrototype } from '../composables/useWikitaLiteLeavePrototype'
@@ -20,17 +21,15 @@ const sheetAnchor = ref<HTMLElement | null>(null)
 const isDesktop = computed(() => globalSkin.value === 'desktop')
 
 const primaryAction = {
-  label: 'Continue',
+  label: t('components.leaveContinue'),
   actionType: 'progressive' as const,
 }
 
 const defaultAction = {
-  label: 'Stay in the prototype',
+  label: t('components.leaveStay'),
 }
 
-const BODY_TEXT =
-  'You are leaving the prototype. Any changes you make beyond this point will affect real ' +
-  'wikis, and the experience you land in may not be fully integrated with the features here.'
+const bodyText = t('components.leaveBody')
 
 function onOpenChange(open: boolean): void {
   if (!open) cancelLeave()
@@ -42,7 +41,7 @@ function onOpenChange(open: boolean): void {
     v-if="isDesktop"
     v-model:open="dialogOpen"
     class="wikita-lite-leave-prototype-dialog"
-    title="Leaving prototype"
+    :title="t('components.leaveTitle')"
     :use-close-button="true"
     :primary-action="primaryAction"
     :default-action="defaultAction"
@@ -50,7 +49,7 @@ function onOpenChange(open: boolean): void {
     @primary="confirmLeave"
     @default="cancelLeave"
   >
-    {{ BODY_TEXT }}
+    {{ bodyText }}
   </CdxDialog>
 
   <template v-else>
@@ -65,7 +64,7 @@ function onOpenChange(open: boolean): void {
       class="wikita-lite-leave-prototype-sheet mobile-wrapper__sheet-popover"
       use-bottom-sheet
       :anchor="sheetAnchor"
-      title="Leaving prototype"
+      :title="t('components.leaveTitle')"
       :use-close-button="true"
       :primary-action="primaryAction"
       :default-action="defaultAction"
@@ -74,7 +73,7 @@ function onOpenChange(open: boolean): void {
       @primary="confirmLeave"
       @default="cancelLeave"
     >
-      {{ BODY_TEXT }}
+      {{ bodyText }}
     </CdxPopover>
   </template>
 </template>

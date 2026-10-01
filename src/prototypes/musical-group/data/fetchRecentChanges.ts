@@ -3,11 +3,14 @@ import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 
 import { bookmarksKey } from './cacheKeys'
-import { EN_WIKI_HOST, normalizeEnwikiTitle, wikiActionUrl } from './enwikiTitle'
+import { contentWikiHost, normalizeEnwikiTitle, wikiActionUrl } from './enwikiTitle'
 import { formatEditSummaryDisplay } from './editSummaryDisplay'
 import { getCachedRecentChangesPreview, setCachedRecentChangesPreview } from './homeTabCache'
 import { predictGoodFaith, predictReferenceNeed, predictRevertRisk, predictTone } from './liftWing'
 import type { HomeRecentChange, HomeRecentChangeFlag, HomeSavedItem } from './types'
+import { getContentLang } from '@/lib/contentLang'
+import { t } from '@/i18n'
+import { formatElapsed, usesLocalizedFormat } from '@/lib/contentFormat'
 
 /** How many saved pages to show in the home Activity preview. */
 const MAX_RECENT_CHANGES = 2
@@ -93,7 +96,7 @@ function diffUrl(title: string, revid: number): string {
     diff: 'prev',
     oldid: String(revid),
   })
-  return `https://${EN_WIKI_HOST}/w/index.php?${params.toString()}`
+  return `https://${contentWikiHost()}/w/index.php?${params.toString()}`
 }
 
 function parseMediaWikiTimestamp(timestamp: string): Date {
@@ -109,6 +112,7 @@ function formatRelativeTime(isoTimestamp: string): string {
   const then = parseMediaWikiTimestamp(isoTimestamp).getTime()
   if (Number.isNaN(then)) return '—'
   const diffMs = Date.now() - then
+  if (usesLocalizedFormat()) return formatElapsed(diffMs)
   if (diffMs < 0) return 'just now'
 
   const minutes = Math.floor(diffMs / (1000 * 60))
@@ -125,7 +129,7 @@ function formatRelativeTime(isoTimestamp: string): string {
 
 export function formatEditMetaLabel(timestamp: string, user: string): string {
   const relative = formatRelativeTime(timestamp)
-  const editor = user.trim() || 'Anonymous'
+  const editor = user.trim() || t('feed.anonymous')
   return `${editor}, ${relative}`
 }
 
@@ -147,7 +151,7 @@ export function formatEditStatusLabel(
   reverted: boolean,
   _isLatest: boolean,
 ): string {
-  if (reverted) return 'Reverted'
+  if (reverted) return t('feed.reverted')
   return ''
 }
 
@@ -509,8 +513,8 @@ async function needsReferenceFlag(
 
   if (revision.parentid) {
     const [childScore, parentScore] = await Promise.all([
-      predictReferenceNeed(revision.revid, 'en', signal),
-      predictReferenceNeed(revision.parentid, 'en', signal),
+      predictReferenceNeed(revision.revid, getContentLang(), signal),
+      predictReferenceNeed(revision.parentid, getContentLang(), signal),
     ])
     if (
       childScore != null &&

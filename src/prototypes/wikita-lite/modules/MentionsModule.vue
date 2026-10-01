@@ -24,6 +24,7 @@ import { WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE } from '../wikita-lite-card
 import WikitaLiteCardSkeletons from '../components/WikitaLiteCardSkeletons.vue'
 import WikitaLiteCardWithAction from '../components/WikitaLiteCardWithAction.vue'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
+import { MESSAGES, t } from '../i18n'
 
 interface Props {
   standalone?: boolean
@@ -71,7 +72,7 @@ function saveIcon(itemId: string, title: string) {
 }
 
 function saveLabel(title: string): string {
-  return relatedReadingSaved(title) ? 'Saved' : 'Save'
+  return relatedReadingSaved(title) ? t('common.savedState') : t('common.save')
 }
 
 const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
@@ -137,10 +138,10 @@ const showMoreLink = useWikitaLiteOverflowShowMore({
       :to="moreTo"
       class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled wikita-lite-button-link"
     >
-      Show more mentions
+      {{ MESSAGES.showMoreMentions }}
     </RouterLink>
 
-    <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading mentions" />
+    <CdxProgressBar v-if="standalone && loading" inline :aria-label="t('home.loadingMentions')" />
   </div>
 </template>
 

@@ -3,12 +3,13 @@ import { computed, inject, useSlots } from 'vue'
 import { CdxIcon } from '@wikimedia/codex'
 import { cdxIconHelpNotice } from '@wikimedia/codex-icons'
 
+import { t } from '@/i18n'
+
 import { globalSkin, globalTheme, PROTOWIKI_CHROME_SKIN, PROTOWIKI_CHROME_THEME } from '@/theme'
 import type { Skin, Theme } from '@/theme'
 
 /** Codex docs — fixed target for the built-in Help link (not a public prop). */
 const HELP_LINK_HREF = 'https://doc.wikimedia.org/codex/latest/'
-const DEFAULT_HELP_LABEL = 'Help'
 
 interface Props {
   /**
@@ -106,7 +107,7 @@ const showHeaderNav = computed(
               rel="noopener noreferrer"
             >
               <CdxIcon size="small" :icon="cdxIconHelpNotice" />
-              <span>{{ DEFAULT_HELP_LABEL }}</span>
+              <span>{{ t('chrome.help') }}</span>
             </a>
           </slot>
         </span>

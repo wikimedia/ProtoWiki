@@ -1,5 +1,7 @@
 import { inject, provide, ref, type InjectionKey, type Ref } from 'vue'
 
+import { t } from '@/i18n'
+
 import { toggleBookmark } from '../data/bookmarks'
 import { addPageToList, createList, removePageFromAllLists } from '../data/lists'
 
@@ -82,7 +84,7 @@ export function provideWikitaSaveFeedback(): WikitaSaveFeedbackContext {
   function createListAndAdd(): void {
     const pageId = listsSheetPageId.value
     if (!pageId) return
-    const list = createList('New list')
+    const list = createList(t('feed.newListName'))
     addPageToList(list.id, pageId, listsSheetPageThumbnailUrl.value ?? undefined)
     listsVersion.value += 1
     closeListsSheet()

@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"mentorDescription": "Ask your mentor a question about editing.",
+	"mentorLastActive": "Active {{PLURAL:$1|$1 hour|$1 hours}} ago",
+	"guideTitle": "How to edit a page",
+	"guideDescription": "Introduction to editing on Wikipedia.",
+	"guideSupportingText": "Guide",
+	"videoTitle": "What makes Wikipedia different from other social media platforms?",
+	"videoDescription": "Introduction to editing on Wikipedia.",
+	"videoSupportingText": "Wikiminute video",
+	"videoMediaAlt": "Wikiminute video thumbnail: What makes Wikipedia different from social media platforms?"
+}

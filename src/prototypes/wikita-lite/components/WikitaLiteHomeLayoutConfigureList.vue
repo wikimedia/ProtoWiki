@@ -3,6 +3,8 @@ import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { CdxButton, CdxIcon, CdxToggleSwitch } from '@wikimedia/codex'
 import { cdxIconDraggableVertical } from '@wikimedia/codex-icons'
 
+import { t } from '@/i18n'
+
 import {
   CONFIGURABLE_HOME_MODULE_LABELS,
   type ConfigurableHomeModuleId,
@@ -175,7 +177,7 @@ onBeforeUnmount(() => setGrabbingCursor(false))
       <CdxButton
         class="wikita-lite-home-layout-configure-list__handle"
         weight="quiet"
-        aria-label="Drag to reorder"
+        :aria-label="t('components.dragToReorder')"
         @pointerdown="onHandlePointerDown($event, index)"
         @keydown="onHandleKeydown($event, index)"
         @touchstart.prevent="suppressLongPress"

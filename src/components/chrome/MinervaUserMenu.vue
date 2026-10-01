@@ -14,6 +14,7 @@ import {
 } from '@wikimedia/codex-icons'
 
 import { useConfig } from '@/composables/useConfig'
+import { t } from '@/i18n'
 
 /**
  * Minerva's avatar button with the user menu hanging off it. The real Minerva
@@ -45,12 +46,12 @@ const menuItems = computed((): MenuItemData[] => [
     label: (props.username ?? '').trim() || displayName.value,
     icon: cdxIconUserAvatar,
   },
-  { value: 'talk', label: 'Talk', icon: cdxIconUserTalk },
-  { value: 'sandbox', label: 'Sandbox', icon: cdxIconSandbox },
-  { value: 'saved', label: 'Saved', icon: cdxIconBookmarkList },
-  { value: 'watchlist', label: 'Watchlist', icon: cdxIconWatchlist },
-  { value: 'contributions', label: 'Contributions', icon: cdxIconUserContributions },
-  { value: 'log-out', label: 'Log out', icon: cdxIconLogOut },
+  { value: 'talk', label: t('chrome.talk'), icon: cdxIconUserTalk },
+  { value: 'sandbox', label: t('chrome.sandbox'), icon: cdxIconSandbox },
+  { value: 'saved', label: t('chrome.saved'), icon: cdxIconBookmarkList },
+  { value: 'watchlist', label: t('chrome.watchlist'), icon: cdxIconWatchlist },
+  { value: 'contributions', label: t('chrome.contributions'), icon: cdxIconUserContributions },
+  { value: 'log-out', label: t('chrome.logOut'), icon: cdxIconLogOut },
 ])
 
 /** Mock rows: clear the pick so no row keeps the selected (blue) treatment. */
@@ -98,7 +99,7 @@ onBeforeUnmount(() => {
       ref="trigger"
       weight="quiet"
       size="large"
-      aria-label="User menu"
+      :aria-label="t('chrome.userMenu')"
       aria-haspopup="menu"
       :aria-expanded="open"
       @click="open = !open"
@@ -113,7 +114,7 @@ onBeforeUnmount(() => {
       class="minerva-user-menu__menu"
       :menu-items="menuItems"
       role="menu"
-      aria-label="User menu"
+      :aria-label="t('chrome.userMenu')"
     />
   </span>
 </template>

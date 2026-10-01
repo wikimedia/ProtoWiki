@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+
 import { listBookmarks } from './bookmarks'
 import { getCachedMusicalGroup } from './musicalGroupCache'
 import type { HomeSavedItem } from './types'
@@ -24,7 +26,7 @@ export function formatRelatedToLabel(
   const saved = savedItems ?? []
   if (!relatedToTitle) return ''
   if (!options?.alwaysShow && isSavedPageTitle(relatedToTitle, saved)) return ''
-  return `Related to ${relatedToTitle}`
+  return t('feed.relatedTo', relatedToTitle)
 }
 
 /** "Related to …" for edit suggestions seeded from a saved page onto a different article. */
@@ -41,7 +43,7 @@ export function formatEditSuggestionRelatedToLabel(
 /** "Related to …" for recommendations seeded from a list on the Saved tab. */
 export function formatRelatedToListLabel(listName: string): string {
   if (!listName) return ''
-  return `Related to ${listName}`
+  return t('feed.relatedTo', listName)
 }
 
 /** Saved page titles from the local entity cache (for views outside the home feed). */

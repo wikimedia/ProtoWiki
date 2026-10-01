@@ -1,4 +1,5 @@
-const WIKIPEDIA_PREFIX = /^Wikipedia:\s?/
+/** Project namespace in any of the supported content wikis (`Wikipedia:`, `Wikipédia:`). */
+const WIKIPEDIA_PREFIX = /^Wikip[eé]dia:\s?/
 
 /** Strip the Wikipedia namespace from a noticeboard page title. */
 export function stripWikipediaPrefix(title: string): string {

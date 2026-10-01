@@ -225,6 +225,8 @@ export interface HomeFeatured {
   thumbnailUrl?: string
   articleUrl: string
   itemId?: string
+  /** Description machine-translated from English Wikipedia (MinT). */
+  machineTranslated?: boolean
 }
 
 /** A "Did you know" hook from the daily featured feed. */
@@ -237,6 +239,8 @@ export interface HomeDidYouKnow {
   thumbnailUrl?: string
   articleUrl?: string
   itemId?: string
+  /** Hook machine-translated from English Wikipedia (MinT). */
+  machineTranslated?: boolean
 }
 
 /** A birthday entry from on-this-day births. */

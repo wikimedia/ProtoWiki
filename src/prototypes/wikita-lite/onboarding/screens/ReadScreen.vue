@@ -6,6 +6,7 @@ import ArticleHeader from '@/components/article/ArticleHeader.vue'
 import ArticleRenderer from '@/components/article/ArticleRenderer.vue'
 import ChromeHeader from '@/components/chrome/ChromeHeader.vue'
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
+import { t } from '@/i18n'
 import { globalSkin } from '@/theme'
 
 import WikitaLitePrototypeMenuPopover from '../../components/WikitaLitePrototypeMenuPopover.vue'
@@ -61,7 +62,7 @@ function onSearch(): void {
 }
 
 const { headerRight } = useWikitaLiteChromeHeaderRight({
-  search: { type: 'button', icon: 'search', label: 'Search', onClick: onSearch },
+  search: { type: 'button', icon: 'search', label: t('onboarding.search'), onClick: onSearch },
 })
 
 function onArticleLinkClick(event: MouseEvent): void {
@@ -111,10 +112,10 @@ function onArticleLinkClick(event: MouseEvent): void {
           @bookmark-click="onBookmark"
         />
 
-        <CdxProgressBar v-if="loading" inline aria-label="Loading article" />
+        <CdxProgressBar v-if="loading" inline :aria-label="t('onboarding.loadingArticle')" />
 
         <CdxMessage v-if="error" type="error" :allow-user-dismiss="false">
-          Couldn't load this article: {{ error }}
+          {{ t('onboarding.articleLoadError', error) }}
         </CdxMessage>
 
         <ArticleRenderer v-if="html !== null" @click="onArticleLinkClick">

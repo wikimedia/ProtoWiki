@@ -2,6 +2,8 @@
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconArrowNext } from '@wikimedia/codex-icons'
 
+import { t } from '@/i18n'
+
 import { useWikitaLiteSubpageBack } from '../composables/useWikitaLiteSubpageBack'
 
 interface Props {
@@ -11,7 +13,7 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
-  backLabel: 'Back',
+  backLabel: () => t('common.back'),
   bleed: true,
 })
 

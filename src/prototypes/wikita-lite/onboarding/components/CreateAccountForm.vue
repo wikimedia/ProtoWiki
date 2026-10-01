@@ -4,50 +4,56 @@
       <div :key="isMultiStep ? currentField : 'all'" class="step-content">
         <div v-if="isFieldActive('username')" class="username-field-wrapper">
           <CdxField :status="usernameFieldStatus" :messages="{}">
-            <template #label>Username</template>
+            <template #label>{{ t('createAccount.usernameLabel') }}</template>
             <template #description>
               <template v-if="settings.fields.username.behaviors.learnMoreLink">
-                Your username is public and cannot be made private later.
+                {{ t('createAccount.usernamePublicLearnMore') }}
                 <a
-                  href="https://en.wikipedia.org/wiki/Wikipedia:Username_policy"
+                  :href="usernamePolicyUrl"
                   rel="noopener"
                   class="learn-more-link"
-                  >Learn more</a
+                  >{{ t('createAccount.learnMore') }}</a
                 >
               </template>
               <template v-else-if="settings.fields.username.behaviors.chooseCarefullyCopy">
                 <span class="username-description-row">
-                  Avoid using your real name.
+                  {{ t('createAccount.avoidRealName') }}
                   <CdxButton
                     ref="policyTriggerRef"
                     weight="quiet"
                     size="small"
                     type="button"
-                    aria-label="Username policy"
+                    :aria-label="t('createAccount.usernamePolicy')"
                     @click="showPolicy = true">
                       <cdx-icon size="small" :icon="cdxIconHelpNotice" />
                   </CdxButton>
                 </span>
               </template>
               <template v-else-if="settings.fields.username.behaviors.thingsToKnowCopy">
-                There are some
-                <a
-                  ref="policyTriggerRef"
-                  href="#"
-                  class="public-link"
-                  @click.prevent="showPolicy = true"
-                  >things to know</a
-                >.
+                <template v-for="part in messageParts('createAccount.thingsToKnow')" :key="String(part)">
+                  <a
+                    v-if="part === 1"
+                    :ref="setPolicyTrigger"
+                    href="#"
+                    class="public-link"
+                    @click.prevent="showPolicy = true"
+                    >{{ t('createAccount.thingsToKnowLink') }}</a
+                  >
+                  <template v-else>{{ part }}</template>
+                </template>
               </template>
               <template v-else>
-                Your username is
-                <a
-                  ref="policyTriggerRef"
-                  href="#"
-                  class="public-link"
-                  @click.prevent="showPolicy = true"
-                  >public</a
-                >.
+                <template v-for="part in messageParts('createAccount.usernameIsPublic')" :key="String(part)">
+                  <a
+                    v-if="part === 1"
+                    :ref="setPolicyTrigger"
+                    href="#"
+                    class="public-link"
+                    @click.prevent="showPolicy = true"
+                    >{{ t('createAccount.usernameIsPublicLink') }}</a
+                  >
+                  <template v-else>{{ part }}</template>
+                </template>
               </template>
             </template>
             <div @click="onUsernameEndIconClick" @keydown="onUsernameEndIconKeydown">
@@ -56,7 +62,7 @@
                 v-bind="noInputAssistanceAttrs"
                 v-model="form.username"
                 input-type="text"
-                placeholder="Enter your username"
+                :placeholder="t('createAccount.usernamePlaceholder')"
                 :autofocus="settings.fields.username.behaviors.autoFocus || undefined"
                 :end-icon="usernameEndIcon"
                 @input="onUsernameInput"
@@ -73,7 +79,7 @@
                     <div :key="swapKey" class="username-help-swap-inner">
                       <template v-if="swapKey === 'checking'">
                         <CdxProgressIndicator :show-label="true">
-                          Checking availability
+                          {{ t('createAccount.checkingAvailability') }}
                         </CdxProgressIndicator>
                       </template>
                       <template v-else-if="swapKey === 'result'">
@@ -81,10 +87,16 @@
                           {{ usernameMessage.text }}
                           <template v-if="usernameMessage.takenSuggestion">
                             <template v-if="settings.fields.username.behaviors.showUsernameHelperTextChip || settings.fields.username.behaviors.showUsernameHelperTextChips">
-                              Try: <CdxInfoChip status="subtle" class="username-suggestion-chip" @mousedown.prevent @click="applySuggestedUsername(usernameMessage.takenSuggestion)">{{ usernameMessage.takenSuggestion }}</CdxInfoChip>
+                              <template v-for="part in messageParts('createAccount.tryUsername')" :key="String(part)">
+                                <CdxInfoChip v-if="part === 1" status="subtle" class="username-suggestion-chip" @mousedown.prevent @click="applySuggestedUsername(usernameMessage.takenSuggestion)">{{ usernameMessage.takenSuggestion }}</CdxInfoChip>
+                                <template v-else>{{ part }}</template>
+                              </template>
                             </template>
                             <template v-else>
-                              Try: <a href="#" class="username-taken-suggestion" @mousedown.prevent @click.prevent="applySuggestedUsername(usernameMessage.takenSuggestion)">{{ usernameMessage.takenSuggestion }}</a>
+                              <template v-for="part in messageParts('createAccount.tryUsername')" :key="String(part)">
+                                <a v-if="part === 1" href="#" class="username-taken-suggestion" @mousedown.prevent @click.prevent="applySuggestedUsername(usernameMessage.takenSuggestion)">{{ usernameMessage.takenSuggestion }}</a>
+                                <template v-else>{{ part }}</template>
+                              </template>
                             </template>
                           </template>
                         </CdxMessage>
@@ -97,7 +109,7 @@
                               status="subtle"
                               :icon="cdxIconReload"
                               class="username-reload-chip"
-                              aria-label="Generate new username suggestions"
+                              :aria-label="t('createAccount.generateUsernames')"
                               @click="reloadUsernames()"
                             />
                             <CdxInfoChip
@@ -111,30 +123,30 @@
                           </div>
                         </template>
                         <template v-else-if="settings.fields.username.behaviors.showUsernameHelperTextChip">
-                          Suggestion:
-                          <CdxInfoChip status="subtle" class="username-suggestion-chip" @mousedown.prevent @click="applySuggestedUsername(suggestedUsername)">{{
-                            suggestedUsername
-                          }}</CdxInfoChip>
+                          <template v-for="part in messageParts('createAccount.usernameSuggestion')" :key="String(part)">
+                            <CdxInfoChip v-if="part === 1" status="subtle" class="username-suggestion-chip" @mousedown.prevent @click="applySuggestedUsername(suggestedUsername)">{{ suggestedUsername }}</CdxInfoChip>
+                            <template v-else>{{ part }}</template>
+                          </template>
                           <CdxInfoChip
                             v-if="settings.fields.username.behaviors.showReloadUsername"
                             status="subtle"
                             :icon="cdxIconReload"
                             class="username-reload-chip"
-                            aria-label="Generate new username"
+                            :aria-label="t('createAccount.generateUsername')"
                             @click="reloadUsername()"
                           />
                         </template>
                         <template v-else>
-                          Suggestion:
-                          <a href="#" class="username-suggestion" @mousedown.prevent @click.prevent="applySuggestedUsername(suggestedUsername)">{{
-                            suggestedUsername
-                          }}</a>
+                          <template v-for="part in messageParts('createAccount.usernameSuggestion')" :key="String(part)">
+                            <a v-if="part === 1" href="#" class="username-suggestion" @mousedown.prevent @click.prevent="applySuggestedUsername(suggestedUsername)">{{ suggestedUsername }}</a>
+                            <template v-else>{{ part }}</template>
+                          </template>
                           <CdxInfoChip
                             v-if="settings.fields.username.behaviors.showReloadUsername"
                             status="subtle"
                             :icon="cdxIconReload"
                             class="username-reload-chip"
-                            aria-label="Generate new username"
+                            :aria-label="t('createAccount.generateUsername')"
                             @click="reloadUsername()"
                           />
                         </template>
@@ -151,7 +163,7 @@
                       status="subtle"
                       :icon="cdxIconReload"
                       class="username-reload-chip"
-                      aria-label="Generate new username suggestions"
+                      :aria-label="t('createAccount.generateUsernames')"
                       @click="reloadUsernames()"
                     />
                     <CdxInfoChip
@@ -165,30 +177,30 @@
                   </div>
                 </template>
                 <template v-else-if="settings.fields.username.behaviors.showUsernameHelperTextChip">
-                  Suggestion:
-                  <CdxInfoChip status="subtle" class="username-suggestion-chip" @mousedown.prevent @click="applySuggestedUsername(suggestedUsername)">{{
-                    suggestedUsername
-                  }}</CdxInfoChip>
+                  <template v-for="part in messageParts('createAccount.usernameSuggestion')" :key="String(part)">
+                    <CdxInfoChip v-if="part === 1" status="subtle" class="username-suggestion-chip" @mousedown.prevent @click="applySuggestedUsername(suggestedUsername)">{{ suggestedUsername }}</CdxInfoChip>
+                    <template v-else>{{ part }}</template>
+                  </template>
                   <CdxInfoChip
                     v-if="settings.fields.username.behaviors.showReloadUsername"
                     status="subtle"
                     :icon="cdxIconReload"
                     class="username-reload-chip"
-                    aria-label="Generate new username"
+                    :aria-label="t('createAccount.generateUsername')"
                     @click="reloadUsername()"
                   />
                 </template>
                 <template v-else>
-                  Suggestion:
-                  <a href="#" class="username-suggestion" @mousedown.prevent @click.prevent="applySuggestedUsername(suggestedUsername)">{{
-                    suggestedUsername
-                  }}</a>
+                  <template v-for="part in messageParts('createAccount.usernameSuggestion')" :key="String(part)">
+                    <a v-if="part === 1" href="#" class="username-suggestion" @mousedown.prevent @click.prevent="applySuggestedUsername(suggestedUsername)">{{ suggestedUsername }}</a>
+                    <template v-else>{{ part }}</template>
+                  </template>
                   <CdxInfoChip
                     v-if="settings.fields.username.behaviors.showReloadUsername"
                     status="subtle"
                     :icon="cdxIconReload"
                     class="username-reload-chip"
-                    aria-label="Generate new username"
+                    :aria-label="t('createAccount.generateUsername')"
                     @click="reloadUsername()"
                   />
                 </template>
@@ -203,7 +215,7 @@
             <Transition name="slide-down">
               <div v-show="usernameCheckState === 'checking'" class="username-check-progress">
                 <CdxProgressIndicator :show-label="true">
-                  Checking availability
+                  {{ t('createAccount.checkingAvailability') }}
                 </CdxProgressIndicator>
               </div>
             </Transition>
@@ -213,10 +225,16 @@
                   {{ usernameMessage.text }}
                   <template v-if="usernameMessage.takenSuggestion">
                     <template v-if="settings.fields.username.behaviors.showUsernameHelperTextChip || settings.fields.username.behaviors.showUsernameHelperTextChips">
-                      Try: <CdxInfoChip status="subtle" class="username-suggestion-chip" @mousedown.prevent @click="applySuggestedUsername(usernameMessage.takenSuggestion)">{{ usernameMessage.takenSuggestion }}</CdxInfoChip>
+                      <template v-for="part in messageParts('createAccount.tryUsername')" :key="String(part)">
+                        <CdxInfoChip v-if="part === 1" status="subtle" class="username-suggestion-chip" @mousedown.prevent @click="applySuggestedUsername(usernameMessage.takenSuggestion)">{{ usernameMessage.takenSuggestion }}</CdxInfoChip>
+                        <template v-else>{{ part }}</template>
+                      </template>
                     </template>
                     <template v-else>
-                      Try: <a href="#" class="username-taken-suggestion" @mousedown.prevent @click.prevent="applySuggestedUsername(usernameMessage.takenSuggestion)">{{ usernameMessage.takenSuggestion }}</a>
+                      <template v-for="part in messageParts('createAccount.tryUsername')" :key="String(part)">
+                        <a v-if="part === 1" href="#" class="username-taken-suggestion" @mousedown.prevent @click.prevent="applySuggestedUsername(usernameMessage.takenSuggestion)">{{ usernameMessage.takenSuggestion }}</a>
+                        <template v-else>{{ part }}</template>
+                      </template>
                     </template>
                   </template>
                 </CdxMessage>
@@ -230,15 +248,15 @@
           :status="emailPasswordInstead ? 'default' : validation.password.status"
           :messages="{}"
         >
-          <template #label>Password</template>
+          <template #label>{{ t('createAccount.passwordLabel') }}</template>
           <template v-if="!emailPasswordInstead && !settings.fields.password.behaviors.hideHelperText" #help-text>
-            It is recommended to use a unique password that you are not using on any other website.
+            {{ t('createAccount.passwordHelp') }}
           </template>
           <CdxCheckbox
             v-if="settings.fields.password.behaviors.emailPassword"
             v-model="emailPasswordInstead"
           >
-            Email me a password instead
+            {{ t('createAccount.emailPasswordInstead') }}
           </CdxCheckbox>
           <div
             v-if="!emailPasswordInstead"
@@ -252,7 +270,7 @@
               v-model="form.password"
               :input-type="passwordInputType"
               :end-icon="passwordEndIcon"
-              placeholder="Enter a password"
+              :placeholder="t('createAccount.passwordPlaceholder')"
               @blur="validate('password', { onBlur: true })"
             />
           </div>
@@ -276,7 +294,7 @@
           :status="validation.confirmPassword.status"
           :messages="{}"
         >
-          <template #label>Confirm password</template>
+          <template #label>{{ t('createAccount.confirmPasswordLabel') }}</template>
           <div
             :class="{ 'password-visible': confirmPasswordVisible }"
             @click="onPasswordToggleClick($event, 'confirmPassword')"
@@ -288,7 +306,7 @@
               v-model="form.confirmPassword"
               :input-type="confirmPasswordInputType"
               :end-icon="confirmPasswordEndIcon"
-              placeholder="Enter password again"
+              :placeholder="t('createAccount.confirmPasswordPlaceholder')"
               @blur="validate('confirmPassword', { onBlur: true })"
             />
           </div>
@@ -313,17 +331,16 @@
           :status="validation.email.status"
           :messages="validation.email.messages"
         >
-          <template #label>Email address</template>
+          <template #label>{{ t('createAccount.emailLabel') }}</template>
           <template v-if="!emailPasswordInstead && !settings.fields.email.behaviors.hideDescription" #description>
-            Email is required to recover your account if you lose your password or log in from a
-            unfamiliar location or new browser.
+            {{ t('createAccount.emailDescription') }}
           </template>
           <CdxTextInput
             ref="emailInputRef"
             v-bind="noInputAssistanceAttrs"
             v-model="form.email"
             input-type="email"
-            placeholder="Enter your email address"
+            :placeholder="t('createAccount.emailPlaceholder')"
             @blur="validate('email', { onBlur: true })"
           />
         </CdxField>
@@ -361,16 +378,16 @@
             type="button"
             @click="handleContinue"
           >
-            Continue
+            {{ t('createAccount.continue') }}
           </CdxButton>
           <CdxButton v-else action="progressive" weight="primary" size="large" type="submit">
-            Create your account
+            {{ t('createAccount.submit') }}
           </CdxButton>
         </div>
       </template>
       <template v-else>
         <CdxButton action="progressive" weight="primary" size="large">
-          Create your account
+          {{ t('createAccount.submit') }}
         </CdxButton>
       </template>
     </div>
@@ -406,6 +423,11 @@ import { useFormValidation } from '../composables/useFormValidation'
 import { useFormSettings } from '../composables/useFormSettings'
 import { generateUsername } from '../utils/generateUsername.js'
 import { useMultiStep } from '../composables/useMultiStep'
+import { capabilityPageUrl, wikiCapabilities } from '../../../musical-group/data/wikiCapabilities'
+import { messageParts, t } from '@/i18n'
+
+/** The content wiki's own policy page (`?lang=`). */
+const usernamePolicyUrl = capabilityPageUrl(wikiCapabilities().usernamePolicyPage)
 
 const emit = defineEmits(['submit'])
 
@@ -423,6 +445,11 @@ const showPolicy = ref(false)
  * them at a time — so they can share the ref.
  */
 const policyTriggerRef = ref(null)
+/* The link variants render their trigger inside a `messageParts` loop, where a
+   plain string ref would collect an array — set the single element instead. */
+function setPolicyTrigger(el) {
+  if (el) policyTriggerRef.value = el
+}
 const { settings } = useFormSettings()
 
 const isTakenOnceMode = computed(() =>
@@ -616,7 +643,7 @@ watchEffect(() => {
     if (endIcon) {
       endIcon.setAttribute('role', 'button')
       endIcon.setAttribute('tabindex', '0')
-      endIcon.setAttribute('aria-label', isVisible ? 'Hide password' : 'Show password')
+      endIcon.setAttribute('aria-label', isVisible ? t('createAccount.hidePassword') : t('createAccount.showPassword'))
     }
   }
 
@@ -636,7 +663,7 @@ watchEffect(() => {
       if (endIcon) {
         endIcon.setAttribute('role', 'button')
         endIcon.setAttribute('tabindex', '0')
-        endIcon.setAttribute('aria-label', 'Generate new username')
+        endIcon.setAttribute('aria-label', t('createAccount.generateUsername'))
       }
     }
   })
@@ -654,13 +681,13 @@ const usernameFieldStatus = computed(() => {
 })
 
 const usernameFieldMessages = computed(() => {
-  if (usernameCheckState.value === 'available') return { success: 'Username available' }
+  if (usernameCheckState.value === 'available') return { success: t('createAccount.usernameAvailable') }
   if (usernameCheckState.value === 'checking') return {}
   return validation.username.messages
 })
 
 const usernameMessage = computed(() => {
-  if (usernameCheckState.value === 'available') return { type: 'success', text: 'Username available' }
+  if (usernameCheckState.value === 'available') return { type: 'success', text: t('createAccount.usernameAvailable') }
   if (validation.username.messages.error) return {
     type: 'error',
     text: validation.username.messages.error,

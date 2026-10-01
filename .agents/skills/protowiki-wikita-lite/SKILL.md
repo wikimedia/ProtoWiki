@@ -69,6 +69,7 @@ wikita-lite routes; does **not** write back to `protowiki-prototype-user-config`
 | Home layout           | `homeOff`, `homeOn`, `homeOrder`                                                       | Toggle/reorder overrides layered on dashboard mode defaults; see `data/homeLayout.ts` |
 | Onboarding            | `onboarded`, `screen`, `title`, `username`, `email`, `survey`, `interests`, `returnTo` | Article: `?screen=article&title=`; account keeps `?title=`                            |
 | User / chrome         | `user`, `realUser`, `theme`, `skin`, `platform`, `langs`, `displayName`                | Mirrors `useConfig` fields                                                            |
+| Content language      | `lang`                                                                                 | Content wiki (`fr` → fr.wikipedia.org); omit for English. See below                   |
 | Page lists            | `saved`, `savedTs`, `edited`, `watchlist`                                              | Repeated titles; `savedTs` = epoch ms per saved entry (index-aligned with `saved`)    |
 | Interests             | `interests`                                                                            | Repeated params, max 10                                                               |
 | Suggestion prefs      | `prefSaved`, `prefHistory`, `prefInterests`, `prefWatchlist`                           | `1` / `0` (omit when default `1`)                                                     |
@@ -80,6 +81,34 @@ wikita-lite routes; does **not** write back to `protowiki-prototype-user-config`
 | Lists sheet           | `list`                                                                                 | Repeated `name\|QID1\|QID2` entries                                                   |
 
 Dev menu **Reset URL state** clears params and reloads `/wikita-lite`.
+
+### Content language (`?lang=`)
+
+`?lang=fr` points the whole data layer (wikita-lite + the shared
+`musical-group/data`) at that language's Wikipedia. `getContentLang()` /
+`contentWikiHost()` in `src/lib/contentLang.ts` read the param on every call;
+`enwikiTitle.ts` helpers (`wikiActionUrl`, `enwikiArticleUrl`, …) follow it.
+English (no param) behaves exactly as before.
+
+- **Per-wiki data** — `musical-group/data/wikiCapabilities.ts`: the main-page
+  subpages for Featured / Did you know (the REST feed has no `tfa` / `dyk` on
+  most wikis), Active discussions noticeboards, policy/help pages, and whether
+  to fall back to MinT.
+- **MinT fallback** — `src/lib/mint.ts` machine-translates English Wikipedia's
+  featured content only when no native source works, and the UI labels it
+  ("Machine translated from English Wikipedia"). Plain `fetch` only: MinT's
+  CORS preflight rejects `Api-User-Agent`.
+- **UI strings** — `wikita-lite/i18n.ts` (`localized()` / `MESSAGES` /
+  `format()`): module titles, tabs, greetings, "Show more", empty states. Other
+  copy stays English. `src/lib/contentFormat.ts` localizes relative times and
+  counts.
+- **Caches** — `readVersionedStore` / `writeVersionedStore` and the page /
+  LiftWing caches use `langScopedStorageKey()`, so languages never share
+  entries.
+- **Adding a language** — add a `wikiCapabilities` entry and a block in
+  `i18n.ts` (plus local namespace prefixes in `enwikiTitle.ts`). RTL languages
+  also need the RTL pass (Codex bidi CSS, `<html dir>`, logical CSS), which
+  hasn't been done yet.
 
 ## API identity
 

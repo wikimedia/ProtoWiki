@@ -12,6 +12,8 @@ import {
 } from '@wikimedia/codex-icons'
 
 import DashboardModule from '@/components/dashboard/DashboardModule.vue'
+import { getUiLang, messageParts, t } from '@/i18n'
+import { usesLocalizedFormat } from '@/lib/contentFormat'
 
 const emit = defineEmits<{
   refresh: []
@@ -57,7 +59,7 @@ const props = withDefaults(defineProps<Props>(), {
   standalone: false,
   to: undefined,
   viewCount: undefined,
-  viewLabel: 'Views on articles you\'ve edited',
+  viewLabel: undefined,
   sparklineData: () => [],
   lastEdited: undefined,
   longestStreak: undefined,
@@ -73,6 +75,13 @@ const props = withDefaults(defineProps<Props>(), {
   refreshError: undefined,
   loadPending: false,
 })
+
+const viewLabelText = computed(() => props.viewLabel ?? t('impact.viewLabelViews'))
+
+/** Article view count — the interface language's grouping outside English. */
+function formatViews(views: number): string {
+  return usesLocalizedFormat() ? views.toLocaleString(getUiLang()) : views.toLocaleString()
+}
 
 const hasContent = computed(
   () =>
@@ -159,14 +168,14 @@ const recentEditCount = computed(() =>
     v-bind="
       standalone
         ? {}
-        : { title: 'Your impact', to, cta: null }
+        : { title: t('impact.yourImpact'), to, cta: null }
     "
   >
     <template v-if="showRefreshInTitle" #header-actions>
       <CdxButton
         weight="quiet"
         :icon-only="true"
-        aria-label="Refresh impact data"
+        :aria-label="t('impact.refresh')"
         :disabled="refreshing"
         @click="onRefreshClick"
       >
@@ -181,7 +190,7 @@ const recentEditCount = computed(() =>
     <template v-if="hasContent && isMobilePreview">
       <div v-if="viewCount" class="impact-module__stat-row">
         <span class="impact-module__count">{{ viewCount }}</span>
-        <span class="impact-module__count-label">{{ viewLabel }}</span>
+        <span class="impact-module__count-label">{{ viewLabelText }}</span>
       </div>
       <svg
         v-if="sparklineData.length >= 2"
@@ -195,11 +204,11 @@ const recentEditCount = computed(() =>
       </svg>
       <div v-if="lastEdited || longestStreak" class="impact-module__metrics">
         <div v-if="lastEdited" class="impact-module__metric">
-          <span class="impact-module__metric-label">Last edited</span>
+          <span class="impact-module__metric-label">{{ t('impact.lastEdited') }}</span>
           <span class="impact-module__metric-value">{{ lastEdited }}</span>
         </div>
         <div v-if="longestStreak" class="impact-module__metric">
-          <span class="impact-module__metric-label">Longest streak</span>
+          <span class="impact-module__metric-label">{{ t('impact.longestStreak') }}</span>
           <span class="impact-module__metric-value">{{ longestStreak }}</span>
         </div>
       </div>
@@ -214,7 +223,7 @@ const recentEditCount = computed(() =>
             <CdxIcon :icon="cdxIconEdit" size="small" class="impact-module__desktop-stat-icon" />
             <span class="impact-module__desktop-stat-value impact-module__desktop-stat-value--progressive">{{ totalEdits ?? 0 }}</span>
           </div>
-          <span class="impact-module__desktop-stat-label">Total edits</span>
+          <span class="impact-module__desktop-stat-label">{{ t('impact.totalEdits') }}</span>
         </div>
         <div class="impact-module__desktop-stat impact-module__desktop-stat--border-left">
           <div class="impact-module__desktop-stat-value-row">
@@ -222,7 +231,7 @@ const recentEditCount = computed(() =>
             <span class="impact-module__desktop-stat-value">{{ thanksReceived }}</span>
           </div>
           <div class="impact-module__desktop-stat-label-row">
-            <span class="impact-module__desktop-stat-label">Thanks received</span>
+            <span class="impact-module__desktop-stat-label">{{ t('impact.thanksReceived') }}</span>
             <CdxIcon :icon="cdxIconInfo" size="small" class="impact-module__desktop-info-icon" />
           </div>
         </div>
@@ -231,7 +240,7 @@ const recentEditCount = computed(() =>
             <CdxIcon :icon="cdxIconClock" size="small" class="impact-module__desktop-stat-icon" />
             <span class="impact-module__desktop-stat-value">{{ lastEdited }}</span>
           </div>
-          <span class="impact-module__desktop-stat-label">Last edited</span>
+          <span class="impact-module__desktop-stat-label">{{ t('impact.lastEdited') }}</span>
         </div>
         <div class="impact-module__desktop-stat impact-module__desktop-stat--border-top impact-module__desktop-stat--border-left">
           <div class="impact-module__desktop-stat-value-row">
@@ -239,7 +248,7 @@ const recentEditCount = computed(() =>
             <span class="impact-module__desktop-stat-value">{{ longestStreak }}</span>
           </div>
           <div class="impact-module__desktop-stat-label-row">
-            <span class="impact-module__desktop-stat-label">Longest streak</span>
+            <span class="impact-module__desktop-stat-label">{{ t('impact.longestStreak') }}</span>
             <CdxIcon :icon="cdxIconInfo" size="small" class="impact-module__desktop-info-icon" />
           </div>
         </div>
@@ -247,11 +256,11 @@ const recentEditCount = computed(() =>
 
       <!-- Recent activity bar chart -->
       <div v-if="recentActivityData.length" class="impact-module__activity">
-        <p class="impact-module__activity-title">Your recent activity (last 60 days)</p>
+        <p class="impact-module__activity-title">{{ t('impact.recentActivityTitle', 60) }}</p>
         <div class="impact-module__activity-body">
           <div class="impact-module__activity-left">
             <span class="impact-module__activity-count-value">{{ recentEditCount }}</span>
-            <span class="impact-module__activity-count-label">Edits</span>
+            <span class="impact-module__activity-count-label">{{ t('impact.editsCountLabel') }}</span>
           </div>
           <div class="impact-module__activity-right">
             <svg
@@ -282,7 +291,7 @@ const recentEditCount = computed(() =>
       <!-- Views sparkline -->
       <div v-if="viewCount" class="impact-module__stat-row">
         <span class="impact-module__count">{{ viewCount }}</span>
-        <span class="impact-module__count-label">{{ viewLabel }}</span>
+        <span class="impact-module__count-label">{{ viewLabelText }}</span>
       </div>
       <svg
         v-if="sparklineData.length >= 2"
@@ -297,7 +306,7 @@ const recentEditCount = computed(() =>
 
       <!-- Most viewed articles -->
       <template v-if="mostViewed.length > 0">
-        <p class="impact-module__most-viewed-title">Most viewed (since your edit)</p>
+        <p class="impact-module__most-viewed-title">{{ t('impact.mostViewedTitle') }}</p>
         <div class="impact-module__most-viewed-list">
           <div
             v-for="article in mostViewed"
@@ -309,7 +318,7 @@ const recentEditCount = computed(() =>
             </div>
             <a :href="article.href ?? '#'" class="impact-module__most-viewed-title-link">{{ article.title }}</a>
             <div class="impact-module__most-viewed-views-col">
-              <span class="impact-module__most-viewed-count">{{ article.views.toLocaleString() }}</span>
+              <span class="impact-module__most-viewed-count">{{ formatViews(article.views) }}</span>
               <svg
                 v-if="article.sparklineData && article.sparklineData.length >= 2"
                 class="impact-module__mini-sparkline"
@@ -322,7 +331,7 @@ const recentEditCount = computed(() =>
             </div>
           </div>
         </div>
-        <a v-if="viewAllEditsHref" :href="viewAllEditsHref" class="impact-module__view-all">View all edits</a>
+        <a v-if="viewAllEditsHref" :href="viewAllEditsHref" class="impact-module__view-all">{{ t('impact.viewAllEdits') }}</a>
       </template>
     </template>
 
@@ -335,7 +344,7 @@ const recentEditCount = computed(() =>
           :disabled="refreshing"
           @click="onRefreshClick"
         >
-          {{ refreshing ? 'Loading…' : 'Load impact' }}
+          {{ refreshing ? t('impact.loading') : t('impact.loadImpact') }}
         </CdxButton>
       </div>
     </template>
@@ -349,12 +358,15 @@ const recentEditCount = computed(() =>
           class="impact-module__empty-image"
         />
         <div class="impact-module__empty-text">
-          <p class="impact-module__empty-heading">0 edits to articles so far</p>
-          <p class="impact-module__empty-body">Help extend free knowledge to the world by editing topics that matter most to you.</p>
+          <p class="impact-module__empty-heading">{{ t('impact.emptyHeadline') }}</p>
+          <p class="impact-module__empty-body">{{ t('impact.emptyBody') }}</p>
         </div>
       </div>
       <p class="impact-module__empty-footer">
-        Start with a few <strong>suggested edits</strong>, then see how many people are viewing your contributions here.
+        <template v-for="(part, index) in messageParts('impact.startWith')" :key="index">
+          <strong v-if="part === 1">{{ t('impact.suggestedEdits') }}</strong>
+          <template v-else>{{ part }}</template>
+        </template>
       </p>
     </template>
 
@@ -367,7 +379,7 @@ const recentEditCount = computed(() =>
             <span class="impact-module__desktop-stat-value">{{ thanksReceived }}</span>
           </div>
           <div class="impact-module__desktop-stat-label-row">
-            <span class="impact-module__desktop-stat-label">Thanks received</span>
+            <span class="impact-module__desktop-stat-label">{{ t('impact.thanksReceived') }}</span>
             <CdxIcon :icon="cdxIconInfo" size="small" class="impact-module__desktop-info-icon" />
           </div>
         </div>
@@ -378,7 +390,7 @@ const recentEditCount = computed(() =>
             <span class="impact-module__desktop-stat-value">–</span>
           </div>
           <div class="impact-module__desktop-stat-label-row">
-            <span class="impact-module__desktop-stat-label">Longest streak</span>
+            <span class="impact-module__desktop-stat-label">{{ t('impact.longestStreak') }}</span>
             <CdxIcon :icon="cdxIconInfo" size="small" class="impact-module__desktop-info-icon" />
           </div>
         </div>
@@ -389,11 +401,14 @@ const recentEditCount = computed(() =>
           alt=""
           class="impact-module__desktop-empty-image"
         />
-        <p class="impact-module__desktop-empty-heading">0 edits to articles so far</p>
-        <p class="impact-module__desktop-empty-subheading">Help extend free knowledge to the world by editing topics that matter most to you.</p>
+        <p class="impact-module__desktop-empty-heading">{{ t('impact.emptyHeadline') }}</p>
+        <p class="impact-module__desktop-empty-subheading">{{ t('impact.emptyBody') }}</p>
       </div>
       <p class="impact-module__empty-footer">
-        Start with a few <strong>suggested edits</strong>, then see how many people are viewing your contributions here.
+        <template v-for="(part, index) in messageParts('impact.startWith')" :key="index">
+          <strong v-if="part === 1">{{ t('impact.suggestedEdits') }}</strong>
+          <template v-else>{{ part }}</template>
+        </template>
       </p>
     </template>
 

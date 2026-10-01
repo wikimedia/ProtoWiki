@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import MobileWrapper from '@/components/MobileWrapper.vue'
+import { t } from '@/i18n'
 
 import WikitaLiteFullscreenDialogShell from '../wikita-lite/components/WikitaLiteFullscreenDialogShell.vue'
 import WikitaLitePersonalizationPanel from '../wikita-lite/components/WikitaLitePersonalizationPanel.vue'
@@ -32,8 +33,8 @@ function closePersonalization(): void {
 <template>
   <MobileWrapper fluid>
     <WikitaLiteFullscreenDialogShell
-      title="Personalization"
-      subtitle="Choose which activity shapes the recommendations on your Home."
+      :title="t('personalization.title')"
+      :subtitle="t('personalization.subtitle')"
       @close="closePersonalization"
     >
       <WikitaLitePersonalizationPanel />

@@ -3,6 +3,7 @@ import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconUserAvatarOutline } from '@wikimedia/codex-icons'
 
 import AccountMenuPopover from '@/components/settings/AccountMenuPopover.vue'
+import { t } from '@/i18n'
 
 import { useWikitaLiteCreateAccount } from '../composables/useWikitaLiteCreateAccountOpener'
 
@@ -21,7 +22,7 @@ function onCreateAccount(): void {
         <CdxButton
           weight="quiet"
           size="large"
-          aria-label="User menu"
+          :aria-label="t('components.userMenu')"
           :aria-expanded="open"
           @click="toggle"
         >

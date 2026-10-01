@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { CdxButton, CdxDialog, type PrimaryModalAction } from '@wikimedia/codex'
 
+import { t } from '@/i18n'
 import { globalSkin } from '@/theme'
 
 interface Props {
@@ -15,7 +16,7 @@ interface Props {
 
 withDefaults(defineProps<Props>(), {
   subtitle: null,
-  closeLabel: 'Close',
+  closeLabel: () => t('common.close'),
   primaryAction: null,
 })
 

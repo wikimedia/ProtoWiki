@@ -3,6 +3,8 @@ import { computed } from 'vue'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconClose } from '@wikimedia/codex-icons'
 
+import { messageParts, t } from '@/i18n'
+
 import type { FlowState } from '../data/useWikitaLiteOnboardingFlow'
 import { useReturnHomeBanner } from '../data/useReturnHomeBanner'
 
@@ -22,16 +24,17 @@ const visible = computed(() => Boolean(props.flow.username.value) && !dismissed.
       class="return-home-banner__close"
       weight="quiet"
       :icon-only="true"
-      aria-label="Dismiss"
+      :aria-label="t('onboarding.dismiss')"
       @click="dismiss"
     >
       <CdxIcon :icon="cdxIconClose" />
     </CdxButton>
 
     <p class="return-home-banner__text">
-      You can always return to your Home: open the account menu and tap
-      <strong>{{ props.flow.username.value }}</strong
-      >.
+      <template v-for="part in messageParts('onboarding.returnHome')" :key="String(part)">
+        <strong v-if="part === 1">{{ props.flow.username.value }}</strong>
+        <template v-else>{{ part }}</template>
+      </template>
     </p>
 
     <svg

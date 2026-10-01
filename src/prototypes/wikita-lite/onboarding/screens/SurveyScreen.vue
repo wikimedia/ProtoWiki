@@ -2,6 +2,8 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { CdxCard } from '@wikimedia/codex'
 
+import { t } from '@/i18n'
+
 import type { FlowState, SurveyChoice } from '../data/useWikitaLiteOnboardingFlow'
 
 const props = defineProps<{ flow: FlowState }>()
@@ -13,18 +15,18 @@ const SELECTION_HOLD_MS = 400
 const OPTIONS: { value: SurveyChoice; label: string; description: string }[] = [
   {
     value: 'read',
-    label: 'Reading and exploring',
-    description: 'Learn, save articles, play games.',
+    label: t('onboarding.surveyRead'),
+    description: t('onboarding.surveyReadDescription'),
   },
   {
     value: 'edit',
-    label: 'Editing and contributing',
-    description: 'Fix a typo, update an article, or start a new one.',
+    label: t('onboarding.surveyEdit'),
+    description: t('onboarding.surveyEditDescription'),
   },
   {
     value: 'both',
-    label: 'A bit of both',
-    description: 'Read, save, and make a few edits too.',
+    label: t('onboarding.surveyBoth'),
+    description: t('onboarding.surveyBothDescription'),
   },
 ]
 
@@ -99,7 +101,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="ob-page">
-    <h1 class="ob-title">What brings you to Wikipedia?</h1>
+    <h1 class="ob-title">{{ t('onboarding.surveyTitle') }}</h1>
 
     <div class="ob-body">
       <!-- Each option is a stock Codex Card. Setting `url` makes it a link, so
@@ -111,7 +113,7 @@ onBeforeUnmount(() => {
       <div
         class="survey__options"
         role="radiogroup"
-        aria-label="What brings you to Wikipedia?"
+        :aria-label="t('onboarding.surveyTitle')"
         @keydown="onArrows"
       >
         <CdxCard

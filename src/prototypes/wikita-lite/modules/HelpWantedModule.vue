@@ -11,6 +11,7 @@ import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardLi
 import WikitaLiteCardSkeletons from '../components/WikitaLiteCardSkeletons.vue'
 import WikitaLiteShowMore from '../components/WikitaLiteShowMore.vue'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
+import { MESSAGES, t } from '../i18n'
 
 interface Props {
   standalone?: boolean
@@ -104,20 +105,20 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
       :expandable="expandable"
       @expand="$emit('expand')"
     >
-      Show more suggestions
+      {{ MESSAGES.showMoreSuggestions }}
     </WikitaLiteShowMore>
 
     <CdxProgressBar
       v-if="standalone && (loading || loadingMore)"
       inline
-      aria-label="Loading edit suggestions"
+      :aria-label="t('home.loadingEditSuggestions')"
     />
 
     <p
       v-if="standalone && !displayItems.length && !loading && !loadingMore"
       class="help-wanted-module__empty"
     >
-      No edit suggestions right now.
+      {{ t('home.emptyEditSuggestions') }}
     </p>
   </div>
 </template>

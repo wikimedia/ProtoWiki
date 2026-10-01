@@ -2,6 +2,8 @@
 import { computed } from 'vue'
 import { CdxCard, CdxProgressBar } from '@wikimedia/codex'
 
+import { t } from '@/i18n'
+
 import type { InterestSuggestionHit } from '../data/useInterestSuggestions'
 
 const props = withDefaults(
@@ -14,7 +16,13 @@ const props = withDefaults(
 )
 
 const heading = computed(() =>
-  props.source === 'random' ? 'Random articles' : 'Related articles',
+  props.source === 'random' ? t('onboarding.randomArticles') : t('onboarding.relatedArticles'),
+)
+
+const loadingLabel = computed(() =>
+  props.source === 'random'
+    ? t('onboarding.loadingRandomArticles')
+    : t('onboarding.loadingRelatedArticles'),
 )
 
 const emit = defineEmits<{
@@ -29,7 +37,7 @@ const emit = defineEmits<{
       v-if="loading"
       class="interest-suggestions__progress"
       inline
-      :aria-label="`Loading ${heading.toLowerCase()}`"
+      :aria-label="loadingLabel"
     />
     <ul v-else class="interest-suggestions__list">
       <li v-for="hit in suggestions" :key="hit.title">
@@ -44,7 +52,7 @@ const emit = defineEmits<{
           url="#"
           force-thumbnail
           :thumbnail="hit.thumbnail ?? null"
-          :aria-label="`Add ${hit.title}`"
+          :aria-label="t('onboarding.addInterest', hit.title)"
           @click.prevent="emit('add', hit.title)"
         >
           <template #title>{{ hit.title }}</template>

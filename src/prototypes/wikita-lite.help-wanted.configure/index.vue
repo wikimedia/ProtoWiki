@@ -4,6 +4,8 @@ import { useRouter } from 'vue-router'
 
 import { CdxButton, CdxToggleSwitch } from '@wikimedia/codex'
 
+import { t } from '@/i18n'
+
 import WikitaLiteFullscreenHeader from '../wikita-lite/components/WikitaLiteFullscreenHeader.vue'
 import WikitaLiteFullscreenShell from '../wikita-lite/components/WikitaLiteFullscreenShell.vue'
 import WikitaLiteSuggestionConfigureToggles from '../wikita-lite/components/WikitaLiteSuggestionConfigureToggles.vue'
@@ -101,12 +103,12 @@ function removeInterest(title: string) {
 
 <template>
   <WikitaLiteFullscreenShell>
-    <WikitaLiteFullscreenHeader title="Configure" @close="closeConfigure" />
+    <WikitaLiteFullscreenHeader :title="t('pages.configureTitle')" @close="closeConfigure" />
 
     <div class="wikita-lite-configure">
       <div class="wikita-lite-configure__master-toggle">
         <CdxToggleSwitch v-model="useDefaultSettings" align-switch>
-          Use my default settings
+          {{ t('pages.useDefaultSettings') }}
         </CdxToggleSwitch>
       </div>
 
@@ -129,7 +131,7 @@ function removeInterest(title: string) {
           size="large"
           @click="finishConfigure"
         >
-          Done
+          {{ t('pages.done') }}
         </CdxButton>
       </div>
     </div>

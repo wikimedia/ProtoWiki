@@ -5,6 +5,8 @@ import { CdxIcon, CdxMenuButton } from '@wikimedia/codex'
 import type { ButtonSize, MenuItemValue } from '@wikimedia/codex'
 import { cdxIconCheck, cdxIconMenu } from '@wikimedia/codex-icons'
 
+import { t } from '@/i18n'
+
 import { useWikitaLiteCardBordersSingleton } from '../composables/useWikitaLiteCardBorders'
 import { useWikitaLiteCardRadiusSingleton } from '../composables/useWikitaLiteCardRadius'
 import { useWikitaLiteHideTabBarSingleton } from '../composables/useWikitaLiteHideTabBar'
@@ -32,26 +34,26 @@ const menuSelected = ref<MenuItemValue | null>(null)
 const menuItems = computed(() => [
   {
     value: 'toggle-card-radius',
-    label: '4px card radius',
+    label: t('components.menuCardRadius'),
     icon: useLargeRadius.value ? cdxIconCheck : undefined,
   },
   {
     value: 'toggle-hide-card-borders',
-    label: 'Hide card borders',
+    label: t('components.menuHideCardBorders'),
     icon: hideCardBorders.value ? cdxIconCheck : undefined,
   },
   {
     value: 'toggle-module-menu-mode',
-    label: 'Module overflow menus',
+    label: t('components.menuModuleOverflowMenus'),
     icon: useModuleMenuMode.value ? cdxIconCheck : undefined,
   },
   {
     value: 'toggle-hide-tab-bar',
-    label: 'Hide tab bar',
+    label: t('components.menuHideTabBar'),
     icon: hideTabBar.value ? cdxIconCheck : undefined,
   },
-  { value: 'reset-onboarding', label: 'Reset onboarding' },
-  { value: 'reset-url-state', label: 'Reset URL state' },
+  { value: 'reset-onboarding', label: t('components.menuResetOnboarding') },
+  { value: 'reset-url-state', label: t('components.menuResetUrlState') },
 ])
 
 async function resetUrlState(): Promise<void> {
@@ -99,7 +101,7 @@ watch(menuSelected, (value) => {
     :menu-items="menuItems"
     weight="quiet"
     :size="size"
-    aria-label="Main menu"
+    :aria-label="t('components.mainMenu')"
   >
     <CdxIcon :icon="cdxIconMenu" />
   </CdxMenuButton>

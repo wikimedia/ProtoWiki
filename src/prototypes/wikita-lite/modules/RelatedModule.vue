@@ -27,6 +27,7 @@ import WikitaLiteCardSkeletons from '../components/WikitaLiteCardSkeletons.vue'
 import WikitaLiteCardWithAction from '../components/WikitaLiteCardWithAction.vue'
 import WikitaLiteShowMore from '../components/WikitaLiteShowMore.vue'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
+import { MESSAGES, t } from '../i18n'
 
 interface Props {
   standalone?: boolean
@@ -83,7 +84,7 @@ function saveIcon(itemId: string, title: string) {
 }
 
 function saveLabel(title: string): string {
-  return relatedReadingSaved(title) ? 'Saved' : 'Save'
+  return relatedReadingSaved(title) ? t('common.savedState') : t('common.save')
 }
 
 const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
@@ -160,20 +161,20 @@ const saveActionsDisabled = computed(() => !props.standalone && props.loading)
       :expandable="expandable"
       @expand="$emit('expand')"
     >
-      Show more further reading
+      {{ MESSAGES.showMoreFurtherReading }}
     </WikitaLiteShowMore>
 
     <CdxProgressBar
       v-if="standalone && (loading || loadingMore)"
       inline
-      aria-label="Loading further reading"
+      :aria-label="t('home.loadingFurtherReading')"
     />
 
     <p
       v-if="standalone && !displayItems.length && !loading && !loadingMore"
       class="related-module__empty"
     >
-      No further reading suggestions yet.
+      {{ t('home.emptyFurtherReading') }}
     </p>
   </div>
 </template>

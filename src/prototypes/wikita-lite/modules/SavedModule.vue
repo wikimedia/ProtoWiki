@@ -22,6 +22,10 @@ import WikitaLiteCardSkeletons from '../components/WikitaLiteCardSkeletons.vue'
 import WikitaLiteCardWithAction from '../components/WikitaLiteCardWithAction.vue'
 import WikitaLiteShowMore from '../components/WikitaLiteShowMore.vue'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
+import { format, MESSAGES, t } from '../i18n'
+import { messageParts } from '@/i18n'
+import { formatElapsed } from '@/lib/contentFormat'
+import { isDefaultContentLang } from '@/lib/contentLang'
 
 interface Props {
   standalone?: boolean
@@ -93,7 +97,7 @@ function saveIcon(itemId: string, title: string) {
 }
 
 function saveLabel(title: string): string {
-  return relatedReadingSaved(title) ? 'Saved' : 'Save'
+  return relatedReadingSaved(title) ? t('common.savedState') : t('common.save')
 }
 
 function cardThumbnail(url?: string) {
@@ -106,16 +110,17 @@ function formatSavedLabel(savedAt: number | undefined): string {
   const diffMs = Date.now() - savedAt
   if (!Number.isFinite(diffMs) || diffMs < 0) return ''
 
-  if (diffMs < 60_000) return 'Saved just now'
+  if (!isDefaultContentLang()) return format(MESSAGES.savedRelative, formatElapsed(diffMs))
+  if (diffMs < 60_000) return t('home.savedJustNow')
 
   const minutes = Math.floor(diffMs / 60_000)
-  if (minutes < 60) return `Saved ${minutes}m ago`
+  if (minutes < 60) return t('home.savedMinutesAgo', minutes)
 
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `Saved ${hours}h ago`
+  if (hours < 24) return t('home.savedHoursAgo', hours)
 
   const days = Math.floor(hours / 24)
-  return `Saved ${days}d ago`
+  return t('home.savedDaysAgo', days)
 }
 
 const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () => props.standalone })
@@ -140,7 +145,7 @@ const showMoreControl = computed(
 
 <template>
   <div class="saved-module">
-    <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading saved pages" />
+    <CdxProgressBar v-if="standalone && loading" inline :aria-label="t('home.loadingSavedPages')" />
 
     <template v-else>
       <template v-if="displayItems.length || skeletons">
@@ -198,7 +203,7 @@ const showMoreControl = computed(
           :expandable="expandable"
           @expand="$emit('expand')"
         >
-          Show more saved
+          {{ MESSAGES.showMoreSaved }}
         </WikitaLiteShowMore>
       </template>
 
@@ -207,9 +212,14 @@ const showMoreControl = computed(
         class="saved-module__empty"
         :class="{ 'saved-module__empty--standalone': standalone }"
       >
-        Use the save icon
-        <CdxIcon :icon="cdxIconBookmarkOutline" class="saved-module__empty-icon" />
-        on any page to add items.
+        <template v-for="part in messageParts('home.savedEmpty')" :key="String(part)">
+          <CdxIcon
+            v-if="part === 1"
+            :icon="cdxIconBookmarkOutline"
+            class="saved-module__empty-icon"
+          />
+          <template v-else>{{ part }}</template>
+        </template>
       </p>
     </template>
   </div>

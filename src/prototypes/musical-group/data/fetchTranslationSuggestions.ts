@@ -1,4 +1,4 @@
-import { wikimediaApiFetchHeaders } from '@/config'
+import { wikiHostFromLang, wikimediaApiFetchHeaders } from '@/config'
 
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
@@ -17,7 +17,8 @@ import {
 } from './homeTabCache'
 import { getCachedMusicalGroup } from './musicalGroupCache'
 import { fetchSavedItemSummaries } from './fetchSavedItemSummaries'
-import { fetchPageSummary } from './pageSummary'
+import { fetchPageSummary, type PageSummary } from './pageSummary'
+import { getContentLang } from '@/lib/contentLang'
 import type { HomeSavedItem, HomeTranslationSuggestion } from './types'
 
 const TRANSLATION_API =
@@ -40,14 +41,13 @@ interface TranslationApiResponse {
   recommendations?: TranslationRecommendation[]
 }
 
-const languageDisplayNames =
-  typeof Intl !== 'undefined' && Intl.DisplayNames
-    ? new Intl.DisplayNames(['en'], { type: 'language' })
-    : null
-
+/** Language names in the content language ("French" on enwiki, "français" on frwiki). */
 function targetLanguageLabel(code: string): string {
   const normalized = code.trim().toLowerCase()
-  const label = languageDisplayNames?.of(normalized)
+  const label =
+    typeof Intl !== 'undefined' && Intl.DisplayNames
+      ? new Intl.DisplayNames([getContentLang()], { type: 'language' }).of(normalized)
+      : undefined
   if (label && label !== normalized) return label
   return normalized.toUpperCase()
 }
@@ -118,6 +118,8 @@ function collectSeedTitlesFromCache(): string[] {
 
 /** Resolve enwiki titles from saved pages to seed translation recommendations. */
 export async function resolveTranslationSeedTitles(signal?: AbortSignal): Promise<string[]> {
+  // Seeds must be source-language titles; saved pages on another wiki aren't.
+  if (getContentLang() !== DEFAULT_SOURCE_LANG) return []
   const seeds = collectSeedTitlesFromCache()
   const config = readActiveConfig()
   const readingList = config.userPageLists[config.user]?.readingList ?? []
@@ -177,12 +179,28 @@ async function fetchRecommendationsForLanguage(
   return requestRecommendations(targetLang, requestCount, signal)
 }
 
+/** Recommendations are source-language (English) articles, whatever the content wiki. */
+async function fetchSourceSummary(title: string, signal?: AbortSignal): Promise<PageSummary | null> {
+  if (getContentLang() === DEFAULT_SOURCE_LANG) {
+    return fetchPageSummary(title, signal, 'wikita-lite-translation-summary')
+  }
+  const slug = encodeURIComponent(title.replace(/ /g, '_'))
+  const response = await fetchWikimedia(
+    `https://${wikiHostFromLang(DEFAULT_SOURCE_LANG)}/api/rest_v1/page/summary/${slug}`,
+    { signal, headers: wikimediaApiFetchHeaders('wikita-lite-translation-summary') },
+  ).catch((err) => {
+    if ((err as Error).name === 'AbortError') throw err
+    return null
+  })
+  return response?.ok ? ((await response.json()) as PageSummary) : null
+}
+
 async function enrichRecommendation(
   title: string,
   targetLang: string,
   signal?: AbortSignal,
 ): Promise<HomeTranslationSuggestion | null> {
-  const summary = await fetchPageSummary(title, signal, 'wikita-lite-translation-summary')
+  const summary = await fetchSourceSummary(title, signal)
   const displayTitle = summary?.normalizedtitle ?? summary?.title ?? title
 
   return {

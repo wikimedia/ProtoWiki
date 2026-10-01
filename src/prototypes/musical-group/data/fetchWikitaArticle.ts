@@ -1,7 +1,7 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 
-import { EN_WIKI_HOST, normalizeEnwikiTitle } from './enwikiTitle'
+import { contentWikiHost, normalizeEnwikiTitle } from './enwikiTitle'
 import {
   getCachedMusicalGroup,
   setCachedMusicalGroupArticleHtml,
@@ -56,7 +56,7 @@ export async function fetchWikitaArticleHtml(
   if (!bodyPromise) {
     bodyPromise = (async () => {
       const slug = encodeURIComponent(normalized.replace(/ /g, '_'))
-      const url = `https://${EN_WIKI_HOST}/api/rest_v1/page/html/${slug}`
+      const url = `https://${contentWikiHost()}/api/rest_v1/page/html/${slug}`
       const response = await fetchWikimedia(url, {
         signal: options.signal,
         headers: {

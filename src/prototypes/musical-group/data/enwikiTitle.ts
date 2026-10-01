@@ -1,11 +1,22 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 
+import { contentWikiHost, getContentLang } from '@/lib/contentLang'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import { normalizeQid } from './wikidataApi'
 
-export const EN_WIKI_HOST = 'en.wikipedia.org'
+/** Content wiki host — follows `?lang=` (see `@/lib/contentLang`), English by default. */
+export { contentWikiHost }
 
 const EN_WIKI_PREFIXES = ['File:', 'Category:', 'Help:', 'Wikipedia:', 'Template:', 'Portal:']
+
+/** Local namespace names (hrefs use these); canonical English ones always apply too. */
+const LOCAL_NAMESPACE_PREFIXES: Record<string, string[]> = {
+  fr: ['Fichier:', 'Catégorie:', 'Aide:', 'Wikipédia:', 'Modèle:', 'Portail:', 'Spécial:', 'Projet:'],
+}
+
+function nonArticlePrefixes(): string[] {
+  return [...EN_WIKI_PREFIXES, ...(LOCAL_NAMESPACE_PREFIXES[getContentLang()] ?? [])]
+}
 
 export function wikiActionUrl(params: Record<string, string>): string {
   const search = new URLSearchParams({
@@ -13,7 +24,7 @@ export function wikiActionUrl(params: Record<string, string>): string {
     format: 'json',
     origin: '*',
   })
-  return `https://${EN_WIKI_HOST}/w/api.php?${search.toString()}`
+  return `https://${contentWikiHost()}/w/api.php?${search.toString()}`
 }
 
 export function normalizeEnwikiTitle(title: string): string {
@@ -22,7 +33,7 @@ export function normalizeEnwikiTitle(title: string): string {
 
 export function enwikiArticleUrl(title: string): string {
   const slug = encodeURIComponent(title.replace(/ /g, '_'))
-  return `https://${EN_WIKI_HOST}/wiki/${slug}`
+  return `https://${contentWikiHost()}/wiki/${slug}`
 }
 
 export function resolveExternalUrl(href: string): string {
@@ -42,7 +53,8 @@ export function isExternalHref(href: string): boolean {
 
   try {
     const host = new URL(href).hostname
-    return host !== EN_WIKI_HOST && host !== `www.${EN_WIKI_HOST}`
+    const wikiHost = contentWikiHost()
+    return host !== wikiHost && host !== `www.${wikiHost}`
   } catch {
     return true
   }
@@ -87,7 +99,8 @@ export function parseEnwikiArticleTitle(href: string): string | null {
   if (/^https?:\/\//i.test(href)) {
     try {
       const url = new URL(href)
-      if (url.hostname !== EN_WIKI_HOST && url.hostname !== `www.${EN_WIKI_HOST}`) return null
+      const wikiHost = contentWikiHost()
+      if (url.hostname !== wikiHost && url.hostname !== `www.${wikiHost}`) return null
       path = url.pathname
     } catch {
       return null
@@ -110,7 +123,7 @@ export function parseEnwikiArticleTitle(href: string): string | null {
   const normalized = normalizeEnwikiTitle(titlePart)
   if (!normalized) return null
 
-  for (const prefix of EN_WIKI_PREFIXES) {
+  for (const prefix of nonArticlePrefixes()) {
     if (normalized.startsWith(prefix)) return null
   }
 

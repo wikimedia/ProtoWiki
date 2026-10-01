@@ -16,6 +16,8 @@ import WikitaLiteFullscreenShell from './WikitaLiteFullscreenShell.vue'
 import WikitaLiteInterestChips from './WikitaLiteInterestChips.vue'
 import type { WikitaLiteModuleId } from '../data/homeModuleIds'
 import { WIKITA_LITE_CARD_CLASS_THUMBNAIL_SIZE_LARGE } from '../wikita-lite-card'
+import { MESSAGES, t } from '../i18n'
+import { contentWikiHost } from '@/lib/contentLang'
 
 interface Props {
   moduleId?: WikitaLiteModuleId
@@ -47,7 +49,15 @@ function focusSearch() {
 onMounted(focusSearch)
 
 const previewHeading = computed(() =>
-  previewSource.value === 'random' ? 'Random articles' : 'Related articles',
+  previewSource.value === 'random'
+    ? t('components.randomArticles')
+    : t('components.relatedArticles'),
+)
+
+const previewLoadingLabel = computed(() =>
+  previewSource.value === 'random'
+    ? t('components.loadingRandomArticles')
+    : t('components.loadingRelatedArticles'),
 )
 
 const showRelatedSection = computed(
@@ -145,7 +155,7 @@ function onSearchResultClick(payload: TypeaheadSearchEvent) {
 
 <template>
   <WikitaLiteFullscreenShell>
-    <WikitaLiteFullscreenHeader title="Select interests" @close="discardAndClose" />
+    <WikitaLiteFullscreenHeader :title="MESSAGES.selectInterests" @close="discardAndClose" />
 
     <div class="wikita-lite-interests">
       <div class="wikita-lite-interests__search">
@@ -154,9 +164,9 @@ function onSearchResultClick(payload: TypeaheadSearchEvent) {
           :key="searchResetKey"
           id="wikita-lite-interests-search"
           placeholder=""
-          form-action="https://en.wikipedia.org/w/index.php"
+          :form-action="`https://${contentWikiHost()}/w/index.php`"
           :search-results="searchResults"
-          search-results-label="Search results"
+          :search-results-label="t('components.searchResults')"
           :show-thumbnail="true"
           :auto-expand-width="false"
           @input="onSearchInput"
@@ -178,7 +188,7 @@ function onSearchResultClick(payload: TypeaheadSearchEvent) {
           <h2 class="wikita-lite-interests__related-title">{{ previewHeading }}</h2>
 
           <div v-if="relatedLoading && !relatedItems.length" class="wikita-lite-interests__loading">
-            <CdxProgressBar inline :aria-label="`Loading ${previewHeading.toLowerCase()}`" />
+            <CdxProgressBar inline :aria-label="previewLoadingLabel" />
           </div>
 
           <div v-else-if="relatedItems.length" class="wikita-lite-interests__related-list">
@@ -212,7 +222,7 @@ function onSearchResultClick(payload: TypeaheadSearchEvent) {
           size="large"
           @click="saveAndClose"
         >
-          Done
+          {{ t('components.done') }}
         </CdxButton>
       </div>
     </div>

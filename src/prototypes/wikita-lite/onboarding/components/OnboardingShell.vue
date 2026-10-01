@@ -7,6 +7,8 @@ import { cdxIconClose, cdxIconPrevious } from '@wikimedia/codex-icons'
 import { globalSkin } from '@/theme'
 
 import './onboarding-layout.css'
+import { MESSAGES } from '../../i18n'
+import { messageParts, t } from '@/i18n'
 
 /**
  * Full-height onboarding shell for the personalisation steps. Now a thin wrapper
@@ -67,6 +69,9 @@ watch(
 const counterTransition = computed(() =>
   counterDir.value === 'up' ? 'ob-counter-up' : 'ob-counter-down',
 )
+
+/** "1 of 3": `$1` stays a slot for the rolling digit; `$2` (the total) is filled in. */
+const counterParts = computed(() => messageParts('onboarding.stepCounter', undefined, props.total))
 
 function onNavigate(): void {
   if (isFirst.value) {
@@ -170,7 +175,7 @@ function onDialogClose(value: boolean): void {
       :open="true"
       :fixed-height="!isDesktop"
       render-in-place
-      title="Personalize your Home"
+      :title="MESSAGES.personalizeHome"
       @update:open="onDialogClose"
     >
       <template #header>
@@ -179,7 +184,7 @@ function onDialogClose(value: boolean): void {
             class="onboarding-shell__nav"
             weight="quiet"
             size="medium"
-            :aria-label="isFirst ? 'Close' : 'Go back'"
+            :aria-label="isFirst ? t('onboarding.close') : t('onboarding.goBack')"
             @click="onNavigate"
           >
             <CdxIcon :icon="isFirst ? cdxIconClose : cdxIconPrevious" />
@@ -187,14 +192,16 @@ function onDialogClose(value: boolean): void {
           <!-- Rolling counter: the " / N" stays fixed and only the current digit
                slides + fades when the step changes (T2). The header stays put. -->
           <span class="onboarding-shell__counter">
-            <span class="onboarding-shell__counter-current">
-              <Transition :name="counterTransition">
-                <span :key="props.current" class="onboarding-shell__counter-digit">{{
-                  props.current
-                }}</span>
-              </Transition>
-            </span>
-            <span class="onboarding-shell__counter-total">&nbsp;of {{ props.total }}</span>
+            <template v-for="part in counterParts" :key="String(part)">
+              <span v-if="part === 1" class="onboarding-shell__counter-current">
+                <Transition :name="counterTransition">
+                  <span :key="props.current" class="onboarding-shell__counter-digit">{{
+                    props.current
+                  }}</span>
+                </Transition>
+              </span>
+              <span v-else class="onboarding-shell__counter-total">{{ part }}</span>
+            </template>
           </span>
         </div>
       </template>

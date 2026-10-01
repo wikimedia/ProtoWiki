@@ -1,3 +1,5 @@
+import { MODULE_TITLE_STRINGS, VIEW_TAB_LABEL_STRINGS, VIEW_TITLE_STRINGS } from './i18n'
+
 import type { WikitaLiteModuleId } from './data/homeModuleIds'
 
 export const WIKITA_LITE_HOME = '/wikita-lite'
@@ -48,16 +50,9 @@ export const WIKITA_LITE_VIEWS: WikitaLiteView[] = ['edit', 'read', 'contribute'
 
 export const DEFAULT_WIKITA_LITE_VIEW: WikitaLiteView = 'edit'
 
-export const VIEW_TITLES: Record<Exclude<WikitaLiteView, 'edit'>, string> = {
-  read: 'Explore',
-  contribute: 'Contribute',
-}
+export const VIEW_TITLES: Record<Exclude<WikitaLiteView, 'edit'>, string> = VIEW_TITLE_STRINGS
 
-export const VIEW_TAB_LABELS: Record<WikitaLiteView, string> = {
-  edit: 'Home',
-  read: 'Explore',
-  contribute: 'Contribute',
-}
+export const VIEW_TAB_LABELS: Record<WikitaLiteView, string> = VIEW_TAB_LABEL_STRINGS
 
 /**
  * Floating home button on WikitaLiteShell routes. Off also drops the bottom
@@ -73,24 +68,8 @@ export function viewTitleFor(view: WikitaLiteView): string | null {
   return VIEW_TITLES[view]
 }
 
-export const MODULE_TITLES = {
-  featured: 'Featured',
-  articleOfTheDay: 'Article of the day',
-  didYouKnow: 'Did you know',
-  bornOnThisDay: 'Born on this day',
-  trending: 'Trending',
-  saved: 'Saved',
-  furtherReading: 'Daily reads',
-  mentor: 'Your mentor',
-  mentions: 'Mentions',
-  suggestedEdits: 'Suggested edits',
-  recentChanges: 'Recent changes',
-  reviewChanges: 'Review changes',
-  activeDiscussions: 'Active discussions',
-  translateArticles: 'Translate articles',
-  learn: 'Learn',
-  impact: 'Your impact',
-} as const
+/** Localized via `?lang=` — see `./i18n.ts`. */
+export const MODULE_TITLES = MODULE_TITLE_STRINGS
 
 export function parseWikitaLiteView(raw: unknown): WikitaLiteView {
   if (raw === 'all') return DEFAULT_WIKITA_LITE_VIEW
@@ -144,20 +123,21 @@ export function recentActivityTitleForView(view: WikitaLiteView): string {
     : MODULE_TITLES.recentChanges
 }
 
-const MODULE_TITLE_BY_ID: Partial<Record<WikitaLiteModuleId, string>> = {
-  featured: MODULE_TITLES.featured,
-  trending: MODULE_TITLES.trending,
-  furtherReading: MODULE_TITLES.furtherReading,
-  suggestedEdits: MODULE_TITLES.suggestedEdits,
-  translation: MODULE_TITLES.translateArticles,
-  activeDiscussions: MODULE_TITLES.activeDiscussions,
-  impact: MODULE_TITLES.impact,
-  mentor: MODULE_TITLES.mentor,
-  learn: MODULE_TITLES.learn,
-  didYouKnow: MODULE_TITLES.didYouKnow,
-  bornOnThisDay: MODULE_TITLES.bornOnThisDay,
-  saved: MODULE_TITLES.saved,
-  mentions: MODULE_TITLES.mentions,
+/** Module id → key in {@link MODULE_TITLES} (read at call time so `?lang=` applies). */
+const MODULE_TITLE_KEY_BY_ID: Partial<Record<WikitaLiteModuleId, keyof typeof MODULE_TITLES>> = {
+  featured: 'featured',
+  trending: 'trending',
+  furtherReading: 'furtherReading',
+  suggestedEdits: 'suggestedEdits',
+  translation: 'translateArticles',
+  activeDiscussions: 'activeDiscussions',
+  impact: 'impact',
+  mentor: 'mentor',
+  learn: 'learn',
+  didYouKnow: 'didYouKnow',
+  bornOnThisDay: 'bornOnThisDay',
+  saved: 'saved',
+  mentions: 'mentions',
 }
 
 export function moduleTitleFor(view: WikitaLiteView, moduleId: WikitaLiteModuleId): string {
@@ -165,5 +145,6 @@ export function moduleTitleFor(view: WikitaLiteView, moduleId: WikitaLiteModuleI
     return recentActivityTitleForView(view)
   }
 
-  return MODULE_TITLE_BY_ID[moduleId] ?? moduleId
+  const key = MODULE_TITLE_KEY_BY_ID[moduleId]
+  return key ? MODULE_TITLES[key] : moduleId
 }

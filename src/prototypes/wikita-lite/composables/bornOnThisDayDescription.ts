@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+
 import type { HomeBornOnThisDay } from '../../musical-group/data/types'
 
 /** Prefer Wikipedia short description; fall back to parsing the on-this-day blurb. */
@@ -20,5 +22,5 @@ export function bornOnThisDayDescription(item: HomeBornOnThisDay): string | unde
 
 export function bornOnThisDayYearLabel(year: number): string {
   const age = new Date().getFullYear() - year
-  return age === 1 ? '1 year old' : `${age} years old`
+  return t('data.yearsOld', age)
 }

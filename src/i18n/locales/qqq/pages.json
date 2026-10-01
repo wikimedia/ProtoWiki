@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"configureTitle": "Header title of the fullscreen suggestion-source configure screens (global and Suggested edits).",
+	"dismissedModules": "Heading above the list of Home modules the user dismissed, on the configure suggestions screen.",
+	"restore": "Button next to a dismissed module that brings it back to Home.",
+	"done": "Full-width button that closes a configure screen.",
+	"useDefaultSettings": "Toggle on the Suggested edits configure screen: when on, the module follows the global Personalization settings instead of its own.",
+	"homeLayoutTitle": "Title of the dialog where the user chooses and reorders the modules shown on Home.",
+	"homeLayoutSubtitle": "Subtitle of the Home layout dialog.",
+	"loadingArticle": "Accessible label (aria-label) of the progress bar shown while an article loads.",
+	"articleLoadError": "Error shown when an article fails to load. $1 = technical error message (not translated)."
+}

@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import type { FlowState } from '../data/useWikitaLiteOnboardingFlow'
+import { MESSAGES, format, t } from '../../i18n'
 
 const props = defineProps<{ flow: FlowState }>()
 
@@ -84,7 +85,7 @@ onBeforeUnmount(() => {
 
 const greeting = computed(() => {
   const name = props.flow.username.value
-  return name ? `Welcome to Wikipedia, ${name}!` : 'Welcome to Wikipedia!'
+  return name ? format(MESSAGES.welcomeNamed, name) : MESSAGES.welcome
 })
 </script>
 
@@ -105,7 +106,7 @@ const greeting = computed(() => {
         v-if="canAnimate"
         type="button"
         class="welcome__replay"
-        aria-label="Play animation again"
+        :aria-label="t('onboarding.playAnimation')"
         @click="replay"
       >
         <img class="welcome__hero" :src="heroSrc" alt="" width="480" height="480" />

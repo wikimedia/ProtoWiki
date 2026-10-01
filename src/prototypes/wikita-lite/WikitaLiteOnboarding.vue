@@ -18,6 +18,7 @@ import CreateAccountScreen from './onboarding/screens/CreateAccountScreen.vue'
 import WelcomeScreen from './onboarding/screens/WelcomeScreen.vue'
 import SurveyScreen from './onboarding/screens/SurveyScreen.vue'
 import InterestsScreen from './onboarding/screens/InterestsScreen.vue'
+import { MESSAGES, t } from './i18n'
 
 const emit = defineEmits<{ completed: [] }>()
 
@@ -145,7 +146,7 @@ onBeforeUnmount(() => {
           action="progressive"
           @click="flow.goTo('survey')"
         >
-          Personalize your Home
+          {{ MESSAGES.personalizeHome }}
         </CdxButton>
         <CdxButton
           v-else-if="flow.screen.value === 'survey'"
@@ -155,7 +156,7 @@ onBeforeUnmount(() => {
           weight="quiet"
           @click="flow.goTo('interests', { survey: 'both' })"
         >
-          Skip
+          {{ t('onboarding.skip') }}
         </CdxButton>
         <CdxButton
           v-else-if="flow.screen.value === 'interests'"
@@ -166,7 +167,7 @@ onBeforeUnmount(() => {
           :action="goHomeActive ? 'progressive' : 'default'"
           @click="flow.goTo('home')"
         >
-          Go to your Home
+          {{ t('onboarding.goToHome') }}
         </CdxButton>
       </template>
     </OnboardingShell>

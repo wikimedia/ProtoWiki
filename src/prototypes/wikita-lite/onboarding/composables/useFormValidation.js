@@ -1,37 +1,43 @@
 import { reactive } from 'vue'
+import { t } from '@/i18n'
 import { useFormSettings } from './useFormSettings'
+
+const MIN_PASSWORD_LENGTH = 8
 
 const baselineValidators = {
   username: (value) => {
     if (!value.trim()) {
-      return { status: 'error', message: 'Please enter a username.' }
+      return { status: 'error', message: t('createAccount.errorUsernameEmpty') }
     }
     return null
   },
   password: (value, form, behaviors = {}) => {
     if (!value) {
-      return { status: 'error', message: 'Please enter a password.' }
+      return { status: 'error', message: t('createAccount.errorPasswordEmpty') }
     }
-    if (behaviors.enforceLength !== false && value.length < 8) {
-      return { status: 'error', message: 'Passwords must be at least 8 characters.' }
+    if (behaviors.enforceLength !== false && value.length < MIN_PASSWORD_LENGTH) {
+      return {
+        status: 'error',
+        message: t('createAccount.errorPasswordLength', MIN_PASSWORD_LENGTH),
+      }
     }
     return null
   },
   confirmPassword: (value, form, behaviors = {}) => {
     if (!value) {
-      return { status: 'error', message: 'Please confirm your password.' }
+      return { status: 'error', message: t('createAccount.errorConfirmEmpty') }
     }
     if (behaviors.matchValidation !== false && value !== form.password) {
-      return { status: 'error', message: 'The passwords you entered do not match.' }
+      return { status: 'error', message: t('createAccount.errorPasswordMismatch') }
     }
     return null
   },
   email: (value, form, behaviors = {}, { emailPasswordInstead } = {}) => {
     if (emailPasswordInstead?.value && !value) {
-      return { status: 'error', message: 'Please enter an email address.' }
+      return { status: 'error', message: t('createAccount.errorEmailEmpty') }
     }
     if (behaviors.emailValidation !== false && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      return { status: 'error', message: 'Please enter a valid email address.' }
+      return { status: 'error', message: t('createAccount.errorEmailInvalid') }
     }
     return null
   },
@@ -81,7 +87,7 @@ export function useFormValidation(form, { emailPasswordInstead } = {}) {
         }
         validation[fieldName] = {
           status,
-          messages: { [status]: 'Username taken.', takenSuggestion: _takenSuggestion },
+          messages: { [status]: t('createAccount.usernameTaken'), takenSuggestion: _takenSuggestion },
         }
         return !forSubmit
       }
@@ -92,8 +98,7 @@ export function useFormValidation(form, { emailPasswordInstead } = {}) {
         validation[fieldName] = {
           status: 'warning',
           messages: {
-            warning:
-              'This password is commonly used and could be easily guessed.',
+            warning: t('createAccount.warningPasswordWeak'),
           },
         }
         return true // Warning doesn't block submission

@@ -1,16 +1,21 @@
 <template>
   <div class="policy-body">
     <ul class="policy-list">
-      <li>Consider <b>privacy risks</b> before using your real name.</li>
-      <li>Don't use offensive, misleading, or promotional names.</li>
-      <li>Your username must represent you as an individual, not an organization.</li>
+      <li>
+        <template v-for="part in messageParts('createAccount.policyPrivacy')" :key="String(part)">
+          <b v-if="part === 1">{{ t('createAccount.policyPrivacyRisks') }}</b>
+          <template v-else>{{ part }}</template>
+        </template>
+      </li>
+      <li>{{ t('createAccount.policyNoOffensive') }}</li>
+      <li>{{ t('createAccount.policyIndividual') }}</li>
     </ul>
     <a
-      href="https://en.wikipedia.org/wiki/Wikipedia:Username_policy"
+      :href="usernamePolicyUrl"
       target="_blank"
       rel="noopener"
       class="policy-full-link"
-    >Read the full username policy</a>
+    >{{ t('createAccount.policyFullLink') }}</a>
   </div>
 </template>
 
@@ -20,6 +25,12 @@
  * between (Minerva bottom sheet, Vector popover) so the wording can't drift
  * between skins.
  */
+import { messageParts, t } from '@/i18n'
+
+import { capabilityPageUrl, wikiCapabilities } from '../../../musical-group/data/wikiCapabilities'
+
+/** The content wiki's own policy page (`?lang=`). */
+const usernamePolicyUrl = capabilityPageUrl(wikiCapabilities().usernamePolicyPage)
 </script>
 
 <style scoped>

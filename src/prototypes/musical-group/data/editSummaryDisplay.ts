@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+
 /** Automated revert/undo prefixes from MediaWiki (en). */
 const REVERT_PREFIX = /^(Reverted|Undid|Rollback)/i
 
@@ -68,12 +70,13 @@ function parseSectionFromRaw(raw: string): { auto: string; human: string } | nul
   return { auto, human }
 }
 
-function formatSectionAndMessage(auto: string, human: string): string {
+/** Section and/or quoted message; `null` when the summary has neither. */
+function formatSectionAndMessage(auto: string, human: string): string | null {
   const section = auto.replace(/:?\s*$/, '')
-  if (section && human) return `${section}: “${human}”`
+  if (section && human) return t('feed.editSummaryLabeledQuote', section, human)
   if (section) return section
-  if (human) return `“${human}”`
-  return 'No edit summary'
+  if (human) return t('feed.editSummaryQuote', human)
+  return null
 }
 
 function formatRevertSummary(text: string): string | null {
@@ -84,7 +87,7 @@ function formatRevertSummary(text: string): string | null {
 
   const prefix = text.slice(0, colonIdx).trim()
   const reason = text.slice(colonIdx + 2).trim()
-  if (reason) return `${prefix}: “${reason}”`
+  if (reason) return t('feed.editSummaryLabeledQuote', prefix, reason)
   return prefix
 }
 
@@ -102,14 +105,14 @@ export function formatEditSummaryDisplay(parsedComment: string, rawComment: stri
     if (autocomment) {
       const human = stripUserPageParentheticals(autocomment.human)
       const formatted = formatSectionAndMessage(autocomment.auto, human)
-      if (formatted !== 'No edit summary') return formatted
+      if (formatted) return formatted
     }
   }
 
   let text = html ? flattenParsedComment(html) : ''
   if (!text) text = raw
   text = stripUserPageParentheticals(text)
-  if (!text) return 'No edit summary'
+  if (!text) return t('feed.noEditSummary')
 
   const revert = formatRevertSummary(text)
   if (revert) return revert
@@ -117,8 +120,8 @@ export function formatEditSummaryDisplay(parsedComment: string, rawComment: stri
   const rawSection = parseSectionFromRaw(raw)
   if (rawSection) {
     const human = stripUserPageParentheticals(rawSection.human)
-    return formatSectionAndMessage(rawSection.auto, human)
+    return formatSectionAndMessage(rawSection.auto, human) ?? t('feed.noEditSummary')
   }
 
-  return `“${text}”`
+  return t('feed.editSummaryQuote', text)
 }

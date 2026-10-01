@@ -6,6 +6,7 @@ import { isExcludedEditOpportunityNeed, resolveEditOpportunityCopy } from './edi
 import { fetchWithTimeout } from './fetchWithTimeout'
 import { fetchPageSummary } from './pageSummary'
 import type { HomeHelpWanted, HomeSavedItem } from './types'
+import { getContentLang } from '@/lib/contentLang'
 
 const MICROTASK_QUALITY_CHECK_URL = 'https://microtask-generator.toolforge.org/quality-check'
 export const SAVED_SUGGESTION_CONCURRENCY = 3
@@ -49,7 +50,7 @@ async function fetchQualityCheck(
     method: 'POST',
     signal,
     headers: microtaskFetchHeaders(userAgentSuffix),
-    body: JSON.stringify({ lang: 'en', titles: [enwikiTitle] }),
+    body: JSON.stringify({ lang: getContentLang(), titles: [enwikiTitle] }),
   })
   // Failures aren't cached, so a later load can retry.
   if (!response.ok) return undefined

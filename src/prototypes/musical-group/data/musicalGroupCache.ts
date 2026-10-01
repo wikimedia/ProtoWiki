@@ -1,3 +1,4 @@
+import { langScopedStorageKey } from '@/lib/contentLang'
 import { normalizeQid } from './wikidataApi'
 import type {
   CarouselImage,
@@ -305,7 +306,7 @@ function clearStoredCache(): void {
   if (typeof window === 'undefined') return
 
   try {
-    window.localStorage.removeItem(STORAGE_KEY)
+    window.localStorage.removeItem(langScopedStorageKey(STORAGE_KEY))
   } catch {
     // Private mode or blocked storage — ignore.
   }
@@ -325,7 +326,7 @@ function readRawStore(): { raw: unknown; corrupt: boolean } {
   if (typeof window === 'undefined') return { raw: null, corrupt: false }
 
   try {
-    const stored = window.localStorage.getItem(STORAGE_KEY)
+    const stored = window.localStorage.getItem(langScopedStorageKey(STORAGE_KEY))
     if (!stored) return { raw: null, corrupt: false }
     return { raw: JSON.parse(stored), corrupt: false }
   } catch {
@@ -358,7 +359,7 @@ function persistStore(store: MusicalGroupCacheStore): void {
       clearStoredCache()
       return
     }
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized))
+    window.localStorage.setItem(langScopedStorageKey(STORAGE_KEY), JSON.stringify(normalized))
   } catch {
     // Quota or private-mode failures — ignore.
   }

@@ -34,6 +34,7 @@ import {
 import WikitaLiteShowMore from '../components/WikitaLiteShowMore.vue'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
 import type { WikitaLiteSupportingSignal } from '../data/supportingSignals'
+import { t } from '../i18n'
 
 interface Props {
   standalone?: boolean
@@ -174,7 +175,8 @@ const showStandaloneLoading = computed(() => {
 })
 
 interface FlagPresentation {
-  label: string
+  /** `home.*` message key. */
+  labelKey: string
   icon?: Icon
   status: WikitaLiteChipStatus
 }
@@ -183,11 +185,19 @@ const FLAG_PRESENTATION: Record<
   Exclude<HomeRecentChangeFlag, 'none' | 'good-faith'>,
   FlagPresentation
 > = {
-  'first-edit': { label: "User's first edit", icon: cdxIconUserAdd, status: 'success' },
-  'new-editor': { label: 'New editor', icon: cdxIconUserAdd, status: 'success' },
-  'needs-reference': { label: 'Needs a reference check', icon: cdxIconReference, status: 'notice' },
-  'tone-issue': { label: 'Tone issue', icon: cdxIconAlert, status: 'warning' },
-  'high-revert-risk': { label: 'High revert risk', icon: cdxIconAlert, status: 'warning' },
+  'first-edit': { labelKey: 'home.flagFirstEdit', icon: cdxIconUserAdd, status: 'success' },
+  'new-editor': { labelKey: 'home.flagNewEditor', icon: cdxIconUserAdd, status: 'success' },
+  'needs-reference': {
+    labelKey: 'home.flagNeedsReference',
+    icon: cdxIconReference,
+    status: 'notice',
+  },
+  'tone-issue': { labelKey: 'home.flagToneIssue', icon: cdxIconAlert, status: 'warning' },
+  'high-revert-risk': {
+    labelKey: 'home.flagHighRevertRisk',
+    icon: cdxIconAlert,
+    status: 'warning',
+  },
 }
 
 function flagPresentation(flag: HomeRecentChangeFlag): FlagPresentation | null {
@@ -199,10 +209,10 @@ function changeChips(change: HomeRecentChange): WikitaLiteChip[] {
   const chips: WikitaLiteChip[] = []
 
   if (useInternalFeed.value && change.isLatest) {
-    chips.push({ label: 'Latest', icon: cdxIconClock, status: 'notice' })
+    chips.push({ label: t('home.chipLatest'), icon: cdxIconClock, status: 'notice' })
   }
   if (change.reverted) {
-    chips.push({ label: 'Reverted', icon: cdxIconEditUndo, status: 'notice' })
+    chips.push({ label: t('home.chipReverted'), icon: cdxIconEditUndo, status: 'notice' })
   }
 
   const flag = flagPresentation(change.flag)
@@ -212,15 +222,15 @@ function changeChips(change: HomeRecentChange): WikitaLiteChip[] {
     !change.flagPending &&
     !change.reverted
   if (showHighRevertRisk) {
-    chips.push({ label: flag.label, icon: flag.icon, status: flag.status })
+    chips.push({ label: t(flag.labelKey), icon: flag.icon, status: flag.status })
   }
 
   if (change.majorChange && !change.flagPending) {
-    chips.push({ label: 'Major change', icon: cdxIconInfo, status: 'notice' })
+    chips.push({ label: t('home.chipMajorChange'), icon: cdxIconInfo, status: 'notice' })
   }
 
   if (flag && !change.flagPending && change.flag !== 'high-revert-risk') {
-    chips.push({ label: flag.label, icon: flag.icon, status: flag.status })
+    chips.push({ label: t(flag.labelKey), icon: flag.icon, status: flag.status })
   }
 
   return chips
@@ -251,8 +261,8 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
       "
       class="recent-activity-module__error"
     >
-      <p>Could not load recent activity.</p>
-      <CdxButton weight="quiet" @click="retryActivity">Try again</CdxButton>
+      <p>{{ t('home.recentActivityError') }}</p>
+      <CdxButton weight="quiet" @click="retryActivity">{{ t('common.tryAgain') }}</CdxButton>
     </div>
 
     <div
@@ -315,10 +325,10 @@ const { groupClass, cardClass } = useWikitaLiteCardListClasses({ standalone: () 
       :expandable="expandable"
       @expand="$emit('expand')"
     >
-      Review more changes
+      {{ t('home.reviewMoreChanges') }}
     </WikitaLiteShowMore>
 
-    <CdxProgressBar v-if="showStandaloneLoading" inline aria-label="Loading recent activity" />
+    <CdxProgressBar v-if="showStandaloneLoading" inline :aria-label="t('home.loadingRecentActivity')" />
 
     <div
       v-if="useInternalFeed"

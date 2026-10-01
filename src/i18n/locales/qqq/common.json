@@ -1,0 +1,19 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"welcomeNamed": "Onboarding welcome heading. $1 = username.",
+	"helloNamed": "Home greeting. $1 = display name.",
+	"translateTo": "Translate articles card action. $1 = language name in the interface language (e.g. \"French\").",
+	"viewsLabel": "Trending card supporting line. $1 = compact view count, $2 = period ({{msg|common-viewsToday}} or {{msg|common-viewsOnDate}}).",
+	"viewsOnDate": "$1 = short date, e.g. \"Oct 1\".",
+	"updatedRelative": "$1 = relative time, e.g. \"5m ago\".",
+	"savedRelative": "$1 = relative time.",
+	"machineTranslated": "Label on content machine-translated by MinT from English Wikipedia.",
+	"allTab": "Active discussions filter tab showing every noticeboard.",
+	"tryAgain": "Retry button under a module that failed to load.",
+	"save": "Accessible label of the bookmark button on an article card when the article is not saved yet.",
+	"savedState": "Accessible label of the bookmark button on an article card when the article is already saved (state, not a command).",
+	"close": "Accessible label of the close button of a full-screen page or dialog.",
+	"back": "Accessible label of the back arrow in a mobile subpage header."
+}

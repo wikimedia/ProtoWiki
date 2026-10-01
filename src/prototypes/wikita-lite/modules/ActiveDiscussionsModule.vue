@@ -15,6 +15,7 @@ import { useWikitaLiteCardListClasses } from '../composables/useWikitaLiteCardLi
 import { useWikitaLiteOverflowShowMore } from '../composables/useWikitaLiteOverflowShowMore'
 import { activeDiscussionCategoryLabel } from '../data/activeDiscussionLabels'
 import type { WikitaLiteSupportingSignal } from '../data/supportingSignals'
+import { MESSAGES, t } from '../i18n'
 
 interface Props {
   standalone?: boolean
@@ -54,7 +55,7 @@ function discussionSignals(discussion: HomeActiveDiscussion): WikitaLiteSupporti
   return [
     {
       icon: cdxIconSpeechBubbles,
-      text: `${discussion.commentCount} ${discussion.commentCount === 1 ? 'comment' : 'comments'}`,
+      text: t('home.commentCount', discussion.commentCount),
     },
   ]
 }
@@ -89,12 +90,12 @@ const showMoreControl = computed(
 
 <template>
   <div class="active-discussions-module">
-    <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading active discussions" />
+    <CdxProgressBar v-if="standalone && loading" inline :aria-label="t('home.loadingActiveDiscussions')" />
 
     <template v-else-if="error">
       <div class="active-discussions-module__error">
         <p>{{ error }}</p>
-        <CdxButton weight="quiet" @click="$emit('retry')">Try again</CdxButton>
+        <CdxButton weight="quiet" @click="$emit('retry')">{{ t('common.tryAgain') }}</CdxButton>
       </div>
     </template>
 
@@ -103,7 +104,7 @@ const showMoreControl = computed(
         v-if="showTabs"
         v-model:active-tab-id="activeTabId"
         :tabs="tabs"
-        aria-label="Active discussion filters"
+        :aria-label="t('home.activeDiscussionFilters')"
       />
 
       <div
@@ -140,11 +141,11 @@ const showMoreControl = computed(
         :expandable="expandable"
         @expand="$emit('expand')"
       >
-        Show more active discussions
+        {{ MESSAGES.showMoreActiveDiscussions }}
       </WikitaLiteShowMore>
 
       <p v-if="standalone && !displayItems.length" class="active-discussions-module__empty">
-        No active discussions right now.
+        {{ t('home.emptyActiveDiscussions') }}
       </p>
     </template>
   </div>

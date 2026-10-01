@@ -15,6 +15,7 @@ import './styles/dark.css'
 import { initTheming } from './theme'
 import { initAppPlatform } from './app-platform'
 import { loadConfig } from './config'
+import { getUiLang } from './i18n'
 
 import '@/composables/useConfig'
 
@@ -79,6 +80,8 @@ router.onError((error, to) => {
 
 router.afterEach(() => {
   sessionStorage.removeItem(CHUNK_RELOAD_KEY)
+  // `?uselang=` / `?lang=` (see `@/i18n`); `dir` waits for the RTL pass.
+  document.documentElement.lang = getUiLang()
 })
 
 syncGithubPagesPreviewRoute(router)

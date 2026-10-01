@@ -1,6 +1,7 @@
 import { inject, provide, ref, type Ref } from 'vue'
 
 import { useConfig } from '@/composables/useConfig'
+import { t } from '@/i18n'
 
 import {
   WIKITA_SAVE_FEEDBACK_KEY,
@@ -128,7 +129,7 @@ export function provideWikitaLiteSaveFeedback(): WikitaLiteSaveFeedbackContext {
   function createListAndAdd(): void {
     const pageId = listsSheetPageId.value
     if (!pageId) return
-    const list = createList('New list')
+    const list = createList(t('data.newList'))
     addPageToList(list.id, pageId, listsSheetPageThumbnailUrl.value ?? undefined)
     listsVersion.value += 1
     closeListsSheet()

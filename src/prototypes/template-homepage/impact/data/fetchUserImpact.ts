@@ -11,6 +11,12 @@
  * - "Most viewed" rows: top 3 articles by those view counts (not merely the 3 most recent edits).
  */
 import { normalizeWikiUsername, wikimediaApiFetchHeaders, wikiHostFromLang } from '@/config'
+import { getUiLang, t } from '@/i18n'
+import {
+  formatCompactNumber,
+  formatShortDate as formatLocalizedShortDate,
+  usesLocalizedFormat,
+} from '@/lib/contentFormat'
 import type { ImpactData, ImpactMostViewedArticle } from './impactTypes'
 
 const METRICS_HOST = 'wikimedia.org'
@@ -95,10 +101,24 @@ function pageviewsArticleSlug(title: string): string {
   return encodeURIComponent(title.replace(/ /g, '_'))
 }
 
+/** "il y a 3 jours" — the same buckets as the English labels, in the interface language. */
+function formatLocalizedRelativeTime(diffMs: number): string {
+  const rtf = new Intl.RelativeTimeFormat(getUiLang(), { numeric: 'auto' })
+  const minutes = Math.floor(diffMs / (1000 * 60))
+  const hours = Math.floor(diffMs / (1000 * 60 * 60))
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  if (minutes < 1) return rtf.format(0, 'second')
+  if (minutes < 60) return rtf.format(-minutes, 'minute')
+  if (hours < 24) return rtf.format(-hours, 'hour')
+  if (days < 30) return rtf.format(-days, 'day')
+  return rtf.format(-Math.floor(days / 30), 'month')
+}
+
 function formatRelativeTime(isoTimestamp: string): string {
   const then = parseMediaWikiTimestamp(isoTimestamp).getTime()
   if (Number.isNaN(then)) return '—'
   const diffMs = Date.now() - then
+  if (usesLocalizedFormat()) return formatLocalizedRelativeTime(Math.max(0, diffMs))
   if (diffMs < 0) return 'just now'
 
   const minutes = Math.floor(diffMs / (1000 * 60))
@@ -116,11 +136,12 @@ function formatRelativeTime(isoTimestamp: string): string {
 }
 
 function formatShortDate(date: Date): string {
+  if (usesLocalizedFormat()) return formatLocalizedShortDate(date)
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 function computeLongestStreak(contribDays: Set<string>): string {
-  if (contribDays.size === 0) return '0 days'
+  if (contribDays.size === 0) return t('impact.streakDays', 0)
   const sorted = [...contribDays].sort()
   let longest = 1
   let current = 1
@@ -135,7 +156,7 @@ function computeLongestStreak(contribDays: Set<string>): string {
       current = 1
     }
   }
-  return longest === 1 ? '1 day' : `${longest} days`
+  return t('impact.streakDays', longest)
 }
 
 function buildActivityHistogram(contribs: UserContrib[]): {
@@ -199,13 +220,14 @@ function buildViewProgressPatch(
 
   return {
     viewCount,
-    viewLabel: "Views on articles you've edited",
+    viewLabel: t('impact.viewLabelViews'),
     sparklineData,
     mostViewed: nextMostViewed,
   }
 }
 
 function formatViewCount(total: number): string {
+  if (usesLocalizedFormat()) return formatCompactNumber(total)
   if (total >= 1_000_000) return `${(total / 1_000_000).toFixed(1)}M`
   if (total >= 1000) return `${(total / 1000).toFixed(1)}k`
   return total.toLocaleString()
@@ -302,7 +324,7 @@ export async function fetchUserImpact(
   const wikiHost = wikiHostFromLang(lang)
   const username = normalizeWikiUsername(rawUsername)
   if (!username.length) {
-    throw new FetchUserImpactError('Enter a Wikipedia username', 'missing_username')
+    throw new FetchUserImpactError(t('impact.errorMissingUsername'), 'missing_username')
   }
 
   assertNotAborted(signal)
@@ -321,7 +343,7 @@ export async function fetchUserImpact(
 
   const userInfo = usersJson.query?.users?.[0]
   if (!userInfo || userInfo.missing) {
-    throw new FetchUserImpactError(`User "${username}" not found`, 'user_not_found')
+    throw new FetchUserImpactError(t('impact.errorUserNotFound', username), 'user_not_found')
   }
 
   const totalEdits = userInfo.editcount ?? 0

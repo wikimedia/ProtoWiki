@@ -7,6 +7,8 @@ import { CdxButton, CdxIcon, CdxMenuButton } from '@wikimedia/codex'
 import type { MenuGroupData, MenuItemData, MenuItemValue } from '@wikimedia/codex'
 import { cdxIconConfigure, cdxIconEllipsis, cdxIconNext, cdxIconPushPin } from '@wikimedia/codex-icons'
 
+import { t } from '@/i18n'
+
 import { useWikitaLiteCardBordersSingleton } from '../composables/useWikitaLiteCardBorders'
 import { useWikitaLiteModuleMenuModeSingleton } from '../composables/useWikitaLiteModuleMenuMode'
 import { useWikitaLitePinnedModulesSingleton } from '../composables/useWikitaLitePinnedModules'
@@ -65,10 +67,12 @@ const showPinButton = computed(() => {
 })
 
 const unpinAriaLabel = computed(() =>
-  !isHome.value ? 'Unpin from home' : 'Unpin from top',
+  !isHome.value ? t('components.unpinFromHome') : t('components.unpinFromTop'),
 )
 
-const aboutLabel = computed(() => `About ${props.title.toLowerCase()}`)
+const aboutLabel = computed(() =>
+  t('components.moduleAbout', props.title.toLowerCase(), props.title),
+)
 
 const overflowMenuItems = computed((): (MenuItemData | MenuGroupData)[] => {
   if (!props.moduleId) return []
@@ -77,7 +81,7 @@ const overflowMenuItems = computed((): (MenuItemData | MenuGroupData)[] => {
 
   if (isPersonalizedModule(props.moduleId)) {
     return [
-      { value: 'configure', label: 'Configure', icon: cdxIconConfigure },
+      { value: 'configure', label: t('components.configure'), icon: cdxIconConfigure },
       {
         hideLabel: true,
         label: aboutLabel.value,
@@ -152,7 +156,7 @@ provide(WIKITA_LITE_CARD_SEPARATION, effectiveCardSeparation)
           :menu-config="{ renderInPlace: true }"
           weight="quiet"
           size="medium"
-          aria-label="Module actions"
+          :aria-label="t('components.moduleActions')"
         >
           <CdxIcon :icon="cdxIconEllipsis" />
         </CdxMenuButton>

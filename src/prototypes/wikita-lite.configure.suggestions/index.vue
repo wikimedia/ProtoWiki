@@ -4,6 +4,8 @@ import { useRouter } from 'vue-router'
 
 import { CdxButton } from '@wikimedia/codex'
 
+import { t } from '@/i18n'
+
 import WikitaLiteFullscreenHeader from '../wikita-lite/components/WikitaLiteFullscreenHeader.vue'
 import WikitaLiteFullscreenShell from '../wikita-lite/components/WikitaLiteFullscreenShell.vue'
 import WikitaLiteSuggestionConfigureToggles from '../wikita-lite/components/WikitaLiteSuggestionConfigureToggles.vue'
@@ -46,7 +48,7 @@ function removeInterest(title: string) {
 
 <template>
   <WikitaLiteFullscreenShell>
-    <WikitaLiteFullscreenHeader title="Configure" @close="closeConfigure" />
+    <WikitaLiteFullscreenHeader :title="t('pages.configureTitle')" @close="closeConfigure" />
 
     <div class="wikita-lite-configure">
       <WikitaLiteSuggestionConfigureToggles
@@ -59,7 +61,7 @@ function removeInterest(title: string) {
       />
 
       <section v-if="dismissedEntries.length" class="wikita-lite-configure__dismissed">
-        <h3 class="wikita-lite-configure__dismissed-label">Dismissed modules</h3>
+        <h3 class="wikita-lite-configure__dismissed-label">{{ t('pages.dismissedModules') }}</h3>
         <ul class="wikita-lite-configure__dismissed-list">
           <li
             v-for="entry in dismissedEntries"
@@ -68,7 +70,7 @@ function removeInterest(title: string) {
           >
             <span class="wikita-lite-configure__dismissed-title">{{ entry.title }}</span>
             <CdxButton weight="quiet" @click="restore(entry.moduleId)">
-              Restore
+              {{ t('pages.restore') }}
             </CdxButton>
           </li>
         </ul>
@@ -80,7 +82,7 @@ function removeInterest(title: string) {
           size="large"
           @click="closeConfigure"
         >
-          Done
+          {{ t('pages.done') }}
         </CdxButton>
       </div>
     </div>

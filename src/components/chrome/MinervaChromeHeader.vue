@@ -7,17 +7,18 @@ import { cdxIconHome } from '@wikimedia/codex-icons'
 import MobileSearchOverlay from '@/components/search/MobileSearchOverlay.vue'
 import { resolveHeaderIcon } from '@/components/header/headerIcons'
 import type { HeaderItem } from '@/components/header/headerItems'
+import { t } from '@/i18n'
+import { wikipediaWordmarkSrc } from './wikipediaWordmark'
 import { globalTheme } from '@/theme'
 import type { Theme } from '@/theme'
 
 export type MinervaHeaderItem = HeaderItem
 
-const WIKIPEDIA_WORDMARK_EN =
-  'https://en.wikipedia.org/static/images/mobile/copyright/wikipedia-wordmark-en-25.svg'
-
 const MAX_FLANK_ITEMS = 4
 
-const DEFAULT_LEFT: HeaderItem[] = [{ type: 'button', icon: 'menu', label: 'Main menu' }]
+const defaultLeft = (): HeaderItem[] => [
+  { type: 'button', icon: 'menu', label: t('chrome.mainMenu') },
+]
 
 /**
  * Full-screen search, the way Minerva does it. Owned here so every mobile
@@ -26,10 +27,15 @@ const DEFAULT_LEFT: HeaderItem[] = [{ type: 'button', icon: 'menu', label: 'Main
  */
 const searchOpen = ref(false)
 
-const DEFAULT_RIGHT: HeaderItem[] = [
-  { type: 'button', icon: 'search', label: 'Search', onClick: () => (searchOpen.value = true) },
-  { type: 'button', icon: 'bell-outline', label: 'Notifications' },
-  { type: 'button', icon: 'user-avatar-outline', label: 'User menu' },
+const defaultRight = (): HeaderItem[] => [
+  {
+    type: 'button',
+    icon: 'search',
+    label: t('chrome.search'),
+    onClick: () => (searchOpen.value = true),
+  },
+  { type: 'button', icon: 'bell-outline', label: t('chrome.notifications') },
+  { type: 'button', icon: 'user-avatar-outline', label: t('chrome.userMenu') },
 ]
 
 interface Props {
@@ -39,7 +45,7 @@ interface Props {
   right?: HeaderItem[]
   /** Wordmark image URL when **`middle`** is omitted. */
   wordmarkSrc?: string
-  /** Minerva wordmark; defaults to **`wordmarkSrc`** then EN constant. */
+  /** Minerva wordmark; defaults to **`wordmarkSrc`** then the UI-language wordmark. */
   mobileWordmarkSrc?: string
   /** When false, the default wordmark is decorative (not a link). */
   brandLink?: boolean
@@ -66,7 +72,7 @@ const emit = defineEmits<{
 const effectiveTheme = computed<Theme>(() => props.theme ?? globalTheme.value)
 
 const wordmarkResolved = computed(
-  () => props.mobileWordmarkSrc ?? props.wordmarkSrc ?? WIKIPEDIA_WORDMARK_EN,
+  () => props.mobileWordmarkSrc ?? props.wordmarkSrc ?? wikipediaWordmarkSrc(),
 )
 
 function clampFlank(items: HeaderItem[], side: 'left' | 'right'): HeaderItem[] {
@@ -77,8 +83,8 @@ function clampFlank(items: HeaderItem[], side: 'left' | 'right'): HeaderItem[] {
   return items.slice(0, MAX_FLANK_ITEMS)
 }
 
-const effectiveLeft = computed(() => clampFlank(props.left ?? DEFAULT_LEFT, 'left'))
-const effectiveRight = computed(() => clampFlank(props.right ?? DEFAULT_RIGHT, 'right'))
+const effectiveLeft = computed(() => clampFlank(props.left ?? defaultLeft(), 'left'))
+const effectiveRight = computed(() => clampFlank(props.right ?? defaultRight(), 'right'))
 const effectiveMiddle = computed(() => props.middle ?? [])
 
 const useDefaultWordmark = computed(() => props.middle === undefined)
@@ -113,7 +119,7 @@ function isExternalHref(href: string): boolean {
 
 <template>
   <header class="minerva-chrome-header" data-skin="mobile" :data-theme="effectiveTheme">
-    <nav class="minerva-chrome-header__nav" aria-label="Site">
+    <nav class="minerva-chrome-header__nav" :aria-label="t('chrome.siteNavigation')">
       <div v-if="hasLeft" class="minerva-chrome-header__left">
         <template v-for="(item, index) in effectiveLeft" :key="`left-${index}`">
           <component
@@ -154,19 +160,19 @@ function isExternalHref(href: string): boolean {
           v-if="useDefaultWordmark && brandLink"
           class="minerva-chrome-header__brand"
           to="/"
-          aria-label="Visit the main page"
+          :aria-label="t('chrome.visitMainPage')"
         >
           <img
             class="minerva-chrome-header__wordmark-img"
             :src="wordmarkResolved"
-            alt="Wikipedia"
+            :alt="t('chrome.wordmarkAlt')"
           />
         </RouterLink>
         <span v-else-if="useDefaultWordmark" class="minerva-chrome-header__brand">
           <img
             class="minerva-chrome-header__wordmark-img"
             :src="wordmarkResolved"
-            alt="Wikipedia"
+            :alt="t('chrome.wordmarkAlt')"
           />
         </span>
         <template v-else v-for="(item, index) in effectiveMiddle" :key="`middle-${index}`">
@@ -251,7 +257,7 @@ function isExternalHref(href: string): boolean {
       v-if="floatingHome"
       class="minerva-chrome-header__fab"
       size="large"
-      aria-label="Home"
+      :aria-label="t('chrome.home')"
       @click="emit('home')"
     >
       <CdxIcon :icon="cdxIconHome" />

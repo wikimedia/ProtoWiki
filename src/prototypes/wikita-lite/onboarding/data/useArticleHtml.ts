@@ -1,6 +1,7 @@
 import { onScopeDispose, ref, watch, type Ref } from 'vue'
 
 import { wikiHostFromLang, wikimediaApiFetchHeaders } from '@/config'
+import { getContentLang } from '@/lib/contentLang'
 
 /**
  * Minimal live-article body fetch for the read screen. Mirrors `ArticleLive`'s
@@ -22,7 +23,7 @@ export interface UseArticleHtml {
   error: Ref<string | null>
 }
 
-export function useArticleHtml(title: Ref<string>, lang = 'en'): UseArticleHtml {
+export function useArticleHtml(title: Ref<string>, lang = getContentLang()): UseArticleHtml {
   const html = ref<string | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)

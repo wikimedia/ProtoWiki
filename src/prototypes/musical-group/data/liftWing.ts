@@ -9,6 +9,7 @@ import {
   setCachedReferenceNeed,
   setCachedRevertRisk,
 } from './liftWingCache'
+import { getContentLang } from '@/lib/contentLang'
 
 const LIFT_WING_BASE = 'https://api.wikimedia.org/service/lw/inference/v1/models'
 
@@ -84,7 +85,7 @@ export async function predictGoodFaith(
 /** Reference-need score for a revision (0–1; higher = more citation follow-up needed). */
 export async function predictReferenceNeed(
   revId: number,
-  lang = 'en',
+  lang = getContentLang(),
   signal?: AbortSignal,
 ): Promise<number | undefined> {
   if (referenceNeedMemory.has(revId)) return referenceNeedMemory.get(revId)
@@ -144,7 +145,7 @@ export async function predictRevertRisk(
         method: 'POST',
         signal,
         headers: liftWingHeaders('musical-group-revertrisk'),
-        body: JSON.stringify({ rev_id: revId, lang: 'en' }),
+        body: JSON.stringify({ rev_id: revId, lang: getContentLang() }),
       },
     )
     if (!response.ok) {
@@ -194,7 +195,7 @@ export async function predictTone(
       body: JSON.stringify({
         instances: [
           {
-            lang: 'en',
+            lang: getContentLang(),
             check_type: 'tone',
             page_title: pageTitle,
             original_text: originalText,

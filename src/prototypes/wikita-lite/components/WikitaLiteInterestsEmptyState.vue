@@ -3,6 +3,8 @@ import { RouterLink } from 'vue-router'
 
 import { CdxButton } from '@wikimedia/codex'
 
+import { t } from '@/i18n'
+
 import { useWikitaLiteRoute } from '../composables/useWikitaLiteRoute'
 import { PERSONALIZATION_PAGE } from '../routes'
 
@@ -12,11 +14,11 @@ const { wikitaLiteRoute } = useWikitaLiteRoute()
 <template>
   <div class="wikita-lite-interests-empty">
     <p class="wikita-lite-interests-empty__body">
-      Add some interests to start getting suggestions.
+      {{ t('components.interestsEmpty') }}
     </p>
     <RouterLink v-slot="{ navigate }" :to="wikitaLiteRoute(PERSONALIZATION_PAGE)" custom>
       <CdxButton class="wikita-lite-interests-empty__cta" weight="normal" @click="navigate">
-        Add interests
+        {{ t('components.addInterests') }}
       </CdxButton>
     </RouterLink>
   </div>

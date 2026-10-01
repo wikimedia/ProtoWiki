@@ -8,7 +8,7 @@
     class="policy-popover"
     :open="visible"
     :anchor="anchor"
-    title="Username policy"
+    :title="t('createAccount.usernamePolicy')"
     use-close-button
     render-in-place
     @update:open="onPopoverOpenUpdate"
@@ -27,8 +27,8 @@
       >
         <div class="policy-sheet">
           <div class="policy-header">
-            <h2 class="policy-title">Username policy</h2>
-            <CdxButton weight="quiet" aria-label="Close" @click="$emit('close')">
+            <h2 class="policy-title">{{ t('createAccount.usernamePolicy') }}</h2>
+            <CdxButton weight="quiet" :aria-label="t('onboarding.close')" @click="$emit('close')">
               <CdxIcon :icon="cdxIconClose" />
             </CdxButton>
           </div>
@@ -45,6 +45,7 @@ import { computed, inject, type Ref } from 'vue'
 import { CdxButton, CdxIcon, CdxPopover } from '@wikimedia/codex'
 import { cdxIconClose } from '@wikimedia/codex-icons'
 
+import { t } from '@/i18n'
 import { globalSkin } from '@/theme'
 
 import UsernamePolicyBody from './UsernamePolicyBody.vue'

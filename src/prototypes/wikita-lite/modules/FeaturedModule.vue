@@ -14,6 +14,7 @@ import {
 import { MODULE_TITLES } from '../routes'
 import WikitaLiteCardSkeletons from '../components/WikitaLiteCardSkeletons.vue'
 import WikitaLiteSupportingRow from '../components/WikitaLiteSupportingRow.vue'
+import { MESSAGES, t } from '../i18n'
 
 interface Props {
   standalone?: boolean
@@ -61,12 +62,12 @@ const { cardClass } = useWikitaLiteCardListClasses()
 
 <template>
   <div class="featured-module">
-    <CdxProgressBar v-if="standalone && loading" inline aria-label="Loading featured" />
+    <CdxProgressBar v-if="standalone && loading" inline :aria-label="t('home.loadingFeatured')" />
 
     <template v-else-if="error">
       <div class="featured-module__error">
         <p>{{ error }}</p>
-        <CdxButton weight="quiet" @click="$emit('retry')">Try again</CdxButton>
+        <CdxButton weight="quiet" @click="$emit('retry')">{{ t('common.tryAgain') }}</CdxButton>
       </div>
     </template>
 
@@ -86,7 +87,11 @@ const { cardClass } = useWikitaLiteCardListClasses()
           </template>
           <template #supporting-text>
             <WikitaLiteSupportingRow :icon="cdxIconStar">
-              {{ MODULE_TITLES.articleOfTheDay }}
+              {{
+                featuredArticle.machineTranslated
+                  ? MESSAGES.machineTranslated
+                  : MODULE_TITLES.articleOfTheDay
+              }}
             </WikitaLiteSupportingRow>
           </template>
         </CdxCard>
@@ -99,7 +104,7 @@ const { cardClass } = useWikitaLiteCardListClasses()
       </div>
 
       <p v-else-if="standalone" class="featured-module__empty">
-        No featured article is available right now.
+        {{ MESSAGES.emptyFeatured }}
       </p>
     </template>
   </div>

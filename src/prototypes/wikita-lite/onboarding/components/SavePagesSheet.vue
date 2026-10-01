@@ -3,6 +3,8 @@ import { nextTick, ref, watch, type ComponentPublicInstance } from 'vue'
 
 import { CdxPopover } from '@wikimedia/codex'
 
+import { t } from '@/i18n'
+
 import type { OnboardingScreen } from '../data/useWikitaLiteOnboardingFlow'
 
 const open = defineModel<boolean>('open', { default: false })
@@ -19,12 +21,12 @@ const emit = defineEmits<{
 const pendingScreen = ref<OnboardingScreen | null>(null)
 
 const primaryAction = {
-  label: 'Create account',
+  label: t('onboarding.savePagesCreateAccount'),
   actionType: 'progressive' as const,
 }
 
 const defaultAction = {
-  label: 'Log in',
+  label: t('onboarding.savePagesLogIn'),
 }
 
 function queueNavigation(screen: OnboardingScreen): void {
@@ -61,7 +63,7 @@ watch(open, async (isOpen) => {
     class="save-pages-sheet mobile-wrapper__sheet-popover"
     use-bottom-sheet
     :anchor="props.anchor"
-    title="Save pages"
+    :title="t('onboarding.savePagesTitle')"
     :use-close-button="true"
     :primary-action="primaryAction"
     :default-action="defaultAction"
@@ -69,7 +71,7 @@ watch(open, async (isOpen) => {
     @primary="onCreateAccount"
     @default="onLogIn"
   >
-    Please log in or create an account to get started.
+    {{ t('onboarding.savePagesBody') }}
   </CdxPopover>
 </template>
 

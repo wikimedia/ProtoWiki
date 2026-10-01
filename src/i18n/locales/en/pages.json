@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"configureTitle": "Configure",
+	"dismissedModules": "Dismissed modules",
+	"restore": "Restore",
+	"done": "Done",
+	"useDefaultSettings": "Use my default settings",
+	"homeLayoutTitle": "Home layout",
+	"homeLayoutSubtitle": "Drag to rearrange sections",
+	"loadingArticle": "Loading article",
+	"articleLoadError": "Couldn't load this article: $1"
+}

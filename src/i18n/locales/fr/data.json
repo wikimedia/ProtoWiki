@@ -1,0 +1,24 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"layoutFurtherReading": "Lectures du jour",
+	"layoutSuggestedEdits": "Modifications suggérées",
+	"layoutMentor": "Votre mentor",
+	"layoutImpact": "Votre impact",
+	"layoutSaved": "Pages enregistrées",
+	"layoutTrending": "Tendances",
+	"layoutFeatured": "Lumière sur",
+	"layoutDidYouKnow": "Le saviez-vous ?",
+	"layoutRecentActivity": "Relire des modifications",
+	"layoutActiveDiscussions": "Discussions actives",
+	"yearsOld": "{{PLURAL:$1|$1 an|$1 ans}}",
+	"headerSearch": "Rechercher",
+	"headerNotifications": "Notifications",
+	"headerUserMenu": "Menu utilisateur",
+	"newList": "Nouvelle liste",
+	"translationLoadError": "Impossible de charger les suggestions de traduction.",
+	"editedPagesMissingUsername": "Saisissez un nom d'utilisateur",
+	"editedPagesUserNotFound": "Utilisateur « $1 » introuvable",
+	"editedPagesNoEdits": "L'utilisateur « $1 » n'a modifié aucun article récemment"
+}

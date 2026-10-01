@@ -3,7 +3,7 @@ import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 
 import { utcDayKey, utcDayParts } from './cacheKeys'
-import { EN_WIKI_HOST, enwikiArticleUrl } from './enwikiTitle'
+import { contentWikiHost, enwikiArticleUrl } from './enwikiTitle'
 import { fetchEnwikiFeaturedFeedDay, wikimediaFeedErrorMessage } from './fetchEnwikiFeaturedFeedDay'
 import {
   getCachedFeaturedTab,
@@ -12,6 +12,10 @@ import {
 import { fetchPageSummary, type PageSummary } from './pageSummary'
 import type { HomeBornOnThisDay, HomeDidYouKnow, HomeFeatured, HomeFeaturedTab } from './types'
 import { normalizeQid } from './wikidataApi'
+import { fetchMainPageFeatured, fetchMainPageHooks } from './fetchMainPageSection'
+import { wikiCapabilities } from './wikiCapabilities'
+import { getContentLang, isDefaultContentLang } from '@/lib/contentLang'
+import { mintTranslate } from '@/lib/mint'
 
 const MAX_DYK = 12
 const MAX_BIRTHS = 5
@@ -249,7 +253,7 @@ export async function fetchFeaturedTabContent(signal?: AbortSignal): Promise<Hom
   }
 
   const { mm, dd } = utcDayParts()
-  const birthsUrl = `https://${EN_WIKI_HOST}/api/rest_v1/feed/onthisday/births/${mm}/${dd}`
+  const birthsUrl = `https://${contentWikiHost()}/api/rest_v1/feed/onthisday/births/${mm}/${dd}`
 
   const [{ ok: featuredOk, json: featuredJson, status: featuredStatus }, birthsResponse] =
     await Promise.all([
@@ -261,7 +265,7 @@ export async function fetchFeaturedTabContent(signal?: AbortSignal): Promise<Hom
     ])
 
   if (!featuredOk) {
-    throw new Error(wikimediaFeedErrorMessage(featuredStatus, 'Featured content'))
+    throw new Error(wikimediaFeedErrorMessage(featuredStatus, 'featured'))
   }
 
   const featured = (featuredJson ?? {}) as FeaturedFeedResponse
@@ -269,22 +273,212 @@ export async function fetchFeaturedTabContent(signal?: AbortSignal): Promise<Hom
     ? ((await birthsResponse.json()) as BirthsFeedResponse)
     : {}
 
-  const [didYouKnow, bornOnThisDay] = await Promise.all([
-    parseDidYouKnow(featured.dyk, signal),
+  const [article, didYouKnow, bornOnThisDay] = await Promise.all([
+    resolveFeaturedArticle(featured.tfa, signal),
+    resolveDidYouKnow(featured.dyk, signal),
     parseBornOnThisDay(birthsJson.births, signal),
   ])
 
-  const value: HomeFeaturedTab = {
-    article: parseTfa(featured.tfa),
-    didYouKnow,
-    bornOnThisDay,
-  }
+  const value: HomeFeaturedTab = { article, didYouKnow, bornOnThisDay }
 
   sessionCached = { day: dayKey, value }
   if (isUsableFeaturedTab(value)) {
     setCachedFeaturedTab(dayKey, value)
   }
   return value
+}
+
+/*
+ * Wikis without `tfa` / `dyk` in the feed: the community's own main-page
+ * picks first, then (where enabled) English Wikipedia's, machine-translated.
+ */
+
+async function resolveFeaturedArticle(
+  tfa: FeedTfa | undefined,
+  signal?: AbortSignal,
+): Promise<HomeFeatured | undefined> {
+  const fromFeed = parseTfa(tfa)
+  if (fromFeed || isDefaultContentLang()) return fromFeed
+
+  const { featuredPage, mintFallback } = wikiCapabilities()
+  if (featuredPage) {
+    const native = await fetchMainPageFeatured(featuredPage, signal).catch(() => undefined)
+    if (native) {
+      const fields = await pageCardFields(native.title, signal)
+      return {
+        title: fields.title,
+        enwikiTitle: native.title,
+        description: fields.description ?? native.extract,
+        thumbnailUrl: fields.thumbnailUrl,
+        articleUrl: fields.articleUrl,
+        itemId: fields.itemId,
+      }
+    }
+  }
+
+  return mintFallback ? translatedEnglishFeatured(signal) : undefined
+}
+
+async function resolveDidYouKnow(
+  items: FeedDyk[] | undefined,
+  signal?: AbortSignal,
+): Promise<HomeDidYouKnow[]> {
+  if (items?.length || isDefaultContentLang()) return parseDidYouKnow(items, signal)
+
+  const { didYouKnowPage, mintFallback } = wikiCapabilities()
+  if (didYouKnowPage) {
+    const hooks = await fetchMainPageHooks(didYouKnowPage, signal).catch(() => [])
+    if (hooks.length) {
+      const results = await mapWithConcurrency(
+        hooks.slice(0, MAX_DYK),
+        SUMMARY_CONCURRENCY,
+        async (hook): Promise<HomeDidYouKnow> => {
+          if (!hook.title) return { text: hook.text, ...(hook.emphasis ? { emphasis: hook.emphasis } : {}) }
+          const fields = await pageCardFields(hook.title, signal)
+          return {
+            text: hook.text,
+            ...(hook.emphasis ? { emphasis: hook.emphasis } : {}),
+            enwikiTitle: hook.title,
+            title: fields.title,
+            thumbnailUrl: fields.thumbnailUrl,
+            articleUrl: fields.articleUrl,
+            itemId: fields.itemId,
+          }
+        },
+        signal,
+      )
+      return results
+    }
+  }
+
+  return mintFallback ? translatedEnglishDidYouKnow(signal) : []
+}
+
+const ENGLISH_WIKI_HOST = 'en.wikipedia.org'
+
+async function fetchEnglishFeaturedFeed(signal?: AbortSignal): Promise<FeaturedFeedResponse | null> {
+  const { yyyy, mm, dd } = utcDayParts()
+  const response = await fetchWikimedia(
+    `https://${ENGLISH_WIKI_HOST}/api/rest_v1/feed/featured/${yyyy}/${mm}/${dd}`,
+    { signal, headers: wikimediaApiFetchHeaders('wikita-lite-mint-source-feed') },
+  ).catch(() => null)
+  if (!response?.ok) return null
+  return (await response.json()) as FeaturedFeedResponse
+}
+
+/** English title → content-wiki title, via enwiki langlinks. Missing = no local article. */
+async function localTitlesFor(
+  englishTitles: string[],
+  signal?: AbortSignal,
+): Promise<Map<string, string>> {
+  const result = new Map<string, string>()
+  const unique = [...new Set(englishTitles.filter(Boolean))]
+  if (!unique.length) return result
+
+  const params = new URLSearchParams({
+    action: 'query',
+    prop: 'langlinks',
+    lllang: getContentLang(),
+    titles: unique.join('|'),
+    redirects: '1',
+    formatversion: '2',
+    format: 'json',
+    origin: '*',
+  })
+  const response = await fetchWikimedia(`https://${ENGLISH_WIKI_HOST}/w/api.php?${params}`, {
+    signal,
+    headers: wikimediaApiFetchHeaders('wikita-lite-mint-langlinks'),
+  }).catch(() => null)
+  if (!response?.ok) return result
+
+  const json = (await response.json()) as {
+    query?: {
+      normalized?: { from: string; to: string }[]
+      redirects?: { from: string; to: string }[]
+      pages?: { title: string; langlinks?: { title: string }[] }[]
+    }
+  }
+  const byEnglish = new Map<string, string>()
+  for (const page of json.query?.pages ?? []) {
+    const local = page.langlinks?.[0]?.title
+    if (local) byEnglish.set(page.title, local)
+  }
+  const resolve = (title: string) => {
+    let current = title
+    for (const step of [...(json.query?.normalized ?? []), ...(json.query?.redirects ?? [])]) {
+      if (step.from === current) current = step.to
+    }
+    return byEnglish.get(current)
+  }
+  for (const title of unique) {
+    const local = resolve(title)
+    if (local) result.set(title, local)
+  }
+  return result
+}
+
+async function translatedEnglishFeatured(signal?: AbortSignal): Promise<HomeFeatured | undefined> {
+  const english = parseTfa((await fetchEnglishFeaturedFeed(signal))?.tfa)
+  if (!english) return undefined
+
+  // A local article beats a translation of the English one.
+  const local = (await localTitlesFor([english.enwikiTitle], signal)).get(english.enwikiTitle)
+  if (local) {
+    const fields = await pageCardFields(local, signal)
+    return {
+      title: fields.title,
+      enwikiTitle: local,
+      description: fields.description ?? '',
+      thumbnailUrl: fields.thumbnailUrl,
+      articleUrl: fields.articleUrl,
+      itemId: fields.itemId ?? english.itemId,
+    }
+  }
+
+  const description = await mintTranslate({
+    from: 'en',
+    to: getContentLang(),
+    content: english.description,
+    signal,
+  })
+  return { ...english, ...(description ? { description, machineTranslated: true } : {}) }
+}
+
+async function translatedEnglishDidYouKnow(signal?: AbortSignal): Promise<HomeDidYouKnow[]> {
+  const items = (await fetchEnglishFeaturedFeed(signal))?.dyk?.slice(0, MAX_DYK) ?? []
+  const subjects = items.map((item) => dykPrimaryPageTitle(item)?.replace(/_/g, ' ') ?? '')
+  const localTitles = await localTitlesFor(subjects, signal)
+  const to = getContentLang()
+
+  const results = await mapWithConcurrency(
+    items.map((item, index) => ({ item, subject: subjects[index] })),
+    SUMMARY_CONCURRENCY,
+    async ({ item, subject }): Promise<HomeDidYouKnow | null> => {
+      // "... that X" reads as a fragment once translated; send the claim alone.
+      const source = item.text?.trim().replace(/^(?:\.\.\.|…)\s*(?:that\s+)?/i, '')
+      if (!source) return null
+      const text = await mintTranslate({ from: 'en', to, content: source, signal })
+      if (!text) return null
+
+      const local = localTitles.get(subject)
+      const fields = local ? await pageCardFields(local, signal) : undefined
+      return {
+        text,
+        machineTranslated: true,
+        ...(fields
+          ? {
+              enwikiTitle: local,
+              title: fields.title,
+              thumbnailUrl: fields.thumbnailUrl,
+              articleUrl: fields.articleUrl,
+              itemId: fields.itemId,
+            }
+          : {}),
+      }
+    },
+    signal,
+  )
+  return results.filter((entry): entry is HomeDidYouKnow => entry !== null)
 }
 
 /** Today's featured article only — convenience wrapper. */

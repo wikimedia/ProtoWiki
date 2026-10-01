@@ -1,5 +1,6 @@
 import { normalizeLang, wikiHostFromLang, wikimediaApiFetchHeaders } from '@/config'
 import { normalizeEnwikiTitle } from './enwikiTitle'
+import { getContentLang } from '@/lib/contentLang'
 
 export interface MorelikeSuggestionHit {
   title: string
@@ -43,7 +44,7 @@ async function fetchGeneratorPages(
   purpose: string,
   signal?: AbortSignal,
 ): Promise<GeneratorPage[]> {
-  const lang = normalizeLang('en')
+  const lang = normalizeLang(getContentLang())
   const wikiHost = wikiHostFromLang(lang)
   const response = await fetch(`https://${wikiHost}/w/api.php?${params.toString()}`, {
     signal,

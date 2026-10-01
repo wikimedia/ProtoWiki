@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"mentorDescription": "Learn module: body of the mentor card.",
+	"mentorLastActive": "Learn module mentor card: when the mentor was last active. $1 = number of hours. Subject is the mentor.",
+	"guideTitle": "Learn module: title of the card linking to the editing guide.",
+	"guideDescription": "Learn module: description of the editing guide card.",
+	"guideSupportingText": "Learn module: content-type label on the editing guide card.",
+	"videoTitle": "Learn module: title of the Wikiminute video card.",
+	"videoDescription": "Learn module: description of the Wikiminute video card.",
+	"videoSupportingText": "Learn module: content-type label on the video card. \"Wikiminute\" is the name of a video series.",
+	"videoMediaAlt": "Alt text of the Wikiminute video thumbnail in the Learn module."
+}

@@ -3,6 +3,8 @@ import { useId } from 'vue'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconClose } from '@wikimedia/codex-icons'
 
+import { t } from '@/i18n'
+
 withDefaults(
   defineProps<{
     title: string
@@ -17,7 +19,7 @@ withDefaults(
     overlay?: boolean
   }>(),
   {
-    doneLabel: 'Done',
+    doneLabel: () => t('onboarding.done'),
     overlay: true,
   },
 )
@@ -43,7 +45,7 @@ const titleId = useId()
       <CdxButton
         weight="quiet"
         :icon-only="true"
-        aria-label="Close"
+        :aria-label="t('onboarding.close')"
         class="dialog-shell__close"
         @click="emit('close')"
       >

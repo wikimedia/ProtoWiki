@@ -17,12 +17,13 @@ import { cdxIconArrowPrevious } from '@wikimedia/codex-icons'
 
 import { articleOpener } from '@/components/article/shared/articleOpener'
 import { wikiArticleUrl } from '@/config'
+import { t } from '@/i18n'
 import TitleSearchResults from './TitleSearchResults.vue'
 import { fetchTitleSearchResults, type TitleSearchResult } from './titleSearch'
 import type { Theme } from '@/theme'
 
 interface Props {
-  /** Placeholder text inside the input. */
+  /** Placeholder text inside the input (default: "Search Wikipedia" in the UI language). */
   placeholder?: string
   /** Language code for the wiki searched (default `en`). */
   lang?: string
@@ -35,7 +36,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placeholder: 'Search Wikipedia',
+  placeholder: undefined,
   lang: 'en',
   limit: 6,
   clientTag: 'mobile-search',
@@ -46,6 +47,8 @@ const emit = defineEmits<{
   /** The back button, Escape, or a pick that opened in place closed the overlay. */
   close: []
 }>()
+
+const placeholderText = computed(() => props.placeholder ?? t('search.placeholder'))
 
 const query = ref('')
 const results = ref<TitleSearchResult[]>([])
@@ -162,7 +165,7 @@ onBeforeUnmount(() => {
     data-skin="mobile"
     :data-theme="props.theme"
     role="dialog"
-    aria-label="Search Wikipedia"
+    :aria-label="t('search.dialogLabel')"
     @keydown="onKeydown"
   >
     <div class="mobile-search__bar">
@@ -170,7 +173,7 @@ onBeforeUnmount(() => {
         class="mobile-search__back"
         weight="quiet"
         size="large"
-        aria-label="Close search"
+        :aria-label="t('search.close')"
         @click="emit('close')"
       >
         <CdxIcon :icon="cdxIconArrowPrevious" />
@@ -182,8 +185,8 @@ onBeforeUnmount(() => {
           v-model="query"
           class="mobile-search__input"
           input-type="search"
-          :placeholder="props.placeholder"
-          :aria-label="props.placeholder"
+          :placeholder="placeholderText"
+          :aria-label="placeholderText"
           clearable
           @input="onInput"
         />
@@ -191,7 +194,7 @@ onBeforeUnmount(() => {
 
       <!-- Overlays the bar's bottom edge so results don't shift while loading. -->
       <div v-if="loading" class="mobile-search__loading">
-        <CdxProgressBar inline aria-label="Loading search results" />
+        <CdxProgressBar inline :aria-label="t('search.loading')" />
       </div>
     </div>
 

@@ -2,6 +2,8 @@
 import { CdxButton, CdxIcon, CdxProgressBar } from '@wikimedia/codex'
 import { cdxIconReload } from '@wikimedia/codex-icons'
 
+import { t } from '@/i18n'
+
 import ImpactModule from '../wikita-lite/modules/ImpactModule.vue'
 import { useWikitaLiteImpact } from '../wikita-lite/composables/useWikitaLiteImpact'
 import MobileSubpageHeader from '../wikita-lite/components/MobileSubpageHeader.vue'
@@ -31,7 +33,7 @@ const {
         <CdxButton
           weight="quiet"
           :icon-only="true"
-          aria-label="Refresh impact data"
+          :aria-label="t('impact.refresh')"
           @click="onImpactRefresh"
         >
           <CdxIcon :icon="cdxIconReload" />
@@ -42,7 +44,7 @@ const {
       v-if="impactLoading && !impactHasContent"
       class="wikita-lite-impact-page__loading"
     >
-      <CdxProgressBar inline aria-label="Loading your impact" />
+      <CdxProgressBar inline :aria-label="t('impact.loadingYourImpact')" />
     </div>
     <ImpactModule v-if="impactHasContent" standalone v-bind="impactPageProps" />
   </WikitaLiteShell>

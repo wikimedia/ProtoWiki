@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { t } from '@/i18n'
+
 import { useWikitaLitePrototypeSplash } from '../composables/useWikitaLitePrototypeSplash'
 import WikitaLiteFullscreenDialogShell from './WikitaLiteFullscreenDialogShell.vue'
 
@@ -7,18 +9,18 @@ const { dismissSplash } = useWikitaLitePrototypeSplash()
 
 <template>
   <WikitaLiteFullscreenDialogShell
-    title="Home prototype"
-    :primary-action="{ label: 'Begin', actionType: 'progressive' }"
+    :title="t('components.splashTitle')"
+    :primary-action="{ label: t('components.splashBegin'), actionType: 'progressive' }"
     @primary="dismissSplash"
     @close="dismissSplash"
   >
-    <p>This is an experimental prototype. Nothing you enter here is saved or stored.</p>
-    <p>To try it out:</p>
+    <p>{{ t('components.splashIntro') }}</p>
+    <p>{{ t('components.splashHowTo') }}</p>
     <ol>
-      <li>Navigate to an article that interests you.</li>
-      <li>Create an account from that page.</li>
-      <li>Answer the onboarding questions to get a personalized Home.</li>
+      <li>{{ t('components.splashStep1') }}</li>
+      <li>{{ t('components.splashStep2') }}</li>
+      <li>{{ t('components.splashStep3') }}</li>
     </ol>
-    <p>Thanks for helping us to test this.</p>
+    <p>{{ t('components.splashThanks') }}</p>
   </WikitaLiteFullscreenDialogShell>
 </template>

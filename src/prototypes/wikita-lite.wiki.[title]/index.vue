@@ -7,6 +7,7 @@ import ArticleHeader from '@/components/article/ArticleHeader.vue'
 import ArticleRenderer from '@/components/article/ArticleRenderer.vue'
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 import MobileWrapper from '@/components/MobileWrapper.vue'
+import { t } from '@/i18n'
 import { globalSkin } from '@/theme'
 
 import WikitaLiteChromeHeader from '../wikita-lite/components/WikitaLiteChromeHeader.vue'
@@ -71,10 +72,10 @@ function onArticleLinkClick(event: MouseEvent): void {
         <article class="wikita-lite-article__body" :data-skin="globalSkin">
           <ArticleHeader :title="title" bookmark-affordance="bookmark" />
 
-          <CdxProgressBar v-if="loading" inline aria-label="Loading article" />
+          <CdxProgressBar v-if="loading" inline :aria-label="t('pages.loadingArticle')" />
 
           <CdxMessage v-if="error" type="error" :allow-user-dismiss="false">
-            Couldn't load this article: {{ error }}
+            {{ t('pages.articleLoadError', error) }}
           </CdxMessage>
 
           <ArticleRenderer v-if="html !== null" @click="onArticleLinkClick">

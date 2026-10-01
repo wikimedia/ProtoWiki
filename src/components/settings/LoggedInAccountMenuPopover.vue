@@ -9,6 +9,8 @@ import {
   cdxIconWatchlist,
 } from '@wikimedia/codex-icons'
 
+import { t } from '@/i18n'
+
 const props = defineProps<{ username: string }>()
 
 const emit = defineEmits<{ 'go-home': [] }>()
@@ -20,9 +22,9 @@ const selected = ref<MenuItemValue | null>(null)
 
 const menuItems = computed<MenuItemData[]>(() => [
   { value: 'home', label: props.username || '$Username', icon: cdxIconUserAvatar },
-  { value: 'watchlist', label: 'Watchlist', icon: cdxIconWatchlist },
-  { value: 'contributors', label: 'Contributors', icon: cdxIconUserContributions },
-  { value: 'log-out', label: 'Log out', icon: cdxIconLogOut },
+  { value: 'watchlist', label: t('chrome.watchlist'), icon: cdxIconWatchlist },
+  { value: 'contributors', label: t('chrome.contributors'), icon: cdxIconUserContributions },
+  { value: 'log-out', label: t('chrome.logOut'), icon: cdxIconLogOut },
 ])
 
 function toggle(): void {

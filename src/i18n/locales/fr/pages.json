@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"configureTitle": "Configurer",
+	"dismissedModules": "Modules masqués",
+	"restore": "Rétablir",
+	"done": "Terminé",
+	"useDefaultSettings": "Utiliser mes paramètres par défaut",
+	"homeLayoutTitle": "Disposition de l'accueil",
+	"homeLayoutSubtitle": "Faites glisser les sections pour les réorganiser",
+	"loadingArticle": "Chargement de l'article",
+	"articleLoadError": "Impossible de charger cet article : $1"
+}

@@ -5,6 +5,8 @@ import { CdxIcon, CdxMenuButton } from '@wikimedia/codex'
 import type { ButtonSize, MenuItemValue } from '@wikimedia/codex'
 import { cdxIconMenu } from '@wikimedia/codex-icons'
 
+import { t } from '@/i18n'
+
 interface Props {
   size?: ButtonSize
 }
@@ -15,7 +17,7 @@ withDefaults(defineProps<Props>(), {
 
 const menuSelected = ref<MenuItemValue | null>(null)
 
-const menuItems = [{ value: 'clear-local-storage', label: 'Clear local storage' }]
+const menuItems = [{ value: 'clear-local-storage', label: t('chrome.clearLocalStorage') }]
 
 function clearLocalStorage(): void {
   if (typeof window === 'undefined') return
@@ -44,7 +46,7 @@ watch(menuSelected, (value) => {
     :menu-items="menuItems"
     weight="quiet"
     :size="size"
-    aria-label="Main menu"
+    :aria-label="t('chrome.mainMenu')"
   >
     <CdxIcon :icon="cdxIconMenu" />
   </CdxMenuButton>

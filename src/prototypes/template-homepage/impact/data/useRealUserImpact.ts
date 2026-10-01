@@ -1,6 +1,7 @@
 import { computed, ref, watch, type ComputedRef, type Ref } from 'vue'
 
 import { normalizeLang, normalizeWikiUsername } from '@/config'
+import { t } from '@/i18n'
 import { getCachedImpact, setCachedImpact } from './impactCache'
 import { FetchUserImpactError, fetchUserImpact } from './fetchUserImpact'
 import { EMPTY_IMPACT_DATA, type ImpactData } from './impactTypes'
@@ -78,13 +79,22 @@ export function useRealUserImpact(
 
   const hasRenderableData = computed(() => impactHasRenderableData(impactData.value))
 
-  const impactProps = computed(() => impactData.value)
+  /*
+   * Cached entries keep the labels of the language they were fetched in. The
+   * views label is a fixed message, so it can follow the interface language;
+   * relative times, streaks and dates update on the next refresh.
+   */
+  const impactProps = computed(() =>
+    impactData.value.viewLabel
+      ? { ...impactData.value, viewLabel: t('impact.viewLabelViews') }
+      : impactData.value,
+  )
 
   async function refresh(): Promise<void> {
     const name = normalizedUsername.value
     const wiki = normalizedWiki.value
     if (!name.length) {
-      error.value = 'Enter a Wikipedia username in the user menu'
+      error.value = t('impact.errorEnterUsername')
       return
     }
 
@@ -117,7 +127,7 @@ export function useRealUserImpact(
           ? err.message
           : err instanceof Error
             ? err.message
-            : 'Failed to fetch impact data'
+            : t('impact.errorFetchFailed')
       error.value = message
     } finally {
       loading.value = false

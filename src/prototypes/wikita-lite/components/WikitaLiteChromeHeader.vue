@@ -11,6 +11,8 @@ import { useWikitaLiteChromeHeaderRight } from '../composables/useWikitaLiteChro
 import { useWikitaLiteUrlState } from '../composables/useWikitaLiteUrlState'
 import { useWikitaLiteView } from '../composables/useWikitaLiteView'
 import WikitaLitePrototypeMenuPopover from './WikitaLitePrototypeMenuPopover.vue'
+import { MESSAGES, t } from '../i18n'
+import { getContentLang } from '@/lib/contentLang'
 
 /**
  * Chrome for the logged-in side of the prototype — Home and the article pages
@@ -38,6 +40,7 @@ const LOGGED_IN_NAV_TOOLS: ChromeNavTool[] = [
 ]
 
 const { state } = useWikitaLiteUrlState()
+const contentLang = getContentLang()
 const { goHome } = useWikitaLiteView()
 
 // Search in this header opens its results in the prototype, still logged in.
@@ -61,7 +64,7 @@ const { headerRight } = useWikitaLiteChromeHeaderRight({
   search: {
     type: 'button',
     icon: 'search',
-    label: 'Search',
+    label: t('components.search'),
     onClick: () => (searchOpen.value = true),
   },
   userMenu,
@@ -82,5 +85,10 @@ const { headerRight } = useWikitaLiteChromeHeaderRight({
     </template>
   </ChromeHeader>
 
-  <MobileSearchOverlay v-if="searchOpen" @close="searchOpen = false" />
+  <MobileSearchOverlay
+    v-if="searchOpen"
+    :lang="contentLang"
+    :placeholder="MESSAGES.searchPlaceholder"
+    @close="searchOpen = false"
+  />
 </template>

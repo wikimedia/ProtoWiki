@@ -1,7 +1,7 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 
-import { EN_WIKI_HOST } from './enwikiTitle'
+import { contentWikiHost } from './enwikiTitle'
 import {
   getCachedPageSummary,
   getPageSummaryInFlight,
@@ -28,7 +28,7 @@ async function fetchPageSummaryFromNetwork(
 ): Promise<PageSummary | null> {
   const slug = encodeURIComponent(title.replace(/ /g, '_'))
   const response = await fetchWikimedia(
-    `https://${EN_WIKI_HOST}/api/rest_v1/page/summary/${slug}`,
+    `https://${contentWikiHost()}/api/rest_v1/page/summary/${slug}`,
     {
       signal,
       headers: wikimediaApiFetchHeaders(purpose),

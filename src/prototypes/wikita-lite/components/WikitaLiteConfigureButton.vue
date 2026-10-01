@@ -2,6 +2,8 @@
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconConfigure } from '@wikimedia/codex-icons'
 
+import { t } from '@/i18n'
+
 import { useWikitaLiteRoute } from '../composables/useWikitaLiteRoute'
 import type { WikitaLiteUrlStatePatch } from '../data/urlStateSchema'
 import {
@@ -16,7 +18,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  label: 'Home layout',
+  label: () => t('components.homeLayout'),
   to: CONFIGURE_HOME_PAGE,
 })
 

@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+import { formatCompactNumber, usesLocalizedFormat } from '@/lib/contentFormat'
 import type { ImpactData } from '../../template-homepage/impact/data/impactTypes'
 
 import { WIKITA_LITE_IMPACT } from './impactFixtures'
@@ -22,6 +24,7 @@ function seededRandom(seed: string): () => number {
 }
 
 function formatViewCount(total: number): string {
+  if (usesLocalizedFormat()) return formatCompactNumber(total)
   if (total >= 1_000_000) return `${(total / 1_000_000).toFixed(1)}M`
   if (total >= 1000) return `${(total / 1000).toFixed(1)}k`
   return total.toLocaleString()
@@ -56,6 +59,8 @@ export function withFictionalImpactFallbacks(data: ImpactData, username: string)
     ...(isMissing(data.editsReviewed)
       ? { editsReviewed: Math.round(edits * (0.05 + random() * 0.3)) }
       : {}),
-    ...(isMissing(data.longestStreak) ? { longestStreak: `${between(2, 21)} days` } : {}),
+    ...(isMissing(data.longestStreak)
+      ? { longestStreak: t('impact.streakDays', between(2, 21)) }
+      : {}),
   }
 }

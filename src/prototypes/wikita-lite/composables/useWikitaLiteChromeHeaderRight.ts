@@ -2,25 +2,32 @@ import { computed, type Component, type ComputedRef, type MaybeRefOrGetter, toVa
 
 import type { HeaderButtonItem, HeaderItem } from '@/components/header/headerItems'
 import { useConfig } from '@/composables/useConfig'
+import { t } from '@/i18n'
 
 import WikitaLiteAccountMenuButton from '../components/WikitaLiteAccountMenuButton.vue'
 
 const DEFAULT_SEARCH: HeaderButtonItem = {
   type: 'button',
   icon: 'search',
-  label: 'Search',
+  get label() {
+    return t('data.headerSearch')
+  },
 }
 
 const DEFAULT_BELL: HeaderButtonItem = {
   type: 'button',
   icon: 'bell-outline',
-  label: 'Notifications',
+  get label() {
+    return t('data.headerNotifications')
+  },
 }
 
 const DEFAULT_USER: HeaderButtonItem = {
   type: 'button',
   icon: 'user-avatar-outline',
-  label: 'User menu',
+  get label() {
+    return t('data.headerUserMenu')
+  },
 }
 
 export function useWikitaLiteChromeHeaderRight(options?: {

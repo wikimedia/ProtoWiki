@@ -2,13 +2,15 @@
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconClose } from '@wikimedia/codex-icons'
 
+import { t } from '@/i18n'
+
 interface Props {
   title: string
   closeLabel?: string
 }
 
 withDefaults(defineProps<Props>(), {
-  closeLabel: 'Close',
+  closeLabel: () => t('common.close'),
 })
 
 const emit = defineEmits<{
