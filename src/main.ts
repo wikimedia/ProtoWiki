@@ -4,18 +4,25 @@ import { handleHotUpdate, routes } from 'vue-router/auto-routes'
 
 import App from './App.vue'
 
+// Both Codex builds are bundled; vite.config.ts scopes each to its `<html dir>`
+// (zero specificity), so LTR pages get exactly the LTR rules they always had.
 import '@wikimedia/codex/dist/codex.style.css'
+import '@wikimedia/codex/dist/codex.style-rtl.css'
 import './styles/global.css'
 import './styles/menu-content-width.css'
 import './styles/wiki-skins/vector-2022.css'
 import './styles/wiki-skins/minerva.css'
+// arwiki snapshots (`npm run snapshot:wiki-skins -- --rtl`), scoped to `<html dir="rtl">`.
+import './styles/wiki-skins/vector-2022.rtl.css'
+import './styles/wiki-skins/minerva.rtl.css'
 import './styles/wiki-skins/mobile-wiki-overrides.css'
 import './styles/dark.css'
 
 import { initTheming } from './theme'
 import { initAppPlatform } from './app-platform'
 import { loadConfig } from './config'
-import { codexI18n, getUiLang } from './i18n'
+import { codexI18n } from './i18n'
+import { applyDocumentDirection } from './i18n/direction'
 
 import '@/composables/useConfig'
 
@@ -80,8 +87,8 @@ router.onError((error, to) => {
 
 router.afterEach(() => {
   sessionStorage.removeItem(CHUNK_RELOAD_KEY)
-  // `?uselang=` / `?lang=` (see `@/i18n`); `dir` waits for the RTL pass.
-  document.documentElement.lang = getUiLang()
+  // `?uselang=` / `?lang=` (see `@/i18n`).
+  applyDocumentDirection()
 })
 
 syncGithubPagesPreviewRoute(router)
@@ -89,5 +96,8 @@ syncGithubPagesPreviewRoute(router)
 if (import.meta.hot) {
   handleHotUpdate(router)
 }
+
+// Before mount: CdxIcon reads the direction once, when it mounts.
+applyDocumentDirection()
 
 createApp(App).use(router).provide('CdxI18nFunction', codexI18n).mount('#app')

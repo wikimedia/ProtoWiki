@@ -46,7 +46,7 @@ const usernamePolicyUrl = capabilityPageUrl(wikiCapabilities().usernamePolicyPag
 
 .policy-list {
   margin: 0;
-  padding-left: var(--spacing-200);
+  padding-inline-start: var(--spacing-200);
   line-height: var(--line-height-medium);
   color: var(--color-base);
 }

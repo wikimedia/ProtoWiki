@@ -31,3 +31,44 @@ export function wikipediaWordmarkSrc(lang = getUiLang()): string {
 export function wikipediaTaglineSrc(lang = getUiLang()): string {
   return localizedFile('tagline', lang) ?? TAGLINE_EN
 }
+
+export interface LogoSize {
+  width: number
+  height: number
+}
+
+/**
+ * Each wiki's own rendered logo sizes (px at a 16px root), from its
+ * `mw-logo-wordmark` / `mw-logo-tagline` styles. English is the reference:
+ * components size the English images by height, so a language only needs an
+ * entry when its artwork has different proportions. arwiki: wordmark 7em ×
+ * 2.4375em, tagline 6.5625em × 1.375em — taller than enwiki's 8.75em × 1.375em
+ * and 8.75em × 0.6875em, so at the English height it renders tiny.
+ */
+const EN_WORDMARK_HEIGHT = 22
+
+const LOGO_SIZES: Record<string, { wordmark: LogoSize; tagline: LogoSize }> = {
+  ar: {
+    wordmark: { width: 112, height: 39 },
+    tagline: { width: 105, height: 22 },
+  },
+}
+
+/**
+ * Inline size for a wordmark / tagline image, or `undefined` to keep the
+ * component's English sizing. `enWordmarkHeight` is the height the component
+ * gives the English wordmark; the wiki's sizes are scaled by the same ratio.
+ */
+export function wikipediaLogoStyle(
+  kind: 'wordmark' | 'tagline',
+  enWordmarkHeight: number,
+  lang = getUiLang(),
+): { width: string; height: string } | undefined {
+  const size = LOGO_SIZES[lang]?.[kind]
+  if (!size) return undefined
+  const scale = enWordmarkHeight / EN_WORDMARK_HEIGHT
+  return {
+    width: `${Math.round(size.width * scale)}px`,
+    height: `${Math.round(size.height * scale)}px`,
+  }
+}

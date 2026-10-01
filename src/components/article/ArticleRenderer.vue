@@ -239,7 +239,12 @@ onUpdated(() => {
       Parser RL (.mw-parser-output) ships from src/styles/wiki-skins/.
     -->
     <div ref="mwParserOutputRef" class="mw-parser-output">
-      <div :key="effectiveSkin" class="protowiki-parser-slot-root">
+      <!-- `mw-content-ltr|rtl` sits inside .mw-parser-output, where the skin CSS expects it. -->
+      <div
+        :key="effectiveSkin"
+        class="protowiki-parser-slot-root"
+        :class="props.dir ? `mw-content-${props.dir}` : undefined"
+      >
         <slot />
       </div>
     </div>

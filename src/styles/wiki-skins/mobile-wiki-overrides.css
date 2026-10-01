@@ -218,3 +218,38 @@
 .article[data-skin='mobile'] .mw-parser-output {
   overflow-wrap: break-word;
 }
+
+/*
+ * RTL articles (arwiki skin snapshot): arwiki's mobile site CSS hides navboxes
+ * under `.ns-0`, a body class ProtoWiki doesn't render, and its `display: table`
+ * navboxes otherwise push the page wider than the phone. Match arwiki mobile.
+ */
+[data-skin='mobile'] .mw-parser-output .mw-content-rtl .navbox {
+  display: none;
+}
+
+/*
+ * arwiki articles still use legacy `div.thumb` multi-image templates with
+ * inline pixel widths (Parsoid figures on enwiki don't). On ar.m.wikipedia.org
+ * Minerva's `.content` rules shrink them to the column; ProtoWiki has no
+ * `.content` wrapper, so cap them here, and clip any remaining overflow so the
+ * page never scrolls sideways.
+ */
+[data-skin='mobile'] .mw-parser-output .mw-content-rtl {
+  overflow-x: clip;
+}
+
+[data-skin='mobile'] .mw-parser-output .mw-content-rtl .thumb,
+[data-skin='mobile'] .mw-parser-output .mw-content-rtl .thumbinner {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+[data-skin='mobile'] .mw-parser-output .mw-content-rtl .thumbinner {
+  width: auto !important;
+}
+
+[data-skin='mobile'] .mw-parser-output .mw-content-rtl .thumb img {
+  max-width: 100%;
+  height: auto;
+}

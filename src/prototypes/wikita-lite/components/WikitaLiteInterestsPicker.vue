@@ -249,15 +249,15 @@ function onSearchResultClick(payload: TypeaheadSearchEvent) {
 }
 
 .wikita-lite-interests__search :deep(.cdx-typeahead-search--show-thumbnail) {
-  margin-left: 0;
+  margin-inline-start: 0;
 }
 
 .wikita-lite-interests__search :deep(.cdx-typeahead-search--show-thumbnail .cdx-text-input__input) {
-  padding-left: 34px;
+  padding-inline-start: 34px;
 }
 
 .wikita-lite-interests__search :deep(.cdx-typeahead-search--show-thumbnail .cdx-text-input__start-icon) {
-  left: 9px;
+  inset-inline-start: 9px;
 }
 
 .wikita-lite-interests__scroll {

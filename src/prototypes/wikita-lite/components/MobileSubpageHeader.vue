@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
-import { cdxIconArrowNext } from '@wikimedia/codex-icons'
+import { cdxIconArrowPrevious } from '@wikimedia/codex-icons'
 
 import { t } from '@/i18n'
 
@@ -29,7 +29,7 @@ const { goBack } = useWikitaLiteSubpageBack()
       :aria-label="backLabel"
       @click="goBack"
     >
-      <CdxIcon :icon="cdxIconArrowNext" dir="rtl" />
+      <CdxIcon :icon="cdxIconArrowPrevious" />
     </CdxButton>
     <h1 class="mobile-subpage-header__title">{{ title }}</h1>
     <div class="mobile-subpage-header__actions">

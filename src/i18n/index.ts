@@ -1,5 +1,7 @@
 import { DEFAULT_CONTENT_LANG, getContentLang, parseContentLang } from '@/lib/contentLang'
 
+import { directionForLang } from './rtl'
+
 /**
  * Interface messages, MediaWiki-style. Catalogs live in
  * `src/i18n/locales/<lang>/<namespace>.json` (Banana format: flat keys, an
@@ -75,7 +77,7 @@ function resolvePlurals(message: string, lang: string, params: MessageParam[]): 
     if (!plain.length) return ''
     let rules = pluralRules.get(lang)
     if (!rules) {
-      rules = new Intl.PluralRules(lang)
+      rules = new Intl.PluralRules(intlLocale(lang))
       pluralRules.set(lang, rules)
     }
     const categories = PLURAL_ORDER.filter((category) =>
@@ -84,6 +86,24 @@ function resolvePlurals(message: string, lang: string, params: MessageParam[]): 
     const position = categories.indexOf(rules.select(Number.isFinite(count) ? count : 0))
     return plain[Math.min(Math.max(position, 0), plain.length - 1)]
   })
+}
+
+/**
+ * `Intl` locale for a UI language. Arabic Wikipedia writes Western digits
+ * ("29 سبتمبر 2026"), so pin them; `$n` params are inserted as Western digits too.
+ */
+export function intlLocale(lang = getUiLang()): string {
+  return lang === 'ar' ? 'ar-u-nu-latn' : lang
+}
+
+/**
+ * In RTL interfaces, isolate text params (usernames, titles) with FSI…PDI so
+ * Latin text doesn't reorder surrounding punctuation — MediaWiki's `bidi()`.
+ */
+function isolate(value: MessageParam, rtl: boolean): string {
+  const text = String(value)
+  if (!rtl || typeof value === 'number' || /^[\d\s.,%+-]*$/.test(text)) return text
+  return `\u2068${text}\u2069`
 }
 
 /** Interface message for `key` (`namespace.key`), with `$1`, `$2`… replaced by `params`. */
@@ -97,9 +117,10 @@ export function t(key: string, ...params: MessageParam[]): string {
     }
     return key
   }
+  const rtl = directionForLang(lang) === 'rtl'
   return resolvePlurals(message, lang, params).replace(/\$(\d+)/g, (match, index) => {
     const value = params[Number(index) - 1]
-    return value === undefined ? match : String(value)
+    return value === undefined ? match : isolate(value, rtl)
   })
 }
 

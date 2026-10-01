@@ -8,7 +8,7 @@ import MobileSearchOverlay from '@/components/search/MobileSearchOverlay.vue'
 import { resolveHeaderIcon } from '@/components/header/headerIcons'
 import type { HeaderItem } from '@/components/header/headerItems'
 import { t } from '@/i18n'
-import { wikipediaWordmarkSrc } from './wikipediaWordmark'
+import { wikipediaLogoStyle, wikipediaWordmarkSrc } from './wikipediaWordmark'
 import { globalTheme } from '@/theme'
 import type { Theme } from '@/theme'
 
@@ -73,6 +73,11 @@ const effectiveTheme = computed<Theme>(() => props.theme ?? globalTheme.value)
 
 const wordmarkResolved = computed(
   () => props.mobileWordmarkSrc ?? props.wordmarkSrc ?? wikipediaWordmarkSrc(),
+)
+
+/** Arabic artwork is taller; size it like arwiki does (CSS height is 21px for English). */
+const wordmarkStyle = computed(() =>
+  props.mobileWordmarkSrc ?? props.wordmarkSrc ? undefined : wikipediaLogoStyle('wordmark', 21),
 )
 
 function clampFlank(items: HeaderItem[], side: 'left' | 'right'): HeaderItem[] {
@@ -165,6 +170,7 @@ function isExternalHref(href: string): boolean {
           <img
             class="minerva-chrome-header__wordmark-img"
             :src="wordmarkResolved"
+            :style="wordmarkStyle"
             :alt="t('chrome.wordmarkAlt')"
           />
         </RouterLink>
@@ -172,6 +178,7 @@ function isExternalHref(href: string): boolean {
           <img
             class="minerva-chrome-header__wordmark-img"
             :src="wordmarkResolved"
+            :style="wordmarkStyle"
             :alt="t('chrome.wordmarkAlt')"
           />
         </span>
@@ -289,7 +296,9 @@ function isExternalHref(href: string): boolean {
   align-items: center;
   gap: var(--spacing-50, 8px);
   min-height: 3.375em;
-  padding: 0 var(--spacing-75, 12px) 0 var(--spacing-25, 4px);
+  padding-block: 0;
+  padding-inline-start: var(--spacing-25, 4px);
+  padding-inline-end: var(--spacing-75, 12px);
   background-color: var(--background-color-interactive, #eaecf0);
   box-shadow: inset 0 -1px 3px 0 rgba(0, 0, 0, 0.08);
 }

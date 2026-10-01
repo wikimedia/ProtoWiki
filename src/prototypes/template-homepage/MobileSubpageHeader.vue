@@ -2,7 +2,7 @@
 import type { RouteLocationRaw } from 'vue-router'
 import { RouterLink } from 'vue-router'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
-import { cdxIconArrowNext } from '@wikimedia/codex-icons'
+import { cdxIconArrowPrevious } from '@wikimedia/codex-icons'
 
 interface Props {
   /** Centered toolbar title (Minerva subpage pattern). */
@@ -32,7 +32,7 @@ withDefaults(defineProps<Props>(), {
       :aria-label="backLabel"
     >
       <CdxButton weight="quiet" :icon-only="true" tabindex="-1">
-        <CdxIcon :icon="cdxIconArrowNext" dir="rtl" />
+        <CdxIcon :icon="cdxIconArrowPrevious" />
       </CdxButton>
     </RouterLink>
     <h1 class="mobile-subpage-header__title">{{ title }}</h1>

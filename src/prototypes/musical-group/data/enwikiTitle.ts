@@ -13,6 +13,7 @@ const EN_WIKI_PREFIXES = ['File:', 'Category:', 'Help:', 'Wikipedia:', 'Template
 const LOCAL_NAMESPACE_PREFIXES: Record<string, string[]> = {
   fr: ['Fichier:', 'Catégorie:', 'Aide:', 'Wikipédia:', 'Modèle:', 'Portail:', 'Spécial:', 'Projet:'],
   es: ['Archivo:', 'Categoría:', 'Ayuda:', 'Plantilla:', 'Especial:', 'Anexo:', 'Wikiproyecto:', 'Usuario:'],
+  ar: ['ملف:', 'تصنيف:', 'مساعدة:', 'ويكيبيديا:', 'قالب:', 'بوابة:', 'خاص:', 'مستخدم:'],
 }
 
 function nonArticlePrefixes(): string[] {

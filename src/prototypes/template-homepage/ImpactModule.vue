@@ -12,7 +12,7 @@ import {
 } from '@wikimedia/codex-icons'
 
 import DashboardModule from '@/components/dashboard/DashboardModule.vue'
-import { getUiLang, messageParts, t } from '@/i18n'
+import { intlLocale, messageParts, t } from '@/i18n'
 import { usesLocalizedFormat } from '@/lib/contentFormat'
 
 const emit = defineEmits<{
@@ -80,7 +80,7 @@ const viewLabelText = computed(() => props.viewLabel ?? t('impact.viewLabelViews
 
 /** Article view count — the interface language's grouping outside English. */
 function formatViews(views: number): string {
-  return usesLocalizedFormat() ? views.toLocaleString(getUiLang()) : views.toLocaleString()
+  return usesLocalizedFormat() ? views.toLocaleString(intlLocale()) : views.toLocaleString()
 }
 
 const hasContent = computed(
@@ -474,7 +474,7 @@ const recentEditCount = computed(() =>
 }
 
 .impact-module__desktop-stat--border-left {
-  border-left: 1px solid var(--border-color-subtle, #a2a9b1);
+  border-inline-start: 1px solid var(--border-color-subtle, #a2a9b1);
 }
 
 .impact-module__desktop-stat--border-top {
@@ -603,6 +603,14 @@ const recentEditCount = computed(() =>
   flex-direction: column;
   flex: 1;
   min-width: 0;
+}
+
+/*
+ * Charts don't mirror (Codex bidirectionality): time runs left to right in
+ * every language, so the start/end date row stays under the bars it labels.
+ */
+.impact-module__activity-right:dir(rtl) {
+  direction: ltr;
 }
 
 .impact-module__activity-chart {

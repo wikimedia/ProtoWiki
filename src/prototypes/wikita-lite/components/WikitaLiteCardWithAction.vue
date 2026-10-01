@@ -198,7 +198,7 @@ function onActionClick(event: MouseEvent) {
 .wikita-lite-card-with-action__action {
   position: absolute;
   top: var(--spacing-50, 8px);
-  right: var(--spacing-50, 8px);
+  inset-inline-end: var(--spacing-50, 8px);
   z-index: 2;
   pointer-events: auto;
 }

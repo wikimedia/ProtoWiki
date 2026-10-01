@@ -103,8 +103,10 @@ const titleId = useId()
   align-items: center;
   gap: var(--spacing-50, 8px);
   box-sizing: border-box;
-  padding: calc(env(safe-area-inset-top, 0px) + var(--spacing-75, 12px)) var(--spacing-100, 16px)
-    var(--spacing-75, 12px) var(--spacing-50, 8px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + var(--spacing-75, 12px));
+  padding-bottom: var(--spacing-75, 12px);
+  padding-inline-start: var(--spacing-50, 8px);
+  padding-inline-end: var(--spacing-100, 16px);
   border-bottom: 1px solid var(--border-color-base, #a2a9b1);
 }
 

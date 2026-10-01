@@ -60,12 +60,15 @@ function onActivate(event: KeyboardEvent, value: SurveyChoice): void {
 }
 
 /** Radiogroup arrow-key navigation: move focus to the neighbour and select it,
- *  matching native radio behaviour (selection follows focus). */
+ *  matching native radio behaviour (selection follows focus). Left/Right follow
+ *  the reading direction, so in RTL ArrowLeft is "next". */
 function onArrows(event: KeyboardEvent): void {
   if (advancing.value) return
-  const forward = event.key === 'ArrowDown' || event.key === 'ArrowRight'
-  const back = event.key === 'ArrowUp' || event.key === 'ArrowLeft'
-  if (!forward && !back) return
+  const { key } = event
+  if (key !== 'ArrowDown' && key !== 'ArrowUp' && key !== 'ArrowLeft' && key !== 'ArrowRight') return
+  const target = event.currentTarget instanceof Element ? event.currentTarget : document.documentElement
+  const rtl = getComputedStyle(target).direction === 'rtl'
+  const forward = key === 'ArrowDown' || key === (rtl ? 'ArrowLeft' : 'ArrowRight')
   event.preventDefault()
 
   const delta = forward ? 1 : -1

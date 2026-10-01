@@ -1,6 +1,7 @@
 import { onScopeDispose, ref, watch, type Ref } from 'vue'
 
 import { wikiHostFromLang, wikimediaApiFetchHeaders } from '@/config'
+import { directionForLang, type TextDirection } from '@/i18n/direction'
 import { getContentLang } from '@/lib/contentLang'
 
 /**
@@ -10,21 +11,40 @@ import { getContentLang } from '@/lib/contentLang'
  * (which forwards the bookmark click `ArticleLive`/`ArticleWrapper` swallow).
  */
 
-const bodyCache = new Map<string, string>()
+interface ParsedArticle {
+  html: string
+  lang: string
+  dir: TextDirection
+}
 
-function extractParserOutput(raw: string): string {
-  const bodyMatch = raw.match(/<body[^>]*>([\s\S]*?)<\/body>/i)
-  return bodyMatch ? bodyMatch[1] : raw
+const bodyCache = new Map<string, ParsedArticle>()
+
+/** Parser body plus the `lang` / `dir` Parsoid puts on `<body>`. */
+function extractParserOutput(raw: string, fallbackLang: string): ParsedArticle {
+  const bodyMatch = raw.match(/<body([^>]*)>([\s\S]*?)<\/body>/i)
+  const attrs = bodyMatch?.[1] ?? ''
+  const lang = attrs.match(/\blang="([^"]+)"/i)?.[1] ?? fallbackLang
+  const dir = attrs.match(/\bdir="(ltr|rtl)"/i)?.[1] as TextDirection | undefined
+  return {
+    html: bodyMatch ? bodyMatch[2] : raw,
+    lang,
+    dir: dir ?? directionForLang(lang),
+  }
 }
 
 export interface UseArticleHtml {
   html: Ref<string | null>
+  /** Content language / direction for `ArticleRenderer` (`mw-content-rtl` on arwiki). */
+  lang: Ref<string>
+  dir: Ref<TextDirection>
   loading: Ref<boolean>
   error: Ref<string | null>
 }
 
 export function useArticleHtml(title: Ref<string>, lang = getContentLang()): UseArticleHtml {
   const html = ref<string | null>(null)
+  const articleLang = ref(lang)
+  const articleDir = ref<TextDirection>(directionForLang(lang))
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -49,7 +69,9 @@ export function useArticleHtml(title: Ref<string>, lang = getContentLang()): Use
 
     const cached = bodyCache.get(cacheKey)
     if (cached) {
-      html.value = cached
+      html.value = cached.html
+      articleLang.value = cached.lang
+      articleDir.value = cached.dir
       error.value = null
       loading.value = false
       return
@@ -69,10 +91,12 @@ export function useArticleHtml(title: Ref<string>, lang = getContentLang()): Use
       })
       if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`)
 
-      const body = extractParserOutput(await response.text())
+      const body = extractParserOutput(await response.text(), lang)
       bodyCache.set(cacheKey, body)
       if (controller.signal.aborted) return
-      html.value = body
+      articleLang.value = body.lang
+      articleDir.value = body.dir
+      html.value = body.html
     } catch (err) {
       if (controller.signal.aborted) return
       error.value = err instanceof Error ? err.message : String(err)
@@ -88,5 +112,5 @@ export function useArticleHtml(title: Ref<string>, lang = getContentLang()): Use
   watch(title, (value) => void load(value), { immediate: true })
   onScopeDispose(() => abortController?.abort())
 
-  return { html, loading, error }
+  return { html, lang: articleLang, dir: articleDir, loading, error }
 }

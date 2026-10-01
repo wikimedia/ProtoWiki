@@ -1,13 +1,16 @@
-/** Project namespace in any of the supported content wikis (`Wikipedia:`, `Wikipédia:`). */
-const WIKIPEDIA_PREFIX = /^Wikip[eé]dia:\s?/
+/** Project namespace in any of the supported content wikis (`Wikipedia:`, `Wikipédia:`, `ويكيبيديا:`). */
+const WIKIPEDIA_PREFIX = /^(?:Wikip[eé]dia|ويكيبيديا):\s?/
 
 /** Strip the Wikipedia namespace from a noticeboard page title. */
 export function stripWikipediaPrefix(title: string): string {
   return title.trim().replace(WIKIPEDIA_PREFIX, '')
 }
 
-/** eswiki Café sections: `Café/Archivo/Ayuda/Actual` → board `Café`, section `Ayuda`. */
-const ARCHIVE_SECTION = /^(.+?)\/Archivo\/([^/]+)\/Actual$/
+/**
+ * Sectioned noticeboards → board + section: eswiki `Café/Archivo/Ayuda/Actual`,
+ * arwiki `الميدان/تقنية`.
+ */
+const ARCHIVE_SECTION = /^(.+?)\/(?:Archivo\/)?([^/]+?)(?:\/Actual)?$/
 
 function capitalizeFirst(text: string): string {
   if (!text.length) return text

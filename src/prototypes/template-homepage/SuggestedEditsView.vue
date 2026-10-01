@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { CdxButton, CdxIcon, CdxSelect } from '@wikimedia/codex'
 import {
   cdxIconArrowNext,
+  cdxIconArrowPrevious,
   cdxIconChart,
   cdxIconEdit,
   cdxIconFunnel,
@@ -265,7 +266,7 @@ function onNavigate(delta: number): void {
         :disabled="!canGoPrev || refreshing"
         @click="onNavigate(-1)"
       >
-        <CdxIcon :icon="cdxIconArrowNext" dir="rtl" />
+        <CdxIcon :icon="cdxIconArrowPrevious" />
       </CdxButton>
 
       <a

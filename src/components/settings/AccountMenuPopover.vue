@@ -73,7 +73,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onDocumentPointe
   display: inline-flex;
 }
 
-/* The wrapper is the positioned + animated element (right-aligned under the
+/* The wrapper is the positioned + animated element (end-aligned under the
    trigger). CdxMenu renders in-flow inside it (position: static) so the
    open/close transform moves the whole panel as one, and the Transition classes
    land on this scoped element rather than the CdxMenu root (which doesn't carry
@@ -81,7 +81,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onDocumentPointe
 .account-menu-popover__menu {
   position: absolute;
   top: 100%;
-  right: 0;
+  inset-inline-end: 0;
   z-index: 100;
   margin-top: var(--spacing-25, 4px);
 }

@@ -11,7 +11,7 @@
  * - "Most viewed" rows: top 3 articles by those view counts (not merely the 3 most recent edits).
  */
 import { normalizeWikiUsername, wikimediaApiFetchHeaders, wikiHostFromLang } from '@/config'
-import { getUiLang, t } from '@/i18n'
+import { intlLocale, t } from '@/i18n'
 import {
   formatCompactNumber,
   formatShortDate as formatLocalizedShortDate,
@@ -103,7 +103,7 @@ function pageviewsArticleSlug(title: string): string {
 
 /** "il y a 3 jours" — the same buckets as the English labels, in the interface language. */
 function formatLocalizedRelativeTime(diffMs: number): string {
-  const rtf = new Intl.RelativeTimeFormat(getUiLang(), { numeric: 'auto' })
+  const rtf = new Intl.RelativeTimeFormat(intlLocale(), { numeric: 'auto' })
   const minutes = Math.floor(diffMs / (1000 * 60))
   const hours = Math.floor(diffMs / (1000 * 60 * 60))
   const days = Math.floor(diffMs / (1000 * 60 * 60 * 24))

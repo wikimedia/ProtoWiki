@@ -34,7 +34,7 @@ const saveSheetVisible = ref(false)
 const articleHeaderRef = ref<InstanceType<typeof ArticleHeader> | null>(null)
 const bookmarkAnchor = computed(() => articleHeaderRef.value?.bookmarkAnchor ?? null)
 
-const { html, loading, error } = useArticleHtml(effectiveTitle)
+const { html, lang: articleLang, dir: articleDir, loading, error } = useArticleHtml(effectiveTitle)
 
 // Search in the chrome above opens its results here rather than on the real wiki.
 useOnboardingArticleOpener(props.flow)
@@ -118,7 +118,12 @@ function onArticleLinkClick(event: MouseEvent): void {
           {{ t('onboarding.articleLoadError', error) }}
         </CdxMessage>
 
-        <ArticleRenderer v-if="html !== null" @click="onArticleLinkClick">
+        <ArticleRenderer
+          v-if="html !== null"
+          :lang="articleLang"
+          :dir="articleDir === 'rtl' ? 'rtl' : undefined"
+          @click="onArticleLinkClick"
+        >
           <!-- eslint-disable-next-line vue/no-v-html -->
           <div v-html="html" />
         </ArticleRenderer>

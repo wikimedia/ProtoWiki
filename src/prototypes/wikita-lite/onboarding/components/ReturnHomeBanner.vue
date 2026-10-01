@@ -32,7 +32,7 @@ const visible = computed(() => Boolean(props.flow.username.value) && !dismissed.
 
     <p class="return-home-banner__text">
       <template v-for="part in messageParts('onboarding.returnHome')" :key="String(part)">
-        <strong v-if="part === 1">{{ props.flow.username.value }}</strong>
+        <strong v-if="part === 1"><bdi>{{ props.flow.username.value }}</bdi></strong>
         <template v-else>{{ part }}</template>
       </template>
     </p>
@@ -72,8 +72,9 @@ const visible = computed(() => Boolean(props.flow.username.value) && !dismissed.
   gap: var(--spacing-50, 8px);
   box-sizing: border-box;
   width: 100%;
-  padding: var(--spacing-75, 12px) var(--spacing-100, 16px) var(--spacing-75, 12px)
-    var(--spacing-50, 8px);
+  padding-block: var(--spacing-75, 12px);
+  padding-inline-start: var(--spacing-50, 8px);
+  padding-inline-end: var(--spacing-100, 16px);
   border-bottom: var(--border-width-base, 1px) solid var(--border-color-subtle, #c8ccd1);
   background-color: var(--background-color-base, #fff);
 }
@@ -101,5 +102,10 @@ const visible = computed(() => Boolean(props.flow.username.value) && !dismissed.
   flex-shrink: 0;
   align-self: flex-start;
   margin-top: var(--spacing-25, 4px);
+}
+
+/* The arrow curves up toward the account menu, which sits top-left in RTL. */
+.return-home-banner__arrow:dir(rtl) {
+  transform: scaleX(-1);
 }
 </style>

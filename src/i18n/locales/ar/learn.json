@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"mentorDescription": "يمكن طرح أي سؤال حول التعديل على مرشدك.",
+	"mentorLastActive": "آخر نشاط قبل {{PLURAL:$1|أقل من ساعة|ساعة|ساعتين|$1 ساعات|$1 ساعة|$1 ساعة}}",
+	"guideTitle": "كيفية تعديل صفحة",
+	"guideDescription": "مقدمة إلى التعديل في ويكيبيديا.",
+	"guideSupportingText": "دليل",
+	"videoTitle": "ما الذي يميز ويكيبيديا عن منصات التواصل الاجتماعي الأخرى؟",
+	"videoDescription": "مقدمة إلى التعديل في ويكيبيديا.",
+	"videoSupportingText": "فيديو Wikiminute",
+	"videoMediaAlt": "صورة مصغّرة لفيديو Wikiminute: ما الذي يميز ويكيبيديا عن منصات التواصل الاجتماعي؟"
+}

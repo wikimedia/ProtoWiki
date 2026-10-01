@@ -6,6 +6,8 @@ import { defineConfig } from 'vite'
 import VueRouter from 'unplugin-vue-router/vite'
 import vue from '@vitejs/plugin-vue'
 
+import directionScope from './scripts/postcss-direction-scope.mjs'
+
 // GitHub Pages project sites need an absolute path prefix. Do not use './' here:
 // Vue Router's normalizeBase turns './' into '/.', so the current path never
 // matches your routes (blank app). CI sets PROTOWIKI_BASE from the repo name.
@@ -23,6 +25,22 @@ const ghPagesPreview404Script = readFileSync(
 
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? buildBase : '/',
+  css: {
+    postcss: {
+      plugins: [
+        // LTR and RTL builds of Codex and the wiki skins, each applying only
+        // under its `<html dir>` — see scripts/postcss-direction-scope.mjs.
+        directionScope({
+          files: [
+            { test: /@wikimedia\/codex\/dist\/codex\.style\.css$/, dir: 'ltr' },
+            { test: /@wikimedia\/codex\/dist\/codex\.style-rtl\.css$/, dir: 'rtl' },
+            { test: /\/src\/styles\/wiki-skins\/(vector-2022|minerva)\.css$/, dir: 'ltr' },
+            { test: /\/src\/styles\/wiki-skins\/(vector-2022|minerva)\.rtl\.css$/, dir: 'rtl' },
+          ],
+        }),
+      ],
+    },
+  },
   plugins: [
     // Plugin order matters: VueRouter must come before vue() so the routes
     // virtual module is generated first.

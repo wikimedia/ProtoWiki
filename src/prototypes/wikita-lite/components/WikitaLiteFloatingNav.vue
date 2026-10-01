@@ -31,7 +31,7 @@ const emit = defineEmits<{
 <style scoped>
 .wikita-lite-floating-nav {
   position: fixed;
-  right: var(--spacing-100);
+  inset-inline-end: var(--spacing-100);
   bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   z-index: 4;
   display: flex;
@@ -45,7 +45,7 @@ const emit = defineEmits<{
 /* Match MobileWrapper’s centred column (inherits --mobile-wrapper-max-width). */
 @media (min-width: 480px) {
   .wikita-lite-floating-nav {
-    right: calc(
+    inset-inline-end: calc(
       (100vw - var(--mobile-wrapper-max-width, 360px)) / 2 + var(--spacing-100)
     );
   }

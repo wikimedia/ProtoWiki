@@ -36,7 +36,7 @@ const title = computed(() => {
   return (value ?? '').replace(/_/g, ' ').trim()
 })
 
-const { html, loading, error } = useArticleHtml(title)
+const { html, lang: articleLang, dir: articleDir, loading, error } = useArticleHtml(title)
 
 watch(title, () => window.scrollTo(0, 0))
 
@@ -78,7 +78,12 @@ function onArticleLinkClick(event: MouseEvent): void {
             {{ t('pages.articleLoadError', error) }}
           </CdxMessage>
 
-          <ArticleRenderer v-if="html !== null" @click="onArticleLinkClick">
+          <ArticleRenderer
+            v-if="html !== null"
+            :lang="articleLang"
+            :dir="articleDir === 'rtl' ? 'rtl' : undefined"
+            @click="onArticleLinkClick"
+          >
             <!-- eslint-disable-next-line vue/no-v-html -->
             <div v-html="html" />
           </ArticleRenderer>

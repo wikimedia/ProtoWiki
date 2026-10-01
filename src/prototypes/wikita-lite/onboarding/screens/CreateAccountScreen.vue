@@ -115,7 +115,7 @@ async function onSubmit({ username, email }: { username: string; email: string }
  */
 .account__column :deep(.username-chips-container) {
   width: 100%;
-  margin-left: 0;
+  margin-inline-start: 0;
   padding-inline: 0;
 }
 

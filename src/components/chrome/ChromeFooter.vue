@@ -11,7 +11,7 @@ import {
 import { messageParts, t } from '@/i18n'
 import { globalSkin, globalTheme } from '@/theme'
 import type { Skin, Theme } from '@/theme'
-import { wikipediaWordmarkSrc } from './wikipediaWordmark'
+import { wikipediaLogoStyle, wikipediaWordmarkSrc } from './wikipediaWordmark'
 
 /** Mobile wordmark in the UI language — matches MinervaChromeHeader default wordmark. */
 const mobileWordmarkSrc = wikipediaWordmarkSrc()
@@ -184,6 +184,7 @@ const mobileFooterLinks = [
                 :src="mobileWordmarkSrc"
                 width="120"
                 height="18"
+                :style="wikipediaLogoStyle('wordmark', 18)"
                 :alt="t('chrome.wordmarkAlt')"
               />
             </div>
@@ -272,7 +273,7 @@ const mobileFooterLinks = [
 .chrome-footer__links li {
   display: inline-block;
   margin-block: 0;
-  margin-right: var(--spacing-50, 8px);
+  margin-inline-end: var(--spacing-50, 8px);
 }
 
 .chrome-footer__links a {
@@ -428,7 +429,7 @@ const mobileFooterLinks = [
 }
 
 .chrome-footer__links--mobile li {
-  margin-right: 0;
+  margin-inline-end: 0;
 }
 
 .chrome-footer__links--mobile li::after {

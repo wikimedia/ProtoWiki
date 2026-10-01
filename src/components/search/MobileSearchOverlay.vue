@@ -187,6 +187,7 @@ onBeforeUnmount(() => {
           input-type="search"
           :placeholder="placeholderText"
           :aria-label="placeholderText"
+          dir="auto"
           clearable
           @input="onInput"
         />
@@ -234,8 +235,9 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   align-items: center;
   gap: var(--spacing-50, 8px);
-  padding: var(--spacing-50, 8px) var(--spacing-50, 8px) var(--spacing-50, 8px)
-    var(--spacing-25, 4px);
+  padding-block: var(--spacing-50, 8px);
+  padding-inline-start: var(--spacing-25, 4px);
+  padding-inline-end: var(--spacing-50, 8px);
   background-color: var(--background-color-interactive, #eaecf0);
   box-shadow: inset 0 -1px 3px 0 rgba(0, 0, 0, 0.08);
 }
@@ -258,6 +260,16 @@ onBeforeUnmount(() => {
 
 .mobile-search__input {
   width: 100%;
+}
+
+/*
+ * `dir="auto"` (on the inner <input>) sets the direction from what's typed.
+ * Empty, some engines fall back to LTR rather than the page's direction, which
+ * would push an RTL placeholder to the wrong edge — keep the page's direction
+ * until there is text to detect.
+ */
+.mobile-search:dir(rtl) .mobile-search__input :deep(.cdx-text-input__input:placeholder-shown) {
+  direction: rtl;
 }
 
 .mobile-search__loading {

@@ -28,7 +28,7 @@ import { useConfig } from '@/composables/useConfig'
 import { t } from '@/i18n'
 import { createAccountOpener } from './createAccountOpener'
 import { DEFAULT_CHROME_NAV_TOOLS, type ChromeNavTool } from './headerNavTools'
-import { wikipediaTaglineSrc, wikipediaWordmarkSrc } from './wikipediaWordmark'
+import { wikipediaLogoStyle, wikipediaTaglineSrc, wikipediaWordmarkSrc } from './wikipediaWordmark'
 import { globalTheme } from '@/theme'
 import type { Theme } from '@/theme'
 import MobileSearchOverlay from '@/components/search/MobileSearchOverlay.vue'
@@ -168,6 +168,7 @@ function onCreateAccountClick(event: MouseEvent): void {
                 :src="desktopWordmarkSrc"
                 width="120"
                 height="18"
+                :style="props.wordmarkSrc ? undefined : wikipediaLogoStyle('wordmark', 22)"
                 :alt="t('chrome.wordmarkAlt')"
               />
               <img
@@ -175,6 +176,7 @@ function onCreateAccountClick(event: MouseEvent): void {
                 :src="desktopTaglineSrc"
                 width="120"
                 height="14"
+                :style="props.taglineSrc ? undefined : wikipediaLogoStyle('tagline', 22)"
                 alt=""
               />
             </span>
@@ -235,7 +237,7 @@ function onCreateAccountClick(event: MouseEvent): void {
             href="#"
             @click.prevent
           >
-            {{ trimmedUsername }}
+            <bdi>{{ trimmedUsername }}</bdi>
           </a>
         </slot>
         <slot v-if="!isLoggedOut" name="nav">
@@ -417,7 +419,10 @@ function onCreateAccountClick(event: MouseEvent): void {
 
 .vector-chrome-header__search-submit.cdx-button {
   align-self: stretch;
-  border-radius: 0 var(--border-radius-base, 2px) var(--border-radius-base, 2px) 0;
+  border-start-start-radius: 0;
+  border-start-end-radius: var(--border-radius-base, 2px);
+  border-end-end-radius: var(--border-radius-base, 2px);
+  border-end-start-radius: 0;
   margin-inline-start: -1px;
 }
 

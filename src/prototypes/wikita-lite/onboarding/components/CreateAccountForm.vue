@@ -62,6 +62,7 @@
                 v-bind="noInputAssistanceAttrs"
                 v-model="form.username"
                 input-type="text"
+                dir="auto"
                 :placeholder="t('createAccount.usernamePlaceholder')"
                 :autofocus="settings.fields.username.behaviors.autoFocus || undefined"
                 :end-icon="usernameEndIcon"
@@ -88,13 +89,13 @@
                           <template v-if="usernameMessage.takenSuggestion">
                             <template v-if="settings.fields.username.behaviors.showUsernameHelperTextChip || settings.fields.username.behaviors.showUsernameHelperTextChips">
                               <template v-for="part in messageParts('createAccount.tryUsername')" :key="String(part)">
-                                <CdxInfoChip v-if="part === 1" status="subtle" class="username-suggestion-chip" @mousedown.prevent @click="applySuggestedUsername(usernameMessage.takenSuggestion)">{{ usernameMessage.takenSuggestion }}</CdxInfoChip>
+                                <CdxInfoChip v-if="part === 1" status="subtle" class="username-suggestion-chip" @mousedown.prevent @click="applySuggestedUsername(usernameMessage.takenSuggestion)"><bdi>{{ usernameMessage.takenSuggestion }}</bdi></CdxInfoChip>
                                 <template v-else>{{ part }}</template>
                               </template>
                             </template>
                             <template v-else>
                               <template v-for="part in messageParts('createAccount.tryUsername')" :key="String(part)">
-                                <a v-if="part === 1" href="#" class="username-taken-suggestion" @mousedown.prevent @click.prevent="applySuggestedUsername(usernameMessage.takenSuggestion)">{{ usernameMessage.takenSuggestion }}</a>
+                                <a v-if="part === 1" href="#" class="username-taken-suggestion" @mousedown.prevent @click.prevent="applySuggestedUsername(usernameMessage.takenSuggestion)"><bdi>{{ usernameMessage.takenSuggestion }}</bdi></a>
                                 <template v-else>{{ part }}</template>
                               </template>
                             </template>
@@ -119,12 +120,12 @@
                               class="username-suggestion-chip"
                               @mousedown.prevent
                               @click="applySuggestedUsername(name)"
-                            >{{ name }}</CdxInfoChip>
+                            ><bdi>{{ name }}</bdi></CdxInfoChip>
                           </div>
                         </template>
                         <template v-else-if="settings.fields.username.behaviors.showUsernameHelperTextChip">
                           <template v-for="part in messageParts('createAccount.usernameSuggestion')" :key="String(part)">
-                            <CdxInfoChip v-if="part === 1" status="subtle" class="username-suggestion-chip" @mousedown.prevent @click="applySuggestedUsername(suggestedUsername)">{{ suggestedUsername }}</CdxInfoChip>
+                            <CdxInfoChip v-if="part === 1" status="subtle" class="username-suggestion-chip" @mousedown.prevent @click="applySuggestedUsername(suggestedUsername)"><bdi>{{ suggestedUsername }}</bdi></CdxInfoChip>
                             <template v-else>{{ part }}</template>
                           </template>
                           <CdxInfoChip
@@ -138,7 +139,7 @@
                         </template>
                         <template v-else>
                           <template v-for="part in messageParts('createAccount.usernameSuggestion')" :key="String(part)">
-                            <a v-if="part === 1" href="#" class="username-suggestion" @mousedown.prevent @click.prevent="applySuggestedUsername(suggestedUsername)">{{ suggestedUsername }}</a>
+                            <a v-if="part === 1" href="#" class="username-suggestion" @mousedown.prevent @click.prevent="applySuggestedUsername(suggestedUsername)"><bdi>{{ suggestedUsername }}</bdi></a>
                             <template v-else>{{ part }}</template>
                           </template>
                           <CdxInfoChip
@@ -173,12 +174,12 @@
                       class="username-suggestion-chip"
                       @mousedown.prevent
                       @click="applySuggestedUsername(name)"
-                    >{{ name }}</CdxInfoChip>
+                    ><bdi>{{ name }}</bdi></CdxInfoChip>
                   </div>
                 </template>
                 <template v-else-if="settings.fields.username.behaviors.showUsernameHelperTextChip">
                   <template v-for="part in messageParts('createAccount.usernameSuggestion')" :key="String(part)">
-                    <CdxInfoChip v-if="part === 1" status="subtle" class="username-suggestion-chip" @mousedown.prevent @click="applySuggestedUsername(suggestedUsername)">{{ suggestedUsername }}</CdxInfoChip>
+                    <CdxInfoChip v-if="part === 1" status="subtle" class="username-suggestion-chip" @mousedown.prevent @click="applySuggestedUsername(suggestedUsername)"><bdi>{{ suggestedUsername }}</bdi></CdxInfoChip>
                     <template v-else>{{ part }}</template>
                   </template>
                   <CdxInfoChip
@@ -192,7 +193,7 @@
                 </template>
                 <template v-else>
                   <template v-for="part in messageParts('createAccount.usernameSuggestion')" :key="String(part)">
-                    <a v-if="part === 1" href="#" class="username-suggestion" @mousedown.prevent @click.prevent="applySuggestedUsername(suggestedUsername)">{{ suggestedUsername }}</a>
+                    <a v-if="part === 1" href="#" class="username-suggestion" @mousedown.prevent @click.prevent="applySuggestedUsername(suggestedUsername)"><bdi>{{ suggestedUsername }}</bdi></a>
                     <template v-else>{{ part }}</template>
                   </template>
                   <CdxInfoChip
@@ -226,13 +227,13 @@
                   <template v-if="usernameMessage.takenSuggestion">
                     <template v-if="settings.fields.username.behaviors.showUsernameHelperTextChip || settings.fields.username.behaviors.showUsernameHelperTextChips">
                       <template v-for="part in messageParts('createAccount.tryUsername')" :key="String(part)">
-                        <CdxInfoChip v-if="part === 1" status="subtle" class="username-suggestion-chip" @mousedown.prevent @click="applySuggestedUsername(usernameMessage.takenSuggestion)">{{ usernameMessage.takenSuggestion }}</CdxInfoChip>
+                        <CdxInfoChip v-if="part === 1" status="subtle" class="username-suggestion-chip" @mousedown.prevent @click="applySuggestedUsername(usernameMessage.takenSuggestion)"><bdi>{{ usernameMessage.takenSuggestion }}</bdi></CdxInfoChip>
                         <template v-else>{{ part }}</template>
                       </template>
                     </template>
                     <template v-else>
                       <template v-for="part in messageParts('createAccount.tryUsername')" :key="String(part)">
-                        <a v-if="part === 1" href="#" class="username-taken-suggestion" @mousedown.prevent @click.prevent="applySuggestedUsername(usernameMessage.takenSuggestion)">{{ usernameMessage.takenSuggestion }}</a>
+                        <a v-if="part === 1" href="#" class="username-taken-suggestion" @mousedown.prevent @click.prevent="applySuggestedUsername(usernameMessage.takenSuggestion)"><bdi>{{ usernameMessage.takenSuggestion }}</bdi></a>
                         <template v-else>{{ part }}</template>
                       </template>
                     </template>
@@ -340,6 +341,7 @@
             v-bind="noInputAssistanceAttrs"
             v-model="form.email"
             input-type="email"
+            dir="auto"
             :placeholder="t('createAccount.emailPlaceholder')"
             @blur="validate('email', { onBlur: true })"
           />
@@ -1021,16 +1023,26 @@ function onFormSubmit() {
   display: none;
 }
 
+/*
+ * The username/email inputs take `dir="auto"` so the typed value sets its own
+ * direction. Empty, some engines fall back to LTR rather than the page's
+ * direction, which would push an RTL placeholder to the wrong edge — keep the
+ * page's direction until there is text to detect.
+ */
+.step-content:dir(rtl) :deep(.cdx-text-input__input[dir='auto']:placeholder-shown) {
+  direction: rtl;
+}
+
 .username-suggestion {
   color: var(--color-success);
   /* font-weight: var(--font-weight-bold); */
   text-decoration: var(--text-decoration-underline);
-  margin-right: 4px;
+  margin-inline-end: 4px;
 }
 
 .username-suggestion-chip {
   cursor: pointer;
-  margin-right: 4px;
+  margin-inline-end: 4px;
 }
 
 .username-chips-container {
@@ -1040,7 +1052,7 @@ function onFormSubmit() {
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   width: 100vw;
-  margin-left: calc(-1 * var(--spacing-100));
+  margin-inline-start: calc(-1 * var(--spacing-100));
   padding-inline: var(--spacing-100);
 }
 
@@ -1059,7 +1071,7 @@ function onFormSubmit() {
 }
 
 .username-chips-container > .username-reload-chip {
-  margin-right: 4px;
+  margin-inline-end: 4px;
 }
 
 .input-height-36 :deep(.cdx-text-input__input) {

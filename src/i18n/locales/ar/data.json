@@ -1,0 +1,21 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"layoutFurtherReading": "قراءات يومية",
+	"layoutSuggestedEdits": "تعديلات مقترحة",
+	"layoutMentor": "مرشدك",
+	"layoutImpact": "تأثيرك",
+	"layoutSaved": "الصفحات المحفوظة",
+	"layoutTrending": "الرائجة",
+	"layoutFeatured": "مقالة مختارة",
+	"layoutDidYouKnow": "هل تعلم…؟",
+	"layoutRecentActivity": "مراجعة التغييرات",
+	"layoutActiveDiscussions": "نقاشات نشطة",
+	"yearsOld": "{{PLURAL:$1|أقل من عام|عام واحد|عامان|$1 أعوام|$1 عامًا|$1 عام}}",
+	"newList": "قائمة جديدة",
+	"translationLoadError": "تعذّر تحميل اقتراحات الترجمة.",
+	"editedPagesMissingUsername": "يُرجى إدخال اسم مستخدم",
+	"editedPagesUserNotFound": "لم يُعثر على المستخدم «$1»",
+	"editedPagesNoEdits": "لا توجد تعديلات حديثة على المقالات للمستخدم «$1»"
+}

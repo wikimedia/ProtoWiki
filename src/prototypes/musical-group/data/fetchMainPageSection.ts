@@ -26,9 +26,12 @@ export interface MainPageHook {
 async function fetchParsedBody(page: string, signal?: AbortSignal): Promise<HTMLElement | null> {
   if (typeof DOMParser === 'undefined') return null
 
+  // `{{Template}}` = render a transclusion (for templates whose content is
+  // `<includeonly>`); anything else is a page title.
+  const source = page.startsWith('{{') ? { text: page, contentmodel: 'wikitext' } : { page }
   const url = wikiActionUrl({
     action: 'parse',
-    page,
+    ...source,
     prop: 'text',
     formatversion: '2',
     disableeditsection: '1',

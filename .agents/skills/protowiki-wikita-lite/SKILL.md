@@ -105,8 +105,8 @@ English (no param) behaves exactly as before.
   LiftWing caches use `langScopedStorageKey()`, so languages never share
   entries.
 - **Adding a language** — see `protowiki-i18n` (catalogs + `wikiCapabilities`
-  entry + namespace prefixes). Supported today: en, fr, es. RTL languages also
-  need the RTL pass, which hasn't been done yet.
+  entry + namespace prefixes). Supported today: en, fr, es, ar (right-to-left —
+  see `protowiki-i18n` for the direction rules).
 
 ## API identity
 

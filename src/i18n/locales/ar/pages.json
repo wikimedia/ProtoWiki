@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"configureTitle": "ضبط",
+	"dismissedModules": "الوحدات المُخفاة",
+	"restore": "استعادة",
+	"done": "تم",
+	"useDefaultSettings": "استخدام إعداداتي الافتراضية",
+	"homeLayoutTitle": "تخطيط الصفحة الرئيسة",
+	"homeLayoutSubtitle": "السحب لإعادة ترتيب الأقسام",
+	"loadingArticle": "جارٍ تحميل المقالة",
+	"articleLoadError": "تعذّر تحميل هذه المقالة: $1"
+}

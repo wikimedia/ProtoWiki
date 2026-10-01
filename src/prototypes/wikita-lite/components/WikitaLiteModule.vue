@@ -249,8 +249,6 @@ provide(WIKITA_LITE_CARD_SEPARATION, effectiveCardSeparation)
   position: absolute !important;
   top: 100% !important;
   bottom: auto !important;
-  left: auto !important;
-  right: 0 !important;
   inset-inline-start: auto !important;
   inset-inline-end: 0 !important;
   transform: none !important;

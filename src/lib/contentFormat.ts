@@ -1,4 +1,4 @@
-import { getUiLang } from '@/i18n'
+import { getUiLang, intlLocale } from '@/i18n'
 
 /**
  * Locale-aware labels in the interface language (`getUiLang()`). English
@@ -17,7 +17,7 @@ const DAY = 24 * HOUR
 
 /** "il y a 5 min" / "hier" for an elapsed duration in the interface language. */
 export function formatElapsed(diffMs: number, lang = getUiLang()): string {
-  const rtf = new Intl.RelativeTimeFormat(lang, { numeric: 'auto', style: 'short' })
+  const rtf = new Intl.RelativeTimeFormat(intlLocale(lang), { numeric: 'auto', style: 'short' })
   const elapsed = Math.max(0, diffMs)
   if (elapsed < MINUTE) return rtf.format(0, 'second')
   if (elapsed < HOUR) return rtf.format(-Math.floor(elapsed / MINUTE), 'minute')
@@ -28,10 +28,10 @@ export function formatElapsed(diffMs: number, lang = getUiLang()): string {
 
 /** "12,3 k" — compact count in the interface language. */
 export function formatCompactNumber(value: number, lang = getUiLang()): string {
-  return new Intl.NumberFormat(lang, { notation: 'compact', maximumFractionDigits: 1 }).format(value)
+  return new Intl.NumberFormat(intlLocale(lang), { notation: 'compact', maximumFractionDigits: 1 }).format(value)
 }
 
 /** "1 oct." — short UTC date in the interface language. */
 export function formatShortDate(date: Date, lang = getUiLang()): string {
-  return date.toLocaleDateString(lang, { month: 'short', day: 'numeric', timeZone: 'UTC' })
+  return date.toLocaleDateString(intlLocale(lang), { month: 'short', day: 'numeric', timeZone: 'UTC' })
 }

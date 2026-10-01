@@ -133,13 +133,13 @@ onBeforeUnmount(() => {
 -->
 <style>
 /*
- * CdxMenu places itself at `left: 0` and the full width of its container, so
- * both are replaced; `inset-inline-end` keeps it flush with the avatar and
- * mirrors to the left in RTL chrome.
+ * CdxMenu places itself at `left: 0` (`right: 0` in its RTL stylesheet) and
+ * the full width of its container, so both are replaced; `inset-inline-end`
+ * keeps it flush with the avatar and mirrors to the left in RTL chrome.
  */
 .minerva-user-menu__menu.cdx-menu {
   top: 100%;
-  left: auto;
+  inset-inline-start: auto;
   inset-inline-end: 0;
   width: max-content;
   min-width: 13rem;

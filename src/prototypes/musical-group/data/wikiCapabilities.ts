@@ -9,7 +9,11 @@ import { enwikiArticleUrl } from './enwikiTitle'
  * entry here (plus strings in `wikita-lite/i18n.ts`).
  */
 export interface WikiCapabilities {
-  /** Main-page subpage holding today's featured article, when the feed has no `tfa`. */
+  /**
+   * Main-page subpage holding today's featured article, when the feed has no
+   * `tfa` — or a `{{Template}}` transclusion when the template's content is
+   * include-only.
+   */
   featuredPage?: string
   /**
    * Alternative to `featuredPage` for wikis whose main-page summary doesn't
@@ -83,6 +87,23 @@ const CAPABILITIES: Record<string, WikiCapabilities> = {
     ],
     usernamePolicyPage: 'Wikipedia:Nombres de usuario',
     editingGuidePage: 'Ayuda:Introducción',
+  },
+  ar: {
+    // The feed carries `dyk` but no `tfa`; this template is the main page's
+    // featured article for today, and bolds a link to it.
+    featuredPage: '{{مقالة الصفحة الرئيسة المختارة/المقالة الحالية}}',
+    // Everything is native, and MinT's Arabic was the weakest in testing.
+    mintFallback: false,
+    // The Village pump (الميدان) sections with DiscussionTools activity.
+    discussionPages: [
+      'ويكيبيديا:الميدان/تقنية',
+      'ويكيبيديا:الميدان/سياسات',
+      'ويكيبيديا:الميدان/منوعات',
+      'ويكيبيديا:الميدان/لغويات',
+      'ويكيبيديا:الميدان/اقتراحات',
+    ],
+    usernamePolicyPage: 'ويكيبيديا:سياسة اسم المستخدم',
+    editingGuidePage: 'مساعدة:مقدمة',
   },
 }
 

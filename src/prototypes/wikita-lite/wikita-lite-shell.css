@@ -202,7 +202,6 @@
 .special-page-wrapper.wikita-lite-shell[data-skin='desktop']:not(.wikita-lite-shell--subpage)
   .wikita-lite-module__overflow-button
   .cdx-menu-button__menu {
-  right: auto !important;
   inset-inline-start: 0 !important;
   inset-inline-end: auto !important;
 }
@@ -312,7 +311,7 @@
 .special-page-wrapper.wikita-lite-shell .special-page-wrapper__header-aside {
   position: absolute;
   top: 50%;
-  right: 0;
+  inset-inline-end: 0;
   transform: translateY(-50%);
 }
 
@@ -548,8 +547,8 @@
   .cdx-card.wikita-lite-card--thumbnail-position-end
   .cdx-card__thumbnail.cdx-thumbnail {
   order: 1;
-  margin-right: 0;
-  margin-left: auto;
+  margin-inline-end: 0;
+  margin-inline-start: auto;
 }
 
 /* Thumbnail on top — mirrors cdx-card--thumbnail-position-top. */

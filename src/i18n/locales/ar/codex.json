@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": []
+	},
+	"chipInputChipAdded": "تمت إضافة الشريحة $1.",
+	"chipInputChipRemoved": "تمت إزالة الشريحة $1.",
+	"dialogCloseButtonLabel": "إغلاق",
+	"inputChipAriaDescription": "الضغط على Enter للتعديل أو على Delete للإزالة",
+	"labelOptionalFlag": "(اختياري)",
+	"messageDismissButtonLabel": "إغلاق",
+	"popoverCloseButtonLabel": "إغلاق",
+	"searchInputSearchButtonLabel": "بحث",
+	"typeaheadSearchSearchResultsLabel": "نتائج البحث"
+}

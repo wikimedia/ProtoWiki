@@ -43,6 +43,9 @@
 
   /* A nudge, not a full-width push — this is a step within one flow. */
   --ob-step-distance: 32px;
+
+  /* Reading direction for the step slide: 1 in LTR, -1 in RTL (set below). */
+  --ob-direction: 1;
 }
 
 /* ------------------------------------------------------------------ *
@@ -96,26 +99,36 @@
   inset: 0;
 }
 
-/* Forward: new content arrives from the right, old exits to the left. */
+/*
+ * Forward: new content arrives from the reading-direction end (the right in
+ * LTR, the left in RTL), old exits toward the start.
+ */
 .ob-step-forward-enter-from {
   opacity: 0;
-  transform: translateX(var(--ob-step-distance));
+  transform: translateX(calc(var(--ob-direction) * var(--ob-step-distance)));
 }
 
 .ob-step-forward-leave-to {
   opacity: 0;
-  transform: translateX(calc(-1 * var(--ob-step-distance)));
+  transform: translateX(calc(-1 * var(--ob-direction) * var(--ob-step-distance)));
 }
 
 /* Back: mirror the forward motion. */
 .ob-step-back-enter-from {
   opacity: 0;
-  transform: translateX(calc(-1 * var(--ob-step-distance)));
+  transform: translateX(calc(-1 * var(--ob-direction) * var(--ob-step-distance)));
 }
 
 .ob-step-back-leave-to {
   opacity: 0;
-  transform: translateX(var(--ob-step-distance));
+  transform: translateX(calc(var(--ob-direction) * var(--ob-step-distance)));
+}
+
+.ob-step-forward-enter-from:dir(rtl),
+.ob-step-forward-leave-to:dir(rtl),
+.ob-step-back-enter-from:dir(rtl),
+.ob-step-back-leave-to:dir(rtl) {
+  --ob-direction: -1;
 }
 
 /* ------------------------------------------------------------------ *

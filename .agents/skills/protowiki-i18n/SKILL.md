@@ -28,6 +28,7 @@ src/i18n/locales/
   en/<namespace>.json    English source (fallback for anything missing)
   fr/<namespace>.json    French
   es/<namespace>.json    Spanish
+  ar/<namespace>.json    Arabic (right-to-left)
   qqq/<namespace>.json   Documentation for translators (never displayed)
 ```
 
@@ -61,6 +62,11 @@ t('impact.editCount', n)                     // "{{PLURAL:$1|$1 edit|$1 edits}}"
 - **Numbers / dates** — `src/lib/contentFormat.ts` (`formatElapsed`,
   `formatCompactNumber`, `formatShortDate`, `usesLocalizedFormat()`) uses `Intl`
   in the interface language; English keeps the existing compact strings.
+- **Bidi** — in RTL interfaces `t()` wraps text params in FSI…PDI (MediaWiki's
+  `bidi()`), so a Latin username doesn't scramble Arabic punctuation. Wrap
+  rendered usernames in `<bdi>`; put `dir="auto"` on inputs people type into.
+- **Digits** — `intlLocale()` pins Arabic to Western digits (`ar-u-nu-latn`),
+  matching arwiki and the digits `$n` params insert.
 - Missing keys render the key itself and warn once in dev.
 
 ## Checking coverage
@@ -84,11 +90,25 @@ with parameters but no `qqq` doc.
    prefixes in `musical-group/data/enwikiTitle.ts`.
 3. Wordmark/tagline images: `src/components/chrome/wikipediaWordmark.ts` (check the
    files exist on that wiki first).
-4. **RTL languages** (ar, he, fa, ur) also need the RTL pass, not done yet: import
-   `codex.style-bidi.css`, set `<html dir>` (see `router.afterEach` in
-   `src/main.ts`, which already sets `lang`), bind `dir` on MobileWrapper's
-   teleport target, replace one-sided physical CSS with logical properties, fix the
-   forced-left back arrows (`cdxIconArrowNext dir="rtl"`).
+4. **RTL languages** (ar, he, fa, ur…) — `directionForLang()` in `src/i18n/rtl.ts`
+   already knows them. Direction is wired once for the whole app:
+   - `applyDocumentDirection()` (`src/i18n/direction.ts`) sets `<html lang dir>`
+     before mount (CdxIcon reads the direction once) and on every navigation, so
+     teleported dialogs and menus inherit it.
+   - Both Codex builds (`codex.style.css` + `codex.style-rtl.css`) and both wiki
+     skin snapshots (`*.css` + `*.rtl.css`, the latter from arwiki via
+     `npm run snapshot:wiki-skins -- --rtl`) are bundled. `scripts/postcss-direction-scope.mjs`
+     (in `vite.config.ts`) scopes each to its `<html dir>` with `:where()`, so
+     LTR pages keep exactly their old cascade. Don't use `codex.style-bidi.css`:
+     its `[dir]` prefixes raise specificity and defeat local overrides.
+   - Write **logical CSS** (`inset-inline-start`, `margin-inline-end`,
+     `border-inline-start`, `text-align: start`); one-sided physical properties
+     break in RTL. Direction-specific tweaks go under `:dir(rtl)`.
+   - Use `cdxIconArrowPrevious` for back, never `cdxIconArrowNext dir="rtl"`.
+   - Charts and sparklines don't mirror (Codex bidirectionality guidance): force
+     `direction: ltr` on the chart block.
+   - Article HTML: `useArticleHtml` returns Parsoid's `lang` / `dir`; pass them to
+     `ArticleRenderer`, which adds `mw-content-rtl` for the skin's rules.
 
 ## Not translated (by design)
 

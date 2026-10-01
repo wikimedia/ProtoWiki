@@ -3,7 +3,7 @@ import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 
 import { utcDayKey, utcDayParts } from './cacheKeys'
-import { contentWikiHost, enwikiArticleUrl } from './enwikiTitle'
+import { contentWikiHost, enwikiArticleUrl, parseEnwikiArticleTitle } from './enwikiTitle'
 import { fetchEnwikiFeaturedFeedDay, wikimediaFeedErrorMessage } from './fetchEnwikiFeaturedFeedDay'
 import {
   getCachedFeaturedTab,
@@ -151,14 +151,17 @@ function dykPrimaryPageTitle(item: FeedDyk): string | undefined {
   const html = item.html
   if (!html) return undefined
 
-  const match = html.match(/href="(?:https:\/\/en\.wikipedia\.org\/wiki\/|\.\/)([^"?#]+)"/i)
-  if (!match) return undefined
-
-  try {
-    return decodeURIComponent(match[1])
-  } catch {
-    return match[1]
+  // The bold link is the hook's subject; otherwise the first article link.
+  // Hrefs are `./Title` (Parsoid) or absolute on the content wiki (arwiki).
+  const hrefs = [
+    html.match(/<b[^>]*>\s*<a[^>]*href="([^"]+)"/i)?.[1],
+    ...[...html.matchAll(/href="([^"]+)"/gi)].map((match) => match[1]),
+  ]
+  for (const href of hrefs) {
+    const title = href ? parseEnwikiArticleTitle(href) : null
+    if (title) return title
   }
+  return undefined
 }
 
 async function parseDidYouKnow(

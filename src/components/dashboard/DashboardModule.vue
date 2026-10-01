@@ -301,13 +301,13 @@ function trimmedTitle(): string {
 }
 
 .sidebar-card__header:has(.sidebar-card__header-actions) .sidebar-card__title {
-  padding-right: calc(var(--min-size-interactive-pointer, 32px) + var(--spacing-50, 8px));
+  padding-inline-end: calc(var(--min-size-interactive-pointer, 32px) + var(--spacing-50, 8px));
 }
 
 .sidebar-card__header-actions {
   position: absolute;
   top: 50%;
-  right: 0;
+  inset-inline-end: 0;
   display: flex;
   flex-shrink: 0;
   align-items: center;

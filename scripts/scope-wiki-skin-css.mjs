@@ -31,17 +31,22 @@ const WIKI_SKINS = path.join(ROOT, 'src/styles/wiki-skins')
 // external-link icon next to `a.external`). Rewrite them to absolute Wikipedia
 // URLs so the assets load. `data:` and already-absolute `http(s):` URLs are left
 // untouched.
-const WIKI_ORIGIN = 'https://en.wikipedia.org'
+// `--rtl` snapshots (see snapshot-wiki-skins.sh) come from arwiki and are
+// written as `*.rtl.css`; src/main.ts bundles both and vite.config.ts scopes
+// each to its `<html dir>`.
+const SKIN_WIKI = process.env.PROTOWIKI_SKIN_WIKI || 'en'
+const VARIANT = process.env.PROTOWIKI_SKIN_VARIANT || ''
+const WIKI_ORIGIN = `https://${SKIN_WIKI}.wikipedia.org`
 
 const jobs = [
   {
-    input: 'vector-2022.rl.css',
-    output: 'vector-2022.css',
+    input: `vector-2022${VARIANT}.rl.css`,
+    output: `vector-2022${VARIANT}.css`,
     skinPrefix: '[data-skin="desktop"]',
   },
   {
-    input: 'minerva.rl.css',
-    output: 'minerva.css',
+    input: `minerva${VARIANT}.rl.css`,
+    output: `minerva${VARIANT}.css`,
     skinPrefix: '[data-skin="mobile"]',
   },
 ]
