@@ -4,8 +4,8 @@ import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 
 definePage({
   meta: {
-    title: 'Special page',
-    description: 'Template for special page prototypes.',
+    title: 'Experimentation preferences',
+    description: 'Prototyping a new preferences section to inform users and allow them to opt-out from experimentation.',
     category: 'prototype',
     platform: 'web',
   },
