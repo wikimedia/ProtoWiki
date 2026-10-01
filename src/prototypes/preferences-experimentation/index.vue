@@ -6,7 +6,7 @@ definePage({
   meta: {
     title: 'Special page',
     description: 'Template for special page prototypes.',
-    category: 'template',
+    category: 'prototype',
     platform: 'web',
   },
 })
