@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { CdxIcon } from '@wikimedia/codex'
-import { cdxIconHelpNotice } from '@wikimedia/codex-icons'
+import { ref } from 'vue'
+import { RouterLink } from 'vue-router'
+import { CdxToast } from '@wikimedia/codex'
 
-import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
-import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
+import ArticleLive from '@/components/article/ArticleLive.vue'
 
-import PreferencesForm from './PreferencesForm.vue'
+import ExperimentationChrome from './ExperimentationChrome.vue'
+import { EXPERIMENTATION_PREFERENCES } from './routes'
 
 definePage({
   meta: {
@@ -16,37 +17,30 @@ definePage({
     platform: 'web',
   },
 })
+
+const showToast = ref(true)
 </script>
 
 <template>
-  <ChromeWrapper username="ExampleUser" :last-edited-notice="false">
-    <SpecialPageWrapper title="Preferences">
-      <template #help>
-        <a
-          class="preferences-help"
-          href="https://en.wikipedia.org/wiki/Help:Preferences"
-          rel="noopener noreferrer"
-        >
-          <CdxIcon size="small" :icon="cdxIconHelpNotice" />
-          <span>Help</span>
-        </a>
-      </template>
-      <PreferencesForm />
-    </SpecialPageWrapper>
-  </ChromeWrapper>
+  <ExperimentationChrome>
+    <ArticleLive article="Main Page" :blank-titlebar="true" />
+    <CdxToast
+      v-if="showToast"
+      standalone
+      type="notice"
+      :auto-dismiss="false"
+      @user-dismissed="showToast = false"
+    >
+      Learn how your completely anonymous interaction data is helping improve the experience of
+      Wikipedia users.
+      <RouterLink class="experimentation-toast__link" :to="EXPERIMENTATION_PREFERENCES">Learn more</RouterLink>
+    </CdxToast>
+  </ExperimentationChrome>
 </template>
 
 <style scoped>
-.preferences-help {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-50);
-  padding: var(--spacing-25) var(--spacing-50);
+.experimentation-toast__link {
   color: var(--color-progressive);
-  text-decoration: none;
-}
-
-.preferences-help:hover {
   text-decoration: underline;
 }
 </style>

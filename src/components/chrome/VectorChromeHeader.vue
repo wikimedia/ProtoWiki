@@ -42,6 +42,8 @@ interface Props {
    * **`#nav`** replaces the whole cluster regardless.
    */
   navTools?: ChromeNavTool[]
+  /** Destination for the wordmark “main page” link. */
+  homeTo?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -50,6 +52,7 @@ const props = withDefaults(defineProps<Props>(), {
   wordmarkSrc: undefined,
   taglineSrc: undefined,
   navTools: undefined,
+  homeTo: '/',
 })
 
 const effectiveTheme = computed<Theme>(() => props.theme ?? globalTheme.value)
@@ -80,7 +83,7 @@ function navHas(tool: ChromeNavTool): boolean {
           </span>
         </slot>
 
-        <RouterLink class="vector-chrome-header__brand-link" to="/" aria-label="Visit the main page">
+        <RouterLink class="vector-chrome-header__brand-link" :to="props.homeTo" aria-label="Visit the main page">
           <slot name="logo">
             <span class="vector-chrome-header__wordmarks">
               <img

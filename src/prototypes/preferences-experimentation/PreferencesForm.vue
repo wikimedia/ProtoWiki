@@ -1,15 +1,20 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
-import { CdxButton, CdxDialog, CdxMessage, CdxSearchInput, CdxTab, CdxTabs } from '@wikimedia/codex'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { CdxButton, CdxMessage, CdxSearchInput, CdxTab, CdxTabs } from '@wikimedia/codex'
 
 import PreferenceField from './PreferenceField.vue'
 import { PREFERENCE_TABS } from './preferencesData'
 import type { PrefField, PrefSection, PrefTab } from './types'
 
+const route = useRoute()
 const activeTab = ref(PREFERENCE_TABS[0].id)
+
+function applyHash() {
+  if (route.hash.includes('beta')) activeTab.value = 'betafeatures'
+}
 const searchQuery = ref('')
 const savedNotice = ref(false)
-const showResetDialog = ref(false)
 
 function collectDefaults(): Record<string, unknown> {
   const values: Record<string, unknown> = {}
@@ -24,6 +29,11 @@ function collectDefaults(): Record<string, unknown> {
 }
 
 const values = reactive<Record<string, unknown>>(collectDefaults())
+const savedValues = ref<Record<string, unknown>>(collectDefaults())
+
+const isDirty = computed(
+  () => JSON.stringify(values) !== JSON.stringify(savedValues.value),
+)
 
 function fieldValue(field: PrefField): unknown {
   if (values[field.id] !== undefined) return values[field.id]
@@ -75,16 +85,18 @@ function isCompact(tab: PrefTab, section: PrefSection): boolean {
   return tab.id === 'personal' && (section.id === 'info' || section.id === 'accountsecurity')
 }
 
+function snapshotValues(): Record<string, unknown> {
+  return JSON.parse(JSON.stringify(values))
+}
+
 function save() {
+  if (!isDirty.value) return
+  savedValues.value = snapshotValues()
   savedNotice.value = true
 }
 
-function resetToDefaults() {
-  for (const key of Object.keys(values)) delete values[key]
-  Object.assign(values, collectDefaults())
-  showResetDialog.value = false
-  savedNotice.value = true
-}
+onMounted(applyHash)
+watch(() => route.hash, applyHash)
 </script>
 
 <template>
@@ -130,24 +142,12 @@ function resetToDefaults() {
     <div class="mw-prefs__submit">
       <CdxMessage v-if="savedNotice" type="success">Your preferences have been saved.</CdxMessage>
       <div class="mw-prefs__actions">
-        <CdxButton action="progressive" weight="primary" type="submit">Save</CdxButton>
-        <CdxButton type="button" @click="showResetDialog = true">
-          Restore all default settings
+        <CdxButton action="progressive" weight="primary" type="submit" :disabled="!isDirty">
+          Save
         </CdxButton>
       </div>
     </div>
   </form>
-
-  <CdxDialog
-    v-model:open="showResetDialog"
-    title="Restore all default settings"
-    :primary-action="{ label: 'Restore all default settings', actionType: 'destructive' }"
-    :default-action="{ label: 'Cancel' }"
-    @primary="resetToDefaults"
-    @default="showResetDialog = false"
-  >
-    You can use this page to reset your preferences to the site defaults. This cannot be undone.
-  </CdxDialog>
 </template>
 
 <style scoped>

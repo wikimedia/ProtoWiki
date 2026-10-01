@@ -38,11 +38,17 @@ interface Props {
    * Drives the structural mobile vs desktop layout (icon toolbar vs text actions).
    */
   skin?: Skin
+  /**
+   * Vector 2022 Main Page titlebar: hide the first heading, languages, and
+   * tagline; left tab is “Main Page”; edit action is “View source”.
+   */
+  blankTitlebar?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   languagesCount: 18,
   skin: undefined,
+  blankTitlebar: false,
 })
 
 const inheritedSkin = inject(PROTOWIKI_CHROME_SKIN)
@@ -93,8 +99,12 @@ function onLanguagePick(row: ArticleLanguageLink) {
 </script>
 
 <template>
-  <header class="article-header" :data-skin="effectiveSkin">
-    <div class="article-header__title-row">
+  <header
+    class="article-header"
+    :class="{ 'article-header--blank-titlebar': blankTitlebar }"
+    :data-skin="effectiveSkin"
+  >
+    <div v-if="!blankTitlebar" class="article-header__title-row">
       <h1 class="article-header__title">
         <slot name="title">{{ title }}</slot>
       </h1>
@@ -123,7 +133,7 @@ function onLanguagePick(row: ArticleLanguageLink) {
           aria-current="page"
           @click.prevent="$emit('articleClick')"
         >
-          Article
+          {{ blankTitlebar ? 'Main Page' : 'Article' }}
         </a>
         <a href="#" class="article-header__tab" @click.prevent="$emit('talkClick')"> Talk </a>
       </nav>
@@ -141,7 +151,9 @@ function onLanguagePick(row: ArticleLanguageLink) {
         >
           Read
         </a>
-        <a href="#" class="article-header__action" @click.prevent="$emit('editClick')"> Edit </a>
+        <a href="#" class="article-header__action" @click.prevent="$emit('editClick')">
+          {{ blankTitlebar ? 'View source' : 'Edit' }}
+        </a>
         <a href="#" class="article-header__action" @click.prevent="$emit('historyClick')">
           View history
         </a>
@@ -280,7 +292,7 @@ function onLanguagePick(row: ArticleLanguageLink) {
       </div>
     </CdxPopover>
 
-    <p v-if="effectiveSkin === 'desktop'" class="article-header__tagline">
+    <p v-if="effectiveSkin === 'desktop' && !blankTitlebar" class="article-header__tagline">
       {{ DEFAULT_TAGLINE }}
     </p>
   </header>
@@ -289,6 +301,10 @@ function onLanguagePick(row: ArticleLanguageLink) {
 <style scoped>
 .article-header {
   background-color: var(--background-color-base);
+}
+
+.article-header--blank-titlebar .article-header__toolbar {
+  border-block-start: none;
 }
 
 .article-header__title-row {
