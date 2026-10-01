@@ -1066,6 +1066,27 @@ export const PREFERENCE_TABS: PrefTab[] = [
     ],
   },
   {
+    id: 'experimentation',
+    label: 'Experimentation',
+    sections: [
+      {
+        id: 'experimentation',
+        title: 'Experimentation preferences',
+        description:
+          'The Wikimedia Foundation conducts fully anonymous experiments to improve the experience of Wikipedia users. If you are selected to join an experiment, you might access new features and interface designs. Your interaction with these experimental elements will be anonymously processed and aggregated to extract conclusions. Taking part in experiments is fully optional. If you prefer not to participate, you can opt out of all experimentation using the option below.',
+        fields: [
+          {
+            id: 'experimentation-opt-out',
+            type: 'checkbox',
+            label: 'Opt out of all experimentation.',
+            help: "If you opt-out, you won't be enrolled in any ongoing or future experiments conducted on this wiki.",
+            defaultValue: false,
+          },
+        ],
+      },
+    ],
+  },
+  {
     id: 'echo',
     label: 'Notifications',
     sections: [

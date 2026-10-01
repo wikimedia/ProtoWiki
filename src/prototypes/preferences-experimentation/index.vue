@@ -33,7 +33,12 @@ const showToast = ref(true)
     >
       Learn how your completely anonymous interaction data is helping improve the experience of
       Wikipedia users.
-      <RouterLink class="experimentation-toast__link" :to="EXPERIMENTATION_PREFERENCES">Learn more</RouterLink>
+      <RouterLink
+        class="experimentation-toast__link"
+        :to="{ path: EXPERIMENTATION_PREFERENCES, hash: '#mw-prefsection-experimentation' }"
+      >
+        Learn more
+      </RouterLink>
     </CdxToast>
   </ExperimentationChrome>
 </template>

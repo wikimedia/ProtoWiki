@@ -11,7 +11,8 @@ const route = useRoute()
 const activeTab = ref(PREFERENCE_TABS[0].id)
 
 function applyHash() {
-  if (route.hash.includes('beta')) activeTab.value = 'betafeatures'
+  if (route.hash.includes('experimentation')) activeTab.value = 'experimentation'
+  else if (route.hash.includes('beta')) activeTab.value = 'betafeatures'
 }
 const searchQuery = ref('')
 const savedNotice = ref(false)
@@ -113,7 +114,7 @@ watch(() => route.hash, applyHash)
           :name="tab.id"
           :label="tab.label"
         >
-          <div class="mw-prefs__panel">
+          <div :id="`mw-prefsection-${tab.id}`" class="mw-prefs__panel">
             <fieldset
               v-for="section in tab.sections"
               :key="section.id"
