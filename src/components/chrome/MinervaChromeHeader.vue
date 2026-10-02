@@ -32,6 +32,8 @@ interface Props {
   wordmarkSrc?: string
   /** Minerva wordmark; defaults to **`wordmarkSrc`** then EN constant. */
   mobileWordmarkSrc?: string
+  /** Destination for the wordmark “main page” link. */
+  homeTo?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -41,6 +43,7 @@ const props = withDefaults(defineProps<Props>(), {
   right: undefined,
   wordmarkSrc: undefined,
   mobileWordmarkSrc: undefined,
+  homeTo: '/',
 })
 
 const effectiveTheme = computed<Theme>(() => props.theme ?? globalTheme.value)
@@ -133,7 +136,7 @@ function isExternalHref(href: string): boolean {
         <RouterLink
           v-if="useDefaultWordmark"
           class="minerva-chrome-header__brand"
-          to="/"
+          :to="props.homeTo"
           aria-label="Visit the main page"
         >
           <img

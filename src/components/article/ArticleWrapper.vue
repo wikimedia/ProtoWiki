@@ -20,6 +20,8 @@ interface Props {
   theme?: Theme
   /** Passed to **`ArticleHeader`** interlanguage control (**`N` languages**). */
   languagesCount?: number
+  /** Vector 2022 Main Page titlebar — forwarded to **`ArticleHeader`**. */
+  blankTitlebar?: boolean
   /**
    * In-app reader shell: the web **`ArticleHeader`** gives way to the apps' lead
    * block (image, title, description, rule), the inline gutter is left to the app
@@ -40,6 +42,7 @@ const props = withDefaults(defineProps<Props>(), {
   skin: undefined,
   theme: undefined,
   languagesCount: undefined,
+  blankTitlebar: false,
   app: false,
   description: undefined,
   leadImageUrl: undefined,
@@ -94,6 +97,7 @@ const chromeHeaderLabel = computed(() => leadTitle.value || 'Article')
       :title="chromeHeaderLabel"
       :languages-count="props.languagesCount"
       :skin="props.skin"
+      :blank-titlebar="props.blankTitlebar"
     />
 
     <slot />

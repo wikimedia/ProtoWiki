@@ -32,6 +32,8 @@ interface Props {
   middle?: HeaderItem[]
   /** Minerva bar only — override default **`right`** item array. */
   right?: HeaderItem[]
+  /** Destination for the wordmark “main page” link. */
+  homeTo?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -45,6 +47,7 @@ const props = withDefaults(defineProps<Props>(), {
   left: undefined,
   middle: undefined,
   right: undefined,
+  homeTo: '/',
 })
 
 const slots = useSlots()
@@ -106,6 +109,7 @@ const minervaRight = computed((): HeaderItem[] | undefined => props.right)
     :wordmark-src="props.wordmarkSrc"
     :tagline-src="props.taglineSrc"
     :nav-tools="props.navTools"
+    :home-to="props.homeTo"
   >
     <template v-if="slots.menu" #menu>
       <slot name="menu" />
@@ -129,5 +133,6 @@ const minervaRight = computed((): HeaderItem[] | undefined => props.right)
     :right="minervaRight"
     :wordmark-src="props.wordmarkSrc"
     :mobile-wordmark-src="props.mobileWordmarkSrc"
+    :home-to="props.homeTo"
   />
 </template>

@@ -10,6 +10,7 @@ interface ArticleLiveCommonProps {
   skin?: Skin
   theme?: Theme
   languagesCount?: number
+  blankTitlebar?: boolean
 }
 
 /** Fixed article: `article` set; the random-only props are forbidden. */
@@ -101,6 +102,8 @@ interface Props {
   theme?: Theme
   /** Forwarded **`ArticleWrapper`** → **`ArticleHeader`** (**`languagesCount` languages**). */
   languagesCount?: number
+  /** Vector 2022 Main Page titlebar — forwarded to **`ArticleWrapper`**. */
+  blankTitlebar?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -116,6 +119,7 @@ const props = withDefaults(defineProps<Props>(), {
   skin: undefined,
   theme: undefined,
   languagesCount: undefined,
+  blankTitlebar: false,
 })
 
 const emit = defineEmits<{
@@ -236,6 +240,7 @@ watch(liveHtml, async (html) => {
     :skin="props.skin"
     :theme="props.theme"
     :languages-count="props.languagesCount"
+    :blank-titlebar="props.blankTitlebar"
     :app="props.app"
     :description="view?.description"
     :lead-image-url="view?.thumbnailUrl ?? undefined"
