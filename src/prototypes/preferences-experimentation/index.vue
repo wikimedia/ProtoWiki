@@ -31,7 +31,7 @@ const showToast = ref(true)
       :auto-dismiss="false"
       @user-dismissed="showToast = false"
     >
-      You can choose whether to take part in anonymous product experiments.
+      We run anonymous tests to improve Wikipedia. You can choose whether to take part.
       <RouterLink
         class="experimentation-toast__link"
         :to="{ path: EXPERIMENTATION_PREFERENCES, hash: '#mw-prefsection-experimentation' }"
