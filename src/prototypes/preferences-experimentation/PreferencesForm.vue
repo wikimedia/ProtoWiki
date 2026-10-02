@@ -22,6 +22,7 @@ function collectDefaults(): Record<string, unknown> {
   for (const tab of PREFERENCE_TABS) {
     for (const section of tab.sections) {
       for (const field of section.fields) {
+        if (field.type === 'separator') continue
         if (field.defaultValue !== undefined) values[field.id] = structuredClone(field.defaultValue)
       }
     }
@@ -36,21 +37,31 @@ const isDirty = computed(
   () => JSON.stringify(values) !== JSON.stringify(savedValues.value),
 )
 
+const autoEnrollBeta = computed(() => Boolean(values['betafeatures-auto-enroll']))
+
 function fieldValue(field: PrefField): unknown {
+  if (field.type === 'separator') return undefined
   if (values[field.id] !== undefined) return values[field.id]
   return field.defaultValue
 }
 
 function setFieldValue(field: PrefField, value: unknown) {
+  if (field.type === 'separator') return
   values[field.id] = value
   savedNotice.value = false
 }
 
 function fieldMatches(field: PrefField, query: string): boolean {
+  if (field.type === 'separator') return false
+  const descriptionText = field.descriptionHtml?.replace(/<[^>]+>/g, ' ')
+  const helpText = field.helpHtml?.replace(/<[^>]+>/g, ' ')
   const haystack = [
     field.label,
     field.help,
+    helpText,
     field.value,
+    field.description,
+    descriptionText,
     ...(field.options ?? []).flatMap((option) => [option.label, option.description]),
     ...(field.rows ?? []).map((row) => row.label),
     ...(field.links ?? []).map((link) => link.label),
@@ -128,6 +139,7 @@ watch(() => route.hash, applyHash)
                 :field="field"
                 :compact="isCompact(tab, section)"
                 :model-value="fieldValue(field)"
+                :disabled="field.type === 'betafeature' && autoEnrollBeta"
                 @update:model-value="setFieldValue(field, $event)"
               />
             </fieldset>

@@ -31,13 +31,12 @@ const showToast = ref(true)
       :auto-dismiss="false"
       @user-dismissed="showToast = false"
     >
-      Learn how your completely anonymous interaction data is helping improve the experience of
-      Wikipedia users.
+      You can choose whether to take part in anonymous product experiments.
       <RouterLink
         class="experimentation-toast__link"
         :to="{ path: EXPERIMENTATION_PREFERENCES, hash: '#mw-prefsection-experimentation' }"
       >
-        Learn more
+        Manage preferences
       </RouterLink>
     </CdxToast>
   </ExperimentationChrome>

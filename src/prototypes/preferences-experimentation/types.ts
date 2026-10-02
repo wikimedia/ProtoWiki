@@ -22,13 +22,19 @@ export type PrefFieldType =
   | 'checkboxes'
   | 'buttons'
   | 'matrix'
+  | 'betafeature'
+  | 'separator'
 
 export interface PrefField {
   id: string
   type: PrefFieldType
   label?: string
   description?: string
+  /** Pre-parsed HTML description (beta features). */
+  descriptionHtml?: string
   help?: string
+  /** Pre-parsed HTML help text when a link or markup is needed. */
+  helpHtml?: string
   value?: string
   options?: PrefOption[]
   links?: PrefLink[]
@@ -37,6 +43,11 @@ export interface PrefField {
   disabled?: boolean
   readonly?: boolean
   defaultValue?: unknown
+  screenshot?: string
+  infoHref?: string
+  discussionHref?: string
+  userCount?: number
+  requiresJavascript?: boolean
 }
 
 export interface PrefSection {

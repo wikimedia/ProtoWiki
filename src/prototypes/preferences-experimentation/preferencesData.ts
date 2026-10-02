@@ -1,3 +1,4 @@
+import { BETA_FEATURES } from './betaFeatures'
 import { GADGET_SECTION_LABELS, GADGETS } from './gadgets'
 import { INTERFACE_LANGUAGES } from './languages'
 import type { PrefSection, PrefTab } from './types'
@@ -1061,6 +1062,19 @@ export const PREFERENCE_TABS: PrefTab[] = [
             help: 'Some beta features can have surprising changes, and so you have to opt in manually.',
             defaultValue: false,
           },
+          { id: 'betafeatures-breaking-hr', type: 'separator' },
+          ...BETA_FEATURES.map((feature) => ({
+            id: feature.id,
+            type: 'betafeature' as const,
+            label: feature.label,
+            descriptionHtml: feature.descriptionHtml,
+            screenshot: feature.screenshot,
+            infoHref: feature.infoHref,
+            discussionHref: feature.discussionHref,
+            userCount: feature.userCount,
+            requiresJavascript: feature.requiresJavascript,
+            defaultValue: false,
+          })),
         ],
       },
     ],
@@ -1073,13 +1087,14 @@ export const PREFERENCE_TABS: PrefTab[] = [
         id: 'experimentation',
         title: 'Experimentation preferences',
         description:
-          'The Wikimedia Foundation conducts fully anonymous experiments to improve the experience of Wikipedia users. If you are selected to join an experiment, you might access new features and interface designs. Your interaction with these experimental elements will be anonymously processed and aggregated to extract conclusions. Taking part in experiments is fully optional. If you prefer not to participate, you can opt out of all experimentation using the option below.',
+          "The Wikimedia Foundation runs fully anonymous A/B tests to improve Wikipedia. When you are included in an experiment, you may see an alternate design or feature while we measure how it works. Taking part in experiments is fully optional. If you prefer not to participate, you can opt out of all experimentation using the option below. This doesn't turn off features that are later released to everyone, and it is separate from Beta features, which you enable or disable individually.",
         fields: [
           {
             id: 'experimentation-opt-out',
             type: 'checkbox',
-            label: 'Opt out of all experimentation.',
-            help: "If you opt-out, you won't be enrolled in any ongoing or future experiments conducted on this wiki.",
+            label: 'Opt out of product experiments',
+            helpHtml:
+              'This preference currently applies to A/B tests run through Wikimedia\'s new experimentation platform. You won\'t be excluded from experiments configured in older systems, or from those related to infrastructure and security. <a href="https://meta.wikimedia.org/wiki/List_of_experiments_in_Product_and_Technology" rel="noopener noreferrer" target="_blank">Learn which experiments this preference excludes you from</a>.',
             defaultValue: false,
           },
         ],
