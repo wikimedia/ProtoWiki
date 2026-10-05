@@ -28,20 +28,24 @@ This is a "make + apply" command. It:
    removes the installed Codex packages, and runs `npm install` so
    `node_modules` holds the real published Codex (the patch's baseline).
 2. Fetches the change: reads Gerrit metadata for the current patchset and
-   fetches the change commit **and its parent** into a local cache checkout.
-3. Builds twice (heavy, local): builds the Codex packages at the **parent**
-   commit (unpatched) and at the **change** commit (patched).
-4. Detects the footprint: the distributed files (`dist/**` + root `theme-*`)
+   fetches the change commit into a local cache checkout.
+3. Resolves the git baseline: the release tag for the **installed** Codex
+   version (e.g. `v2.7.0`). The emitted diff spans **published → change**,
+   not change-parent → change, so a change stacked on unreleased main still
+   applies cleanly onto the npm artifact CI installs.
+4. Builds twice (heavy, local): builds the Codex packages at the **published
+   release tag** (unpatched) and at the **change** commit (patched).
+5. Detects the footprint: the distributed files (`dist/**` + root `theme-*`)
    that differ between the two builds are exactly what the change touches —
    auto-detected, not a hardcoded list, so it scales to whatever files a change
    touches. Package metadata (`package.json` / `README` / `LICENSE`) is excluded.
-5. Builds a tiny per-file diff anchored to the published artifact: it formats the
+6. Builds a tiny per-file diff anchored to the published artifact: it formats the
    published file, the unpatched build, and the patched build with the committed
    Prettier config, 3-way merges so only the unpatched→patched change is layered
    onto the published file, then diffs `format(published)` → merged.
-6. Writes the small patches to `patches/codex/*.patch` plus `manifest.json`
+7. Writes the small patches to `patches/codex/*.patch` plus `manifest.json`
    (Codex versions, change id, Prettier version, file list).
-7. Applies the patch locally via `scripts/apply-codex-patch.mjs` (the same path
+8. Applies the patch locally via `scripts/apply-codex-patch.mjs` (the same path
    CI uses), so local == CI.
 
 Commit `patches/codex/`. Because the deploy / preview workflows run
@@ -106,6 +110,9 @@ Focus on light/dark theme and desktop/mobile skin states.
 
 - The cache checkout lives under your system temp directory
   (`$TMPDIR/protowiki-codex-gerrit-cache` on macOS) and is reused across runs.
+- The patch is anchored to whatever Codex version is in `package.json` /
+  `package-lock.json` when you run the command. Bump Codex first if you want
+  the trial on a different release (see [`protowiki-update-codex`](../SKILL.md)).
 - **Regenerate on an upstream bump.** The patch is anchored to a specific
   published Codex version and Prettier version. If you bump `@wikimedia/codex`
   (see [`protowiki-update-codex`](../SKILL.md)) or Prettier, re-run
