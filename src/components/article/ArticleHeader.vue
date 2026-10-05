@@ -472,7 +472,8 @@ function toggleBookmark() {
 }
 
 .article-header[data-skin='desktop'] .article-header__page-tools {
-  align-self: center;
+  align-self: stretch;
+  align-items: stretch;
 }
 
 .article-header__tabs {
@@ -529,6 +530,13 @@ function toggleBookmark() {
 .article-header__page-tools :deep(.cdx-button) {
   min-height: auto;
   padding-block: 0;
+}
+
+.article-header[data-skin='desktop'] .article-header__page-tools :deep(.cdx-button) {
+  height: 100%;
+  min-height: 100%;
+  padding-block: 0;
+  border-radius: 0;
 }
 
 .article-header__actions--logged-out .article-header__page-tools {
