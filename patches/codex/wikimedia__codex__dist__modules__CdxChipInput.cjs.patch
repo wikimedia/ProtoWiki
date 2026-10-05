@@ -1,0 +1,316 @@
+Index: dist/modules/CdxChipInput.cjs
+===================================================================
+--- dist/modules/CdxChipInput.cjs
++++ dist/modules/CdxChipInput.cjs
+@@ -23,33 +23,33 @@
+     },
+     emits: ['remove-chip', 'click-chip', 'arrow-left', 'arrow-right'],
+     setup(e, { emit: n, slots: f }) {
+       const v = t.computed(() => (e.disabled ? -1 : 0)),
+-        h = t.ref(),
++        m = t.ref(),
+         C = t.computed(() => ({
+           'cdx-input-chip--disabled': e.disabled,
+           'cdx-input-chip--readonly': e.readonly,
+           [e.className]: e.className.length > 0,
+         })),
+         p = B('cdx-input-chip-aria-description', 'Press Enter to edit or Delete to remove'),
+         o = t.ref(),
+-        l = t.ref(!1),
++        r = t.ref(!1),
+         u = t.computed(() =>
+-          l.value && o.value && o.value.scrollWidth > o.value.clientWidth
++          r.value && o.value && o.value.scrollWidth > o.value.clientWidth
+             ? H.useSlotContents(f == null ? void 0 : f.default)[0]
+             : null,
+         )
+       t.onMounted(() => {
+-        l.value = !0
++        r.value = !0
+       })
+       function g(a) {
+         var c
+         switch (a.key) {
+           case 'Enter':
+             ;(n('click-chip'), a.preventDefault(), a.stopPropagation())
+             break
+           case 'Escape':
+-            ;((c = h.value) == null || c.blur(), a.preventDefault(), a.stopPropagation())
++            ;((c = m.value) == null || c.blur(), a.preventDefault(), a.stopPropagation())
+             break
+           case 'Backspace':
+           case 'Delete':
+             ;(n('remove-chip', a.key), a.preventDefault(), a.stopPropagation())
+@@ -62,13 +62,13 @@
+             break
+         }
+       }
+       return {
+-        rootElement: h,
++        rootElement: m,
+         rootClasses: C,
+         ariaDescription: p,
+         onKeydown: g,
+-        cdxIconClose: $.o6,
++        cdxIconClose: $.t6,
+         tabIndex: v,
+         tooltipContent: u,
+         textElement: o,
+       }
+@@ -80,12 +80,12 @@
+     },
+   }),
+   ee = ['tabindex', 'aria-description'],
+   te = { ref: 'textElement', class: 'cdx-input-chip__text' }
+-function ne(e, n, f, v, h, C) {
++function ne(e, n, f, v, m, C) {
+   const p = t.resolveComponent('cdx-icon'),
+     o = t.resolveComponent('cdx-button'),
+-    l = t.resolveDirective('tooltip')
++    r = t.resolveDirective('tooltip')
+   return t.withDirectives(
+     (t.openBlock(),
+     t.createElementBlock(
+       'div',
+@@ -108,8 +108,9 @@
+           o,
+           {
+             class: 'cdx-input-chip__button',
+             weight: 'quiet',
++            size: 'small',
+             tabindex: '-1',
+             'aria-hidden': 'true',
+             disabled: e.disabled || e.readonly,
+             onClick:
+@@ -127,9 +128,9 @@
+       ],
+       42,
+       ee,
+     )),
+-    [[l, e.tooltipContent]],
++    [[r, e.tooltipContent]],
+   )
+ }
+ const oe = E._export_sfc(_, [['render', ne]]),
+   ie = D.makeStringTypeValidator(D.ValidationStatusTypes),
+@@ -148,13 +149,13 @@
+     },
+     emits: ['update:input-chips', 'update:input-value', 'chip-click'],
+     setup(e, { emit: n, attrs: f }) {
+       const v = t.ref(),
+-        h = t.ref(),
++        m = t.ref(),
+         C = t.ref(),
+         p = t.ref(''),
+         o = Y(v),
+-        l = t.ref(),
++        r = t.ref(),
+         u = t.inject(D.AllowArbitraryKey, t.ref(!0)),
+         g = t.ref(''),
+         a = Z.useOptionalModelWrapper(g, t.toRef(e, 'inputValue'), n, 'update:input-value'),
+         c = t.ref('default'),
+@@ -173,13 +174,13 @@
+         w = t.ref(null),
+         K = t.computed(() => (w.value ? w.value.value : '')),
+         M = B('cdx-chip-input-chip-added', (i) => 'Chip '.concat(i, ' was added.'), [a]),
+         P = B('cdx-chip-input-chip-removed', (i) => 'Chip '.concat(i, ' was removed.'), [K])
+-      function T(i, r) {
+-        i !== null && (y[r] = i)
++      function T(i, l) {
++        i !== null && (y[l] = i)
+       }
+-      const m = () => {
+-        l.value.focus()
++      const h = () => {
++        r.value.focus()
+       }
+       function k() {
+         e.inputChips.find((i) => i.value === a.value) || !e.chipValidator(a.value)
+           ? (c.value = 'error')
+@@ -192,58 +193,58 @@
+         e.readonly ||
+           b.value ||
+           n(
+             'update:input-chips',
+-            e.inputChips.filter((r) => r.value !== i.value),
++            e.inputChips.filter((l) => l.value !== i.value),
+           )
+       }
+-      function z(i, r) {
++      function z(i, l) {
+         const d =
+             (o.value === 'ltr' && i === 'left') || (o.value === 'rtl' && i === 'right') ? -1 : 1,
+-          s = r + d
++          s = l + d
+         if (!(s < 0)) {
+           if (s >= e.inputChips.length) {
+-            m()
++            h()
+             return
+           }
+           y[s].focus()
+         }
+       }
+       async function O(i) {
+-        var r
++        var l
+         ;(n('chip-click', i),
+           !(e.readonly || b.value || !u.value) &&
+-            (k(), await t.nextTick(), V(i), (a.value = (r = i.label) != null ? r : i.value), m()))
++            (k(), await t.nextTick(), V(i), (a.value = (l = i.label) != null ? l : i.value), h()))
+       }
+-      function W(i, r, d) {
+-        if (((w.value = i), (p.value = P.value), d === 'button')) m()
++      function W(i, l, d) {
++        if (((w.value = i), (p.value = P.value), d === 'button')) h()
+         else if (d === 'Backspace') {
+-          const s = r === 0 ? 1 : r - 1
+-          s < e.inputChips.length ? y[s].focus() : m()
++          const s = l === 0 ? 1 : l - 1
++          s < e.inputChips.length ? y[s].focus() : h()
+         } else if (d === 'Delete') {
+-          const s = r + 1
+-          s < e.inputChips.length ? y[s].focus() : m()
++          const s = l + 1
++          s < e.inputChips.length ? y[s].focus() : h()
+         }
+         V(i)
+       }
+       function L(i) {
+         var d, s
+-        const r = o.value === 'rtl' ? 'ArrowRight' : 'ArrowLeft'
++        const l = o.value === 'rtl' ? 'ArrowRight' : 'ArrowLeft'
+         switch (i.key) {
+           case 'Enter':
+             if (a.value.toString().length > 0 && u.value) {
+               ;(k(), i.preventDefault(), i.stopPropagation())
+               return
+             }
+             break
+           case 'Escape':
+-            ;((d = l.value) == null || d.blur(), i.preventDefault(), i.stopPropagation())
++            ;((d = r.value) == null || d.blur(), i.preventDefault(), i.stopPropagation())
+             return
+           case 'Backspace':
+-          case r:
++          case l:
+             if (
+-              ((s = l.value) == null ? void 0 : s.selectionStart) === 0 &&
+-              l.value.selectionEnd === 0 &&
++              ((s = r.value) == null ? void 0 : s.selectionStart) === 0 &&
++              r.value.selectionEnd === 0 &&
+               e.inputChips.length > 0
+             ) {
+               ;(y[e.inputChips.length - 1].focus(), i.preventDefault(), i.stopPropagation())
+               return
+@@ -257,24 +258,24 @@
+       function U() {
+         I.value = !1
+       }
+       function x(i) {
+-        var r
+-        !((r = v.value) != null && r.contains(i.relatedTarget)) && u.value && k()
++        var l
++        !((l = v.value) != null && l.contains(i.relatedTarget)) && u.value && k()
+       }
+       return (
+         t.watch(t.toRef(e, 'inputChips'), (i) => {
+-          const r = i.find((d) => d.value === a.value)
+-          c.value = r ? 'error' : 'default'
++          const l = i.find((d) => d.value === a.value)
++          c.value = l ? 'error' : 'default'
+         }),
+         t.watch(a, () => {
+           c.value === 'error' && (c.value = 'default')
+         }),
+         {
+           rootElement: v,
+-          chipsContainer: h,
++          chipsContainer: m,
+           separateInputWrapper: C,
+-          input: l,
++          input: r,
+           computedInputValue: a,
+           rootClasses: R,
+           rootStyle: N,
+           otherAttrs: q,
+@@ -282,9 +283,9 @@
+           handleChipClick: O,
+           handleChipRemove: W,
+           moveChipFocus: z,
+           onInputKeydown: L,
+-          focusInput: m,
++          focusInput: h,
+           onInputFocus: j,
+           onInputBlur: U,
+           onFocusOut: x,
+           computedDisabled: b,
+@@ -298,13 +299,13 @@
+     class: 'cdx-chip-input__chips',
+     role: 'listbox',
+     'aria-orientation': 'horizontal',
+   },
+-  re = ['readonly', 'disabled'],
+-  le = { key: 0, ref: 'separateInputWrapper', class: 'cdx-chip-input__separate-input' },
++  le = ['readonly', 'disabled'],
++  re = { key: 0, ref: 'separateInputWrapper', class: 'cdx-chip-input__separate-input' },
+   se = ['readonly', 'disabled'],
+   pe = { class: 'cdx-chip-input__aria-status', role: 'status', 'aria-live': 'polite' }
+-function de(e, n, f, v, h, C) {
++function de(e, n, f, v, m, C) {
+   const p = t.resolveComponent('cdx-input-chip')
+   return (
+     t.openBlock(),
+     t.createElementBlock(
+@@ -326,24 +327,24 @@
+               t.Fragment,
+               null,
+               t.renderList(
+                 e.inputChips,
+-                (o, l) => (
++                (o, r) => (
+                   t.openBlock(),
+                   t.createBlock(
+                     p,
+                     {
+                       key: o.value,
+                       ref_for: !0,
+-                      ref: (u) => e.assignChipTemplateRef(u, l),
++                      ref: (u) => e.assignChipTemplateRef(u, r),
+                       class: t.normalizeClass(['cdx-chip-input__item', o.className]),
+                       icon: o.icon,
+                       readonly: e.readonly,
+                       disabled: e.computedDisabled,
+                       onClickChip: (u) => e.handleChipClick(o),
+-                      onRemoveChip: (u) => e.handleChipRemove(o, l, u),
+-                      onArrowLeft: (u) => e.moveChipFocus('left', l),
+-                      onArrowRight: (u) => e.moveChipFocus('right', l),
++                      onRemoveChip: (u) => e.handleChipRemove(o, r, u),
++                      onArrowLeft: (u) => e.moveChipFocus('left', r),
++                      onArrowRight: (u) => e.moveChipFocus('right', r),
+                     },
+                     {
+                       default: t.withCtx(() => {
+                         var u
+@@ -396,9 +397,9 @@
+                       },
+                     ),
+                     null,
+                     16,
+-                    re,
++                    le,
+                   )),
+                   [[t.vModelDynamic, e.computedInputValue]],
+                 ),
+           ],
+@@ -407,9 +408,9 @@
+         e.separateInput
+           ? (t.openBlock(),
+             t.createElementBlock(
+               'div',
+-              le,
++              re,
+               [
+                 t.withDirectives(
+                   t.createElementVNode(
+                     'input',

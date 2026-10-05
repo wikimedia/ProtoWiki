@@ -1,0 +1,50 @@
+Index: dist/modules/CdxCombobox.cjs
+===================================================================
+--- dist/modules/CdxCombobox.cjs
++++ dist/modules/CdxCombobox.cjs
+@@ -3,10 +3,10 @@
+   x = require('./Icon.js'),
+   k = require('./CdxButton.cjs'),
+   M = require('./CdxMenu.cjs'),
+   W = require('./CdxTextInput.cjs'),
+-  F = require('./useModelWrapper.cjs'),
+-  N = require('./useSplitAttributes.cjs'),
++  N = require('./useModelWrapper.cjs'),
++  F = require('./useSplitAttributes.cjs'),
+   A = require('./useFieldData.cjs'),
+   K = require('./useFloatingMenu.cjs'),
+   v = require('./constants.js'),
+   D = require('./_plugin-vue_export-helper.js'),
+@@ -28,9 +28,9 @@
+         f = o.ref(),
+         u = o.ref(),
+         l = o.useId(),
+         i = o.toRef(e, 'selected'),
+-        p = F(i, t, 'update:selected'),
++        p = N(i, t, 'update:selected'),
+         n = o.ref(!1),
+         a = o.ref(!1),
+         C = o.computed(() => {
+           var d, b
+@@ -45,9 +45,9 @@
+         I = o.computed(() => ({
+           'cdx-combobox--expanded': n.value,
+           'cdx-combobox--disabled': s.value,
+         })),
+-        { rootClasses: y, rootStyle: q, otherAttrs: w } = N(c, I)
++        { rootClasses: y, rootStyle: q, otherAttrs: w } = F(c, I)
+       function B(d) {
+         ;(a.value && n.value
+           ? (n.value = !1)
+           : (e.menuItems.length > 0 || m['no-results']) && (n.value = !0),
+@@ -89,9 +89,9 @@
+           onInputBlur: S,
+           onKeydown: $,
+           onButtonClick: h,
+           onButtonMousedown: V,
+-          cdxIconExpand: x.F6,
++          cdxIconExpand: x.y6,
+           rootClasses: y,
+           rootStyle: q,
+           otherAttrs: w,
+         }

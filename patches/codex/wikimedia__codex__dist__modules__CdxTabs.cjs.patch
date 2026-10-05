@@ -1,0 +1,131 @@
+Index: dist/modules/CdxTabs.cjs
+===================================================================
+--- dist/modules/CdxTabs.cjs
++++ dist/modules/CdxTabs.cjs
+@@ -6,9 +6,9 @@
+   R = require('./useComputedDirection.cjs'),
+   W = require('./useOptionalModelWrapper.js'),
+   S = require('./useIntersectionObserver.cjs'),
+   I = require('./useSlotContents.js'),
+-  A = require('./constants.js'),
++  V = require('./constants.js'),
+   O = require('./_plugin-vue_export-helper.js'),
+   F = e.defineComponent({
+     name: 'CdxTabs',
+     components: { CdxButton: M, CdxIcon: x.CdxIcon },
+@@ -49,21 +49,21 @@
+         y = e.computed(() => {
+           var o
+           return (o = b.value.get(m.value)) == null ? void 0 : o.id
+         })
+-      ;(e.provide(A.ActiveTabKey, m), e.provide(A.TabsKey, b))
++      ;(e.provide(V.ActiveTabKey, m), e.provide(V.TabsKey, b))
+       const C = e.ref(new Map()),
+         E = e.ref(),
+-        D = e.ref(),
+-        V = S(E, { threshold: 0.95 }),
+-        k = S(D, { threshold: 0.95 })
++        L = e.ref(),
++        k = S(E, { threshold: 0.95 }),
++        A = S(L, { threshold: 0.95 })
+       function B(o, n) {
+         const r = o
+         r &&
+-          (C.value.set(n, r), n === 0 ? (E.value = r) : n === w.value.length - 1 && (D.value = r))
++          (C.value.set(n, r), n === 0 ? (E.value = r) : n === w.value.length - 1 && (L.value = r))
+       }
+       const _ = e.computed(() => ({ 'cdx-tabs--framed': t.framed, 'cdx-tabs--quiet': !t.framed }))
+-      function L() {
++      function N() {
+         var o
+         ;(o = C.value.get(g.value)) == null || o.focus()
+       }
+       function T(o) {
+@@ -71,11 +71,11 @@
+         const n = v.value === 'rtl' ? u.value : p.value,
+           r = v.value === 'rtl' ? p.value : u.value,
+           a = o.offsetLeft,
+           h = a + o.clientWidth,
+-          N = l.value.scrollLeft + n.clientWidth,
++          D = l.value.scrollLeft + n.clientWidth,
+           K = l.value.scrollLeft + l.value.clientWidth - r.clientWidth
+-        return a < N ? a - N : h > K ? h - K : 0
++        return a < D ? a - D : h > K ? h - K : 0
+       }
+       function q(o) {
+         if (!l.value || !p.value || !u.value) return
+         const n =
+@@ -89,9 +89,9 @@
+             break
+           }
+           a = h
+         }
+-        ;(l.value.scrollBy({ left: r, behavior: 'smooth' }), L())
++        ;(l.value.scrollBy({ left: r, behavior: 'smooth' }), N())
+       }
+       return (
+         e.watch(m, () => {
+           if (y.value === void 0 || !l.value || !p.value || !u.value) return
+@@ -109,15 +109,15 @@
+           nextScroller: u,
+           rootClasses: _,
+           tabNames: w,
+           tabsData: b,
+-          firstLabelVisible: V,
+-          lastLabelVisible: k,
++          firstLabelVisible: k,
++          lastLabelVisible: A,
+           assignTemplateRefForTabButton: B,
+           scrollTabs: q,
+-          focusActiveTab: L,
+-          cdxIconPrevious: x.D8,
+-          cdxIconNext: x.A8,
++          focusActiveTab: N,
++          cdxIconPrevious: x.U8,
++          cdxIconNext: x.x8,
+         }
+       )
+     },
+     methods: {
+@@ -156,11 +156,11 @@
+   P = { class: 'cdx-tabs__header' },
+   j = { ref: 'prevScroller', class: 'cdx-tabs__prev-scroller' },
+   z = { ref: 'tabListElement', class: 'cdx-tabs__list', role: 'tablist' },
+   H = ['id', 'disabled', 'aria-controls', 'aria-selected', 'tabindex', 'onClick', 'onKeyup'],
+-  G = { ref: 'nextScroller', class: 'cdx-tabs__next-scroller' },
+-  J = { class: 'cdx-tabs__content' }
+-function Q(t, s, d, f, l, p) {
++  U = { ref: 'nextScroller', class: 'cdx-tabs__next-scroller' },
++  G = { class: 'cdx-tabs__content' }
++function J(t, s, d, f, l, p) {
+   const u = e.resolveComponent('cdx-icon'),
+     v = e.resolveComponent('cdx-button')
+   return (
+     e.openBlock(),
+@@ -264,9 +264,9 @@
+           ),
+           e.withDirectives(
+             e.createElementVNode(
+               'div',
+-              G,
++              U,
+               [
+                 e.createVNode(
+                   v,
+                   {
+@@ -290,12 +290,12 @@
+             ),
+             [[e.vShow, !t.lastLabelVisible]],
+           ),
+         ]),
+-        e.createElementVNode('div', J, [e.renderSlot(t.$slots, 'default')]),
++        e.createElementVNode('div', G, [e.renderSlot(t.$slots, 'default')]),
+       ],
+       2,
+     )
+   )
+ }
+-const U = O._export_sfc(F, [['render', Q]])
+-module.exports = U
++const Q = O._export_sfc(F, [['render', J]])
++module.exports = Q
