@@ -1,9 +1,20 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { CdxTypeaheadSearch, type SearchResult } from '@wikimedia/codex'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import {
+  CdxTypeaheadSearch,
+  type SearchResult,
+  type SearchResultClickEvent,
+} from '@wikimedia/codex'
 
 import { wikimediaApiFetchHeaders, wikiHostFromLang } from '@/config'
 import type { Skin, Theme } from '@/theme'
+
+/** Payload for the `submit` event (Enter / search button without a highlighted result). */
+export interface SearchSubmitPayload {
+  query: string
+  /** First typeahead suggestion when results exist for the current query. */
+  title?: string
+}
 
 interface Props {
   /** Wiki host for opensearch (no protocol). Defaults to en.wikipedia.org. */
@@ -16,6 +27,13 @@ interface Props {
   skin?: Skin
   /** Local theme override. Sets `data-theme` on the root. */
   theme?: Theme
+  /** Show an integrated submit button (Vector chrome inline search). */
+  useButton?: boolean
+  /**
+   * Widen the input on focus so result thumbnails align with the search icon.
+   * Only applies when thumbnails are shown (`show-thumbnail`).
+   */
+  autoExpandWidth?: boolean
 }
 
 interface Emits {
@@ -23,9 +41,9 @@ interface Emits {
   (event: 'select', title: string): void
   /**
    * Emitted when the user submits the search (Enter / search button).
-   * Carries the typed query.
+   * Includes the first suggestion title when the typeahead list is populated.
    */
-  (event: 'submit', query: string): void
+  (event: 'submit', payload: SearchSubmitPayload): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -34,6 +52,8 @@ const props = withDefaults(defineProps<Props>(), {
   limit: 10,
   skin: undefined,
   theme: undefined,
+  useButton: false,
+  autoExpandWidth: false,
 })
 
 const emit = defineEmits<Emits>()
@@ -41,12 +61,28 @@ const emit = defineEmits<Emits>()
 const suggestions = ref<SearchResult[]>([])
 const isSearching = ref(false)
 const lastQuery = ref('')
+/** Query the current `suggestions` were fetched for (guards stale results). */
+const suggestionsQuery = ref('')
+const typeaheadRef = ref<InstanceType<typeof CdxTypeaheadSearch> | null>(null)
 
-const formAction = computed(() => `https://${props.host}/w/index.php`)
+/** Enter pressed before opensearch finished — resolve when results arrive. */
+let pendingSubmitQuery: string | null = null
 
 const lang = computed(() => props.host.split('.')[0] ?? 'en')
 
 let abortController: AbortController | null = null
+
+function preventFormSubmit(event: Event) {
+  event.preventDefault()
+}
+
+onMounted(() => {
+  typeaheadRef.value?.form?.addEventListener('submit', preventFormSubmit)
+})
+
+onBeforeUnmount(() => {
+  typeaheadRef.value?.form?.removeEventListener('submit', preventFormSubmit)
+})
 
 class OpenSearchFetchError extends Error {
   constructor(
@@ -58,7 +94,65 @@ class OpenSearchFetchError extends Error {
   }
 }
 
-/** Title suggestions from Action API `opensearch` (CirrusSearch completion). */
+/** Codex figures render at 40px; fetch larger for sharp downscaling on retina. */
+const THUMBNAIL_SIZE = 120
+
+interface PageMeta {
+  description?: string
+  thumbnail?: { source?: string }
+}
+
+function resultTitle(result: SearchResult): string | undefined {
+  return result.label ?? (result.value != null ? String(result.value) : undefined)
+}
+
+function firstSuggestionTitle(): string | undefined {
+  const first = suggestions.value[0]
+  return first ? resultTitle(first) : undefined
+}
+
+/** Live input text — may run ahead of debounced `@input` / `lastQuery`. */
+function currentInputQuery(): string {
+  return (typeaheadRef.value?.inputValue ?? lastQuery.value).trim()
+}
+
+function suggestionsMatchQuery(query: string): boolean {
+  return query.length > 0 && suggestionsQuery.value === query
+}
+
+function openFirstSuggestion(query: string): boolean {
+  if (!suggestionsMatchQuery(query)) return false
+
+  const title = firstSuggestionTitle()
+  if (!title) return false
+
+  completeSearchInput(title)
+  emit('submit', { query, title })
+  return true
+}
+
+function blurSearchInput(): void {
+  const typeahead = typeaheadRef.value
+  if (!typeahead) return
+
+  typeahead.expanded = false
+  typeahead.menu?.clearActive()
+  typeahead.form?.querySelector('input')?.blur()
+}
+
+function completeSearchInput(title: string): void {
+  const typeahead = typeaheadRef.value
+  if (!typeahead) return
+
+  typeahead.inputValue = title
+  blurSearchInput()
+}
+
+function resolvePendingSubmit(query: string): void {
+  openFirstSuggestion(query)
+}
+
+/** Title suggestions from opensearch, enriched with descriptions and thumbnails. */
 async function fetchOpenSearchSuggestions(
   query: string,
   options: { signal?: AbortSignal; lang?: string; limit?: number },
@@ -73,7 +167,7 @@ async function fetchOpenSearchSuggestions(
   const wikiHost = wikiHostFromLang(options.lang ?? 'en')
   const limit = options.limit ?? 10
 
-  const params = new URLSearchParams({
+  const openSearchParams = new URLSearchParams({
     action: 'opensearch',
     search: trimmed,
     limit: String(limit),
@@ -82,47 +176,101 @@ async function fetchOpenSearchSuggestions(
     origin: '*',
   })
 
-  const response = await fetch(`https://${wikiHost}/w/api.php?${params.toString()}`, {
+  const openSearchResponse = await fetch(
+    `https://${wikiHost}/w/api.php?${openSearchParams.toString()}`,
+    {
+      signal: options.signal,
+      headers: wikimediaApiFetchHeaders('opensearch'),
+    },
+  )
+
+  if (!openSearchResponse.ok) {
+    throw new OpenSearchFetchError(`HTTP ${openSearchResponse.status}`, 'http')
+  }
+
+  const openSearchData = (await openSearchResponse.json()) as [
+    string,
+    string[],
+    string[],
+    string[],
+  ]
+  const [, titles, descriptions] = openSearchData
+
+  if (!titles.length) return []
+
+  const metaParams = new URLSearchParams({
+    action: 'query',
+    titles: titles.join('|'),
+    prop: 'pageimages|description',
+    piprop: 'thumbnail',
+    pithumbsize: String(THUMBNAIL_SIZE),
+    pilicense: 'any',
+    format: 'json',
+    formatversion: '2',
+    origin: '*',
+  })
+
+  const metaResponse = await fetch(`https://${wikiHost}/w/api.php?${metaParams.toString()}`, {
     signal: options.signal,
     headers: wikimediaApiFetchHeaders('opensearch'),
   })
 
-  if (!response.ok) {
-    throw new OpenSearchFetchError(`HTTP ${response.status}`, 'http')
+  const metaByTitle = new Map<string, PageMeta>()
+  if (metaResponse.ok) {
+    const metaData = (await metaResponse.json()) as {
+      query?: { pages?: Array<{ title?: string; description?: string; thumbnail?: PageMeta['thumbnail'] }> }
+    }
+    for (const page of metaData.query?.pages ?? []) {
+      if (page.title) metaByTitle.set(page.title, page)
+    }
   }
 
-  const data = (await response.json()) as [string, string[], string[], string[]]
-  const [, titles, descriptions, urls] = data
+  return titles.map((title, i) => {
+    const meta = metaByTitle.get(title)
+    const description = meta?.description?.trim() || descriptions[i]?.trim() || undefined
+    const thumbnailUrl = meta?.thumbnail?.source
 
-  return titles.map((title, i) => ({
-    value: title,
-    label: title,
-    description: descriptions[i]?.trim() || undefined,
-    url: urls[i],
-  }))
+    // Inert `#` — Codex requires `url` on submit but must not leave the prototype.
+    return {
+      value: title,
+      label: title,
+      description,
+      url: '#',
+      thumbnail: thumbnailUrl ? { url: thumbnailUrl } : null,
+    }
+  })
 }
 
 async function onInput(value: string) {
   const trimmed = (value ?? '').trim()
+  if (pendingSubmitQuery && pendingSubmitQuery !== trimmed) {
+    pendingSubmitQuery = null
+  }
+
   lastQuery.value = trimmed
   if (!trimmed) {
     suggestions.value = []
+    suggestionsQuery.value = ''
     isSearching.value = false
+    pendingSubmitQuery = null
     return
   }
 
   abortController?.abort()
-  abortController = new AbortController()
+  const controller = new AbortController()
+  abortController = controller
+  const { signal } = controller
 
   isSearching.value = true
   try {
     const items = await fetchOpenSearchSuggestions(trimmed, {
       lang: lang.value,
       limit: props.limit,
-      signal: abortController.signal,
+      signal,
     })
     if (lastQuery.value !== trimmed) return
     suggestions.value = items
+    suggestionsQuery.value = trimmed
   } catch (err) {
     if (
       (err as Error).name === 'AbortError' ||
@@ -131,45 +279,64 @@ async function onInput(value: string) {
       return
     }
     suggestions.value = []
+    suggestionsQuery.value = ''
   } finally {
     isSearching.value = false
+
+    if (signal.aborted) return
+
+    if (pendingSubmitQuery && pendingSubmitQuery === lastQuery.value.trim()) {
+      const query = pendingSubmitQuery
+      pendingSubmitQuery = null
+      resolvePendingSubmit(query)
+    }
   }
 }
 
-function onSearchResultClick(payload: { title?: string; value?: string }) {
-  const title = payload.title ?? payload.value ?? ''
-  if (title) emit('select', title)
+function onSearchResultClick(payload: SearchResultClickEvent) {
+  const result = payload.searchResult
+  if (!result) return
+  const title = resultTitle(result)
+  if (!title) return
+
+  pendingSubmitQuery = null
+  completeSearchInput(title)
+  emit('select', title)
 }
 
-function onSubmit(payload: { value?: string }) {
-  const query = (payload.value ?? lastQuery.value ?? '').trim()
-  if (query) emit('submit', query)
+function onSubmit(_payload: SearchResultClickEvent) {
+  const query = currentInputQuery()
+  if (!query) return
+
+  // Codex debounces `@input` — Enter may arrive before our fetch starts.
+  if (query !== lastQuery.value.trim()) {
+    void onInput(typeaheadRef.value?.inputValue ?? query)
+  }
+
+  if (openFirstSuggestion(query)) {
+    pendingSubmitQuery = null
+    return
+  }
+
+  pendingSubmitQuery = query
 }
 </script>
 
 <template>
   <div class="search-bar" :data-skin="props.skin" :data-theme="props.theme">
     <CdxTypeaheadSearch
+      ref="typeaheadRef"
       id="protowiki-search"
       :placeholder="props.placeholder"
-      :form-action="formAction"
+      form-action="#"
       :search-results="suggestions"
-      :search-results-label="props.placeholder"
-      :search-footer-url="`https://${props.host}/wiki/Special:Search?search=${encodeURIComponent(lastQuery)}`"
-      :show-thumbnail="false"
+      :use-button="props.useButton"
+      :auto-expand-width="props.autoExpandWidth"
+      show-thumbnail
       @input="onInput"
       @search-result-click="onSearchResultClick"
       @submit="onSubmit"
-    >
-      <template #default>
-        <input type="hidden" name="title" value="Special:Search" />
-        <input type="hidden" name="wprov" value="acrw1_0" />
-      </template>
-      <template #search-footer-text="{ searchQuery }">
-        Search Wikipedia for pages containing
-        <strong class="search-bar__highlight">{{ searchQuery }}</strong>
-      </template>
-    </CdxTypeaheadSearch>
+    />
   </div>
 </template>
 
@@ -177,9 +344,5 @@ function onSubmit(payload: { value?: string }) {
 .search-bar {
   display: block;
   width: 100%;
-}
-
-.search-bar__highlight {
-  font-weight: var(--font-weight-bold, 700);
 }
 </style>

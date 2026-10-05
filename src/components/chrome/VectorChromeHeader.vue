@@ -5,6 +5,8 @@ import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import {
   cdxIconAppearance,
   cdxIconBell,
+  cdxIconBookmark,
+  cdxIconDownTriangle,
   cdxIconMenu,
   cdxIconSearch,
   cdxIconTray,
@@ -12,11 +14,14 @@ import {
   cdxIconWatchlist,
 } from '@wikimedia/codex-icons'
 
+import { useChromeSearchHandlers } from '@/composables/useChromeSearch'
 import { useConfig } from '@/composables/useConfig'
 import { DEFAULT_CHROME_NAV_TOOLS, type ChromeNavTool } from './headerNavTools'
 import { globalTheme } from '@/theme'
 import type { Theme } from '@/theme'
-import Search from '../Search.vue'
+import Search, { type SearchSubmitPayload } from '../Search.vue'
+
+const chromeSearchHandlers = useChromeSearchHandlers()
 
 const { user } = useConfig()
 
@@ -67,6 +72,14 @@ const effectiveNavTools = computed(() =>
 function navHas(tool: ChromeNavTool): boolean {
   return effectiveNavTools.value.includes(tool)
 }
+
+function handleSearchSelect(title: string) {
+  chromeSearchHandlers?.onSelect?.(title)
+}
+
+function handleSearchSubmit(payload: SearchSubmitPayload) {
+  chromeSearchHandlers?.onSubmit?.(payload)
+}
 </script>
 
 <template>
@@ -104,15 +117,13 @@ function navHas(tool: ChromeNavTool): boolean {
 
       <div class="vector-chrome-header__inline-search">
         <div class="vector-chrome-header__search">
-          <Search />
+          <Search
+            use-button
+            auto-expand-width
+            @select="handleSearchSelect"
+            @submit="handleSearchSubmit"
+          />
         </div>
-        <CdxButton
-          class="vector-chrome-header__search-submit"
-          tag="a"
-          href="https://en.wikipedia.org/wiki/Special:Search"
-        >
-          Search
-        </CdxButton>
       </div>
 
       <div class="vector-chrome-header__end">
@@ -120,8 +131,7 @@ function navHas(tool: ChromeNavTool): boolean {
           class="vector-chrome-header__search-icon-toggle"
           weight="quiet"
           aria-label="Search"
-          tag="a"
-          href="https://en.wikipedia.org/wiki/Special:Search"
+          @click.prevent
         >
           <CdxIcon :icon="cdxIconSearch" />
         </CdxButton>
@@ -172,17 +182,22 @@ function navHas(tool: ChromeNavTool): boolean {
           <CdxButton v-if="navHas('notices')" weight="quiet" aria-label="Notices">
             <CdxIcon :icon="cdxIconTray" />
           </CdxButton>
-          <CdxButton
-            v-if="navHas('watchlist')"
-            weight="quiet"
-            class="vector-chrome-header__hide-narrow"
-            aria-label="Watchlist"
-          >
+          <CdxButton v-if="navHas('bookmarks')" weight="quiet" aria-label="Bookmarks">
+            <CdxIcon :icon="cdxIconBookmark" />
+          </CdxButton>
+          <CdxButton v-if="navHas('watchlist')" weight="quiet" aria-label="Watchlist">
             <CdxIcon :icon="cdxIconWatchlist" />
           </CdxButton>
-          <CdxButton v-if="navHas('user')" weight="quiet" aria-label="User menu">
-            <CdxIcon :icon="cdxIconUserAvatar" />
-          </CdxButton>
+          <div v-if="navHas('user')" class="vector-chrome-header__user-menu">
+            <CdxButton weight="quiet" aria-label="User menu" aria-haspopup="menu">
+              <CdxIcon :icon="cdxIconUserAvatar" />
+              <CdxIcon
+                class="vector-chrome-header__user-menu-caret"
+                :icon="cdxIconDownTriangle"
+                size="small"
+              />
+            </CdxButton>
+          </div>
         </slot>
       </div>
     </nav>
@@ -208,7 +223,6 @@ function navHas(tool: ChromeNavTool): boolean {
 /*
  * Breakpoint parity with FakeMediaWiki `src/views/SpecialView/style.css`:
  * - max-width 1120px — collapse inline search → icon (nav-item-search / nav-button-search).
- * - max-width 768px — hide desktop-only tools (nav-button-desktop, e.g. watchlist).
  * Skin swap (nav-desktop vs nav-mobile) stays at 640px via src/theme.ts.
  */
 
@@ -297,12 +311,6 @@ function navHas(tool: ChromeNavTool): boolean {
   max-width: 32rem;
 }
 
-.vector-chrome-header__search-submit.cdx-button {
-  align-self: stretch;
-  border-radius: 0 var(--border-radius-base, 2px) var(--border-radius-base, 2px) 0;
-  margin-inline-start: -1px;
-}
-
 .vector-chrome-header__search-icon-toggle {
   display: none;
 }
@@ -345,6 +353,19 @@ a.vector-chrome-header__text-link:hover {
   padding: 0.5rem 0.4rem;
 }
 
+.vector-chrome-header__user-menu .cdx-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  min-width: calc(var(--size-icon-medium, 32px) + 0.75rem);
+  padding-inline-end: 0.25rem;
+}
+
+.vector-chrome-header__user-menu-caret {
+  flex-shrink: 0;
+  margin-inline-start: -0.125rem;
+}
+
 .vector-chrome-header[data-theme='dark'] .vector-chrome-header__wordmark-img,
 .vector-chrome-header[data-theme='dark'] .vector-chrome-header__tagline-img {
   opacity: 0;
@@ -364,11 +385,10 @@ a.vector-chrome-header__text-link:hover {
     width: var(--size-icon-large, 40px);
     padding: 0.7rem;
   }
-}
 
-@media (max-width: 768px) {
-  .vector-chrome-header__hide-narrow {
-    display: none !important;
+  .vector-chrome-header__user-menu .cdx-button {
+    width: auto;
+    min-width: calc(var(--size-icon-large, 40px) + 0.75rem);
   }
 }
 </style>
