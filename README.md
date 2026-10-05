@@ -61,7 +61,7 @@ There are also many skills within the repo that agents can use to navigate all o
 
 ### Getting started
 
-To run ProtoWiki locally, click "Use as template" on this repo, then clone your copy.
+To run ProtoWiki locally, click "Use this template" on this repo, then clone your copy.
 
 Then install dependencies and run the dev server:
 
