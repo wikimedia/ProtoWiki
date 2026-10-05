@@ -12,18 +12,18 @@ GET https://{host}/w/rest.php/attribution/v0-beta/pages/{title}/signals
 
 ### Parameters
 
-| Param | Values | Effect |
-| --- | --- | --- |
-| `{host}` | e.g. `en.wikipedia.org`, `commons.wikimedia.org` | Project wiki |
-| `{title}` | URL-encoded page title | Article or `File:…` media page |
-| `expand` | Comma-separated | Optional blocks to include |
+| Param     | Values                                           | Effect                         |
+| --------- | ------------------------------------------------ | ------------------------------ |
+| `{host}`  | e.g. `en.wikipedia.org`, `commons.wikimedia.org` | Project wiki                   |
+| `{title}` | URL-encoded page title                           | Article or `File:…` media page |
+| `expand`  | Pipe-separated (`\|`)                            | Optional blocks to include     |
 
 ### Expand values
 
-| Value | Response block | Notes |
-| --- | --- | --- |
+| Value                 | Response block               | Notes                                                                    |
+| --------------------- | ---------------------------- | ------------------------------------------------------------------------ |
 | `trust_and_relevance` | `trust_and_relevance` object | Page views, references, trending, last update, contributor_counts (null) |
-| `calls_to_action` | `calls_to_action` object | Static participation + donation CTAs |
+| `calls_to_action`     | `calls_to_action` object     | Static participation + donation CTAs                                     |
 
 **Do not use** `ecosystem_growth` — stale name in some framework docs; returns nothing.
 
@@ -36,7 +36,10 @@ Default essential block is always included.
   "essential": {
     "title": "Aurora",
     "link": "https://en.wikipedia.org/w/index.php?title=Aurora&wprov=afsw1",
-    "license": { "title": "CC BY-SA 4.0", "url": "https://creativecommons.org/licenses/by-sa/4.0/deed.en" },
+    "license": {
+      "title": "CC BY-SA 4.0",
+      "url": "https://creativecommons.org/licenses/by-sa/4.0/deed.en"
+    },
     "default_brand_marks": [{ "name": "Default logo", "url": "…", "type": "logo" }],
     "source_wiki": { "site_name": "English Wikipedia", "site_id": "enwiki", "site_language": "en" }
   },
@@ -82,13 +85,13 @@ Missing page → HTTP 404:
 
 ### Beta known issues (MediaWiki.org)
 
-| Issue | Status |
-| --- | --- |
-| `contributor_counts` returns null | Pending ~July 2026 |
-| `trending.relative` hardcoded false | Pending ~Sept 2026 |
-| CTAs are static/hard-coded | Pending |
-| License name inconsistency | In progress |
-| Remote media (Commons embeds in articles) | Pending |
+| Issue                                     | Status             |
+| ----------------------------------------- | ------------------ |
+| `contributor_counts` returns null         | Pending ~July 2026 |
+| `trending.relative` hardcoded false       | Pending ~Sept 2026 |
+| CTAs are static/hard-coded                | Pending            |
+| License name inconsistency                | In progress        |
+| Remote media (Commons embeds in articles) | Pending            |
 
 ## Contributor count backfill
 
@@ -103,20 +106,20 @@ CORS `*`. One call vs paginating Action API `prop=contributors`.
 
 ## Alternative pathways
 
-| Signal | Attribution API | Enterprise | Action API | REST API | Analytics |
-| --- | --- | --- | --- | --- | --- |
-| Source | yes | yes | yes | — | — |
-| Credit | yes | — | yes | — | — |
-| Link | yes | yes | yes | — | — |
-| Title | yes | yes | yes | yes | — |
-| License | yes | yes | yes | yes | — |
-| Brand mark | yes | — | yes | — | — |
-| Reference count | yes | partial | parse HTML | partial | — |
-| Contributor count | null (soon) | — | yes | yes (editors count) | — |
-| Page views | yes | — | — | — | yes |
-| Trending | yes (top only) | — | — | — | yes |
-| Last update | yes | yes | yes | yes | — |
-| Participation CTA | yes (static) | — | — | — | — |
+| Signal            | Attribution API | Enterprise | Action API | REST API            | Analytics |
+| ----------------- | --------------- | ---------- | ---------- | ------------------- | --------- |
+| Source            | yes             | yes        | yes        | —                   | —         |
+| Credit            | yes             | —          | yes        | —                   | —         |
+| Link              | yes             | yes        | yes        | —                   | —         |
+| Title             | yes             | yes        | yes        | yes                 | —         |
+| License           | yes             | yes        | yes        | yes                 | —         |
+| Brand mark        | yes             | —          | yes        | —                   | —         |
+| Reference count   | yes             | partial    | parse HTML | partial             | —         |
+| Contributor count | null (soon)     | —          | yes        | yes (editors count) | —         |
+| Page views        | yes             | —          | —          | —                   | yes       |
+| Trending          | yes (top only)  | —          | —          | —                   | yes       |
+| Last update       | yes             | yes        | yes        | yes                 | —         |
+| Participation CTA | yes (static)    | —          | —          | —                   | —         |
 
 ## Etiquette
 

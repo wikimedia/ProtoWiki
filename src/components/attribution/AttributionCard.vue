@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { CdxButton, CdxIcon, CdxProgressBar } from '@wikimedia/codex'
-import { cdxIconClock, cdxIconLinkExternal, cdxIconReferenceExisting, cdxIconUserAvatar } from '@wikimedia/codex-icons'
+import { CdxButton, CdxIcon, CdxMessage, CdxProgressBar } from '@wikimedia/codex'
+import {
+  cdxIconClock,
+  cdxIconLinkExternal,
+  cdxIconReferenceExisting,
+  cdxIconUserAvatar,
+} from '@wikimedia/codex-icons'
 
 import {
   brandMarkLogo,
@@ -76,12 +81,10 @@ const sourceName = computed(() => (props.signals ? sourceLabel(props.signals) : 
 const trust = computed(() => props.signals?.trust_and_relevance)
 
 const showLogo = computed(
-  () =>
-    props.sourceDisplay === 'name-and-mark' || props.sourceDisplay === 'mark-only',
+  () => props.sourceDisplay === 'name-and-mark' || props.sourceDisplay === 'mark-only',
 )
 const showSourceName = computed(
-  () =>
-    props.sourceDisplay === 'name-and-mark' || props.sourceDisplay === 'name-only',
+  () => props.sourceDisplay === 'name-and-mark' || props.sourceDisplay === 'name-only',
 )
 
 const apiTrending = computed(() => (props.signals ? isTrending(props.signals) : false))
@@ -138,24 +141,15 @@ const trustItems = computed(() => {
   return items
 })
 
-const showCreditLine = computed(
-  () => props.showCredit && Boolean(props.signals?.essential.credit),
-)
+const showCreditLine = computed(() => props.showCredit && Boolean(props.signals?.essential.credit))
 
-const showSearchThumbnail = computed(
-  () => props.showThumbnail && Boolean(props.thumbnailUrl),
-)
+const showSearchThumbnail = computed(() => props.showThumbnail && Boolean(props.thumbnailUrl))
 
 const showSearchSubtitle = computed(
-  () =>
-    trendingActive.value ||
-    Boolean(contributorLine.value) ||
-    Boolean(pageViewsLine.value),
+  () => trendingActive.value || Boolean(contributorLine.value) || Boolean(pageViewsLine.value),
 )
 
-const showSearchLicenseFooter = computed(
-  () => props.licenseDisplay !== 'hidden' && props.signals,
-)
+const showSearchLicenseFooter = computed(() => props.licenseDisplay !== 'hidden' && props.signals)
 
 const showSearchFooter = computed(
   () =>
@@ -199,9 +193,9 @@ const showSearchSourceRow = computed(
       aria-label="Loading attribution"
     />
 
-    <p v-else-if="props.error" class="attribution-card__error" role="alert">
+    <CdxMessage v-else-if="props.error" type="error" :allow-user-dismiss="false">
       {{ props.error }}
-    </p>
+    </CdxMessage>
 
     <template v-else-if="props.signals">
       <!-- Search result card (Figma SearchResult) -->
@@ -209,17 +203,21 @@ const showSearchSourceRow = computed(
         <div class="attribution-card__search-header">
           <div v-if="showSearchSourceRow" class="attribution-card__source-row">
             <div v-if="showSearchBrandMark" class="attribution-card__brand-mark">
-              <span v-if="useLetterBrandMark" class="attribution-card__brand-letter" aria-hidden="true">W</span>
-              <img
-                v-else-if="logo"
-                :src="logo.url"
-                :alt="sourceName"
-                width="24"
-                height="24"
-              />
+              <span
+                v-if="useLetterBrandMark"
+                class="attribution-card__brand-letter"
+                aria-hidden="true"
+                >W</span
+              >
+              <img v-else-if="logo" :src="logo.url" :alt="sourceName" width="24" height="24" />
             </div>
-            <div v-if="showSourceName || showSearchSourceLink" class="attribution-card__source-meta">
-              <small v-if="showSourceName" class="attribution-card__source-name">{{ sourceName }}</small>
+            <div
+              v-if="showSourceName || showSearchSourceLink"
+              class="attribution-card__source-meta"
+            >
+              <small v-if="showSourceName" class="attribution-card__source-name">{{
+                sourceName
+              }}</small>
               <a
                 v-if="showSearchSourceLink"
                 class="attribution-card__source-link"
@@ -242,7 +240,10 @@ const showSearchSourceRow = computed(
               {{ props.signals.essential.title }}
             </a>
           </h4>
-          <h4 v-else-if="props.titleDisplay === 'title-only'" class="attribution-card__search-title">
+          <h4
+            v-else-if="props.titleDisplay === 'title-only'"
+            class="attribution-card__search-title"
+          >
             {{ props.signals.essential.title }}
           </h4>
           <h4 v-else-if="props.titleDisplay === 'link-only'" class="attribution-card__search-title">
@@ -259,8 +260,12 @@ const showSearchSourceRow = computed(
 
         <div v-if="showSearchSubtitle" class="attribution-card__subtitle">
           <span v-if="trendingActive" class="attribution-card__trend-chip">Most read</span>
-          <small v-if="contributorLine" class="attribution-card__subtitle-stat">{{ contributorLine }}</small>
-          <small v-if="pageViewsLine" class="attribution-card__subtitle-stat">{{ pageViewsLine }}</small>
+          <small v-if="contributorLine" class="attribution-card__subtitle-stat">{{
+            contributorLine
+          }}</small>
+          <small v-if="pageViewsLine" class="attribution-card__subtitle-stat">{{
+            pageViewsLine
+          }}</small>
         </div>
 
         <div v-if="props.snippet || showSearchThumbnail" class="attribution-card__snippet-row">
@@ -304,7 +309,9 @@ const showSearchSourceRow = computed(
           <small v-if="searchReferenceLine" class="attribution-card__footer-stat">
             {{ searchReferenceLine }}
           </small>
-          <small v-if="lastUpdatedLine" class="attribution-card__footer-stat">{{ lastUpdatedLine }}</small>
+          <small v-if="lastUpdatedLine" class="attribution-card__footer-stat">{{
+            lastUpdatedLine
+          }}</small>
           <a
             v-if="selectedCta"
             class="attribution-card__footer-cta"
@@ -339,7 +346,10 @@ const showSearchSourceRow = computed(
               {{ props.signals.essential.title }}
               <CdxIcon :icon="cdxIconLinkExternal" size="small" />
             </a>
-            <span v-else-if="props.titleDisplay === 'title-only'" class="attribution-card__title-plain">
+            <span
+              v-else-if="props.titleDisplay === 'title-only'"
+              class="attribution-card__title-plain"
+            >
               {{ props.signals.essential.title }}
             </span>
             <a
@@ -416,7 +426,10 @@ const showSearchSourceRow = computed(
             >
               {{ props.signals.essential.title }}
             </a>
-            <p v-else-if="props.titleDisplay === 'title-only'" class="attribution-card__title-plain">
+            <p
+              v-else-if="props.titleDisplay === 'title-only'"
+              class="attribution-card__title-plain"
+            >
               {{ props.signals.essential.title }}
             </p>
             <a
@@ -455,7 +468,8 @@ const showSearchSourceRow = computed(
           >
             {{ props.signals.essential.license.title }}
           </a>
-          <template v-else>{{ props.signals.essential.license.title }}</template>.
+          <template v-else>{{ props.signals.essential.license.title }}</template
+          >.
         </p>
 
         <div v-if="selectedCta" class="attribution-card__cta-row attribution-card__cta-row--full">
@@ -478,11 +492,6 @@ const showSearchSourceRow = computed(
 
 .attribution-card__loading-bar {
   width: 100%;
-}
-
-.attribution-card__error {
-  margin: 0;
-  color: var(--color-error);
 }
 
 /* Search result (inline) — Figma SearchResult */
@@ -579,7 +588,6 @@ const showSearchSourceRow = computed(
   line-height: 1;
   color: var(--color-base);
 }
-
 
 .attribution-card__source-link:hover {
   margin: 0;

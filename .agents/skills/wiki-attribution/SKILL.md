@@ -18,11 +18,11 @@ This skill covers **what** to show and **how** to fetch it. For general API etiq
 
 ## Signal categories
 
-| Category | Purpose | Reference |
-| --- | --- | --- |
-| Essential | Source, credit, link, title, license, brand mark, modification disclaimer | [`references/signals.md`](references/signals.md) |
-| Trust & relevance | Reference count, contributor count, page views, trending, last update | [`references/signals.md`](references/signals.md) |
-| Ecosystem growth | Participation and donation CTAs | [`references/signals.md`](references/signals.md) |
+| Category          | Purpose                                                                   | Reference                                        |
+| ----------------- | ------------------------------------------------------------------------- | ------------------------------------------------ |
+| Essential         | Source, credit, link, title, license, brand mark, modification disclaimer | [`references/signals.md`](references/signals.md) |
+| Trust & relevance | Reference count, contributor count, page views, trending, last update     | [`references/signals.md`](references/signals.md) |
+| Ecosystem growth  | Participation and donation CTAs                                           | [`references/signals.md`](references/signals.md) |
 
 ## Attribution levels
 
@@ -38,14 +38,14 @@ See [`references/levels.md`](references/levels.md) for the full ladder and contr
 
 Six documented scenarios with required/recommended signals per context:
 
-| Scenario | Typical surface |
-| --- | --- |
-| Search | Result snippets with inline source |
-| AI assistants | Answer + expandable sources panel |
-| Social media | Shared cards, embeds |
-| Games & rich media | In-world knowledge panels |
-| Media & publications | Blog posts, news articles |
-| Audio | Voice assistants (under review) |
+| Scenario             | Typical surface                    |
+| -------------------- | ---------------------------------- |
+| Search               | Result snippets with inline source |
+| AI assistants        | Answer + expandable sources panel  |
+| Social media         | Shared cards, embeds               |
+| Games & rich media   | In-world knowledge panels          |
+| Media & publications | Blog posts, news articles          |
+| Audio                | Voice assistants (under review)    |
 
 See [`references/scenarios.md`](references/scenarios.md).
 
@@ -54,7 +54,7 @@ See [`references/scenarios.md`](references/scenarios.md).
 **Recommended:** [Wikimedia Attribution API](https://www.mediawiki.org/wiki/Attribution_API) (beta) — one endpoint for most signals.
 
 ```
-GET https://{host}/w/rest.php/attribution/v0-beta/pages/{title}/signals?expand=trust_and_relevance,calls_to_action
+GET https://{host}/w/rest.php/attribution/v0-beta/pages/{title}/signals?expand=trust_and_relevance|calls_to_action
 ```
 
 Full technical details, alternative pathways, beta known issues, and `wprov` provenance guidance: [`references/api.md`](references/api.md).
@@ -63,7 +63,7 @@ Full technical details, alternative pathways, beta known issues, and `wprov` pro
 
 ```ts
 const res = await fetch(
-  `https://en.wikipedia.org/w/rest.php/attribution/v0-beta/pages/${encodeURIComponent('Aurora')}/signals?expand=trust_and_relevance,calls_to_action`,
+  `https://en.wikipedia.org/w/rest.php/attribution/v0-beta/pages/${encodeURIComponent('Aurora')}/signals?expand=trust_and_relevance|calls_to_action`,
   { headers: { 'Api-User-Agent': 'MyApp/1.0 (https://example.org; you@example.org)' } },
 )
 const signals = await res.json()
@@ -74,12 +74,12 @@ const signals = await res.json()
 
 ### Beta gaps (Jul 2026 — not client bugs)
 
-| Field | Status | Workaround |
-| --- | --- | --- |
-| `contributor_counts` | Returns `null` by design until ~July 2026 | Core REST `/w/rest.php/v1/page/{title}/history/counts/editors` |
-| `trending.relative.*` | Hardcoded `false` until ~Sept 2026 | Use `trending.top.*` only |
-| CTAs | Static demo values via `expand=calls_to_action` | Use cautiously in production |
-| Commons media | `essential.credit` present; sparse trust signals | Expect partial `trust_and_relevance` |
+| Field                 | Status                                           | Workaround                                                     |
+| --------------------- | ------------------------------------------------ | -------------------------------------------------------------- |
+| `contributor_counts`  | Returns `null` by design until ~July 2026        | Core REST `/w/rest.php/v1/page/{title}/history/counts/editors` |
+| `trending.relative.*` | Hardcoded `false` until ~Sept 2026               | Use `trending.top.*` only                                      |
+| CTAs                  | Static demo values via `expand=calls_to_action`  | Use cautiously in production                                   |
+| Commons media         | `essential.credit` present; sparse trust signals | Expect partial `trust_and_relevance`                           |
 
 ## See also
 
