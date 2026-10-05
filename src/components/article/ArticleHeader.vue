@@ -2,6 +2,8 @@
 import { computed, inject, ref, watch } from 'vue'
 import { CdxButton, CdxIcon, CdxPopover, CdxTextInput } from '@wikimedia/codex'
 import {
+  cdxIconBookmark,
+  cdxIconBookmarkOutline,
   cdxIconDownTriangle,
   cdxIconDownload,
   cdxIconEdit,
@@ -19,6 +21,7 @@ import {
   type ArticleLanguageLink,
 } from './shared/articleLanguageLinks'
 import { useConfig } from '@/composables/useConfig'
+import { togglePageInList } from '@/config'
 import { globalSkin, PROTOWIKI_CHROME_SKIN } from '@/theme'
 import type { Skin } from '@/theme'
 
@@ -47,8 +50,22 @@ const props = withDefaults(defineProps<Props>(), {
 
 const inheritedSkin = inject(PROTOWIKI_CHROME_SKIN)
 const effectiveSkin = computed<Skin>(() => props.skin ?? inheritedSkin?.value ?? globalSkin.value)
-const { user } = useConfig()
+const { user, currentUserPageLists, setCurrentUserPageList } = useConfig()
 const isLoggedOut = computed(() => user.value === 'logged-out')
+
+const pageTitle = computed(() => props.title.trim())
+
+const isWatched = computed(() => currentUserPageLists.value.watchlist.includes(pageTitle.value))
+
+const isBookmarked = computed(() =>
+  currentUserPageLists.value.readingList.includes(pageTitle.value),
+)
+
+const watchLabel = computed(() => (isWatched.value ? 'Unwatch' : 'Watch'))
+
+const bookmarkAriaLabel = computed(() =>
+  isBookmarked.value ? 'Remove bookmark' : 'Bookmark',
+)
 
 const languagesButtonLabel = computed(() => {
   const n = props.languagesCount ?? 18
@@ -61,6 +78,7 @@ const emit = defineEmits<{
   readClick: []
   editClick: []
   historyClick: []
+  watchClick: []
   bookmarkClick: []
   downloadClick: []
   moreClick: []
@@ -90,6 +108,22 @@ function onLanguagePick(row: ArticleLanguageLink) {
   emit('languageSelect', row)
   closeLangMenu()
 }
+
+function toggleWatch() {
+  setCurrentUserPageList(
+    'watchlist',
+    togglePageInList(currentUserPageLists.value.watchlist, pageTitle.value),
+  )
+  emit('watchClick')
+}
+
+function toggleBookmark() {
+  setCurrentUserPageList(
+    'readingList',
+    togglePageInList(currentUserPageLists.value.readingList, pageTitle.value),
+  )
+  emit('bookmarkClick')
+}
 </script>
 
 <template>
@@ -98,20 +132,24 @@ function onLanguagePick(row: ArticleLanguageLink) {
       <h1 class="article-header__title">
         <slot name="title">{{ title }}</slot>
       </h1>
-      <div v-if="effectiveSkin === 'desktop'" class="article-header__lang-anchor">
-        <button
-          ref="langAnchor"
-          type="button"
-          class="article-header__languages"
+      <div
+        v-if="effectiveSkin === 'desktop'"
+        ref="langAnchor"
+        class="article-header__lang-anchor"
+      >
+        <CdxButton
+          class="article-header__lang-btn"
+          weight="quiet"
+          action="progressive"
           :aria-expanded="langMenuOpen"
           aria-haspopup="dialog"
           :aria-controls="langMenuOpen ? 'article-header-lang-menu' : undefined"
           @click="langMenuOpen = !langMenuOpen"
         >
-          <CdxIcon class="article-header__lang-icon" :icon="cdxIconLanguage" size="small" />
-          <span>{{ languagesButtonLabel }}</span>
-          <CdxIcon class="article-header__caret" :icon="cdxIconDownTriangle" size="small" />
-        </button>
+          <CdxIcon :icon="cdxIconLanguage" size="small" />
+          {{ languagesButtonLabel }}
+          <CdxIcon :icon="cdxIconDownTriangle" size="small" />
+        </CdxButton>
       </div>
     </div>
 
@@ -131,6 +169,7 @@ function onLanguagePick(row: ArticleLanguageLink) {
       <nav
         v-if="effectiveSkin === 'desktop'"
         class="article-header__actions"
+        :class="{ 'article-header__actions--logged-out': isLoggedOut }"
         aria-label="Page actions"
       >
         <a
@@ -145,14 +184,48 @@ function onLanguagePick(row: ArticleLanguageLink) {
         <a href="#" class="article-header__action" @click.prevent="$emit('historyClick')">
           View history
         </a>
-        <CdxButton
-          class="article-header__icon-btn"
-          weight="quiet"
-          aria-label="Watch"
-          @click="$emit('bookmarkClick')"
-        >
-          <CdxIcon :icon="cdxIconUnStar" />
-        </CdxButton>
+        <div class="article-header__page-tools">
+          <CdxButton
+            v-if="!isLoggedOut"
+            class="article-header__watch-btn"
+            weight="quiet"
+            action="progressive"
+            :aria-label="watchLabel"
+            @click="toggleWatch"
+          >
+            <CdxIcon :icon="isWatched ? cdxIconUnStar : cdxIconStar" />
+            {{ watchLabel }}
+          </CdxButton>
+          <CdxButton
+            v-if="!isLoggedOut"
+            weight="quiet"
+            :icon-only="true"
+            :aria-label="bookmarkAriaLabel"
+            @click="toggleBookmark"
+          >
+            <CdxIcon :icon="isBookmarked ? cdxIconBookmark : cdxIconBookmarkOutline" />
+          </CdxButton>
+          <CdxButton
+            v-if="!isLoggedOut"
+            weight="quiet"
+            :icon-only="true"
+            aria-label="More options"
+            class="article-header__more-btn"
+            @click="$emit('moreClick')"
+          >
+            <CdxIcon :icon="cdxIconEllipsis" />
+          </CdxButton>
+          <CdxButton
+            v-else
+            weight="quiet"
+            :icon-only="true"
+            aria-label="More options"
+            class="article-header__more-btn"
+            @click="$emit('moreClick')"
+          >
+            <CdxIcon :icon="cdxIconEllipsis" />
+          </CdxButton>
+        </div>
       </nav>
     </div>
 
@@ -296,7 +369,7 @@ function onLanguagePick(row: ArticleLanguageLink) {
   align-items: flex-end;
   justify-content: space-between;
   gap: var(--spacing-100, 16px);
-  padding-bottom: var(--spacing-50, 8px);
+  padding-bottom: var(--spacing-25, 4px);
 }
 
 .article-header__title {
@@ -315,34 +388,15 @@ function onLanguagePick(row: ArticleLanguageLink) {
   flex-shrink: 0;
 }
 
-.article-header__languages {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-35, 5px);
-  margin: 0;
-  padding: var(--spacing-25, 2px) 0;
-  border: none;
-  background: transparent;
-  font: inherit;
-  font-family: var(--font-family-base);
+/* Match Article / Talk tab typography (toolbar small text, normal weight). */
+.article-header__lang-btn,
+.article-header__watch-btn {
   font-size: var(--font-size-small, 14px);
-  color: var(--color-progressive);
-  cursor: pointer;
+  font-weight: var(--font-weight-normal);
 }
 
-.article-header__languages:hover {
-  text-decoration: underline;
-}
-
-.article-header__lang-icon {
-  flex-shrink: 0;
-  color: var(--color-progressive);
-}
-
-.article-header__caret {
-  flex-shrink: 0;
-  opacity: 0.85;
-  color: var(--color-progressive);
+.article-header__lang-btn {
+  padding-block-end: 0;
 }
 
 .article-header__lang-panel {
@@ -395,7 +449,7 @@ function onLanguagePick(row: ArticleLanguageLink) {
 
 .article-header__toolbar {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   justify-content: space-between;
   gap: var(--spacing-100, 16px);
   flex-wrap: wrap;
@@ -406,7 +460,28 @@ function onLanguagePick(row: ArticleLanguageLink) {
   font-size: var(--font-size-small, 14px);
 }
 
-.article-header__tabs,
+.article-header[data-skin='desktop'] .article-header__toolbar {
+  box-sizing: border-box;
+  min-height: 34px;
+  align-items: stretch;
+}
+
+.article-header[data-skin='desktop'] .article-header__tabs,
+.article-header[data-skin='desktop'] .article-header__actions {
+  align-items: stretch;
+}
+
+.article-header[data-skin='desktop'] .article-header__page-tools {
+  align-self: center;
+}
+
+.article-header__tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-75, 12px);
+  flex-wrap: wrap;
+}
+
 .article-header__actions {
   display: flex;
   align-items: center;
@@ -414,11 +489,18 @@ function onLanguagePick(row: ArticleLanguageLink) {
   flex-wrap: wrap;
 }
 
+/* Logged out: span the toolbar so ellipsis can sit at the far edge. */
+.article-header__actions--logged-out {
+  flex: 1;
+  min-width: 0;
+}
+
 .article-header__tab,
 .article-header__action {
   display: inline-flex;
   align-items: center;
-  padding: var(--spacing-50, 8px) var(--spacing-12, 1px);
+  padding-block: 0;
+  padding-inline: var(--spacing-12, 1px);
   margin: 0;
   color: var(--color-progressive);
   text-decoration: none;
@@ -434,14 +516,28 @@ function onLanguagePick(row: ArticleLanguageLink) {
 .article-header__tab--active,
 .article-header__action--active {
   color: var(--color-base);
-  font-weight: var(--font-weight-bold);
   border-bottom-color: var(--color-base);
   text-decoration: none;
 }
 
-.article-header__icon-btn {
-  margin-inline-start: var(--spacing-25, 2px);
-  color: var(--color-base);
+.article-header__page-tools {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.article-header__page-tools :deep(.cdx-button) {
+  min-height: auto;
+  padding-block: 0;
+}
+
+.article-header__actions--logged-out .article-header__page-tools {
+  margin-inline-start: auto;
+}
+
+/* Vertical kebab — Codex ships only a horizontal ellipsis. */
+.article-header__more-btn :deep(.cdx-icon) {
+  transform: rotate(90deg);
 }
 
 .article-header__tagline {

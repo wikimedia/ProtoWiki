@@ -170,6 +170,15 @@ export function formatPageList(pages: string[]): string {
   return pages.join(', ')
 }
 
+/** Add or remove a page title from a list (exact string match). */
+export function togglePageInList(pages: string[], pageTitle: string): string[] {
+  const title = pageTitle.trim()
+  if (!title) return pages
+  const index = pages.indexOf(title)
+  if (index >= 0) return pages.filter((_, i) => i !== index)
+  return [...pages, title]
+}
+
 export function resetUserPageLists(user: ConfigUser): UserPageLists {
   return cloneUserPageLists(DEFAULT_USER_PAGE_LISTS[user])
 }

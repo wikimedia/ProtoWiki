@@ -238,6 +238,15 @@ Vector-like **page** chrome above the parser output (not the site **`ChromeHeade
 
 Fixed copy: desktop tagline **“From Wikipedia, the free encyclopedia”**; Article / Read tabs are visually active (not prop-driven). **`#title`** slot replaces the **`h1`** inner markup. Emits language pick / settings and tab/tool clicks.
 
+**Desktop page tools** (actions row, **`effectiveSkin === 'desktop'`** only):
+
+| User | Controls after Read / Edit / View history |
+| --- | --- |
+| Logged out | Ellipsis quiet button only |
+| Logged in | Watch (progressive quiet, icon + “Watch” / “Unwatch”), Bookmark (quiet icon-only), Ellipsis |
+
+Watch and Bookmark toggle filled vs outline icons and sync with the active user's **`watchlist`** / **`readingList`** in prototype settings (matched by **`title`**). Emits **`watchClick`**, **`bookmarkClick`**, **`moreClick`** on toggle / overflow click.
+
 ## Styling notes
 
 - **`ArticleHeader`** title uses **`--font-family-serif`**; tabs/actions use base UI tokens — **`mw-first-heading`** targets **`PlainWrapper`** (and hand-authored **`h1`** in demos / editors), not **`ArticleHeader`**’s **`article-header__title`** row.
