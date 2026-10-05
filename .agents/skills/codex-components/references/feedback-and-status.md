@@ -10,14 +10,14 @@ Banner message (notice / warning / error / success).
 </CdxMessage>
 ```
 
-| Prop | Values | Default |
-| --- | --- | --- |
-| `type` | `notice` / `warning` / `error` / `success` | `notice` |
-| `inline` | true for compact inline use | `false` |
-| `dismissButtonLabel` | `aria-label` for ✕ | `'Close'` |
-| `allowUserDismiss` | boolean | `false` |
-| `fadeIn` | boolean | `false` |
-| `icon` | custom icon descriptor | (status default) |
+| Prop                 | Values                                                                  | Default          |
+| -------------------- | ----------------------------------------------------------------------- | ---------------- |
+| `type`               | `subtle` / `notice` / `progressive` / `warning` / `error` / `success`   | `notice`         |
+| `inline`             | true for compact inline use                                             | `false`          |
+| `dismissButtonLabel` | `aria-label` for ✕                                                      | `'Close'`        |
+| `allowUserDismiss`   | boolean                                                                 | `false`          |
+| `fadeIn`             | boolean                                                                 | `false`          |
+| `icon`               | custom icon descriptor — only for `notice`, `progressive`, and `subtle` | (status default) |
 
 Emits `user-dismissed`.
 
@@ -32,15 +32,17 @@ Use this:
 A progress bar.
 
 ```vue
-<CdxProgressBar inline aria-label="Loading" />            <!-- indeterminate, thin -->
-<CdxProgressBar :value="42" aria-label="Importing" />  <!-- determinate -->
+<CdxProgressBar inline aria-label="Loading" />
+<!-- indeterminate, thin -->
+<CdxProgressBar :value="42" aria-label="Importing" />
+<!-- determinate -->
 ```
 
-| Prop | Values | Default |
-| --- | --- | --- |
-| `inline` | true for thin inline bar | `false` |
-| `value` | `0`–`100` for determinate, omit for indeterminate | indeterminate |
-| `disabled` | boolean | `false` |
+| Prop       | Values                                            | Default       |
+| ---------- | ------------------------------------------------- | ------------- |
+| `inline`   | true for thin inline bar                          | `false`       |
+| `value`    | `0`–`100` for determinate, omit for indeterminate | indeterminate |
+| `disabled` | boolean                                           | `false`       |
 
 ## CdxProgressIndicator
 
@@ -78,10 +80,10 @@ function notify() {
 
 ## When to use which
 
-| Situation | Use |
-| --- | --- |
-| Form field is invalid | `CdxMessage` inline (or `CdxField`'s `status` + `messages`) |
-| Page is loading | `CdxProgressBar inline` |
-| Button is busy | `CdxProgressIndicator inline` inside the button |
-| Action just completed | `CdxToast` (transient) |
-| Persistent page-level notice | `CdxMessage` block-level |
+| Situation                    | Use                                                         |
+| ---------------------------- | ----------------------------------------------------------- |
+| Form field is invalid        | `CdxMessage` inline (or `CdxField`'s `status` + `messages`) |
+| Page is loading              | `CdxProgressBar inline`                                     |
+| Button is busy               | `CdxProgressIndicator inline` inside the button             |
+| Action just completed        | `CdxToast` (transient)                                      |
+| Persistent page-level notice | `CdxMessage` block-level                                    |
