@@ -2,25 +2,32 @@
  * Patches for Parsoid HTML + Minerva RL that are still missing after
  * `npm run snapshot:wiki-skins`.
  *
- * Mobile hatnote strip: Minerva applies a full-width neutral band + borders on
- * en.m.wikipedia; RL CSS alone does not, while inline Module:Hatnote styles
- * keep the desktop `padding-left: 1.6em` gutter.
- *
- * No border-top — ArticleHeader’s icon toolbar already draws the divider above;
- * duplicating it stacks two hairlines.
+ * Mobile hatnotes: no grey band (app + mobile-web reader); inline Module:Hatnote
+ * styles keep the desktop `padding-left: 1.6em` gutter — reset here.
  */
 
 .article[data-skin='mobile'] .mw-parser-output div.hatnote {
   box-sizing: border-box;
   margin-top: 0;
-  margin-bottom: var(--spacing-50, 8px) !important;
-  padding: var(--spacing-50, 8px) var(--spacing-100, 16px) !important;
-  border-top: none;
-  border-bottom: 1px solid var(--border-color-muted, var(--border-color-subtle));
-  background-color: var(--background-color-neutral-subtle);
+  margin-bottom: 0 !important;
+  padding: var(--spacing-50, 8px) 0 0 !important;
+  border: none;
+  background: none;
   font-family: inherit;
-  font-size: var(--font-size-small);
+  font-size: 0.8125rem;
   line-height: var(--line-height-small, 1.4);
+  color: var(--color-subtle, #54595d);
+}
+
+/* Lead hatnote — block padding handled by the ArticleWrapper lead block / ArticleHeader chrome. */
+.article[data-skin='mobile'] .mw-parser-output section[data-mw-section-id='0'] > div.hatnote {
+  padding-block: 0 !important;
+}
+
+/* First hatnote after a section heading. */
+.article[data-skin='mobile'] .mw-parser-output section > h2 + div.hatnote,
+.article[data-skin='mobile'] .mw-parser-output section > h2 + span.mw-empty-elt + div.hatnote {
+  margin-top: var(--spacing-100, 16px) !important;
 }
 
 /*
@@ -43,4 +50,45 @@
 
 .article[data-skin='mobile'] .mw-parser-output div.hatnote:has(+ p.mw-empty-elt) {
   margin-bottom: 0 !important;
+}
+
+/*
+ * Floated thumbs / figures. ProtoWiki serves desktop Parsoid HTML, and Minerva
+ * clears floats only when body.skin--responsive is set — so these are load-bearing
+ * for every mobile-skinned article surface, web and app alike.
+ */
+.article[data-skin='mobile'] .mw-parser-output :is(
+  figure,
+  .thumb,
+  div.tright,
+  div.tleft,
+  div.floatright,
+  div.floatleft,
+  .side-box
+) {
+  float: none !important;
+  clear: both !important;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  margin-inline: 0;
+}
+
+.article[data-skin='mobile'] .mw-parser-output .thumbinner {
+  width: auto !important;
+  max-width: 100%;
+  margin-inline: auto;
+}
+
+.article[data-skin='mobile'] .mw-parser-output .thumb img,
+.article[data-skin='mobile'] .mw-parser-output figure img.mw-file-element {
+  box-sizing: border-box;
+  max-width: 100%;
+  height: auto;
+}
+
+.article[data-skin='mobile'] .mw-parser-output .thumbcaption,
+.article[data-skin='mobile'] .mw-parser-output figure > figcaption {
+  width: auto !important;
+  box-sizing: border-box;
 }

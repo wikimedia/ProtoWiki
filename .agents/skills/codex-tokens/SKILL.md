@@ -1,7 +1,6 @@
 ---
 name: codex-tokens
 description: The Codex CSS custom-property design tokens (color, spacing, typography, border, shadow, transition) shipped via @wikimedia/codex-design-tokens — what each token name means, how to use them in templates and CSS, and how the light / dark token sets cascade through [data-theme]. Use when picking a colour / spacing / type value, debugging a dark-mode regression, or asking "what's the token for X?".
-license: MIT
 ---
 
 # Codex tokens
@@ -85,7 +84,7 @@ the upstream package.
 ## Inside ProtoWiki
 
 ProtoWiki bundles the Codex token files and re-scopes them at boot via
-`src/lib/theming.ts` so the same `var(--…)` rule cascades through
+`src/theme.ts` so the same `var(--…)` rule cascades through
 `[data-theme="light"]` / `[data-theme="dark"]`. See
 [`protowiki-theme`](../protowiki-theme/SKILL.md) for the boot-time
 resolution, the per-subtree `theme` prop, and the `useTheme()` hook.

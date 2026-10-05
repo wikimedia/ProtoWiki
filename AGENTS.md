@@ -10,8 +10,8 @@ just orients you.
   `src/prototypes/`. Single-concern layout wrappers, chrome primitives,
   data utilities, and reader-focused components — see
   [`protowiki-components`](.agents/skills/protowiki-components/SKILL.md)
-  for the catalogue. Composables in `src/composables/`. Theming logic
-  in `src/lib/`. Styles in `src/styles/`.
+  for the catalogue. Composables in `src/composables/`. Theming in
+  `src/theme.ts`, app config in `src/config.ts`. Styles in `src/styles/`.
 - **`.agents/skills/`** — the _single canonical home_ for non-code
   material: how to use Codex, how to fetch Wikipedia data, how the
   prototyping workflow works, how to deploy. Each skill is an
@@ -64,9 +64,10 @@ trailing **Inside ProtoWiki** section.
 | Skill                                                                              | What it covers                                                           |
 | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | [`protowiki-getting-started`](.agents/skills/protowiki-getting-started/SKILL.md)   | Orientation: what ProtoWiki is, the stack, where everything lives        |
-| [`protowiki-create-prototype`](.agents/skills/protowiki-create-prototype/SKILL.md) | Adding a new prototype via file-based routing — zero registration        |
-| [`protowiki-components`](.agents/skills/protowiki-components/SKILL.md)             | Shipped Vue components: wrappers, chrome, article surfaces, search       |
-| [`protowiki-skins`](.agents/skills/protowiki-skins/SKILL.md)                       | Vector 2022 (desktop) vs Minerva (mobile); per-component skin overrides  |
+| [`protowiki-create-prototype`](.agents/skills/protowiki-create-prototype/SKILL.md) | Adding a new prototype via file-based routing — zero registration, web or app |
+| [`protowiki-app-prototyping`](.agents/skills/protowiki-app-prototyping/SKILL.md)   | The app platform: `platform: 'app'`, app chrome, in-app articles, iOS vs Android |
+| [`protowiki-components`](.agents/skills/protowiki-components/SKILL.md)             | Shipped Vue components: wrappers, web + app chrome, article surfaces, search |
+| [`protowiki-skins`](.agents/skills/protowiki-skins/SKILL.md)                       | Vector 2022 (desktop) vs Minerva (mobile) web skins; per-component skin overrides |
 | [`protowiki-theme`](.agents/skills/protowiki-theme/SKILL.md)                       | Light / dark theming; per-component theme overrides                      |
 | [`protowiki-deploy`](.agents/skills/protowiki-deploy/SKILL.md)                     | GitHub Pages deploy, PR previews, base path, fork setup, SPA 404         |
 | [`protowiki-update-codex`](.agents/skills/protowiki-update-codex/SKILL.md)         | Upgrading Codex: bump packages, diff upstream docs, sync skills + tokens |
@@ -87,6 +88,7 @@ trailing **Inside ProtoWiki** section.
 | Skill                                                                        | What it covers                                                                                      |
 | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | [`wiki-apis`](.agents/skills/wiki-apis/SKILL.md)                             | REST API + Action API + etiquette                                                                   |
+| [`wiki-attribution`](.agents/skills/wiki-attribution/SKILL.md)               | Attribution Framework + Attribution API (beta): signals, scenarios, levels, fetch pathways          |
 | [`wiki-signals`](.agents/skills/wiki-signals/SKILL.md)                       | Catalog of signals (inference, analytics, links, curation, attribution, edit suggestions)           |
 | [`wiki-snapshot-data`](.agents/skills/wiki-snapshot-data/SKILL.md)           | Snapshotting article HTML and skin CSS — universal pattern                                          |
 | [`protowiki-snapshot-data`](.agents/skills/protowiki-snapshot-data/SKILL.md) | ProtoWiki integration: `public/snapshots/`, `src/styles/wiki-skins/`, `ArticleSnapshot` consumption |
@@ -112,7 +114,14 @@ mirrors [FakeMediaWiki `wiki-signals`](https://github.com/TodePond/FakeMediaWiki
   Skin/theme overrides via `[data-skin]` / `[data-theme]` selectors.
 - Codex first. If a Codex component / token / icon exists, use it.
 - Data fetching uses native `fetch` with `AbortController` for debouncing.
-- **Hand-authored article pages** (no `ArticleLive` / `ArticleSnapshot`): prefer **`ChromeWrapper` → `ArticleCustom`** (default slot = parser body); or compose **`ChromeWrapper` → `ArticleWrapper` → `ArticleRenderer`** when you need finer control. Put markup in the renderer slot; use **`section.hand-authored-lead`** when the lead includes an infobox so mobile matches enwiki order. See [`protowiki-components` → `article.md`](.agents/skills/protowiki-components/references/article.md) and **`src/prototypes/template-article-custom/`**.
+- Prototype gallery **title** and **description** must not be AI-generated;
+  agents ask the author or omit — see
+  [`protowiki-create-prototype`](.agents/skills/protowiki-create-prototype/SKILL.md).
+- **App prototypes** declare `platform: 'app'` and wrap in **`AppChromeWrapper`**
+  (not `ChromeWrapper`); in-app articles are **`<ArticleLive app>`**, not a
+  separate component. See
+  [`protowiki-app-prototyping`](.agents/skills/protowiki-app-prototyping/SKILL.md).
+- **Hand-authored article pages** (no `ArticleLive` / `ArticleSnapshot`): prefer **`ChromeWrapper` → `ArticleCustom`** (default slot = parser body); or compose **`ChromeWrapper` → `ArticleWrapper` → `ArticleRenderer`** when you need finer control. Put markup in the renderer slot. See [`protowiki-components` → `article.md`](.agents/skills/protowiki-components/references/article.md) and **`src/prototypes/template-article-custom/`**.
 
 ## What this repo is not
 

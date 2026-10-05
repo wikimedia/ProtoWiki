@@ -11,9 +11,7 @@ import './styles/wiki-skins/minerva.css'
 import './styles/wiki-skins/mobile-wiki-overrides.css'
 import './styles/dark.css'
 
-import { initTheming } from './theme'
-
-import '@/composables/useConfig'
+import { bootAppearance, mergedLocationQuery, wireAppearanceRouter } from '@/appearance'
 
 /** Path under `import.meta.env.BASE_URL` (e.g. `/template-chrome`). */
 function githubPagesSubpathAfterBase(baseUrl: string): string | null {
@@ -37,16 +35,21 @@ function syncGithubPagesPreviewRoute(router: ReturnType<typeof createRouter>): v
   if (!subPath) {
     return
   }
-  void router.replace(subPath)
+  void router.replace({
+    path: subPath,
+    query: mergedLocationQuery(router.currentRoute.value.query),
+    hash: window.location.hash,
+  })
 }
 
-initTheming()
+bootAppearance()
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 })
 
+wireAppearanceRouter(router)
 syncGithubPagesPreviewRoute(router)
 
 if (import.meta.hot) {

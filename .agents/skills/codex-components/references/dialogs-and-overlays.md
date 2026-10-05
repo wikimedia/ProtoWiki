@@ -17,16 +17,16 @@ A modal dialog with title, body, and actions.
 </CdxDialog>
 ```
 
-| Prop | Values |
-| --- | --- |
-| `open` | controlled via `v-model:open` |
-| `title` | required string |
-| `subtitle` | optional |
-| `hideTitle` | hide the title visually |
-| `primaryAction` | `{ label, actionType?: 'progressive' \| 'destructive', disabled? }` |
-| `defaultAction` | `{ label, disabled? }` |
-| `closeButtonLabel` | aria-label for ✕ |
-| `dismissable` | allow esc / overlay click to close |
+| Prop               | Values                                                              |
+| ------------------ | ------------------------------------------------------------------- |
+| `open`             | controlled via `v-model:open`                                       |
+| `title`            | required string                                                     |
+| `subtitle`         | optional                                                            |
+| `hideTitle`        | hide the title visually                                             |
+| `primaryAction`    | `{ label, actionType?: 'progressive' \| 'destructive', disabled? }` |
+| `defaultAction`    | `{ label, disabled? }`                                              |
+| `closeButtonLabel` | aria-label for ✕                                                    |
+| `dismissable`      | allow esc / overlay click to close                                  |
 
 Slots:
 
@@ -39,7 +39,7 @@ Emits `primary`, `default`, `update:open`.
 ## CdxTooltip
 
 Render a tooltip when hovering / focusing a child. Codex provides this
-as a directive *and* as a component, but the most common form is the
+as a directive _and_ as a component, but the most common form is the
 component:
 
 ```vue
@@ -61,11 +61,7 @@ Or as a directive:
 A floating menu — typically anchored to a trigger.
 
 ```vue
-<CdxMenu
-  v-model:expanded="open"
-  v-model:selected="selected"
-  :menu-items="items"
-/>
+<CdxMenu v-model:expanded="open" v-model:selected="selected" :menu-items="items" />
 ```
 
 For most cases you want a button that opens a menu — use:
@@ -82,10 +78,14 @@ menus, contextual actions on a row, etc.
     { value: 'edit', label: 'Edit', icon: cdxIconEdit },
     { value: 'delete', label: 'Delete', icon: cdxIconTrash },
   ]"
+  @load-more="loadMoreItems"
 >
   <CdxIcon :icon="cdxIconEllipsis" />
 </CdxMenuButton>
 ```
+
+Emits `load-more` when the user scrolls toward the bottom of the menu —
+use it to append items for infinite scrolling.
 
 ## CdxPopover
 
@@ -93,10 +93,25 @@ Generic positioned overlay (not a menu). Use for rich popovers, hover
 cards, etc. — anything beyond a flat list of options.
 
 ```vue
-<CdxPopover v-model:open="open" :anchor="anchorRef">
+<CdxPopover
+  v-model:open="open"
+  :anchor="anchorRef"
+  use-bottom-sheet="responsive"
+  :hide-arrow="false"
+>
   <slot />
 </CdxPopover>
 ```
+
+| Prop             | Values                                                     | Default   |
+| ---------------- | ---------------------------------------------------------- | --------- |
+| `useBottomSheet` | `'never'` / `'responsive'` / `'always'`                    | `'never'` |
+| `hideArrow`      | hide the pointer arrow (popover sits closer to the anchor) | `false`   |
+| `hideBackdrop`   | hide the bottom-sheet scrim                                | `false`   |
+
+`'responsive'` shows a bottom sheet on mobile (≤639px) and a regular
+popover on larger screens. `'always'` uses the bottom sheet on all
+viewports. The bottom sheet variant has no arrow.
 
 ## Pattern — confirm before destructive
 
@@ -120,11 +135,7 @@ cards, etc. — anything beyond a flat list of options.
 ## Pattern — overflow menu
 
 ```vue
-<CdxMenuButton
-  v-model:selected="action"
-  :menu-items="overflowItems"
-  aria-label="More actions"
->
+<CdxMenuButton v-model:selected="action" :menu-items="overflowItems" aria-label="More actions">
   <CdxIcon :icon="cdxIconEllipsis" />
 </CdxMenuButton>
 ```

@@ -1,7 +1,6 @@
 ---
 name: protowiki-snapshot-data
 description: ProtoWiki-specific integration of the snapshotting pattern — the npm scripts that wrap the agnostic fetchers, where snapshots land in this repo (public/snapshots/, src/styles/wiki-skins/), how `ArticleSnapshot` consumes a pre-baked HTML body, and how the skin CSS gets scoped to [data-skin]. Use when adding a new article snapshot to ProtoWiki, refreshing the Wikipedia skin CSS, or wiring `ArticleSnapshot` up to a static fixture.
-license: MIT
 ---
 
 # Snapshotting Wikipedia data — Inside ProtoWiki

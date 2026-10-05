@@ -1,7 +1,6 @@
 ---
 name: wiki-snapshot-data
 description: When and how to snapshot Wikipedia data — committing JSON / HTML fixtures and the Wikipedia skin CSS — instead of fetching live, plus a reusable fetch_page.py snapshotter and a fetch_skin_css.sh recipe for grabbing the ResourceLoader bundles needed to style .mw-parser-output. Use when you're demonstrating a fixed page, want offline-capable demos, are hitting API rate limits, or want full visual fidelity for an article body.
-license: MIT
 ---
 
 # Snapshotting Wikipedia data

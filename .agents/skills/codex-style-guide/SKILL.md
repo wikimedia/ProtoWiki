@@ -1,7 +1,6 @@
 ---
 name: codex-style-guide
 description: The Wikimedia / Codex Style Guide — the design-decision companion to the Codex toolkit. Covers the four design principles (Design with Others, For Curious Humans, Trustworthy, Content First), accessibility, bidirectionality, visual styles (colour usage, typography/readability, icon design, images, illustrations, data visualization), layout guidelines (links vs buttons, forms, content overflow), and content guidelines (voice & tone, writing for copy, machine assistance). Use when making a UX call ("dialog or inline edit?"), choosing colours/type/imagery, laying out a form, writing UI copy, labelling AI-assisted output, or sanity-checking a design.
-license: MIT
 ---
 
 # Codex style guide

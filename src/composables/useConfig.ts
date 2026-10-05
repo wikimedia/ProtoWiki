@@ -3,19 +3,27 @@ import { computed, readonly, ref, watch, type ComputedRef, type DeepReadonly, ty
 import {
   configUserDisplayName,
   configUserPageTitle,
+  DEFAULT_CONFIG,
+  isDefaultUserPageLists,
   langForUser,
-  loadConfig,
-  resetUserPageListField,
+  resetUserPageLists,
   saveConfig,
+  type ConfigAppPlatform,
   type Config,
   type ConfigTheme,
+  type ConfigWebSkin,
   type ConfigUser,
   type PageListKey,
   type UserPageLists,
 } from '@/config'
-import { applyThemePreference } from '@/theme'
+import {
+  onAppPlatformSettingChanged,
+  onThemeSettingChanged,
+  onWebSkinSettingChanged,
+  protowikiConfig,
+} from '@/appearance'
 
-const config = ref<Config>(loadConfig())
+const config = protowikiConfig
 
 watch(
   config,
@@ -28,28 +36,58 @@ watch(
 watch(
   () => config.value.theme,
   (preference) => {
-    applyThemePreference(preference)
+    onThemeSettingChanged(preference)
+  },
+)
+
+watch(
+  () => config.value.webSkin,
+  (webSkin) => {
+    onWebSkinSettingChanged(webSkin)
+  },
+)
+
+watch(
+  () => config.value.appPlatform,
+  (platform) => {
+    onAppPlatformSettingChanged(platform)
   },
 )
 
 export function useConfig(): {
   config: DeepReadonly<Ref<Config>>
   theme: Ref<ConfigTheme>
+  appPlatform: Ref<ConfigAppPlatform>
+  webSkin: Ref<ConfigWebSkin>
   user: Ref<ConfigUser>
   realUsername: Ref<string>
-  apiContact: Ref<string>
   lang: Ref<string>
   realLang: ComputedRef<string>
   displayName: ComputedRef<string>
   pageTitle: ComputedRef<string>
   currentUserPageLists: ComputedRef<UserPageLists>
+  isCurrentUserPageListsModified: ComputedRef<boolean>
   setCurrentUserPageList: (field: PageListKey, pages: string[]) => void
-  resetCurrentUserPageListField: (field: PageListKey) => void
+  resetCurrentUserPageLists: () => void
 } {
   const theme = computed({
     get: () => config.value.theme,
     set: (value: ConfigTheme) => {
       config.value = { ...config.value, theme: value }
+    },
+  })
+
+  const appPlatform = computed({
+    get: () => config.value.appPlatform,
+    set: (value: ConfigAppPlatform) => {
+      config.value = { ...config.value, appPlatform: value }
+    },
+  })
+
+  const webSkin = computed({
+    get: () => config.value.webSkin,
+    set: (value: ConfigWebSkin) => {
+      config.value = { ...config.value, webSkin: value }
     },
   })
 
@@ -64,13 +102,6 @@ export function useConfig(): {
     get: () => config.value.realUsername,
     set: (value: string) => {
       config.value = { ...config.value, realUsername: value }
-    },
-  })
-
-  const apiContact = computed({
-    get: () => config.value.apiContact,
-    set: (value: string) => {
-      config.value = { ...config.value, apiContact: value }
     },
   })
 
@@ -103,6 +134,14 @@ export function useConfig(): {
 
   const currentUserPageLists = computed(() => config.value.userPageLists[user.value])
 
+  const isCurrentUserPageListsModified = computed(() => {
+    if (!isDefaultUserPageLists(user.value, currentUserPageLists.value)) return true
+    if (user.value === 'real') {
+      return config.value.realUsername !== DEFAULT_CONFIG.realUsername
+    }
+    return false
+  })
+
   function setCurrentUserPageList(field: PageListKey, pages: string[]) {
     const activeUser = user.value
     config.value = {
@@ -117,17 +156,14 @@ export function useConfig(): {
     }
   }
 
-  function resetCurrentUserPageListField(field: PageListKey) {
+  function resetCurrentUserPageLists() {
     const activeUser = user.value
     config.value = {
       ...config.value,
+      realUsername: activeUser === 'real' ? DEFAULT_CONFIG.realUsername : config.value.realUsername,
       userPageLists: {
         ...config.value.userPageLists,
-        [activeUser]: resetUserPageListField(
-          config.value.userPageLists[activeUser],
-          activeUser,
-          field,
-        ),
+        [activeUser]: resetUserPageLists(activeUser),
       },
     }
   }
@@ -135,15 +171,17 @@ export function useConfig(): {
   return {
     config: readonly(config),
     theme,
+    appPlatform,
+    webSkin,
     user,
     realUsername,
-    apiContact,
     lang,
     realLang,
     displayName,
     pageTitle,
     currentUserPageLists,
+    isCurrentUserPageListsModified,
     setCurrentUserPageList,
-    resetCurrentUserPageListField,
+    resetCurrentUserPageLists,
   }
 }

@@ -12,16 +12,19 @@ default body slot.
 </CdxCard>
 ```
 
-The home gallery (`src/prototypes/index.vue`) uses one `CdxCard` per prototype (`#title`, optional `#description` from route `meta`).
+The home gallery (`src/prototypes/index.vue`) uses one `CdxCard` per prototype (`#title`, optional `#description` from route `meta.title` / `meta.description`). For gallery ordering, category, hiding, and spotlight, see [`protowiki-create-prototype` → `gallery-meta.md`](../../protowiki-create-prototype/references/gallery-meta.md).
 
-| Prop / slot | Use |
-| --- | --- |
-| `url` | Optional href; if set, the whole card renders as a link |
-| `#title` | Card title (slot) |
-| `#description` | Secondary text (slot) |
-| `thumbnail` | `{ url, width, height }` for a thumbnail image |
-| `icon` | icon descriptor (alternative to thumbnail) |
-| `forceThumbnail` | render thumbnail container even without an image |
+| Prop / slot         | Use                                                                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `url`               | Optional href; if set, the whole card renders as a link                                                                                     |
+| `#title`            | Card title (slot)                                                                                                                           |
+| `#description`      | Secondary text (slot)                                                                                                                       |
+| `thumbnail`         | `{ url, width, height }` for a thumbnail image                                                                                              |
+| `icon`              | icon descriptor (alternative to thumbnail)                                                                                                  |
+| `forceThumbnail`    | render thumbnail container even without an image                                                                                            |
+| `thumbnailPosition` | `'inline-start'` (default) / `'inline-end'` / `'block-start'` — `'block-start'` shows a full-width image above the text (16∶9 aspect ratio) |
+| `thumbnailSize`     | `'small'` (48px, default) / `'large'` (96px) — only applies for inline positions                                                            |
+| `separation`        | `'outline'` (default) / `'divider'` / `'none'` — `'divider'` is for vertical card groups only                                               |
 
 ## CdxTable
 
@@ -95,6 +98,6 @@ when assistive tech relies on the role.
 
 ## Content overflow (style guide)
 
-For *how to handle overflow* — wrapping vs ellipsis (+tooltip) vs a
+For _how to handle overflow_ — wrapping vs ellipsis (+tooltip) vs a
 scroll fade — see
 [`codex-style-guide` → content overflow](../../codex-style-guide/references/content-overflow.md).

@@ -30,7 +30,7 @@ pixel value.
 
 ## Container scope
 
-**`ArticleWrapper`**'s **`<article>`** + nested **`ArticleRenderer`** **`.article-content`** share vertical padding; you don't
+**`ArticleWrapper`**'s **`<article>`** owns horizontal **`--spacing-100`** and shares vertical padding with nested **`ArticleRenderer`** **`.article-content`**; you don't
 need to add page-level padding inside it for the article column. Use spacing tokens for
 *intra-component* gaps.
 

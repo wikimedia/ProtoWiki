@@ -1,7 +1,6 @@
 ---
 name: codex-typography
 description: The single most important text rule in Codex — every piece of text must use exactly ONE of the 9 canonical text styles (Heading 1–4, Body, Small, Figure caption, Block quote, Cite). Each style is a fixed combination of font-family, font-size, font-weight, and line-height; never invent font combinations or mix tokens across styles. Use whenever you add or style any text — a heading, paragraph, label, caption, or quote.
-license: MIT
 ---
 
 # Codex typography

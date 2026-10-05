@@ -6,153 +6,199 @@ definePage({
   },
 })
 
-import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
-import { CdxButton, CdxCard, CdxIcon } from '@wikimedia/codex'
-import { cdxIconConfigure } from '@wikimedia/codex-icons'
+import { CdxButton, CdxCard, CdxIcon, CdxInfoChip, CdxTab, CdxTabs } from '@wikimedia/codex'
+import { cdxIconAppearance, cdxIconUserAvatar } from '@wikimedia/codex-icons'
 
 import PlainWrapper from '@/components/PlainWrapper.vue'
-import UserSettingsPopover from '@/components/settings/UserSettingsPopover.vue'
+import AppearanceSettingsPanel from '@/components/settings/AppearanceSettingsPanel.vue'
+import SettingsPopover from '@/components/settings/SettingsPopover.vue'
+import UserSettingsPanel from '@/components/settings/UserSettingsPanel.vue'
+import { useGalleryTab } from '@/composables/useGalleryTab'
+import { usePrototypeGallery } from '@/composables/usePrototypeGallery'
+import { PROTOWIKI_API_PROJECT_URL, PROTOWIKI_LICENSE_URL } from '@/config'
+import { preservedQueryFromLocationQuery } from '@/appearance'
+import { GALLERY_TABS } from '@/prototype-gallery'
 
 const router = useRouter()
+const route = useRoute()
+const { galleryTab } = useGalleryTab()
+const { entries, webTemplateEntries, appTemplateEntries } = usePrototypeGallery(galleryTab)
 
-interface PrototypeMeta {
-  title?: string
-  description?: string
+function prototypeHref(path: string): string {
+  return router.resolve({
+    path,
+    query: preservedQueryFromLocationQuery(route.query),
+  }).href
 }
 
-interface PrototypeEntry {
-  path: string
-  title: string
-  description?: string
-  bucket: 'regular' | 'template' | 'example'
-}
-
-function humanize(path: string): string {
-  return path
-    .replace(/^\//, '')
-    .replace(/\/$/, '')
-    .replace(/-/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-}
-
-/** Top-level prototype only (src/prototypes/name/index.vue), not nested subfolder indexes. */
-function isTopLevelPrototypePath(path: string): boolean {
-  const segments = path.replace(/^\/|\/$/g, '').split('/').filter(Boolean)
-  return segments.length === 1
-}
-
-/** Bucket from `definePage` title — `Template:` / `Example:` prefixes (case-insensitive). */
-function prototypeBucket(title: string): 'regular' | 'template' | 'example' {
-  const t = title.trim()
-  if (/^template\s*:/i.test(t)) return 'template'
-  if (/^example\s*:/i.test(t)) return 'example'
-  return 'regular'
-}
-
-const bucketOrder: Record<'regular' | 'template' | 'example', number> = {
-  regular: 0,
-  template: 1,
-  example: 2,
-}
-
-const prototypes = computed<PrototypeEntry[]>(() => {
-  return router
-    .getRoutes()
-    .filter((route) => route.path !== '/' && route.path !== '/:catchAll(.*)')
-    .filter((route) => isTopLevelPrototypePath(route.path))
-    .map((route) => {
-      const meta = (route.meta ?? {}) as PrototypeMeta
-      const description =
-        typeof meta.description === 'string' && meta.description.length > 0
-          ? meta.description
-          : undefined
-      const title = meta.title ?? humanize(route.path)
-      return {
-        path: route.path,
-        title,
-        description,
-        bucket: prototypeBucket(title),
-      }
-    })
-    .sort((a, b) => {
-      const ba = a.bucket
-      const bb = b.bucket
-      const cmpBucket = bucketOrder[ba] - bucketOrder[bb]
-      if (cmpBucket !== 0) return cmpBucket
-      return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
-    })
-})
-
-const regularPrototypes = computed(() => prototypes.value.filter((e) => e.bucket === 'regular'))
-
-const templateAndExamplePrototypes = computed(() =>
-  prototypes.value.filter((e) => e.bucket !== 'regular'),
-)
-
-const showBucketDivider = computed(
-  () => regularPrototypes.value.length > 0 && templateAndExamplePrototypes.value.length > 0,
-)
-
+const docsUrl = `${PROTOWIKI_API_PROJECT_URL}#prototyping-system`
 </script>
 
 <template>
-  <!--  -->
   <PlainWrapper heading="ProtoWiki">
     <template #actions>
-      <UserSettingsPopover v-slot="{ toggle, open }">
-        <CdxButton
-          weight="quiet"
-          :icon-only="true"
-          aria-label="Settings"
-          :aria-expanded="open"
-          @click="toggle"
-        >
-          <CdxIcon :icon="cdxIconConfigure" />
-        </CdxButton>
-      </UserSettingsPopover>
+      <div class="prototype-index__settings-toolbar">
+        <SettingsPopover>
+          <template #default="{ toggle, open }">
+            <CdxButton
+              weight="quiet"
+              :icon-only="true"
+              aria-label="Appearance"
+              :aria-expanded="open"
+              @click="toggle"
+            >
+              <CdxIcon :icon="cdxIconAppearance" />
+            </CdxButton>
+          </template>
+          <template #panel>
+            <AppearanceSettingsPanel />
+          </template>
+        </SettingsPopover>
+        <SettingsPopover>
+          <template #default="{ toggle, open }">
+            <CdxButton
+              weight="quiet"
+              :icon-only="true"
+              aria-label="Account"
+              :aria-expanded="open"
+              @click="toggle"
+            >
+              <CdxIcon :icon="cdxIconUserAvatar" />
+            </CdxButton>
+          </template>
+          <template #panel>
+            <UserSettingsPanel />
+          </template>
+        </SettingsPopover>
+      </div>
     </template>
     <div class="prototype-index">
-      <div class="prototype-index__list">
-        <div v-for="entry in regularPrototypes" :key="entry.path" class="prototype-index__card">
-          <CdxCard :url="router.resolve({ path: entry.path }).href">
-            <template #title>{{ entry.title }}</template>
-            <template v-if="entry.description" #description>{{ entry.description }}</template>
-          </CdxCard>
-        </div>
+      <CdxTabs v-model:active="galleryTab" class="prototype-index__tabs">
+        <CdxTab v-for="tab in GALLERY_TABS" :key="tab.value" :name="tab.value" :label="tab.label">
+          <div v-if="galleryTab === tab.value" class="prototype-index__list">
+            <template v-if="tab.value === 'template'">
+              <h3 v-if="webTemplateEntries.length" class="prototype-index__section-heading">
+                Web templates
+              </h3>
+              <div
+                v-for="entry in webTemplateEntries"
+                :key="entry.path"
+                class="prototype-index__card"
+              >
+                <CdxCard :url="prototypeHref(entry.path)">
+                  <template #title>{{ entry.title }}</template>
+                  <template v-if="entry.description" #description>{{ entry.description }}</template>
+                  <template #supporting-text>
+                    <div class="prototype-index__chips">
+                      <CdxInfoChip status="subtle">{{ entry.platformLabel }}</CdxInfoChip>
+                      <CdxInfoChip v-if="entry.supportingText" status="subtle">{{
+                        entry.supportingText
+                      }}</CdxInfoChip>
+                    </div>
+                  </template>
+                </CdxCard>
+              </div>
 
-        <hr v-if="showBucketDivider" class="prototype-index__divider" />
+              <h3 v-if="appTemplateEntries.length" class="prototype-index__section-heading">
+                App templates
+              </h3>
+              <div
+                v-for="entry in appTemplateEntries"
+                :key="entry.path"
+                class="prototype-index__card"
+              >
+                <CdxCard :url="prototypeHref(entry.path)">
+                  <template #title>{{ entry.title }}</template>
+                  <template v-if="entry.description" #description>{{ entry.description }}</template>
+                  <template #supporting-text>
+                    <div class="prototype-index__chips">
+                      <CdxInfoChip status="subtle">{{ entry.platformLabel }}</CdxInfoChip>
+                      <CdxInfoChip v-if="entry.supportingText" status="subtle">{{
+                        entry.supportingText
+                      }}</CdxInfoChip>
+                    </div>
+                  </template>
+                </CdxCard>
+              </div>
+            </template>
 
-        <div
-          v-for="entry in templateAndExamplePrototypes"
-          :key="entry.path"
-          class="prototype-index__card"
-        >
-          <CdxCard :url="router.resolve({ path: entry.path }).href">
-            <template #title>{{ entry.title }}</template>
-            <template v-if="entry.description" #description>{{ entry.description }}</template>
-          </CdxCard>
-        </div>
-      </div>
+            <template v-else>
+              <p v-if="tab.value === 'prototype' && !entries.length" class="prototype-index__empty">
+                This is where your prototype(s) will appear when you make one. For information on
+                how to get started, check out the
+                <a :href="docsUrl" target="_blank" rel="noopener noreferrer">docs</a>. Or browse the
+                <RouterLink :to="{ query: { category: 'template' } }">templates</RouterLink> to pick
+                a good starting point.
+              </p>
+              <div v-for="entry in entries" :key="entry.path" class="prototype-index__card">
+                <CdxCard :url="prototypeHref(entry.path)">
+                  <template #title>{{ entry.title }}</template>
+                  <template v-if="entry.description" #description>{{ entry.description }}</template>
+                  <template #supporting-text>
+                    <div class="prototype-index__chips">
+                      <CdxInfoChip status="subtle">{{ entry.platformLabel }}</CdxInfoChip>
+                      <CdxInfoChip v-if="entry.supportingText" status="subtle">{{
+                        entry.supportingText
+                      }}</CdxInfoChip>
+                    </div>
+                  </template>
+                </CdxCard>
+              </div>
+            </template>
+          </div>
+        </CdxTab>
+      </CdxTabs>
+
+      <footer>
+        <p>
+          <a :href="PROTOWIKI_API_PROJECT_URL" rel="noopener noreferrer">Source</a>
+          <br />
+          <a :href="PROTOWIKI_LICENSE_URL" rel="noopener noreferrer">License</a>
+        </p>
+      </footer>
     </div>
   </PlainWrapper>
 </template>
 
 <style scoped>
+.prototype-index__settings-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-25);
+}
+
+.prototype-index__tabs {
+  margin-top: var(--spacing-50);
+}
+
 .prototype-index__list {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-75);
+  margin-top: var(--spacing-75);
 }
 
 .prototype-index__card {
   min-width: 0;
 }
 
-.prototype-index__divider {
-  margin: var(--spacing-50) 0;
-  border: 0;
-  border-top: 1px solid var(--border-color-subtle);
+.prototype-index__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-25);
+}
+
+.prototype-index__section-heading {
+  margin: var(--spacing-100) 0 0;
+}
+
+.prototype-index__empty {
+  margin: var(--spacing-100) 0 0;
+}
+
+footer {
+  margin-top: var(--spacing-200);
 }
 </style>

@@ -4,8 +4,10 @@ import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 
 definePage({
   meta: {
-    title: 'Template: Special page',
+    title: 'Special page',
     description: 'Template for special page prototypes.',
+    category: 'template',
+    platform: 'web',
   },
 })
 </script>

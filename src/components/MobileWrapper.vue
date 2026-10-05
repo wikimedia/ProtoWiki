@@ -18,7 +18,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   lang: undefined,
   dir: undefined,
-  maxWidth: '360px',
+  maxWidth: '412px',
 })
 </script>
 
@@ -42,9 +42,11 @@ const props = withDefaults(defineProps<Props>(), {
 }
 
 .mobile-wrapper__column {
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
   width: 100%;
-  min-height: 100%;
+  min-height: 100vh;
 }
 
 /* Wider than a typical phone column — show frame + gutters (below global skin 640px). */
@@ -55,7 +57,7 @@ const props = withDefaults(defineProps<Props>(), {
   }
 
   .mobile-wrapper__column {
-    max-width: var(--mobile-wrapper-max-width, 360px);
+    max-width: var(--mobile-wrapper-max-width, 412px);
     margin-inline: auto;
     background-color: var(--background-color-base);
     border-inline: var(--border-width-base) solid var(--border-color-muted);

@@ -1,4 +1,8 @@
 export type ConfigTheme = 'light' | 'dark' | 'system'
+export type PrototypePlatform = 'web' | 'app'
+export type AppPlatform = 'ios' | 'android'
+export type ConfigAppPlatform = 'auto' | AppPlatform
+export type ConfigWebSkin = 'auto' | 'desktop' | 'mobile'
 export type ConfigUser = 'logged-out' | 'new' | 'experienced' | 'real'
 
 export type PageListKey = 'watchlist' | 'readingList' | 'editedPages'
@@ -13,11 +17,13 @@ export interface UserPageLists {
 
 export interface Config {
   theme: ConfigTheme
+  /** Native app OS preference for `platform: 'app'` prototypes. */
+  appPlatform: ConfigAppPlatform
+  /** Vector / Minerva skin preference for `platform: 'web'` prototypes. */
+  webSkin: ConfigWebSkin
   user: ConfigUser
   /** Wikipedia username when `user` is `'real'`. */
   realUsername: string
-  /** Contact detail for Wikimedia API etiquette (email/URL), appended to user agent. */
-  apiContact: string
   userPageLists: Record<ConfigUser, UserPageLists>
 }
 
@@ -31,7 +37,7 @@ export const DEFAULT_USER_PAGE_LISTS: Record<ConfigUser, UserPageLists> = {
   new: {
     lang: 'en',
     watchlist: [],
-    readingList: ['Wet Leg', 'Jade Thirlwall'],
+    readingList: [],
     editedPages: [],
   },
   experienced: {
@@ -66,14 +72,16 @@ export const DEFAULT_USER_PAGE_LISTS: Record<ConfigUser, UserPageLists> = {
 
 export const DEFAULT_CONFIG: Config = {
   theme: 'light',
+  appPlatform: 'auto',
+  webSkin: 'auto',
   user: 'new',
-  realUsername: '',
-  apiContact: '',
+  realUsername: 'Todepond',
   userPageLists: cloneUserPageListsMap(DEFAULT_USER_PAGE_LISTS),
 }
 
-export const PROTOWIKI_API_USER_AGENT = 'ProtoWiki/0.1'
+export const PROTOWIKI_API_USER_AGENT = 'ProtoWiki/0.4'
 export const PROTOWIKI_API_PROJECT_URL = 'https://github.com/wikimedia/ProtoWiki'
+export const PROTOWIKI_LICENSE_URL = `${PROTOWIKI_API_PROJECT_URL}/blob/main/LICENSE`
 export const DEFAULT_API_CONTACT = 'lwilson-ctr@wikimedia.org'
 
 export const CONFIG_USER_DISPLAY_NAMES: Partial<Record<ConfigUser, string>> = {
@@ -82,17 +90,29 @@ export const CONFIG_USER_DISPLAY_NAMES: Partial<Record<ConfigUser, string>> = {
   experienced: 'ExperiencedEditor',
 }
 
-export const CONFIG_USER_MENU_ITEMS: { value: ConfigUser; label: string }[] = [
-  { value: 'logged-out', label: 'Logged out' },
-  { value: 'new', label: 'New editor' },
+export const CONFIG_USER_MENU_ITEMS: { value: ConfigUser; label: string; description?: string }[] = [
+  { value: 'logged-out', label: 'Logged out user' },
+  { value: 'new', label: 'New user' },
   { value: 'experienced', label: 'Experienced editor' },
-  { value: 'real', label: 'Real user' },
+  { value: 'real', label: 'Real user', description: 'Connect to a real account on the wikis' },
 ]
 
 export const CONFIG_THEME_MENU_ITEMS: { value: ConfigTheme; label: string }[] = [
+  { value: 'system', label: 'Auto' },
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
-  { value: 'system', label: 'System' },
+]
+
+export const CONFIG_APP_PLATFORM_MENU_ITEMS: { value: ConfigAppPlatform; label: string }[] = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'android', label: 'Android' },
+  { value: 'ios', label: 'iOS' },
+]
+
+export const CONFIG_WEB_SKIN_MENU_ITEMS: { value: ConfigWebSkin; label: string }[] = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'desktop', label: 'Desktop' },
+  { value: 'mobile', label: 'Mobile' },
 ]
 
 /** Normalize a Wikipedia username for API calls and cache keys. */
@@ -150,15 +170,24 @@ export function formatPageList(pages: string[]): string {
   return pages.join(', ')
 }
 
-export function resetUserPageListField(
-  lists: UserPageLists,
-  user: ConfigUser,
-  field: PageListKey,
-): UserPageLists {
-  return {
-    ...lists,
-    [field]: [...DEFAULT_USER_PAGE_LISTS[user][field]],
-  }
+export function resetUserPageLists(user: ConfigUser): UserPageLists {
+  return cloneUserPageLists(DEFAULT_USER_PAGE_LISTS[user])
+}
+
+function userPageListsEqual(a: UserPageLists, b: UserPageLists): boolean {
+  const arraysEqual = (x: string[], y: string[]) =>
+    x.length === y.length && x.every((v, i) => v === y[i])
+  return (
+    a.lang === b.lang &&
+    arraysEqual(a.watchlist, b.watchlist) &&
+    arraysEqual(a.readingList, b.readingList) &&
+    arraysEqual(a.editedPages, b.editedPages)
+  )
+}
+
+/** Whether a preset's page lists still match its shipped defaults (i.e. nothing to reset). */
+export function isDefaultUserPageLists(user: ConfigUser, lists: UserPageLists): boolean {
+  return userPageListsEqual(lists, DEFAULT_USER_PAGE_LISTS[user])
 }
 
 function resolveApiContact(rawContact: string): string {
@@ -169,7 +198,7 @@ function resolveApiContact(rawContact: string): string {
 /** `fetch` headers for Wikimedia API requests (`Api-User-Agent`). */
 export function wikimediaApiFetchHeaders(purpose?: string, apiContact?: string): HeadersInit {
   const tag = purpose?.trim()
-  const contact = resolveApiContact(apiContact ?? loadConfig().apiContact)
+  const contact = resolveApiContact(apiContact ?? DEFAULT_API_CONTACT)
   const base = `${PROTOWIKI_API_USER_AGENT} (${PROTOWIKI_API_PROJECT_URL}; ${contact})`
   return { 'Api-User-Agent': tag ? `${base} ${tag}` : base }
 }
@@ -177,11 +206,23 @@ export function wikimediaApiFetchHeaders(purpose?: string, apiContact?: string):
 const STORAGE_KEY = 'protowiki-prototype-user-config'
 
 const VALID_THEMES: ConfigTheme[] = ['light', 'dark', 'system']
+const VALID_CONFIG_APP_PLATFORMS: ConfigAppPlatform[] = ['auto', 'ios', 'android']
+const VALID_WEB_SKINS: ConfigWebSkin[] = ['auto', 'desktop', 'mobile']
 const VALID_USERS: ConfigUser[] = ['logged-out', 'new', 'experienced', 'real']
 const PAGE_LIST_KEYS: PageListKey[] = ['watchlist', 'readingList', 'editedPages']
 
 function isConfigTheme(value: unknown): value is ConfigTheme {
   return typeof value === 'string' && VALID_THEMES.includes(value as ConfigTheme)
+}
+
+export function isConfigAppPlatform(value: unknown): value is ConfigAppPlatform {
+  return (
+    typeof value === 'string' && VALID_CONFIG_APP_PLATFORMS.includes(value as ConfigAppPlatform)
+  )
+}
+
+export function isConfigWebSkin(value: unknown): value is ConfigWebSkin {
+  return typeof value === 'string' && VALID_WEB_SKINS.includes(value as ConfigWebSkin)
 }
 
 function isConfigUser(value: unknown): value is ConfigUser {
@@ -259,8 +300,6 @@ export function normalizeConfig(input: unknown): Config {
   const record = input as Record<string, unknown>
   const realUsername =
     typeof record.realUsername === 'string' ? record.realUsername : DEFAULT_CONFIG.realUsername
-  const apiContact =
-    typeof record.apiContact === 'string' ? record.apiContact : DEFAULT_CONFIG.apiContact
   const userPageLists = mergeUserPageListsMap(record.userPageLists)
 
   if (typeof record.realWiki === 'string') {
@@ -272,9 +311,12 @@ export function normalizeConfig(input: unknown): Config {
 
   return {
     theme: isConfigTheme(record.theme) ? record.theme : DEFAULT_CONFIG.theme,
+    appPlatform: isConfigAppPlatform(record.appPlatform)
+      ? record.appPlatform
+      : DEFAULT_CONFIG.appPlatform,
+    webSkin: isConfigWebSkin(record.webSkin) ? record.webSkin : DEFAULT_CONFIG.webSkin,
     user: isConfigUser(record.user) ? record.user : DEFAULT_CONFIG.user,
     realUsername,
-    apiContact,
     userPageLists,
   }
 }
@@ -321,9 +363,10 @@ export function loadConfig(): Config {
 function cloneConfig(config: Config): Config {
   return {
     theme: config.theme,
+    appPlatform: config.appPlatform,
+    webSkin: config.webSkin,
     user: config.user,
     realUsername: config.realUsername,
-    apiContact: config.apiContact,
     userPageLists: cloneUserPageListsMap(config.userPageLists),
   }
 }
