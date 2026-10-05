@@ -1,15 +1,14 @@
 import { computed, readonly, type ComputedRef, type DeepReadonly, type Ref } from 'vue'
 
-import { globalAppPlatform } from '@/app-platform'
+import { globalAppPlatform } from '@/appearance'
 import type { AppPlatform } from '@/config'
 
 /**
  * Read-only access to the effective app platform (resolved `ios` / `android`
  * on `<html>`).
  *
- * Resolution order: `?os=auto|ios|android` URL param (masks stored preference,
- * never writes to localStorage) → stored preference → device detection when
- * effective preference is `auto`.
+ * Driven by **App OS** in Appearance settings, kept in sync with `?os=`
+ * on the URL (`auto` runs device detection; `ios` / `android` pin explicitly).
  *
  * Use this when a prototype needs structural differences between iOS and
  * Android. For visual-only differences, prefer [data-app-platform] selectors

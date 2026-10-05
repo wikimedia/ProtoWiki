@@ -11,11 +11,7 @@ import './styles/wiki-skins/minerva.css'
 import './styles/wiki-skins/mobile-wiki-overrides.css'
 import './styles/dark.css'
 
-import { initTheming } from './theme'
-import { initAppPlatform } from './app-platform'
-import { loadConfig } from './config'
-
-import '@/composables/useConfig'
+import { bootAppearance, mergedLocationQuery, wireAppearanceRouter } from '@/appearance'
 
 /** Path under `import.meta.env.BASE_URL` (e.g. `/template-chrome`). */
 function githubPagesSubpathAfterBase(baseUrl: string): string | null {
@@ -39,47 +35,21 @@ function syncGithubPagesPreviewRoute(router: ReturnType<typeof createRouter>): v
   if (!subPath) {
     return
   }
-  void router.replace(subPath)
+  void router.replace({
+    path: subPath,
+    query: mergedLocationQuery(router.currentRoute.value.query),
+    hash: window.location.hash,
+  })
 }
 
-initTheming()
-initAppPlatform(loadConfig().appPlatform)
+bootAppearance()
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 })
 
-/** PR previews replace hashed lazy chunks on each push; recover from a cached entry bundle. */
-const CHUNK_RELOAD_KEY = 'protowiki-chunk-reload'
-
-function isStaleLazyChunkError(error: unknown): boolean {
-  const msg = error instanceof Error ? error.message : String(error)
-  return (
-    msg.includes('Failed to fetch dynamically imported module') ||
-    msg.includes('Importing a module script failed') ||
-    msg.includes('error loading dynamically imported module')
-  )
-}
-
-router.onError((error, to) => {
-  if (!isStaleLazyChunkError(error)) {
-    throw error
-  }
-
-  const target = router.resolve(to).href
-  if (sessionStorage.getItem(CHUNK_RELOAD_KEY) === target) {
-    throw error
-  }
-
-  sessionStorage.setItem(CHUNK_RELOAD_KEY, target)
-  window.location.assign(target)
-})
-
-router.afterEach(() => {
-  sessionStorage.removeItem(CHUNK_RELOAD_KEY)
-})
-
+wireAppearanceRouter(router)
 syncGithubPagesPreviewRoute(router)
 
 if (import.meta.hot) {

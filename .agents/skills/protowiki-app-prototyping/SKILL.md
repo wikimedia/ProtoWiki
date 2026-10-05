@@ -80,16 +80,14 @@ if that's actually what you want.
 
 ## iOS vs Android
 
-One preference drives the whole app, resolved at boot and written to
-`<html data-app-platform="ios|android">`:
+One preference drives the whole app, kept in sync between **App OS** in
+Appearance settings and `?os=auto|ios|android` on the URL. The resolved value
+is written to `<html data-app-platform="ios|android">`:
 
-1. **`?os=auto|ios|android`** on the URL — masks the stored preference for that
-   page load without saving it (handy for sharing a link or a PR preview).
-2. **Stored preference** — `config.appPlatform` (`'auto' | 'ios' | 'android'`),
-   set under **App OS** in the gallery's Appearance settings, persisted in
-   `localStorage`.
-3. **Device detection** when the effective preference is `auto` — user-agent
-   sniffing, falling back to **Android** on desktop browsers.
+1. **Stored preference + URL** — `config.appPlatform` and `?os=` always match;
+   changing either updates the other (settings persist in `localStorage`).
+2. **Device detection** when the preference is `auto` — user-agent sniffing,
+   falling back to **Android** on desktop browsers.
 
 Read it, never write it:
 
@@ -175,10 +173,13 @@ behaviour matrix live in
 
 ## Sharing an app prototype
 
-Normal ProtoWiki deploy — plus `?os=` when the reviewer should see a specific
-platform:
+Normal ProtoWiki deploy. `?os=` stays pinned on the URL and matches **App OS**
+in Appearance settings — change either one and the other follows. With
+`?os=auto`, device detection runs on each visit; `?os=ios` / `?os=android`
+pin explicitly.
 
 ```text
+https://<user>.github.io/protowiki/template-app-article?os=auto
 https://<user>.github.io/protowiki/template-app-article?os=ios
 https://<user>.github.io/protowiki/template-app-article?os=android
 ```

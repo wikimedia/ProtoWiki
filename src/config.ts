@@ -273,13 +273,13 @@ function isConfigTheme(value: unknown): value is ConfigTheme {
   return typeof value === 'string' && VALID_THEMES.includes(value as ConfigTheme)
 }
 
-function isConfigAppPlatform(value: unknown): value is ConfigAppPlatform {
+export function isConfigAppPlatform(value: unknown): value is ConfigAppPlatform {
   return (
     typeof value === 'string' && VALID_CONFIG_APP_PLATFORMS.includes(value as ConfigAppPlatform)
   )
 }
 
-function isConfigWebSkin(value: unknown): value is ConfigWebSkin {
+export function isConfigWebSkin(value: unknown): value is ConfigWebSkin {
   return typeof value === 'string' && VALID_WEB_SKINS.includes(value as ConfigWebSkin)
 }
 

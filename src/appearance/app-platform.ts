@@ -4,15 +4,6 @@ import type { AppPlatform, ConfigAppPlatform } from '@/config'
 
 export const globalAppPlatform: Ref<AppPlatform> = ref<AppPlatform>('android')
 
-function readUrlParam(name: string): string | null {
-  if (typeof window === 'undefined') return null
-  return new URLSearchParams(window.location.search).get(name)
-}
-
-function isConfigAppPlatform(value: unknown): value is ConfigAppPlatform {
-  return value === 'auto' || value === 'ios' || value === 'android'
-}
-
 function resolveAppPlatformFromDevice(): AppPlatform {
   if (typeof navigator === 'undefined') return 'android'
 
@@ -25,16 +16,9 @@ function resolveAppPlatformFromDevice(): AppPlatform {
   return 'android'
 }
 
-function resolvePreferenceWithUrlMask(stored: ConfigAppPlatform): ConfigAppPlatform {
-  const osParam = readUrlParam('os')
-  if (isConfigAppPlatform(osParam)) return osParam
-  return stored
-}
-
-function resolveEffectiveAppPlatform(preference: ConfigAppPlatform): AppPlatform {
-  const effectivePreference = resolvePreferenceWithUrlMask(preference)
-  if (effectivePreference === 'ios' || effectivePreference === 'android') {
-    return effectivePreference
+function resolveEffectiveAppPlatformFromPreference(preference: ConfigAppPlatform): AppPlatform {
+  if (preference === 'ios' || preference === 'android') {
+    return preference
   }
   return resolveAppPlatformFromDevice()
 }
@@ -45,12 +29,16 @@ function setHtmlAppPlatform(platform: AppPlatform): void {
 }
 
 export function applyAppPlatform(preference: ConfigAppPlatform): void {
-  const platform = resolveEffectiveAppPlatform(preference)
+  applyAppPlatformPreference(preference)
+}
+
+export function applyAppPlatformPreference(preference: ConfigAppPlatform): void {
+  const platform = resolveEffectiveAppPlatformFromPreference(preference)
   globalAppPlatform.value = platform
   setHtmlAppPlatform(platform)
 }
 
 /** Apply the initial app platform on <html>. Call once before mounting the app. */
 export function initAppPlatform(preference: ConfigAppPlatform): void {
-  applyAppPlatform(preference)
+  applyAppPlatformPreference(preference)
 }

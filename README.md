@@ -3,10 +3,10 @@
 
 # ProtoWiki
 
-This repo is an experimental collection of resources for prototyping within the Wiki ecosystem. It contains two things:
+ProtoWiki contains two things:
 
 1. [A big list](#resources) of links to many resources and tools that you can use.
-2. [A prototyping system](#prototyping-system) itself for making minimal prototypes.
+2. [A prototyping system](#prototyping-system) for making minimal prototypes.
 
 We'd love to hear from you. Have some feedback? Have a suggestion? Found a bug?\
 In all cases, please feel free to [let us know](https://github.com/wikimedia/ProtoWiki/issues/new).
@@ -61,7 +61,7 @@ There are also many skills within the repo that agents can use to navigate all o
 
 ### Getting started
 
-To run ProtoWiki locally, click "Use as template" on this repo, then clone your copy.
+To run ProtoWiki locally, click "Use this template" on this repo, then clone your copy.
 
 Then install dependencies and run the dev server:
 

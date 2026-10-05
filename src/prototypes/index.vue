@@ -6,7 +6,7 @@ definePage({
   },
 })
 
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { CdxButton, CdxCard, CdxIcon, CdxInfoChip, CdxTab, CdxTabs } from '@wikimedia/codex'
 import { cdxIconAppearance, cdxIconUserAvatar } from '@wikimedia/codex-icons'
@@ -18,11 +18,20 @@ import UserSettingsPanel from '@/components/settings/UserSettingsPanel.vue'
 import { useGalleryTab } from '@/composables/useGalleryTab'
 import { usePrototypeGallery } from '@/composables/usePrototypeGallery'
 import { PROTOWIKI_API_PROJECT_URL, PROTOWIKI_LICENSE_URL } from '@/config'
+import { preservedQueryFromLocationQuery } from '@/appearance'
 import { GALLERY_TABS } from '@/prototype-gallery'
 
 const router = useRouter()
+const route = useRoute()
 const { galleryTab } = useGalleryTab()
 const { entries, webTemplateEntries, appTemplateEntries } = usePrototypeGallery(galleryTab)
+
+function prototypeHref(path: string): string {
+  return router.resolve({
+    path,
+    query: preservedQueryFromLocationQuery(route.query),
+  }).href
+}
 
 const docsUrl = `${PROTOWIKI_API_PROJECT_URL}#prototyping-system`
 </script>
@@ -78,7 +87,7 @@ const docsUrl = `${PROTOWIKI_API_PROJECT_URL}#prototyping-system`
                 :key="entry.path"
                 class="prototype-index__card"
               >
-                <CdxCard :url="router.resolve({ path: entry.path }).href">
+                <CdxCard :url="prototypeHref(entry.path)">
                   <template #title>{{ entry.title }}</template>
                   <template v-if="entry.description" #description>{{ entry.description }}</template>
                   <template #supporting-text>
@@ -100,7 +109,7 @@ const docsUrl = `${PROTOWIKI_API_PROJECT_URL}#prototyping-system`
                 :key="entry.path"
                 class="prototype-index__card"
               >
-                <CdxCard :url="router.resolve({ path: entry.path }).href">
+                <CdxCard :url="prototypeHref(entry.path)">
                   <template #title>{{ entry.title }}</template>
                   <template v-if="entry.description" #description>{{ entry.description }}</template>
                   <template #supporting-text>
@@ -124,7 +133,7 @@ const docsUrl = `${PROTOWIKI_API_PROJECT_URL}#prototyping-system`
                 a good starting point.
               </p>
               <div v-for="entry in entries" :key="entry.path" class="prototype-index__card">
-                <CdxCard :url="router.resolve({ path: entry.path }).href">
+                <CdxCard :url="prototypeHref(entry.path)">
                   <template #title>{{ entry.title }}</template>
                   <template v-if="entry.description" #description>{{ entry.description }}</template>
                   <template #supporting-text>
