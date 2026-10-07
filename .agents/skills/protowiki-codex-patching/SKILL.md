@@ -59,6 +59,14 @@ Details: [making patches](references/making-patches.md) ·
 Applies to every prototype, not only ones being tested against a patch. The rules
 are ordered: reach for the first one that works.
 
+**Surface stylesheet.** Alias tokens (`--my-card-border-color--hover`, …) and
+rules that target a **child component's root** (e.g. `CdxMenu` thumbnails) go
+in an unscoped `<prototype>-surface.css` imported from the route entry, with
+every selector prefixed by a prototype root class (e.g. `.my-prototype`).
+Overlay-link card hover uses aliases in the surface file plus `:deep(.cdx-card)`
+on the wrapper in the card SFC. Layout and `:deep()` on **direct-child** Codex
+nodes can stay scoped. See [building-for-patches](references/building-for-patches.md).
+
 1. **Use the Codex component, not a lookalike.** If a design is "almost
    `CdxToggleButton`", render `CdxToggleButton` and override only the delta
    (e.g. `font-weight`, the toggled-on colour), with one comment saying why.
@@ -88,7 +96,8 @@ are ordered: reach for the first one that works.
    a stock block plus an `html[data-codex-patched]` block. Gates are the last
    resort: each one is a copy you must update when the patch changes.
 
-Worked examples (thumbnails, Saved tabs, search hover, card hover aliases):
+Worked examples (surface file layout, filter tabs, thumbnails, search hover,
+overlay-link card hover with stock/patched alias blocks):
 [references/building-for-patches.md](references/building-for-patches.md).
 
 ## Verify on both
@@ -116,8 +125,8 @@ open each build from the Codex patch message on the home screen (stock lives und
   `patches/codex/`.
 - **Scoped CSS doesn't reach child component roots.** A `<style scoped>` rule
   like `.my-menu :deep(...)` only matches if `.my-menu` carries your scope id.
-  A Codex child component's root (e.g. `CdxMenu`) doesn't. Put such rules in a
-  global stylesheet under a prototype class (Wikitab: `wikitab-surface.css`).
+  A Codex child component's root (e.g. `CdxMenu`) doesn't. Put such rules in the
+  prototype surface stylesheet (see [building-for-patches](references/building-for-patches.md)).
 - **`data-theme` islands reset tokens.** A subtree with its own `data-theme`
   gets fresh Codex tokens, so remaps from outside don't reach it. Re-apply them
   inside the island.
@@ -133,7 +142,5 @@ open each build from the Codex patch message on the home screen (stock lives und
   published Codex version (regenerate the patch afterwards).
 - [`protowiki-deploy`](../protowiki-deploy/SKILL.md) — GitHub Pages, base paths,
   previews.
-- [`protowiki-wikitab`](../protowiki-wikitab/SKILL.md#codex-agnostic-styling) —
-  the prototype these rules were worked out on.
 - [`codex-usage`](../codex-usage/SKILL.md) — components first, tokens second,
   custom CSS last.

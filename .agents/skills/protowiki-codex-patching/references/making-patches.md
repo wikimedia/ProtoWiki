@@ -5,8 +5,10 @@ one replaces the old one.
 
 **Pure Gerrit only:** `npm run codex:patch` is the sole way to write
 `patches/codex/`. Never edit `.patch` files or `node_modules` to change the
-patch. If the Gerrit change has bugs, work around them in prototype CSS (see
-[building-for-patches.md](building-for-patches.md)) or report on Gerrit.
+patch. If the Gerrit change has bugs, work around them in the prototype's surface CSS
+(`<prototype>-surface.css` — see
+[building-for-patches.md → Where patch-aware CSS lives](building-for-patches.md#where-patch-aware-css-lives))
+or report on Gerrit.
 
 ## Make a patch from a Gerrit change
 

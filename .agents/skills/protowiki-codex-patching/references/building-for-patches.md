@@ -1,85 +1,262 @@
 # Building for patches — worked examples
 
-Each example is a real case from Wikitab where a prototype failed to follow a
-Codex patch, with the fix. The general rules are in [`../SKILL.md`](../SKILL.md).
+Each example is a production-verified pattern, generalized below. The general
+rules are in [`../SKILL.md`](../SKILL.md).
+
+## Where patch-aware CSS lives
+
+Rules that target **Codex child component roots** (e.g. sizing a `CdxMenu`
+thumbnail slot) or **define stock/patched alias tokens** belong in an unscoped
+surface stylesheet beside the prototype:
+
+```
+src/prototypes/my-prototype/
+  index.vue                 # import './my-prototype-surface.css'
+  my-prototype-surface.css  # selectors under .my-prototype …
+  MyCard.vue                # overlay-link hover uses :deep(.cdx-card) + aliases
+```
+
+In `index.vue`:
+
+```vue
+<script setup lang="ts">
+import './my-prototype-surface.css'
+</script>
+
+<template>
+  <div class="my-prototype">…</div>
+</template>
+```
+
+Per-component layout and `:deep()` rules that target **direct child** Codex
+nodes in the same SFC (e.g. filter tabs) can stay scoped. See saved tabs below.
+
+---
 
 ## Saved filter tabs: lookalike → real component
 
 **Before.** `CdxTabs framed`, plus ~150 lines of scoped CSS recreating framed
-small `CdxToggleButton` (padding, border, hover outline, active inset, focus
-ring) state by state. The patch changed toggle-button styling, and the tabs
-didn't follow.
+small `CdxToggleButton` state by state. A patch changed toggle-button styling;
+the tabs did not follow.
 
 **After.** One `CdxToggleButton size="small"` per tab inside a
-`role="tablist"` row. Wikitab CSS keeps:
+`role="tablist"` row. Layout and the toggled-on remap stay in **scoped** CSS
+(`:deep` reaches buttons rendered in the same SFC):
 
-- layout (flex row, gap, horizontal scroll, 1px padding so focus outlines
-  aren't clipped);
-- `font-weight: normal` (the design wants regular weight; Codex buttons are bold);
-- the toggled-on colour remapped from progressive blue to
-  `--background-color-inverted` / `--color-inverted`, including its hover,
-  focus and active states.
+```css
+.my-filter-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--spacing-25);
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Room for hover/focus outline at scrollport edge */
+  padding: var(--border-width-base);
+}
 
-Everything else — unselected rest, hover, active, disabled — comes from
-whatever Codex is installed. The test: deleting the override block should give
-you plain Codex toggle buttons, not broken markup.
+.my-filter-tabs :deep(.cdx-toggle-button) {
+  flex: 0 0 auto;
+  font-weight: var(--font-weight-normal);
+}
 
-## Thumbnails: known upstream gap (deferred)
+/* Codex uses --toggled-on / --framed, not a generic --is-on class */
+.my-filter-tabs
+  :deep(.cdx-toggle-button--framed.cdx-toggle-button--toggled-on:enabled) {
+  background-color: var(--background-color-inverted);
+  color: var(--color-inverted);
+  border-color: var(--border-color-transparent);
+  box-shadow: none;
+}
 
-**Symptom.** Wikitab feed cards size `.cdx-thumbnail` to 96px, but on the current
-Gerrit trial the photo can letterbox and the border can look wrong (side bands,
-missing edge).
+.my-filter-tabs
+  :deep(.cdx-toggle-button--framed.cdx-toggle-button--toggled-on:enabled:hover),
+.my-filter-tabs
+  :deep(.cdx-toggle-button--framed.cdx-toggle-button--toggled-on:enabled:focus-visible),
+.my-filter-tabs
+  :deep(.cdx-toggle-button--framed.cdx-toggle-button--toggled-on:enabled:active) {
+  background-color: var(--background-color-inverted);
+  color: var(--color-inverted);
+  border-color: var(--border-color-transparent);
+}
+```
+
+Unselected rest, hover, active, and disabled come from installed Codex.
+**Test:** delete the toggled-on block; you should get plain Codex toggle buttons.
+
+---
+
+## Thumbnails: size the root, stretch inners in the surface file
+
+**Symptom.** Cards size `.cdx-thumbnail` to 96px, but photos letterbox or borders
+look wrong when trialling a Gerrit change.
 
 **Cause.** Codex fixes inner `__image` / `__placeholder` at 2.5rem (3rem on card
-thumbnails) while Wikitab sizes the root larger. The Gerrit change's transparent
-inner-border model does not fully solve fill at non-default sizes.
+thumbnails) while the prototype sizes the root larger.
 
-**Policy.** Do not patch this in `patches/codex/` while trialling the change —
-accept border/frame quirks or report on Gerrit. A future local-Codex overlay
-workflow may carry ProtoWiki-specific fixes on stock or patched installs.
+**Policy.** Do not patch this in `patches/codex/` while trialling — accept frame
+quirks or report on Gerrit.
 
-**Layout (not a patch fix):** Wikitab sets thumbnail *slot* sizes (96px cards,
-40px search menu) and `wikitab-surface.css` stretches inners so photos fill
-those slots on stock and patched Codex. That fill is normal layout CSS, not a
-workaround baked into `patches/codex/`.
+**Layout** (verified pattern — surface file, not scoped):
 
-## Search menu hover: remap the token, don't add a background
+```css
+.my-prototype .cdx-card__thumbnail.cdx-thumbnail,
+.my-prototype .my-search-menu .cdx-menu-item__thumbnail.cdx-thumbnail {
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
 
-**Symptom.** Typeahead hover was Codex blue on a purple theme. The obvious fix
-— a themed `background-color` on highlighted rows — would add a hover wash
-that patched Codex deliberately removed.
+/* 96px card slot — set on the contexts you use */
+.my-prototype .cdx-card__thumbnail.cdx-thumbnail {
+  width: 96px;
+  height: 96px;
+}
 
-**Fix.**
+/* 40px search-menu slot */
+.my-prototype .my-search-menu .cdx-menu-item__thumbnail.cdx-thumbnail {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+}
 
-- The search island has its own `data-theme`, so page-level remaps don't reach
-  it. `WikitabSearch.vue` re-points `--color-progressive*` and
-  `--background-color-progressive-subtle*` on `.wikitab-search__menu`.
-- Stock `CdxMenuItem` paints highlighted rows with
-  `--background-color-interactive-subtle--hover`, so that token is remapped
-  under `html:not([data-codex-patched])` only.
-- No `background-color` rule exists anywhere. Patched Codex (text tint, no wash)
-  and stock Codex (wash) each render their own design in the theme colour.
+.my-prototype :is(
+  .cdx-card__thumbnail.cdx-thumbnail,
+  .my-search-menu .cdx-menu-item__thumbnail.cdx-thumbnail
+) :is(.cdx-thumbnail__placeholder, .cdx-thumbnail__image) {
+  width: 100%;
+  height: 100%;
+}
 
-**Lesson.** "Should this have a hover background?" is answered by the
-installed Codex, not the prototype.
+.my-prototype :is(
+  .cdx-card__thumbnail.cdx-thumbnail,
+  .my-search-menu .cdx-menu-item__thumbnail.cdx-thumbnail
+) .cdx-thumbnail__image {
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+}
 
-## Card hover through an overlay link: the one place gates are needed
+/* Stock only — patched Codex may change inner border model */
+html:not([data-codex-patched]) .my-prototype :is(
+  .cdx-card__thumbnail.cdx-thumbnail,
+  .my-search-menu .cdx-menu-item__thumbnail.cdx-thumbnail
+) :is(.cdx-thumbnail__placeholder, .cdx-thumbnail__image) {
+  border: var(--border-width-base) var(--border-style-base) var(--border-color-subtle);
+  border-radius: var(--border-radius-base);
+}
+```
 
-`WikitabCard` puts a sibling `<a>` over the `CdxCard` (hooks contain nested
-links, which Codex forbids inside a linked card). The pointer is over the
-overlay, so Codex's own `.cdx-card:hover` never matches, and the hover must be
-reproduced from the wrapper.
+Rule 5: size the `.cdx-thumbnail` root; stretch inners — never only the inners.
 
-`wikitab-surface.css` defines `--wikitab-card-*` aliases: one block mirrors stock
-`CdxCard`, and an `html[data-codex-patched]` block mirrors the patched mapping
-(progressive border, 1px outline, inset on active, no transition). This is a
-copy, so when a patch changes `CdxCard.css`, update the patched block. Prefer
-restructuring markup so Codex's own selectors match (rule 2: wear Codex classes
-on an ancestor of whatever the pointer hits) whenever that's possible.
+---
+
+## Search menu hover: remap tokens inside the theme island
+
+**Symptom.** Typeahead hover was Codex blue on a themed page. Adding
+`background-color` on highlighted rows would fight a patch that removed the
+hover wash.
+
+**Fix.** The search subtree has its own `data-theme`, so page-level remaps do
+not reach it. Re-point progressive tokens on the menu wrapper (surface file or
+`:global()` in the search SFC when a theme class gates remaps):
+
+```css
+.my-prototype__search .my-prototype__search-menu {
+  --color-progressive: var(--my-accent);
+  --color-progressive--hover: var(--my-accent-hover);
+  --color-progressive--active: var(--my-accent-active);
+  --background-color-progressive-subtle: var(--my-accent-subtle);
+  --background-color-progressive-subtle--hover: var(--my-accent-subtle-hover);
+  --background-color-progressive-subtle--active: var(--my-accent-subtle-active);
+}
+
+/* Stock: CdxMenuItem --highlighted uses interactive-subtle hover wash */
+html:not([data-codex-patched]) .my-prototype__search .my-prototype__search-menu {
+  --background-color-interactive-subtle--hover: var(--my-accent-subtle-hover);
+}
+```
+
+No `background-color` on `.cdx-menu-item`. Patched Codex tints label text;
+stock Codex paints the wash — each via its own tokens.
+
+---
+
+## Card hover through an overlay link: aliases + wrapper `:hover`
+
+When hooks carry nested anchors, omit `CdxCard`'s `url` and cover the card with
+a sibling overlay `<a>`. The pointer never hits `.cdx-card--is-link`, so hover
+must be driven from the **wrapper** (not `:has(.overlay-link:hover)` on a
+distant ancestor).
+
+**1. Alias tokens** — surface file, stock block + patched block:
+
+```css
+.my-prototype {
+  --my-card-border-color: var(--border-color-base);
+  --my-card-transition-duration: var(--transition-duration-base);
+  --my-card-border-color--hover: var(--border-color-interactive--hover);
+  --my-card-box-shadow--hover: none;
+  --my-card-border-color--active: var(--border-color-interactive--active);
+  --my-card-box-shadow--active: none;
+}
+
+html[data-codex-patched] .my-prototype {
+  --my-card-border-color: var(--border-color-subtle);
+  --my-card-transition-duration: 0s;
+  --my-card-border-color--hover: var(--border-color-progressive);
+  --my-card-box-shadow--hover: 0 0 0 1px var(--box-shadow-color-progressive--focus);
+  --my-card-border-color--active: var(--border-color-progressive);
+  --my-card-box-shadow--active: inset 0 0 0 1px var(--box-shadow-color-progressive--focus);
+}
+```
+
+**2. Wrapper hover** — scoped in the card component; `:deep(.cdx-card)` reads
+the aliases (exclude ⋯ menu hover so the card shell stays at rest):
+
+```css
+.my-card :deep(.cdx-card) {
+  transition-property: background-color, color, border-color, box-shadow;
+  transition-duration: var(--my-card-transition-duration);
+}
+
+.my-card:hover:not(:has(.my-card__menu:hover)):not(:has(.my-card__menu:focus-within))
+  :deep(.cdx-card) {
+  border-color: var(--my-card-border-color--hover);
+  box-shadow: var(--my-card-box-shadow--hover);
+}
+
+.my-card:active:not(:has(.my-card__menu :active)) :deep(.cdx-card) {
+  border-color: var(--my-card-border-color--active);
+  box-shadow: var(--my-card-box-shadow--active);
+}
+```
+
+When `CdxCard.css` changes after a patch, diff the patched alias block against
+`node_modules/@wikimedia/codex/dist/…/CdxCard.css` under `npm run codex:use-patch`.
+
+Hand-built cards that **do** wear `cdx-card cdx-card--is-link` with no overlay
+skip this entirely — Codex paints hover itself (rule 2 in the main skill).
+
+---
 
 ## Scoped rules that never matched
 
-A scoped rule `.wikitab-search__menu :deep(.cdx-menu-item__thumbnail)` sized
-search thumbnails. It never applied: `.wikitab-search__menu` is the class on
-`CdxMenu`'s root, and a child component's root doesn't get the parent's scope
-id. The 40px slot rule lives in `wikitab-surface.css` under `.wikitab`.
+**Before (broken):**
+
+```vue
+<style scoped>
+.my-search :deep(.cdx-menu-item__thumbnail) {
+  width: 40px;
+  height: 40px;
+}
+</style>
+```
+
+`.my-search` sits on a parent element, but `CdxMenu`'s root is a **child
+component** — it does not carry the parent's scope id, so the rule never applied.
+
+**After:** move the slot rule to `my-prototype-surface.css` (see thumbnails).
+Scoped `:deep()` **does** work when the Codex node is a direct child in your
+template (saved filter tabs above).

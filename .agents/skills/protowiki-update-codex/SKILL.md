@@ -202,10 +202,10 @@ changes:
 - If any patches are committed, check stock and patched both still render —
   `npm run codex:use-stock` / `npm run codex:use-patch` (see
   [`protowiki-codex-patching`](../protowiki-codex-patching/SKILL.md)).
-- `/wikitab` — hand-built cards wear Codex classes and mirror `CdxCard` hover
-  in `src/prototypes/wikitab/wikitab-surface.css`; if `CdxCard.css` changed,
-  update the `--wikitab-card-*` aliases there (see
-  [`protowiki-wikitab`](../protowiki-wikitab/SKILL.md#codex-agnostic-styling)).
+- Hand-built surfaces that wear Codex classes — if `CdxCard.css` (or another
+  mirrored component) changed, diff the installed file and update the
+  `html[data-codex-patched]` alias block in that prototype's `*-surface.css`
+  (see [`protowiki-codex-patching` → card hover](../protowiki-codex-patching/references/building-for-patches.md#card-hover-through-an-overlay-link-gated-alias-blocks)).
 
 ### Regenerate the committed patch
 
