@@ -1,0 +1,39 @@
+Index: dist/modules/CdxMessage.cjs
+===================================================================
+--- dist/modules/CdxMessage.cjs
++++ dist/modules/CdxMessage.cjs
+@@ -4,9 +4,9 @@
+   v = require('./CdxButton.cjs'),
+   p = require('./constants.js'),
+   g = require('./useI18nWithOverride.js'),
+   b = require('./_plugin-vue_export-helper.js'),
+-  C = { subtle: t.V7, notice: t.V7, progressive: t.V7, error: t.y6, warning: t.V5, success: t.F9 },
++  C = { subtle: t.z7, notice: t.z7, progressive: t.z7, error: t.I6, warning: t.r5, success: t.A9 },
+   y = s.defineComponent({
+     name: 'CdxMessage',
+     components: { CdxButton: v, CdxIcon: t.CdxIcon },
+     props: {
+@@ -56,11 +56,9 @@
+           'cdx-message--block': !e.inline,
+           'cdx-message--user-dismissable': l.value,
+           ['cdx-message--'.concat(e.type)]: !0,
+         })),
+-        a = s.computed(() =>
+-          e.icon && ['progressive', 'subtle', 'notice'].includes(e.type) ? e.icon : C[e.type],
+-        ),
++        a = s.computed(() => (e.icon && e.type === 'notice' ? e.icon : C[e.type])),
+         r = s.ref('')
+       function d(m) {
+         i.value ||
+           ((r.value =
+@@ -87,9 +85,9 @@
+           leaveActiveClass: r,
+           computedIcon: a,
+           onDismiss: d,
+           onActionButtonClick: f,
+-          cdxIconClose: t.o6,
++          cdxIconClose: t.t6,
+         }
+       )
+     },
+   }),

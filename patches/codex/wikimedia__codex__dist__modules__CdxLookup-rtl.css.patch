@@ -1,0 +1,15 @@
+Index: dist/modules/CdxLookup-rtl.css
+===================================================================
+--- dist/modules/CdxLookup-rtl.css
++++ dist/modules/CdxLookup-rtl.css
+@@ -3,9 +3,9 @@
+   box-sizing: border-box;
+   vertical-align: middle;
+ }
+ .cdx-lookup--pending .cdx-text-input .cdx-text-input__input {
+-  background-color: var(--background-color-interactive, #eaecf0);
++  background-color: var(--background-color-interactive, #ebebeb);
+   background-image: linear-gradient(
+     -135deg,
+     var(--background-color-base, #fff) 25%,
+     var(--background-color-transparent, transparent) 25%,

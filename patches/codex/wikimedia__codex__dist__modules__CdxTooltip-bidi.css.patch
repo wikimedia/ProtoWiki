@@ -1,0 +1,31 @@
+Index: dist/modules/CdxTooltip-bidi.css
+===================================================================
+--- dist/modules/CdxTooltip-bidi.css
++++ dist/modules/CdxTooltip-bidi.css
+@@ -5,15 +5,24 @@
+   z-index: 800;
+   width: -webkit-max-content;
+   width: max-content;
+   max-width: 16rem;
++  font-family:
++    -apple-system,
++    BlinkMacSystemFont,
++    Segoe UI,
++    Roboto,
++    Inter,
++    Helvetica,
++    Arial,
++    sans-serif;
+   font-size: var(--font-size-small, 0.875rem);
+   font-weight: 400;
+   line-height: var(--line-height-small, 1.375rem);
+ }
+ [dir] .cdx-tooltip {
+-  background-color: var(--background-color-inverted, #101418);
+-  border-radius: 2px;
++  background-color: var(--background-color-inverted, #171717);
++  border-radius: 0;
+   padding: 2px 6px;
+   animation-name: cdx-animation-tooltip;
+   animation-duration: 0.1s;
+   animation-timing-function: linear;
