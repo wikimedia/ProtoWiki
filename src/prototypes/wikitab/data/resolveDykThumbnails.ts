@@ -2,6 +2,7 @@ import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 import type { WikitabCardData } from '../sections'
+import { WIKITAB_FEED_CARD_THUMB_WIDTH, wikimediaThumbnailAtLeast } from './wikimediaThumbnailUrl'
 import { EN_WIKI_HOST } from './wikitabHtml'
 
 const CONCURRENCY = 3
@@ -58,7 +59,9 @@ export async function resolveDykThumbnails(
     if (!card.thumbnailTitle || card.thumbnailUrl) continue
     if (!thumbnailByTitle.has(card.thumbnailTitle)) continue
     const source = thumbnailByTitle.get(card.thumbnailTitle)
-    if (source) card.thumbnailUrl = source
+    if (source) {
+      card.thumbnailUrl = wikimediaThumbnailAtLeast(source, WIKITAB_FEED_CARD_THUMB_WIDTH)
+    }
     else card.thumbnailTitle = undefined
   }
 }

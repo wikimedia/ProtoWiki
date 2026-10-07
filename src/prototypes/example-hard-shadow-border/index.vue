@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cdxIconOutline } from '@wikimedia/codex-icons'
+
 import PlainWrapper from '@/components/PlainWrapper.vue'
 import HardShadowTabTrack from './HardShadowTabTrack.vue'
 import OptionSection from './OptionSection.vue'
@@ -9,6 +11,7 @@ definePage({
     category: 'example',
     description:
       'Compare CSS techniques for the Figma inside-stroke + bottom/right outside-stroke tab border.',
+    icon: cdxIconOutline,
   },
 })
 

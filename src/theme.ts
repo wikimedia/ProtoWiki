@@ -244,6 +244,12 @@ export function initTheming(): void {
 
   injectThemedTokens()
 
+  // Lets prototype CSS gate overrides that only make sense on stock Codex:
+  // `html:not([data-codex-patched]) …`.
+  if (__CODEX_PATCH__) {
+    document.documentElement.setAttribute('data-codex-patched', __CODEX_PATCH__)
+  }
+
   const config = protowikiConfig.value
   applyWebSkinPreference(config.webSkin)
   applyThemePreference(config.theme)

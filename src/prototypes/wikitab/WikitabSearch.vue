@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, useId, ref, toRef } from 'vue'
 import { CdxMenu, CdxSearchInput } from '@wikimedia/codex'
+import '@wikimedia/codex/dist/modules/CdxTypeaheadSearch.css'
 
 import { globalTheme } from '@/theme'
 
@@ -67,8 +68,11 @@ function onKeydown(event: KeyboardEvent): void {
 
 <template>
   <div
-    class="wikitab-search"
-    :class="{ 'wikitab-search--expanded': menuExpanded }"
+    class="wikitab-search cdx-typeahead-search"
+    :class="{
+      'wikitab-search--expanded': menuExpanded,
+      'cdx-typeahead-search--expanded': menuExpanded,
+    }"
     :data-theme="globalTheme"
   >
     <CdxSearchInput
@@ -94,7 +98,7 @@ function onKeydown(event: KeyboardEvent): void {
           ref="menuRef"
           v-model:expanded="menuExpanded"
           v-model:selected="selected"
-          class="wikitab-search__menu"
+          class="wikitab-search__menu cdx-typeahead-search__menu"
           :menu-items="menuItems"
           :show-thumbnail="true"
           :show-pending="showMenuPending"
@@ -136,20 +140,11 @@ function onKeydown(event: KeyboardEvent): void {
   z-index: 10;
 }
 
-.wikitab-search :deep(.cdx-search-input__input-wrapper) {
-  position: relative;
-}
-
-.wikitab-search--expanded :deep(.cdx-search-input--has-end-button) {
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-}
-
-.wikitab-search--expanded :deep(.cdx-text-input) {
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-}
-
+/*
+ * Panel slot lives in .cdx-search-input__input-wrapper (Codex default position:
+ * relative). Match CdxTypeaheadSearch — menu width = input only, not the end
+ * button.
+ */
 .wikitab-search__panel {
   position: absolute;
   top: 100%;
@@ -157,48 +152,88 @@ function onKeydown(event: KeyboardEvent): void {
   z-index: 10;
   box-sizing: border-box;
   width: 100%;
-  margin-top: -1px;
+}
+
+.wikitab-search--expanded :deep(.wikitab-search__input.cdx-search-input .cdx-text-input) {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* Stock Codex — panel draws the dropdown frame; strip duplicate menu chrome. */
+:global(html:not([data-codex-patched])) .wikitab-search__panel {
   background-color: var(--background-color-base);
   border: var(--border-width-base) solid var(--border-color-base);
-  border-top: 0;
   border-radius: 0 0 var(--border-radius-base) var(--border-radius-base);
 }
 
-/* :deep() — CdxMenu root does not receive parent scope id. */
+:global(html:not([data-codex-patched])) .wikitab-search :deep(.wikitab-search__menu) {
+  border: 0;
+  box-shadow: none;
+}
+
+/* Patched Codex — typeahead menu outline + bottom radius; panel is positioning only. */
+:global(html[data-codex-patched]) .wikitab-search__panel {
+  background-color: transparent;
+}
+
+:global(html[data-codex-patched]) .wikitab-search :deep(.wikitab-search__menu.cdx-menu) {
+  border-bottom-left-radius: var(--border-radius-base);
+  border-bottom-right-radius: var(--border-radius-base);
+}
+
 .wikitab-search :deep(.wikitab-search__menu) {
   position: static;
-  border: 0;
 }
 
 .wikitab-search__search-for strong {
   white-space: pre-wrap;
 }
 
-.wikitab-search__menu :deep(.cdx-thumbnail__placeholder),
-.wikitab-search__menu :deep(.cdx-thumbnail__image) {
-  width: 40px;
-  min-width: 40px;
-  height: 40px;
-  min-height: 40px;
-}
+/*
+ * Menu thumb size — see wikitab-surface.css (scoped rules do not reach CdxMenu).
+ */
 
-.wikitab-search :deep(.cdx-text-input__input:enabled:focus) {
-  border-color: var(
-    --wikitab-theme-card-progressive,
-    var(--border-color-progressive--focus, #36c)
+/*
+ * Remap tokens (not the focus box-shadow itself) so Codex keeps owning the
+ * ring's shape. Scoped to children of the data-theme root, and only on themes
+ * that set --wikitab-theme-card-progressive — a self-referencing fallback
+ * would be a custom-property cycle.
+ *
+ * data-theme on .wikitab-search re-applies stock Codex light/dark tokens, so
+ * menu-item hover would stay default blue without remapping progressive tokens
+ * onto the typeahead menu. Stock Codex paints a grey wash via
+ * --background-color-interactive-subtle--hover on --highlighted rows; the patch
+ * drops that and tints label text progressive instead — do not add a bg under
+ * html[data-codex-patched].
+ */
+:global(.wikitab--remaps-card-progressive .wikitab-search .cdx-text-input),
+:global(.wikitab--remaps-card-progressive .wikitab-search .cdx-menu__progress-bar),
+:global(.wikitab--remaps-card-progressive .wikitab-search .wikitab-search__menu) {
+  --border-color-progressive--focus: var(--wikitab-theme-card-progressive);
+  --box-shadow-color-progressive--focus: var(--wikitab-theme-card-progressive);
+  --border-color-progressive: var(--wikitab-theme-card-progressive);
+  --background-color-progressive: var(--wikitab-theme-card-progressive);
+  --color-progressive: var(--wikitab-theme-card-progressive);
+  --color-progressive--hover: var(--wikitab-theme-card-progressive--hover);
+  --color-progressive--active: var(--wikitab-theme-card-progressive--active);
+  --background-color-progressive-subtle: var(--wikitab-theme-card-progressive-subtle);
+  --background-color-progressive-subtle--hover: var(
+    --wikitab-theme-card-progressive-subtle--hover
   );
-  box-shadow: inset 0 0 0 1px
-    var(--wikitab-theme-card-progressive, var(--box-shadow-color-progressive--focus, #36c));
+  --background-color-progressive-subtle--active: var(
+    --wikitab-theme-card-progressive-subtle--active
+  );
 }
 
-.wikitab-search :deep(.cdx-menu__progress-bar.cdx-progress-bar) {
-  border-color: var(--wikitab-theme-card-progressive, var(--border-color-progressive, #36c));
-}
-
-.wikitab-search :deep(.cdx-menu__progress-bar .cdx-progress-bar__bar) {
-  background-color: var(
-    --wikitab-theme-card-progressive,
-    var(--background-color-progressive, #36c)
+/* Stock CdxMenuItem --highlighted already sets background-color — theme the token. */
+:global(
+    html:not([data-codex-patched])
+      .wikitab--remaps-card-progressive
+      .wikitab-search
+      .wikitab-search__menu
+  ) {
+  --background-color-interactive-subtle--hover: var(
+    --wikitab-theme-card-progressive-subtle--hover
   );
 }
 

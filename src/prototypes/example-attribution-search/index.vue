@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { CdxField, CdxMessage, CdxSearchInput } from '@wikimedia/codex'
+import { cdxIconReference } from '@wikimedia/codex-icons'
 
 import AttributionCard from '@/components/attribution/AttributionCard.vue'
 import { useAttributionSignals } from '@/components/attribution/useAttributionSignals'
@@ -16,6 +17,7 @@ definePage({
     description: 'Using the Attribution API in a search scenario.',
     category: 'example',
     platform: 'web',
+    icon: cdxIconReference,
   },
 })
 

@@ -129,6 +129,8 @@ Gallery cards are driven by flat `definePage` meta on each top-level
 - **`category`** — `'prototype'` (default), `'template'`, or `'example'`; controls
   which block the card appears in (prototypes first, then a divider, then
   templates+examples) and the gallery title prefix for templates and examples (`Template:` / `Example:`)
+- **`icon`** — optional Codex `Icon` constant from `@wikimedia/codex-icons`; shown
+  as the gallery card thumbnail (`CdxCard` `:icon`)
 - **`platform`** — `'web'` (default) or `'app'`; shown as a chip on the gallery
   card (Web / App), and splits the Templates tab into a **Web templates** section
   followed by an **App templates** section

@@ -38,10 +38,10 @@ defineExpose({
 <style scoped>
 .wikitab-saved-articles-button {
   flex-shrink: 0;
-  width: 2.75rem;
-  min-width: 2.75rem;
-  height: 2.75rem;
-  min-height: 2.75rem;
-  border-radius: 2px;
+  width: var(--min-size-interactive-touch);
+  min-width: var(--min-size-interactive-touch);
+  height: var(--min-size-interactive-touch);
+  min-height: var(--min-size-interactive-touch);
+  border-radius: var(--border-radius-base);
 }
 </style>

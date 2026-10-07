@@ -433,7 +433,7 @@ const INITIAL_IMAGE_SKELETON_COUNT = 16
   width: 100vw;
   max-width: 100vw;
   margin-inline: calc(50% - 50vw);
-  padding-inline: 2px;
+  padding-inline: var(--spacing-12);
 }
 
 .wikitab-search-page__sentinel {

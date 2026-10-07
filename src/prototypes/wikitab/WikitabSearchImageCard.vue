@@ -65,7 +65,7 @@ watch(
 </script>
 
 <template>
-  <div class="wikitab-search-image-card">
+  <div class="wikitab-search-image-card cdx-card cdx-card--is-link wikitab-surface--subtle">
     <div class="wikitab-search-image-card__frame" :style="{ aspectRatio }">
       <div
         v-if="showThumbnailPending"
@@ -113,25 +113,19 @@ watch(
 </template>
 
 <style scoped>
+/*
+ * Border, radius and hover come from .cdx-card. The photo fills the frame
+ * edge to edge, so drop the card padding and base background.
+ */
 .wikitab-search-image-card {
-  position: relative;
   display: block;
   box-sizing: border-box;
   width: 100%;
   overflow: visible;
-  border: var(--border-width-base, 1px) solid var(--border-color-subtle);
+  padding: 0;
+  background-color: transparent;
   border-radius: var(--border-radius-base);
   text-decoration: none;
-  transition-property: border-color;
-  transition-duration: 0.1s;
-}
-
-.wikitab-search-image-card:hover {
-  border-color: var(--border-color-interactive--hover, #27292d);
-}
-
-.wikitab-search-image-card:active {
-  border-color: var(--border-color-interactive--active, #202122);
 }
 
 .wikitab-search-image-card:has([aria-expanded='true']) {
@@ -142,7 +136,11 @@ watch(
   position: relative;
   width: 100%;
   overflow: hidden;
-  border-radius: inherit;
+  /*
+   * Inset radius for flush media inside a bordered .cdx-card — outer corners use
+   * --border-radius-base; padding-box corners sit one border-width inside that curve.
+   */
+  border-radius: calc(var(--border-radius-base) - var(--border-width-base));
 }
 
 .wikitab-search-image-card__pending {
@@ -184,10 +182,11 @@ watch(
   z-index: 2;
   margin: 0;
   /* padding-block-start: var(--spacing-10); */
-  padding-inline: 2px 0;
+  padding-inline: var(--spacing-12) 0;
   /* background-image: linear-gradient(to top, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 100%); */
+  /* Legibility over arbitrary photos — pure black, deliberately not a theme colour. */
   text-shadow: 0.5px 0.5px 0px rgba(0, 0, 0, 1);
-  color: rgba(255, 255, 255, 1);
+  color: var(--color-inverted-fixed);
   font-family: var(--font-family-base);
   font-size: var(--font-size-small);
   font-weight: var(--font-weight-normal);
@@ -207,7 +206,6 @@ watch(
   z-index: 3;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.1s;
 }
 
 .wikitab-search-image-card:hover .wikitab-search-image-card__menu,
@@ -228,20 +226,8 @@ watch(
   line-height: 0;
 }
 
-.wikitab-search-image-card__menu-button :deep(.cdx-icon) {
-  width: 1.25rem;
-  height: 1.25rem;
-  color: var(--color-neutral);
-}
-
 .wikitab-search-image-card__menu-button :deep(.cdx-menu) {
   width: max-content !important;
   min-width: 0 !important;
-}
-
-.wikitab-search-image-card__menu-button :deep(.cdx-menu-item__text) {
-  font-weight: var(--font-weight-normal);
-  font-size: var(--font-size-medium);
-  line-height: var(--line-height-small);
 }
 </style>

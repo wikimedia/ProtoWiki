@@ -1,6 +1,10 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 
 import { filterDisambiguationPageIds } from './filterDisambiguationPages'
+import {
+  WIKITAB_SEARCH_POPOVER_THUMB_WIDTH,
+  wikimediaThumbnailAtLeast,
+} from './wikimediaThumbnailUrl'
 
 const SEARCH_HOST = 'en.wikipedia.org'
 export const WIKITAB_SEARCH_LIMIT = 6
@@ -12,11 +16,6 @@ export interface WikitabSearchResult {
   title: string
   description?: string
   thumbnailUrl?: string
-}
-
-function normalizeThumbnailUrl(url: string | undefined): string | undefined {
-  if (!url) return undefined
-  return url.startsWith('//') ? `https:${url}` : url
 }
 
 /** REST title search only — no disambiguation filter. */
@@ -64,7 +63,10 @@ export async function fetchWikitabSearchRaw(
       id: page.id,
       title: page.title,
       description: page.description?.trim() || undefined,
-      thumbnailUrl: normalizeThumbnailUrl(page.thumbnail?.url),
+      thumbnailUrl: wikimediaThumbnailAtLeast(
+        page.thumbnail?.url,
+        WIKITAB_SEARCH_POPOVER_THUMB_WIDTH,
+      ),
     }))
 }
 

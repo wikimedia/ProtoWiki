@@ -13,6 +13,10 @@ import {
 } from './feedCache'
 import { fetchMainPageOtd } from './fetchMainPageOtd'
 import {
+  WIKITAB_FEED_CARD_THUMB_WIDTH,
+  wikimediaThumbnailAtLeast,
+} from './wikimediaThumbnailUrl'
+import {
   EN_WIKI_HOST,
   articleUrl,
   expandDykHookHtml,
@@ -127,7 +131,10 @@ function mapTrending(response: FeaturedFeedResponse, day: string): WikitabCardDa
         typeof article.views === 'number'
           ? `${formatViews(article.views)} views${period ? ` ${period}` : ''}`
           : undefined,
-      thumbnailUrl: article.thumbnail?.source,
+      thumbnailUrl: wikimediaThumbnailAtLeast(
+        article.thumbnail?.source,
+        WIKITAB_FEED_CARD_THUMB_WIDTH,
+      ),
     }))
 }
 
@@ -168,7 +175,10 @@ function mapNews(response: FeaturedFeedResponse): WikitabCardData[] {
         html: normalizeFeedHtml(story),
         href: subject ? articleUrl(subject) : lead && summaryUrl(lead),
         linkTitle: subject ?? lead?.normalizedtitle,
-        thumbnailUrl: lead?.thumbnail?.source,
+        thumbnailUrl: wikimediaThumbnailAtLeast(
+          lead?.thumbnail?.source,
+          WIKITAB_FEED_CARD_THUMB_WIDTH,
+        ),
       }
     })
 }

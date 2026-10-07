@@ -44,7 +44,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="wikitab-color-theme-picker" role="dialog" aria-modal="true" aria-label="Color theme">
+  <div class="wikitab-color-theme-picker wikitab-panel" role="dialog" aria-modal="true" aria-label="Color theme">
     <div class="wikitab-color-theme-picker__column">
       <header class="wikitab-color-theme-picker__head">
         <h2 class="wikitab-color-theme-picker__title">Color theme</h2>
@@ -99,21 +99,6 @@ onUnmounted(() => {
   scrollbar-gutter: auto;
 }
 
-.wikitab-color-theme-picker {
-  --wikitab-page-gutter: var(--spacing-100);
-
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  box-sizing: border-box;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding-inline: var(--wikitab-page-gutter);
-  padding-block: var(--spacing-100);
-  background-color: var(--wikitab-theme-bg, var(--background-color-base));
-  color: var(--wikitab-theme-fg, var(--color-base));
-}
-
 .wikitab-color-theme-picker__column {
   display: flex;
   flex-direction: column;
@@ -129,7 +114,7 @@ onUnmounted(() => {
   gap: var(--spacing-50);
   box-sizing: border-box;
   width: 100%;
-  min-height: 2.75rem;
+  min-height: var(--min-size-interactive-touch);
   padding-top: 0;
 }
 
@@ -146,10 +131,10 @@ onUnmounted(() => {
 
 .wikitab-color-theme-picker__close {
   flex-shrink: 0;
-  width: 2.75rem;
-  min-width: 2.75rem;
-  height: 2.75rem;
-  min-height: 2.75rem;
+  width: var(--min-size-interactive-touch);
+  min-width: var(--min-size-interactive-touch);
+  height: var(--min-size-interactive-touch);
+  min-height: var(--min-size-interactive-touch);
 }
 
 .wikitab-color-theme-picker__grid {
@@ -166,7 +151,7 @@ onUnmounted(() => {
   align-items: center;
   min-height: 4.5rem;
   padding: var(--spacing-100);
-  border: 2px solid transparent;
+  border: var(--border-width-thick) var(--border-style-base) transparent;
   border-radius: var(--border-radius-base);
   font-family: var(--font-family-base);
   font-size: var(--font-size-medium);
@@ -186,12 +171,13 @@ onUnmounted(() => {
 }
 
 .wikitab-color-theme-picker__card:focus-visible {
-  outline: 2px solid var(--wikitab-theme-fg, var(--color-progressive));
-  outline-offset: 2px;
+  outline: var(--border-width-thick) var(--border-style-base)
+    var(--wikitab-theme-fg, var(--color-progressive));
+  outline-offset: var(--spacing-12);
 }
 
 .wikitab-color-theme-picker__card--selected {
-  box-shadow: inset 0 0 0 2px currentColor;
+  box-shadow: inset 0 0 0 var(--border-width-thick) currentColor;
 }
 
 .wikitab-color-theme-picker__card--potd {

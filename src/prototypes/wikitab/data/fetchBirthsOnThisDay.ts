@@ -1,6 +1,7 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import type { WikitabCardData } from '../sections'
+import { WIKITAB_FEED_CARD_THUMB_WIDTH, wikimediaThumbnailAtLeast } from './wikimediaThumbnailUrl'
 import { EN_WIKI_HOST, articleUrl } from './wikitabHtml'
 
 interface FeedThumbnail {
@@ -59,7 +60,10 @@ function mapBirthItem(
     description: lead?.description || subtitleFromText(item.text ?? '', linkTitle),
     href: lead ? summaryUrl(lead) : undefined,
     linkTitle,
-    thumbnailUrl: lead?.thumbnail?.source,
+    thumbnailUrl: wikimediaThumbnailAtLeast(
+      lead?.thumbnail?.source,
+      WIKITAB_FEED_CARD_THUMB_WIDTH,
+    ),
     thumbnailTitle:
       !lead?.thumbnail?.source && linkTitle ? linkTitle : undefined,
   }

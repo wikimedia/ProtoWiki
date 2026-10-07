@@ -122,7 +122,7 @@ const menuRevealOnInteraction = computed(() => skin.value === 'desktop')
 
 <template>
   <div
-    class="wikitab-search-activity-card"
+    class="wikitab-search-activity-card cdx-card cdx-card--is-link"
     :class="{
       'wikitab-search-activity-card--no-thumbnail': !showThumbnail,
       'wikitab-search-activity-card--menu-on-hover': menuRevealOnInteraction,
@@ -238,28 +238,13 @@ const menuRevealOnInteraction = computed(() => skin.value === 'desktop')
 </template>
 
 <style scoped>
+/* Surface (border, radius, padding, hover) comes from .cdx-card — layout only here. */
 .wikitab-search-activity-card {
-  position: relative;
-  display: flex;
   flex-direction: column;
+  align-items: stretch;
   gap: var(--spacing-50);
   box-sizing: border-box;
   min-width: 0;
-  padding-block: var(--spacing-75);
-  padding-inline: var(--spacing-75);
-  border: var(--border-width-base) solid var(--border-color-base);
-  border-radius: var(--border-radius-base);
-  background-color: var(--background-color-base);
-  transition-property: background-color, color, border-color, box-shadow;
-  transition-duration: 0.1s;
-}
-
-.wikitab-search-activity-card:hover {
-  border-color: var(--border-color-interactive--hover, #27292d);
-}
-
-.wikitab-search-activity-card:active {
-  border-color: var(--border-color-interactive--active, #202122);
 }
 
 .wikitab-search-activity-card:has([aria-expanded='true']) {
@@ -276,7 +261,6 @@ const menuRevealOnInteraction = computed(() => skin.value === 'desktop')
 .wikitab-search-activity-card--menu-on-hover .wikitab-search-activity-card__menu {
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.1s;
 }
 
 .wikitab-search-activity-card--menu-on-hover:hover .wikitab-search-activity-card__menu,
@@ -286,10 +270,6 @@ const menuRevealOnInteraction = computed(() => skin.value === 'desktop')
   .wikitab-search-activity-card__menu {
   opacity: 1;
   pointer-events: auto;
-}
-
-.wikitab-search-activity-card__menu-button :deep(.cdx-icon) {
-  color: var(--color-subtle);
 }
 
 .wikitab-search-activity-card__menu-button :deep(.cdx-menu) {
@@ -327,14 +307,6 @@ const menuRevealOnInteraction = computed(() => skin.value === 'desktop')
   flex-shrink: 0;
   width: 96px;
   height: 96px;
-}
-
-.wikitab-search-activity-card__thumbnail :deep(.cdx-thumbnail__image),
-.wikitab-search-activity-card__thumbnail :deep(.cdx-thumbnail__placeholder) {
-  width: 96px;
-  min-width: 96px;
-  height: 96px;
-  min-height: 96px;
 }
 
 /* Placeholder thumbnails stay Codex neutral grey, not the page color theme. */

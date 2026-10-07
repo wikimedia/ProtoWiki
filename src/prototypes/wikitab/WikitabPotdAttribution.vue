@@ -282,7 +282,6 @@ const captionClampStyle = computed(() => ({
 [data-skin='desktop'] .wikitab-potd-attribution__close {
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.1s;
 }
 
 [data-skin='desktop'] .wikitab-potd-attribution__card-wrap:hover .wikitab-potd-attribution__close,
@@ -291,15 +290,14 @@ const captionClampStyle = computed(() => ({
   pointer-events: auto;
 }
 
-/* Match WikitabConfigureButton / WikitabColorThemeButton (2.75rem). */
+/* Match WikitabConfigureButton / WikitabColorThemeButton (touch-size square). */
 .wikitab-potd-attribution__open-wrap {
   position: fixed;
   z-index: 5;
   left: var(--wikitab-potd-attribution-inset);
   bottom: var(--wikitab-potd-attribution-inset);
   flex-shrink: 0;
-  border-radius: 2px;
-  overflow: hidden;
+  border-radius: var(--border-radius-base);
   background-color: var(--wikitab-theme-bg, var(--background-color-base));
 }
 
@@ -312,11 +310,11 @@ const captionClampStyle = computed(() => ({
 
 .wikitab-potd-attribution__open {
   flex-shrink: 0;
-  width: 2.75rem;
-  min-width: 2.75rem;
-  height: 2.75rem;
-  min-height: 2.75rem;
-  border-radius: 2px;
+  width: var(--min-size-interactive-touch);
+  min-width: var(--min-size-interactive-touch);
+  height: var(--min-size-interactive-touch);
+  min-height: var(--min-size-interactive-touch);
+  border-radius: var(--border-radius-base);
 }
 
 /*
@@ -398,15 +396,18 @@ const captionClampStyle = computed(() => ({
 .wikitab-potd-attribution__card-wrap--linked :deep(.cdx-card) {
   pointer-events: none;
   transition-property: background-color, color, border-color, box-shadow;
-  transition-duration: 0.1s;
+  transition-duration: var(--wikitab-card-transition-duration);
 }
 
+/* Wrapper-driven hover — aliases in wikitab-surface.css mirror CdxCard. */
 .wikitab-potd-attribution__card-wrap--linked:hover :deep(.cdx-card) {
-  border-color: var(--border-color-interactive--hover, #27292d);
+  border-color: var(--wikitab-card-border-color--hover);
+  box-shadow: var(--wikitab-card-box-shadow--hover);
 }
 
 .wikitab-potd-attribution__card-wrap--linked:active :deep(.cdx-card) {
-  border-color: var(--border-color-interactive--active, #202122);
+  border-color: var(--wikitab-card-border-color--active);
+  box-shadow: var(--wikitab-card-box-shadow--active);
 }
 
 .wikitab-potd-attribution__card :deep(.cdx-card__text__title) {

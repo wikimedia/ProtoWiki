@@ -254,35 +254,39 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
 }
 
 /*
- * Text cards omit CdxCard `url` (hooks carry nested anchors), so Codex never
- * adds `.cdx-card--is-link`. Drive hover/active border from the wrapper so
- * nested inline links still show the interactive border.
+ * Text cards omit CdxCard `url` (hooks carry nested anchors), and thumbnail
+ * cards with a menu use the overlay link instead — so Codex never adds
+ * `.cdx-card--is-link`, and the overlay sits above the card anyway. Drive
+ * hover/active from the wrapper through the --wikitab-card-* aliases in
+ * wikitab-surface.css, which mirror CdxCard on stock and patched Codex.
  */
-.wikitab-card--text :deep(.cdx-card) {
-  transition-property: background-color, color, border-color, box-shadow;
-  transition-duration: 0.1s;
-}
-
-.wikitab-card--text:hover :deep(.cdx-card) {
-  border-color: var(--border-color-interactive--hover, #27292d);
-}
-
-.wikitab-card--text:active :deep(.cdx-card) {
-  border-color: var(--border-color-interactive--active, #202122);
-}
-
-/* Thumbnail cards with a menu use the overlay link instead of CdxCard `url`. */
+.wikitab-card--text :deep(.cdx-card),
 .wikitab-card--thumbnail.wikitab-card--has-menu :deep(.cdx-card) {
   transition-property: background-color, color, border-color, box-shadow;
-  transition-duration: 0.1s;
+  transition-duration: var(--wikitab-card-transition-duration);
 }
 
-.wikitab-card--thumbnail.wikitab-card--has-menu:hover :deep(.cdx-card) {
-  border-color: var(--border-color-interactive--hover, #27292d);
+/* ⋯ hover / press / open — card shell stays at rest. */
+.wikitab-card--text:hover:not(:has(.wikitab-card__menu:hover)):not(:has(.wikitab-card__menu:focus-within)):not(
+    :has(.wikitab-card__menu [aria-expanded='true'])
+  )
+  :deep(.cdx-card),
+.wikitab-card--thumbnail.wikitab-card--has-menu:hover:not(:has(.wikitab-card__menu:hover)):not(
+    :has(.wikitab-card__menu:focus-within)
+  ):not(:has(.wikitab-card__menu [aria-expanded='true']))
+  :deep(.cdx-card) {
+  border-color: var(--wikitab-card-border-color--hover);
+  box-shadow: var(--wikitab-card-box-shadow--hover);
 }
 
-.wikitab-card--thumbnail.wikitab-card--has-menu:active :deep(.cdx-card) {
-  border-color: var(--border-color-interactive--active, #202122);
+.wikitab-card--text:active:not(:has(.wikitab-card__menu :active)):not(:has(.wikitab-card__menu:focus-within))
+  :deep(.cdx-card),
+.wikitab-card--thumbnail.wikitab-card--has-menu:active:not(:has(.wikitab-card__menu :active)):not(
+    :has(.wikitab-card__menu:focus-within)
+  )
+  :deep(.cdx-card) {
+  border-color: var(--wikitab-card-border-color--active);
+  box-shadow: var(--wikitab-card-box-shadow--active);
 }
 
 .wikitab-card--has-menu {
@@ -346,7 +350,6 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
 .wikitab-card--menu-on-hover .wikitab-card__menu {
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.1s;
 }
 
 .wikitab-card--menu-on-hover:hover .wikitab-card__menu,
@@ -369,23 +372,10 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
   line-height: 0;
 }
 
-.wikitab-card__menu-button :deep(.cdx-icon) {
-  /* Match section ⋯ (page-default medium); card grid compact type scales icons down. */
-  width: 1.25rem;
-  height: 1.25rem;
-  color: var(--color-neutral);
-}
-
 /* MenuButton sizes to available width by default; shrink to label + icon. */
 .wikitab-card__menu-button :deep(.cdx-menu) {
   width: max-content !important;
   min-width: 0 !important;
-}
-
-.wikitab-card__menu-button :deep(.cdx-menu-item__text) {
-  font-weight: var(--font-weight-normal);
-  font-size: var(--font-size-medium);
-  line-height: var(--line-height-small);
 }
 
 /* Drawn inside the card, which clips its overflow. */
@@ -437,19 +427,14 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
 }
 
 /*
- * Codex 2.6.x CdxCard has no thumbnailSize prop — large (96px) thumbnails are
- * set via layout CSS only, keyed off sections.ts thumbnailSize.
+ * Thumbnail size is layout CSS only, keyed off sections.ts thumbnailSize — never
+ * CdxCard's thumbnailSize prop (absent in stock 2.7, removed by the card patch).
  */
 .wikitab-card :deep(.cdx-card__thumbnail.cdx-thumbnail) {
   flex-shrink: 0;
-}
-
-.wikitab-card :deep(.cdx-card__thumbnail .cdx-thumbnail__placeholder),
-.wikitab-card :deep(.cdx-card__thumbnail .cdx-thumbnail__image) {
+  align-self: flex-start;
   width: var(--wikitab-thumbnail-size);
-  min-width: var(--wikitab-thumbnail-size);
   height: var(--wikitab-thumbnail-size);
-  min-height: var(--wikitab-thumbnail-size);
 }
 
 /* Placeholder thumbnails stay Codex neutral grey, not the page color theme. */
@@ -602,6 +587,7 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
   min-width: 0;
 }
 
+/* Layout only — color from Codex .cdx-card__text__description .cdx-icon (same as supporting). */
 .wikitab-card__hook-icon {
   display: inline-flex;
   flex-shrink: 0;
@@ -611,7 +597,6 @@ const forceThumbnail = computed(() => props.variant === 'thumbnail' || showThumb
   width: 1.125em;
   height: 1.125em;
   margin-inline-end: var(--spacing-25);
-  color: var(--color-subtle);
   line-height: 1;
 }
 

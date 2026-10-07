@@ -91,10 +91,10 @@ border shell. Variant wiring:
 | `thumbnail` | `url`, `thumbnail`, `force-thumbnail` | Whole card is the link via `url`. |
 | `text` | No `url`; hook HTML in `#description`; thumbnail via CSS `order` at inline-end when an image resolves | Overlay `<a class="wikitab-card__link">` for the primary page — hooks carry nested anchors Codex forbids inside a linked card. |
 
-ProtoWiki ships Codex **2.6.x**, whose `CdxCard` has no `thumbnailSize` /
-`thumbnailPosition` props — large (96px) thumbnails and text-variant end
-placement are layout CSS in `WikitabCard.vue`, keyed off `sections.ts`
-`thumbnailSize`. **Never set `display: block` on the card root** — it overrides
+Stock Codex 2.7 has no `CdxCard` `thumbnailSize` / `thumbnailPosition` props
+(and the Gerrit card patch removes them again) — large (96px) thumbnails and
+text-variant end placement are layout CSS in `WikitabCard.vue`, keyed off
+`sections.ts` `thumbnailSize`. **Never set `display: block` on the card root** — it overrides
 `.cdx-card { display: flex }` and breaks the fixed-height slot.
 
 **Typography:** card title, description, and supporting text use Codex's built-in
@@ -115,6 +115,68 @@ supporting slot is preserved) and `align-items: stretch` on `.wikitab-card__cdx`
 
 When adding a section: if thumbnails are guaranteed from the feed, use
 `thumbnail`. If thumbnails are optional or need a follow-up fetch, use `text`.
+
+## Codex-agnostic styling
+
+Wikitab must look identical on stock Codex and follow Codex automatically when
+a Codex patch is installed. The general rules, tooling and worked examples
+(several from Wikitab) live in
+[`protowiki-codex-patching`](../protowiki-codex-patching/SKILL.md). This section
+records how Wikitab applies them:
+
+1. **Codex classes before copied visuals.** A hand-built card wears
+   `cdx-card cdx-card--is-link` on its root, so Codex's own stylesheet draws
+   border, radius, padding, background, hover and active — whatever version is
+   installed. The component keeps layout only (`flex-direction`,
+   `align-items: stretch`, gap). Used by `WikitabSearchActivityCard`,
+   `WikitabSearchContributeCard`, `WikitabSearchImageCard` (which resets
+   `padding: 0` and a transparent background). This only works when the card
+   root is an ancestor of whatever the pointer hits.
+2. **Tokens, never literals that equal a token.** Radius, transition duration,
+   touch size (`--min-size-interactive-touch`), 2px spacing (`--spacing-12`),
+   border widths and styles — and no hex fallbacks in `var()`. The Default /
+   White / Gray / Black / POTD colour-theme swatches read Codex token values
+   at build time from `data/codexTokenValues.ts`, so neutral themes follow
+   patched neutrals.
+3. **Shell, not per-component copies.** `wikitab-surface.css` (imported once by
+   `index.vue`, global) holds:
+   - `--wikitab-card-*` aliases for **wrapper-driven** hover — `WikitabCard`
+     and the POTD attribution card, where a sibling overlay link sits above the
+     `CdxCard` so Codex's `:hover` never matches. Stock values mirror stock
+     `CdxCard`; `html[data-codex-patched]` swaps in the patched mapping
+     (progressive border + 1px outline on hover, inset on active, no
+     transition). The same `--wikitab-card-transition-duration` drives card ⋯
+     menu opacity fades (`--transition-property-fade` +
+     `--transition-timing-function-system`). Update both blocks if a future
+     patch changes `CdxCard.css`.
+   - `.wikitab-surface--subtle` — keeps the historical subtle rest border on
+     Contribute / Image cards (stock `CdxCard` uses base; patched uses subtle).
+   - `.wikitab-panel` — the full-page overlay shell shared by Configure, Saved
+     and Color theme.
+   - `--wikitab-menu-font-size-*` / `--wikitab-menu-line-height-*` and
+     `--wikitab-menu-color-*` — snapshotted on `.wikitab` and re-applied on every
+     `.cdx-menu` and card `*__menu-button` wrapper so compact card-grid type and
+     card progressive/subtle remaps do not leak into MenuButton icons or dropdown
+     labels; Codex owns icon color (no per-component `.cdx-icon { color: … }` overrides).
+   - Thumbnail fill — Wikitab sizes only the `.cdx-thumbnail` root (96px feed
+     cards via `--wikitab-thumbnail-size`, 40px search menu). Inner borders are
+     zeroed and `.cdx-thumbnail__image` alone is `position: absolute; inset: 0`
+     (the placeholder stays a flex child so its icon stays centred). Why:
+     [building-for-patches → Thumbnails](../protowiki-codex-patching/references/building-for-patches.md#thumbnails-size-the-root-let-codex-fill).
+4. **Deliberate looks stay; structural overrides yield.** Saved filter tabs are
+   framed `CdxToggleButton size="small"` with only `font-weight: normal` and a
+   black (inverted) toggled-on state overridden. Themed quiet-button washes and
+   themed card accents are Wikitab design and stay on stock and patched.
+   Overrides that only exist to flatten stock Codex (the `box-shadow: none` on
+   popovers and dialogs in `index.vue`) are gated behind
+   `html:not([data-codex-patched])`. Menus always use Codex chrome (stock border
+   + shadow; patched 1px outline). Search typeahead hover follows whichever
+   Codex is installed (token remaps only, no added background).
+
+Card themed accents work
+in both modes because the themed progressive remaps in `index.vue` re-point
+`--border-color-progressive` / `--box-shadow-color-progressive--focus`, which
+the patched hover reads.
 
 ## Pagination
 
@@ -436,8 +498,21 @@ REST:
 - **Panel** — first menu row is the `Search for "…"` item (custom menu slot,
   text only, no thumbnail; shows the raw input inside the quotes including
   whitespace; `&nbsp;` before the opening quote so that space cannot collapse);
-  then thumbnail + title + description rows. Dropdown width matches the input
-  wrapper only (not the Search button). When open,
+  then thumbnail + title + description rows. The menu panel lives in Codex's
+  `.cdx-search-input__input-wrapper` slot — **input width only**, not the end
+  button (same as `CdxTypeaheadSearch`). `WikitabSearch.vue` wears
+  `cdx-typeahead-search` / `cdx-typeahead-search__menu` classes and imports
+  `CdxTypeaheadSearch.css`. Popover thumbnails request 120px Commons variants
+  (`wikimediaThumbnailAtLeast` in `fetchWikitabSearch.ts`).   The 40×40 menu slot
+  size lives in `wikitab-surface.css` (not scoped `WikitabSearch` CSS — CdxMenu
+  does not carry the parent scope id). On colorful themes,
+  `WikitabSearch.vue` remaps menu progressive tokens to
+  `--wikitab-theme-card-progressive*` (the white search island’s `data-theme`
+  would otherwise reset hover to Codex blue). Stock `--highlighted` rows keep
+  Codex’s interactive-subtle wash via `--background-color-interactive-subtle--hover`;
+  patched rows are text-only progressive — no extra bg. Stock: panel draws
+  the frame. Patched: panel is positioning-only; menu keeps Codex's 1px outline.
+  When open,
   `.wikitab__hero:has(.wikitab-search--expanded)` gets `z-index: 10` so the
   menu covers feed card link overlays (`z-index: 2`). Keyboard handling matches
   `CdxTypeaheadSearch`: arrow keys navigate the menu, but **Space** is left to
@@ -477,8 +552,13 @@ these heavily while API work resolves — especially on Activity and Contribute,
 where cards stream in one at a time. Contribute reuses the **activity** skeleton
 variant (same compact list type).
 
-**Articles tab** — `WikitabSearchResultCard.vue` per hit. One flat list built in
-priority order from four sources (global `pageid` dedupe — earlier slots win):
+**Articles tab** — `WikitabSearchResultCard.vue` per hit. Description, extract, and
+supporting rows wear Codex card text classes (`.cdx-card__text`,
+`.cdx-card__text__description`, `.cdx-card__text__supporting-text`) so body
+colour follows installed `CdxCard.css` (`--color-subtle` on stock,
+`--color-base` on patched) — no hardcoded subtle. Title stays a progressive
+link. One flat list built in priority order from four sources (global `pageid`
+dedupe — earlier slots win):
 
 | Cap | Source | Relation |
 | --- | ------ | -------- |
@@ -565,11 +645,14 @@ description page.
   **no cropping** (`height: auto`, no `object-fit: cover`). On wide desktop
   the image panel **breaks out** to the screen edge with **2px** inset on each
   side; tabs and other tab panels stay in the centred column.
-- **Styling** — subtle border (`--border-color-subtle`), `--border-radius-base`.
-  Hover/active borders match feed cards (`--border-color-interactive--hover` /
-  `--border-color-interactive--active`). The card frame keeps the API
-  `width / height` as CSS `aspect-ratio` through decode so tile height stays
-  stable; the img fills at `width: 100%`, `height: auto`.
+- **Styling** — `cdx-card cdx-card--is-link` plus `.wikitab-surface--subtle`
+  (see [Codex-agnostic styling](#codex-agnostic-styling)): subtle rest border,
+  Codex radius and hover/active. Card root uses `border-radius:
+  var(--border-radius-base)`; the photo frame clips with the **inset** radius
+  `calc(var(--border-radius-base) - var(--border-width-base))` so flush media
+  meets the inner edge of the card border without corner slivers. The frame
+  keeps the API `width / height` as CSS `aspect-ratio` through decode so tile
+  height stays stable; the img fills at `width: 100%`, `height: auto`.
 - **Loading** — `WikitabSearchImageCard` uses thumbnail-slot loading
   (`useThumbnailSlotReady.ts`, 1.5s cap): flat neutral block inside the
   aspect-ratio box until decode. Initial skeletons use
@@ -647,9 +730,9 @@ Rate-limit contract (mandatory):
   memory when switching tabs.
 
 UI: resolved `WikitabSearchActivityCard` rows plus activity skeleton phases
-above. Resolved cards use the standard Codex card border (`--border-color-subtle`
-at rest, interactive hover/active border tokens) — unlike Articles tab cards,
-which are borderless. Activity skeletons have **no thumbnail column**; resolved
+above. Resolved cards wear Codex's `cdx-card cdx-card--is-link` classes, so
+border, radius, padding and hover/active come from Codex — unlike Articles tab
+cards, which are borderless. Activity skeletons have **no thumbnail column**; resolved
 cards show a 40px thumbnail when one resolves. Description block: green **+n** / red **−n** character delta (from revision `size`
 vs parent), or subtle **±0** when size is unchanged, on its own line above the edit
 summary when the parent size is known. Chip row uses `CdxInfoChip` (in order):
@@ -696,7 +779,8 @@ the first six titles rather than duplicating the Articles fetch pipeline.
   fetch starts only when Contribute is selected; abort when hidden or on query
   change, but keep resolved results when switching tabs.
 
-UI: `WikitabSearchContributeCard.vue` — bordered card (Activity shell), 96px
+UI: `WikitabSearchContributeCard.vue` — bordered card (`cdx-card` classes +
+`.wikitab-surface--subtle`), 96px
 left thumbnail with thumbnail-slot loading, article title, task body, supporting
 row with progressive task icon + label at row start and **Related to {seed}** at
 row end when from morelike. Whole card links to Visual Editor

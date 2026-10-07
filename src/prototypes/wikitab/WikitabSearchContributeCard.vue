@@ -53,7 +53,7 @@ const taskIcon = computed(() => resolveEditOpportunityIcon(props.item.need))
 </script>
 
 <template>
-  <div class="wikitab-search-contribute-card">
+  <div class="wikitab-search-contribute-card cdx-card cdx-card--is-link wikitab-surface--subtle">
     <div v-if="showSaveMenu" class="wikitab-search-contribute-card__menu">
       <CdxMenuButton
         v-model:selected="selection"
@@ -106,28 +106,13 @@ const taskIcon = computed(() => resolveEditOpportunityIcon(props.item.need))
 </template>
 
 <style scoped>
+/* Surface (border, radius, padding, hover) comes from .cdx-card — layout only here. */
 .wikitab-search-contribute-card {
-  position: relative;
-  display: flex;
   flex-direction: column;
+  align-items: stretch;
   gap: var(--spacing-50);
   box-sizing: border-box;
   min-width: 0;
-  padding-block: var(--spacing-75);
-  padding-inline: var(--spacing-75);
-  border: var(--border-width-base) solid var(--border-color-subtle);
-  border-radius: var(--border-radius-base);
-  background-color: var(--background-color-base);
-  transition-property: background-color, color, border-color, box-shadow;
-  transition-duration: 0.1s;
-}
-
-.wikitab-search-contribute-card:hover {
-  border-color: var(--border-color-interactive--hover, #27292d);
-}
-
-.wikitab-search-contribute-card:active {
-  border-color: var(--border-color-interactive--active, #202122);
 }
 
 .wikitab-search-contribute-card__menu {
@@ -135,6 +120,11 @@ const taskIcon = computed(() => resolveEditOpportunityIcon(props.item.need))
   top: var(--spacing-50);
   right: var(--spacing-50);
   z-index: 3;
+}
+
+.wikitab-search-contribute-card__menu-button :deep(.cdx-menu) {
+  width: max-content !important;
+  min-width: 0 !important;
 }
 
 .wikitab-search-contribute-card__link {
@@ -160,12 +150,6 @@ const taskIcon = computed(() => resolveEditOpportunityIcon(props.item.need))
 
 .wikitab-search-contribute-card__thumbnail {
   flex-shrink: 0;
-  width: 96px;
-  height: 96px;
-}
-
-.wikitab-search-contribute-card__thumbnail :deep(.cdx-thumbnail__image),
-.wikitab-search-contribute-card__thumbnail :deep(.cdx-thumbnail__placeholder) {
   width: 96px;
   height: 96px;
 }

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cdxIconSandbox } from '@wikimedia/codex-icons'
+
 import PlainWrapper from '@/components/PlainWrapper.vue'
 
 definePage({
@@ -7,6 +9,8 @@ definePage({
     description: 'Template for minimal prototypes.',
     category: 'template',
     platform: 'web',
+    order: 1,
+    icon: cdxIconSandbox,
   },
 })
 </script>

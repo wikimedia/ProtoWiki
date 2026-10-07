@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { cdxIconBrowser } from '@wikimedia/codex-icons'
+
 definePage({
   meta: {
     title: 'Chrome',
     description: 'Template for prototypes with a Wikipedia header and footer.',
     category: 'template',
     platform: 'web',
+    order: 0,
+    icon: cdxIconBrowser,
   },
 })
 

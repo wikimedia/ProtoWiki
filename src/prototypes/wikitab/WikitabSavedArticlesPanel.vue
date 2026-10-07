@@ -72,7 +72,7 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="wikitab-saved-articles-panel"
+    class="wikitab-saved-articles-panel wikitab-panel"
     role="dialog"
     aria-modal="true"
     aria-label="Saved"
@@ -137,21 +137,6 @@ onUnmounted(() => {
   scrollbar-gutter: auto;
 }
 
-.wikitab-saved-articles-panel {
-  --wikitab-page-gutter: var(--spacing-100);
-
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  box-sizing: border-box;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding-inline: var(--wikitab-page-gutter);
-  padding-block: var(--spacing-100);
-  background-color: var(--wikitab-theme-bg, var(--background-color-base));
-  color: var(--wikitab-theme-fg, var(--color-base));
-}
-
 .wikitab-saved-articles-panel__column {
   display: flex;
   flex-direction: column;
@@ -186,10 +171,10 @@ onUnmounted(() => {
 
 .wikitab-saved-articles-panel__close {
   flex-shrink: 0;
-  width: 2.75rem;
-  min-width: 2.75rem;
-  height: 2.75rem;
-  min-height: 2.75rem;
+  width: var(--min-size-interactive-touch);
+  min-width: var(--min-size-interactive-touch);
+  height: var(--min-size-interactive-touch);
+  min-height: var(--min-size-interactive-touch);
 }
 
 .wikitab-saved-articles-panel__empty {

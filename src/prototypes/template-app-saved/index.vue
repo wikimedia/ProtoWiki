@@ -5,6 +5,8 @@ definePage({
     description: 'Template for an in-app saved-articles screen with collections.',
     category: 'template',
     platform: 'app',
+    order: 4,
+    icon: cdxIconBookmark,
   },
 })
 

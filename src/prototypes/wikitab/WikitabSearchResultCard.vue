@@ -57,10 +57,6 @@ const showThumbnailSlotPending = computed(
   () => showThumbnailBackfillPending.value || showThumbnailPending.value,
 )
 
-const thumbnail = computed(() =>
-  props.article.thumbnailUrl ? { url: props.article.thumbnailUrl } : null,
-)
-
 const descriptionHtml = computed(() =>
   props.article.description
     ? highlightSearchQuery(props.article.description, props.searchQuery)
@@ -94,6 +90,10 @@ watch(selection, (value) => {
   if (value === 'why') whyDialogOpen.value = true
   if (value !== null) selection.value = null
 })
+
+const thumbnail = computed(() =>
+  props.article.thumbnailUrl ? { url: props.article.thumbnailUrl } : null,
+)
 
 </script>
 
@@ -137,13 +137,19 @@ watch(selection, (value) => {
       </p>
     </CdxDialog>
 
-    <CdxThumbnail
+    <div
       class="wikitab-search-result-card__thumbnail"
       :class="{ 'wikitab-search-result-card__thumbnail--pending': showThumbnailSlotPending }"
-      :thumbnail="thumbnail"
-    />
+    >
+      <div
+        v-if="showThumbnailSlotPending && article.thumbnailUrl"
+        class="wikitab-search-result-card__thumbnail-pending"
+        aria-hidden="true"
+      />
+      <CdxThumbnail :thumbnail="thumbnail" />
+    </div>
 
-    <div class="wikitab-search-result-card__content">
+    <div class="wikitab-search-result-card__content cdx-card__text">
       <h3 class="wikitab-search-result-card__title">
         <a :href="articleUrl(article.title)" target="_blank" rel="noreferrer">
           {{ article.title }}
@@ -151,22 +157,22 @@ watch(selection, (value) => {
       </h3>
       <p
         v-if="descriptionHtml"
-        class="wikitab-search-result-card__description"
+        class="wikitab-search-result-card__description cdx-card__text__description"
         v-html="descriptionHtml"
       />
       <p
         v-if="article.matchSnippetHtml"
-        class="wikitab-search-result-card__extract"
+        class="wikitab-search-result-card__extract cdx-card__text__description"
         v-html="article.matchSnippetHtml"
       />
       <p
         v-else-if="extractHtml"
-        class="wikitab-search-result-card__extract"
+        class="wikitab-search-result-card__extract cdx-card__text__description"
         v-html="extractHtml"
       />
       <p
         v-if="attributionLoading"
-        class="wikitab-search-result-card__supporting wikitab-search-result-card__supporting--loading"
+        class="wikitab-search-result-card__supporting cdx-card__text__supporting-text wikitab-search-result-card__supporting--loading"
         aria-hidden="true"
       >
         <span class="wikitab-search-result-card__supporting-skeleton-start">
@@ -175,7 +181,10 @@ watch(selection, (value) => {
         </span>
         <span class="wikitab-search-result-card__supporting-skeleton-end" />
       </p>
-      <p v-else-if="showSupporting" class="wikitab-search-result-card__supporting">
+      <p
+        v-else-if="showSupporting"
+        class="wikitab-search-result-card__supporting cdx-card__text__supporting-text"
+      >
         <span class="wikitab-search-result-card__supporting-start">
           <span
             v-if="pageViewsLabel"
@@ -223,8 +232,9 @@ watch(selection, (value) => {
   z-index: 2;
 }
 
-.wikitab-search-result-card__menu-button :deep(.cdx-icon) {
-  color: var(--color-subtle);
+.wikitab-search-result-card__menu-button :deep(.cdx-menu) {
+  width: max-content !important;
+  min-width: 0 !important;
 }
 
 .wikitab-search-result-card__why {
@@ -232,29 +242,34 @@ watch(selection, (value) => {
 }
 
 .wikitab-search-result-card__thumbnail {
+  position: relative;
   flex-shrink: 0;
   width: 96px;
   height: 96px;
 }
 
-.wikitab-search-result-card__thumbnail :deep(.cdx-thumbnail__image),
-.wikitab-search-result-card__thumbnail :deep(.cdx-thumbnail__placeholder) {
-  width: 96px;
-  height: 96px;
+.wikitab-search-result-card__thumbnail :deep(.cdx-thumbnail) {
+  width: 100%;
+  height: 100%;
 }
 
-.wikitab-search-result-card__thumbnail--pending :deep(.cdx-thumbnail),
+.wikitab-search-result-card__thumbnail-pending {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-color: var(--wikitab-theme-skeleton-bg, var(--background-color-neutral-subtle));
+}
+
+.wikitab-search-result-card__thumbnail--pending :deep(.cdx-thumbnail__image) {
+  opacity: 0;
+}
+
 .wikitab-search-result-card__thumbnail--pending :deep(.cdx-thumbnail__placeholder) {
-  border: 0;
   background-color: var(--wikitab-theme-skeleton-bg, var(--background-color-neutral-subtle));
 }
 
 .wikitab-search-result-card__thumbnail--pending :deep(.cdx-icon) {
   display: none;
-}
-
-.wikitab-search-result-card__thumbnail--pending :deep(.cdx-thumbnail__image) {
-  opacity: 0;
 }
 
 .wikitab-search-result-card__content {
@@ -298,10 +313,6 @@ watch(selection, (value) => {
 .wikitab-search-result-card__description,
 .wikitab-search-result-card__extract {
   margin: 0;
-  font-size: var(--font-size-medium);
-  font-weight: var(--font-weight-normal);
-  line-height: var(--line-height-small);
-  color: var(--color-subtle);
 }
 
 .wikitab-search-result-card__extract {
@@ -325,10 +336,6 @@ watch(selection, (value) => {
   gap: var(--spacing-25);
   margin: 0;
   padding-top: var(--spacing-25);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-normal);
-  line-height: var(--line-height-small);
-  color: var(--color-subtle);
 }
 
 .wikitab-search-result-card__supporting-start {

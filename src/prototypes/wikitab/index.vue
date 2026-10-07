@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
 import tabularWordmark from './assets/tabular-wikipedia-wordmark.svg'
+import './wikitab-surface.css'
 
 import WikitabColorThemeButton from './WikitabColorThemeButton.vue'
 import WikitabColorThemePicker from './WikitabColorThemePicker.vue'
@@ -35,6 +36,7 @@ import {
   colorThemeCycleId,
   colorThemeIsAccentOnWhite,
   colorThemeRemapsCardProgressive,
+  colorThemeUsesLightCards,
   colorThemeUsesTintedPageSubtle,
   DEFAULT_COLOR_THEME_ID,
   isDefaultColorTheme,
@@ -62,12 +64,14 @@ import {
 } from './useWikitabSavedArticles'
 import { bumpWikitabSearchMountKey, useWikitabSearchMountKey } from './useWikitabSearchMount'
 import { useWikitabSearchTab } from './useWikitabSearchTab'
+import { cdxIconLogoWikipedia } from '@wikimedia/codex-icons'
 
 definePage({
   meta: {
     title: 'Wikitab',
     description: 'New tab home',
     platform: 'web',
+    icon: cdxIconLogoWikipedia,
   },
 })
 
@@ -631,6 +635,8 @@ watch(searchQuery, (next, prev) => {
       'wikitab--potd-background': showPotdBackground,
       'wikitab--potd-attribution-open': potdAttributionFocus,
       'wikitab--accent-on-white': colorThemeIsAccentOnWhite(colorThemeId),
+      'wikitab--light-cards':
+        colorThemeId != null && colorThemeUsesLightCards(colorThemeId),
       'wikitab--tinted-subtle':
         colorThemeId != null && colorThemeUsesTintedPageSubtle(colorThemeId),
       'wikitab--remaps-card-progressive':
@@ -1049,16 +1055,15 @@ watch(searchQuery, (next, prev) => {
 }
 
 /*
- * Flat overlay chrome — strip Codex drop shadows from floating surfaces.
- * Focus rings and inset selection overlays are unchanged.
+ * Flat overlay chrome — strip stock Codex drop shadows from popovers on stock Codex.
+ * Menus stay on-Codex in both modes (stock border + shadow; patched 1px outline).
  */
-.wikitab :deep(.cdx-menu),
-.wikitab :deep(.cdx-popover) {
+:global(html:not([data-codex-patched])) .wikitab :deep(.cdx-popover) {
   box-shadow: none;
 }
 
 /* CdxDialog teleports to <body>; scope via page root presence. */
-:global(html:has(.wikitab) .cdx-dialog) {
+:global(html:not([data-codex-patched]):has(.wikitab) .cdx-dialog) {
   box-shadow: none;
 }
 
@@ -1119,9 +1124,41 @@ watch(searchQuery, (next, prev) => {
  */
 .wikitab--themed.wikitab--tinted-subtle,
 .wikitab--themed.wikitab--tinted-subtle :deep(.wikitab-search-page),
-.wikitab--themed.wikitab--tinted-subtle :deep(.wikitab-search-result-card),
 .wikitab--themed.wikitab--tinted-subtle :deep(.wikitab-section) {
   --color-subtle: var(--wikitab-theme-subtle);
+}
+
+/*
+ * Articles-tab body copy follows CdxCard description/supporting tokens (subtle on
+ * stock, base on patched). On hue-tinted pages remap both so card-equivalent text
+ * stays theme-subtle.
+ */
+.wikitab--themed.wikitab--tinted-subtle :deep(.wikitab-search-result-card) {
+  --color-subtle: var(--wikitab-theme-subtle);
+  --color-base: var(--wikitab-theme-subtle);
+}
+
+/*
+ * lightCards tints (Blue bold, Purple bold) — article description, extract, and
+ * supporting line all use near-black for contrast on the saturated page tint.
+ */
+.wikitab--themed.wikitab--light-cards :deep(.wikitab-search-result-card) {
+  --color-subtle: var(--wikitab-theme-fg);
+  --color-base: var(--wikitab-theme-fg);
+}
+
+/*
+ * lightCards feed cards (Blue bold, Purple bold) — patched hover aliases on
+ * .wikitab inherit the white page progressive; card shells need the card accent.
+ */
+.wikitab--themed.wikitab--light-cards :deep(.wikitab-card) {
+  --wikitab-card-border-color--hover: var(--wikitab-theme-card-progressive);
+  --wikitab-card-box-shadow--hover: 0 0 0 1px var(--wikitab-theme-card-progressive);
+  --wikitab-card-border-color--active: var(
+    --wikitab-theme-card-progressive--active,
+    var(--wikitab-theme-card-progressive)
+  );
+  --wikitab-card-box-shadow--active: inset 0 0 0 1px var(--wikitab-theme-card-progressive);
 }
 
 .wikitab--themed.wikitab--tinted-subtle :deep(.wikitab-section__error),
@@ -1174,143 +1211,14 @@ watch(searchQuery, (next, prev) => {
   color: var(--wikitab-theme-subtle);
 }
 
-/* Section ⋯, configure, saved, and palette — same quiet icon color (Codex neutral, not theme-subtle). */
-.wikitab--themed :deep(.wikitab-section__menu .cdx-icon),
-.wikitab--themed :deep(.wikitab-saved-section__menu .cdx-icon),
-.wikitab--themed :deep(.wikitab-daily-reads-section__menu .cdx-icon),
-.wikitab--themed :deep(.wikitab-suggested-edits-section__menu .cdx-icon),
-.wikitab--themed :deep(.wikitab-review-changes-section__menu .cdx-icon),
-.wikitab--themed :deep(.wikitab-configure-button .cdx-icon),
-.wikitab--themed :deep(.wikitab-configure-module-list__handle .cdx-icon),
-.wikitab--themed :deep(.wikitab-saved-articles-button .cdx-icon),
-.wikitab--themed :deep(.wikitab-color-theme-button .cdx-icon),
-.wikitab--themed :deep(.wikitab-potd-attribution__open .cdx-icon),
-.wikitab--themed :deep(.wikitab-potd-attribution__close .cdx-icon) {
-  color: var(--color-neutral);
-}
 
 /*
- * Page-chrome quiet buttons (section ⋯, Show more, palette, picker close): Codex hover
- * uses multiply blend + gray/blue subtle fill — replace with theme washes from
- * --wikitab-theme-quiet-* (colorThemePageStyle). No background-color transition.
+ * Themed borders on tinted page surfaces (Red light, Blue bold, …) — not accent-on-white
+ * swatches (Default, Red, Orange, … on a white page). Home feed cards + Articles /
+ * Images search surfaces share --wikitab-theme-border; Activity / Contribute search
+ * cards and the typeahead keep Codex defaults.
  */
-.wikitab--themed :deep(.wikitab-section__menu .cdx-button.cdx-button--weight-quiet),
-.wikitab--themed :deep(.wikitab-section__more-button.cdx-button--weight-quiet),
-.wikitab--themed :deep(.wikitab-saved-section__menu .cdx-button.cdx-button--weight-quiet),
-.wikitab--themed :deep(.wikitab-saved-section__more-button.cdx-button--weight-quiet),
-.wikitab--themed :deep(.wikitab-daily-reads-section__menu .cdx-button.cdx-button--weight-quiet),
-.wikitab--themed :deep(.wikitab-daily-reads-section__more-button.cdx-button--weight-quiet),
-.wikitab--themed :deep(.wikitab-suggested-edits-section__menu .cdx-button.cdx-button--weight-quiet),
-.wikitab--themed :deep(.wikitab-suggested-edits-section__more-button.cdx-button--weight-quiet),
-.wikitab--themed :deep(.wikitab-review-changes-section__menu .cdx-button.cdx-button--weight-quiet),
-.wikitab--themed :deep(.wikitab-review-changes-section__more-button.cdx-button--weight-quiet),
-.wikitab--themed :deep(.wikitab-saved-articles-panel__more-button.cdx-button--weight-quiet),
-.wikitab--themed :deep(.wikitab-configure-button.cdx-button--weight-quiet),
-.wikitab--themed :deep(.wikitab-configure-module-list__handle.cdx-button--weight-quiet),
-.wikitab--themed :deep(.wikitab-saved-articles-button.cdx-button--weight-quiet),
-.wikitab--themed :deep(.wikitab-color-theme-button.cdx-button--weight-quiet),
-.wikitab--themed :deep(.wikitab-configure-panel__close.cdx-button--weight-quiet),
-.wikitab--themed :deep(.wikitab-saved-articles-panel__close.cdx-button--weight-quiet),
-.wikitab--themed :deep(.wikitab-color-theme-picker__close.cdx-button--weight-quiet),
-.wikitab--themed :deep(.wikitab-potd-attribution__open.cdx-button--weight-quiet),
-.wikitab--themed :deep(.wikitab-potd-attribution__close.cdx-button--weight-quiet) {
-  mix-blend-mode: normal;
-  background-color: transparent;
-  border-color: transparent;
-  transition-property: color, border-color, box-shadow;
-}
-
-.wikitab--themed :deep(.wikitab-section__menu .cdx-button.cdx-button--weight-quiet:hover),
-.wikitab--themed :deep(.wikitab-section__more-button.cdx-button--weight-quiet:hover),
-.wikitab--themed :deep(.wikitab-saved-section__menu .cdx-button.cdx-button--weight-quiet:hover),
-.wikitab--themed :deep(.wikitab-saved-section__more-button.cdx-button--weight-quiet:hover),
-.wikitab--themed :deep(.wikitab-daily-reads-section__menu .cdx-button.cdx-button--weight-quiet:hover),
-.wikitab--themed :deep(.wikitab-daily-reads-section__more-button.cdx-button--weight-quiet:hover),
-.wikitab--themed :deep(.wikitab-suggested-edits-section__menu .cdx-button.cdx-button--weight-quiet:hover),
-.wikitab--themed :deep(.wikitab-suggested-edits-section__more-button.cdx-button--weight-quiet:hover),
-.wikitab--themed :deep(.wikitab-review-changes-section__menu .cdx-button.cdx-button--weight-quiet:hover),
-.wikitab--themed :deep(.wikitab-review-changes-section__more-button.cdx-button--weight-quiet:hover),
-.wikitab--themed :deep(.wikitab-saved-articles-panel__more-button.cdx-button--weight-quiet:hover),
-.wikitab--themed :deep(.wikitab-configure-button.cdx-button--weight-quiet:hover),
-.wikitab--themed :deep(.wikitab-configure-module-list__handle.cdx-button--weight-quiet:hover),
-.wikitab--themed :deep(.wikitab-saved-articles-button.cdx-button--weight-quiet:hover),
-.wikitab--themed :deep(.wikitab-color-theme-button.cdx-button--weight-quiet:hover),
-.wikitab--themed :deep(.wikitab-configure-panel__close.cdx-button--weight-quiet:hover),
-.wikitab--themed :deep(.wikitab-saved-articles-panel__close.cdx-button--weight-quiet:hover),
-.wikitab--themed :deep(.wikitab-color-theme-picker__close.cdx-button--weight-quiet:hover),
-.wikitab--themed :deep(.wikitab-potd-attribution__open.cdx-button--weight-quiet:hover),
-.wikitab--themed :deep(.wikitab-potd-attribution__close.cdx-button--weight-quiet:hover) {
-  background-color: var(--wikitab-theme-quiet-hover-bg);
-}
-
-.wikitab--themed :deep(.wikitab-section__menu .cdx-button.cdx-button--weight-quiet:active),
-.wikitab--themed
-  :deep(.wikitab-section__menu .cdx-button.cdx-button--weight-quiet.cdx-button--is-active),
-.wikitab--themed :deep(.wikitab-section__more-button.cdx-button--weight-quiet:active),
-.wikitab--themed
-  :deep(.wikitab-section__more-button.cdx-button--weight-quiet.cdx-button--is-active),
-.wikitab--themed :deep(.wikitab-saved-section__menu .cdx-button.cdx-button--weight-quiet:active),
-.wikitab--themed
-  :deep(.wikitab-saved-section__menu .cdx-button.cdx-button--weight-quiet.cdx-button--is-active),
-.wikitab--themed :deep(.wikitab-saved-section__more-button.cdx-button--weight-quiet:active),
-.wikitab--themed
-  :deep(.wikitab-saved-section__more-button.cdx-button--weight-quiet.cdx-button--is-active),
-.wikitab--themed :deep(.wikitab-daily-reads-section__menu .cdx-button.cdx-button--weight-quiet:active),
-.wikitab--themed
-  :deep(.wikitab-daily-reads-section__menu .cdx-button.cdx-button--weight-quiet.cdx-button--is-active),
-.wikitab--themed :deep(.wikitab-daily-reads-section__more-button.cdx-button--weight-quiet:active),
-.wikitab--themed
-  :deep(.wikitab-daily-reads-section__more-button.cdx-button--weight-quiet.cdx-button--is-active),
-.wikitab--themed :deep(.wikitab-suggested-edits-section__menu .cdx-button.cdx-button--weight-quiet:active),
-.wikitab--themed
-  :deep(.wikitab-suggested-edits-section__menu .cdx-button.cdx-button--weight-quiet.cdx-button--is-active),
-.wikitab--themed :deep(.wikitab-suggested-edits-section__more-button.cdx-button--weight-quiet:active),
-.wikitab--themed
-  :deep(.wikitab-suggested-edits-section__more-button.cdx-button--weight-quiet.cdx-button--is-active),
-.wikitab--themed :deep(.wikitab-review-changes-section__menu .cdx-button.cdx-button--weight-quiet:active),
-.wikitab--themed
-  :deep(.wikitab-review-changes-section__menu .cdx-button.cdx-button--weight-quiet.cdx-button--is-active),
-.wikitab--themed :deep(.wikitab-review-changes-section__more-button.cdx-button--weight-quiet:active),
-.wikitab--themed
-  :deep(.wikitab-review-changes-section__more-button.cdx-button--weight-quiet.cdx-button--is-active),
-.wikitab--themed :deep(.wikitab-saved-articles-panel__more-button.cdx-button--weight-quiet:active),
-.wikitab--themed
-  :deep(.wikitab-saved-articles-panel__more-button.cdx-button--weight-quiet.cdx-button--is-active),
-.wikitab--themed :deep(.wikitab-configure-button.cdx-button--weight-quiet:active),
-.wikitab--themed :deep(.wikitab-configure-button.cdx-button--weight-quiet.cdx-button--is-active),
-.wikitab--themed :deep(.wikitab-configure-module-list__handle.cdx-button--weight-quiet:active),
-.wikitab--themed
-  :deep(.wikitab-configure-module-list__handle.cdx-button--weight-quiet.cdx-button--is-active),
-.wikitab--themed :deep(.wikitab-saved-articles-button.cdx-button--weight-quiet:active),
-.wikitab--themed :deep(.wikitab-saved-articles-button.cdx-button--weight-quiet.cdx-button--is-active),
-.wikitab--themed :deep(.wikitab-color-theme-button.cdx-button--weight-quiet:active),
-.wikitab--themed :deep(.wikitab-color-theme-button.cdx-button--weight-quiet.cdx-button--is-active),
-.wikitab--themed :deep(.wikitab-configure-panel__close.cdx-button--weight-quiet:active),
-.wikitab--themed
-  :deep(.wikitab-configure-panel__close.cdx-button--weight-quiet.cdx-button--is-active),
-.wikitab--themed :deep(.wikitab-saved-articles-panel__close.cdx-button--weight-quiet:active),
-.wikitab--themed
-  :deep(.wikitab-saved-articles-panel__close.cdx-button--weight-quiet.cdx-button--is-active),
-.wikitab--themed :deep(.wikitab-color-theme-picker__close.cdx-button--weight-quiet:active),
-.wikitab--themed
-  :deep(.wikitab-color-theme-picker__close.cdx-button--weight-quiet.cdx-button--is-active),
-.wikitab--themed :deep(.wikitab-potd-attribution__open.cdx-button--weight-quiet:active),
-.wikitab--themed
-  :deep(.wikitab-potd-attribution__open.cdx-button--weight-quiet.cdx-button--is-active),
-.wikitab--themed :deep(.wikitab-potd-attribution__close.cdx-button--weight-quiet:active),
-.wikitab--themed
-  :deep(.wikitab-potd-attribution__close.cdx-button--weight-quiet.cdx-button--is-active) {
-  background-color: var(--wikitab-theme-quiet-active-bg);
-}
-
-/*
- * Themed thumbnail borders on tinted page surfaces only (Articles + Images tabs).
- * White cards (feed, Activity, Contribute) and the search typeahead keep Codex defaults.
- */
-.wikitab--themed:not(.wikitab--accent-on-white)
-  :deep(.wikitab-search-result-card .cdx-thumbnail__image),
-.wikitab--themed:not(.wikitab--accent-on-white)
-  :deep(.wikitab-search-result-card .cdx-thumbnail__placeholder) {
+.wikitab--themed:not(.wikitab--accent-on-white) :deep(.wikitab-card .cdx-card) {
   border-color: var(--wikitab-theme-border, var(--border-color-subtle));
 }
 
@@ -1332,7 +1240,8 @@ watch(searchQuery, (next, prev) => {
  */
 .wikitab--themed.wikitab--remaps-card-progressive :deep(.wikitab-card),
 .wikitab--themed.wikitab--remaps-card-progressive :deep(.wikitab-search-activity-card),
-.wikitab--themed.wikitab--remaps-card-progressive :deep(.wikitab-search-contribute-card) {
+.wikitab--themed.wikitab--remaps-card-progressive :deep(.wikitab-search-contribute-card),
+.wikitab--themed.wikitab--remaps-card-progressive :deep(.wikitab-search-image-card) {
   --color-progressive: var(--wikitab-theme-card-progressive, var(--color-progressive));
   --color-progressive--hover: var(
     --wikitab-theme-card-progressive--hover,
@@ -1395,58 +1304,6 @@ watch(searchQuery, (next, prev) => {
     --wikitab-theme-card-progressive-subtle--active,
     var(--background-color-progressive-subtle--active)
   );
-}
-
-/* Card ⋯ menus — theme focus ring + open/active wash (Codex quiet defaults to blue). */
-.wikitab--themed :deep(.wikitab-card__menu-button .cdx-button.cdx-button--weight-quiet),
-.wikitab--themed
-  :deep(.wikitab-search-result-card__menu-button .cdx-button.cdx-button--weight-quiet),
-.wikitab--themed
-  :deep(.wikitab-search-activity-card__menu-button .cdx-button.cdx-button--weight-quiet) {
-  mix-blend-mode: normal;
-  background-color: transparent;
-  border-color: transparent;
-  transition-property: color, border-color, box-shadow;
-}
-
-.wikitab--themed :deep(.wikitab-card__menu-button .cdx-button.cdx-button--weight-quiet:hover),
-.wikitab--themed
-  :deep(.wikitab-search-result-card__menu-button .cdx-button.cdx-button--weight-quiet:hover),
-.wikitab--themed
-  :deep(.wikitab-search-activity-card__menu-button .cdx-button.cdx-button--weight-quiet:hover),
-.wikitab--themed
-  :deep(.wikitab-card__menu-button .cdx-button.cdx-button--weight-quiet[aria-expanded='true']),
-.wikitab--themed
-  :deep(
-    .wikitab-search-result-card__menu-button
-      .cdx-button.cdx-button--weight-quiet[aria-expanded='true']
-  ),
-.wikitab--themed
-  :deep(
-    .wikitab-search-activity-card__menu-button
-      .cdx-button.cdx-button--weight-quiet[aria-expanded='true']
-  ) {
-  background-color: var(--wikitab-theme-quiet-hover-bg);
-}
-
-.wikitab--themed :deep(.wikitab-card__menu-button .cdx-button.cdx-button--weight-quiet:active),
-.wikitab--themed
-  :deep(.wikitab-search-result-card__menu-button .cdx-button.cdx-button--weight-quiet:active),
-.wikitab--themed
-  :deep(.wikitab-search-activity-card__menu-button .cdx-button.cdx-button--weight-quiet:active),
-.wikitab--themed
-  :deep(.wikitab-card__menu-button .cdx-button.cdx-button--weight-quiet.cdx-button--is-active),
-.wikitab--themed
-  :deep(
-    .wikitab-search-result-card__menu-button
-      .cdx-button.cdx-button--weight-quiet.cdx-button--is-active
-  ),
-.wikitab--themed
-  :deep(
-    .wikitab-search-activity-card__menu-button
-      .cdx-button.cdx-button--weight-quiet.cdx-button--is-active
-  ) {
-  background-color: var(--wikitab-theme-quiet-active-bg);
 }
 
 </style>

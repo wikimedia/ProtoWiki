@@ -61,14 +61,14 @@ const columns = computed(() =>
 <style scoped>
 .wikitab-search-image-skeleton-grid {
   display: grid;
-  gap: 2px;
+  gap: var(--spacing-12);
   width: 100%;
 }
 
 .wikitab-search-image-skeleton-grid__column {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--spacing-12);
   min-width: 0;
 }
 </style>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CdxTab, CdxTabs } from '@wikimedia/codex'
+import { CdxToggleButton } from '@wikimedia/codex'
 
 import type { WikitabSavedItemTab } from './data/wikitabSavedItemTabs'
 
@@ -8,140 +8,110 @@ defineProps<{
 }>()
 
 const activeTab = defineModel<WikitabSavedItemTab>('active', { required: true })
+
+function onTabUpdate(name: WikitabSavedItemTab, selected: boolean): void {
+  if (selected) {
+    activeTab.value = name
+  }
+}
 </script>
 
 <template>
-  <CdxTabs v-model:active="activeTab" framed class="wikitab-saved-item-tabs">
-    <CdxTab
+  <div
+    class="wikitab-saved-item-tabs"
+    role="tablist"
+  >
+    <CdxToggleButton
       v-for="tab in tabs"
       :key="tab.name"
-      :name="tab.name"
-      :label="tab.label"
-    />
-  </CdxTabs>
+      role="tab"
+      size="small"
+      :model-value="activeTab === tab.name"
+      :aria-selected="activeTab === tab.name"
+      @update:model-value="(selected) => onTabUpdate(tab.name, selected)"
+    >
+      {{ tab.label }}
+    </CdxToggleButton>
+  </div>
 </template>
 
 <style scoped>
 .wikitab-saved-item-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--spacing-25);
   width: 100%;
   margin-bottom: var(--spacing-50);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  /*
+   * Room for the 1px hover/focus outline — overflow clips box-shadow at the
+   * scrollport edge without this padding.
+   */
+  padding-block: var(--border-width-base);
+  padding-inline: var(--border-width-base);
+  scroll-padding-inline: var(--border-width-base);
 }
 
-.wikitab-saved-item-tabs :deep(.cdx-tabs__content) {
+.wikitab-saved-item-tabs::-webkit-scrollbar {
   display: none;
 }
 
-/* Header + scroll fades — root IS .cdx-tabs--framed, so target children directly. */
-.wikitab-saved-item-tabs :deep(.cdx-tabs__header) {
-  background-color: transparent;
-}
-
-.wikitab-saved-item-tabs :deep(.cdx-tabs__prev-scroller),
-.wikitab-saved-item-tabs :deep(.cdx-tabs__next-scroller) {
-  background-color: transparent;
-}
-
-.wikitab-saved-item-tabs :deep(.cdx-tabs__prev-scroller::after) {
-  background-image: linear-gradient(
-    to right,
-    var(--wikitab-theme-bg, var(--background-color-base)) 0,
-    var(--background-color-transparent, transparent) 100%
-  );
-}
-
-.wikitab-saved-item-tabs :deep(.cdx-tabs__next-scroller::before) {
-  background-image: linear-gradient(
-    to left,
-    var(--wikitab-theme-bg, var(--background-color-base)) 0,
-    var(--background-color-transparent, transparent) 100%
-  );
-}
-
-.wikitab-saved-item-tabs :deep(.cdx-tabs__list) {
-  gap: var(--spacing-25);
-  padding-block: 1px;
-}
-
-/* Framed toggle-button at size="small" — beat framed-tab folder styling. */
-.wikitab-saved-item-tabs :deep(.cdx-tabs__header .cdx-tabs__list__item) {
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  max-width: 28rem;
-  margin: 0;
-  padding-block: var(--spacing-12);
-  padding-inline: var(--spacing-50);
-  border-width: var(--border-width-base);
-  border-style: solid;
-  border-color: var(--border-color-interactive);
-  border-radius: var(--border-radius-base);
-  font-family: inherit;
-  font-size: var(--font-size-small);
+/* Framed small toggle buttons ship bold; Wikitab tabs stay regular weight. */
+.wikitab-saved-item-tabs :deep(.cdx-toggle-button) {
+  flex: 0 0 auto;
   font-weight: var(--font-weight-normal);
-  line-height: 1.125rem;
-  text-transform: none;
-  mix-blend-mode: normal;
 }
 
-.wikitab-saved-item-tabs :deep(.cdx-tabs__scroll-button.cdx-button) {
-  padding-block: var(--spacing-12);
-  padding-inline: var(--spacing-50);
-  font-size: var(--font-size-small);
-  line-height: 1.125rem;
+/*
+ * Stock Codex shrinks small toggle height but keeps medium type; patched Codex
+ * adds --font-size-small here — mirror that so tabs read compact on stock too.
+ */
+.wikitab-saved-item-tabs :deep(.cdx-toggle-button--size-small) {
+  font-size: var(--font-size-small, 0.875rem);
 }
 
+/*
+ * Codex framed toggled-on uses progressive (blue); Saved tabs use inverted black.
+ * Unselected state stays stock Codex — only remap the on state and its interactions.
+ */
 .wikitab-saved-item-tabs
-  :deep(
-    .cdx-tabs__header
-      .cdx-tabs__list__item:enabled:not([aria-selected='true']):not([aria-selected='true'])
-  ) {
-  background-color: var(--background-color-interactive-subtle);
-  color: var(--color-base);
-}
-
-.wikitab-saved-item-tabs
-  :deep(
-    .cdx-tabs__header
-      .cdx-tabs__list__item:enabled:not([aria-selected='true']):not([aria-selected='true']):hover
-  ) {
-  background-color: var(--background-color-interactive-subtle--hover);
-  border-color: var(--border-color-interactive--hover);
-  color: var(--color-base);
-}
-
-.wikitab-saved-item-tabs
-  :deep(
-    .cdx-tabs__header
-      .cdx-tabs__list__item:enabled:not([aria-selected='true']):not([aria-selected='true']):active
-  ) {
-  background-color: var(--background-color-interactive-subtle--active);
-  border-color: var(--border-color-interactive--active);
-  color: var(--color-base);
-}
-
-.wikitab-saved-item-tabs
-  :deep(.cdx-tabs__header .cdx-tabs__list__item[aria-selected='true'][aria-selected='true']) {
-  background-color: var(--color-base);
-  border-color: var(--border-color-transparent);
+  :deep(.cdx-toggle-button--framed.cdx-toggle-button--toggled-on:enabled) {
+  background-color: var(--background-color-inverted);
   color: var(--color-inverted);
+  border-color: var(--border-color-transparent);
+  box-shadow: none;
+}
+
+.wikitab-saved-item-tabs
+  :deep(.cdx-toggle-button--framed.cdx-toggle-button--toggled-on:enabled:hover) {
+  background-color: var(--background-color-inverted);
+  color: var(--color-inverted);
+  border-color: var(--border-color-transparent);
+}
+
+.wikitab-saved-item-tabs
+  :deep(.cdx-toggle-button--framed.cdx-toggle-button--toggled-on:enabled:focus-visible) {
+  background-color: var(--background-color-inverted);
+  color: var(--color-inverted);
+  border-color: var(--border-color-transparent);
+  box-shadow:
+    0 0 0 1px var(--box-shadow-color-emphasized),
+    inset 0 0 0 1px var(--box-shadow-color-inverted);
 }
 
 .wikitab-saved-item-tabs
   :deep(
-    .cdx-tabs__header .cdx-tabs__list__item[aria-selected='true'][aria-selected='true']:hover
-  ) {
-  background-color: var(--color-base--hover);
-  border-color: var(--border-color-transparent);
-  color: var(--color-inverted);
-}
-
+    .cdx-toggle-button--framed.cdx-toggle-button--toggled-on:enabled:active
+  ),
 .wikitab-saved-item-tabs
   :deep(
-    .cdx-tabs__header .cdx-tabs__list__item[aria-selected='true'][aria-selected='true']:active
+    .cdx-toggle-button--framed.cdx-toggle-button--toggled-on:enabled.cdx-toggle-button--is-active
   ) {
-  background-color: var(--color-emphasized);
-  border-color: var(--border-color-transparent);
+  background-color: var(--background-color-inverted);
   color: var(--color-inverted);
+  border-color: var(--border-color-transparent);
+  box-shadow: inset 0 0 0 1px var(--box-shadow-color-emphasized);
 }
 </style>

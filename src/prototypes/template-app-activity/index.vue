@@ -5,6 +5,8 @@ definePage({
     description: 'Template for an in-app activity feed with reading/edit stats and history.',
     category: 'template',
     platform: 'app',
+    order: 5,
+    icon: cdxIconChartLine,
   },
 })
 

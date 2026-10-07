@@ -73,9 +73,9 @@ defineExpose({
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  height: 2.75rem;
-  border-radius: 2px;
-  overflow: hidden;
+  height: var(--min-size-interactive-touch);
+  border-radius: var(--border-radius-base);
+  /* Do not clip — Codex hover/focus draws a 1px border + outline outside the hit target. */
   background-color: var(--wikitab-theme-bg, var(--background-color-base));
 }
 
@@ -99,7 +99,18 @@ defineExpose({
 
 .wikitab-color-theme-button {
   flex-shrink: 0;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: var(--min-size-interactive-touch);
+  height: var(--min-size-interactive-touch);
+  border-radius: 0;
+}
+
+.wikitab-color-theme-button:first-child {
+  border-start-start-radius: var(--border-radius-base);
+  border-end-start-radius: var(--border-radius-base);
+}
+
+.wikitab-color-theme-button:last-child {
+  border-start-end-radius: var(--border-radius-base);
+  border-end-end-radius: var(--border-radius-base);
 }
 </style>

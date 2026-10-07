@@ -1,3 +1,4 @@
+import { codexDark, codexLight } from './codexTokenValues'
 import { wikitabColor, type WikitabPaletteFamily, type WikitabPaletteStep } from './wikitabPalette'
 
 const INVERTED_FG = 'var(--color-inverted-fixed)'
@@ -81,7 +82,7 @@ function whiteProgressiveTheme(
 ): WikitabColorThemeStyle {
   const progressive = wikitabColor(family, step)
   return {
-    bg: '#ffffff',
+    bg: codexLight.backgroundBase,
     border: wikitabColor('gray', 200),
     fg: progressive,
     progressive,
@@ -159,7 +160,7 @@ export function colorThemeCycleId(
  */
 export const WIKITAB_COLOR_THEME_STYLES: Record<WikitabColorThemeId, WikitabColorThemeStyle> = {
   'picture-of-the-day': {
-    bg: '#101418',
+    bg: codexDark.backgroundBase,
     border: wikitabColor('gray', 800),
     fg: INVERTED_FG,
     progressive: null,
@@ -170,9 +171,9 @@ export const WIKITAB_COLOR_THEME_STYLES: Record<WikitabColorThemeId, WikitabColo
     potdBackgroundExpandedOpacity: 0.85,
   },
   'default-white': {
-    /* Fixed white — `--background-color-base` follows Codex dark mode and the swatch
-       would inherit the active theme’s document mode (e.g. Black → unreadable). */
-    bg: '#ffffff',
+    /* Codex light base as a resolved value — `var(--background-color-base)` follows
+       the active document mode, so the swatch would inherit it (e.g. Black → unreadable). */
+    bg: codexLight.backgroundBase,
     border: wikitabColor('gray', 200),
     fg: wikitabColor('gray', 900),
     progressive: null,
@@ -186,8 +187,8 @@ export const WIKITAB_COLOR_THEME_STYLES: Record<WikitabColorThemeId, WikitabColo
   ),
   black: {
     /* Codex `--background-color-inverted` flips to a light gray in dark mode; use the
-       fixed dark-base value so Black stays black once we sync Codex dark mode. */
-    bg: '#101418',
+       resolved dark-mode base so Black stays black once we sync Codex dark mode. */
+    bg: codexDark.backgroundBase,
     border: wikitabColor('gray', 800),
     fg: INVERTED_FG,
     progressive: null,
@@ -331,10 +332,10 @@ export function normalizeColorThemeId(raw: unknown): WikitabColorThemeId | null 
 const PROGRESSIVE_ON_TINT = '#ffffff'
 
 /** Codex light-mode default — card links on neutral lightCards themes. */
-const CODEX_LIGHT_PROGRESSIVE = '#3366cc'
+const CODEX_LIGHT_PROGRESSIVE = codexLight.progressive
 
 /** Codex light-mode `--color-subtle` — white card description / supporting text. */
-const CODEX_LIGHT_SUBTLE = '#54595d'
+const CODEX_LIGHT_SUBTLE = codexLight.subtle
 
 /** Codex document theme to pair with this page tint (bold → dark, light → light). */
 export function colorThemeCodexMode(theme: WikitabColorThemeStyle): 'light' | 'dark' {

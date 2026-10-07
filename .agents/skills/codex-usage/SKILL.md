@@ -155,3 +155,6 @@ the bootstrap, [`protowiki-theme`](../protowiki-theme/SKILL.md) for the
 theming cascade (and the `references/css-imports.md` page beside it for
 the load order), and [`protowiki-components`](../protowiki-components/SKILL.md)
 for the wrappers and prototype-specific components built on top.
+To trial an unmerged Codex change, and for the rules that keep prototype CSS
+following Codex changes, see
+[`protowiki-codex-patching`](../protowiki-codex-patching/SKILL.md).

@@ -151,14 +151,14 @@ function setColumnSentinel(columnIndex: number, el: Element | ComponentPublicIns
 <style scoped>
 .wikitab-search-image-grid {
   display: grid;
-  gap: 2px;
+  gap: var(--spacing-12);
   width: 100%;
 }
 
 .wikitab-search-image-grid__column {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--spacing-12);
   min-width: 0;
 }
 

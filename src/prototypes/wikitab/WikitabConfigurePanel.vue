@@ -37,7 +37,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="wikitab-configure-panel" role="dialog" aria-modal="true" aria-label="Modules">
+  <div class="wikitab-configure-panel wikitab-panel" role="dialog" aria-modal="true" aria-label="Modules">
     <div class="wikitab-configure-panel__column">
       <header class="wikitab-configure-panel__head">
         <h2 class="wikitab-configure-panel__title">Modules</h2>
@@ -69,21 +69,6 @@ onUnmounted(() => {
   scrollbar-gutter: auto;
 }
 
-.wikitab-configure-panel {
-  --wikitab-page-gutter: var(--spacing-100);
-
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  box-sizing: border-box;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding-inline: var(--wikitab-page-gutter);
-  padding-block: var(--spacing-100);
-  background-color: var(--wikitab-theme-bg, var(--background-color-base));
-  color: var(--wikitab-theme-fg, var(--color-base));
-}
-
 .wikitab-configure-panel__column {
   display: flex;
   flex-direction: column;
@@ -101,7 +86,7 @@ onUnmounted(() => {
   gap: var(--spacing-50);
   box-sizing: border-box;
   width: 100%;
-  min-height: 2.75rem;
+  min-height: var(--min-size-interactive-touch);
   padding-top: 0;
 }
 
@@ -118,10 +103,10 @@ onUnmounted(() => {
 
 .wikitab-configure-panel__close {
   flex-shrink: 0;
-  width: 2.75rem;
-  min-width: 2.75rem;
-  height: 2.75rem;
-  min-height: 2.75rem;
+  width: var(--min-size-interactive-touch);
+  min-width: var(--min-size-interactive-touch);
+  height: var(--min-size-interactive-touch);
+  min-height: var(--min-size-interactive-touch);
 }
 
 @media (max-width: 767px) {

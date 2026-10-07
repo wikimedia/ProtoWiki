@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { cdxIconSearch } from '@wikimedia/codex-icons'
+
 definePage({
   meta: {
     title: 'Search',
     description: 'Template for an in-app live search screen with multilingual results.',
     category: 'template',
     platform: 'app',
+    order: 3,
+    icon: cdxIconSearch,
   },
 })
 

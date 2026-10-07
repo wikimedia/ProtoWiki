@@ -2,6 +2,10 @@ import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 
+import {
+  WIKITAB_FEED_CARD_THUMB_WIDTH,
+  wikimediaThumbnailAtLeast,
+} from './wikimediaThumbnailUrl'
 import { articleTitleKey, EN_WIKI_HOST } from './wikitabHtml'
 
 const SUMMARY_CONCURRENCY = 2
@@ -21,11 +25,6 @@ interface PageSummaryResponse {
 }
 
 const pageSummaryByTitleKey = new Map<string, WikitabPageSummary>()
-
-function normalizeThumbnailUrl(url: string | undefined): string | undefined {
-  if (!url) return undefined
-  return url.startsWith('//') ? `https:${url}` : url
-}
 
 /** REST page summary with session cache keyed by article title. */
 export async function fetchWikitabPageSummary(
@@ -55,7 +54,10 @@ export async function fetchWikitabPageSummary(
       pageid: summary.pageid,
       title: summary.title,
       description: summary.description?.trim() || undefined,
-      thumbnailUrl: normalizeThumbnailUrl(summary.thumbnail?.source),
+      thumbnailUrl: wikimediaThumbnailAtLeast(
+        summary.thumbnail?.source,
+        WIKITAB_FEED_CARD_THUMB_WIDTH,
+      ),
     }
     pageSummaryByTitleKey.set(articleTitleKey(data.title), data)
     pageSummaryByTitleKey.set(key, data)

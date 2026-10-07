@@ -342,3 +342,14 @@ hr {
 [class*='cdx-'] {
   font-family: var(--font-family-base);
 }
+
+/*
+ * Wikitab card thumbnails — patched Codex pins card-thumb inners at 3rem. Reset
+ * so wikitab-surface.css can stretch them to the 96px slot (layout, not a
+ * patches/codex/ workaround).
+ */
+html[data-codex-patched] .cdx-card__thumbnail.cdx-thumbnail .cdx-thumbnail__placeholder,
+html[data-codex-patched] .cdx-card__thumbnail.cdx-thumbnail .cdx-thumbnail__image {
+  width: auto;
+  height: auto;
+}
