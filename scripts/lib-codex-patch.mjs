@@ -1,13 +1,18 @@
 // Shared helpers for the Codex Gerrit patch workflow.
 //
-// Two scripts use this:
-//   - patch-codex.mjs        (local "make": build the change, emit a tiny diff)
-//   - apply-codex-patch.mjs  (postinstall: format + apply the committed diff)
+// Scripts that use this:
+//   - patch-codex.mjs           (local "make": build the change, emit a tiny diff)
+//   - apply-codex-patch.mjs     (postinstall: apply the committed patch)
+//   - codex.mjs                 (switch stock / patched)
+//   - build-codex-variants.mjs  (build patched + stock side by side)
 //
-// The formatting helpers MUST behave identically in both, because the committed
+// The formatting helpers MUST behave identically everywhere, because a committed
 // patch is authored against `format(published)` and re-applied to
 // `format(published)` at install time. Same formatter + same input => the patch
 // always lands.
+//
+// Layout: at most one patch, flat in patches/codex/ (manifest.json + *.patch).
+// No manifest means no patch: every install and deploy is stock Codex.
 
 import fs from 'node:fs'
 import path from 'node:path'
@@ -17,8 +22,30 @@ import { spawnSync } from 'node:child_process'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const ROOT = path.resolve(__dirname, '..')
-export const PATCHES_DIR = path.join(ROOT, 'patches', 'codex')
-export const MANIFEST_PATH = path.join(PATCHES_DIR, 'manifest.json')
+export const PATCH_DIR = path.join(ROOT, 'patches', 'codex')
+export const MANIFEST_PATH = path.join(PATCH_DIR, 'manifest.json')
+
+export function readManifest() {
+  if (!fs.existsSync(MANIFEST_PATH)) return null
+  return JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'))
+}
+
+export function hasPatch() {
+  return fs.existsSync(MANIFEST_PATH)
+}
+
+/**
+ * Whether an install should be patched: CODEX_PATCH=off|stock forces stock,
+ * anything else applies the committed patch when there is one.
+ */
+export function wantsPatch(request = process.env.CODEX_PATCH) {
+  if (request === 'off' || request === 'stock') return false
+  return hasPatch()
+}
+
+export function patchLabel(manifest) {
+  return manifest.change ? `Gerrit ${manifest.change}` : 'Patched'
+}
 
 export const CODEX_PACKAGES = [
   '@wikimedia/codex',
@@ -51,7 +78,8 @@ export function parserForFile(file) {
 export function run(command, args, opts = {}) {
   const result = spawnSync(command, args, {
     cwd: opts.cwd ?? ROOT,
-    stdio: 'pipe',
+    env: opts.env ?? process.env,
+    stdio: opts.stdio ?? 'pipe',
     encoding: 'utf8',
     maxBuffer: 1024 * 1024 * 64,
   })
@@ -160,9 +188,87 @@ export function patchFileName(target) {
   return `${target.replace(/^@/, '').replace(/[/]/g, '__')}.patch`
 }
 
-export function readManifest() {
-  if (!fs.existsSync(MANIFEST_PATH)) {
-    return null
+// Lives inside the installed package so a fresh (stock) reinstall wipes it:
+// the marker only exists while the patched files are actually on disk.
+// vite.config.ts reads it to expose __CODEX_PATCH__ / __CODEX_BUILD__ to the app.
+export const PATCH_MARKER_PATH = path.join(
+  ROOT,
+  'node_modules',
+  '@wikimedia',
+  'codex',
+  '.protowiki-codex-patch.json',
+)
+
+export function writePatchMarker(manifest) {
+  const marker = {
+    change: manifest.change,
+    patchset: manifest.patchset,
+    subject: manifest.subject,
+    url: manifest.url,
+    generatedAt: manifest.generatedAt,
   }
-  return JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'))
+  fs.writeFileSync(PATCH_MARKER_PATH, `${JSON.stringify(marker, null, 2)}\n`)
+}
+
+export function readPatchMarker() {
+  if (!fs.existsSync(PATCH_MARKER_PATH)) return null
+  return JSON.parse(fs.readFileSync(PATCH_MARKER_PATH, 'utf8'))
+}
+
+export function removePatchMarker() {
+  fs.rmSync(PATCH_MARKER_PATH, { force: true })
+}
+
+export function installedVersions() {
+  return Object.fromEntries(
+    CODEX_PACKAGES.map((pkg) => {
+      const pkgJson = path.join(installedPackageDir(pkg), 'package.json')
+      return [
+        pkg,
+        fs.existsSync(pkgJson) ? JSON.parse(fs.readFileSync(pkgJson, 'utf8')).version : null,
+      ]
+    }),
+  )
+}
+
+// A pristine copy of the published packages, taken whenever node_modules is
+// known to be stock (no marker). Switching to stock restores from it
+// instead of reinstalling — patches never touch package.json, so the installed
+// versions identify which published release the copy belongs to.
+const STOCK_CACHE_DIR = path.join(ROOT, 'node_modules', '.cache', 'protowiki-codex-stock')
+const STOCK_CACHE_VERSIONS = path.join(STOCK_CACHE_DIR, 'versions.json')
+
+function stockCacheMatches(versions) {
+  if (!fs.existsSync(STOCK_CACHE_VERSIONS)) return false
+  return JSON.stringify(JSON.parse(fs.readFileSync(STOCK_CACHE_VERSIONS, 'utf8'))) ===
+    JSON.stringify(versions)
+}
+
+/** Call only while node_modules holds stock Codex (no patch marker). */
+export function snapshotStock() {
+  const versions = installedVersions()
+  if (Object.values(versions).some((v) => !v) || stockCacheMatches(versions)) return
+  fs.rmSync(STOCK_CACHE_DIR, { recursive: true, force: true })
+  for (const pkg of CODEX_PACKAGES) {
+    fs.cpSync(installedPackageDir(pkg), path.join(STOCK_CACHE_DIR, pkg), { recursive: true })
+  }
+  fs.writeFileSync(STOCK_CACHE_VERSIONS, `${JSON.stringify(versions)}\n`)
+}
+
+/** Path of a target's published (stock) copy in the snapshot, or null if unavailable. */
+export function stockSnapshotPath(target) {
+  if (!stockCacheMatches(installedVersions())) return null
+  const { pkg, rel } = splitTarget(target)
+  const file = path.join(STOCK_CACHE_DIR, pkg, rel)
+  return fs.existsSync(file) ? file : null
+}
+
+/** Restore stock Codex from the snapshot. Returns false when no usable snapshot exists. */
+export function restoreStock() {
+  if (!stockCacheMatches(installedVersions())) return false
+  for (const pkg of CODEX_PACKAGES) {
+    fs.rmSync(installedPackageDir(pkg), { recursive: true, force: true })
+    fs.cpSync(path.join(STOCK_CACHE_DIR, pkg), installedPackageDir(pkg), { recursive: true })
+  }
+  return true
 }

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cdxIconBrowser } from '@wikimedia/codex-icons'
+
 definePage({
   meta: {
     title: 'Chrome',
@@ -6,6 +8,7 @@ definePage({
     category: 'template',
     platform: 'app',
     order: 0,
+    icon: cdxIconBrowser,
   },
 })
 

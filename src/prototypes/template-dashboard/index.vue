@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CdxIcon } from '@wikimedia/codex'
-import { cdxIconCheck, cdxIconUserTalk } from '@wikimedia/codex-icons'
+import { cdxIconCheck, cdxIconLayout, cdxIconUserTalk } from '@wikimedia/codex-icons'
 import { RouterLink } from 'vue-router'
 
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
@@ -15,6 +15,8 @@ definePage({
     description: 'Template for dashboard prototypes that contain "box modules".',
     category: 'template',
     platform: 'web',
+    order: 6,
+    icon: cdxIconLayout,
   },
 })
 

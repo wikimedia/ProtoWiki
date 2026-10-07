@@ -12,7 +12,24 @@ export interface UserPageLists {
   lang: string
   watchlist: string[]
   readingList: string[]
+  /** Epoch ms when each readingList entry was saved; index-aligned with readingList. */
+  readingListSavedAt: number[]
   editedPages: string[]
+}
+
+export const READING_LIST_SAVED_AT_DAY_MS = 24 * 60 * 60 * 1000
+
+/** Fill missing reading-list timestamps with staggered synthetic values. */
+export function backfillReadingListSavedAt(
+  titles: readonly string[],
+  times: readonly number[] = [],
+): number[] {
+  const now = Date.now()
+  return titles.map((_, index) => {
+    const value = times[index]
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) return value
+    return now - index * READING_LIST_SAVED_AT_DAY_MS
+  })
 }
 
 export interface Config {
@@ -24,6 +41,10 @@ export interface Config {
   user: ConfigUser
   /** Wikipedia username when `user` is `'real'`. */
   realUsername: string
+  /** Contact detail for Wikimedia API etiquette (email/URL), appended to user agent. */
+  apiContact: string
+  /** Wiki language codes the user can translate into (e.g. `fr`, `de`). */
+  knownLanguages: string[]
   userPageLists: Record<ConfigUser, UserPageLists>
 }
 
@@ -32,12 +53,14 @@ export const DEFAULT_USER_PAGE_LISTS: Record<ConfigUser, UserPageLists> = {
     lang: 'en',
     watchlist: [],
     readingList: [],
+    readingListSavedAt: [],
     editedPages: [],
   },
   new: {
     lang: 'en',
     watchlist: [],
     readingList: [],
+    readingListSavedAt: [],
     editedPages: [],
   },
   experienced: {
@@ -60,22 +83,28 @@ export const DEFAULT_USER_PAGE_LISTS: Record<ConfigUser, UserPageLists> = {
       'Dada',
       'Surrealism',
     ],
+    readingListSavedAt: [],
     editedPages: ['Wet Leg', 'Jade Thirlwall', 'Confidence Man (band)', 'Gorillaz'],
   },
   real: {
     lang: 'en',
     watchlist: [],
     readingList: [],
+    readingListSavedAt: [],
     editedPages: [],
   },
 }
+
+export const DEFAULT_KNOWN_LANGUAGES = ['fr']
 
 export const DEFAULT_CONFIG: Config = {
   theme: 'light',
   appPlatform: 'auto',
   webSkin: 'auto',
-  user: 'new',
-  realUsername: 'Todepond',
+  user: 'logged-out',
+  realUsername: '',
+  apiContact: '',
+  knownLanguages: [...DEFAULT_KNOWN_LANGUAGES],
   userPageLists: cloneUserPageListsMap(DEFAULT_USER_PAGE_LISTS),
 }
 
@@ -90,12 +119,13 @@ export const CONFIG_USER_DISPLAY_NAMES: Partial<Record<ConfigUser, string>> = {
   experienced: 'ExperiencedEditor',
 }
 
-export const CONFIG_USER_MENU_ITEMS: { value: ConfigUser; label: string; description?: string }[] = [
-  { value: 'logged-out', label: 'Logged out user' },
-  { value: 'new', label: 'New user' },
-  { value: 'experienced', label: 'Experienced editor' },
-  { value: 'real', label: 'Real user', description: 'Connect to a real account on the wikis' },
-]
+export const CONFIG_USER_MENU_ITEMS: { value: ConfigUser; label: string; description?: string }[] =
+  [
+    { value: 'logged-out', label: 'Logged out user' },
+    { value: 'new', label: 'New user' },
+    { value: 'experienced', label: 'Experienced editor' },
+    { value: 'real', label: 'Real user', description: 'Connect to a real account on the wikis' },
+  ]
 
 export const CONFIG_THEME_MENU_ITEMS: { value: ConfigTheme; label: string }[] = [
   { value: 'system', label: 'Auto' },
@@ -170,18 +200,39 @@ export function formatPageList(pages: string[]): string {
   return pages.join(', ')
 }
 
+export function parseLangList(text: string): string[] {
+  const seen = new Set<string>()
+  const result: string[] = []
+
+  for (const part of text.split(',')) {
+    const code = normalizeLang(part)
+    if (!code || seen.has(code)) continue
+    seen.add(code)
+    result.push(code)
+  }
+
+  return result
+}
+
+export function formatLangList(codes: string[]): string {
+  return codes.map((code) => normalizeLang(code)).join(', ')
+}
+
 export function resetUserPageLists(user: ConfigUser): UserPageLists {
   return cloneUserPageLists(DEFAULT_USER_PAGE_LISTS[user])
 }
 
 function userPageListsEqual(a: UserPageLists, b: UserPageLists): boolean {
-  const arraysEqual = (x: string[], y: string[]) =>
+  const stringArraysEqual = (x: string[], y: string[]) =>
+    x.length === y.length && x.every((v, i) => v === y[i])
+  const numberArraysEqual = (x: number[], y: number[]) =>
     x.length === y.length && x.every((v, i) => v === y[i])
   return (
     a.lang === b.lang &&
-    arraysEqual(a.watchlist, b.watchlist) &&
-    arraysEqual(a.readingList, b.readingList) &&
-    arraysEqual(a.editedPages, b.editedPages)
+    stringArraysEqual(a.watchlist, b.watchlist) &&
+    stringArraysEqual(a.readingList, b.readingList) &&
+    numberArraysEqual(a.readingListSavedAt, b.readingListSavedAt) &&
+    stringArraysEqual(a.editedPages, b.editedPages)
   )
 }
 
@@ -195,12 +246,19 @@ function resolveApiContact(rawContact: string): string {
   return normalized.length ? normalized : DEFAULT_API_CONTACT
 }
 
-/** `fetch` headers for Wikimedia API requests (`Api-User-Agent`). */
-export function wikimediaApiFetchHeaders(purpose?: string, apiContact?: string): HeadersInit {
+/** Full Wikimedia API User-Agent string (without the header name). */
+export function formatWikimediaApiUserAgent(purpose?: string, apiContact?: string): string {
   const tag = purpose?.trim()
   const contact = resolveApiContact(apiContact ?? DEFAULT_API_CONTACT)
   const base = `${PROTOWIKI_API_USER_AGENT} (${PROTOWIKI_API_PROJECT_URL}; ${contact})`
-  return { 'Api-User-Agent': tag ? `${base} ${tag}` : base }
+  const parts = [base]
+  if (tag) parts.push(tag)
+  return parts.join(' ')
+}
+
+/** `fetch` headers for Wikimedia API requests (`Api-User-Agent`). */
+export function wikimediaApiFetchHeaders(purpose?: string, apiContact?: string): HeadersInit {
+  return { 'Api-User-Agent': formatWikimediaApiUserAgent(purpose, apiContact) }
 }
 
 const STORAGE_KEY = 'protowiki-prototype-user-config'
@@ -230,10 +288,12 @@ function isConfigUser(value: unknown): value is ConfigUser {
 }
 
 function cloneUserPageLists(lists: UserPageLists): UserPageLists {
+  const readingList = [...lists.readingList]
   return {
     lang: lists.lang,
     watchlist: [...lists.watchlist],
-    readingList: [...lists.readingList],
+    readingList,
+    readingListSavedAt: backfillReadingListSavedAt(readingList, lists.readingListSavedAt ?? []),
     editedPages: [...lists.editedPages],
   }
 }
@@ -252,6 +312,13 @@ function cloneUserPageListsMap(
 function parseStringArray(value: unknown): string[] | null {
   if (!Array.isArray(value)) return null
   return value.filter((item): item is string => typeof item === 'string')
+}
+
+function parseNumberArray(value: unknown): number[] | null {
+  if (!Array.isArray(value)) return null
+  const parsed = value.map((item) => (typeof item === 'number' ? item : Number(item)))
+  if (parsed.some((item) => !Number.isFinite(item))) return null
+  return parsed
 }
 
 function mergeUserPageLists(user: ConfigUser, stored: unknown): UserPageLists {
@@ -273,6 +340,12 @@ function mergeUserPageLists(user: ConfigUser, stored: unknown): UserPageLists {
       merged[key] = parsed
     }
   }
+
+  const parsedSavedAt = parseNumberArray(record.readingListSavedAt)
+  merged.readingListSavedAt = backfillReadingListSavedAt(
+    merged.readingList,
+    parsedSavedAt ?? [],
+  )
 
   return merged
 }
@@ -300,6 +373,12 @@ export function normalizeConfig(input: unknown): Config {
   const record = input as Record<string, unknown>
   const realUsername =
     typeof record.realUsername === 'string' ? record.realUsername : DEFAULT_CONFIG.realUsername
+  const apiContact =
+    typeof record.apiContact === 'string' ? record.apiContact : DEFAULT_CONFIG.apiContact
+  const knownLanguagesParsed = parseStringArray(record.knownLanguages)
+  const knownLanguages = knownLanguagesParsed?.length
+    ? knownLanguagesParsed.map((code) => normalizeLang(code)).filter(Boolean)
+    : [...DEFAULT_KNOWN_LANGUAGES]
   const userPageLists = mergeUserPageListsMap(record.userPageLists)
 
   if (typeof record.realWiki === 'string') {
@@ -317,6 +396,8 @@ export function normalizeConfig(input: unknown): Config {
     webSkin: isConfigWebSkin(record.webSkin) ? record.webSkin : DEFAULT_CONFIG.webSkin,
     user: isConfigUser(record.user) ? record.user : DEFAULT_CONFIG.user,
     realUsername,
+    apiContact,
+    knownLanguages,
     userPageLists,
   }
 }
@@ -367,6 +448,8 @@ function cloneConfig(config: Config): Config {
     webSkin: config.webSkin,
     user: config.user,
     realUsername: config.realUsername,
+    apiContact: config.apiContact,
+    knownLanguages: [...config.knownLanguages],
     userPageLists: cloneUserPageListsMap(config.userPageLists),
   }
 }

@@ -92,3 +92,109 @@
   width: auto !important;
   box-sizing: border-box;
 }
+
+/*
+ * Main Page portal boxes — Codex Heading 2 is normal weight, so `h2.mp-h2`
+ * titles read too light. Use Codex Heading 4 for box titles. Minerva also
+ * applies section-heading padding to every `h2` (`padding-top: 0.5em`,
+ * `padding-bottom: 0.17em`, no inline gutter), which breaks mp-h2 bars.
+ */
+.article .mw-parser-output .mp-h2 {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-large);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-large);
+  color: var(--color-base);
+}
+
+.article[data-skin='mobile'] .mw-parser-output .mp-h2 {
+  box-sizing: border-box;
+  margin-block: var(--spacing-50, 8px);
+  margin-inline: 0;
+  padding: var(--spacing-35, 6px) var(--spacing-75, 12px);
+  border-bottom: 1px solid var(--border-color-muted, #a2a9b1);
+  display: block;
+}
+
+.article[data-skin='mobile'] .mw-parser-output .mp-contains-float > ul,
+.article[data-skin='mobile'] .mw-parser-output .mp-contains-float > ol {
+  margin-inline: 0;
+  /* Minerva zeros list padding; 1em matches mobile-web `.content ul` — not body prose 32px. */
+  padding-inline: 1em 0;
+}
+
+.article[data-skin='mobile'] .mw-parser-output .mp-contains-float ul ul {
+  padding-inline-start: 0.5em;
+}
+
+/*
+ * Main Page layout — Parsoid ships `Wikipedia:Main Page/styles.css` with viewport
+ * `@media` breakpoints (500px / 875px). Inside MobileWrapper the column can be
+ * ~412px while the window is wide, so re-root those breakpoints on the parser
+ * column via container queries (mirrors the inline rules at each width).
+ */
+.article .mw-parser-output:has(#mp-upper) {
+  container-type: inline-size;
+  container-name: wikipedia-main-page;
+}
+
+/* Undo viewport `@media (min-width: 875px) { #mp-upper { display: flex } }`. */
+.article .mw-parser-output:has(#mp-upper) #mp-upper {
+  display: block;
+}
+
+.article .mw-parser-output:has(#mp-upper) #mp-left,
+.article .mw-parser-output:has(#mp-upper) #mp-right {
+  flex: unset;
+  margin-inline: 0;
+}
+
+@container wikipedia-main-page (max-width: 499px) {
+  .article .mw-parser-output .mp-contains-float > * {
+    float: none !important;
+    margin: auto !important;
+  }
+
+  .article .mw-parser-output .mp-contains-float .mp-thumb {
+    margin: auto;
+  }
+}
+
+@container wikipedia-main-page (max-width: 874px) {
+  .article .mw-parser-output #mp-tfp :is(table, tr, td, tbody) {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  .article .mw-parser-output #mp-tfp tr:first-child td:first-child a.mw-file-description {
+    display: table;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .article .mw-parser-output #articlecount > ul > li {
+    display: block;
+  }
+
+  .article .mw-parser-output #articlecount > ul > li::after {
+    content: '';
+    font-weight: normal;
+  }
+}
+
+@container wikipedia-main-page (min-width: 875px) {
+  .article .mw-parser-output #mp-upper {
+    display: flex;
+  }
+
+  .article .mw-parser-output #mp-left {
+    flex: 1 1 55%;
+    margin-right: 2px;
+  }
+
+  .article .mw-parser-output #mp-right {
+    flex: 1 1 45%;
+    margin-left: 2px;
+  }
+}

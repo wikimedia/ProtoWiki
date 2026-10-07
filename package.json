@@ -7,14 +7,17 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:variants": "node scripts/build-codex-variants.mjs",
     "preview": "vite preview",
     "type-check": "vue-tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,vue,css}\"",
     "lint": "eslint . --ext .ts,.vue",
     "snapshot:wiki-skins": "bash scripts/snapshot-wiki-skins.sh",
     "postinstall": "node scripts/apply-codex-patch.mjs",
-    "patch-codex": "node scripts/patch-codex.mjs",
-    "patch-codex:reset": "node scripts/patch-codex.mjs --reset"
+    "codex:use-stock": "node scripts/codex.mjs stock",
+    "codex:use-patch": "node scripts/codex.mjs patched",
+    "codex:patch": "node scripts/patch-codex.mjs",
+    "codex:reset": "node scripts/patch-codex.mjs --reset"
   },
   "dependencies": {
     "@wikimedia/codex": "^2.7.0",

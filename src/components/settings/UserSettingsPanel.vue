@@ -17,6 +17,7 @@ import './settingsPanel.css'
 const {
   user,
   realUsername,
+  knownLanguagesText,
   lang,
   currentUserPageLists,
   isCurrentUserPageListsModified,
@@ -64,7 +65,7 @@ const editedPagesText = computed({
             v-model:selected="user"
             class="settings-panel__input"
             :menu-items="userMenuItems"
-            default-label="New user"
+            default-label="Logged out user"
           />
           <CdxButton
             v-tooltip="!isCurrentUserPageListsModified ? 'Already set to default' : undefined"
@@ -79,6 +80,14 @@ const editedPagesText = computed({
       <CdxField class="user-settings-panel__wiki-field">
         <template #label>Wiki</template>
         <CdxTextInput v-model="lang" class="settings-panel__input" />
+      </CdxField>
+      <CdxField>
+        <template #label>Known languages</template>
+        <CdxTextInput
+          v-model="knownLanguagesText"
+          class="settings-panel__input"
+          placeholder="fr, de, es"
+        />
       </CdxField>
       <CdxField v-if="user === 'real'">
         <template #label>Username</template>

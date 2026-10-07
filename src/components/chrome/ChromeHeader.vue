@@ -32,6 +32,8 @@ interface Props {
   middle?: HeaderItem[]
   /** Minerva bar only — override default **`right`** item array. */
   right?: HeaderItem[]
+  /** Minerva bar only — when false, the default wordmark is decorative (not a link). */
+  brandLink?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -45,6 +47,7 @@ const props = withDefaults(defineProps<Props>(), {
   left: undefined,
   middle: undefined,
   right: undefined,
+  brandLink: true,
 })
 
 const slots = useSlots()
@@ -77,16 +80,21 @@ const minervaMiddle = computed((): HeaderItem[] | undefined => {
         component: defineComponent({
           name: 'ChromeHeaderLogoSlot',
           setup() {
-            return () =>
-              h(
+            return () => {
+              const logo = () => slots.logo?.() ?? null
+              if (!props.brandLink) {
+                return h('span', { class: 'minerva-chrome-header__brand' }, logo)
+              }
+              return h(
                 RouterLink,
                 {
                   class: 'minerva-chrome-header__brand',
                   to: '/',
                   'aria-label': 'Visit the main page',
                 },
-                () => slots.logo?.() ?? null,
+                logo,
               )
+            }
           },
         }),
       },
@@ -129,5 +137,6 @@ const minervaRight = computed((): HeaderItem[] | undefined => props.right)
     :right="minervaRight"
     :wordmark-src="props.wordmarkSrc"
     :mobile-wordmark-src="props.mobileWordmarkSrc"
+    :brand-link="props.brandLink"
   />
 </template>

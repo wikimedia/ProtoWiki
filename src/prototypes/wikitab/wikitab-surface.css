@@ -1,0 +1,253 @@
+/*
+ * Wikitab surface shell — the one place hand-built surfaces get their visuals.
+ * Goal: identical to today on stock Codex, and follow Codex automatically when a
+ * Codex patch (see `npm run codex:use-patch`) changes card / dialog styling.
+ *
+ * 1. Hand-built cards (search Activity / Contribute / Image) wear Codex's own
+ *    `cdx-card cdx-card--is-link` classes, so Codex's stylesheet draws their
+ *    border, radius, padding, background and hover — whatever version is
+ *    installed. Components keep layout only.
+ *
+ * 2. CdxCard-based cards whose hover is driven from a wrapper (WikitabCard,
+ *    POTD attribution — a sibling overlay link sits above the card, so Codex's
+ *    `.cdx-card--is-link:hover` never matches) read the --wikitab-card-* aliases
+ *    below. They mirror CdxCard.css: stock 2.7 first, then the patched mapping
+ *    under html[data-codex-patched] (set by src/theme.ts). The same
+ *    --wikitab-card-transition-duration drives card ⋯ menu opacity fades.
+ *
+ * 3. `.wikitab-panel` — full-page overlays (Configure, Saved, Color theme).
+ */
+
+.wikitab {
+  --wikitab-card-border-color: var(--border-color-base);
+  --wikitab-card-transition-duration: var(--transition-duration-base);
+  --wikitab-card-border-color--hover: var(--border-color-interactive--hover);
+  --wikitab-card-box-shadow--hover: none;
+  --wikitab-card-border-color--active: var(--border-color-interactive--active);
+  --wikitab-card-box-shadow--active: none;
+
+  /*
+   * Page-default menu type — snapshotted here before compact card grids shadow
+   * --font-size-* below. CdxMenu / CdxMenuItem read these tokens; module ⋯
+   * menus already sit outside card grids, card ⋯ menus must match them.
+   */
+  --wikitab-menu-font-size-medium: var(--font-size-medium);
+  --wikitab-menu-font-size-small: var(--font-size-small);
+  --wikitab-menu-line-height-small: var(--line-height-small);
+  --wikitab-menu-line-height-medium: var(--line-height-medium);
+  --wikitab-menu-color-base: var(--color-base);
+  --wikitab-menu-color-subtle: var(--color-subtle);
+  --wikitab-menu-color-neutral: var(--color-neutral);
+}
+
+.wikitab :where(.cdx-menu) {
+  --font-size-medium: var(--wikitab-menu-font-size-medium);
+  --font-size-small: var(--wikitab-menu-font-size-small);
+  --line-height-small: var(--wikitab-menu-line-height-small);
+  --line-height-medium: var(--wikitab-menu-line-height-medium);
+  --color-base: var(--wikitab-menu-color-base);
+  --color-subtle: var(--wikitab-menu-color-subtle);
+  --color-neutral: var(--wikitab-menu-color-neutral);
+}
+
+/*
+ * Card ⋯ MenuButton — page-default type + icon tokens. Compact card grids and card
+ * progressive/subtle remaps must not leak into Codex quiet buttons or their menus.
+ */
+.wikitab :where(
+  .wikitab-card__menu-button,
+  .wikitab-search-result-card__menu-button,
+  .wikitab-search-activity-card__menu-button,
+  .wikitab-search-contribute-card__menu-button,
+  .wikitab-search-image-card__menu-button
+) {
+  --font-size-small: var(--wikitab-menu-font-size-small);
+  --font-size-medium: var(--wikitab-menu-font-size-medium);
+  --color-base: var(--wikitab-menu-color-base);
+  --color-subtle: var(--wikitab-menu-color-subtle);
+  --color-neutral: var(--wikitab-menu-color-neutral);
+}
+
+/*
+ * Thumbnail fill — Wikitab sizes the .cdx-thumbnail root (96px feed cards,
+ * --wikitab-thumbnail-size, 40px search menu). Codex fixes inners at 2.5rem/3rem;
+ * stretch inners and absolutely inset __image so the image fills the slot.
+ * (Border/frame quirks on the Gerrit trial are a separate upstream gap — not handled here.)
+ */
+.wikitab :is(
+  .wikitab-search-activity-card__thumbnail,
+  .wikitab-search-contribute-card__thumbnail,
+  .wikitab-search__menu .cdx-menu-item__thumbnail.cdx-thumbnail,
+  .cdx-card__thumbnail.cdx-thumbnail,
+  .wikitab-search-result-card__thumbnail .cdx-thumbnail
+) {
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.wikitab :is(
+  .wikitab-search-activity-card__thumbnail,
+  .wikitab-search-contribute-card__thumbnail,
+  .wikitab-search__menu .cdx-menu-item__thumbnail.cdx-thumbnail,
+  .cdx-card__thumbnail.cdx-thumbnail,
+  .wikitab-search-result-card__thumbnail .cdx-thumbnail
+) :is(.cdx-thumbnail__placeholder, .cdx-thumbnail__image) {
+  width: 100%;
+  height: 100%;
+}
+
+html:not([data-codex-patched]) .wikitab :is(
+  .wikitab-search-activity-card__thumbnail,
+  .wikitab-search-contribute-card__thumbnail,
+  .wikitab-search__menu .cdx-menu-item__thumbnail.cdx-thumbnail,
+  .cdx-card__thumbnail.cdx-thumbnail,
+  .wikitab-search-result-card__thumbnail .cdx-thumbnail
+) :is(.cdx-thumbnail__placeholder, .cdx-thumbnail__image) {
+  border: var(--border-width-base) var(--border-style-base) var(--border-color-subtle);
+  border-radius: var(--border-radius-base);
+}
+
+/*
+ * Search typeahead — 40px thumbnail slot. Must live here (not scoped Vue CSS):
+ * CdxMenu is a child component whose root does not carry WikitabSearch's scope id.
+ */
+.wikitab .wikitab-search__menu .cdx-menu-item__thumbnail.cdx-thumbnail {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.wikitab :is(
+  .wikitab-search-activity-card__thumbnail,
+  .wikitab-search-contribute-card__thumbnail,
+  .wikitab-search__menu .cdx-menu-item__thumbnail.cdx-thumbnail,
+  .cdx-card__thumbnail.cdx-thumbnail,
+  .wikitab-search-result-card__thumbnail .cdx-thumbnail
+) :is(.cdx-thumbnail__placeholder) {
+  flex: 1 1 auto;
+  align-self: stretch;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.wikitab :is(
+  .wikitab-search-activity-card__thumbnail,
+  .wikitab-search-contribute-card__thumbnail,
+  .wikitab-search__menu .cdx-menu-item__thumbnail.cdx-thumbnail,
+  .cdx-card__thumbnail.cdx-thumbnail,
+  .wikitab-search-result-card__thumbnail .cdx-thumbnail
+) :is(.cdx-thumbnail__image) {
+  position: absolute;
+  inset: 0;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+/*
+ * Card ⋯ menu reveal fade — duration via --wikitab-card-transition-duration
+ * (0s under html[data-codex-patched], matching patched CdxCard). Property and
+ * easing follow Codex fade tokens so a future patch can retune them too.
+ */
+.wikitab :where(
+  .wikitab-card--menu-on-hover .wikitab-card__menu,
+  .wikitab-search-activity-card--menu-on-hover .wikitab-search-activity-card__menu,
+  .wikitab-search-image-card__menu,
+  [data-skin='desktop'] .wikitab-potd-attribution__close
+) {
+  transition: var(--transition-property-fade) var(--wikitab-card-transition-duration)
+    var(--transition-timing-function-system);
+}
+
+html[data-codex-patched] .wikitab {
+  --wikitab-card-border-color: var(--border-color-subtle);
+  --wikitab-card-transition-duration: 0s;
+  --wikitab-card-border-color--hover: var(--border-color-progressive);
+  --wikitab-card-box-shadow--hover: 0 0 0 1px var(--box-shadow-color-progressive--focus);
+  --wikitab-card-border-color--active: var(--border-color-progressive);
+  --wikitab-card-box-shadow--active: inset 0 0 0 1px var(--box-shadow-color-progressive--focus);
+}
+
+/*
+ * Stock Codex quiet buttons — themed hover wash via token remap (Codex :hover reads
+ * these tokens). mix-blend-mode: normal so multiply does not hide the wash on tinted
+ * pages. Patched Codex quiet buttons are border-only on hover; leave them unremapped.
+ */
+html:not([data-codex-patched]) .wikitab.wikitab--themed {
+  --background-color-interactive-subtle--hover: var(--wikitab-theme-quiet-hover-bg);
+  --background-color-interactive-subtle--active: var(--wikitab-theme-quiet-active-bg);
+}
+
+html:not([data-codex-patched]) .wikitab.wikitab--themed .cdx-button.cdx-button--weight-quiet {
+  mix-blend-mode: normal;
+}
+
+/*
+ * Hand-built cards that historically used the subtle border (Contribute, Image).
+ * Stock CdxCard draws --border-color-base; patched CdxCard already uses subtle.
+ * :where() keeps specificity at (0,2,0) so Codex hover/active and page-theme
+ * border overrides still win.
+ */
+.wikitab-surface--subtle.cdx-card:where(:not(:hover):not(:active)) {
+  border-color: var(--border-color-subtle);
+}
+
+/*
+ * Card ⋯ pressed / open — shell stays at rest; the quiet MenuButton owns feedback.
+ * Beats `.cdx-card--is-link:hover` on the same element (search Activity / Contribute / Image).
+ */
+.wikitab-search-activity-card.cdx-card.cdx-card--is-link:where(
+    :has(.wikitab-search-activity-card__menu:hover),
+    :has(.wikitab-search-activity-card__menu:focus-within),
+    :has(.wikitab-search-activity-card__menu :active),
+    :has(.wikitab-search-activity-card__menu [aria-expanded='true'])
+  ),
+.wikitab-search-contribute-card.cdx-card.cdx-card--is-link:where(
+    :has(.wikitab-search-contribute-card__menu:hover),
+    :has(.wikitab-search-contribute-card__menu:focus-within),
+    :has(.wikitab-search-contribute-card__menu :active),
+    :has(.wikitab-search-contribute-card__menu [aria-expanded='true'])
+  ),
+.wikitab-search-image-card.cdx-card.cdx-card--is-link:where(
+    :has(.wikitab-search-image-card__menu:hover),
+    :has(.wikitab-search-image-card__menu:focus-within),
+    :has(.wikitab-search-image-card__menu :active),
+    :has(.wikitab-search-image-card__menu [aria-expanded='true'])
+  ) {
+  border-color: var(--wikitab-card-border-color);
+  box-shadow: none;
+}
+
+.wikitab-search-contribute-card.wikitab-surface--subtle.cdx-card:where(
+    :has(.wikitab-search-contribute-card__menu:hover),
+    :has(.wikitab-search-contribute-card__menu:focus-within),
+    :has(.wikitab-search-contribute-card__menu :active),
+    :has(.wikitab-search-contribute-card__menu [aria-expanded='true'])
+  ),
+.wikitab-search-image-card.wikitab-surface--subtle.cdx-card:where(
+    :has(.wikitab-search-image-card__menu:hover),
+    :has(.wikitab-search-image-card__menu:focus-within),
+    :has(.wikitab-search-image-card__menu :active),
+    :has(.wikitab-search-image-card__menu [aria-expanded='true'])
+  ) {
+  border-color: var(--border-color-subtle);
+}
+
+.wikitab-panel {
+  --wikitab-page-gutter: var(--spacing-100);
+
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-inline: var(--wikitab-page-gutter);
+  padding-block: var(--spacing-100);
+  background-color: var(--wikitab-theme-bg, var(--background-color-base));
+  color: var(--wikitab-theme-fg, var(--color-base));
+}

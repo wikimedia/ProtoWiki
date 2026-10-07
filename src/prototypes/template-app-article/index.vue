@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { cdxIconArticle } from '@wikimedia/codex-icons'
+
 definePage({
   meta: {
     title: 'Article',
     description: 'Template for an in-app article reading screen with live content.',
     category: 'template',
     platform: 'app',
+    order: 1,
+    icon: cdxIconArticle,
   },
 })
 

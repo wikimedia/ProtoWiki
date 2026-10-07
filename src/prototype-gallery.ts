@@ -1,4 +1,5 @@
 import type { RouteMeta } from 'vue-router'
+import type { Icon } from '@wikimedia/codex-icons'
 
 import type { PrototypePlatform } from '@/config'
 
@@ -18,12 +19,13 @@ export interface GalleryEntry {
   path: string
   title: string
   description?: string
-  supportingText?: string
+  /** Card supporting text, e.g. "Web prototype", "App template". */
+  supportingText: string
   platform: PrototypePlatform
-  platformLabel: string
   category: PageCategory
   order: number
   spotlight: boolean
+  icon?: Icon
 }
 
 export interface GalleryLayout {
@@ -44,11 +46,6 @@ const CATEGORY_ORDER: Record<PageCategory, number> = {
   example: 2,
 }
 
-const CATEGORY_LABEL: Partial<Record<PageCategory, string>> = {
-  template: 'Template',
-  example: 'Example',
-}
-
 const PLATFORM_LABEL: Record<PrototypePlatform, string> = {
   web: 'Web',
   app: 'App',
@@ -59,12 +56,8 @@ export function stripCategoryPrefix(title: string): string {
   return title.replace(/^(prototype|template|example)\s*:\s*/i, '').trim()
 }
 
-export function getPlatformLabel(platform: PrototypePlatform): string {
-  return PLATFORM_LABEL[platform]
-}
-
-export function getCategorySupportingText(category: PageCategory): string | undefined {
-  return CATEGORY_LABEL[category]
+export function getSupportingText(platform: PrototypePlatform, category: PageCategory): string {
+  return `${PLATFORM_LABEL[platform]} ${category}`
 }
 
 /** Mechanical fallback when meta.title is omitted — not a substitute for human-written copy. */
@@ -107,12 +100,12 @@ export function parseGalleryEntry(meta: RouteMeta, path: string): GalleryEntry {
     path,
     title: stripCategoryPrefix(rawTitle),
     description,
-    supportingText: getCategorySupportingText(category),
+    supportingText: getSupportingText(platform, category),
     platform,
-    platformLabel: getPlatformLabel(platform),
     category,
     order,
     spotlight: meta.spotlight === true,
+    icon: meta.icon,
   }
 }
 

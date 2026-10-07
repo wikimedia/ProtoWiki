@@ -14,26 +14,118 @@ export function formatCompactCount(value: number): string {
   return String(value)
 }
 
-/** Relative "Updated …" from an ISO timestamp. */
-export function formatRelativeUpdate(iso: string): string {
+const SIX_WEEKS_DAYS = 42
+
+function padTwoDigits(value: number): string {
+  return String(value).padStart(2, '0')
+}
+
+/** Day-first (DD/MM) for en-GB or Europe timezone; otherwise month-first (MM/DD). */
+export function prefersDayFirstDate(): boolean {
+  if (typeof navigator === 'undefined') return false
+
+  const locale = navigator.language ?? 'en-US'
+  if (locale.toLowerCase().startsWith('en-gb')) return true
+
+  try {
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    if (timeZone.startsWith('Europe/')) return true
+  } catch {
+    // Ignore — fall through to month-first default.
+  }
+
+  return false
+}
+
+function formatCompactCalendarDate(date: Date, includeYear: boolean, dayFirst: boolean): string {
+  const month = padTwoDigits(date.getMonth() + 1)
+  const day = padTwoDigits(date.getDate())
+  const datePart = dayFirst ? `${day}/${month}` : `${month}/${day}`
+  if (!includeYear) return datePart
+  return `${datePart}/${date.getFullYear()}`
+}
+
+/** Relative duration only — e.g. "4w ago", "just now" (no "Updated" prefix). */
+export function formatRelativeUpdateDuration(iso: string): string {
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return iso
 
   const diffMs = Date.now() - date.getTime()
   const diffMinutes = Math.round(diffMs / 60_000)
-  if (diffMinutes < 1) return 'Updated just now'
-  if (diffMinutes < 60) return `Updated ${diffMinutes} minute${diffMinutes === 1 ? '' : 's'} ago`
+  if (diffMinutes < 1) return 'just now'
+  if (diffMinutes < 60) return `${diffMinutes}m ago`
 
   const diffHours = Math.round(diffMinutes / 60)
-  if (diffHours < 48) return `Updated ${diffHours} hour${diffHours === 1 ? '' : 's'} ago`
+  if (diffHours < 48) return `${diffHours}h ago`
 
-  const diffDays = Math.round(diffHours / 24)
-  if (diffDays < 14) return `Updated ${diffDays} day${diffDays === 1 ? '' : 's'} ago`
+  const diffDays = Math.max(1, Math.round(diffHours / 24))
+  if (diffDays < 7) return `${diffDays}d ago`
 
-  return `Last update ${date.toLocaleDateString(undefined, {
+  if (diffDays < 365) {
+    const weeks = Math.max(1, Math.round(diffDays / 7))
+    return `${weeks}w ago`
+  }
+
+  const years = Math.max(1, Math.round(diffDays / 365))
+  return `${years}y ago`
+}
+
+/**
+ * Wikitab search card last-update label — relative up to 6 weeks, then a compact date.
+ * > 6 weeks and < 1 year: MM/DD or DD/MM; ≥ 1 year: MM/DD/YYYY or DD/MM/YYYY.
+ */
+export function formatSearchLastUpdatedLabel(iso: string): string {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return iso
+
+  const diffMs = Date.now() - date.getTime()
+  const diffMinutes = Math.round(diffMs / 60_000)
+  if (diffMinutes < 1) return 'just now'
+  if (diffMinutes < 60) return `${diffMinutes}m ago`
+
+  const diffHours = Math.round(diffMinutes / 60)
+  if (diffHours < 48) return `${diffHours}h ago`
+
+  const diffDays = Math.max(1, Math.round(diffHours / 24))
+  if (diffDays <= SIX_WEEKS_DAYS) {
+    if (diffDays < 7) return `${diffDays}d ago`
+    const weeks = Math.max(1, Math.round(diffDays / 7))
+    return `${weeks}w ago`
+  }
+
+  return formatCompactCalendarDate(date, diffDays >= 365, prefersDayFirstDate())
+}
+
+/** Relative "Updated …" from an ISO timestamp. */
+export function formatRelativeUpdate(iso: string): string {
+  const duration = formatRelativeUpdateDuration(iso)
+  if (duration === iso) return iso
+  return duration === 'just now' ? 'Updated just now' : `Updated ${duration}`
+}
+
+/** Tooltip for compact page-view count in search cards. */
+export function pageViewsTooltip(count: number): string {
+  return `${count.toLocaleString()} views this month`
+}
+
+/** Tooltip for compact reference count in search cards. */
+export function referenceCountTooltip(count: number): string {
+  return `${count.toLocaleString()} reference${count === 1 ? '' : 's'}`
+}
+
+/** Tooltip for compact last-update label in search cards. */
+export function formatLastUpdatedTooltip(iso: string): string {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return `Last updated ${iso}`
+
+  const formatted = date.toLocaleString(undefined, {
     month: 'long',
+    day: 'numeric',
     year: 'numeric',
-  })}`
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+  return `Last updated ${formatted}`
 }
 
 export function isTrending(signals: {

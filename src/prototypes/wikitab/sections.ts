@@ -1,0 +1,251 @@
+import { cdxIconCalendar, cdxIconChartLine, cdxIconLink, type Icon } from '@wikimedia/codex-icons'
+
+export type WikitabSectionId = 'trending' | 'otd' | 'births' | 'dyk' | 'news' | 'discussions'
+
+export const WIKITAB_SAVED_MODULE_ID = 'saved' as const
+export const WIKITAB_DAILY_READS_MODULE_ID = 'daily-reads' as const
+export const WIKITAB_SUGGESTED_EDITS_MODULE_ID = 'suggested-edits' as const
+export const WIKITAB_REVIEW_CHANGES_MODULE_ID = 'review-changes' as const
+
+export type WikitabModuleId =
+  | WikitabSectionId
+  | typeof WIKITAB_SAVED_MODULE_ID
+  | typeof WIKITAB_DAILY_READS_MODULE_ID
+  | typeof WIKITAB_SUGGESTED_EDITS_MODULE_ID
+  | typeof WIKITAB_REVIEW_CHANGES_MODULE_ID
+
+/**
+ * Which card layout a section renders. Drives the real card, its placeholder,
+ * and the loading mode (see `WikitabCard.vue`):
+ * - `thumbnail` — always shows a thumbnail column; thumbnail-slot loading.
+ * - `text` — thumbnail only when a URL resolves; full-card skeleton while loading.
+ */
+export type WikitabCardVariant = 'thumbnail' | 'text'
+
+export interface WikitabSectionSpec {
+  id: WikitabSectionId
+  heading: string
+  /** Card slots shown before any paging. Desktop renders these as 2x2. */
+  initialCount: number
+  /** How many more a "Show more" press (or a mobile scroll-to-end) reveals. */
+  pageSize: number
+  /**
+   * Exact card height in px. The placeholder and the real card must match this
+   * so revealing a page never shifts the layout.
+   */
+  cardHeight: number
+  variant: WikitabCardVariant
+  /**
+   * Thumbnail edge length in px. Must leave room inside `cardHeight`: a 96px
+   * thumbnail needs 122px of card, a 40px one fits in 98px.
+   */
+  thumbnailSize: number
+  /** Glyph beside the card's supporting text, where the variant shows one. */
+  supportingIcon?: Icon
+  /**
+   * Text variant only: show the full hook with no line-clamp and let the card
+   * grow past `cardHeight` (which becomes a minimum). Placeholders still use
+   * `cardHeight` exactly.
+   */
+  fullHook?: boolean
+}
+
+export const WIKITAB_SECTIONS: readonly WikitabSectionSpec[] = [
+  {
+    id: 'trending',
+    heading: 'Trending',
+    initialCount: 4,
+    pageSize: 6,
+    cardHeight: 122,
+    variant: 'thumbnail',
+    thumbnailSize: 96,
+    supportingIcon: cdxIconChartLine,
+  },
+  {
+    id: 'news',
+    heading: 'In the news',
+    initialCount: 4,
+    pageSize: 6,
+    cardHeight: 122,
+    variant: 'text',
+    thumbnailSize: 96,
+    fullHook: true,
+  },
+  {
+    id: 'dyk',
+    heading: 'Did you know',
+    initialCount: 4,
+    pageSize: 6,
+    cardHeight: 122,
+    variant: 'text',
+    thumbnailSize: 96,
+    fullHook: true,
+  },
+  {
+    id: 'discussions',
+    heading: 'Active discussions',
+    initialCount: 4,
+    pageSize: 6,
+    cardHeight: 98,
+    variant: 'text',
+    thumbnailSize: 96,
+  },
+  {
+    id: 'otd',
+    heading: 'On this day',
+    initialCount: 4,
+    pageSize: 6,
+    cardHeight: 122,
+    variant: 'text',
+    thumbnailSize: 96,
+    fullHook: true,
+  },
+  {
+    id: 'births',
+    heading: 'Birthdays',
+    initialCount: 4,
+    pageSize: 6,
+    cardHeight: 122,
+    variant: 'thumbnail',
+    thumbnailSize: 96,
+    supportingIcon: cdxIconCalendar,
+  },
+]
+
+/** Default home-feed module order when nothing is pinned. */
+export const WIKITAB_HOME_MODULE_ORDER: readonly WikitabModuleId[] = [
+  WIKITAB_SAVED_MODULE_ID,
+  WIKITAB_DAILY_READS_MODULE_ID,
+  WIKITAB_SUGGESTED_EDITS_MODULE_ID,
+  'trending',
+  'news',
+  'dyk',
+  'discussions',
+  WIKITAB_REVIEW_CHANGES_MODULE_ID,
+  'otd',
+  'births',
+]
+
+/** Home Saved module — same paging contract as feed sections. */
+export const WIKITAB_SAVED_MODULE_SPEC = {
+  id: WIKITAB_SAVED_MODULE_ID,
+  heading: 'Saved',
+  initialCount: 4,
+  pageSize: 6,
+  cardHeight: 122,
+  variant: 'thumbnail' as WikitabCardVariant,
+  thumbnailSize: 96,
+}
+
+/** Home Daily reads module — morelike suggestions from daily-random saved seeds. */
+export const WIKITAB_DAILY_READS_MODULE_SPEC = {
+  id: WIKITAB_DAILY_READS_MODULE_ID,
+  heading: 'Daily reads',
+  initialCount: 4,
+  pageSize: 6,
+  cardHeight: 122,
+  variant: 'thumbnail' as WikitabCardVariant,
+  thumbnailSize: 96,
+  supportingIcon: cdxIconLink,
+}
+
+/** Home Suggested edits module — quality-check tasks from daily-random saved seeds. */
+export const WIKITAB_SUGGESTED_EDITS_MODULE_SPEC = {
+  id: WIKITAB_SUGGESTED_EDITS_MODULE_ID,
+  heading: 'Suggested edits',
+  initialCount: 2,
+  pageSize: 4,
+  cardHeight: 122,
+  variant: 'thumbnail' as WikitabCardVariant,
+  thumbnailSize: 96,
+}
+
+/** Home Review changes module — merged edits from daily-random saved article seeds. */
+export const WIKITAB_REVIEW_CHANGES_MODULE_SPEC = {
+  id: WIKITAB_REVIEW_CHANGES_MODULE_ID,
+  heading: 'Review changes',
+  initialCount: 2,
+  pageSize: 4,
+}
+
+/** Configure-panel rows: saved-adjacent modules first, then daily feed sections. */
+export const WIKITAB_CONFIGURE_MODULES: ReadonlyArray<{
+  id: WikitabModuleId
+  heading: string
+}> = [
+  { id: WIKITAB_SAVED_MODULE_ID, heading: WIKITAB_SAVED_MODULE_SPEC.heading },
+  { id: WIKITAB_DAILY_READS_MODULE_ID, heading: WIKITAB_DAILY_READS_MODULE_SPEC.heading },
+  {
+    id: WIKITAB_SUGGESTED_EDITS_MODULE_ID,
+    heading: WIKITAB_SUGGESTED_EDITS_MODULE_SPEC.heading,
+  },
+  ...WIKITAB_SECTIONS.slice(0, 4).map((section) => ({ id: section.id, heading: section.heading })),
+  {
+    id: WIKITAB_REVIEW_CHANGES_MODULE_ID,
+    heading: WIKITAB_REVIEW_CHANGES_MODULE_SPEC.heading,
+  },
+  ...WIKITAB_SECTIONS.slice(4).map((section) => ({ id: section.id, heading: section.heading })),
+]
+
+const WIKITAB_MODULE_HEADINGS = Object.fromEntries(
+  WIKITAB_CONFIGURE_MODULES.map((module) => [module.id, module.heading]),
+) as Record<WikitabModuleId, string>
+
+export function wikitabModuleHeading(id: WikitabModuleId): string {
+  return WIKITAB_MODULE_HEADINGS[id]
+}
+
+/** Registry default when no custom order is stored. */
+export function defaultModuleOrder(): WikitabModuleId[] {
+  return WIKITAB_CONFIGURE_MODULES.map((module) => module.id)
+}
+
+/** Stored order when non-empty; otherwise the registry default. */
+export function resolveModuleOrder(stored: readonly WikitabModuleId[]): WikitabModuleId[] {
+  if (!stored.length) return defaultModuleOrder()
+  return [...stored]
+}
+
+export interface WikitabSupportingSignal {
+  icon: Icon
+  text: string
+}
+
+/** One card's display data. Fields used depend on the section's variant. */
+export interface WikitabCardData {
+  key: string
+  /** Where the card as a whole links — the bolded link's page. */
+  href?: string
+  /** Accessible name for that card-wide link. */
+  linkTitle?: string
+  /** `thumbnail` variant: bold title, subtle description, supporting caption. */
+  title?: string
+  description?: string
+  supportingText?: string
+  /** When set, renders multiple icon + text pairs instead of `supportingText`. */
+  supportingSignals?: WikitabSupportingSignal[]
+  /** With `supportingSignals`, pins this text to the inline end of the row. */
+  supportingTextEnd?: string
+  /** `text` variant: hook / story HTML with its inline links preserved. */
+  html?: string
+  thumbnailUrl?: string
+  /**
+   * Page title whose summary supplies `thumbnailUrl`. Present on DYK hooks,
+   * where the feed gives no thumbnail and it has to be fetched per page.
+   */
+  thumbnailTitle?: string
+  /** Active discussions — stable thread id for saves. */
+  threadId?: string
+  /** Active discussions — noticeboard page title. */
+  noticeboardPage?: string
+  /** Active discussions — comment count for saves. */
+  commentCount?: number
+  /** Suggested edits / Contribute — page id and task need for saves. */
+  pageid?: number
+  suggestionNeed?: string
+  suggestionBody?: string
+  suggestionLabel?: string
+  editHref?: string
+}
+
+export type WikitabFeed = Record<WikitabSectionId, WikitabCardData[]>

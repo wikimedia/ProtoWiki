@@ -1,4 +1,5 @@
 import { wikimediaApiFetchHeaders, wikiHostFromLang } from '@/config'
+import { fetchWikimedia } from '@/lib/fetchWikimedia'
 
 import {
   AttributionApiError,
@@ -188,7 +189,7 @@ export async function fetchAttributionSignals(
   const expand = options.expand?.length ? options.expand : [...DEFAULT_EXPAND]
   const url = attributionSignalsUrl(host, trimmedTitle, expand)
 
-  const response = await fetch(url, {
+  const response = await fetchWikimedia(url, {
     signal,
     headers: wikimediaApiFetchHeaders('attribution', apiContact),
   })

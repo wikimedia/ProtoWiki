@@ -1,3 +1,5 @@
+import type { Icon } from '@wikimedia/codex-icons'
+
 import type { PrototypePlatform } from '@/config'
 import type { PageCategory } from '@/prototype-gallery'
 
@@ -14,5 +16,6 @@ declare module 'vue-router' {
     spotlight?: boolean
     hidePrimary?: boolean
     hideSecondary?: boolean
+    icon?: Icon
   }
 }

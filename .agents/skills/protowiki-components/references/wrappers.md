@@ -219,6 +219,39 @@ Does **not** set `data-skin` / `data-theme` — pass those on content inside the
 </MobileWrapper>
 ```
 
+### Overlays inside MobileWrapper
+
+`MobileWrapper` provides `#mobile-wrapper-overlay` and
+`provide( 'CdxTeleportTarget', overlayEl )` (a template ref, not a selector
+string) so Codex popovers, bottom sheets, and dialogs teleport into a **fixed,
+viewport-height** layer aligned with the phone column (not the scrollable page
+height). Shared containment CSS lives in `src/styles/mobile-wrapper-overlays.css`.
+The overlay element must appear **before** the default slot so the ref is set
+before slot children mount.
+
+**`CdxPopover` bottom sheets:** Codex only uses bottom-sheet layout when the
+**browser viewport** is ≤639px. On wider viewports (typical desktop preview),
+`use-bottom-sheet` falls back to floating popover mode. Add
+`mobile-wrapper__sheet-popover` on the `CdxPopover` (teleport into the overlay
+root is fine) so `mobile-wrapper-overlays.css` keeps the sheet anchored to the
+bottom of the phone column:
+
+```vue
+<CdxPopover
+  v-model:open="open"
+  class="mobile-wrapper__sheet-popover"
+  use-bottom-sheet
+  :anchor="triggerRef"
+>
+  …
+</CdxPopover>
+```
+
+**Full-screen in-place dialogs** inside the frame: pass `render-in-place` to
+`CdxDialog` so it stays within the phone column instead of teleporting to
+`<body>`, then override the backdrop to `position: absolute` (it defaults to
+`fixed`, which would cover the whole browser viewport rather than the frame).
+
 ## Why these wrappers?
 
 The earlier draft of this repo had `ArticleLayout`, `ArticleBody`,

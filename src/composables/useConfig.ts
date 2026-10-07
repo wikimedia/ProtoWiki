@@ -4,6 +4,7 @@ import {
   configUserDisplayName,
   configUserPageTitle,
   DEFAULT_CONFIG,
+  formatLangList,
   isDefaultUserPageLists,
   langForUser,
   resetUserPageLists,
@@ -15,6 +16,7 @@ import {
   type ConfigUser,
   type PageListKey,
   type UserPageLists,
+  parseLangList,
 } from '@/config'
 import {
   onAppPlatformSettingChanged,
@@ -61,6 +63,9 @@ export function useConfig(): {
   webSkin: Ref<ConfigWebSkin>
   user: Ref<ConfigUser>
   realUsername: Ref<string>
+  apiContact: Ref<string>
+  knownLanguages: Ref<string[]>
+  knownLanguagesText: Ref<string>
   lang: Ref<string>
   realLang: ComputedRef<string>
   displayName: ComputedRef<string>
@@ -68,6 +73,7 @@ export function useConfig(): {
   currentUserPageLists: ComputedRef<UserPageLists>
   isCurrentUserPageListsModified: ComputedRef<boolean>
   setCurrentUserPageList: (field: PageListKey, pages: string[]) => void
+  setReadingListWithTimestamps: (titles: string[], savedAt: number[]) => void
   resetCurrentUserPageLists: () => void
 } {
   const theme = computed({
@@ -102,6 +108,27 @@ export function useConfig(): {
     get: () => config.value.realUsername,
     set: (value: string) => {
       config.value = { ...config.value, realUsername: value }
+    },
+  })
+
+  const apiContact = computed({
+    get: () => config.value.apiContact,
+    set: (value: string) => {
+      config.value = { ...config.value, apiContact: value }
+    },
+  })
+
+  const knownLanguages = computed({
+    get: () => config.value.knownLanguages,
+    set: (value: string[]) => {
+      config.value = { ...config.value, knownLanguages: [...value] }
+    },
+  })
+
+  const knownLanguagesText = computed({
+    get: () => formatLangList(config.value.knownLanguages),
+    set: (value: string) => {
+      config.value = { ...config.value, knownLanguages: parseLangList(value) }
     },
   })
 
@@ -156,6 +183,21 @@ export function useConfig(): {
     }
   }
 
+  function setReadingListWithTimestamps(titles: string[], savedAt: number[]) {
+    const activeUser = user.value
+    config.value = {
+      ...config.value,
+      userPageLists: {
+        ...config.value.userPageLists,
+        [activeUser]: {
+          ...config.value.userPageLists[activeUser],
+          readingList: [...titles],
+          readingListSavedAt: [...savedAt],
+        },
+      },
+    }
+  }
+
   function resetCurrentUserPageLists() {
     const activeUser = user.value
     config.value = {
@@ -175,6 +217,9 @@ export function useConfig(): {
     webSkin,
     user,
     realUsername,
+    apiContact,
+    knownLanguages,
+    knownLanguagesText,
     lang,
     realLang,
     displayName,
@@ -182,6 +227,7 @@ export function useConfig(): {
     currentUserPageLists,
     isCurrentUserPageListsModified,
     setCurrentUserPageList,
+    setReadingListWithTimestamps,
     resetCurrentUserPageLists,
   }
 }

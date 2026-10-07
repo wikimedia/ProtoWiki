@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { cdxIconArticle } from '@wikimedia/codex-icons'
+
 definePage({
   meta: {
     title: 'Article (live)',
     description: "Template for an article page that's loaded from live data.",
     category: 'template',
     platform: 'web',
+    order: 2,
+    icon: cdxIconArticle,
   },
 })
 

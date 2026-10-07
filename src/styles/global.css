@@ -316,3 +316,40 @@ hr {
   padding-bottom: var(--spacing-50, 8px);
   border-bottom: 1px solid var(--border-color-subtle, #c8ccd1);
 }
+
+/* ---------- Codex overrides ---------- */
+
+/*
+ * Re-link Codex components to `--font-family-base`.
+ *
+ * Codex resolves design tokens at **build time**, so `codex.style.css` never
+ * emits `var(--font-family-base)` — it bakes in the literal value, `sans-serif`.
+ * Today that hits `.cdx-dialog__body`, `.cdx-accordion__content` and
+ * `.cdx-text-area__textarea`, which drop out of the platform font stack the rest
+ * of the prototype uses. Because the value is inlined, redefining the token alone
+ * cannot reach them; a real rule has to.
+ *
+ * Pointing every Codex element at `var(--font-family-base)` restores the
+ * indirection Codex's build removed: the token (overridden to the system sans
+ * stack in `codex-token-extensions.css`) becomes the single place to change
+ * prototype-wide Codex typography, and any future component that bakes in
+ * `sans-serif` is covered without having to be listed here.
+ *
+ * `main.ts` imports `codex.style.css` before this file, so equal-specificity
+ * (0,1,0) rules here win on source order. Component `<style scoped>` blocks,
+ * which carry an extra attribute selector, still override this.
+ */
+[class*='cdx-'] {
+  font-family: var(--font-family-base);
+}
+
+/*
+ * Wikitab card thumbnails — patched Codex pins card-thumb inners at 3rem. Reset
+ * so wikitab-surface.css can stretch them to the 96px slot (layout, not a
+ * patches/codex/ workaround).
+ */
+html[data-codex-patched] .cdx-card__thumbnail.cdx-thumbnail .cdx-thumbnail__placeholder,
+html[data-codex-patched] .cdx-card__thumbnail.cdx-thumbnail .cdx-thumbnail__image {
+  width: auto;
+  height: auto;
+}

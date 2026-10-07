@@ -1,0 +1,138 @@
+/*
+ * Codex overlay containment inside MobileWrapper's phone column.
+ *
+ * Codex popovers/dialogs default to viewport-relative positioning (fixed + 100vw).
+ * Inside the centred phone preview that escapes the frame. Teleport target +
+ * these overrides re-anchor overlays to the column.
+ *
+ * The overlay root is position:fixed (viewport height), not absolute on the
+ * scrollable column — otherwise bottom sheets land at the bottom of the page.
+ */
+
+.mobile-wrapper__overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: var(--z-index-overlay, 450);
+}
+
+@media (min-width: 480px) {
+  .mobile-wrapper__overlay {
+    inset-inline: 0;
+    margin-inline: auto;
+    width: min(100%, var(--mobile-wrapper-max-width, 412px));
+  }
+}
+
+/* Bottom sheet (native Codex mode, viewport ≤639px) ------------------------- */
+
+#mobile-wrapper-overlay :where(.cdx-popover__backdrop--bottom-sheet) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  pointer-events: auto;
+}
+
+#mobile-wrapper-overlay :where(.cdx-popover--bottom-sheet) {
+  pointer-events: auto;
+}
+
+/*
+ * Opt in with .mobile-wrapper__sheet-popover on the CdxPopover (class lands on
+ * the panel) to keep a full-width bottom sheet inside the phone column.
+ *
+ * Codex only adds .cdx-popover--bottom-sheet when the viewport is ≤639px. On
+ * wider viewports (desktop preview, tablet, phone landscape) use-bottom-sheet
+ * falls back to a floating popover — and may leave stale max-width inline
+ * styles from that path. Width overrides apply at every breakpoint; layout
+ * conversion below targets the floating fallback only.
+ */
+#mobile-wrapper-overlay .cdx-popover.mobile-wrapper__sheet-popover {
+  box-sizing: border-box;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  pointer-events: auto;
+}
+
+#mobile-wrapper-overlay .cdx-popover__backdrop:has(.mobile-wrapper__sheet-popover:not(.cdx-popover--bottom-sheet)) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background-color: var(--background-color-backdrop-light, rgba(255, 255, 255, 0.65));
+  pointer-events: auto;
+}
+
+#mobile-wrapper-overlay .cdx-popover.mobile-wrapper__sheet-popover:not(.cdx-popover--bottom-sheet) {
+  position: static !important;
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  align-self: stretch !important;
+  max-height: min(90dvh, calc(100% - 2rem));
+  margin: 0;
+  padding: 0 !important;
+  border-top: var(--border-width-base, 1px) solid var(--border-color-base, #a2a9b1);
+  border-inline-width: 0;
+  border-bottom-width: 0;
+  border-radius: var(--border-radius-large, 8px) var(--border-radius-large, 8px) 0 0;
+  box-shadow: none !important;
+}
+
+#mobile-wrapper-overlay .cdx-popover.mobile-wrapper__sheet-popover:not(.cdx-popover--bottom-sheet) .cdx-popover__arrow {
+  display: none;
+}
+
+#mobile-wrapper-overlay .cdx-popover.mobile-wrapper__sheet-popover:not(.cdx-popover--bottom-sheet) .cdx-popover__header {
+  margin-bottom: 0;
+  padding: 16px 24px;
+}
+
+#mobile-wrapper-overlay .cdx-popover.mobile-wrapper__sheet-popover:not(.cdx-popover--bottom-sheet) .cdx-popover__header .cdx-popover__header__title {
+  flex-grow: 1;
+}
+
+#mobile-wrapper-overlay .cdx-popover.mobile-wrapper__sheet-popover:not(.cdx-popover--bottom-sheet) .cdx-popover__body {
+  min-height: 0;
+  padding: 8px 24px;
+}
+
+#mobile-wrapper-overlay .cdx-popover.mobile-wrapper__sheet-popover:not(.cdx-popover--bottom-sheet) .cdx-popover__footer {
+  margin-top: auto;
+  padding: 16px 24px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Dialog (teleported into overlay root) ------------------------------------- */
+
+#mobile-wrapper-overlay :where(.cdx-dialog-backdrop) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+}
+
+#mobile-wrapper-overlay :where(.cdx-dialog) {
+  pointer-events: auto;
+}
+
+/* In-place dialogs inside the column ---------------------------------------- */
+
+.mobile-wrapper__column :where(.cdx-dialog-backdrop) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}

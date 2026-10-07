@@ -6,6 +6,8 @@ import darkTokensRaw from '@wikimedia/codex-design-tokens/theme-wikimedia-ui-mod
 import { protowikiConfig } from '@/appearance'
 import type { ConfigTheme, ConfigWebSkin } from '@/config'
 
+import codexTokenExtensions from '@/styles/codex-token-extensions.css?inline'
+
 export type Skin = 'desktop' | 'mobile'
 export type Theme = 'light' | 'dark'
 
@@ -63,6 +65,13 @@ function injectThemedTokens(): void {
 
   inject(lightTokensRaw, '[data-theme="dark"]', 'protowiki-tokens-dark-base')
   inject(darkTokensRaw, '[data-theme="dark"]', 'protowiki-tokens-dark-palette')
+
+  if (!document.getElementById('protowiki-tokens-extensions')) {
+    const style = document.createElement('style')
+    style.id = 'protowiki-tokens-extensions'
+    style.textContent = codexTokenExtensions
+    document.head.appendChild(style)
+  }
 }
 
 // Module-level reactive refs that mirror the data-skin / data-theme
@@ -119,7 +128,12 @@ function resolveEffectiveTheme(preference: ConfigTheme): Theme {
   return resolveThemeFromPreference(preference)
 }
 
-function applyGlobalTheme(theme: Theme): void {
+/**
+ * Set the resolved light/dark theme on `<html>` immediately.
+ * Prefer {@link applyThemePreference} for stored user preference; use this
+ * for temporary document-theme overrides (e.g. Wikitab color themes).
+ */
+export function applyGlobalTheme(theme: Theme): void {
   globalTheme.value = theme
   setHtmlAttribute('data-theme', theme)
   syncWikiSkinNightClass(theme)
@@ -229,6 +243,12 @@ export function initTheming(): void {
   if (typeof window === 'undefined') return
 
   injectThemedTokens()
+
+  // Lets prototype CSS gate overrides that only make sense on stock Codex:
+  // `html:not([data-codex-patched]) …`.
+  if (__CODEX_PATCH__) {
+    document.documentElement.setAttribute('data-codex-patched', __CODEX_PATCH__)
+  }
 
   const config = protowikiConfig.value
   applyWebSkinPreference(config.webSkin)

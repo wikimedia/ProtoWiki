@@ -34,6 +34,8 @@ interface Props {
   lastEditedNotice?: boolean
   /** When **`false`**, omit the default **`ChromeFooter`** (header-only chrome). */
   showFooter?: boolean
+  /** When **`false`**, omit the default **`ChromeHeader`** (content-only chrome). */
+  showHeader?: boolean
   /** Forwarded to **`ChromeHeader`** / **`ChromeFooter`** (Meta label; mobile footer line). */
   username?: string
   /** Forwarded to **`ChromeHeader`**. */
@@ -44,6 +46,8 @@ interface Props {
   mobileWordmarkSrc?: string
   /** Forwarded to **`ChromeHeader`** (desktop tools only). */
   navTools?: ChromeNavTool[]
+  /** Forwarded to **`ChromeHeader`** — when false, the Minerva wordmark is decorative. */
+  brandLink?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -53,11 +57,13 @@ const props = withDefaults(defineProps<Props>(), {
   theme: undefined,
   lastEditedNotice: true,
   showFooter: true,
+  showHeader: true,
   username: undefined,
   wordmarkSrc: undefined,
   taglineSrc: undefined,
   mobileWordmarkSrc: undefined,
   navTools: undefined,
+  brandLink: true,
 })
 
 const { displayName } = useConfig()
@@ -78,21 +84,24 @@ provide(PROTOWIKI_CHROME_THEME, effectiveTheme)
     :lang="props.lang"
     :dir="props.dir"
   >
-    <slot name="header">
-      <ChromeHeader
-        :skin="effectiveSkin"
-        :theme="effectiveTheme"
-        :username="effectiveUsername"
-        :wordmark-src="props.wordmarkSrc"
-        :tagline-src="props.taglineSrc"
-        :mobile-wordmark-src="props.mobileWordmarkSrc"
-        :nav-tools="props.navTools"
-      >
-        <template v-if="$slots.menu" #menu>
-          <slot name="menu" />
-        </template>
-      </ChromeHeader>
-    </slot>
+    <template v-if="props.showHeader">
+      <slot name="header">
+        <ChromeHeader
+          :skin="effectiveSkin"
+          :theme="effectiveTheme"
+          :username="effectiveUsername"
+          :wordmark-src="props.wordmarkSrc"
+          :tagline-src="props.taglineSrc"
+          :mobile-wordmark-src="props.mobileWordmarkSrc"
+          :nav-tools="props.navTools"
+          :brand-link="props.brandLink"
+        >
+          <template v-if="$slots.menu" #menu>
+            <slot name="menu" />
+          </template>
+        </ChromeHeader>
+      </slot>
+    </template>
 
     <main class="chrome-wrapper__content">
       <slot />
@@ -125,5 +134,6 @@ provide(PROTOWIKI_CHROME_THEME, effectiveTheme)
   width: 100%;
   margin: 0 auto;
   padding: 0 0;
+  padding-bottom: var(--keyboard-inset, 0px);
 }
 </style>

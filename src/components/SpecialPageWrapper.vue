@@ -144,8 +144,7 @@ const showHeaderNav = computed(
   justify-content: space-between;
   gap: var(--spacing-100, 16px);
   width: 100%;
-  margin-bottom: var(--spacing-100, 16px);
-  padding-bottom: 2px;
+  margin-bottom: var(--spacing-50);
   border-bottom: 1px solid var(--border-color-base, #a2a9b1);
 }
 
@@ -166,7 +165,7 @@ const showHeaderNav = computed(
  * Minerva / mobile — sans title (global `h1` is serif Heading 1); xx-large reads
  * smaller than xxx-large without the desktop title-rule line under the header.
  */
-.special-page-wrapper[data-skin='mobile'] .special-page-wrapper__title {
+.special-page-wrapper[data-skin='mobile'] h1.special-page-wrapper__title {
   padding-bottom: 0;
   font-family:
     var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
@@ -179,6 +178,7 @@ const showHeaderNav = computed(
 .special-page-wrapper[data-skin='mobile'] .special-page-wrapper__header {
   border-bottom: none;
   padding-bottom: 0;
+  margin-bottom: var(--spacing-150);
 }
 
 .special-page-wrapper__header-aside {
@@ -216,8 +216,7 @@ const showHeaderNav = computed(
 }
 
 .special-page-wrapper[data-skin='mobile'] {
-  padding: var(--spacing-100);
-  padding-block: var(--spacing-150);
+  padding: var(--spacing-100) var(--spacing-100) var(--spacing-300);
 }
 
 .special-page-wrapper[data-skin='mobile'] .special-page-wrapper__help {

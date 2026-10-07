@@ -338,7 +338,7 @@ const mobileFooterLinks = [
 }
 
 .chrome-footer__mobile-body {
-  padding: var(--spacing-100, 16px) var(--spacing-100, 16px) 0;
+  padding: var(--spacing-100, 16px);
   background-color: var(--background-color-neutral-subtle, #f8f9fa);
 }
 

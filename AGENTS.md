@@ -71,6 +71,8 @@ trailing **Inside ProtoWiki** section.
 | [`protowiki-theme`](.agents/skills/protowiki-theme/SKILL.md)                       | Light / dark theming; per-component theme overrides                      |
 | [`protowiki-deploy`](.agents/skills/protowiki-deploy/SKILL.md)                     | GitHub Pages deploy, PR previews, base path, fork setup, SPA 404         |
 | [`protowiki-update-codex`](.agents/skills/protowiki-update-codex/SKILL.md)         | Upgrading Codex: bump packages, diff upstream docs, sync skills + tokens |
+| [`protowiki-codex-patching`](.agents/skills/protowiki-codex-patching/SKILL.md)     | Unmerged Codex changes: one committed patch, stock/patched switching, side-by-side deploys, CSS that follows Codex |
+| [`protowiki-wikitab`](.agents/skills/protowiki-wikitab/SKILL.md)                   | Wikitab new-tab page: section registry, no-jump loading contract, reveal-more paging |
 
 ### Codex (design system)
 
@@ -112,7 +114,9 @@ mirrors [FakeMediaWiki `wiki-signals`](https://github.com/TodePond/FakeMediaWiki
   exists. No registration step.
 - Plain CSS. No preprocessor. Per-component styles in scoped blocks.
   Skin/theme overrides via `[data-skin]` / `[data-theme]` selectors.
-- Codex first. If a Codex component / token / icon exists, use it.
+- Codex first. If a Codex component / token / icon exists, use it — and
+ override only the delta, so prototypes follow Codex patches and upgrades
+ (see [`protowiki-codex-patching`](.agents/skills/protowiki-codex-patching/SKILL.md)).
 - Data fetching uses native `fetch` with `AbortController` for debouncing.
 - Prototype gallery **title** and **description** must not be AI-generated;
   agents ask the author or omit — see

@@ -1,0 +1,35 @@
+/**
+ * Codex token additions + overrides, injected by `src/theme.ts` **after** the
+ * three Codex token sheets so these declarations win the cascade.
+ *
+ * Why here and not `global.css`: the token sheets are injected at runtime as
+ * `<style>` tags scoped to `[data-theme="light"] / [data-theme="dark"]`. Those
+ * selectors match `:root` on specificity (0,1,0), so a `:root` override in
+ * `global.css` loses on source order. Matching the selectors *and* being
+ * injected last is what makes an override stick — at `<html>` and at every
+ * nested `data-theme` subtree.
+ */
+
+/*
+ * Tokens not yet published in @wikimedia/codex-design-tokens.
+ * Mirrors design/codex Gerrit 1319153 (Card amendments, T407399).
+ * Remove when upstream ships --size-600 in a Codex release.
+ */
+[data-theme='light'],
+[data-theme='dark'] {
+  --size-600: 6rem;
+}
+
+/*
+ * Prototype-wide typography override.
+ *
+ * Codex ships `--font-family-base: sans-serif` (bare browser default), so any
+ * component styling itself with `font-family: var(--font-family-base)` — dialogs,
+ * menus, fields — falls out of the platform stack the rest of the prototype uses.
+ * Point the token at the system sans stack so those components match without
+ * having to chase them component by component.
+ */
+[data-theme='light'],
+[data-theme='dark'] {
+  --font-family-base: var(--font-family-system-sans, system-ui, sans-serif);
+}

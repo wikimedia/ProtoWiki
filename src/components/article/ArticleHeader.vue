@@ -2,6 +2,7 @@
 import { computed, inject, ref, watch } from 'vue'
 import { CdxButton, CdxIcon, CdxPopover, CdxTextInput } from '@wikimedia/codex'
 import {
+  cdxIconBookmarkOutline,
   cdxIconDownTriangle,
   cdxIconDownload,
   cdxIconEdit,
@@ -38,17 +39,33 @@ interface Props {
    * Drives the structural mobile vs desktop layout (icon toolbar vs text actions).
    */
   skin?: Skin
+  /**
+   * Mobile icon toolbar: watchlist star (default) vs reader bookmark (Minerva
+   * “save for later” affordance in onboarding flows).
+   */
+  bookmarkAffordance?: 'watch' | 'bookmark'
 }
 
 const props = withDefaults(defineProps<Props>(), {
   languagesCount: 18,
   skin: undefined,
+  bookmarkAffordance: 'watch',
 })
 
 const inheritedSkin = inject(PROTOWIKI_CHROME_SKIN)
 const effectiveSkin = computed<Skin>(() => props.skin ?? inheritedSkin?.value ?? globalSkin.value)
 const { user } = useConfig()
 const isLoggedOut = computed(() => user.value === 'logged-out')
+
+const bookmarkLabel = computed(() =>
+  props.bookmarkAffordance === 'bookmark' ? 'Bookmark' : 'Watch',
+)
+const bookmarkIcon = computed(() =>
+  props.bookmarkAffordance === 'bookmark' ? cdxIconBookmarkOutline : cdxIconUnStar,
+)
+const bookmarkIconLoggedOut = computed(() =>
+  props.bookmarkAffordance === 'bookmark' ? cdxIconBookmarkOutline : cdxIconStar,
+)
 
 const languagesButtonLabel = computed(() => {
   const n = props.languagesCount ?? 18
@@ -71,6 +88,9 @@ const emit = defineEmits<{
 const langMenuOpen = ref(false)
 const langSearch = ref('')
 const langAnchor = ref<HTMLElement | null>(null)
+const bookmarkAnchor = ref<HTMLElement | null>(null)
+
+defineExpose({ bookmarkAnchor })
 
 const filteredLanguageLinks = computed(() => {
   const q = langSearch.value.trim().toLowerCase()
@@ -148,10 +168,10 @@ function onLanguagePick(row: ArticleLanguageLink) {
         <CdxButton
           class="article-header__icon-btn"
           weight="quiet"
-          aria-label="Watch"
+          :aria-label="bookmarkLabel"
           @click="$emit('bookmarkClick')"
         >
-          <CdxIcon :icon="cdxIconUnStar" />
+          <CdxIcon :icon="bookmarkIcon" />
         </CdxButton>
       </nav>
     </div>
@@ -184,12 +204,13 @@ function onLanguagePick(row: ArticleLanguageLink) {
           <CdxIcon :icon="cdxIconDownload" />
         </button>
         <button
+          ref="bookmarkAnchor"
           type="button"
           class="article-header__icon-tool"
-          aria-label="Watch"
+          :aria-label="bookmarkLabel"
           @click="$emit('bookmarkClick')"
         >
-          <CdxIcon :icon="cdxIconStar" />
+          <CdxIcon :icon="bookmarkIconLoggedOut" />
         </button>
         <button
           type="button"
@@ -202,12 +223,13 @@ function onLanguagePick(row: ArticleLanguageLink) {
       </div>
       <template v-else>
         <button
+          ref="bookmarkAnchor"
           type="button"
           class="article-header__icon-tool"
-          aria-label="Watch"
+          :aria-label="bookmarkLabel"
           @click="$emit('bookmarkClick')"
         >
-          <CdxIcon :icon="cdxIconUnStar" />
+          <CdxIcon :icon="bookmarkIcon" />
         </button>
         <button
           type="button"
