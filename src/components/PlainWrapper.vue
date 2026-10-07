@@ -34,6 +34,7 @@ const showHeading = computed(() => {
   const h = props.heading
   return typeof h === 'string' && h.length > 0
 })
+
 </script>
 
 <template>

@@ -21,8 +21,42 @@ const ghPagesPreview404Script = readFileSync(
   'utf8',
 )
 
-export default defineConfig(({ command }) => ({
-  base: command === 'build' ? buildBase : '/',
+// Written by scripts/lib-codex-state.mjs only while patched files are installed.
+const codexPatchMarker = new URL(
+  './node_modules/@wikimedia/codex/.protowiki-codex-patch.json',
+  import.meta.url,
+)
+const codexPatch = existsSync(codexPatchMarker)
+  ? JSON.parse(readFileSync(codexPatchMarker, 'utf8'))
+  : null
+const codexVersion: string = JSON.parse(
+  readFileSync(new URL('./node_modules/@wikimedia/codex/package.json', import.meta.url), 'utf8'),
+).version
+
+// Set by scripts/build-codex-variants.mjs: the sibling builds of this deploy
+// (patched + stock) so the app can link between them.
+const codexVariants = JSON.parse(process.env.PROTOWIKI_CODEX_VARIANTS ?? '[]')
+const isVariantSubpathBuild = process.env.PROTOWIKI_CODEX_VARIANT_SUBPATH === '1'
+
+// Shape: CodexBuildInfo in src/env.d.ts.
+const codexBuild = {
+  codexVersion,
+  patch: codexPatch && {
+    change: codexPatch.change ? String(codexPatch.change) : null,
+    patchset: codexPatch.patchset ?? null,
+    subject: codexPatch.subject ?? null,
+    url: codexPatch.url ?? null,
+  },
+  variant: codexPatch ? 'patched' : 'stock',
+  variants: codexVariants,
+}
+
+export default defineConfig(({ command, isPreview }) => ({
+  base: command === 'build' || isPreview ? buildBase : '/',
+  define: {
+    __CODEX_PATCH__: JSON.stringify(codexPatch ? String(codexPatch.change ?? 'patched') : null),
+    __CODEX_BUILD__: JSON.stringify(codexBuild),
+  },
   plugins: [
     // Plugin order matters: VueRouter must come before vue() so the routes
     // virtual module is generated first.
@@ -54,12 +88,17 @@ export default defineConfig(({ command }) => ({
       },
     },
     // GitHub Pages serves a static 404.html for unknown paths. Copy index.html,
-    // then prepend a script so pr-preview deep links redirect into the preview
-    // base (sessionStorage + restore in index). Production deep links unchanged.
+    // then prepend a script so pr-preview and codex/<variant> deep links redirect
+    // into their base (sessionStorage + restore in index). Production deep links
+    // unchanged. Pages only reads the site-root 404.html, so variant subpath
+    // builds skip this.
     {
       name: 'protowiki-spa-404',
       apply: 'build',
       closeBundle() {
+        if (isVariantSubpathBuild) {
+          return
+        }
         const dist = resolve(__dirname, 'dist')
         const index = resolve(dist, 'index.html')
         const fallback = resolve(dist, '404.html')

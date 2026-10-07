@@ -232,8 +232,21 @@ Use this sentence starter in guided mode:
 | Scenario                                   | Workflow                                                | Result                                                                                                           |
 | ------------------------------------------ | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | Push to `main` in any ProtoWiki-based repo | [`deploy.yml`](../../../.github/workflows/deploy.yml)   | Updates production site root                                                                                     |
-| PR inside same repo                        | [`preview.yml`](../../../.github/workflows/preview.yml) | Creates/removes `pr-preview/pr-<number>/`                                                                        |
+| PR inside same repo                        | [`preview.yml`](../../../.github/workflows/preview.yml) | Creates/removes `pr-preview/pr-<number>/` (plus a `codex/stock/` subfolder when a Codex patch is committed)     |
 | External fork PR into upstream             | Not enabled by default in this strategy                 | Use template-first repo previews; upstream path is collaborator-only unless extra fork-preview workflow is added |
+
+## Codex patches in deploys
+
+If `patches/codex/` holds an unmerged Codex change, `npm ci` applies it and both
+workflows build with it:
+
+- **Production** builds patched Codex. Merging a branch with a committed patch
+  ships it; run `npm run codex:reset` first if you don't want that.
+- **Pull request previews** run `npm run build:variants`: patched at
+  `pr-preview/pr-N/`, stock at `pr-preview/pr-N/codex/stock/`. A message on the
+  home screen shows which Codex you're on and links to the other build.
+
+See [`protowiki-codex-patching` → deploying](../protowiki-codex-patching/references/deploying-patches.md).
 
 ## Custom domain
 

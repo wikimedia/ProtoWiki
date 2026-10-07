@@ -49,6 +49,7 @@ See also [`protowiki-create-prototype` → Gallery copy](../SKILL.md#gallery-cop
 | --- | --- | --- | --- |
 | `title` | prototype | string | Short name; omitted titles fall back to `deriveTitleFromPath`; `template` / `example` categories get a `Template:` / `Example:` prefix on the card |
 | `description` | prototype | string | Card subtitle |
+| `icon` | prototype | Codex `Icon` constant (optional) | Inline-start thumbnail on the gallery card via `CdxCard` `:icon`; import from `@wikimedia/codex-icons` |
 | `category` | prototype | `prototype` \| `template` \| `example` (default `prototype`) | Gallery tab filter (`Prototypes` / `Templates` / `Examples`); Home tab shows all |
 | `platform` | prototype | `web` \| `app` (default `web`) | Card chip label (Web / App); in the Templates tab, splits the list into **Web templates** then **App templates** |
 | `order` | prototype | number (default: alphabetical) | Sort within block; lower first |
@@ -91,12 +92,15 @@ to just what you're working on. Remove `spotlight` (or set `spotlight: false`) w
 ### Template starter
 
 ```ts
+import { cdxIconBrowser } from '@wikimedia/codex-icons'
+
 definePage({
   meta: {
     title: 'Chrome',
     description: 'Template for prototypes with a Wikipedia header and footer.',
     category: 'template',
     order: 0,
+    icon: cdxIconBrowser,
   },
 })
 // Gallery card title: "Template: Chrome"
@@ -113,7 +117,7 @@ definePage({
     platform: 'app',
   },
 })
-// Gallery card title: "Template: Article"; chips: App · Template
+// Gallery card title: "Article"; supporting text: "App template"
 // Listed under the "App templates" heading, after the web templates
 ```
 

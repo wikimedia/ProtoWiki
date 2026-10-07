@@ -10,7 +10,7 @@ import {
   CdxTabs,
   CdxTextArea,
 } from '@wikimedia/codex'
-import { cdxIconAdd, cdxIconClock, cdxIconTrash } from '@wikimedia/codex-icons'
+import { cdxIconAdd, cdxIconCalendar, cdxIconClock, cdxIconTrash } from '@wikimedia/codex-icons'
 
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
@@ -21,6 +21,7 @@ definePage({
     description: 'Prototype for an event worklist page, intended for mobile.',
     category: 'example',
     platform: 'web',
+    icon: cdxIconCalendar,
   },
 })
 

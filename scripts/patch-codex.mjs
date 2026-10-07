@@ -2,14 +2,12 @@
 // Trial an unmerged Codex Gerrit change in ProtoWiki by committing a tiny,
 // deterministic diff instead of vendored tarballs.
 //
-//   npm run patch-codex -- <gerrit-url-or-change-number>   (build + emit patch)
-//   npm run patch-codex:reset                              (remove the patch)
+//   npm run codex:patch -- <gerrit-url-or-change>   build + emit the patch
+//   npm run codex:reset                             delete the patch, back to stock
 //
-// All heavy work (cloning + building Codex) happens locally. The committed
-// output is a small `patches/codex/*` diff that is re-applied at install time
-// by scripts/apply-codex-patch.mjs (wired as `postinstall`), so CI / PR
-// previews reproduce the change with no Codex build step. See
-// .agents/skills/protowiki-update-codex/references/gerrit-patch-trial.md.
+// Output lands in patches/codex/, replacing any previous patch. All heavy work
+// (cloning + building Codex) happens locally; postinstall re-applies the diff
+// with no Codex build step. See .agents/skills/protowiki-codex-patching/.
 
 import fs from 'node:fs'
 import os from 'node:os'
@@ -17,10 +15,9 @@ import path from 'node:path'
 
 import {
   CODEX_PACKAGES,
-  MANIFEST_PATH,
-  PATCHES_DIR,
-  ROOT,
+  PATCH_DIR,
   formatContent,
+  hasPatch,
   installedPackageDir,
   isFormattable,
   loadJsDiff,
@@ -33,6 +30,7 @@ import {
   sha256,
   tryRun,
 } from './lib-codex-patch.mjs'
+import { clearViteCache, ensureCodex } from './lib-codex-state.mjs'
 
 const CACHE_ROOT = path.join(os.tmpdir(), 'protowiki-codex-gerrit-cache')
 const CODEX_REPO_DIR = path.join(CACHE_ROOT, 'design-codex')
@@ -86,23 +84,6 @@ async function fetchJson(url) {
 function computePatchRef(changeNumber, patchsetNumber) {
   const twoDigit = changeNumber.slice(-2).padStart(2, '0')
   return `refs/changes/${twoDigit}/${changeNumber}/${patchsetNumber}`
-}
-
-function removeInstalledCodex() {
-  for (const pkg of CODEX_PACKAGES) {
-    fs.rmSync(installedPackageDir(pkg), { recursive: true, force: true })
-  }
-}
-
-function removePatches() {
-  fs.rmSync(PATCHES_DIR, { recursive: true, force: true })
-}
-
-function freshRegistryInstall() {
-  // Patches are gone, so the postinstall applier is a no-op and node_modules
-  // ends up holding the pristine published packages (our patch baseline).
-  console.log('Installing pristine published Codex packages')
-  run('npm', ['install'], { cwd: ROOT })
 }
 
 function installedVersion(pkg) {
@@ -249,6 +230,15 @@ function mergeThreeWay(rel, current, base, other) {
   }
 }
 
+function removePatchFiles() {
+  if (!fs.existsSync(PATCH_DIR)) return
+  for (const file of fs.readdirSync(PATCH_DIR)) {
+    if (file === 'manifest.json' || file.endsWith('.patch')) {
+      fs.rmSync(path.join(PATCH_DIR, file))
+    }
+  }
+}
+
 async function makePatch(changeInput) {
   const changeNumber = parseChangeNumber(changeInput)
   console.log(`Fetching Gerrit change ${changeNumber}`)
@@ -262,9 +252,9 @@ async function makePatch(changeInput) {
   console.log(`Current patchset: ${patchset} (${ref})`)
 
   // 1. Establish a pristine published baseline in node_modules.
-  removePatches()
-  removeInstalledCodex()
-  freshRegistryInstall()
+  await ensureCodex(false)
+  const outDir = PATCH_DIR
+  removePatchFiles()
   const versions = Object.fromEntries(CODEX_PACKAGES.map((pkg) => [pkg, installedVersion(pkg)]))
   console.log(`Baseline Codex version: ${versions['@wikimedia/codex']}`)
 
@@ -314,7 +304,7 @@ async function makePatch(changeInput) {
   const jsdiff = await loadJsDiff()
   const prettierOpts = readPrettierOptions()
 
-  fs.mkdirSync(PATCHES_DIR, { recursive: true })
+  fs.mkdirSync(outDir, { recursive: true })
   const manifestFiles = []
 
   for (const candidate of changed) {
@@ -339,7 +329,7 @@ async function makePatch(changeInput) {
 
     const diff = jsdiff.createPatch(candidate.rel, fmtPublished, fmtMerged, '', '')
     const fileName = patchFileName(candidate.target)
-    fs.writeFileSync(path.join(PATCHES_DIR, fileName), diff)
+    fs.writeFileSync(path.join(outDir, fileName), diff)
     manifestFiles.push({
       target: candidate.target,
       package: candidate.pkg,
@@ -358,6 +348,8 @@ async function makePatch(changeInput) {
   }
 
   const manifest = {
+    subject: detail.subject,
+    url: `https://gerrit.wikimedia.org/r/c/design/codex/+/${changeNumber}`,
     change: changeNumber,
     patchset,
     revision: changeSha,
@@ -367,46 +359,42 @@ async function makePatch(changeInput) {
     prettierVersion: prettierVersion(prettier),
     files: manifestFiles,
   }
-  fs.writeFileSync(MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`)
+  fs.writeFileSync(path.join(outDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`)
 
   // 6. Apply locally via the same path CI uses.
   console.log('Applying patch locally')
-  console.log(run('node', ['scripts/apply-codex-patch.mjs'], { cwd: ROOT }))
+  await ensureCodex(true)
+  clearViteCache()
 
   console.log(`\nWrote ${manifestFiles.length} patch file(s) to patches/codex/.`)
-  console.log('Commit patches/codex/ so the PR preview reproduces the change.')
-  console.log('To remove the patch: npm run patch-codex:reset')
+  console.log('Commit patches/codex/ so deploys and PR previews reproduce the change.')
+  console.log('Remove it with: npm run codex:reset')
 }
 
-function reset() {
-  const manifest = readManifest()
-  removePatches()
-  removeInstalledCodex()
-  freshRegistryInstall()
-  if (manifest) {
-    console.log(`Removed Codex patch for change ${manifest.change}; restored published packages.`)
-  } else {
-    console.log('No Codex patch present; reinstalled published packages.')
+async function reset() {
+  if (!hasPatch()) {
+    console.log('No patch in patches/codex/; nothing to remove.')
+    return
   }
-}
-
-function printUsage() {
-  console.log('Usage:')
-  console.log('  npm run patch-codex -- <gerrit-url-or-change-number>')
-  console.log('  npm run patch-codex:reset')
+  await ensureCodex(false)
+  removePatchFiles()
+  clearViteCache()
+  console.log('Removed the Codex patch. Installs and deploys are stock Codex again.')
 }
 
 async function main() {
-  const [, , firstArg] = process.argv
-  if (firstArg === '--reset') {
-    reset()
+  const args = process.argv.slice(2)
+  if (args[0] === '--reset') {
+    await reset()
     return
   }
-  if (!firstArg) {
-    printUsage()
+  if (!args[0]) {
+    console.log('Usage:')
+    console.log('  npm run codex:patch -- <gerrit-url-or-change-number>')
+    console.log('  npm run codex:reset')
     process.exit(1)
   }
-  await makePatch(firstArg)
+  await makePatch(args[0])
 }
 
 main().catch((error) => {

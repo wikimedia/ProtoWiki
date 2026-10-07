@@ -39,8 +39,8 @@ import AppChromeWrapper from '@/components/app/AppChromeWrapper.vue'
 
 Two things make it an app prototype:
 
-1. **`platform: 'app'`** in `definePage` meta — the gallery groups and chips it
-   as App.
+1. **`platform: 'app'`** in `definePage` meta — the gallery groups it under App
+   and labels its card "App prototype" (or "App template" / "App example").
 2. **`AppChromeWrapper`** instead of `ChromeWrapper` — phone frame, app top bar,
    bottom icon nav.
 

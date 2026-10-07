@@ -5,6 +5,8 @@ definePage({
     description: 'Template for the app Explore/Home screen, with a real live Community feed.',
     category: 'template',
     platform: 'app',
+    order: 2,
+    icon: cdxIconHome,
   },
 })
 
@@ -25,6 +27,7 @@ import {
   cdxIconDownTriangle,
   cdxIconGlobe,
   cdxIconHelpNotice,
+  cdxIconHome,
   cdxIconInfo,
   cdxIconInstance,
   cdxIconShareAndroid,
