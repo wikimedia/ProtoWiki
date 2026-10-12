@@ -1,0 +1,15 @@
+Index: dist/modules/CdxInfoChip.cjs
+===================================================================
+--- dist/modules/CdxInfoChip.cjs
++++ dist/modules/CdxInfoChip.cjs
+@@ -4,9 +4,9 @@
+   o = require('./Icon.js'),
+   d = require('./useSlotContents.js'),
+   p = require('./CdxTooltip.cjs'),
+   f = require('./_plugin-vue_export-helper.js'),
+-  m = { subtle: o.V7, notice: o.V7, progressive: o.V7, error: o.y6, warning: o.V5, success: o.F9 },
++  m = { subtle: o.z7, notice: o.z7, progressive: o.z7, error: o.I6, warning: o.r5, success: o.A9 },
+   v = e.defineComponent({
+     name: 'CdxInfoChip',
+     components: { CdxIcon: o.CdxIcon },
+     directives: { tooltip: p },
