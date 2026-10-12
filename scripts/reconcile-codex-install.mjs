@@ -9,7 +9,10 @@ import { clearViteCache, ensureCodex } from './lib-codex-state.mjs'
  * @returns {Promise<boolean>} true when node_modules changed on disk
  */
 export async function reconcileCodexInstall({ log = console.log } = {}) {
-  const changed = await ensureCodex(wantsPatch(), { log })
+  // build-codex-variants.mjs sets this for the stock sibling under codex/stock/.
+  const patched =
+    process.env.PROTOWIKI_CODEX_VARIANT_SUBPATH === '1' ? false : wantsPatch()
+  const changed = await ensureCodex(patched, { log })
   if (changed) clearViteCache()
   return changed
 }

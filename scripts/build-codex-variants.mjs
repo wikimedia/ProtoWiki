@@ -46,6 +46,8 @@ try {
         PROTOWIKI_BASE: variant.base,
         PROTOWIKI_CODEX_VARIANTS: JSON.stringify(variants),
         PROTOWIKI_CODEX_VARIANT_SUBPATH: isRoot ? '0' : '1',
+        // Vite startup reconciles node_modules; must not re-apply the patch for stock.
+        CODEX_PATCH: variant.id === 'patched' ? process.env.CODEX_PATCH : 'off',
       },
     })
   }
