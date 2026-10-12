@@ -40,7 +40,20 @@ const siblingButtonLabel = computed(() => {
 })
 
 function siblingHref(base: string): string {
-  return base.replace(/\/$/, '') + route.fullPath
+  const path = base.replace(/\/$/, '') + route.fullPath
+  // Absolute path so GitHub Pages / preview subpaths resolve correctly.
+  if (path.startsWith('/')) {
+    return path
+  }
+  return `/${path}`
+}
+
+/** Stock/patched previews are separate Vite builds; Vue Router must not handle this. */
+function openSibling(event: MouseEvent) {
+  const s = sibling.value
+  if (!s) return
+  event.preventDefault()
+  window.location.assign(siblingHref(s.base))
 }
 </script>
 
@@ -51,37 +64,49 @@ function siblingHref(base: string): string {
     :allow-user-dismiss="true"
     @user-dismissed="dismissed = true"
   >
-    <template v-if="build.patch">
-      ProtoWiki is running with a modified version of Codex.
-      <template v-if="patchLinkLabel">
-        <br>
-        <a
-          v-if="build.patch.url"
-          class="codex-patch-message__link"
-          :href="build.patch.url"
-          target="_blank"
-          rel="noopener"
-        >“{{ patchLinkLabel }}”<CdxIcon :icon="cdxIconLinkExternal" size="small" /></a>
-        <span v-else>“{{ patchLinkLabel }}”</span>
-      </template>
-    </template>
-    <template v-else>
-      ProtoWiki is running stock Codex.
-    </template>
-    <CdxButton
-      v-if="sibling"
-      class="codex-patch-message__variant-button"
-      tag="a"
-      :href="siblingHref(sibling.base)"
-      action="progressive"
-      weight="normal"
-    >
-      {{ siblingButtonLabel }}
-    </CdxButton>
+    <div class="codex-patch-message">
+      <div class="codex-patch-message__text">
+        <template v-if="build.patch">
+          ProtoWiki is running with a modified version of Codex.
+          <template v-if="patchLinkLabel">
+            <br>
+            <a
+              v-if="build.patch.url"
+              class="codex-patch-message__link"
+              :href="build.patch.url"
+              target="_blank"
+              rel="noopener"
+            >“{{ patchLinkLabel }}”<CdxIcon :icon="cdxIconLinkExternal" size="small" /></a>
+            <span v-else>“{{ patchLinkLabel }}”</span>
+          </template>
+        </template>
+        <template v-else>
+          ProtoWiki is running stock Codex.
+        </template>
+      </div>
+      <CdxButton
+        v-if="sibling"
+        class="codex-patch-message__variant-button"
+        tag="a"
+        :href="siblingHref(sibling.base)"
+        action="progressive"
+        weight="normal"
+        @click="openSibling"
+      >
+        {{ siblingButtonLabel }}
+      </CdxButton>
+    </div>
   </CdxMessage>
 </template>
 
 <style scoped>
+.codex-patch-message {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-50);
+}
+
 .codex-patch-message__link {
   display: inline-flex;
   align-items: center;
@@ -100,6 +125,5 @@ function siblingHref(base: string): string {
 
 .codex-patch-message__variant-button {
   display: inline-flex;
-  margin-top: var(--spacing-50);
 }
 </style>
