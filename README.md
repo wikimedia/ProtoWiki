@@ -23,6 +23,7 @@ Depending on what you're trying to prototype, you might want to consider using o
 - [ProtoWiki](https://github.com/wikimedia/ProtoWiki#using-protowiki-as-a-system) — This repo! An unopinionated prototyping system for MediaWiki and list of resources.
 - [Wikipedia Article Template](https://github.com/bmartinezcalvo/wikipedia-article-template) - "Interactive UX prototype template for Wikipedia article pages, built with Vue 3 and Wikimedia Codex design system."
 - [Suggestion Mode Template](https://github.com/bmartinezcalvo/suggestion-mode) - "Interactive UX prototype showing the Suggestion Mode feature in the edit mode of a Wikipedia's article."
+- **ProtoWiki gallery:** `template-visual-editor` — read/edit + suggestion mode integrated with ProtoWiki chrome (`src/prototypes/template-visual-editor/`).
 - [Wikihack Starter](https://gitlab.wikimedia.org/egardner/wikihack-starter) — "A Vue 3 prototyping environment for experimenting with Wikipedia reader features. Built for hackathons and rapid iteration, this starter kit lets you test new UI ideas in front of real users with minimal setup."
 - [FakeMediaWiki System](https://github.com/todepond/fakemediawiki) — "An opinonated system for building lightweight MediaWiki prototypes. I should probably give it a better name."
 - [Wikipedia Boilerplate](https://github.com/Sudhanshugtm/boiler_plate) — "Rapid prototyping framework for Wikipedia UX design work."
@@ -217,7 +218,3 @@ To craft a static hand-written article page, use the `ArticleCustom` component.
 ### Using other components
 
 There are other components that you can use within the prototyping system. Explore the `components` folder to discover them all.
-
-### App prototyping
-
-TODO

@@ -38,11 +38,14 @@ interface Props {
    * Drives the structural mobile vs desktop layout (icon toolbar vs text actions).
    */
   skin?: Skin
+  /** Which Read/Edit action appears selected (desktop actions row). */
+  activeAction?: 'read' | 'edit'
 }
 
 const props = withDefaults(defineProps<Props>(), {
   languagesCount: 18,
   skin: undefined,
+  activeAction: 'read',
 })
 
 const inheritedSkin = inject(PROTOWIKI_CHROME_SKIN)
@@ -135,13 +138,22 @@ function onLanguagePick(row: ArticleLanguageLink) {
       >
         <a
           href="#"
-          class="article-header__action article-header__action--active"
-          aria-current="true"
+          class="article-header__action"
+          :class="{ 'article-header__action--active': props.activeAction === 'read' }"
+          :aria-current="props.activeAction === 'read' ? 'true' : undefined"
           @click.prevent="$emit('readClick')"
         >
           Read
         </a>
-        <a href="#" class="article-header__action" @click.prevent="$emit('editClick')"> Edit </a>
+        <a
+          href="#"
+          class="article-header__action"
+          :class="{ 'article-header__action--active': props.activeAction === 'edit' }"
+          :aria-current="props.activeAction === 'edit' ? 'true' : undefined"
+          @click.prevent="$emit('editClick')"
+        >
+          Edit
+        </a>
         <a href="#" class="article-header__action" @click.prevent="$emit('historyClick')">
           View history
         </a>
@@ -280,7 +292,10 @@ function onLanguagePick(row: ArticleLanguageLink) {
       </div>
     </CdxPopover>
 
-    <p v-if="effectiveSkin === 'desktop'" class="article-header__tagline">
+    <p
+      v-if="effectiveSkin === 'desktop' && props.activeAction === 'read'"
+      class="article-header__tagline"
+    >
       {{ DEFAULT_TAGLINE }}
     </p>
   </header>

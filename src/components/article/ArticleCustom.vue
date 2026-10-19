@@ -23,7 +23,22 @@ interface Props {
   description?: string
   /** Lead image — **`app`** only. */
   leadImageUrl?: string
+  /** Forwarded to **`ArticleHeader`** (Read vs Edit active tab on desktop). */
+  activeAction?: 'read' | 'edit'
 }
+
+const emit = defineEmits<{
+  talkClick: []
+  articleClick: []
+  readClick: []
+  editClick: []
+  historyClick: []
+  bookmarkClick: []
+  downloadClick: []
+  moreClick: []
+  languageSelect: [link: import('./shared/articleLanguageLinks').ArticleLanguageLink]
+  languageSettingsClick: []
+}>()
 
 const props = withDefaults(defineProps<Props>(), {
   lang: undefined,
@@ -36,6 +51,7 @@ const props = withDefaults(defineProps<Props>(), {
   app: false,
   description: undefined,
   leadImageUrl: undefined,
+  activeAction: 'read',
 })
 </script>
 
@@ -51,6 +67,17 @@ const props = withDefaults(defineProps<Props>(), {
     :app="props.app"
     :description="props.description"
     :lead-image-url="props.leadImageUrl"
+    :active-action="props.activeAction"
+    @talk-click="emit('talkClick')"
+    @article-click="emit('articleClick')"
+    @read-click="emit('readClick')"
+    @edit-click="emit('editClick')"
+    @history-click="emit('historyClick')"
+    @bookmark-click="emit('bookmarkClick')"
+    @download-click="emit('downloadClick')"
+    @more-click="emit('moreClick')"
+    @language-select="emit('languageSelect', $event)"
+    @language-settings-click="emit('languageSettingsClick')"
   >
     <ArticleRenderer
       :lang="props.lang"
