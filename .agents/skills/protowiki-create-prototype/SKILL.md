@@ -149,6 +149,7 @@ Full field reference, layout rules, and examples:
 | Goal | Composition |
 | --- | --- |
 | Article-style page with chrome (live) | `<ChromeWrapper><ArticleLive article="…"/></ChromeWrapper>` |
+| English Wikipedia Main Page (live) | `<ChromeWrapper><ArticleLive article="Main Page" /></ChromeWrapper>` — starter: **`template-main-page/`**; see [`protowiki-components` → `article.md`](../protowiki-components/references/article.md#main-page) |
 | Article-style page with committed snapshot fixture | `<ChromeWrapper><ArticleSnapshot article="…"/></ChromeWrapper>` |
 | Article-style page with **hand-written** body HTML (no REST, no snapshot file) | `<ChromeWrapper><ArticleCustom>…</ArticleCustom></ChromeWrapper>` — canonical: **`src/prototypes/template-article-custom/`**; see [`protowiki-components` → `article.md`](../protowiki-components/references/article.md) (infobox classes, lead markup order) |
 | Special-page-style page | `<ChromeWrapper><SpecialPageWrapper title="…">…</SpecialPageWrapper></ChromeWrapper>` |

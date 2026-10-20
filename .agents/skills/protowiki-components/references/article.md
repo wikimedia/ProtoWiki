@@ -32,6 +32,14 @@ When any of these roots sit inside **`ChromeWrapper`**, they **inherit** effecti
 
 - With **`app`**, that same title becomes the lead-block **`h1`** instead of the **`ArticleHeader`** label, and **`ArticleLive`** upgrades it to the canonical title once **`fetchArticleView()`** answers.
 
+### Main Page
+
+When the derived chrome title is exactly **`Main Page`** (English Wikipedia’s main page title), **`ArticleWrapper`** enables production’s Main Page **`ArticleHeader`** — hidden desktop **`h1`**, **Main Page** tab, no languages control or tagline; on mobile web, a bare header (logged-in users see a **Welcome, …!** greeting). Portal box typography and the two-column **`#mp-upper`** layout are handled in **`src/styles/wiki-skins/mobile-wiki-overrides.css`** (container queries on the parser column).
+
+**Starter:** **`src/prototypes/template-main-page/`** — **`ChromeWrapper`** + **`ArticleLive article="Main Page"`**. No extra props: surfaces do not take a **`mainPage`** flag; title detection is automatic. For hand-authored portal markup, **`ArticleCustom title="Main Page"`** (or **`ArticleWrapper`** + slot) gets the same header chrome.
+
+Other wikis use different main-page titles; pass the correct **`article`** / **`lang`** (and **`host`** if needed) to **`ArticleLive`**.
+
 ## `ArticleWrapper`
 
 | Concern      | Notes                                                                                                                                          |
