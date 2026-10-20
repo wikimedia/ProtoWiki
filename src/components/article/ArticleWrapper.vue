@@ -58,6 +58,9 @@ const effectiveTheme = computed<Theme>(
 
 const derivedHeader = computed(() => (props.title ?? '').replace(/_/g, ' ').trim())
 
+/** English Wikipedia's Main Page gets production's Main Page header. */
+const isMainPage = computed(() => derivedHeader.value === 'Main Page')
+
 /** Title as given — empty until a live surface resolves one (e.g. a random article). */
 const leadTitle = computed(() => props.header?.trim() || derivedHeader.value)
 
@@ -94,6 +97,7 @@ const chromeHeaderLabel = computed(() => leadTitle.value || 'Article')
       :title="chromeHeaderLabel"
       :languages-count="props.languagesCount"
       :skin="props.skin"
+      :main-page="isMainPage"
     />
 
     <slot />

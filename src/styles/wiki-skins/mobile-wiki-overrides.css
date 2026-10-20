@@ -92,3 +92,121 @@
   width: auto !important;
   box-sizing: border-box;
 }
+
+/*
+ * Main Page portal boxes. Their titles (`h2.mp-h2`) get ProtoWiki's article
+ * Heading 2 (24px, normal weight, Minerva's section padding) over the Main
+ * Page's own TemplateStyles. Restore those, as production renders them on both
+ * skins: bold sans at 120%, line-height 1.375, 0.2em / 0.4em inside the bar and
+ * 0.5em above and below it.
+ */
+.article .mw-parser-output .mp-h2 {
+  margin: 0.5em 0;
+  padding: 0.2em 0.4em;
+  font-family: var(--font-family-system-sans);
+  font-size: 120%;
+  font-weight: var(--font-weight-bold);
+  line-height: 1.375;
+}
+
+.article[data-skin='mobile'] .mw-parser-output .mp-contains-float > ul,
+.article[data-skin='mobile'] .mw-parser-output .mp-contains-float > ol {
+  margin-inline: 0;
+  /* Minerva zeros list padding; 1em matches mobile-web `.content ul` — not body prose 32px. */
+  padding-inline: 1em 0;
+}
+
+.article[data-skin='mobile'] .mw-parser-output .mp-contains-float ul ul {
+  padding-inline-start: 0.5em;
+}
+
+/*
+ * Main Page layout — Parsoid ships `Wikipedia:Main Page/styles.css` with viewport
+ * `@media` breakpoints (500px / 875px). Inside MobileWrapper the column can be
+ * ~412px while the window is wide, so re-root those breakpoints on the parser
+ * column via container queries (mirrors the inline rules at each width).
+ */
+.article .mw-parser-output:has(#mp-upper) {
+  container-type: inline-size;
+  container-name: wikipedia-main-page;
+}
+
+/* Undo viewport `@media (min-width: 875px) { #mp-upper { display: flex } }`. */
+.article .mw-parser-output:has(#mp-upper) #mp-upper {
+  display: block;
+}
+
+.article .mw-parser-output:has(#mp-upper) #mp-left,
+.article .mw-parser-output:has(#mp-upper) #mp-right {
+  flex: unset;
+  margin-inline: 0;
+}
+
+@container wikipedia-main-page (max-width: 499px) {
+  .article .mw-parser-output .mp-contains-float > * {
+    float: none !important;
+    margin: auto !important;
+  }
+
+  .article .mw-parser-output .mp-contains-float .mp-thumb {
+    margin: auto;
+  }
+}
+
+@container wikipedia-main-page (max-width: 874px) {
+  .article .mw-parser-output #mp-tfp :is(table, tr, td, tbody) {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  .article .mw-parser-output #mp-tfp tr:first-child td:first-child a.mw-file-description {
+    display: table;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .article .mw-parser-output #articlecount > ul > li {
+    display: block;
+  }
+
+  .article .mw-parser-output #articlecount > ul > li::after {
+    content: '';
+    font-weight: normal;
+  }
+}
+
+/*
+ * Re-apply the two-column layout. These repeat the `:has(#mp-upper)` qualifier
+ * from the resets above: `:has()` takes the specificity of its argument, so the
+ * reset scores an id more than a plain `.article .mw-parser-output #mp-upper`
+ * would, and a lower-specificity rule here would lose no matter the order.
+ */
+@container wikipedia-main-page (min-width: 875px) {
+  .article .mw-parser-output:has(#mp-upper) #mp-upper {
+    display: flex;
+  }
+
+  .article .mw-parser-output:has(#mp-upper) #mp-left {
+    flex: 1 1 55%;
+    margin-right: 2px;
+  }
+
+  .article .mw-parser-output:has(#mp-upper) #mp-right {
+    flex: 1 1 45%;
+    margin-left: 2px;
+  }
+}
+
+/*
+ * Long unbreakable tokens. Minerva hangs `word-wrap: break-word` off `.content`
+ * — a class MediaWiki puts on its body wrapper and Parsoid HTML doesn't carry —
+ * so nothing here lets a token like Earth's infobox mass,
+ * `(5.97217±0.00028)×10^24`, break. The mobile infobox is `table-layout: fixed`,
+ * so the table itself stays in the column but the token spills out of its cell,
+ * widening the document: the page scrolls sideways and the viewport-fixed Home
+ * button is dragged off screen with it. Breaking the token fixes both.
+ */
+.article[data-skin='mobile'] .mw-parser-output {
+  overflow-wrap: break-word;
+}
