@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 
 import { resolveHeaderIcon } from '@/components/header/headerIcons'
 import type { HeaderItem } from '@/components/header/headerItems'
+import MobileSearchOverlay from '@/components/search/MobileSearchOverlay.vue'
 import { globalTheme } from '@/theme'
 import type { Theme } from '@/theme'
 
@@ -17,8 +18,15 @@ const MAX_FLANK_ITEMS = 4
 
 const DEFAULT_LEFT: HeaderItem[] = [{ type: 'button', icon: 'menu', label: 'Main menu' }]
 
+/**
+ * The default search button opens Minerva's full-screen search, so every
+ * mobile chrome has one that works. A prototype passing its own `right` items
+ * brings its own search.
+ */
+const searchOpen = ref(false)
+
 const DEFAULT_RIGHT: HeaderItem[] = [
-  { type: 'button', icon: 'search', label: 'Search' },
+  { type: 'button', icon: 'search', label: 'Search', onClick: () => (searchOpen.value = true) },
   { type: 'button', icon: 'bell-outline', label: 'Notifications' },
   { type: 'button', icon: 'user-avatar-outline', label: 'User menu' },
 ]
@@ -215,6 +223,8 @@ function isExternalHref(href: string): boolean {
       </div>
     </nav>
   </header>
+
+  <MobileSearchOverlay v-if="searchOpen" :theme="effectiveTheme" @close="searchOpen = false" />
 </template>
 
 <style scoped>

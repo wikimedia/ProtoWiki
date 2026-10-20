@@ -12,8 +12,8 @@ or **`MinervaChromeHeader`** (mobile skin) based on effective skin:
 
 | Skin | Component | Chrome feel | Notes |
 | --- | --- | --- | --- |
-| `desktop` | **`VectorChromeHeader`** | **Vector 2022–style** | Wordmark/tagline (**`wordmarkSrc`**, **`taglineSrc`**, **`#logo`**), **`Search`** + **Search** button, username link (**`username`** + **`#username`**), user-tool cluster (**`navTools`** vs **`#nav`**: appearance, notifications, notices, bookmarks, watchlist, user + chevron). Main-menu glyph is icon-only (mock). Global skin stays **desktop** until viewport **≤640px**; below **1120px** inline search collapses to a search icon. |
-| `mobile` | **`MinervaChromeHeader`** | **Minerva-style** | Grey elevated bar: menu · wordmark · search + notifications + user — prop-driven **`left`** / **`middle`** / **`right`** item arrays. **`navTools`** is ignored. |
+| `desktop` | **`VectorChromeHeader`** | **Vector 2022–style** | Wordmark/tagline (**`wordmarkSrc`**, **`taglineSrc`**, **`#logo`**), **`Search`** + **Search** button, username link (**`username`** + **`#username`**), user-tool cluster (**`navTools`** vs **`#nav`**: appearance, notifications, notices, bookmarks, watchlist, user + chevron). Main-menu glyph is icon-only (mock). Global skin stays **desktop** until viewport **≤640px**; below **1120px** inline search collapses to a search icon that opens the search box in place of the menu and wordmark, as in production: it ends where the icon was and fills the space to its left (Escape or blur folds it back). |
+| `mobile` | **`MinervaChromeHeader`** | **Minerva-style** | Grey elevated bar: menu · wordmark · search + notifications + user — the default search button opens a full-screen **`MobileSearchOverlay`**. Prop-driven **`left`** / **`middle`** / **`right`** item arrays. **`navTools`** is ignored. |
 
 **`ChromeFooter`** matches the skin:
 
@@ -100,7 +100,9 @@ import type { MinervaHeaderItem } from '@/components/chrome/MinervaChromeHeader.
 | --- | --- |
 | `left` | menu button |
 | `middle` | Wikipedia wordmark (`RouterLink` + `<img>`) when **`middle`** omitted |
-| `right` | search, notifications, user avatar buttons |
+| `right` | search (opens **`MobileSearchOverlay`**), notifications, user avatar buttons |
+
+Passing your own **`right`** replaces the default search button, so the overlay goes with it — bring your own search.
 
 Adjacent icon buttons/links in **`left`** and **`right`** have **no gap** between them (flush groups).
 

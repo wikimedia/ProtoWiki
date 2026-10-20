@@ -126,7 +126,7 @@ function openFirstSuggestion(query: string): boolean {
   const title = firstSuggestionTitle()
   if (!title) return false
 
-  completeSearchInput(title)
+  clearSearchInput()
   emit('submit', { query, title })
   return true
 }
@@ -140,11 +140,20 @@ function blurSearchInput(): void {
   typeahead.form?.querySelector('input')?.blur()
 }
 
-function completeSearchInput(title: string): void {
+/**
+ * A pick navigates to the article, so the box empties — as in production,
+ * where the new page loads with a blank search.
+ */
+function clearSearchInput(): void {
+  abortController?.abort()
+  suggestions.value = []
+  suggestionsQuery.value = ''
+  lastQuery.value = ''
+
   const typeahead = typeaheadRef.value
   if (!typeahead) return
 
-  typeahead.inputValue = title
+  typeahead.inputValue = ''
   blurSearchInput()
 }
 
@@ -300,7 +309,7 @@ function onSearchResultClick(payload: SearchResultClickEvent) {
   if (!title) return
 
   pendingSubmitQuery = null
-  completeSearchInput(title)
+  clearSearchInput()
   emit('select', title)
 }
 

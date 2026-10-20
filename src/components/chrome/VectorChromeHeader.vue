@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import {
@@ -58,6 +58,24 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const effectiveTheme = computed<Theme>(() => props.theme ?? globalTheme.value)
+
+/*
+ * Below 1120px the search box folds into an icon. Like Vector 2022, the icon
+ * opens the box in place of the menu and wordmark, and it folds again on
+ * Escape or when focus leaves it.
+ */
+const searchOpen = ref(false)
+const inlineSearch = ref<HTMLElement | null>(null)
+
+async function openSearch(): Promise<void> {
+  searchOpen.value = true
+  await nextTick()
+  inlineSearch.value?.querySelector('input')?.focus()
+}
+
+function onSearchFocusOut(event: FocusEvent): void {
+  if (!inlineSearch.value?.contains(event.relatedTarget as Node | null)) searchOpen.value = false
+}
 const trimmedUsername = computed(() => (props.username ?? '').trim())
 const showChromeUsernameLink = computed(() => trimmedUsername.value.length > 0)
 const isLoggedOut = computed(() => user.value === 'logged-out')
@@ -83,7 +101,12 @@ function handleSearchSubmit(payload: SearchSubmitPayload) {
 </script>
 
 <template>
-  <header class="vector-chrome-header" data-skin="desktop" :data-theme="effectiveTheme">
+  <header
+    class="vector-chrome-header"
+    :class="{ 'vector-chrome-header--search-open': searchOpen }"
+    data-skin="desktop"
+    :data-theme="effectiveTheme"
+  >
     <nav class="vector-chrome-header__nav" aria-label="Site">
       <div class="vector-chrome-header__start">
         <slot name="menu">
@@ -115,7 +138,12 @@ function handleSearchSubmit(payload: SearchSubmitPayload) {
         </RouterLink>
       </div>
 
-      <div class="vector-chrome-header__inline-search">
+      <div
+        ref="inlineSearch"
+        class="vector-chrome-header__inline-search"
+        @focusout="onSearchFocusOut"
+        @keydown.esc="searchOpen = false"
+      >
         <div class="vector-chrome-header__search">
           <Search
             use-button
@@ -131,7 +159,8 @@ function handleSearchSubmit(payload: SearchSubmitPayload) {
           class="vector-chrome-header__search-icon-toggle"
           weight="quiet"
           aria-label="Search"
-          @click.prevent
+          :aria-expanded="searchOpen"
+          @click="openSearch"
         >
           <CdxIcon :icon="cdxIconSearch" />
         </CdxButton>
@@ -373,6 +402,46 @@ a.vector-chrome-header__text-link:hover {
 
 @media (max-width: 1120px) {
   .vector-chrome-header__inline-search {
+    display: none;
+  }
+
+  /*
+   * Opened from the icon: like Vector 2022, the search box takes the place of
+   * the menu and wordmark (and its own icon); the user tools stay.
+   */
+  .vector-chrome-header--search-open .vector-chrome-header__inline-search {
+    display: flex;
+  }
+
+  /* Ends where the icon was and grows leftwards over all the freed space. */
+  .vector-chrome-header--search-open .vector-chrome-header__inline-search,
+  .vector-chrome-header--search-open .vector-chrome-header__inline-search .vector-chrome-header__search {
+    max-width: none;
+  }
+
+  /* A zero basis, so the box takes what the tools leave rather than pushing them to a new row. */
+  .vector-chrome-header--search-open .vector-chrome-header__inline-search {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-inline-start: 0;
+  }
+
+  /*
+   * CODEX+ CdxTextInput has a 256px min-width; in a narrow header the field
+   * would run under the Search button. Let it shrink with the box.
+   */
+  .vector-chrome-header--search-open :deep(.cdx-search-input__input-wrapper),
+  .vector-chrome-header--search-open :deep(.cdx-search-input__text-input) {
+    min-width: 0;
+  }
+
+  /* The tools' own gap, so the box's end lines up with the icon's. */
+  .vector-chrome-header--search-open .vector-chrome-header__nav {
+    column-gap: 0.2rem;
+  }
+
+  .vector-chrome-header--search-open .vector-chrome-header__start,
+  .vector-chrome-header--search-open .vector-chrome-header__search-icon-toggle {
     display: none;
   }
 
