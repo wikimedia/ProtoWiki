@@ -106,9 +106,15 @@ export default defineConfig(async ({ command, isPreview }) => {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
     },
+    // `PORT` is set by Claude's preview (`autoPort` in .claude/launch.json);
+    // when present, bind exactly that port so the preview finds the server.
     server: {
-      port: 5173,
-      strictPort: false,
+      port: Number(process.env.PORT) || 5173,
+      strictPort: Boolean(process.env.PORT),
+    },
+    preview: {
+      port: Number(process.env.PORT) || 4173,
+      strictPort: Boolean(process.env.PORT),
     },
   }
 })
