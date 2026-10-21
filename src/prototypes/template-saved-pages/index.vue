@@ -8,10 +8,7 @@ import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 import { useConfig } from '@/composables/useConfig'
 import { useSkin } from '@/composables/useSkin'
 import { useWikiPrototypeNavigation } from '@/composables/useWikiPrototypeNavigation'
-import {
-  ARTICLE_TEMPLATE_PATH,
-  SAVED_PAGES_TEMPLATE_PATH,
-} from '@/composables/webTemplatePaths'
+import { ARTICLE_TEMPLATE_PATH, SAVED_PAGES_TEMPLATE_PATH } from '@/composables/webTemplatePaths'
 
 import {
   fetchReadingListPages,
@@ -22,6 +19,8 @@ import SavedPagesEmptyState from './SavedPagesEmptyState.vue'
 
 definePage({
   meta: {
+    title: 'Saved',
+    description: 'Template for the Saved special page',
     category: 'template',
     platform: 'web',
     order: 5.5,
@@ -191,7 +190,9 @@ function entryKey(entry: SavedPageListItem): string | number {
 }
 
 /* Codex block-start thumbs default to 16∶9 — square reads closer to saved-pages mocks. */
-.template-saved-pages__cards--grid .template-saved-pages__card :deep(.cdx-card__thumbnail.cdx-thumbnail) {
+.template-saved-pages__cards--grid
+  .template-saved-pages__card
+  :deep(.cdx-card__thumbnail.cdx-thumbnail) {
   width: 100%;
 }
 

@@ -2,6 +2,7 @@
 import { computed, provide } from 'vue'
 
 import { useConfig } from '@/composables/useConfig'
+import { SAVED_PAGES_TEMPLATE_PATH } from '@/composables/webTemplatePaths'
 import type { ChromeNavTool } from './headerNavTools'
 import { globalSkin, globalTheme, PROTOWIKI_CHROME_SKIN, PROTOWIKI_CHROME_THEME } from '@/theme'
 import type { Skin, Theme } from '@/theme'
@@ -46,7 +47,10 @@ interface Props {
   navTools?: ChromeNavTool[]
   /** Forwarded to **`ChromeHeader`**. */
   prototypingSettings?: boolean
-  /** Forwarded to **`ChromeHeader`** — Vector bookmark → saved pages route. */
+  /**
+   * Forwarded to **`ChromeHeader`** — Vector bookmark → saved pages route.
+   * Defaults to **`SAVED_PAGES_TEMPLATE_PATH`**; pass **`''`** to disable navigation.
+   */
   savedPagesRoute?: string
 }
 
@@ -63,7 +67,7 @@ const props = withDefaults(defineProps<Props>(), {
   mobileWordmarkSrc: undefined,
   navTools: undefined,
   prototypingSettings: true,
-  savedPagesRoute: undefined,
+  savedPagesRoute: SAVED_PAGES_TEMPLATE_PATH,
 })
 
 const { displayName } = useConfig()
