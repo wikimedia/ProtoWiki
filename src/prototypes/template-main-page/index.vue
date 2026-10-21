@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { cdxIconHome } from '@wikimedia/codex-icons'
+import { cdxIconNewspaper } from '@wikimedia/codex-icons'
 
 definePage({
   meta: {
@@ -8,7 +8,7 @@ definePage({
     category: 'template',
     platform: 'web',
     order: 8,
-    icon: cdxIconHome,
+    icon: cdxIconNewspaper,
   },
 })
 
