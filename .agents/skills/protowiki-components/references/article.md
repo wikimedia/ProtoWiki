@@ -116,7 +116,7 @@ Web-only **`editable?`** and **`startInEditMode?`** mirror **`ArticleLive`**: on
 
 Live fetch via **`page/html`** (in-memory cache + **`localStorage`**). Single import for **`ChromeWrapper` → live reader** demos.
 
-On web **`ArticleLive`**, in-article links to the same wiki (**`/wiki/…`**) update **`?title=`** on the current prototype route instead of leaving ProtoWiki (see **`useInArticleWikiLinks`** / **`ArticleRenderer`**).
+On web **`ArticleLive`**, in-article links to the same wiki (**`/wiki/…`**) update **`?title=`** on the current prototype route instead of leaving ProtoWiki (see **`useInArticleWikiLinks`** / **`ArticleRenderer`**). Footnote / citation anchors (**`#cite_note`**, **`#cite_ref`**) are excluded from that hijacking; Parsoid **`./Page#cite_note-…`** hrefs are normalized to same-document fragments so superscripts jump to the references block.
 
 ### Visual Editor (`editable`, `editRoute`, `readRoute`)
 
@@ -249,7 +249,7 @@ Vector-like **page** chrome above the parser output (not the site **`ChromeHeade
 | **`languagesCount?`** | Number for the interlanguage control label (default **18** → “18 languages”). Language rows in the popover are fixed mock data. |
 | **`skin?`**           | Desktop vs mobile layout.                                                                                                       |
 
-Fixed copy: desktop tagline **“From Wikipedia, the free encyclopedia”**; Article / Read tabs are visually active (not prop-driven). **`#title`** slot replaces the **`h1`** inner markup. Emits language pick / settings and tab/tool clicks.
+Fixed copy: desktop tagline **“From Wikipedia, the free encyclopedia”**; Article / Read tabs are visually active (not prop-driven). **`#title`** slot replaces the **`h1`** inner markup. Emits language pick / settings and tab/tool clicks. **Watch** and **Save** (logged-in only) toggle the active mock user’s **`watchlist`** and **`readingList`** in prototype config (persisted via **`useConfig`**).
 
 ## Styling notes
 

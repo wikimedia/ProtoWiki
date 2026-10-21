@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, ref, watch } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
 import {
   CdxButton,
   CdxIcon,
@@ -27,7 +28,9 @@ import {
   DEFAULT_ARTICLE_LANGUAGE_LINKS,
   type ArticleLanguageLink,
 } from './shared/articleLanguageLinks'
+import { preservedQueryFromLocationQuery } from '@/appearance/url-query'
 import { useConfig } from '@/composables/useConfig'
+import { normalizeWikiPageTitleInput, pageListContains } from '@/config'
 import { globalSkin, PROTOWIKI_CHROME_SKIN } from '@/theme'
 import type { Skin } from '@/theme'
 
@@ -57,6 +60,8 @@ interface Props {
    * logged in.
    */
   mainPage?: boolean
+  /** When set, save toast links to the web saved-pages template. */
+  savedPagesRoute?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -64,11 +69,22 @@ const props = withDefaults(defineProps<Props>(), {
   skin: undefined,
   activeView: 'read',
   mainPage: false,
+  savedPagesRoute: undefined,
+})
+
+const route = useRoute()
+
+const savedPagesTo = computed(() => {
+  if (!props.savedPagesRoute?.length) return null
+  return {
+    path: props.savedPagesRoute,
+    query: preservedQueryFromLocationQuery(route.query),
+  }
 })
 
 const inheritedSkin = inject(PROTOWIKI_CHROME_SKIN)
 const effectiveSkin = computed<Skin>(() => props.skin ?? inheritedSkin?.value ?? globalSkin.value)
-const { user, displayName } = useConfig()
+const { user, displayName, currentUserPageLists, toggleCurrentUserPageInList } = useConfig()
 const isLoggedOut = computed(() => user.value === 'logged-out')
 /** Main Page on mobile: no tabs or toolbar, only the heading. */
 const bareMainPage = computed(() => props.mainPage && effectiveSkin.value === 'mobile')
@@ -96,19 +112,29 @@ const emit = defineEmits<{
   languageSettingsClick: []
 }>()
 
-const isWatched = ref(false)
-const isBookmarked = ref(false)
+const pageTitle = computed(() => normalizeWikiPageTitleInput(props.title))
+
+const isWatched = computed(() =>
+  pageListContains(currentUserPageLists.value.watchlist, pageTitle.value),
+)
+const isBookmarked = computed(() =>
+  pageListContains(currentUserPageLists.value.readingList, pageTitle.value),
+)
 const showSavedToast = ref(false)
 
 function onWatchClick() {
-  isWatched.value = !isWatched.value
+  toggleCurrentUserPageInList('watchlist', pageTitle.value, { prepend: true })
   emit('watchClick')
 }
 
-watch(isBookmarked, (saved) => {
-  showSavedToast.value = saved
+function onBookmarkClick() {
+  const before = currentUserPageLists.value.readingList.length
+  toggleCurrentUserPageInList('readingList', pageTitle.value, { prepend: true })
+  if (currentUserPageLists.value.readingList.length > before) {
+    showSavedToast.value = true
+  }
   emit('bookmarkClick')
-})
+}
 
 const langMenuOpen = ref(false)
 const langSearch = ref('')
@@ -229,7 +255,7 @@ function onLanguagePick(row: ArticleLanguageLink) {
               weight="quiet"
               :aria-pressed="isBookmarked"
               :aria-label="isBookmarked ? 'Remove from saved items' : 'Save page'"
-              @click="isBookmarked = !isBookmarked"
+              @click="onBookmarkClick"
             >
               <CdxIcon :icon="isBookmarked ? cdxIconBookmark : cdxIconBookmarkOutline" />
             </CdxButton>
@@ -284,7 +310,7 @@ function onLanguagePick(row: ArticleLanguageLink) {
           class="article-header__icon-tool"
           :aria-pressed="isBookmarked"
           :aria-label="isBookmarked ? 'Remove from saved items' : 'Save page'"
-          @click="isBookmarked = !isBookmarked"
+          @click="onBookmarkClick"
         >
           <CdxIcon :icon="isBookmarked ? cdxIconBookmark : cdxIconBookmarkOutline" />
         </button>
@@ -368,7 +394,8 @@ function onLanguagePick(row: ArticleLanguageLink) {
       @auto-dismissed="showSavedToast = false"
     >
       <strong>{{ title }}</strong> has been added to your
-      <a href="#" @click.prevent>saved items</a>.
+      <RouterLink v-if="savedPagesTo" :to="savedPagesTo">saved items</RouterLink>
+      <a v-else href="#" @click.prevent>saved items</a>.
     </CdxToast>
 
     <p v-if="effectiveSkin === 'desktop' && !props.mainPage" class="article-header__tagline">
@@ -382,23 +409,22 @@ function onLanguagePick(row: ArticleLanguageLink) {
   background-color: var(--background-color-base);
 }
 
+/* Title row + rule — same pattern as `SpecialPageWrapper__header` / `__title`. */
 .article-header__title-row {
   display: flex;
-  align-items: flex-end;
+  align-items: baseline;
   justify-content: space-between;
   gap: var(--spacing-100, 16px);
-  padding-bottom: var(--spacing-50, 8px);
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--border-color-base, #a2a9b1);
 }
 
 .article-header__title {
   margin: 0;
   flex: 1;
   min-width: 0;
-  font-family: var(--font-family-serif);
-  font-size: 2rem;
-  font-weight: var(--font-weight-normal);
-  line-height: var(--line-height-xxx-small, 1.375);
-  color: var(--color-base);
+  padding-bottom: 2px;
+  border: none;
 }
 
 /* Visually hidden but still the page's `h1` for assistive tech (Main Page). */
@@ -414,6 +440,7 @@ function onLanguagePick(row: ArticleLanguageLink) {
 /* Main Page: the title row holds only the hidden heading, so the tabs lead. */
 .article-header--main-page .article-header__title-row {
   padding: 0;
+  border-bottom: none;
 }
 
 .article-header--main-page .article-header__toolbar {
@@ -504,8 +531,7 @@ function onLanguagePick(row: ArticleLanguageLink) {
 }
 
 /* Vector 2022 page toolbar: 32px row, 14px normal-weight tabs, 2px underline
-   on the selected tab, a base-color rule under the title and a subtle rule
-   under the toolbar. */
+   on the selected tab; title rule lives on `__title-row` (special-page parity). */
 .article-header__toolbar {
   display: flex;
   align-items: stretch;
@@ -514,7 +540,7 @@ function onLanguagePick(row: ArticleLanguageLink) {
   flex-wrap: wrap;
   min-height: 32px;
   padding: 0;
-  border-top: 1px solid var(--border-color-base, #a2a9b1);
+  border-top: none;
   border-bottom: 1px solid var(--border-color-subtle, #c8ccd1);
   margin: 0;
   overflow: visible;
@@ -665,10 +691,6 @@ function onLanguagePick(row: ArticleLanguageLink) {
   transform: rotate(90deg);
 }
 
-.article-header[data-skin='mobile'] .article-header__title {
-  font-size: 1.625rem;
-}
-
 /* Logged-in Main Page greeting: GrowthExperiments' 1.7em serif Homepage title. */
 .article-header[data-skin='mobile'] .article-header__title--greeting {
   margin-bottom: var(--spacing-75, 12px);
@@ -678,6 +700,19 @@ function onLanguagePick(row: ArticleLanguageLink) {
 
 .article-header[data-skin='mobile'] .article-header__title-row {
   padding-bottom: 0;
+  border-bottom: none;
+}
+
+/* Minerva title typography — matches `SpecialPageWrapper` mobile `__title`. */
+.article-header[data-skin='mobile']
+  .article-header__title:not(.article-header__title--greeting):not(.article-header__title--hidden) {
+  padding-bottom: 0;
+  font-family:
+    var(--font-family-system-sans, system-ui, sans-serif), var(--font-family-base, sans-serif);
+  font-size: var(--font-size-xx-large);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-xx-large);
+  color: var(--color-base);
 }
 
 .article-header[data-skin='mobile'] .article-header__toolbar {

@@ -18,19 +18,18 @@ import { useRoute, useRouter } from 'vue-router'
 import ArticleLive from '@/components/article/ArticleLive.vue'
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 import { preservedQueryFromLocationQuery } from '@/appearance/url-query'
-import { provideChromeSearchHandlers } from '@/composables/useChromeSearch'
 import { parseWikiPageTitleQuery } from '@/composables/useWikiPageTitleQuery'
 import {
   MAIN_PAGE_TEMPLATE_PATH,
   WIKIPEDIA_MAIN_PAGE_TITLE,
 } from '@/composables/useWordmarkMainPageLink'
-import { useWikiPrototypeNavigation } from '@/composables/useWikiPrototypeNavigation'
-
-const ARTICLE_TEMPLATE_PATH = '/template-article'
+import {
+  ARTICLE_TEMPLATE_PATH,
+  SAVED_PAGES_TEMPLATE_PATH,
+} from '@/composables/webTemplatePaths'
 
 const route = useRoute()
 const router = useRouter()
-const { navigateToWikiPrototype } = useWikiPrototypeNavigation()
 
 function stripTitleQuery() {
   if (parseWikiPageTitleQuery(route.query) === undefined) return
@@ -44,23 +43,15 @@ function stripTitleQuery() {
 
 stripTitleQuery()
 watch(() => route.query.title, stripTitleQuery)
-
-provideChromeSearchHandlers({
-  onSelect(title) {
-    navigateToWikiPrototype(ARTICLE_TEMPLATE_PATH, title)
-  },
-  onSubmit({ title }) {
-    if (title) navigateToWikiPrototype(ARTICLE_TEMPLATE_PATH, title)
-  },
-})
 </script>
 
 <template>
-  <ChromeWrapper>
+  <ChromeWrapper :saved-pages-route="SAVED_PAGES_TEMPLATE_PATH">
     <!-- ArticleWrapper detects title "Main Page" and applies production Main Page header chrome. -->
     <ArticleLive
       :article="WIKIPEDIA_MAIN_PAGE_TITLE"
-      wiki-link-route="/template-article"
+      :wiki-link-route="ARTICLE_TEMPLATE_PATH"
+      :saved-pages-route="SAVED_PAGES_TEMPLATE_PATH"
     />
 
     <!-- Other wikis use different main-page titles; set lang/host and article accordingly. -->

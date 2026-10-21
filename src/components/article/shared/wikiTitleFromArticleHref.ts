@@ -9,6 +9,16 @@ function titleFromWikiPathSegment(segment: string): string | null {
   }
 }
 
+/** MediaWiki in-article footnote targets (`#cite_note-…`, `#cite_ref-…`). */
+export function citationHashFromHref(href: string): string | null {
+  const hashIndex = href.indexOf('#')
+  if (hashIndex === -1) return null
+  const fragment = href.slice(hashIndex + 1)
+  if (!fragment.length) return null
+  if (!/^cite_(note|ref)(-|$)/.test(fragment)) return null
+  return `#${fragment}`
+}
+
 /** REST / Parsoid bodies use `./Page_name` wikilinks relative to the current title. */
 function titleFromParsoidRelativeHref(href: string): string | null {
   if (!href.startsWith('./')) return null
@@ -22,6 +32,7 @@ function titleFromParsoidRelativeHref(href: string): string | null {
  */
 export function wikiTitleFromArticleHref(href: string, wikiHost: string): string | null {
   if (!href || href.startsWith('#')) return null
+  if (citationHashFromHref(href)) return null
 
   const parsoidTitle = titleFromParsoidRelativeHref(href)
   if (parsoidTitle) return parsoidTitle

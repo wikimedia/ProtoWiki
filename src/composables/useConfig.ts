@@ -9,8 +9,11 @@ import {
   isDefaultMockEditorEditCountByUser,
   isDefaultUserPageLists,
   langForUser,
+  prependPageInList,
   resetUserPageLists,
   saveConfig,
+  normalizeWikiPageTitleInput,
+  togglePageInList,
   type ConfigAppPlatform,
   type Config,
   type ConfigTheme,
@@ -72,6 +75,12 @@ export function useConfig(): {
   currentUserPageLists: ComputedRef<UserPageLists>
   isCurrentUserPageListsModified: ComputedRef<boolean>
   setCurrentUserPageList: (field: PageListKey, pages: string[]) => void
+  toggleCurrentUserPageInList: (
+    field: PageListKey,
+    pageTitle: string,
+    options?: { prepend?: boolean },
+  ) => void
+  prependCurrentUserPageInList: (field: PageListKey, pageTitle: string) => void
   resetCurrentUserPageLists: () => void
   mockEditorEditCount: Ref<ConfigMockEditorEditCount>
 } {
@@ -164,6 +173,26 @@ export function useConfig(): {
     }
   }
 
+  function toggleCurrentUserPageInList(
+    field: PageListKey,
+    pageTitle: string,
+    options: { prepend?: boolean } = {},
+  ) {
+    if (user.value === 'logged-out') return
+    const key = normalizeWikiPageTitleInput(pageTitle)
+    if (!key.length) return
+    const current = config.value.userPageLists[user.value][field]
+    setCurrentUserPageList(field, togglePageInList(current, key, options))
+  }
+
+  function prependCurrentUserPageInList(field: PageListKey, pageTitle: string) {
+    if (user.value === 'logged-out') return
+    const key = normalizeWikiPageTitleInput(pageTitle)
+    if (!key.length) return
+    const current = config.value.userPageLists[user.value][field]
+    setCurrentUserPageList(field, prependPageInList(current, key))
+  }
+
   function resetCurrentUserPageLists() {
     const activeUser = user.value
     const editsDefault = defaultMockEditorEditCountForUser(activeUser)
@@ -220,6 +249,8 @@ export function useConfig(): {
     currentUserPageLists,
     isCurrentUserPageListsModified,
     setCurrentUserPageList,
+    toggleCurrentUserPageInList,
+    prependCurrentUserPageInList,
     resetCurrentUserPageLists,
     mockEditorEditCount,
   }

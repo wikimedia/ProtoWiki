@@ -20,6 +20,8 @@ interface ArticleLiveCommonProps {
   readRoute?: string
   /** When set, in-article wiki links navigate here with **`?title=`** instead of updating the current URL. */
   wikiLinkRoute?: string
+  /** Forwarded to **`ArticleHeader`** — save toast links to saved pages. */
+  savedPagesRoute?: string
 }
 
 /** Fixed article: `article` set; the random-only props are forbidden. */
@@ -63,8 +65,9 @@ export type ArticleLiveProps = ArticleLiveFixedProps | ArticleLiveRandomProps
  */
 import { computed, inject, nextTick, onBeforeUnmount, provide, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { CdxMessage, CdxProgressBar } from '@wikimedia/codex'
+import { CdxProgressBar } from '@wikimedia/codex'
 
+import ArticleLoadErrorMessage from './ArticleLoadErrorMessage.vue'
 import ArticleRenderer from './ArticleRenderer.vue'
 import ArticleWrapper from './ArticleWrapper.vue'
 import {
@@ -132,6 +135,7 @@ interface Props {
   editRoute?: string
   readRoute?: string
   wikiLinkRoute?: string
+  savedPagesRoute?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -152,6 +156,7 @@ const props = withDefaults(defineProps<Props>(), {
   editRoute: undefined,
   readRoute: undefined,
   wikiLinkRoute: undefined,
+  savedPagesRoute: undefined,
 })
 
 const editing = defineModel<boolean>('editing', { default: false })
@@ -267,9 +272,10 @@ async function fetchArticle(title: string, host: string, lang: string, signal: A
 
   liveHtml.value = body.html
   view.value = articleView
-  if (articleView) resolvedTitle.value = articleView.title
+  const displayTitle = articleView?.title ?? body.liveTitle
+  resolvedTitle.value = displayTitle
   if (effectiveEditable.value) void refreshPrefetchSuggestionCount()
-  emit('titleResolved', title)
+  emit('titleResolved', displayTitle)
 }
 
 async function resolveAndFetch() {
@@ -422,6 +428,7 @@ function onEditNavigate() {
       :description="view?.description"
       :lead-image-url="view?.thumbnailUrl ?? undefined"
       :active-view="headerActiveView"
+      :saved-pages-route="props.savedPagesRoute"
       @edit-click="onEditClick()"
       @read-click="onReadClick()"
     >
@@ -456,13 +463,12 @@ function onEditNavigate() {
     :app="props.app"
     :description="view?.description"
     :lead-image-url="view?.thumbnailUrl ?? undefined"
+    :saved-pages-route="props.savedPagesRoute"
     @edit-click="onEditNavigate()"
   >
     <CdxProgressBar v-if="loading" inline aria-label="Loading article" />
 
-    <CdxMessage v-if="error" type="error" :allow-user-dismiss="false">
-      Couldn't load this article: {{ error }}
-    </CdxMessage>
+    <ArticleLoadErrorMessage v-if="error" :error="error" />
 
     <ArticleRenderer
       v-if="liveHtml !== null || $slots.default"

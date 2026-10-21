@@ -123,6 +123,8 @@ Special pages usually **omit** the mock last-edited notice (desktop block **and*
 </ChromeWrapper>
 ```
 
+**Saved pages (web):** starter **`src/prototypes/template-saved-pages/`** — mock reading list cards, responsive grid/list. Wire the cluster with path constants in **`src/composables/webTemplatePaths.ts`**, **`ChromeWrapper`** **`savedPagesRoute`**, **`ArticleLive`** **`wikiLinkRoute`** / **`savedPagesRoute`**, and **`useWikiPrototypeNavigation`** for **`?title=`** + appearance query preservation (see **`template-article`**, **`template-main-page`**).
+
 ## Bare canvas with chrome (no columns)
 
 ```vue

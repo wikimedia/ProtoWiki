@@ -91,7 +91,7 @@ onMounted(() => {
       class="settings-popover__overlay"
     >
       <div :id="panelId" class="settings-popover__panel" @click.stop>
-        <slot name="panel" />
+        <slot name="panel" :open="open" />
       </div>
     </CdxPopover>
   </div>

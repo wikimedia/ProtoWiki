@@ -26,22 +26,17 @@ export function useRealUserImpact(
   hasStarted: ComputedRef<boolean>
   hasRenderableData: ComputedRef<boolean>
   lastFetchedAt: Ref<number | null>
-  editedPageTitles: Ref<string[]>
 } {
   const impactData = ref<ImpactData>({ ...EMPTY_IMPACT_DATA })
   const loading = ref(false)
   const error = ref<string | null>(null)
   const hasStarted = ref(false)
   const lastFetchedAt = ref<number | null>(null)
-  const editedPageTitles = ref<string[]>([])
 
   let abortController: AbortController | null = null
 
   function mergeImpactPatch(patch: Partial<ImpactData>): void {
     impactData.value = { ...impactData.value, ...patch }
-    if (patch.editedPageTitles) {
-      editedPageTitles.value = patch.editedPageTitles
-    }
     if (!lastFetchedAt.value) {
       lastFetchedAt.value = Date.now()
     }
@@ -52,13 +47,11 @@ export function useRealUserImpact(
     if (cached) {
       impactData.value = { ...EMPTY_IMPACT_DATA, ...cached.data }
       lastFetchedAt.value = cached.fetchedAt
-      editedPageTitles.value = cached.data.editedPageTitles ?? []
       hasStarted.value = true
       return
     }
     impactData.value = { ...EMPTY_IMPACT_DATA }
     lastFetchedAt.value = null
-    editedPageTitles.value = []
     hasStarted.value = false
   }
 
@@ -107,9 +100,13 @@ export function useRealUserImpact(
       const entry = setCachedImpact(name, data, wiki)
       impactData.value = { ...EMPTY_IMPACT_DATA, ...data }
       lastFetchedAt.value = entry.fetchedAt
-      editedPageTitles.value = data.editedPageTitles ?? []
     } catch (err) {
       if (err instanceof FetchUserImpactError && err.code === 'aborted') {
+        error.value = null
+        return
+      }
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        error.value = null
         return
       }
       const message =
@@ -133,6 +130,5 @@ export function useRealUserImpact(
     hasStarted: computed(() => hasStarted.value),
     hasRenderableData,
     lastFetchedAt,
-    editedPageTitles,
   }
 }

@@ -1225,7 +1225,7 @@ function leaveReview() {
 
 // ── Save dialog ──────────────────────────────────────────────────────────────
 
-const { user } = useConfig()
+const { user, prependCurrentUserPageInList } = useConfig()
 const saveOpen = ref(false)
 const saveDiff = ref<DiffBlock[]>([])
 /** Text of every block when the editor opened, for "Review your changes". */
@@ -1264,8 +1264,14 @@ function finishPublish() {
   saveOpen.value = true
 }
 
-function onSaved() {
+function onSaved(_summary: string, options: { watchPage: boolean }) {
   saveOpen.value = false
+  if (user.value !== 'logged-out') {
+    prependCurrentUserPageInList('editedPages', props.page.title)
+    if (options.watchPage) {
+      prependCurrentUserPageInList('watchlist', props.page.title)
+    }
+  }
   emit('published', cleanHtml())
 }
 

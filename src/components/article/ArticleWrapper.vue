@@ -32,6 +32,8 @@ interface Props {
   leadImageUrl?: string
   /** Forwarded to **`ArticleHeader`**: which page-action tab is selected. */
   activeView?: 'read' | 'edit'
+  /** Forwarded to **`ArticleHeader`** — save toast link target. */
+  savedPagesRoute?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -46,6 +48,7 @@ const props = withDefaults(defineProps<Props>(), {
   description: undefined,
   leadImageUrl: undefined,
   activeView: 'read',
+  savedPagesRoute: undefined,
 })
 
 const emit = defineEmits<{
@@ -110,6 +113,7 @@ const chromeHeaderLabel = computed(() => leadTitle.value || 'Article')
       @read-click="emit('readClick')"
       @edit-click="emit('editClick')"
       :main-page="isMainPage"
+      :saved-pages-route="props.savedPagesRoute"
     />
 
     <slot />

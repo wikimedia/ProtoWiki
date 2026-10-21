@@ -46,6 +46,8 @@ interface Props {
   navTools?: ChromeNavTool[]
   /** Forwarded to **`ChromeHeader`**. */
   prototypingSettings?: boolean
+  /** Forwarded to **`ChromeHeader`** — Vector bookmark → saved pages route. */
+  savedPagesRoute?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -61,6 +63,7 @@ const props = withDefaults(defineProps<Props>(), {
   mobileWordmarkSrc: undefined,
   navTools: undefined,
   prototypingSettings: true,
+  savedPagesRoute: undefined,
 })
 
 const { displayName } = useConfig()
@@ -91,6 +94,7 @@ provide(PROTOWIKI_CHROME_THEME, effectiveTheme)
         :mobile-wordmark-src="props.mobileWordmarkSrc"
         :nav-tools="props.navTools"
         :prototyping-settings="props.prototypingSettings"
+        :saved-pages-route="props.savedPagesRoute"
       >
         <template v-if="$slots.menu" #menu>
           <slot name="menu" />

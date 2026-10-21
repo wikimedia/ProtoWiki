@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, toRef, watch } from 'vue'
-import { CdxMessage, CdxProgressBar, CdxToast } from '@wikimedia/codex'
+import { CdxProgressBar, CdxToast } from '@wikimedia/codex'
 
+import ArticleLoadErrorMessage from '@/components/article/ArticleLoadErrorMessage.vue'
 import ArticleRenderer from '@/components/article/ArticleRenderer.vue'
 import type { Skin, Theme } from '@/theme'
 
@@ -128,9 +129,7 @@ defineExpose({ exitEditForNavigation, onEditClick, onReadClick })
   <div class="ve-page__content">
     <CdxProgressBar v-if="loading" inline aria-label="Loading article" />
     <p v-if="loading" class="ve-page__loading">Loading article…</p>
-    <CdxMessage v-if="error" type="error" :allow-user-dismiss="false">
-      Couldn't load this article: {{ error }}
-    </CdxMessage>
+    <ArticleLoadErrorMessage v-if="error" :error="error" />
 
     <template v-if="page && liveHtml !== null && !loading">
       <VeEditor

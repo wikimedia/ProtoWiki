@@ -24,7 +24,16 @@ function onSubmit({ query, title }: SearchSubmitPayload) {
 }
 ```
 
-Inside **`ChromeWrapper`**, prototypes can opt in without forking the header:
+Inside **`ChromeWrapper`**, chrome search uses **`useChromeSearchHandlers`**
+(with defaults — no boilerplate on most pages):
+
+- On **`/template-article`** and **`/template-visual-editor`**, a pick updates
+  **`?title=`** on the current route ( **`ArticleLive`** / VE shell reload ).
+- Everywhere else with default chrome, search opens **`/template-article`**
+  with **`?title=`** (appearance query params preserved).
+
+Override with **`provideChromeSearchHandlers`** when search should stay on a
+custom route or do something else:
 
 ```ts
 import { provideChromeSearchHandlers } from '@/composables/useChromeSearch'
@@ -44,9 +53,6 @@ provideChromeSearchHandlers({
 The same handlers drive search at every breakpoint — the Vector inline box
 (and its folded icon below 1120px) and Minerva's full-screen
 **`MobileSearchOverlay`** below 640px.
-
-**Reference:** **`src/prototypes/template-article/`** loads the picked title
-into **`ArticleLive`**.
 
 ## Props
 
@@ -76,8 +82,9 @@ into **`ArticleLive`**.
 - Suggestions render with title, description (when present), and thumbnail.
 - **No off-wiki navigation by default.** Suggestions omit result URLs, the
   Special:Search footer is hidden, and the form action is inert — interaction
-  only emits `select` / `submit`. Prototypes wire those events (or
-  **`provideChromeSearchHandlers`**) to stay in the prototype.
+  only emits `select` / `submit`. Standalone **`Search`** usage must wire those
+  events; **`ChromeWrapper`** applies default in-prototype navigation unless you
+  override with **`provideChromeSearchHandlers`**.
 - Native form submit is prevented so Enter never leaves the page.
 - A pick (or Enter that resolves to a title) clears the field and its
   suggestions, as production does when the new page loads.

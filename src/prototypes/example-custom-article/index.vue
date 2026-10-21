@@ -159,12 +159,8 @@ const leadPhotoUrl = `${import.meta.env.BASE_URL}images/wet-leg-o2-infobox.jpg`
           Longue&rdquo;, and were nominated for Best New Artist.<sup
             id="cite_ref-1"
             class="reference"
-            ><a href="#cite_note-1"
-              >[1]</a
-            ></sup
-          ><sup id="cite_ref-2" class="reference"
-            ><a href="#cite_note-2">[2]</a></sup
-          >
+            ><a href="#cite_note-1">[1]</a></sup
+          ><sup id="cite_ref-2" class="reference"><a href="#cite_note-2">[2]</a></sup>
           They also won Best New Artist and Best British Group at the 2023 Brit Awards.
         </p>
 
@@ -203,16 +199,14 @@ const leadPhotoUrl = `${import.meta.env.BASE_URL}images/wet-leg-o2-infobox.jpg`
               ><a href="#cite_note-5">[5]</a></sup
             >
             and prior to forming Wet Leg was known as RHAIN and was linked to the music scene in
-            Bristol.<sup id="cite_ref-6" class="reference"
-              ><a href="#cite_note-6">[6]</a></sup
-            >
-            As RHAIN, Teasdale performed her song &ldquo;Humdrum Drivel&rdquo; in 2013.<sup
+            Bristol.<sup id="cite_ref-6" class="reference"><a href="#cite_note-6">[6]</a></sup> As
+            RHAIN, Teasdale performed her song &ldquo;Humdrum Drivel&rdquo; in 2013.<sup
               id="cite_ref-7"
               class="reference"
               ><a href="#cite_note-7">[7]</a></sup
             >
-            In 2014, she was photographed by <i>Cosmopolitan</i> magazine while attending the Isle
-            of Wight music festival.<sup id="cite_ref-8" class="reference"
+            In 2014, she was FUCKING photographed by <i>Cosmopolitan</i> magazine while attending
+            the Isle of Wight music festival.<sup id="cite_ref-8" class="reference"
               ><a href="#cite_note-8">[8]</a></sup
             >
           </p>
@@ -227,23 +221,17 @@ const leadPhotoUrl = `${import.meta.env.BASE_URL}images/wet-leg-o2-infobox.jpg`
               class="reference"
               ><a href="#cite_note-10">[10]</a></sup
             >
-            and later signed with Domino Recording Company.<sup
-              id="cite_ref-11"
-              class="reference"
+            and later signed with Domino Recording Company.<sup id="cite_ref-11" class="reference"
               ><a href="#cite_note-11">[11]</a></sup
-            ><sup id="cite_ref-12" class="reference"
-              ><a href="#cite_note-12">[12]</a></sup
-            >
-            Several different explanations have been given for how the band got their name: in a
-            December 2021 interview, they said that they chose the name by picking different emoji
+            ><sup id="cite_ref-12" class="reference"><a href="#cite_note-12">[12]</a></sup> Several
+            different explanations have been given for how the band got their name: in a December
+            2021 interview, they said that they chose the name by picking different emoji
             combinations;<sup id="cite_ref-13" class="reference"
               ><a href="#cite_note-13">[13]</a></sup
             >
             in an April 2022 YouTube interview, the band said it came from an Isle of Wight slang to
             describe non-locals on the island — who had crossed the Solent were said to have a
-            &ldquo;wet leg&rdquo; from getting off the boat.<sup
-              id="cite_ref-14"
-              class="reference"
+            &ldquo;wet leg&rdquo; from getting off the boat.<sup id="cite_ref-14" class="reference"
               ><a href="#cite_note-14">[14]</a></sup
             >
             Former drummer Doug Richards, in a July 2023 interview, alleged that the name stemmed
@@ -290,8 +278,8 @@ const leadPhotoUrl = `${import.meta.env.BASE_URL}images/wet-leg-o2-infobox.jpg`
             Oceanic leg of Love On Tour in 2023.<sup id="cite_ref-20" class="reference"
               ><a href="#cite_note-20">[20]</a></sup
             >
-            Wet Leg appeared on <i>Later&hellip; with Jools Holland</i> in November 2021 and returned
-            for the first part of his next series in May 2022.<sup
+            Wet Leg appeared on <i>Later&hellip; with Jools Holland</i> in November 2021 and
+            returned for the first part of his next series in May 2022.<sup
               id="cite_ref-21"
               class="reference"
               ><a href="#cite_note-21">[21]</a></sup
@@ -314,9 +302,7 @@ const leadPhotoUrl = `${import.meta.env.BASE_URL}images/wet-leg-o2-infobox.jpg`
           <p>
             Wet Leg received their first three nominations at the 65th Annual Grammy Awards,
             including Best New Artist, Best Alternative Music Performance for &ldquo;Chaise
-            Longue&rdquo; and Best Alternative Music Album,<sup
-              id="cite_ref-1-1"
-              class="reference"
+            Longue&rdquo; and Best Alternative Music Album,<sup id="cite_ref-1-1" class="reference"
               ><a href="#cite_note-1">[1]</a></sup
             >
             winning the latter two awards.<sup id="cite_ref-24" class="reference"
@@ -346,8 +332,8 @@ const leadPhotoUrl = `${import.meta.env.BASE_URL}images/wet-leg-o2-infobox.jpg`
               class="reference"
               ><a href="#cite_note-28">[28]</a></sup
             >
-            The track earned them the Grammy
-            Award for Best Remixed Recording, Non-Classical at the 66th Annual Grammy Awards.
+            The track earned them the Grammy Award for Best Remixed Recording, Non-Classical at the
+            66th Annual Grammy Awards.
           </p>
         </section>
 
@@ -357,9 +343,7 @@ const leadPhotoUrl = `${import.meta.env.BASE_URL}images/wet-leg-o2-infobox.jpg`
           <p>
             In March 2025, Wet Leg posted a new photo on their Instagram account with the caption
             &ldquo;We&apos;re so back&rdquo;, indicating that the band was set to return with new
-            music.<sup id="cite_ref-29" class="reference"
-              ><a href="#cite_note-29">[29]</a></sup
-            >
+            music.<sup id="cite_ref-29" class="reference"><a href="#cite_note-29">[29]</a></sup>
             Later that month, the band played a secret show under the name Uma Thurman at the Green
             Door Store in Brighton, during which they performed seven unreleased songs.<sup
               id="cite_ref-30"
@@ -368,18 +352,15 @@ const leadPhotoUrl = `${import.meta.env.BASE_URL}images/wet-leg-o2-infobox.jpg`
             >
             The band's single, &ldquo;Catch These Fists&rdquo;, was released on 1 April 2025,
             coinciding with the announcement of their second album <i>Moisturizer</i>, released on
-            11 July.<sup id="cite_ref-31" class="reference"
-              ><a href="#cite_note-31">[31]</a></sup
-            >
-            The band were referred to in the album&apos;s press materials as &ldquo;the Isle of Wight
-            five-piece&rdquo;, indicating that long-serving touring musicians Henry Holmes, Josh
-            Mobaraki and Ellis Durand had been formally inducted into the band as official members
-            after four years together.<sup id="cite_ref-32" class="reference"
+            11 July.<sup id="cite_ref-31" class="reference"><a href="#cite_note-31">[31]</a></sup>
+            The band were referred to in the album&apos;s press materials as &ldquo;the Isle of
+            Wight five-piece&rdquo;, indicating that long-serving touring musicians Henry Holmes,
+            Josh Mobaraki and Ellis Durand had been formally inducted into the band as official
+            members after four years together.<sup id="cite_ref-32" class="reference"
               ><a href="#cite_note-32">[32]</a></sup
             >
-            Alongside
-            the release of &ldquo;Catch These Fists&rdquo; they announced a UK tour and a North
-            America tour on their Instagram.
+            Alongside the release of &ldquo;Catch These Fists&rdquo; they announced a UK tour and a
+            North America tour on their Instagram.
           </p>
 
           <p>
@@ -422,8 +403,8 @@ const leadPhotoUrl = `${import.meta.env.BASE_URL}images/wet-leg-o2-infobox.jpg`
                   ><a href="#cite_ref-2" aria-label="Jump up">^</a></span
                 >
                 <span class="reference-text">
-                  Horton, Adrian; Lee, Benjamin (6 February 2023). &ldquo;Grammy awards 2023: list of
-                  winners&rdquo;.
+                  Horton, Adrian; Lee, Benjamin (6 February 2023). &ldquo;Grammy awards 2023: list
+                  of winners&rdquo;.
                   <a
                     class="external text"
                     href="https://www.theguardian.com/music/2023/feb/05/grammy-awards-2022-list-of-winners"
@@ -581,8 +562,8 @@ const leadPhotoUrl = `${import.meta.env.BASE_URL}images/wet-leg-o2-infobox.jpg`
                   ><a href="#cite_ref-13" aria-label="Jump up">^</a></span
                 >
                 <span class="reference-text">
-                  Sally Perry (6 December 2021). &ldquo;Wet Leg band name: What&apos;s the origin and
-                  meaning?&rdquo;.
+                  Sally Perry (6 December 2021). &ldquo;Wet Leg band name: What&apos;s the origin
+                  and meaning?&rdquo;.
                   <a
                     class="external text"
                     href="https://onthewight.com/wet-leg-band-name-whats-the-origin-and-meaning-we-have-the-answer-direct-from-the-band"
@@ -730,8 +711,8 @@ const leadPhotoUrl = `${import.meta.env.BASE_URL}images/wet-leg-o2-infobox.jpg`
                   ><a href="#cite_ref-23" aria-label="Jump up">^</a></span
                 >
                 <span class="reference-text">
-                  Andrew Ford (16 July 2022). &ldquo;Wet Leg play live and Allan Clayton takes you on
-                  A Winter&apos;s Journey&rdquo;.
+                  Andrew Ford (16 July 2022). &ldquo;Wet Leg play live and Allan Clayton takes you
+                  on A Winter&apos;s Journey&rdquo;.
                   <a
                     class="external text"
                     href="https://www.abc.net.au/radionational/programs/musicshow/wet-leg-rhian-teasdale-hester-chambers-allan-clayton-winterreise/13975066"
@@ -760,8 +741,8 @@ const leadPhotoUrl = `${import.meta.env.BASE_URL}images/wet-leg-o2-infobox.jpg`
                   ><a href="#cite_ref-25" aria-label="Jump up">^</a></span
                 >
                 <span class="reference-text">
-                  Jon Wilks (11 February 2023). &ldquo;Who are the Morris dancers dancing with Wet Leg
-                  at the Brits?&rdquo;.
+                  Jon Wilks (11 February 2023). &ldquo;Who are the Morris dancers dancing with Wet
+                  Leg at the Brits?&rdquo;.
                   <a
                     class="external text"
                     href="https://tradfolk.co/performance/morris-dancing/morris-dancers-wet-leg-the-brits/"
@@ -790,8 +771,8 @@ const leadPhotoUrl = `${import.meta.env.BASE_URL}images/wet-leg-o2-infobox.jpg`
                   ><a href="#cite_ref-27" aria-label="Jump up">^</a></span
                 >
                 <span class="reference-text">
-                  Emma Wilkes (22 April 2023). &ldquo;Dave Grohl makes cameo appearance during Wet Leg
-                  Coachella set&rdquo;.
+                  Emma Wilkes (22 April 2023). &ldquo;Dave Grohl makes cameo appearance during Wet
+                  Leg Coachella set&rdquo;.
                   <a
                     class="external text"
                     href="https://www.nme.com/en_au/news/music/dave-grohl-makes-cameo-appearance-during-wet-leg-coachella-set-3434142"
@@ -820,8 +801,8 @@ const leadPhotoUrl = `${import.meta.env.BASE_URL}images/wet-leg-o2-infobox.jpg`
                   ><a href="#cite_ref-29" aria-label="Jump up">^</a></span
                 >
                 <span class="reference-text">
-                  Anagricel Duran (17 March 2025). &ldquo;Wet Leg announce their return: &ldquo;We&apos;re
-                  so back&rdquo;&rdquo;.
+                  Anagricel Duran (17 March 2025). &ldquo;Wet Leg announce their return:
+                  &ldquo;We&apos;re so back&rdquo;&rdquo;.
                   <a
                     class="external text"
                     href="https://www.nme.com/news/music/wet-leg-announce-their-return-were-so-back-3846997"
@@ -850,8 +831,9 @@ const leadPhotoUrl = `${import.meta.env.BASE_URL}images/wet-leg-o2-infobox.jpg`
                   ><a href="#cite_ref-31" aria-label="Jump up">^</a></span
                 >
                 <span class="reference-text">
-                  Damian Jones (1 April 2025). &ldquo;Wet Leg announce new album &lsquo;Moisturizer&rsquo;
-                  with thunderous single &lsquo;Catch These Fists&rsquo;&rdquo;.
+                  Damian Jones (1 April 2025). &ldquo;Wet Leg announce new album
+                  &lsquo;Moisturizer&rsquo; with thunderous single &lsquo;Catch These
+                  Fists&rsquo;&rdquo;.
                   <a
                     class="external text"
                     href="https://www.nme.com/news/music/wet-leg-announce-new-album-moisturizer-with-thunderous-single-catch-these-fists-3850978"

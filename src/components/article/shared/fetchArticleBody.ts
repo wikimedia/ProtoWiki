@@ -5,7 +5,7 @@ export type ArticleBody = { html: string; liveTitle: string }
 const articleBodyCache = new Map<string, ArticleBody>()
 const inFlightFetches = new Map<string, Promise<ArticleBody>>()
 
-const STORAGE_PREFIX = 'protowiki:articleBody:v1:'
+const STORAGE_PREFIX = 'protowiki:articleBody:v2:'
 const LOG_PREFIX = '[ProtoWiki][fetchArticleBody]'
 
 function getLocalStorage(): Storage | null {
@@ -81,6 +81,14 @@ export function extractParserOutput(raw: string): string {
   return raw
 }
 
+/** REST `page/html` puts the rendered page title in `<title>` (after redirects). */
+export function liveTitleFromPageHtml(raw: string, requestedTitle: string): string {
+  const titleMatch = raw.match(/<title>([^<]+)<\/title>/i)
+  const parsed = titleMatch?.[1]?.trim()
+  if (parsed && parsed !== 'Redirect') return parsed
+  return requestedTitle.trim().replace(/_/g, ' ')
+}
+
 export interface FetchArticleBodyOptions {
   signal?: AbortSignal
 }
@@ -140,7 +148,7 @@ export async function fetchArticleBody(
       }
       const text = await response.text()
       const html = extractParserOutput(text)
-      const liveTitleResolved = trimmed.replace(/_/g, ' ')
+      const liveTitleResolved = liveTitleFromPageHtml(text, trimmed)
       const body: ArticleBody = { html, liveTitle: liveTitleResolved }
       articleBodyCache.set(key, body)
       saveToStorage(STORAGE_PREFIX, key, body)

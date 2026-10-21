@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import {
   CdxTypeaheadSearch,
   type SearchResult,
@@ -72,16 +72,29 @@ const lang = computed(() => props.host.split('.')[0] ?? 'en')
 
 let abortController: AbortController | null = null
 
-function preventFormSubmit(event: Event) {
+/**
+ * Codex TypeaheadSearch assigns `window.location` on form submit when `selection`
+ * is set; in ProtoWiki that can throw (missing `url`) and must never navigate
+ * off-site. Handle Enter / the search button here instead.
+ */
+function onFormSubmitCapture(event: Event) {
   event.preventDefault()
+  event.stopImmediatePropagation()
+  handleTypeaheadSubmit({
+    searchResult: null,
+    index: -1,
+    numberOfResults: suggestions.value.length,
+  })
 }
 
 onMounted(() => {
-  typeaheadRef.value?.form?.addEventListener('submit', preventFormSubmit)
+  void nextTick(() => {
+    typeaheadRef.value?.form?.addEventListener('submit', onFormSubmitCapture, true)
+  })
 })
 
 onBeforeUnmount(() => {
-  typeaheadRef.value?.form?.removeEventListener('submit', preventFormSubmit)
+  typeaheadRef.value?.form?.removeEventListener('submit', onFormSubmitCapture, true)
 })
 
 class OpenSearchFetchError extends Error {
@@ -135,9 +148,29 @@ interface EnterSuggestionResolution {
   pickedHighlightedRow: boolean
 }
 
+/** Codex sets `selection` when Enter confirms a keyboard-highlighted menu row. */
+function titleFromTypeaheadSelection(): string | undefined {
+  const typeahead = typeaheadRef.value
+  if (!typeahead) return undefined
+
+  const raw = typeahead.selection
+  if (raw == null || raw === '') return undefined
+
+  const key = String(raw)
+  const matched = suggestions.value.find(
+    (s) => String(s.value) === key || resultTitle(s) === key,
+  )
+  return matched ? resultTitle(matched) : key
+}
+
 function resolveSuggestionTitleForEnter(): EnterSuggestionResolution | undefined {
   const fetchQuery = suggestionsQuery.value.trim()
   if (!fetchQuery.length || suggestions.value.length === 0) return undefined
+
+  const fromSelection = titleFromTypeaheadSelection()
+  if (fromSelection) {
+    return { title: fromSelection, pickedHighlightedRow: true }
+  }
 
   const input = currentInputQuery()
   const matchedRow = suggestions.value.find((s) => resultTitle(s) === input)
@@ -190,6 +223,7 @@ function clearSearchInput(): void {
   if (!typeahead) return
 
   typeahead.inputValue = ''
+  typeahead.selection = null
   blurSearchInput()
 }
 
@@ -350,7 +384,15 @@ function onSearchResultClick(payload: SearchResultClickEvent) {
   emit('select', title)
 }
 
-function onSubmit(_payload: SearchResultClickEvent) {
+function handleTypeaheadSubmit(payload: SearchResultClickEvent) {
+  const fromPayload = payload.searchResult ? resultTitle(payload.searchResult) : undefined
+  if (fromPayload) {
+    pendingSubmitQuery = null
+    clearSearchInput()
+    emit('select', fromPayload)
+    return
+  }
+
   const fetchTerm = searchTermForFetch()
   if (!currentInputQuery() && !fetchTerm) return
 
@@ -385,7 +427,6 @@ function onSubmit(_payload: SearchResultClickEvent) {
       show-thumbnail
       @input="onInput"
       @search-result-click="onSearchResultClick"
-      @submit="onSubmit"
     />
   </div>
 </template>

@@ -1,6 +1,6 @@
 import type { InArticleWikiLinkNavigation } from '@/composables/useInArticleWikiLinks'
 
-import { wikiTitleFromArticleHref } from './wikiTitleFromArticleHref'
+import { citationHashFromHref, wikiTitleFromArticleHref } from './wikiTitleFromArticleHref'
 
 function wikiHrefFromAnchor(anchor: HTMLAnchorElement): string {
   return anchor.dataset.protowikiWikiHref ?? anchor.getAttribute('href') ?? ''
@@ -27,6 +27,13 @@ export function rewriteInArticleWikiLinkHrefs(
 
     const rawHref = anchor.getAttribute('href')
     if (!rawHref) return
+
+    const citationHash = citationHashFromHref(rawHref)
+    if (citationHash) {
+      anchor.href = citationHash
+      return
+    }
+
     if (!anchor.dataset.protowikiWikiHref) {
       anchor.dataset.protowikiWikiHref = rawHref
     }

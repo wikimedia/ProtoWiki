@@ -184,8 +184,8 @@ export const DEFAULT_API_CONTACT = 'lwilson-ctr@wikimedia.org'
 
 export const CONFIG_USER_DISPLAY_NAMES: Partial<Record<ConfigUser, string>> = {
   'logged-out': 'LoggedOut',
-  new: 'NewEditor',
-  experienced: 'ExperiencedEditor',
+  new: 'New user',
+  experienced: 'Experienced editor',
 }
 
 export const CONFIG_USER_MENU_ITEMS: { value: ConfigUser; label: string; description?: string }[] = [
@@ -268,6 +268,42 @@ export function formatPageList(pages: string[]): string {
   return pages.join(', ')
 }
 
+/** Trim and treat underscores like spaces — same as article chrome titles. */
+export function normalizeWikiPageTitleInput(raw: string): string {
+  return raw.trim().replace(/_/g, ' ')
+}
+
+/** @deprecated Use {@link normalizeWikiPageTitleInput}. */
+export const normalizePageListTitle = normalizeWikiPageTitleInput
+
+export function pageListContains(pages: string[], pageTitle: string): boolean {
+  const key = normalizeWikiPageTitleInput(pageTitle)
+  if (!key.length) return false
+  return pages.includes(key)
+}
+
+export function togglePageInList(
+  pages: string[],
+  pageTitle: string,
+  options: { prepend?: boolean } = {},
+): string[] {
+  const key = normalizeWikiPageTitleInput(pageTitle)
+  if (!key.length) return [...pages]
+  const index = pages.indexOf(key)
+  if (index >= 0) {
+    return pages.filter((_, i) => i !== index)
+  }
+  return options.prepend ? [key, ...pages] : [...pages, key]
+}
+
+/** Add or move a page to the front (canonical title). */
+export function prependPageInList(pages: string[], pageTitle: string): string[] {
+  const key = normalizeWikiPageTitleInput(pageTitle)
+  if (!key.length) return [...pages]
+  const rest = pages.filter((page) => normalizeWikiPageTitleInput(page) !== key)
+  return [key, ...rest]
+}
+
 export function resetUserPageLists(user: ConfigUser): UserPageLists {
   return cloneUserPageLists(DEFAULT_USER_PAGE_LISTS[user])
 }
@@ -307,7 +343,9 @@ const VALID_THEMES: ConfigTheme[] = ['light', 'dark', 'system']
 const VALID_CONFIG_APP_PLATFORMS: ConfigAppPlatform[] = ['auto', 'ios', 'android']
 const VALID_WEB_SKINS: ConfigWebSkin[] = ['auto', 'desktop', 'mobile']
 const VALID_USERS: ConfigUser[] = ['logged-out', 'new', 'experienced', 'real']
-const PAGE_LIST_KEYS: PageListKey[] = ['watchlist', 'readingList', 'editedPages']
+export const PAGE_LIST_FIELD_KEYS: PageListKey[] = ['watchlist', 'readingList', 'editedPages']
+
+const PAGE_LIST_KEYS = PAGE_LIST_FIELD_KEYS
 
 function isConfigTheme(value: unknown): value is ConfigTheme {
   return typeof value === 'string' && VALID_THEMES.includes(value as ConfigTheme)

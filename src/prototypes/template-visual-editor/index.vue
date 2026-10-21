@@ -18,9 +18,9 @@ import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import ArticleLive from '@/components/article/ArticleLive.vue'
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 import SettingsPopover from '@/components/settings/SettingsPopover.vue'
-import { provideChromeSearchHandlers } from '@/composables/useChromeSearch'
 import { useWikiPageTitleQuery } from '@/composables/useWikiPageTitleQuery'
 import { globalSkin } from '@/theme'
+import { ARTICLE_TEMPLATE_PATH, SAVED_PAGES_TEMPLATE_PATH } from '@/composables/webTemplatePaths'
 
 import SuggestionSettingsPanel from '@/components/settings/SuggestionSettingsPanel.vue'
 
@@ -34,22 +34,16 @@ const suggestionCount = ref<number | null>(null)
 
 const article = computed(() => titleFromQuery.value)
 
-provideChromeSearchHandlers({
-  onSelect(title) {
-    setWikiPageTitle(title)
-  },
-  onSubmit({ title }) {
-    if (!title) setWikiPageTitle(title)
-  },
-})
-
 function onTitleResolved(title: string) {
   if (title?.trim()) setWikiPageTitle(title)
 }
 </script>
 
 <template>
-  <ChromeWrapper :show-footer="!(isMobile && editing)">
+  <ChromeWrapper
+    :show-footer="!(isMobile && editing)"
+    :saved-pages-route="SAVED_PAGES_TEMPLATE_PATH"
+  >
     <template v-if="isMobile && editing" #header><span /></template>
 
     <template #menu>
@@ -87,7 +81,9 @@ function onTitleResolved(title: string) {
       v-model:suggestion-count="suggestionCount"
       editable
       start-in-edit-mode
-      read-route="/template-article"
+      :read-route="ARTICLE_TEMPLATE_PATH"
+      :wiki-link-route="ARTICLE_TEMPLATE_PATH"
+      :saved-pages-route="SAVED_PAGES_TEMPLATE_PATH"
       :article="article"
       @title-resolved="onTitleResolved"
     />

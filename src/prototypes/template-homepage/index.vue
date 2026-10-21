@@ -43,7 +43,7 @@ definePage({
 
 <template>
   <ChromeWrapper :last-edited-notice="false">
-    <SpecialPageWrapper :title="pageTitle" help>
+    <SpecialPageWrapper :title="pageTitle">
       <div class="prototype-dashpage-shell">
         <Dashboard>
           <template #banner>

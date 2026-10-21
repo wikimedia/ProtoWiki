@@ -22,7 +22,7 @@ export interface ImpactData {
   activityEndDate?: string
   mostViewed?: ImpactMostViewedArticle[]
   viewAllEditsHref?: string
-  /** Titles edited (namespace 0) — used to sync config editedPages. */
+  /** Unique article titles from recent namespace-0 contribs (impact fetch only). */
   editedPageTitles?: string[]
 }
 

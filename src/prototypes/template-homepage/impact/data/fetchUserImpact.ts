@@ -17,9 +17,15 @@ const METRICS_HOST = 'wikimedia.org'
 const TOP_MOST_VIEWED = 3
 /** Max unique edited articles to query for pageviews (serial); then keep top 3 by views. */
 const MAX_PAGEVIEW_ARTICLES = 15
-const MAX_CONTRIB_PAGES = 5
-const CONTRIBS_PER_PAGE = 500
+const MAX_CONTRIB_PAGES = 1
+const CONTRIBS_PER_PAGE = 30
 const ACTIVITY_DAYS = 60
+
+/** Unique article titles derived from `list=usercontribs` (namespace 0), most recent first. */
+export const REAL_USER_EDITED_PAGES_MAX_CONTRIBS = MAX_CONTRIB_PAGES * CONTRIBS_PER_PAGE
+
+/** Mock user settings — Edited pages field when Real user is selected. */
+export const REAL_USER_EDITED_PAGES_FIELD_DESCRIPTION = `From last ${REAL_USER_EDITED_PAGES_MAX_CONTRIBS} edits`
 
 export class FetchUserImpactError extends Error {
   constructor(
@@ -38,6 +44,11 @@ export interface FetchUserImpactOptions {
   lang?: string
 }
 
+export interface FetchRealUserEditedPageTitlesOptions {
+  signal?: AbortSignal
+  lang?: string
+}
+
 interface UserContrib {
   title: string
   timestamp: string
@@ -49,13 +60,110 @@ function assertNotAborted(signal?: AbortSignal): void {
   }
 }
 
-async function fetchJson(url: string, signal?: AbortSignal): Promise<unknown> {
+async function fetchJson(
+  url: string,
+  signal?: AbortSignal,
+  apiPurpose = 'user-impact',
+): Promise<unknown> {
   assertNotAborted(signal)
-  const response = await fetch(url, { signal, headers: wikimediaApiFetchHeaders('user-impact') })
+  const response = await fetch(url, { signal, headers: wikimediaApiFetchHeaders(apiPurpose) })
   if (!response.ok) {
     throw new FetchUserImpactError(`HTTP ${response.status}`, 'http')
   }
   return response.json()
+}
+
+function contribTitleTimestamps(contribs: UserContrib[]): Map<string, string> {
+  const titleToLatestEdit = new Map<string, string>()
+  for (const c of contribs) {
+    if (!titleToLatestEdit.has(c.title)) {
+      titleToLatestEdit.set(c.title, c.timestamp)
+    }
+  }
+  return titleToLatestEdit
+}
+
+function editedPageTitlesFromContribs(contribs: UserContrib[]): string[] {
+  return [...contribTitleTimestamps(contribs).keys()]
+}
+
+async function fetchUserArticleContribs(
+  username: string,
+  wikiHost: string,
+  signal?: AbortSignal,
+  apiPurpose = 'user-impact',
+): Promise<UserContrib[]> {
+  const allContribs: UserContrib[] = []
+  let uccontinue: string | undefined
+
+  for (let page = 0; page < MAX_CONTRIB_PAGES; page++) {
+    assertNotAborted(signal)
+    const params: Record<string, string> = {
+      action: 'query',
+      list: 'usercontribs',
+      ucuser: username,
+      ucnamespace: '0',
+      uclimit: String(CONTRIBS_PER_PAGE),
+    }
+    if (uccontinue) params.uccontinue = uccontinue
+
+    const json = (await fetchJson(actionUrl(wikiHost, params), signal, apiPurpose)) as {
+      query?: { usercontribs?: UserContrib[] }
+      continue?: { uccontinue?: string }
+    }
+
+    const batch = json.query?.usercontribs ?? []
+    allContribs.push(...batch)
+
+    uccontinue = json.continue?.uccontinue
+    if (!uccontinue) break
+  }
+
+  return allContribs
+}
+
+/**
+ * Article titles from recent namespace-0 contribs — for mock user settings only.
+ * Does not load Impact metrics (pageviews, activity chart, etc.).
+ */
+export async function fetchRealUserEditedPageTitles(
+  rawUsername: string,
+  options: FetchRealUserEditedPageTitlesOptions = {},
+): Promise<string[]> {
+  const { signal, lang = 'en' } = options
+  const wikiHost = wikiHostFromLang(lang)
+  const username = normalizeWikiUsername(rawUsername)
+  if (!username.length) {
+    throw new FetchUserImpactError('Enter a Wikipedia username', 'missing_username')
+  }
+
+  assertNotAborted(signal)
+
+  const usersJson = (await fetchJson(
+    actionUrl(wikiHost, {
+      action: 'query',
+      list: 'users',
+      ususers: username,
+      usprop: 'editcount',
+    }),
+    signal,
+    'real-user-edited-pages',
+  )) as {
+    query?: { users?: { name?: string; missing?: boolean }[] }
+  }
+
+  const userInfo = usersJson.query?.users?.[0]
+  if (!userInfo || userInfo.missing) {
+    throw new FetchUserImpactError(`User "${username}" not found`, 'user_not_found')
+  }
+
+  const contribs = await fetchUserArticleContribs(
+    username,
+    wikiHost,
+    signal,
+    'real-user-edited-pages',
+  )
+  return editedPageTitlesFromContribs(contribs)
 }
 
 function actionUrl(wikiHost: string, params: Record<string, string>): string {
@@ -239,7 +347,9 @@ async function fetchPageviewsSince(
 
   try {
     assertNotAborted(signal)
-    const response = await fetch(url, { signal, headers: wikimediaApiFetchHeaders('user-impact') })
+    // No `Api-User-Agent` here: that header triggers a CORS preflight, and wikimedia.org
+    // metrics returns 405 on OPTIONS, so browser fetches would fail silently.
+    const response = await fetch(url, { signal })
     if (!response.ok) {
       return { total: 0, daily: [] }
     }
@@ -329,31 +439,7 @@ export async function fetchUserImpact(
 
   assertNotAborted(signal)
 
-  const allContribs: UserContrib[] = []
-  let uccontinue: string | undefined
-
-  for (let page = 0; page < MAX_CONTRIB_PAGES; page++) {
-    assertNotAborted(signal)
-    const params: Record<string, string> = {
-      action: 'query',
-      list: 'usercontribs',
-      ucuser: username,
-      ucnamespace: '0',
-      uclimit: String(CONTRIBS_PER_PAGE),
-    }
-    if (uccontinue) params.uccontinue = uccontinue
-
-    const json = (await fetchJson(actionUrl(wikiHost, params), signal)) as {
-      query?: { usercontribs?: UserContrib[] }
-      continue?: { uccontinue?: string }
-    }
-
-    const batch = json.query?.usercontribs ?? []
-    allContribs.push(...batch)
-
-    uccontinue = json.continue?.uccontinue
-    if (!uccontinue) break
-  }
+  const allContribs = await fetchUserArticleContribs(username, wikiHost, signal)
 
   const lastEdited = allContribs[0]
     ? formatRelativeTime(allContribs[0].timestamp)
@@ -365,13 +451,7 @@ export async function fetchUserImpact(
   const { recentActivityData, activityStartDate, activityEndDate } =
     buildActivityHistogram(allContribs)
 
-  const titleToLatestEdit = new Map<string, string>()
-  for (const c of allContribs) {
-    if (!titleToLatestEdit.has(c.title)) {
-      titleToLatestEdit.set(c.title, c.timestamp)
-    }
-  }
-
+  const titleToLatestEdit = contribTitleTimestamps(allContribs)
   const editedPageTitles = [...titleToLatestEdit.keys()]
 
   onProgress?.({

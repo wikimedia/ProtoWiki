@@ -33,7 +33,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  publish: [summary: string]
+  publish: [summary: string, options: { watchPage: boolean }]
 }>()
 
 const isMobile = computed(() => props.skin === 'mobile')
@@ -94,7 +94,7 @@ async function publish() {
   pending.value = true
   await new Promise((r) => setTimeout(r, 800))
   pending.value = false
-  emit('publish', summary.value)
+  emit('publish', summary.value, { watchPage: watchPage.value })
 }
 
 /** Word-level diff for the visual review. */

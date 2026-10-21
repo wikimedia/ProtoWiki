@@ -43,6 +43,8 @@ interface Props {
    * When true, default tool controls open prototyping settings; wordmarks link to the Main Page.
    */
   prototypingSettings?: boolean
+  /** Forwarded to Vector chrome — bookmark links to saved pages template. */
+  savedPagesRoute?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -57,6 +59,7 @@ const props = withDefaults(defineProps<Props>(), {
   middle: undefined,
   right: undefined,
   prototypingSettings: true,
+  savedPagesRoute: undefined,
 })
 
 const slots = useSlots()
@@ -96,7 +99,8 @@ const minervaUserSettingsComponent = defineComponent({
                 h(CdxIcon, { icon: cdxIconUserAvatarOutline, size: 'medium' }),
             },
           ),
-        panel: () => h(UserSettingsPanel),
+        panel: ({ open }: { open: boolean }) =>
+          h(UserSettingsPanel, { settingsOpen: open }),
       })
   },
 })
@@ -182,6 +186,7 @@ const minervaRight = computed((): HeaderItem[] | undefined => {
     :tagline-src="props.taglineSrc"
     :nav-tools="props.navTools"
     :prototyping-settings="props.prototypingSettings"
+    :saved-pages-route="props.savedPagesRoute"
   >
     <template v-if="slots.menu" #menu>
       <slot name="menu" />

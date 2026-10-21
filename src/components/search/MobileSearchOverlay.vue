@@ -3,7 +3,7 @@
  * Full-screen mobile search, the way Minerva does it: the search icon swaps the
  * chrome for a search field over a list of title suggestions.
  *
- * Picks go to the page's `provideChromeSearchHandlers`, same as the desktop
+ * Picks use `useChromeSearchHandlers` (defaults or `provideChromeSearchHandlers`), same as desktop
  * inline search: a plain click calls `onSelect`, Enter calls `onSubmit` with the
  * first suggestion. Rows stay real links to the wiki, so a modified click opens
  * a new tab — but a plain click never leaves the prototype.

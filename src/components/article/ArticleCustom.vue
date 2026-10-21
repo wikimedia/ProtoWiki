@@ -34,6 +34,7 @@ interface Props {
   editable?: boolean
   /** Open edit mode once hand-authored body HTML is captured (**`editable`** only). */
   startInEditMode?: boolean
+  savedPagesRoute?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -49,6 +50,7 @@ const props = withDefaults(defineProps<Props>(), {
   leadImageUrl: undefined,
   editable: false,
   startInEditMode: false,
+  savedPagesRoute: undefined,
 })
 
 const editing = defineModel<boolean>('editing', { default: false })
@@ -144,6 +146,7 @@ watch([editCount, editCountReady], () => {
       :description="props.description"
       :lead-image-url="props.leadImageUrl"
       :active-view="editing ? 'edit' : 'read'"
+      :saved-pages-route="props.savedPagesRoute"
       @edit-click="onEditClick()"
       @read-click="onReadClick()"
     >
@@ -187,6 +190,7 @@ watch([editCount, editCountReady], () => {
     :app="props.app"
     :description="props.description"
     :lead-image-url="props.leadImageUrl"
+    :saved-pages-route="props.savedPagesRoute"
   >
     <ArticleRenderer
       :lang="props.lang"

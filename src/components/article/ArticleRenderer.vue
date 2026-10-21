@@ -68,7 +68,12 @@ function syncInArticleWikiLinks() {
 }
 
 watch(
-  [mwParserOutputRef, () => articleWikiHost?.value, inArticleWikiLinkHandler, () => route.fullPath],
+  [
+    mwParserOutputRef,
+    () => articleWikiHost?.value,
+    () => inArticleWikiLinkHandler,
+    () => route.fullPath,
+  ],
   () => {
     syncInArticleWikiLinks()
   },

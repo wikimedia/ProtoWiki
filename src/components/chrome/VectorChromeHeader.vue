@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import {
   cdxIconAppearance,
   cdxIconBell,
-  cdxIconBookmark,
+  cdxIconBookmarkList,
   cdxIconDownTriangle,
   cdxIconMenu,
   cdxIconSearch,
@@ -23,6 +23,7 @@ import { useWordmarkMainPageLink } from '@/composables/useWordmarkMainPageLink'
 import { DEFAULT_CHROME_NAV_TOOLS, type ChromeNavTool } from './headerNavTools'
 import { globalTheme } from '@/theme'
 import type { Theme } from '@/theme'
+import { preservedQueryFromLocationQuery } from '@/appearance/url-query'
 import Search, { type SearchSubmitPayload } from '../Search.vue'
 
 const chromeSearchHandlers = useChromeSearchHandlers()
@@ -56,6 +57,8 @@ interface Props {
    * When true, appearance and user tools open prototyping settings; wordmark links to the Main Page.
    */
   prototypingSettings?: boolean
+  /** When set, desktop bookmark tool links here (web template cluster). */
+  savedPagesRoute?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -65,7 +68,11 @@ const props = withDefaults(defineProps<Props>(), {
   taglineSrc: undefined,
   navTools: undefined,
   prototypingSettings: true,
+  savedPagesRoute: undefined,
 })
+
+const route = useRoute()
+const router = useRouter()
 
 const effectiveTheme = computed<Theme>(() => props.theme ?? globalTheme.value)
 
@@ -107,6 +114,20 @@ function handleSearchSelect(title: string) {
 
 function handleSearchSubmit(payload: SearchSubmitPayload) {
   chromeSearchHandlers?.onSubmit?.(payload)
+}
+
+const savedPagesTo = computed(() => {
+  if (!props.savedPagesRoute?.length) return null
+  return {
+    path: props.savedPagesRoute,
+    query: preservedQueryFromLocationQuery(route.query),
+  }
+})
+
+function goToSavedPages(): void {
+  const location = savedPagesTo.value
+  if (!location) return
+  void router.push(location)
 }
 </script>
 
@@ -209,8 +230,8 @@ function handleSearchSubmit(payload: SearchSubmitPayload) {
                 </a>
               </span>
             </template>
-            <template #panel>
-              <UserSettingsPanel />
+            <template #panel="{ open: settingsOpen }">
+              <UserSettingsPanel :settings-open="settingsOpen" />
             </template>
           </SettingsPopover>
           <div
@@ -270,8 +291,13 @@ function handleSearchSubmit(payload: SearchSubmitPayload) {
           <CdxButton v-if="navHas('notices')" weight="quiet" aria-label="Notices">
             <CdxIcon :icon="cdxIconTray" />
           </CdxButton>
-          <CdxButton v-if="navHas('bookmarks')" weight="quiet" aria-label="Bookmarks">
-            <CdxIcon :icon="cdxIconBookmark" />
+          <CdxButton
+            v-if="navHas('bookmarks')"
+            weight="quiet"
+            :aria-label="savedPagesTo ? 'Saved pages' : 'Bookmarks'"
+            @click="goToSavedPages"
+          >
+            <CdxIcon :icon="cdxIconBookmarkList" />
           </CdxButton>
           <CdxButton v-if="navHas('watchlist')" weight="quiet" aria-label="Watchlist">
             <CdxIcon :icon="cdxIconWatchlist" />
@@ -295,8 +321,8 @@ function handleSearchSubmit(payload: SearchSubmitPayload) {
                     />
                   </CdxButton>
                 </template>
-                <template #panel>
-                  <UserSettingsPanel />
+                <template #panel="{ open: settingsOpen }">
+                  <UserSettingsPanel :settings-open="settingsOpen" />
                 </template>
               </SettingsPopover>
               <CdxButton v-else weight="quiet" aria-label="User menu" aria-haspopup="menu">

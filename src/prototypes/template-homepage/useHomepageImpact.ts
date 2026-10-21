@@ -1,4 +1,4 @@
-import { computed, watch, type ComputedRef } from 'vue'
+import { computed, type ComputedRef } from 'vue'
 
 import { useConfig } from '@/composables/useConfig'
 import { useRealUserImpact } from './impact/data/useRealUserImpact'
@@ -22,18 +22,8 @@ export function useHomepageImpact(): {
   impactDesktopProps: ComputedRef<ImpactModuleBind>
   onImpactRefresh: () => void
 } {
-  const { user, realUsername, realLang, setCurrentUserPageList } = useConfig()
+  const { user, realUsername, realLang } = useConfig()
   const realImpact = useRealUserImpact(realUsername, realLang)
-
-  watch(
-    [() => user.value, realImpact.editedPageTitles],
-    ([activeUser, titles]) => {
-      if (activeUser === 'real' && titles.length > 0) {
-        setCurrentUserPageList('editedPages', [...titles])
-      }
-    },
-    { immediate: true },
-  )
 
   function realUserBind(): ImpactModuleBind {
     if (shouldShowLoadPrompt(realImpact.hasStarted.value, realImpact.hasRenderableData.value)) {

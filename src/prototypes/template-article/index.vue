@@ -16,22 +16,17 @@ import { computed } from 'vue'
 
 import ArticleLive from '@/components/article/ArticleLive.vue'
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
-import { provideChromeSearchHandlers } from '@/composables/useChromeSearch'
 import { useWikiPageTitleQuery } from '@/composables/useWikiPageTitleQuery'
+import {
+  ARTICLE_TEMPLATE_PATH,
+  SAVED_PAGES_TEMPLATE_PATH,
+  VISUAL_EDITOR_TEMPLATE_PATH,
+} from '@/composables/webTemplatePaths'
 
 const { titleFromQuery, setWikiPageTitle } = useWikiPageTitleQuery()
 
 /** Fixed title from `?title=`; omit prop for random article when absent. */
 const article = computed(() => titleFromQuery.value)
-
-provideChromeSearchHandlers({
-  onSelect(title) {
-    if (title?.trim()) setWikiPageTitle(title)
-  },
-  onSubmit({ title }) {
-    if (title) setWikiPageTitle(title)
-  },
-})
 
 function onTitleResolved(title: string) {
   if (title?.trim()) setWikiPageTitle(title)
@@ -39,9 +34,11 @@ function onTitleResolved(title: string) {
 </script>
 
 <template>
-  <ChromeWrapper>
+  <ChromeWrapper :saved-pages-route="SAVED_PAGES_TEMPLATE_PATH">
     <ArticleLive
-      edit-route="/template-visual-editor"
+      :edit-route="VISUAL_EDITOR_TEMPLATE_PATH"
+      :wiki-link-route="ARTICLE_TEMPLATE_PATH"
+      :saved-pages-route="SAVED_PAGES_TEMPLATE_PATH"
       :article="article"
       @title-resolved="onTitleResolved"
     />

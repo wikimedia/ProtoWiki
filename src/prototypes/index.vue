@@ -109,8 +109,8 @@ const docsUrl = `${PROTOWIKI_API_PROJECT_URL}#prototyping-system`
               <CdxIcon :icon="cdxIconUserAvatar" />
             </CdxButton>
           </template>
-          <template #panel>
-            <UserSettingsPanel />
+          <template #panel="{ open: settingsOpen }">
+            <UserSettingsPanel :settings-open="settingsOpen" />
           </template>
         </SettingsPopover>
       </div>
