@@ -1,0 +1,134 @@
+Index: dist/modules/CdxTable.cjs
+===================================================================
+--- dist/modules/CdxTable.cjs
++++ dist/modules/CdxTable.cjs
+@@ -35,12 +35,12 @@
+         btnLabelNext: p,
+         btnLabelPrev: g,
+         btnLabelLast: b,
+         wrappedItemsPerPage: s,
+-        cdxIconPrevious: f.D8,
+-        cdxIconNext: f.A8,
+-        cdxIconMoveFirst: f.i8,
+-        cdxIconMoveLast: f.p8,
++        cdxIconPrevious: f.U8,
++        cdxIconNext: f.x8,
++        cdxIconMoveFirst: f.H8,
++        cdxIconMoveLast: f.V8,
+       }
+     },
+   }),
+   ie = { class: 'cdx-table-pager' },
+@@ -165,9 +165,9 @@
+ }
+ const be = P._export_sfc(se, [['render', ge]]),
+   me = y.makeStringTypeValidator(y.TableTextAlignments),
+   ve = y.makeStringTypeValidator(y.TablePaginationPositions),
+-  fe = { none: f.H9, asc: f.nc, desc: f.M6 },
++  fe = { none: f.e9, asc: f.ac, desc: f.H6 },
+   he = { none: 'none', asc: 'ascending', desc: 'descending' },
+   Se = e.defineComponent({
+     name: 'CdxTable',
+     components: { CdxCheckbox: ae, CdxIcon: f.CdxIcon, CdxTablePager: be, CdxProgressBar: le },
+@@ -252,14 +252,14 @@
+         d = e.computed(() => s.value + g.value),
+         l = e.computed(() => p.value),
+         h = e.computed(() => s.value <= 0),
+         m = e.computed(() => (p.value ? g.value < i.value : s.value + i.value >= u.value)),
+-        D = c(
++        x = c(
+           'cdx-table-pagination-status-message-determinate-short',
+           (a, o, r) => ''.concat(a, '–').concat(o, ' of ').concat(r),
+           [b, d, u],
+         ),
+-        x = c(
++        D = c(
+           'cdx-table-pagination-status-message-determinate-long',
+           (a, o, r) => 'Showing results '.concat(a, '–').concat(o, ' of ').concat(r),
+           [b, d, u],
+         ),
+@@ -279,12 +279,12 @@
+           [g],
+         ),
+         V = c('cdx-table-pagination-status-message-pending', 'Loading results...'),
+         R = e.computed(() =>
+-          t.pending ? V.value : p.value && m.value ? B.value : p.value ? E.value : D.value,
++          t.pending ? V.value : p.value && m.value ? B.value : p.value ? E.value : x.value,
+         ),
+         I = e.computed(() =>
+-          t.pending ? V.value : p.value && m.value ? B.value : p.value ? L.value : x.value,
++          t.pending ? V.value : p.value && m.value ? B.value : p.value ? L.value : D.value,
+         )
+       function F() {
+         ;((s.value += i.value), t.serverPagination && n('load-more', s.value, i.value))
+       }
+@@ -307,10 +307,10 @@
+       const C = $(e.toRef(t, 'selectedRows'), n, 'update:selectedRows'),
+         w = e.ref(u.value === C.value.length),
+         k = e.ref(!1),
+         A = e.computed(() => Object.keys(t.sort)[0]),
+-        M = e.computed(() => t.columns.some((a) => a.allowSort)),
+-        q = e.computed(() => {
++        q = e.computed(() => t.columns.some((a) => a.allowSort)),
++        M = e.computed(() => {
+           var o
+           return {
+             'cdx-table__table--layout-fixed':
+               (o = t.columns) == null ? void 0 : o.some((r) => 'width' in r || 'minWidth' in r),
+@@ -406,10 +406,10 @@
+         wrappedSelectedRows: C,
+         selectAll: w,
+         selectAllIndeterminate: k,
+         activeSortColumn: A,
+-        hasSortableColumns: M,
+-        tableClasses: q,
++        hasSortableColumns: q,
++        tableClasses: M,
+         tableWrapperClasses: O,
+         getRowKey: N,
+         getRowClass: K,
+         getRowHeaderScope: j,
+@@ -436,10 +436,10 @@
+   Ve = { key: 0 },
+   _e = { key: 0, class: 'cdx-table__table__select-rows' },
+   $e = ['aria-sort'],
+   Pe = ['aria-selected', 'onClick'],
+-  De = { class: 'cdx-table__table__sort-label' },
+-  xe = { key: 0 },
++  xe = { class: 'cdx-table__table__sort-label' },
++  De = { key: 0 },
+   Ee = { key: 0 },
+   Le = { key: 1 },
+   Re = { class: 'cdx-table__table__empty-state' },
+   Ie = ['colspan'],
+@@ -622,9 +622,9 @@
+                                         },
+                                         [
+                                           e.createElementVNode(
+                                             'span',
+-                                            De,
++                                            xe,
+                                             e.toDisplayString(l.label),
+                                             1,
+                                           ),
+                                           e.createVNode(
+@@ -668,9 +668,9 @@
+                 : e.createCommentVNode('v-if', !0),
+               e.renderSlot(t.$slots, 'tbody', {}, () => [
+                 t.dataForDisplay.length > 0
+                   ? (e.openBlock(),
+-                    e.createElementBlock('tbody', xe, [
++                    e.createElementBlock('tbody', De, [
+                       (e.openBlock(!0),
+                       e.createElementBlock(
+                         e.Fragment,
+                         null,
+@@ -840,6 +840,6 @@
+         : e.createCommentVNode('v-if', !0),
+     ])
+   )
+ }
+-const Me = P._export_sfc(Se, [['render', Ae]])
+-module.exports = Me
++const qe = P._export_sfc(Se, [['render', Ae]])
++module.exports = qe
