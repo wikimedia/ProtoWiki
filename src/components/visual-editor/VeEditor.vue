@@ -41,6 +41,7 @@ import {
   type Finding,
 } from './engine/checks'
 import { resolveRedirect } from './engine/api'
+import { normalizeHandAuthoredReferences } from './engine/dom'
 import { addTemplateChips, stripTemplateChips } from './engine/templateChips'
 import {
   addReferenceChecks,
@@ -1297,11 +1298,17 @@ function closeCitoid() {
 const existingReferences = computed<ExistingReference[]>(() => {
   void citoid.value
   const list: ExistingReference[] = []
-  surfaceRef.value?.querySelectorAll('ol.mw-references > li').forEach((li, i) => {
-    const text = li.querySelector('.mw-reference-text')
-    if (!text) return
-    list.push({ label: `[${i + 1}]`, html: text.innerHTML })
-  })
+  surfaceRef.value
+    ?.querySelectorAll('ol.mw-references > li, ol.references > li')
+    .forEach((li, i) => {
+      const text = li.querySelector('.mw-reference-text, .reference-text')
+      if (!text) return
+      const labelMatch = li.id.match(/^cite_note-(\d+)$/)
+      list.push({
+        label: labelMatch ? `[${labelMatch[1]}]` : `[${i + 1}]`,
+        html: text.innerHTML,
+      })
+    })
   return list
 })
 
@@ -1333,12 +1340,15 @@ onMounted(async () => {
   const surface = surfaceRef.value!
   const minimumLoad = new Promise((resolve) => setTimeout(resolve, isMobile.value ? 1200 : 1000))
   surface.innerHTML = props.html
+  normalizeHandAuthoredReferences(surface)
   // Chips need layout (they mark templates that render nothing), so before hiding sections.
   addTemplateChips(surface)
   if (sectionOnly.value) applySectionOnly(sectionOnly.value)
   // Media, references and templates are edited through dialogs, not typed into.
   surface
-    .querySelectorAll('figure, sup.mw-ref, [typeof~="mw:Transclusion"], table.infobox, .navbox, .reflist, ol.mw-references, style')
+    .querySelectorAll(
+      'figure, sup.mw-ref, [typeof~="mw:Transclusion"], table.infobox, .navbox, .reflist, ol.mw-references, ol.references, style',
+    )
     .forEach((el) => el.setAttribute('contenteditable', 'false'))
   originalBlocks = new WeakSet(Array.from(surface.querySelectorAll(BLOCK_SELECTOR)))
   surface.querySelectorAll(DIFF_BLOCKS).forEach((el) => {

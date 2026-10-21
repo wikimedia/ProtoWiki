@@ -5,7 +5,14 @@
  * ones). Ports `PasteCheck.js`, `LLMPasteCheck.js`, `AddReferenceEditCheck.js`
  * and `ToneCheck.js` in check mode.
  */
-import { buildRun, contentsRange, isInValidSection, makeContext, collectBlocks } from './dom'
+import {
+  blockHasInlineReference,
+  buildRun,
+  collectBlocks,
+  contentsRange,
+  isInValidSection,
+  makeContext,
+} from './dom'
 import { predictTone, TONE_LANGUAGES } from './api'
 import { toneFinding, type Finding } from './checks'
 import { CHECK_STRINGS as S, EXPERIMENTAL_STRINGS as X } from './strings'
@@ -107,7 +114,7 @@ export async function recheckTone(block: Element, page: { lang: string; title: s
 }
 
 function hasReference(el: Element): boolean {
-  return !!el.querySelector('sup.mw-ref, [typeof~="mw:Extension/ref"]')
+  return blockHasInlineReference(el)
 }
 
 /**

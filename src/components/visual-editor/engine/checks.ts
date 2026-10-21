@@ -6,6 +6,7 @@
  * DOM — see `dom.ts` for how VE's model is emulated.
  */
 import {
+  blockHasInlineReference,
   buildRun,
   collectBlocks,
   compareRanges,
@@ -19,7 +20,6 @@ import {
   isInValidSection,
   isOffsetQuoted,
   isOpaqueElement,
-  isReferenceNode,
   isTransclusion,
   isWholeWord,
   makeContext,
@@ -180,9 +180,8 @@ const DISMISS: Choice = { action: 'dismiss', label: STR.dismiss }
 // ── addReference ─────────────────────────────────────────────────────────────
 
 function containsReference(el: Element, citationNeeded: Set<string>): boolean {
+  if (blockHasInlineReference(el)) return true
   for (const sup of el.querySelectorAll('[typeof]')) {
-    if (isReferenceNode(sup)) return true
-    if (readDataMw(sup)?.name === 'ref') return true
     if (isTransclusion(sup) && isCitationNeededTemplate(sup, citationNeeded)) return true
   }
   return false

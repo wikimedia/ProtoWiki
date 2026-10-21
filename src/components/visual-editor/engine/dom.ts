@@ -144,7 +144,54 @@ export function hasOpaqueAncestor(node: Node, ctx: DocContext): boolean {
 /** Reference bodies live in VE's internal list — never scanned. */
 export function isInReferenceList(node: Node): boolean {
   const el = node.nodeType === 1 ? (node as Element) : node.parentElement
-  return !!el?.closest('ol.mw-references, .mw-references-wrap, .reflist')
+  return !!el?.closest('ol.mw-references, ol.references, .mw-references-wrap, .reflist')
+}
+
+/** Hand-authored reader markup (`sup.reference` + `ol.references`) → Parsoid-shaped refs for VE checks. */
+export function normalizeHandAuthoredReferences(root: Element): void {
+  const noteBodies = new Map<string, string>()
+  root
+    .querySelectorAll('ol.references > li[id^="cite_note-"], ol.mw-references > li[id^="cite_note-"]')
+    .forEach((li) => {
+      const text = li.querySelector('.reference-text, .mw-reference-text')
+      if (text) noteBodies.set(li.id, text.innerHTML)
+    })
+
+  root.querySelectorAll('.mw-references-wrap ol.references:not(.mw-references)').forEach((ol) => {
+    ol.classList.add('mw-references')
+  })
+
+  root.querySelectorAll('sup.reference').forEach((sup) => {
+    if (isReferenceNode(sup)) return
+    const link = sup.querySelector('a[href^="#cite_note-"]')
+    if (!link) return
+    const noteId = (link.getAttribute('href') ?? '').slice(1)
+    if (!noteId.startsWith('cite_note-')) return
+
+    sup.classList.add('mw-ref')
+    sup.setAttribute('typeof', 'mw:Extension/ref')
+    sup.setAttribute('rel', 'dc:references')
+    const bodyHtml = noteBodies.get(noteId)
+    const dataMw: Record<string, unknown> = {
+      name: 'ref',
+      attrs: {},
+      body: bodyHtml
+        ? { id: `mw-reference-text-${noteId}`, html: `<span class="reference-text">${bodyHtml}</span>` }
+        : { id: `mw-reference-text-${noteId}` },
+    }
+    sup.setAttribute('data-mw', JSON.stringify(dataMw))
+    link.setAttribute('title', (link.textContent ?? '').trim())
+  })
+}
+
+/** True when the block already has an inline footnote marker. */
+export function blockHasInlineReference(el: Element): boolean {
+  if (el.querySelector('[typeof~="mw:Extension/ref"]')) return true
+  if (el.querySelector('sup.mw-ref, sup.reference a[href^="#cite_note-"]')) return true
+  for (const sup of el.querySelectorAll('[typeof]')) {
+    if (readDataMw(sup)?.name === 'ref') return true
+  }
+  return false
 }
 
 /** A text segment of a content run, mapping run offsets back to DOM text. */
