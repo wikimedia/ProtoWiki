@@ -20,7 +20,7 @@ import SavedPagesEmptyState from './SavedPagesEmptyState.vue'
 definePage({
   meta: {
     title: 'Saved',
-    description: 'Template for the Saved special page',
+    description: 'Template for the Saved special page.',
     category: 'template',
     platform: 'web',
     order: 5.5,

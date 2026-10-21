@@ -321,7 +321,17 @@ function userPageListsEqual(a: UserPageLists, b: UserPageLists): boolean {
 
 /** Whether a preset's page lists still match its shipped defaults (i.e. nothing to reset). */
 export function isDefaultUserPageLists(user: ConfigUser, lists: UserPageLists): boolean {
-  return userPageListsEqual(lists, DEFAULT_USER_PAGE_LISTS[user])
+  const defaults = DEFAULT_USER_PAGE_LISTS[user]
+  if (user === 'real') {
+    const arraysEqual = (x: string[], y: string[]) =>
+      x.length === y.length && x.every((v, i) => v === y[i])
+    return (
+      lists.lang === defaults.lang &&
+      arraysEqual(lists.watchlist, defaults.watchlist) &&
+      arraysEqual(lists.readingList, defaults.readingList)
+    )
+  }
+  return userPageListsEqual(lists, defaults)
 }
 
 function resolveApiContact(rawContact: string): string {

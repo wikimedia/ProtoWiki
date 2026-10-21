@@ -259,6 +259,11 @@ const editedPagesText = computed({
 })
 
 const realEditedPagesLoading = computed(() => user.value === 'real' && realEditedPages.loading.value)
+
+async function onRefreshRealEditedPages(): Promise<void> {
+  await commitRealUserIdentityIfDirty()
+  await realEditedPages.refresh()
+}
 </script>
 
 <template>
@@ -287,6 +292,10 @@ const realEditedPagesLoading = computed(() => user.value === 'real' && realEdite
               () => {
                 resetCurrentUserPageLists()
                 clearPageListUiState()
+                if (user === 'real') {
+                  syncRealUserIdentityBaseline()
+                  void realEditedPages.refresh()
+                }
               }
             "
           >
@@ -321,29 +330,52 @@ const realEditedPagesLoading = computed(() => user.value === 'real' && realEdite
         />
       </CdxField>
       <template v-if="user !== 'logged-out'">
-        <CdxField :status="pageListFieldStatus('watchlist')">
-          <template #label>Watchlist</template>
+        <CdxField :status="pageListFieldStatus('editedPages')">
+          <template #label>Edited articles</template>
+          <template v-if="user === 'real'" #description>
+            {{ realUserEditedPagesDescription }}
+          </template>
+          <div v-if="user === 'real'" class="settings-panel__row">
+            <CdxTextInput
+              v-model="editedPagesText"
+              v-bind="pageListInputAttrs"
+              class="settings-panel__input"
+              disabled
+              readonly
+            />
+            <CdxButton
+              weight="quiet"
+              :disabled="realEditedPagesLoading"
+              @click="() => void onRefreshRealEditedPages()"
+            >
+              Refresh
+            </CdxButton>
+          </div>
           <CdxTextInput
-            v-model="watchlistText"
+            v-else
+            v-model="editedPagesText"
             v-bind="pageListInputAttrs"
             class="settings-panel__input"
-            :disabled="isNormalizingPageList('watchlist')"
-            @blur="onPageListFieldBlur('watchlist')"
-            @keydown="(event) => event.key === 'Enter' && onPageListFieldEnter('watchlist', event)"
+            :disabled="isNormalizingPageList('editedPages')"
+            @blur="onPageListFieldBlur('editedPages')"
+            @keydown="(event) => event.key === 'Enter' && onPageListFieldEnter('editedPages', event)"
           />
-          <template v-if="isNormalizingPageList('watchlist')" #help-text>
+          <template v-if="realEditedPagesLoading" #help-text>
+            <CdxProgressBar inline aria-label="Loading edited articles from Wikipedia" />
+          </template>
+          <template v-else-if="isNormalizingPageList('editedPages')" #help-text>
             <CdxProgressBar inline aria-label="Resolving page titles" />
           </template>
-          <template v-else-if="pageListNotFoundMessages('watchlist').length" #help-text>
+          <template v-else-if="pageListNotFoundMessages('editedPages').length" #help-text>
             <ul class="user-settings-panel__page-list-errors" role="alert">
-              <li v-for="message in pageListNotFoundMessages('watchlist')" :key="message">
+              <li v-for="message in pageListNotFoundMessages('editedPages')" :key="message">
                 {{ message }}
               </li>
             </ul>
           </template>
         </CdxField>
         <CdxField :status="pageListFieldStatus('readingList')">
-          <template #label>Saved pages</template>
+          <template #label>Saved</template>
           <CdxTextInput
             v-model="readingListText"
             v-bind="pageListInputAttrs"
@@ -363,29 +395,22 @@ const realEditedPagesLoading = computed(() => user.value === 'real' && realEdite
             </ul>
           </template>
         </CdxField>
-        <CdxField :status="pageListFieldStatus('editedPages')">
-          <template #label>Edited pages</template>
-          <template v-if="user === 'real'" #description>
-            {{ realUserEditedPagesDescription }}
-          </template>
+        <CdxField :status="pageListFieldStatus('watchlist')">
+          <template #label>Watchlist</template>
           <CdxTextInput
-            v-model="editedPagesText"
+            v-model="watchlistText"
             v-bind="pageListInputAttrs"
             class="settings-panel__input"
-            :disabled="user === 'real' || isNormalizingPageList('editedPages')"
-            :readonly="user === 'real'"
-            @blur="onPageListFieldBlur('editedPages')"
-            @keydown="(event) => event.key === 'Enter' && onPageListFieldEnter('editedPages', event)"
+            :disabled="isNormalizingPageList('watchlist')"
+            @blur="onPageListFieldBlur('watchlist')"
+            @keydown="(event) => event.key === 'Enter' && onPageListFieldEnter('watchlist', event)"
           />
-          <template v-if="realEditedPagesLoading" #help-text>
-            <CdxProgressBar inline aria-label="Loading edited pages from Wikipedia" />
-          </template>
-          <template v-else-if="isNormalizingPageList('editedPages')" #help-text>
+          <template v-if="isNormalizingPageList('watchlist')" #help-text>
             <CdxProgressBar inline aria-label="Resolving page titles" />
           </template>
-          <template v-else-if="pageListNotFoundMessages('editedPages').length" #help-text>
+          <template v-else-if="pageListNotFoundMessages('watchlist').length" #help-text>
             <ul class="user-settings-panel__page-list-errors" role="alert">
-              <li v-for="message in pageListNotFoundMessages('editedPages')" :key="message">
+              <li v-for="message in pageListNotFoundMessages('watchlist')" :key="message">
                 {{ message }}
               </li>
             </ul>
