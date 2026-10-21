@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import { cdxIconHome } from '@wikimedia/codex-icons'
+import { cdxIconUserActive } from '@wikimedia/codex-icons'
 
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 import Dashboard from '@/components/dashboard/Dashboard.vue'
@@ -31,12 +31,12 @@ const showLoggedInModules = computed(() => user.value !== 'logged-out')
 
 definePage({
   meta: {
-    title: 'Homepage',
-    description: 'Template for prototyping the newcomer homepage.',
+    title: 'Newcomer Homepage',
+    description: 'Template for prototyping the Newcomer Homepage.',
     category: 'template',
     platform: 'web',
     order: 7,
-    icon: cdxIconHome,
+    icon: cdxIconUserActive,
   },
 })
 </script>
