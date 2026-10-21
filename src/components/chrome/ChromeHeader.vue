@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineComponent, h, useSlots } from 'vue'
+import { computed, defineComponent, h, markRaw, useSlots } from 'vue'
 import { RouterLink } from 'vue-router'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconUserAvatarOutline } from '@wikimedia/codex-icons'
@@ -10,6 +10,7 @@ import { useWordmarkMainPageLink } from '@/composables/useWordmarkMainPageLink'
 import type { HeaderItem } from '@/components/header/headerItems'
 import type { ChromeNavTool } from './headerNavTools'
 import MinervaChromeHeader from './MinervaChromeHeader.vue'
+import MinervaChromeMainMenu from './MinervaChromeMainMenu.vue'
 import { MINERVA_DEFAULT_RIGHT } from './minervaHeaderDefaults'
 import VectorChromeHeader from './VectorChromeHeader.vue'
 import { globalSkin, globalTheme } from '@/theme'
@@ -100,10 +101,23 @@ const minervaUserSettingsComponent = defineComponent({
   },
 })
 
+const minervaDefaultMainMenuComponent = defineComponent({
+  name: 'ChromeHeaderMinervaDefaultMainMenu',
+  setup() {
+    return () =>
+      h(MinervaChromeMainMenu, { prototypingSettings: props.prototypingSettings })
+  },
+})
+
 const minervaLeft = computed((): HeaderItem[] | undefined => {
   if (props.left !== undefined) return props.left
   if (slots.menu) return [{ type: 'component', component: slotBridgeComponent('menu') }]
-  return undefined
+  return [
+    {
+      type: 'component',
+      component: markRaw(minervaDefaultMainMenuComponent),
+    },
+  ]
 })
 
 const minervaMiddle = computed((): HeaderItem[] | undefined => {
