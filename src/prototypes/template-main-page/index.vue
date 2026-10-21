@@ -4,7 +4,7 @@ import { cdxIconNewspaper } from '@wikimedia/codex-icons'
 definePage({
   meta: {
     title: 'Main page',
-    description: "Template for prototyping English Wikipedia's Main Page",
+    description: "Template for prototyping English Wikipedia's Main Page.",
     category: 'template',
     platform: 'web',
     order: 8,
