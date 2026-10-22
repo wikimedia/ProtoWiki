@@ -6,6 +6,7 @@ import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 import { useConfig } from '@/composables/useConfig'
 import { globalSkin } from '@/theme'
+import HomeDailyReads from './HomeDailyReads.vue'
 import HomeImpact from './HomeImpact.vue'
 import HomeMentor from './HomeMentor.vue'
 import HomeModuleMenu from './HomeModuleMenu.vue'
@@ -40,6 +41,11 @@ const SUGGESTED_EDITS_MENU = {
   footer: { value: 'about', label: 'About suggested edits' },
 }
 
+const DAILY_READS_MENU = {
+  items: [{ value: 'interests', label: 'Interests', icon: cdxIconConfigure }],
+  footer: { value: 'about', label: 'About daily reads' },
+}
+
 const { isAssigned: isMentorAssigned, assign: assignMentor, optOut: optOutOfMentor } =
   useHomeMentor()
 const mentorTitle = computed(() =>
@@ -72,6 +78,13 @@ function onMentorMenuSelect(value: string | number): void {
               <HomeModuleMenu :menu="SUGGESTED_EDITS_MENU" />
             </template>
             <HomeSuggestedEdits />
+          </HomeSectionFrame>
+
+          <HomeSectionFrame id="daily-reads" title="Daily reads">
+            <template #actions>
+              <HomeModuleMenu :menu="DAILY_READS_MENU" />
+            </template>
+            <HomeDailyReads />
           </HomeSectionFrame>
         </div>
 
