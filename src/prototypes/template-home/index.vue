@@ -7,8 +7,12 @@ import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 import { useConfig } from '@/composables/useConfig'
 import { globalSkin } from '@/theme'
 import HomeImpact from './HomeImpact.vue'
+import HomeMentor from './HomeMentor.vue'
+import HomeModuleMenu from './HomeModuleMenu.vue'
 import HomePageHeader from './HomePageHeader.vue'
 import HomeSectionFrame from './HomeSectionFrame.vue'
+import { MENTOR_CONTENT } from './mentorContent'
+import { useHomeMentor } from './useHomeMentor'
 
 definePage({
   meta: {
@@ -25,6 +29,15 @@ const { pageTitle } = useConfig()
 
 /* Desktop: 60/40, main column then side column. Mobile: one column. */
 const isSplit = computed(() => globalSkin.value === 'desktop')
+
+const { isAssigned: isMentorAssigned } = useHomeMentor()
+const mentorTitle = computed(() =>
+  isMentorAssigned.value ? MENTOR_CONTENT.assigned.title : MENTOR_CONTENT.unassigned.title,
+)
+const MENTOR_MENU = {
+  items: [{ value: 'opt-out', label: 'Opt out of mentorship' }],
+  footer: { value: 'about', label: 'About mentors' },
+}
 </script>
 
 <template>
@@ -40,6 +53,13 @@ const isSplit = computed(() => globalSkin.value === 'desktop')
         <div class="home-modules home-modules--side">
           <HomeSectionFrame id="impact" title="Your impact">
             <HomeImpact />
+          </HomeSectionFrame>
+
+          <HomeSectionFrame id="mentor" :title="mentorTitle">
+            <template #actions>
+              <HomeModuleMenu :menu="MENTOR_MENU" />
+            </template>
+            <HomeMentor />
           </HomeSectionFrame>
         </div>
       </div>
