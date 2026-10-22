@@ -11,14 +11,14 @@ import { readDayCache, utcDayKey, writeDayCache } from './homeCache'
 import { titleKey } from './useHomeSeeds'
 
 const CACHE_SLOT = 'suggested-edits'
-/** Up to four pages of three when personal; a single card for a reader with no pages. */
-export const PERSONAL_SUGGESTION_COUNT = 12
-export const RANDOM_SUGGESTION_COUNT = 1
+/** Up to four pages of three, personal or random. */
+const SUGGESTION_COUNT = 12
 const RELATED_SEED_COUNT = 5
 const RELATED_PER_SEED = 4
 const LINK_RECOMMENDATION_SEEDS = 3
 const LINK_RECOMMENDATIONS_PER_SEED = 3
-const RANDOM_POOL = 10
+/** Enough random candidates to fill the four pages after duplicates. */
+const RANDOM_POOL = 20
 
 interface Task {
   page: TaskPage
@@ -93,17 +93,16 @@ async function personalTasks(seeds: string[], signal: AbortSignal): Promise<Task
 /**
  * Articles with something to improve, each labelled with its task ("Find a
  * reference"…). Personal when the reader has pages to grow from (`seeds`);
- * otherwise one random suggestion.
+ * otherwise random ones.
  */
 export async function loadSuggestedEdits(
   seeds: string[],
   signal: AbortSignal,
 ): Promise<HomeArticleCard[]> {
   const personal = seeds.length > 0
-  const limit = personal ? PERSONAL_SUGGESTION_COUNT : RANDOM_SUGGESTION_COUNT
 
-  // Random suggestions stay for the day too, so the one card doesn't change each visit.
-  const cacheKey = `${utcDayKey()}|${personal ? seeds.map(titleKey).sort().join('|') : 'random'}`
+  // Random suggestions stay for the day too, so the cards don't change each visit.
+  const cacheKey = `${utcDayKey()}|${personal ? seeds.map(titleKey).sort().join('|') : `random:${SUGGESTION_COUNT}`}`
   const cached = readDayCache<HomeArticleCard>(CACHE_SLOT, cacheKey)
   if (cached) return cached
 
@@ -115,7 +114,7 @@ export async function loadSuggestedEdits(
   const cards: HomeArticleCard[] = []
   for (const { page, label } of tasks) {
     const key = titleKey(page.title)
-    if (seen.has(key) || cards.length >= limit) continue
+    if (seen.has(key) || cards.length >= SUGGESTION_COUNT) continue
     seen.add(key)
     cards.push({
       title: page.title,

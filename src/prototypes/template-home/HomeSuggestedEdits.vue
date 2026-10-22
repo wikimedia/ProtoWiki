@@ -2,7 +2,7 @@
 /**
  * The Suggested edits module's body: articles with something to improve, each
  * labelled with its task. Grows from the Mock user's pages (`useHomeSeeds`); a
- * reader with none gets one random suggestion. Desktop and mobile both reveal
+ * reader with none gets random suggestions. Desktop and mobile both reveal
  * more cards in place.
  */
 import { computed, ref, watch } from 'vue'
@@ -10,15 +10,14 @@ import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconCollapse, cdxIconLightbulb } from '@wikimedia/codex-icons'
 
 import HomeArticleCards from './HomeArticleCards.vue'
-import { loadSuggestedEdits, RANDOM_SUGGESTION_COUNT } from './loadSuggestedEdits'
+import { loadSuggestedEdits } from './loadSuggestedEdits'
 import { useHomeSeeds } from './useHomeSeeds'
 import { useModuleLoad } from './useModuleLoad'
 
 /** Cards shown at first, and revealed by each "Show more". */
 const PAGE_SIZE = 3
 
-const { seeds, personal } = useHomeSeeds()
-const firstCount = computed(() => (personal.value ? PAGE_SIZE : RANDOM_SUGGESTION_COUNT))
+const { seeds } = useHomeSeeds()
 
 const seedsKey = () => seeds.value.join('\n')
 const {
@@ -28,15 +27,15 @@ const {
   reload,
 } = useModuleLoad(seedsKey, (signal) => loadSuggestedEdits(seeds.value, signal))
 
-const shown = ref(firstCount.value)
+const shown = ref(PAGE_SIZE)
 // New pages to grow from start back at the first cards.
 watch(seedsKey, () => {
-  shown.value = firstCount.value
+  shown.value = PAGE_SIZE
 })
 
 const visible = computed(() => edits.value.slice(0, shown.value))
 const hasMore = computed(() => shown.value < edits.value.length)
-const expanded = computed(() => shown.value > firstCount.value)
+const expanded = computed(() => shown.value > PAGE_SIZE)
 
 function revealMore(): void {
   shown.value += PAGE_SIZE
@@ -46,7 +45,7 @@ const root = ref<HTMLElement | null>(null)
 
 /** Fold back, and bring the module into view if the reader had scrolled past it. */
 function collapse(): void {
-  shown.value = firstCount.value
+  shown.value = PAGE_SIZE
   const el = root.value
   if (el && el.getBoundingClientRect().top < 0) el.scrollIntoView({ block: 'start' })
 }
@@ -67,7 +66,7 @@ function collapse(): void {
       <HomeArticleCards
         :cards="visible"
         :loading="loading"
-        :skeletons="firstCount"
+        :skeletons="PAGE_SIZE"
         :supporting-icon="cdxIconLightbulb"
         progressive
       />

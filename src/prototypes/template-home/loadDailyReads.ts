@@ -1,12 +1,15 @@
 /**
  * Daily reads: articles like the reader's own pages ("Related to …"), from
- * CirrusSearch `morelike:`; a reader with no pages gets one random Vital article.
+ * CirrusSearch `morelike:`; a reader with no pages gets random Vital articles.
  */
 
 import { selectRandomArticle } from '@/components/article/shared/selectRandomArticle'
 import { wikimediaApiFetchHeaders } from '@/config'
 
-import { fetchReadingListPages } from '../template-saved-pages/fetchReadingListPages'
+import {
+  fetchReadingListPages,
+  type SavedPageListItem,
+} from '../template-saved-pages/fetchReadingListPages'
 import type { HomeArticleCard } from './HomeArticleCards.vue'
 import { readDayCache, utcDayKey, writeDayCache } from './homeCache'
 import { titleKey } from './useHomeSeeds'
@@ -17,7 +20,8 @@ const CACHE_SLOT = 'daily-reads'
 /** Seeds used per load — enough variety without fanning out into many calls. */
 const SEED_COUNT = 3
 export const DAILY_READS_COUNT = 3
-export const RANDOM_READ_COUNT = 1
+/** Random picks tried before settling for fewer cards (picks can repeat). */
+const RANDOM_ATTEMPTS = DAILY_READS_COUNT * 2
 
 interface MorelikeHit {
   title: string
@@ -81,29 +85,34 @@ function pickRandom<T>(items: readonly T[], count: number): T[] {
 }
 
 /**
- * One of Wikipedia's Vital articles, picked at random (ProtoWiki's own random
- * pick), with its description and thumbnail (the Saved pages template's lookup).
- * No supporting text: there's no page of the reader's it relates to.
+ * Wikipedia's Vital articles, picked at random (ProtoWiki's own random pick),
+ * with their descriptions and thumbnails (the Saved pages template's lookup, in
+ * one call). No supporting text: there's no page of the reader's they relate to.
  */
-async function loadRandomRead(signal: AbortSignal): Promise<HomeArticleCard[]> {
-  // `fresh`: a new pick each time the day's cache misses, not the session's remembered one.
-  const { title, lang } = await selectRandomArticle({ source: 'vital', langs: ['en'], fresh: true })
-  const [page] = await fetchReadingListPages([title], { signal, lang })
-  if (page?.kind !== 'page') return []
-  return [
-    {
+async function loadRandomReads(signal: AbortSignal): Promise<HomeArticleCard[]> {
+  const titles = new Map<string, string>()
+  for (let i = 0; i < RANDOM_ATTEMPTS && titles.size < DAILY_READS_COUNT; i++) {
+    if (signal.aborted) throw new DOMException('Aborted', 'AbortError')
+    // `fresh`: a new pick each time, not the session's remembered one.
+    const { title } = await selectRandomArticle({ source: 'vital', langs: ['en'], fresh: true })
+    titles.set(titleKey(title), title)
+  }
+
+  const pages = await fetchReadingListPages([...titles.values()], { signal, lang: 'en' })
+  return pages
+    .filter((page): page is Extract<SavedPageListItem, { kind: 'page' }> => page.kind === 'page')
+    .map((page) => ({
       title: page.title,
       description: page.description || undefined,
       thumbnailUrl: page.thumbnailUrl ?? undefined,
-    },
-  ]
+    }))
 }
 
 /**
  * Articles like the reader's own pages. A few random seeds, one `morelike`
  * call each — one at a time — interleaved round-robin so the cards mix seeds;
  * duplicates and the seeds themselves are dropped. A reader with no pages gets
- * one random article instead. Cached per day and seed set, so the Home doesn't
+ * random articles instead. Cached per day and seed set, so the Home doesn't
  * reshuffle on every visit.
  */
 export async function loadDailyReads(
@@ -111,12 +120,12 @@ export async function loadDailyReads(
   signal: AbortSignal,
 ): Promise<HomeArticleCard[]> {
   const personal = seeds.length > 0
-  const cacheKey = `${utcDayKey()}|${personal ? seeds.map(titleKey).sort().join('|') : 'random'}`
+  const cacheKey = `${utcDayKey()}|${personal ? seeds.map(titleKey).sort().join('|') : `random:${DAILY_READS_COUNT}`}`
   const cached = readDayCache<HomeArticleCard>(CACHE_SLOT, cacheKey)
   if (cached) return cached
 
   if (!personal) {
-    const cards = await loadRandomRead(signal)
+    const cards = await loadRandomReads(signal)
     writeDayCache(CACHE_SLOT, cacheKey, cards)
     return cards
   }

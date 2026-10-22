@@ -1,26 +1,23 @@
 <script setup lang="ts">
 /**
  * The Daily reads module's body: three articles like the reader's own pages,
- * each saying which one it's related to; a reader with no pages gets one random
- * article, with no supporting text. Just its cards — no "Show more".
+ * each saying which one it's related to; a reader with no pages gets three
+ * random articles, with no supporting text. Just its cards — no "Show more".
  */
-import { computed } from 'vue'
 import { CdxButton } from '@wikimedia/codex'
 import { cdxIconLink } from '@wikimedia/codex-icons'
 
 import HomeArticleCards from './HomeArticleCards.vue'
-import { DAILY_READS_COUNT, loadDailyReads, RANDOM_READ_COUNT } from './loadDailyReads'
+import { DAILY_READS_COUNT, loadDailyReads } from './loadDailyReads'
 import { useHomeSeeds } from './useHomeSeeds'
 import { useModuleLoad } from './useModuleLoad'
 
-const { seeds, personal } = useHomeSeeds()
+const { seeds } = useHomeSeeds()
 
 const { items: reads, loading, error, reload } = useModuleLoad(
   () => seeds.value.join('\n'),
   (signal) => loadDailyReads(seeds.value, signal),
 )
-
-const skeletons = computed(() => (personal.value ? DAILY_READS_COUNT : RANDOM_READ_COUNT))
 </script>
 
 <template>
@@ -38,7 +35,7 @@ const skeletons = computed(() => (personal.value ? DAILY_READS_COUNT : RANDOM_RE
       v-else
       :cards="reads"
       :loading="loading"
-      :skeletons="skeletons"
+      :skeletons="DAILY_READS_COUNT"
       :supporting-icon="cdxIconLink"
     />
   </div>
