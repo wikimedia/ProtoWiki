@@ -11,6 +11,7 @@ import HomeImpact from './HomeImpact.vue'
 import HomeMentor from './HomeMentor.vue'
 import HomeModuleMenu from './HomeModuleMenu.vue'
 import HomePageHeader from './HomePageHeader.vue'
+import HomeReviewChanges from './HomeReviewChanges.vue'
 import HomeSectionFrame from './HomeSectionFrame.vue'
 import HomeSuggestedEdits from './HomeSuggestedEdits.vue'
 import { MENTOR_CONTENT } from './mentorContent'
@@ -27,7 +28,7 @@ definePage({
   },
 })
 
-const { pageTitle } = useConfig()
+const { pageTitle, user } = useConfig()
 
 /* Desktop: 60/40, main column then side column. Mobile: one column. */
 const isSplit = computed(() => globalSkin.value === 'desktop')
@@ -44,6 +45,13 @@ const SUGGESTED_EDITS_MENU = {
 const DAILY_READS_MENU = {
   items: [{ value: 'interests', label: 'Interests', icon: cdxIconConfigure }],
   footer: { value: 'about', label: 'About daily reads' },
+}
+
+/* Review changes is for editors with pages of their own: Experienced editor and Real user. */
+const showReviewChanges = computed(() => user.value === 'experienced' || user.value === 'real')
+const REVIEW_CHANGES_MENU = {
+  items: [{ value: 'personalization', label: 'Personalization', icon: cdxIconConfigure }],
+  footer: { value: 'about', label: 'About review changes' },
 }
 
 const { isAssigned: isMentorAssigned, assign: assignMentor, optOut: optOutOfMentor } =
@@ -85,6 +93,13 @@ function onMentorMenuSelect(value: string | number): void {
               <HomeModuleMenu :menu="DAILY_READS_MENU" />
             </template>
             <HomeDailyReads />
+          </HomeSectionFrame>
+
+          <HomeSectionFrame v-if="showReviewChanges" id="review-changes" title="Review changes">
+            <template #actions>
+              <HomeModuleMenu :menu="REVIEW_CHANGES_MENU" />
+            </template>
+            <HomeReviewChanges />
           </HomeSectionFrame>
         </div>
 
