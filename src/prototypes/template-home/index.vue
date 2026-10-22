@@ -6,6 +6,7 @@ import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 import { useConfig } from '@/composables/useConfig'
 import { globalSkin } from '@/theme'
+import HomeActiveDiscussions from './HomeActiveDiscussions.vue'
 import HomeDailyReads from './HomeDailyReads.vue'
 import HomeImpact from './HomeImpact.vue'
 import HomeMentor from './HomeMentor.vue'
@@ -47,8 +48,8 @@ const DAILY_READS_MENU = {
   footer: { value: 'about', label: 'About daily reads' },
 }
 
-/* Review changes is for editors with pages of their own: Experienced editor and Real user. */
-const showReviewChanges = computed(() => user.value === 'experienced' || user.value === 'real')
+/* Review changes and Active discussions are for experienced editors: Experienced editor and Real user. */
+const showEditorModules = computed(() => user.value === 'experienced' || user.value === 'real')
 const REVIEW_CHANGES_MENU = {
   items: [{ value: 'personalization', label: 'Personalization', icon: cdxIconConfigure }],
   footer: { value: 'about', label: 'About review changes' },
@@ -95,11 +96,19 @@ function onMentorMenuSelect(value: string | number): void {
             <HomeDailyReads />
           </HomeSectionFrame>
 
-          <HomeSectionFrame v-if="showReviewChanges" id="review-changes" title="Review changes">
+          <HomeSectionFrame v-if="showEditorModules" id="review-changes" title="Review changes">
             <template #actions>
               <HomeModuleMenu :menu="REVIEW_CHANGES_MENU" />
             </template>
             <HomeReviewChanges />
+          </HomeSectionFrame>
+
+          <HomeSectionFrame
+            v-if="showEditorModules"
+            id="active-discussions"
+            title="Active discussions"
+          >
+            <HomeActiveDiscussions />
           </HomeSectionFrame>
         </div>
 
