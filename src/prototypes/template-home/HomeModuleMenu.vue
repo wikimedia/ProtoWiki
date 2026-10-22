@@ -104,4 +104,14 @@ function onClick(): void {
 .home-module-menu {
   display: flex;
 }
+
+/*
+ * CODEX+ CdxMenu: it reserves the footer's height (as the list's bottom margin)
+ * when it opens, before the floating menu gets its width — so at its 8rem
+ * minimum the footer label wraps, and the reserved space is too tall. On one
+ * line, the footer measures the same at any width.
+ */
+.home-module-menu :deep(.cdx-menu--has-footer .cdx-menu-item:last-of-type .cdx-menu-item__text) {
+  white-space: nowrap;
+}
 </style>

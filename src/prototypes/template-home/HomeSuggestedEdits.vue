@@ -2,17 +2,23 @@
 /**
  * The Suggested edits module's body: articles with something to improve, each
  * labelled with its task. Grows from the Mock user's pages (`useHomeSeeds`); a
- * reader with none gets random suggestions. Desktop and mobile both reveal
- * more cards in place.
+ * reader with none gets random suggestions. On the Home it shows three cards
+ * and a "Show more"; as a `feed` (its own page) every suggestion, as divider rows.
  */
 import { computed, ref, watch } from 'vue'
-import { CdxButton, CdxIcon } from '@wikimedia/codex'
-import { cdxIconCollapse, cdxIconLightbulb } from '@wikimedia/codex-icons'
+import { CdxButton } from '@wikimedia/codex'
+import { cdxIconLightbulb } from '@wikimedia/codex-icons'
 
 import HomeArticleCards from './HomeArticleCards.vue'
+import HomeShowMore from './HomeShowMore.vue'
 import { loadSuggestedEdits } from './loadSuggestedEdits'
 import { useHomeSeeds } from './useHomeSeeds'
 import { useModuleLoad } from './useModuleLoad'
+
+const props = defineProps<{
+  /** The module's own page: every suggestion, as a feed. */
+  feed?: boolean
+}>()
 
 /** Cards shown at first, and revealed by each "Show more". */
 const PAGE_SIZE = 3
@@ -33,13 +39,9 @@ watch(seedsKey, () => {
   shown.value = PAGE_SIZE
 })
 
-const visible = computed(() => edits.value.slice(0, shown.value))
+const visible = computed(() => (props.feed ? edits.value : edits.value.slice(0, shown.value)))
 const hasMore = computed(() => shown.value < edits.value.length)
 const expanded = computed(() => shown.value > PAGE_SIZE)
-
-function revealMore(): void {
-  shown.value += PAGE_SIZE
-}
 
 const root = ref<HTMLElement | null>(null)
 
@@ -69,20 +71,18 @@ function collapse(): void {
         :skeletons="PAGE_SIZE"
         :supporting-icon="cdxIconLightbulb"
         progressive
+        :feed="feed"
       />
 
-      <div v-if="hasMore || expanded" class="home-suggested-edits__more-row">
-        <CdxButton v-if="hasMore" :disabled="loading" @click="revealMore">Show more</CdxButton>
-        <CdxButton
-          v-if="expanded"
-          class="home-suggested-edits__collapse"
-          weight="quiet"
-          aria-label="Show fewer"
-          @click="collapse"
-        >
-          <CdxIcon :icon="cdxIconCollapse" />
-        </CdxButton>
-      </div>
+      <HomeShowMore
+        v-if="!feed"
+        module="suggested-edits"
+        :has-more="hasMore"
+        :expanded="expanded"
+        :disabled="loading"
+        @more="shown += PAGE_SIZE"
+        @collapse="collapse"
+      />
     </template>
   </div>
 </template>
@@ -100,16 +100,5 @@ function collapse(): void {
 
 .home-suggested-edits__error p {
   margin: 0;
-}
-
-/* "Show more" hugs its label at the start, the collapse button sits at the end. */
-.home-suggested-edits__more-row {
-  display: flex;
-  align-items: center;
-  margin-top: var(--spacing-75);
-}
-
-.home-suggested-edits__collapse {
-  margin-inline-start: auto;
 }
 </style>

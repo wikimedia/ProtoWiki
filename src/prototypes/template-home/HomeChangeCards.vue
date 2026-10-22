@@ -3,7 +3,8 @@
  * A module's list of change cards: Codex `CdxCard`s for edits — status chips
  * over the page title, the article's description, the edit summary, then the
  * editor and when. Cards open the diff on Wikipedia in a new tab. While loading
- * it shows flat skeletons of the same shape.
+ * it shows flat skeletons of the same shape. As a `feed` (a module's own page)
+ * the cards are divider rows.
  */
 import { CdxCard, CdxIcon, CdxInfoChip } from '@wikimedia/codex'
 import { cdxIconUserAvatar } from '@wikimedia/codex-icons'
@@ -15,11 +16,13 @@ defineProps<{
   loading?: boolean
   /** Skeletons shown while loading. */
   skeletons: number
+  /** Divider rows rather than outlined cards (a module's own page). */
+  feed?: boolean
 }>()
 </script>
 
 <template>
-  <div class="home-change-cards" :aria-busy="loading">
+  <div class="home-change-cards" :class="{ 'home-feed': feed }" :aria-busy="loading">
     <template v-if="loading">
       <div v-for="index in skeletons" :key="index" class="home-card-skeleton" aria-hidden="true" />
     </template>
@@ -31,6 +34,7 @@ defineProps<{
       class="home-change-cards__card"
       :url="card.href"
       target="_blank"
+      :separation="feed ? 'divider' : undefined"
     >
       <template #title>
         <!-- CODEX+ CdxCard: no slot above the title, so status chips lead the title slot. -->
@@ -134,5 +138,19 @@ defineProps<{
   border: var(--border-width-base) var(--border-style-base) var(--border-color-base);
   border-radius: var(--border-radius-base);
   background-color: var(--background-color-base);
+}
+
+/* A feed: divider rows, so no gap between them, and skeletons are rows too (no outline, a rule between). */
+.home-feed {
+  gap: 0;
+}
+
+.home-feed .home-card-skeleton {
+  border-width: 0;
+  border-radius: 0;
+}
+
+.home-feed .home-card-skeleton + .home-card-skeleton {
+  border-top-width: var(--border-width-base);
 }
 </style>

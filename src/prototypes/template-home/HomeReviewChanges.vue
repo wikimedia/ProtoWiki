@@ -2,16 +2,22 @@
 /**
  * The Review changes module's body: the latest edit to each of the reader's
  * pages, newest first, flagged for review. Only shown to readers with pages
- * (see `index.vue`). Desktop and mobile both reveal more cards in place.
+ * (see `index.vue`). On the Home it shows three cards and a "Show more"; as a
+ * `feed` (its own page) every change, as divider rows.
  */
 import { computed, ref, watch } from 'vue'
-import { CdxButton, CdxIcon } from '@wikimedia/codex'
-import { cdxIconCollapse } from '@wikimedia/codex-icons'
+import { CdxButton } from '@wikimedia/codex'
 
 import HomeChangeCards from './HomeChangeCards.vue'
+import HomeShowMore from './HomeShowMore.vue'
 import { loadReviewChanges } from './loadReviewChanges'
 import { useHomeSeeds } from './useHomeSeeds'
 import { useModuleLoad } from './useModuleLoad'
+
+const props = defineProps<{
+  /** The module's own page: every change, as a feed. */
+  feed?: boolean
+}>()
 
 /** Cards shown at first, and revealed by each "Show more". */
 const PAGE_SIZE = 3
@@ -32,13 +38,11 @@ watch(seedsKey, () => {
   shown.value = PAGE_SIZE
 })
 
-const visible = computed(() => changes.value.slice(0, shown.value))
+const visible = computed(() =>
+  props.feed ? changes.value : changes.value.slice(0, shown.value),
+)
 const hasMore = computed(() => shown.value < changes.value.length)
 const expanded = computed(() => shown.value > PAGE_SIZE)
-
-function revealMore(): void {
-  shown.value += PAGE_SIZE
-}
 
 const root = ref<HTMLElement | null>(null)
 
@@ -62,20 +66,17 @@ function collapse(): void {
     </p>
 
     <template v-else>
-      <HomeChangeCards :cards="visible" :loading="loading" :skeletons="PAGE_SIZE" />
+      <HomeChangeCards :cards="visible" :loading="loading" :skeletons="PAGE_SIZE" :feed="feed" />
 
-      <div v-if="hasMore || expanded" class="home-review-changes__more-row">
-        <CdxButton v-if="hasMore" :disabled="loading" @click="revealMore">Show more</CdxButton>
-        <CdxButton
-          v-if="expanded"
-          class="home-review-changes__collapse"
-          weight="quiet"
-          aria-label="Show fewer"
-          @click="collapse"
-        >
-          <CdxIcon :icon="cdxIconCollapse" />
-        </CdxButton>
-      </div>
+      <HomeShowMore
+        v-if="!feed"
+        module="review-changes"
+        :has-more="hasMore"
+        :expanded="expanded"
+        :disabled="loading"
+        @more="shown += PAGE_SIZE"
+        @collapse="collapse"
+      />
     </template>
   </div>
 </template>
@@ -93,16 +94,5 @@ function collapse(): void {
 
 .home-review-changes__error p {
   margin: 0;
-}
-
-/* "Show more" hugs its label at the start, the collapse button sits at the end. */
-.home-review-changes__more-row {
-  display: flex;
-  align-items: center;
-  margin-top: var(--spacing-75);
-}
-
-.home-review-changes__collapse {
-  margin-inline-start: auto;
 }
 </style>

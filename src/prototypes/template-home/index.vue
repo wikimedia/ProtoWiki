@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { cdxIconConfigure, cdxIconHome, cdxIconLevelOne } from '@wikimedia/codex-icons'
+import { cdxIconHome } from '@wikimedia/codex-icons'
 
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
@@ -15,6 +15,7 @@ import HomePageHeader from './HomePageHeader.vue'
 import HomeReviewChanges from './HomeReviewChanges.vue'
 import HomeSectionFrame from './HomeSectionFrame.vue'
 import HomeSuggestedEdits from './HomeSuggestedEdits.vue'
+import { DAILY_READS_MENU, REVIEW_CHANGES_MENU, SUGGESTED_EDITS_MENU } from './homeModuleMenus'
 import { MENTOR_CONTENT } from './mentorContent'
 import { useHomeMentor } from './useHomeMentor'
 
@@ -34,26 +35,8 @@ const { pageTitle, user } = useConfig()
 /* Desktop: 60/40, main column then side column. Mobile: one column. */
 const isSplit = computed(() => globalSkin.value === 'desktop')
 
-/* The picks don't lead anywhere yet. */
-const SUGGESTED_EDITS_MENU = {
-  items: [
-    { value: 'interests', label: 'Interests', icon: cdxIconConfigure },
-    { value: 'edit-types', label: 'Types of edits', icon: cdxIconLevelOne },
-  ],
-  footer: { value: 'about', label: 'About suggested edits' },
-}
-
-const DAILY_READS_MENU = {
-  items: [{ value: 'interests', label: 'Interests', icon: cdxIconConfigure }],
-  footer: { value: 'about', label: 'About daily reads' },
-}
-
 /* Review changes and Active discussions are for experienced editors: Experienced editor and Real user. */
 const showEditorModules = computed(() => user.value === 'experienced' || user.value === 'real')
-const REVIEW_CHANGES_MENU = {
-  items: [{ value: 'personalization', label: 'Personalization', icon: cdxIconConfigure }],
-  footer: { value: 'about', label: 'About review changes' },
-}
 
 const { isAssigned: isMentorAssigned, assign: assignMentor, optOut: optOutOfMentor } =
   useHomeMentor()

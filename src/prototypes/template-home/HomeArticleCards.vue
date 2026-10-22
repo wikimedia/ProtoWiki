@@ -3,7 +3,8 @@
  * A module's list of article cards: Codex `CdxCard`s with a large thumbnail and a
  * supporting line under the text, opening the article template. While loading
  * it shows flat skeletons of the same shape, so the cards land without moving
- * the page.
+ * the page. As a `feed` (a module's own page) the cards are divider rows, like
+ * the Saved pages template's mobile list.
  */
 import { CdxCard, CdxIcon } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
@@ -28,6 +29,8 @@ defineProps<{
   supportingIcon?: Icon
   /** Supporting text (and its icon) in progressive blue: it names a task to do. */
   progressive?: boolean
+  /** Divider rows rather than outlined cards (a module's own page). */
+  feed?: boolean
 }>()
 
 const { navigateToWikiPrototype, resolveWikiPrototypeUrl } = useWikiPrototypeNavigation()
@@ -48,7 +51,7 @@ function onClick(event: MouseEvent, card: HomeArticleCard): void {
 <template>
   <div
     class="home-article-cards"
-    :class="{ 'home-article-cards--progressive': progressive }"
+    :class="{ 'home-article-cards--progressive': progressive, 'home-feed': feed }"
     :aria-busy="loading"
   >
     <template v-if="loading">
@@ -66,6 +69,7 @@ function onClick(event: MouseEvent, card: HomeArticleCard): void {
       :thumbnail="thumbnail(card)"
       thumbnail-size="large"
       force-thumbnail
+      :separation="feed ? 'divider' : undefined"
       @click="onClick($event, card)"
     >
       <template #title>{{ card.title }}</template>
@@ -145,6 +149,21 @@ function onClick(event: MouseEvent, card: HomeArticleCard): void {
 /* Minerva's narrower column wraps descriptions onto more lines. */
 [data-skin='mobile'] .home-card-skeleton {
   height: 129px;
+}
+
+/* A feed: divider rows, so no gap between them, and skeletons are rows too (no outline, a rule between). */
+.home-feed {
+  gap: 0;
+}
+
+.home-feed .home-card-skeleton {
+  padding-inline: 0;
+  border-width: 0;
+  border-radius: 0;
+}
+
+.home-feed .home-card-skeleton + .home-card-skeleton {
+  border-top-width: var(--border-width-base);
 }
 
 /* Codex's large thumbnail: 96px, in the thumbnail's subtle outline. */
