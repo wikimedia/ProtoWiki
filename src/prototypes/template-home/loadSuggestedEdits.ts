@@ -1,3 +1,4 @@
+import type { HomeArticleCard } from './HomeArticleCards.vue'
 import { LINK_RECOMMENDATION_LABEL, taskTypeForTemplates } from './editTaskTypes'
 import {
   fetchLinkRecommendations,
@@ -6,15 +7,10 @@ import {
   fetchTemplateTasksAbout,
   type TaskPage,
 } from './fetchEditTasks'
+import { readDayCache, utcDayKey, writeDayCache } from './homeCache'
+import { titleKey } from './useHomeSeeds'
 
-/** One suggested edit: an article and the task it needs ("Find a reference"…). */
-export interface SuggestedEdit {
-  title: string
-  description?: string
-  thumbnailUrl?: string
-  task: string
-}
-
+const CACHE_SLOT = 'suggested-edits'
 /** Up to four pages of three when personal; a single card for a reader with no pages. */
 export const PERSONAL_SUGGESTION_COUNT = 12
 export const RANDOM_SUGGESTION_COUNT = 1
@@ -24,44 +20,9 @@ const LINK_RECOMMENDATION_SEEDS = 3
 const LINK_RECOMMENDATIONS_PER_SEED = 3
 const RANDOM_POOL = 10
 
-/* Its own key, so this template's state doesn't leak into other prototypes'. */
-const CACHE_KEY = 'protowiki-template-home-suggested-edits-v1'
-
 interface Task {
   page: TaskPage
   label: string
-}
-
-/** Lowercase compare key (underscores → spaces, trim), for deduplicating titles. */
-export function titleKey(title: string): string {
-  return title.replace(/_/g, ' ').trim().toLowerCase()
-}
-
-/** `YYYY-MM-DD` in UTC, so suggestions stay put for the day. */
-function utcDayKey(date = new Date()): string {
-  return date.toISOString().slice(0, 10)
-}
-
-/** Cache only: clearing it must only ever cost a refetch. One entry, replaced on write. */
-function readCache(key: string): SuggestedEdit[] | null {
-  try {
-    const raw = window.localStorage.getItem(CACHE_KEY)
-    if (!raw) return null
-    const entry = JSON.parse(raw) as { key?: string; value?: SuggestedEdit[] }
-    return entry.key === key && Array.isArray(entry.value) ? entry.value : null
-  } catch {
-    return null
-  }
-}
-
-function writeCache(key: string, value: SuggestedEdit[]): void {
-  // Empty results aren't cached, so they're retried next load.
-  if (!value.length) return
-  try {
-    window.localStorage.setItem(CACHE_KEY, JSON.stringify({ key, value }))
-  } catch {
-    // Full or unavailable storage must never break the page.
-  }
 }
 
 /** First task label for a page, from its maintenance templates. */
@@ -130,19 +91,20 @@ async function personalTasks(seeds: string[], signal: AbortSignal): Promise<Task
 }
 
 /**
- * Articles with something to improve, each labelled with its task. Personal when
- * the reader has pages to grow from (`seeds`); otherwise one random suggestion.
+ * Articles with something to improve, each labelled with its task ("Find a
+ * reference"…). Personal when the reader has pages to grow from (`seeds`);
+ * otherwise one random suggestion.
  */
 export async function loadSuggestedEdits(
   seeds: string[],
   signal: AbortSignal,
-): Promise<SuggestedEdit[]> {
+): Promise<HomeArticleCard[]> {
   const personal = seeds.length > 0
   const limit = personal ? PERSONAL_SUGGESTION_COUNT : RANDOM_SUGGESTION_COUNT
 
   // Random suggestions stay for the day too, so the one card doesn't change each visit.
   const cacheKey = `${utcDayKey()}|${personal ? seeds.map(titleKey).sort().join('|') : 'random'}`
-  const cached = readCache(cacheKey)
+  const cached = readDayCache<HomeArticleCard>(CACHE_SLOT, cacheKey)
   if (cached) return cached
 
   const tasks = personal
@@ -150,19 +112,19 @@ export async function loadSuggestedEdits(
     : templateTasks(await fetchRandomTaskPages(RANDOM_POOL, signal))
 
   const seen = new Set<string>()
-  const edits: SuggestedEdit[] = []
+  const cards: HomeArticleCard[] = []
   for (const { page, label } of tasks) {
     const key = titleKey(page.title)
-    if (seen.has(key) || edits.length >= limit) continue
+    if (seen.has(key) || cards.length >= limit) continue
     seen.add(key)
-    edits.push({
+    cards.push({
       title: page.title,
       description: page.description,
       thumbnailUrl: page.thumbnailUrl,
-      task: label,
+      supportingText: label,
     })
   }
 
-  writeCache(cacheKey, edits)
-  return edits
+  writeDayCache(CACHE_SLOT, cacheKey, cards)
+  return cards
 }
