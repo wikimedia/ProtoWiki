@@ -30,13 +30,22 @@ const { pageTitle } = useConfig()
 /* Desktop: 60/40, main column then side column. Mobile: one column. */
 const isSplit = computed(() => globalSkin.value === 'desktop')
 
-const { isAssigned: isMentorAssigned } = useHomeMentor()
+const { isAssigned: isMentorAssigned, assign: assignMentor, optOut: optOutOfMentor } =
+  useHomeMentor()
 const mentorTitle = computed(() =>
   isMentorAssigned.value ? MENTOR_CONTENT.assigned.title : MENTOR_CONTENT.unassigned.title,
 )
-const MENTOR_MENU = {
-  items: [{ value: 'opt-out', label: 'Opt out of mentorship' }],
+/* With a mentor: opt out. Without one: get one, as the module's own button does. */
+const mentorMenu = computed(() => ({
+  items: isMentorAssigned.value
+    ? [{ value: 'opt-out', label: 'Opt out of mentorship' }]
+    : [{ value: 'get-mentor', label: MENTOR_CONTENT.unassigned.action }],
   footer: { value: 'about', label: 'About mentors' },
+}))
+
+function onMentorMenuSelect(value: string | number): void {
+  if (value === 'opt-out') optOutOfMentor()
+  if (value === 'get-mentor') assignMentor()
 }
 </script>
 
@@ -57,7 +66,7 @@ const MENTOR_MENU = {
 
           <HomeSectionFrame id="mentor" :title="mentorTitle">
             <template #actions>
-              <HomeModuleMenu :menu="MENTOR_MENU" />
+              <HomeModuleMenu :menu="mentorMenu" @select="onMentorMenuSelect" />
             </template>
             <HomeMentor />
           </HomeSectionFrame>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * A module's "…" menu, beside its heading: the module's actions, and "About …"
- * as the footer. The picks don't lead anywhere yet.
+ * as the footer. Each pick is emitted as `select`, for the module to act on.
  *
  * CODEX+ CdxMenuButton: no placement prop (it's fixed to `bottom-start`, which
  * flips to `bottom-end` near the window's edge). The button sits at the end of
@@ -21,6 +21,8 @@ defineProps<{
   }
 }>()
 
+const emit = defineEmits<{ select: [value: MenuItemValue] }>()
+
 const button = ref<InstanceType<typeof CdxButton> | null>(null)
 const menuRef = ref<InstanceType<typeof CdxMenu> | null>(null)
 const expanded = ref(false)
@@ -29,10 +31,12 @@ const menuId = useId()
 
 useFloatingMenu(button, menuRef, { useAvailableWidth: true, placement: 'bottom-end', offset: 4 })
 
-// A pick only closes the menu; clear it so no row stays selected.
+// A pick is passed on and closes the menu; clear it so no row stays selected.
 const selected = ref<MenuItemValue | null>(null)
 watch(selected, (value) => {
-  if (value !== null) selected.value = null
+  if (value === null) return
+  emit('select', value)
+  selected.value = null
 })
 
 // As CdxMenuButton: Enter toggles (or picks a keyboard-highlighted row); the rest goes to the menu.
