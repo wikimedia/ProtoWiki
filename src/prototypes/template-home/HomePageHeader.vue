@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * The Home's title over production's tabs — Homepage (this page), User page and
+ * The Home's title over its tabs — Home (this page), User page and
  * Talk — styled as each skin's page tabs: Vector 2022's under the title rule,
  * Minerva's bold grey strip. User page and Talk are the account's pages on
  * Wikipedia.
@@ -31,7 +31,7 @@ const talkHref = computed(() => wikiUrl(`User talk:${displayName.value}`))
         class="home-page-header__tab home-page-header__tab--active"
         aria-current="page"
       >
-        Homepage
+        Home
       </RouterLink>
       <a :href="userPageHref" class="home-page-header__tab">User page</a>
       <a :href="talkHref" class="home-page-header__tab">Talk</a>
