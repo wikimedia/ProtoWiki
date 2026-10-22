@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { cdxIconHome } from '@wikimedia/codex-icons'
+import { cdxIconConfigure, cdxIconHome, cdxIconLevelOne } from '@wikimedia/codex-icons'
 
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
@@ -11,6 +11,7 @@ import HomeMentor from './HomeMentor.vue'
 import HomeModuleMenu from './HomeModuleMenu.vue'
 import HomePageHeader from './HomePageHeader.vue'
 import HomeSectionFrame from './HomeSectionFrame.vue'
+import HomeSuggestedEdits from './HomeSuggestedEdits.vue'
 import { MENTOR_CONTENT } from './mentorContent'
 import { useHomeMentor } from './useHomeMentor'
 
@@ -29,6 +30,15 @@ const { pageTitle } = useConfig()
 
 /* Desktop: 60/40, main column then side column. Mobile: one column. */
 const isSplit = computed(() => globalSkin.value === 'desktop')
+
+/* The picks don't lead anywhere yet. */
+const SUGGESTED_EDITS_MENU = {
+  items: [
+    { value: 'interests', label: 'Interests', icon: cdxIconConfigure },
+    { value: 'edit-types', label: 'Types of edits', icon: cdxIconLevelOne },
+  ],
+  footer: { value: 'about', label: 'About suggested edits' },
+}
 
 const { isAssigned: isMentorAssigned, assign: assignMentor, optOut: optOutOfMentor } =
   useHomeMentor()
@@ -56,8 +66,14 @@ function onMentorMenuSelect(value: string | number): void {
       <HomePageHeader :title="pageTitle" />
 
       <div class="home-columns" :class="{ 'home-columns--split': isSplit }">
-        <!-- Main column: empty for now. -->
-        <div v-if="isSplit" class="home-modules home-modules--main" />
+        <div class="home-modules home-modules--main">
+          <HomeSectionFrame id="suggested-edits" title="Suggested edits">
+            <template #actions>
+              <HomeModuleMenu :menu="SUGGESTED_EDITS_MENU" />
+            </template>
+            <HomeSuggestedEdits />
+          </HomeSectionFrame>
+        </div>
 
         <div class="home-modules home-modules--side">
           <HomeSectionFrame id="impact" title="Your impact">
@@ -107,6 +123,13 @@ function onMentorMenuSelect(value: string | number): void {
   margin-top: var(--spacing-100);
 }
 
+/* Mobile: one column, the main column's modules first, with the modules' own gap between. */
+.home-columns {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-200);
+}
+
 /* Desktop: 60/40, each column's modules from the top. */
 .home-columns--split {
   display: grid;
@@ -115,14 +138,14 @@ function onMentorMenuSelect(value: string | number): void {
   column-gap: var(--spacing-200);
 }
 
-/* Narrow desktop: one column, and the empty main column takes no room. */
+/*
+ * Narrow desktop: one column. With the side column's own top margin, the row
+ * gap makes the desktop modules' 48px break between the columns' modules.
+ */
 @media (max-width: 767px) {
   .home-columns--split {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .home-modules--main:empty {
-    display: none;
+    row-gap: var(--spacing-200);
   }
 }
 </style>
