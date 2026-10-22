@@ -107,7 +107,7 @@ function collapse(): void {
 .home-suggested-edits__more-row {
   display: flex;
   align-items: center;
-  margin-top: var(--spacing-50);
+  margin-top: var(--spacing-75);
 }
 
 .home-suggested-edits__collapse {
