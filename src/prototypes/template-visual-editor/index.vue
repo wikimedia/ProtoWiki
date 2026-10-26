@@ -13,8 +13,11 @@ definePage({
 })
 
 import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 
+import { removeUrlQueryParam } from '@/appearance/url-query'
+import type { SuggestionTypeId } from '@/components/visual-editor/engine/checks'
 import ArticleLive from '@/components/article/ArticleLive.vue'
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 import SettingsPopover from '@/components/settings/SettingsPopover.vue'
@@ -33,6 +36,32 @@ const editing = ref(false)
 const suggestionCount = ref<number | null>(null)
 
 const article = computed(() => titleFromQuery.value)
+
+/**
+ * `?task=` (a Home suggested edit's Growth task type) → the editor's suggestion
+ * types for it, so the editor opens on that suggestion. "Extend article" has no
+ * suggestion to open on.
+ */
+const TASK_SUGGESTION_TYPES: Record<string, SuggestionTypeId[]> = {
+  references: ['citationNeeded', 'addReference', 'convertReference'],
+  links: ['suggestedLink'],
+  copyedit: [
+    'textMatch-cliches',
+    'textMatch-editorializing',
+    'tone',
+    'doubleBold',
+    'duplicateLink',
+    'yearLink',
+    'headingLevel',
+  ],
+  update: ['textMatch-relative-time-ref'],
+}
+
+// Read once, then dropped from the URL so it doesn't follow on to later pages.
+const route = useRoute()
+const task = typeof route.query.task === 'string' ? route.query.task : null
+const focusSuggestionTypes = task ? (TASK_SUGGESTION_TYPES[task] ?? null) : null
+if (task) removeUrlQueryParam('task')
 
 function onTitleResolved(title: string) {
   if (title?.trim()) setWikiPageTitle(title)
@@ -81,6 +110,7 @@ function onTitleResolved(title: string) {
       v-model:suggestion-count="suggestionCount"
       editable
       start-in-edit-mode
+      :focus-suggestion-types="focusSuggestionTypes"
       :read-route="ARTICLE_TEMPLATE_PATH"
       :wiki-link-route="ARTICLE_TEMPLATE_PATH"
       :saved-pages-route="SAVED_PAGES_TEMPLATE_PATH"

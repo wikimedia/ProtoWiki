@@ -22,6 +22,8 @@ const props = withDefaults(
     /** When set, exit / publish navigates to the read prototype instead of in-place read. */
     readRoute?: string
     prefetchSuggestionCount?: number | null
+    /** Suggestion types the editor opens on (see `VeEditor` `focusTypes`). */
+    focusSuggestionTypes?: readonly string[] | null
     lang?: string
     dir?: 'ltr' | 'rtl'
     theme?: Theme
@@ -32,6 +34,7 @@ const props = withDefaults(
     startInEditMode: false,
     readRoute: undefined,
     prefetchSuggestionCount: null,
+    focusSuggestionTypes: null,
     lang: undefined,
     dir: undefined,
     theme: undefined,
@@ -140,6 +143,7 @@ defineExpose({ exitEditForNavigation, onEditClick, onReadClick })
         :skin="skin"
         :page="page"
         :section="editSection"
+        :focus-types="focusSuggestionTypes"
         @exit="handleEditorExit"
         @published="handlePublished"
         @sidebar="(open) => (sidebarOpen = open)"

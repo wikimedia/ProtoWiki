@@ -20,6 +20,8 @@ export interface HomeArticleCard {
   thumbnailUrl?: string
   /** Short line under the text, e.g. the task or why it's suggested. */
   supportingText?: string
+  /** Suggested-edit task id, passed on as `?task=` so the editor opens on it. */
+  task?: string
 }
 
 const props = defineProps<{
@@ -41,6 +43,10 @@ const { navigateToWikiPrototype, resolveWikiPrototypeUrl } = useWikiPrototypeNav
 
 const target = computed(() => props.to ?? ARTICLE_TEMPLATE_PATH)
 
+function query(card: HomeArticleCard) {
+  return card.task ? { task: card.task } : undefined
+}
+
 function thumbnail(card: HomeArticleCard) {
   return card.thumbnailUrl ? { url: card.thumbnailUrl } : null
 }
@@ -50,7 +56,7 @@ function onClick(event: MouseEvent, card: HomeArticleCard): void {
   if (event.defaultPrevented || event.button !== 0) return
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
   event.preventDefault()
-  navigateToWikiPrototype(target.value, card.title)
+  navigateToWikiPrototype(target.value, card.title, query(card))
 }
 </script>
 
@@ -71,7 +77,7 @@ function onClick(event: MouseEvent, card: HomeArticleCard): void {
       v-else
       :key="card.title"
       class="home-article-cards__card"
-      :url="resolveWikiPrototypeUrl(target, card.title) ?? undefined"
+      :url="resolveWikiPrototypeUrl(target, card.title, query(card)) ?? undefined"
       :thumbnail="thumbnail(card)"
       thumbnail-size="large"
       force-thumbnail

@@ -1,5 +1,9 @@
 import type { HomeArticleCard } from './HomeArticleCards.vue'
-import { LINK_RECOMMENDATION_LABEL, taskTypeForTemplates } from './editTaskTypes'
+import {
+  LINK_RECOMMENDATION_ID,
+  LINK_RECOMMENDATION_LABEL,
+  taskTypeForTemplates,
+} from './editTaskTypes'
 import {
   fetchLinkRecommendations,
   fetchRandomTaskPages,
@@ -22,13 +26,15 @@ const RANDOM_POOL = 20
 
 interface Task {
   page: TaskPage
+  /** Task type id, e.g. `references`. */
+  id: string
   label: string
 }
 
-/** First task label for a page, from its maintenance templates. */
+/** First task for a page, from its maintenance templates. */
 function templateTask(page: TaskPage): Task | null {
   const type = taskTypeForTemplates(page.templates)
-  return type ? { page, label: type.label } : null
+  return type ? { page, id: type.id, label: type.label } : null
 }
 
 function templateTasks(pages: TaskPage[]): Task[] {
@@ -84,7 +90,7 @@ async function personalTasks(seeds: string[], signal: AbortSignal): Promise<Task
   ])
 
   const linkTasks = linkRecommendations.map((pages) =>
-    pages.map((page) => ({ page, label: LINK_RECOMMENDATION_LABEL })),
+    pages.map((page) => ({ page, id: LINK_RECOMMENDATION_ID, label: LINK_RECOMMENDATION_LABEL })),
   )
   // Own pages first — they're what the reader already cares about — then a mix.
   return [...templateTasks(own), ...interleave([...related.map(templateTasks), ...linkTasks])]
@@ -102,7 +108,8 @@ export async function loadSuggestedEdits(
   const personal = seeds.length > 0
 
   // Random suggestions stay for the day too, so the cards don't change each visit.
-  const cacheKey = `${utcDayKey()}|${personal ? seeds.map(titleKey).sort().join('|') : `random:${SUGGESTION_COUNT}`}`
+  // `v2`: cards carry their task id.
+  const cacheKey = `v2|${utcDayKey()}|${personal ? seeds.map(titleKey).sort().join('|') : `random:${SUGGESTION_COUNT}`}`
   const cached = readDayCache<HomeArticleCard>(CACHE_SLOT, cacheKey)
   if (cached) return cached
 
@@ -112,7 +119,7 @@ export async function loadSuggestedEdits(
 
   const seen = new Set<string>()
   const cards: HomeArticleCard[] = []
-  for (const { page, label } of tasks) {
+  for (const { page, id, label } of tasks) {
     const key = titleKey(page.title)
     if (seen.has(key) || cards.length >= SUGGESTION_COUNT) continue
     seen.add(key)
@@ -121,6 +128,7 @@ export async function loadSuggestedEdits(
       description: page.description,
       thumbnailUrl: page.thumbnailUrl,
       supportingText: label,
+      task: id,
     })
   }
 

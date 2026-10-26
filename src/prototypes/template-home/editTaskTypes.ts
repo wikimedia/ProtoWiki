@@ -41,6 +41,7 @@ export const TEMPLATE_TASK_TYPES: readonly EditTaskType[] = [
 ]
 
 /** Growth's "Add a link" structured task (CirrusSearch `hasrecommendation:link`). */
+export const LINK_RECOMMENDATION_ID = 'links'
 export const LINK_RECOMMENDATION_LABEL = 'Add links'
 
 export const ALL_TASK_TEMPLATES = TEMPLATE_TASK_TYPES.flatMap((type) => type.templates)
