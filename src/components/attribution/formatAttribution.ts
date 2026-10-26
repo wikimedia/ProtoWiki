@@ -14,37 +14,6 @@ export function formatCompactCount(value: number): string {
   return String(value)
 }
 
-const SIX_WEEKS_DAYS = 42
-
-function padTwoDigits(value: number): string {
-  return String(value).padStart(2, '0')
-}
-
-/** Day-first (DD/MM) for en-GB or Europe timezone; otherwise month-first (MM/DD). */
-export function prefersDayFirstDate(): boolean {
-  if (typeof navigator === 'undefined') return false
-
-  const locale = navigator.language ?? 'en-US'
-  if (locale.toLowerCase().startsWith('en-gb')) return true
-
-  try {
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
-    if (timeZone.startsWith('Europe/')) return true
-  } catch {
-    // Ignore — fall through to month-first default.
-  }
-
-  return false
-}
-
-function formatCompactCalendarDate(date: Date, includeYear: boolean, dayFirst: boolean): string {
-  const month = padTwoDigits(date.getMonth() + 1)
-  const day = padTwoDigits(date.getDate())
-  const datePart = dayFirst ? `${day}/${month}` : `${month}/${day}`
-  if (!includeYear) return datePart
-  return `${datePart}/${date.getFullYear()}`
-}
-
 /** Relative duration only — e.g. "4w ago", "just now" (no "Updated" prefix). */
 export function formatRelativeUpdateDuration(iso: string): string {
   const date = new Date(iso)
@@ -70,30 +39,9 @@ export function formatRelativeUpdateDuration(iso: string): string {
   return `${years}y ago`
 }
 
-/**
- * Wikitab search card last-update label — relative up to 6 weeks, then a compact date.
- * > 6 weeks and < 1 year: MM/DD or DD/MM; ≥ 1 year: MM/DD/YYYY or DD/MM/YYYY.
- */
+/** Wikitab search card last-update label (same relative scale as {@link formatRelativeUpdateDuration}). */
 export function formatSearchLastUpdatedLabel(iso: string): string {
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return iso
-
-  const diffMs = Date.now() - date.getTime()
-  const diffMinutes = Math.round(diffMs / 60_000)
-  if (diffMinutes < 1) return 'just now'
-  if (diffMinutes < 60) return `${diffMinutes}m ago`
-
-  const diffHours = Math.round(diffMinutes / 60)
-  if (diffHours < 48) return `${diffHours}h ago`
-
-  const diffDays = Math.max(1, Math.round(diffHours / 24))
-  if (diffDays <= SIX_WEEKS_DAYS) {
-    if (diffDays < 7) return `${diffDays}d ago`
-    const weeks = Math.max(1, Math.round(diffDays / 7))
-    return `${weeks}w ago`
-  }
-
-  return formatCompactCalendarDate(date, diffDays >= 365, prefersDayFirstDate())
+  return formatRelativeUpdateDuration(iso)
 }
 
 /** Relative "Updated …" from an ISO timestamp. */
