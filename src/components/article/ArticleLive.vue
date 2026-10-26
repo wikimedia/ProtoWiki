@@ -132,6 +132,8 @@ interface Props {
   languagesCount?: number
   editable?: boolean
   startInEditMode?: boolean
+  /** With **`editable`**: the editor opens on the first detected suggestion of these types. */
+  focusSuggestionTypes?: readonly string[] | null
   editRoute?: string
   readRoute?: string
   wikiLinkRoute?: string
@@ -153,6 +155,7 @@ const props = withDefaults(defineProps<Props>(), {
   languagesCount: undefined,
   editable: false,
   startInEditMode: false,
+  focusSuggestionTypes: null,
   editRoute: undefined,
   readRoute: undefined,
   wikiLinkRoute: undefined,
@@ -445,6 +448,7 @@ function onEditNavigate() {
         :start-in-edit-mode="startInEditMode"
         :read-route="props.readRoute"
         :prefetch-suggestion-count="prefetchSuggestionCount"
+        :focus-suggestion-types="props.focusSuggestionTypes"
         :lang="resolvedLang"
         :dir="props.dir"
         :theme="props.theme"

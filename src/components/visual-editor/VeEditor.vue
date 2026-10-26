@@ -59,6 +59,8 @@ const props = defineProps<{
   page: { title: string; lang: string; host: string }
   /** Opened from a section's edit link (`data-mw-section-id`). */
   section?: string | null
+  /** Opened for a task: once detected, go to the first suggestion of these types. */
+  focusTypes?: readonly string[] | null
 }>()
 
 const { editCount, editCountReady } = useEffectiveEditorEditCount()
@@ -624,6 +626,24 @@ function viewSuggestions() {
   if (!target) return
   scrollToFinding(target)
   setTimeout(() => focus(target), isMobile.value ? 600 : 400)
+}
+
+/** Opened for a task: turn suggestions on and go to the first one of `focusTypes`. */
+function viewFocusTypes() {
+  const types = props.focusTypes
+  if (!types?.length) return
+  const target = pendingSuggestions.value
+    .filter((f) => types.includes(f.type) && !overlapsCheck(f))
+    .sort(byPosition)[0]
+  if (!target) return
+  suggestionsOn.value = true
+  // The desktop sidebar opening reflows the article, so measure after it.
+  nextTick(() =>
+    requestAnimationFrame(() => {
+      scrollToFinding(target)
+      setTimeout(() => focus(target), isMobile.value ? 600 : 400)
+    }),
+  )
 }
 
 // ── Focus / selection sync ───────────────────────────────────────────────────
@@ -1379,6 +1399,7 @@ onMounted(async () => {
   scheduleLayout()
   await detection
   updateViewport()
+  viewFocusTypes()
 })
 
 onBeforeUnmount(() => {
