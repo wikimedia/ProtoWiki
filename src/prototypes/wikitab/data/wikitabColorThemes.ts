@@ -5,6 +5,7 @@ const INVERTED_FG = 'var(--color-inverted-fixed)'
 
 export type WikitabColorThemeId =
   | 'picture-of-the-day'
+  | 'picture-of-the-day-light'
   | 'default-white'
   | 'red-white'
   | 'orange-white'
@@ -55,13 +56,21 @@ export type WikitabColorThemeStyle = {
   accentOnWhite?: boolean
   /** Full-page background from today's Picture of the day (featured feed `image`). */
   usesPotdBackground?: boolean
-  /** Opacity of the POTD photo layer (0–1). Defaults to 0.5 when omitted. */
+  /** Opacity of the POTD photo layer (0–1). Defaults to 0.4 when omitted. */
   potdBackgroundOpacity?: number
-  /** POTD photo opacity while the attribution card is open. Defaults to 0.85. */
+  /** POTD photo opacity while the attribution card is open. Defaults to 1. */
   potdBackgroundExpandedOpacity?: number
+  /**
+   * Black overlay strength on the photo only (0–1). Lets light Codex mode sit on a
+   * dimmed image without switching the page to dark mode.
+   */
+  potdBackgroundScrim?: number
 }
 
 export const POTD_COLOR_THEME_ID = 'picture-of-the-day' satisfies WikitabColorThemeId
+
+export const POTD_LIGHT_COLOR_THEME_ID =
+  'picture-of-the-day-light' satisfies WikitabColorThemeId
 
 export const DEFAULT_COLOR_THEME_ID = 'default-white' satisfies WikitabColorThemeId
 
@@ -112,7 +121,8 @@ export const WIKITAB_COLOR_THEME_ITEMS: {
   id: WikitabColorThemeId
   label: string
 }[] = [
-  { id: 'picture-of-the-day', label: 'Picture of the day' },
+  { id: 'picture-of-the-day', label: 'Picture of the day (dark)' },
+  { id: 'picture-of-the-day-light', label: 'Picture of the day (light)' },
   { id: 'default-white', label: 'Default' },
   ...WHITE_PROGRESSIVE_THEME_ITEMS.map(({ id, label }) => ({ id, label })),
   { id: 'black', label: 'Dark' },
@@ -167,8 +177,20 @@ export const WIKITAB_COLOR_THEME_STYLES: Record<WikitabColorThemeId, WikitabColo
     lightHover: false,
     codexMode: 'dark',
     usesPotdBackground: true,
-    potdBackgroundOpacity: 0.5,
-    potdBackgroundExpandedOpacity: 0.85,
+    potdBackgroundOpacity: 0.4,
+    potdBackgroundExpandedOpacity: 1,
+  },
+  'picture-of-the-day-light': {
+    /* White base + semi-transparent photo washes the image brighter than dark POTD. */
+    bg: codexLight.backgroundBase,
+    border: wikitabColor('gray', 200),
+    fg: wikitabColor('gray', 900),
+    progressive: null,
+    lightHover: true,
+    codexMode: 'light',
+    usesPotdBackground: true,
+    potdBackgroundOpacity: 0.4,
+    potdBackgroundExpandedOpacity: 1,
   },
   'default-white': {
     /* Codex light base as a resolved value — `var(--background-color-base)` follows
@@ -290,7 +312,6 @@ export const WIKITAB_COLOR_THEME_STYLES: Record<WikitabColorThemeId, WikitabColo
 }
 
 const LEGACY_THEME_ALIASES: Record<string, WikitabColorThemeId> = {
-  'picture-of-the-day-light': 'picture-of-the-day',
   'gray-bold': 'off-black',
   'red-bold': 'red-light',
   'red-dark': 'red-light',
@@ -430,7 +451,8 @@ export function colorThemeCardStyle(
   }
   if (isPotdColorTheme(id) && potdImageUrl) {
     style['--wikitab-potd-picker-image'] = `url(${potdImageUrl})`
-    style['--wikitab-potd-picker-image-opacity'] = String(colors.potdBackgroundOpacity ?? 0.5)
+    style['--wikitab-potd-picker-image-opacity'] = String(colors.potdBackgroundOpacity ?? 0.4)
+    style['--wikitab-potd-picker-image-scrim'] = String(colors.potdBackgroundScrim ?? 0)
   }
   return {
     lightHover: colors.lightHover,
@@ -608,10 +630,11 @@ export function colorThemePageStyle(id: WikitabColorThemeId): Record<string, str
   appendSkeletonTokens(style, theme)
 
   if (theme.usesPotdBackground) {
-    style['--wikitab-potd-background-opacity'] = String(theme.potdBackgroundOpacity ?? 0.5)
+    style['--wikitab-potd-background-opacity'] = String(theme.potdBackgroundOpacity ?? 0.4)
     style['--wikitab-potd-background-opacity-expanded'] = String(
-      theme.potdBackgroundExpandedOpacity ?? 0.85,
+      theme.potdBackgroundExpandedOpacity ?? 1,
     )
+    style['--wikitab-potd-background-scrim'] = String(theme.potdBackgroundScrim ?? 0)
   }
 
   return style

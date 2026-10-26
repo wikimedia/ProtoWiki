@@ -191,10 +191,14 @@ onUnmounted(() => {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image: var(--wikitab-potd-picker-image);
+  background-image: linear-gradient(
+      rgb(0 0 0 / var(--wikitab-potd-picker-image-scrim, 0)),
+      rgb(0 0 0 / var(--wikitab-potd-picker-image-scrim, 0))
+    ),
+    var(--wikitab-potd-picker-image);
   background-size: cover;
   background-position: center;
-  opacity: var(--wikitab-potd-picker-image-opacity, 0.5);
+  opacity: var(--wikitab-potd-picker-image-opacity, 0.4);
 }
 
 .wikitab-color-theme-picker__card--potd .wikitab-color-theme-picker__card-label,

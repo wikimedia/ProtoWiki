@@ -2,9 +2,9 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
-import tabularWordmark from './assets/tabular-wikipedia-wordmark.svg'
 import './wikitab-surface.css'
 
+import WikitabWordmark from './WikitabWordmark.vue'
 import WikitabColorThemeButton from './WikitabColorThemeButton.vue'
 import WikitabColorThemePicker from './WikitabColorThemePicker.vue'
 import WikitabPotdAttribution from './WikitabPotdAttribution.vue'
@@ -53,7 +53,11 @@ import { useWikitabSuggestedEdits } from './useWikitabSuggestedEdits'
 import { useWikitabReviewChanges } from './useWikitabReviewChanges'
 import { useWikitabPinned } from './useWikitabPinned'
 import { buildEffectiveHomeOrder, useWikitabModuleOrder } from './useWikitabModuleOrder'
-import { loadWikitabConfig, type WikitabSavedItem } from './data/wikitabConfig'
+import {
+  loadWikitabConfig,
+  resetWikitabModuleConfigure,
+  type WikitabSavedItem,
+} from './data/wikitabConfig'
 import type { SaveItemPayload } from './data/savedCardHelpers'
 import type { WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
 import type { WikitabSearchContributeItem } from './data/fetchWikitabSearchContribute'
@@ -62,9 +66,12 @@ import {
   snapshotSavedModuleItems,
   useWikitabSavedArticles,
 } from './useWikitabSavedArticles'
+import { articleUrl } from './data/wikitabHtml'
 import { bumpWikitabSearchMountKey, useWikitabSearchMountKey } from './useWikitabSearchMount'
 import { useWikitabSearchTab } from './useWikitabSearchTab'
 import { cdxIconLogoWikipedia } from '@wikimedia/codex-icons'
+
+const mainPageUrl = articleUrl('Main Page')
 
 definePage({
   meta: {
@@ -72,6 +79,7 @@ definePage({
     description: 'New tab home',
     platform: 'web',
     icon: cdxIconLogoWikipedia,
+    favicon: 'images/wikitab-favicon.svg',
   },
 })
 
@@ -89,7 +97,8 @@ const CUSTOM_MODULE_IDS = new Set<WikitabModuleId>([
   WIKITAB_REVIEW_CHANGES_MODULE_ID,
 ])
 
-const { hiddenIds, isHidden, hideSection, showSection } = useWikitabHiddenSections()
+const { hiddenIds, isHidden, hideSection, showSection, reloadFromStorage: reloadHiddenSections } =
+  useWikitabHiddenSections()
 const feedHiddenSectionIds = computed(() =>
   hiddenIds.value.filter((id): id is WikitabSectionId => !CUSTOM_MODULE_IDS.has(id)),
 )
@@ -106,7 +115,8 @@ const {
   autoLoad: false,
 })
 const { pinnedIds, isPinned, togglePin, orderSections } = useWikitabPinned()
-const { resolvedOrder, setModuleOrder } = useWikitabModuleOrder()
+const { resolvedOrder, setModuleOrder, reloadFromStorage: reloadModuleOrder } =
+  useWikitabModuleOrder()
 const { filterCards, filterActivityItems, hideArticle } = useWikitabHiddenArticles()
 const {
   savedItems,
@@ -393,6 +403,13 @@ async function closeConfigure(): Promise<void> {
   configureButton.value?.focusButton()
 }
 
+function resetModuleConfigure(): void {
+  resetWikitabModuleConfigure()
+  reloadModuleOrder()
+  reloadHiddenSections()
+  void refreshHomeModulesInOrder()
+}
+
 async function openSavedPanel(): Promise<void> {
   savedPanelOpen.value = true
 
@@ -671,22 +688,19 @@ watch(searchQuery, (next, prev) => {
       <header class="wikitab__hero">
         <div class="wikitab__hero-top">
           <h1 class="wikitab__wordmark">
-            <RouterLink class="wikitab__wordmark-link" :to="{ path: route.path, query: {} }">
-              <img
-                class="wikitab__wordmark-img"
-                :src="tabularWordmark"
-                alt="Tabular Wikipedia"
-                width="150"
-                height="33"
-              />
-            </RouterLink>
+            <WikitabWordmark />
           </h1>
-          <WikitabSearch
-            :key="searchMountKey"
-            class="wikitab__search"
-            :initial-query="searchQuery"
-            :search-mode="isSearchMode"
-          />
+          <div class="wikitab__hero-search">
+            <WikitabSearch
+              :key="searchMountKey"
+              class="wikitab__search"
+              :initial-query="searchQuery"
+              :search-mode="isSearchMode"
+            />
+            <a v-if="!isSearchMode" class="wikitab__main-page-link" :href="mainPageUrl">
+              Main page
+            </a>
+          </div>
         </div>
         <WikitabSearchPage
           v-if="isSearchMode"
@@ -817,6 +831,7 @@ watch(searchQuery, (next, prev) => {
       :module-order="resolvedOrder"
       :is-hidden="isHidden"
       @close="closeConfigure"
+      @reset="resetModuleConfigure"
       @show="showSection"
       @hide="hideSection"
       @reorder="setModuleOrder"
@@ -906,6 +921,14 @@ watch(searchQuery, (next, prev) => {
   width: 100%;
 }
 
+.wikitab__hero-search {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-100);
+  width: 100%;
+}
+
 /* Elevate the whole hero while search is open so the menu covers section links. */
 .wikitab__hero:has(.wikitab-search--expanded) {
   position: relative;
@@ -916,25 +939,7 @@ watch(searchQuery, (next, prev) => {
   margin: 0;
 }
 
-.wikitab__wordmark-link {
-  display: block;
-  color: inherit;
-  text-decoration: none;
-}
-
-.wikitab__wordmark-link:hover,
-.wikitab__wordmark-link:focus-visible {
-  text-decoration: none;
-  opacity: 0.85;
-}
-
-.wikitab__wordmark-img {
-  display: block;
-  height: 33px;
-  width: auto;
-}
-
-[data-theme='dark'] .wikitab__wordmark-img {
+[data-theme='dark'] .wikitab__wordmark :deep(.wikitab-wordmark__img) {
   filter: brightness(0) invert(1);
 }
 
@@ -948,16 +953,20 @@ watch(searchQuery, (next, prev) => {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image: var(--wikitab-potd-background-image);
+  background-image: linear-gradient(
+      rgb(0 0 0 / var(--wikitab-potd-background-scrim, 0)),
+      rgb(0 0 0 / var(--wikitab-potd-background-scrim, 0))
+    ),
+    var(--wikitab-potd-background-image);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  opacity: var(--wikitab-potd-background-opacity, 0.5);
+  opacity: var(--wikitab-potd-background-opacity, 0.4);
   transition: opacity 0.2s ease;
 }
 
 .wikitab--potd-background.wikitab--potd-attribution-open::before {
-  opacity: var(--wikitab-potd-background-opacity-expanded, 0.85);
+  opacity: var(--wikitab-potd-background-opacity-expanded, 1);
 }
 
 @media (min-width: 640px) {
@@ -974,6 +983,19 @@ watch(searchQuery, (next, prev) => {
 
 .wikitab__search {
   width: 100%;
+}
+
+.wikitab__main-page-link {
+  color: var(--color-progressive);
+  font-size: var(--font-size-medium);
+  line-height: var(--line-height-small);
+  text-decoration: none;
+}
+
+.wikitab__main-page-link:hover,
+.wikitab__main-page-link:focus-visible {
+  color: var(--color-progressive--hover);
+  text-decoration: underline;
 }
 
 .wikitab__search-page {

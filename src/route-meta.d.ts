@@ -17,5 +17,7 @@ declare module 'vue-router' {
     hidePrimary?: boolean
     hideSecondary?: boolean
     icon?: Icon
+    /** Public path under `public/` (e.g. `images/wikitab-favicon.svg`). */
+    favicon?: string
   }
 }

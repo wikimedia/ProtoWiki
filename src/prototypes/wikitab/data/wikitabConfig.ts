@@ -723,6 +723,11 @@ export function loadWikitabConfig(): WikitabConfig {
 
 const PATCH_MAX_ATTEMPTS = 6
 
+/** Restore configure-panel defaults: registry module order and all modules visible. */
+export function resetWikitabModuleConfigure(): WikitabConfigPatchResult {
+  return patchWikitabConfig({ moduleOrderIds: [], hiddenSectionIds: [] })
+}
+
 export function patchWikitabConfig(partial: Partial<WikitabConfig>): WikitabConfigPatchResult {
   if (typeof window === 'undefined') {
     const next = normalizeConfig({ ...DEFAULT_WIKITAB_CONFIG, ...partial })

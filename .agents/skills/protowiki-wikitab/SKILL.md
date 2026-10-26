@@ -14,6 +14,13 @@ Desktop and mobile diverge on `[data-skin]`, which ProtoWiki already resolves
 from `?skin=` and the viewport at boot (see
 [`protowiki-skins`](../protowiki-skins/SKILL.md)).
 
+## WIKITAB wordmark
+
+Hero wordmark: `WikitabWordmark.vue` — static **W-tabbed** SVG at
+`src/prototypes/wikitab/assets/wordmark/W-tabbed.svg` (140×43 viewBox). Source
+export: `public/images/W-tabbed.svg`. Re-copy or normalize manually when the
+Figma asset changes.
+
 ## The section registry is the source of truth
 
 `sections.ts` holds one `WikitabSectionSpec` per section, and it drives both the
@@ -135,9 +142,11 @@ records how Wikitab applies them:
 2. **Tokens, never literals that equal a token.** Radius, transition duration,
    touch size (`--min-size-interactive-touch`), 2px spacing (`--spacing-12`),
    border widths and styles — and no hex fallbacks in `var()`. The Default /
-   White / Gray / Black / POTD colour-theme swatches read Codex token values
-   at build time from `data/codexTokenValues.ts`, so neutral themes follow
-   patched neutrals.
+   White / Gray / Black / POTD (dark + light) colour-theme swatches read Codex
+   token values at build time from `data/codexTokenValues.ts`, so neutral themes
+   follow patched neutrals. Both POTD variants share the same featured-feed photo
+   layer; ids are `picture-of-the-day` and `picture-of-the-day-light` in
+   `data/wikitabColorThemes.ts`.
 3. **Shell, not per-component copies.** `wikitab-surface.css` (imported once by
    `index.vue`, global) holds:
    - `--wikitab-card-*` aliases for **wrapper-driven** hover — `WikitabCard`
@@ -304,8 +313,8 @@ Four home modules sit beside the daily feed — not in `WIKITAB_SECTIONS` or
 `useWikitabFeed`. Saved, Daily reads, and Suggested edits use the feed paging
 contract (`initialCount` 4 / `pageSize` 6 for Saved and Daily reads; Suggested
 edits uses `initialCount` 2 / `pageSize` 4). Default home order
-(`WIKITAB_HOME_MODULE_ORDER` / `defaultModuleOrder()`): Saved → Daily reads →
-Suggested edits → Trending → In the news → Did you know → Active discussions →
+(`WIKITAB_HOME_MODULE_ORDER` / `defaultModuleOrder()`): Trending → Daily reads →
+Did you know → In the news → Saved → Suggested edits → Active discussions →
 Review changes → On this day → Birthdays. All appear in Configure and support
 pin / hide / drag reorder.
 

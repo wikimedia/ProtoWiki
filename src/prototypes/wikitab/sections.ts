@@ -112,14 +112,14 @@ export const WIKITAB_SECTIONS: readonly WikitabSectionSpec[] = [
   },
 ]
 
-/** Default home-feed module order when nothing is pinned. */
+/** Default home-feed / configure-panel module order (all modules visible). */
 export const WIKITAB_HOME_MODULE_ORDER: readonly WikitabModuleId[] = [
-  WIKITAB_SAVED_MODULE_ID,
-  WIKITAB_DAILY_READS_MODULE_ID,
-  WIKITAB_SUGGESTED_EDITS_MODULE_ID,
   'trending',
-  'news',
+  WIKITAB_DAILY_READS_MODULE_ID,
   'dyk',
+  'news',
+  WIKITAB_SAVED_MODULE_ID,
+  WIKITAB_SUGGESTED_EDITS_MODULE_ID,
   'discussions',
   WIKITAB_REVIEW_CHANGES_MODULE_ID,
   'otd',
@@ -168,24 +168,26 @@ export const WIKITAB_REVIEW_CHANGES_MODULE_SPEC = {
   pageSize: 4,
 }
 
-/** Configure-panel rows: saved-adjacent modules first, then daily feed sections. */
+/** Configure-panel rows — same order as `WIKITAB_HOME_MODULE_ORDER`. */
 export const WIKITAB_CONFIGURE_MODULES: ReadonlyArray<{
   id: WikitabModuleId
   heading: string
-}> = [
-  { id: WIKITAB_SAVED_MODULE_ID, heading: WIKITAB_SAVED_MODULE_SPEC.heading },
-  { id: WIKITAB_DAILY_READS_MODULE_ID, heading: WIKITAB_DAILY_READS_MODULE_SPEC.heading },
-  {
-    id: WIKITAB_SUGGESTED_EDITS_MODULE_ID,
-    heading: WIKITAB_SUGGESTED_EDITS_MODULE_SPEC.heading,
-  },
-  ...WIKITAB_SECTIONS.slice(0, 4).map((section) => ({ id: section.id, heading: section.heading })),
-  {
-    id: WIKITAB_REVIEW_CHANGES_MODULE_ID,
-    heading: WIKITAB_REVIEW_CHANGES_MODULE_SPEC.heading,
-  },
-  ...WIKITAB_SECTIONS.slice(4).map((section) => ({ id: section.id, heading: section.heading })),
-]
+}> = WIKITAB_HOME_MODULE_ORDER.map((id) => {
+  if (id === WIKITAB_SAVED_MODULE_ID) {
+    return { id, heading: WIKITAB_SAVED_MODULE_SPEC.heading }
+  }
+  if (id === WIKITAB_DAILY_READS_MODULE_ID) {
+    return { id, heading: WIKITAB_DAILY_READS_MODULE_SPEC.heading }
+  }
+  if (id === WIKITAB_SUGGESTED_EDITS_MODULE_ID) {
+    return { id, heading: WIKITAB_SUGGESTED_EDITS_MODULE_SPEC.heading }
+  }
+  if (id === WIKITAB_REVIEW_CHANGES_MODULE_ID) {
+    return { id, heading: WIKITAB_REVIEW_CHANGES_MODULE_SPEC.heading }
+  }
+  const section = WIKITAB_SECTIONS.find((entry) => entry.id === id)
+  return { id, heading: section!.heading }
+})
 
 const WIKITAB_MODULE_HEADINGS = Object.fromEntries(
   WIKITAB_CONFIGURE_MODULES.map((module) => [module.id, module.heading]),

@@ -49,5 +49,9 @@ export function useWikitabHiddenSections() {
     window.removeEventListener('storage', onStorage)
   })
 
-  return { hiddenIds, isHidden, hideSection, showSection, toggleSection }
+  function reloadFromStorage(): void {
+    syncFromStorage()
+  }
+
+  return { hiddenIds, isHidden, hideSection, showSection, toggleSection, reloadFromStorage }
 }

@@ -1,5 +1,5 @@
 import { createApp } from 'vue'
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, type RouteLocationNormalizedLoaded } from 'vue-router'
 import { handleHotUpdate, routes } from 'vue-router/auto-routes'
 
 import App from './App.vue'
@@ -51,6 +51,47 @@ const router = createRouter({
 
 wireAppearanceRouter(router)
 syncGithubPagesPreviewRoute(router)
+
+const DEFAULT_FAVICON = `${import.meta.env.BASE_URL}images/ProtoWiki.svg`
+
+function resolveFaviconHref(route: RouteLocationNormalizedLoaded): string {
+  const favicon = route.meta.favicon
+  if (typeof favicon === 'string' && favicon.trim()) {
+    const path = favicon.trim().replace(/^\//, '')
+    return `${import.meta.env.BASE_URL}${path}`
+  }
+  return DEFAULT_FAVICON
+}
+
+function applyDocumentTitle(route: RouteLocationNormalizedLoaded) {
+  const title = route.meta.title
+  document.title =
+    typeof title === 'string' && title.trim() ? title.trim() : 'ProtoWiki'
+}
+
+function applyDocumentFavicon(route: RouteLocationNormalizedLoaded) {
+  const href = resolveFaviconHref(route)
+  let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+  if (!link) {
+    link = document.createElement('link')
+    link.rel = 'icon'
+    link.type = 'image/svg+xml'
+    document.head.appendChild(link)
+  }
+  if (link.href !== href) {
+    link.href = href
+  }
+}
+
+function applyDocumentMeta(route: RouteLocationNormalizedLoaded) {
+  applyDocumentTitle(route)
+  applyDocumentFavicon(route)
+}
+
+router.afterEach((to) => {
+  applyDocumentMeta(to)
+})
+applyDocumentMeta(router.currentRoute.value)
 
 if (import.meta.hot) {
   handleHotUpdate(router)

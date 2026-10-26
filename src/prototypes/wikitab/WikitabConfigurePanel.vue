@@ -14,6 +14,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
+  reset: []
   show: [id: WikitabModuleId]
   hide: [id: WikitabModuleId]
   reorder: [order: WikitabModuleId[]]
@@ -59,6 +60,12 @@ onUnmounted(() => {
         @hide="emit('hide', $event)"
         @reorder="emit('reorder', $event)"
       />
+
+      <div class="wikitab-configure-panel__footer">
+        <CdxButton class="wikitab-configure-panel__reset" @click="emit('reset')">
+          Reset
+        </CdxButton>
+      </div>
     </div>
   </div>
 </template>
@@ -101,6 +108,12 @@ onUnmounted(() => {
   color: var(--wikitab-theme-fg, var(--color-base));
 }
 
+.wikitab-configure-panel__footer {
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--spacing-200) var(--spacing-100) var(--spacing-400);
+}
+
 .wikitab-configure-panel__close {
   flex-shrink: 0;
   width: var(--min-size-interactive-touch);
@@ -140,6 +153,10 @@ onUnmounted(() => {
 
   [data-skin='desktop'] .wikitab-configure-panel__head {
     padding-top: var(--spacing-200);
+    padding-inline: 0;
+  }
+
+  [data-skin='desktop'] .wikitab-configure-panel__footer {
     padding-inline: 0;
   }
 }

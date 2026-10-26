@@ -198,7 +198,7 @@ onBeforeUnmount(() => setGrabbingCursor(false))
   flex-direction: column;
   gap: var(--spacing-100);
   margin: 0;
-  padding: 0 0 var(--spacing-400);
+  padding: 0;
   list-style: none;
 }
 

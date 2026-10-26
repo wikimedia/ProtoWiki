@@ -70,5 +70,9 @@ export function useWikitabModuleOrder() {
     window.removeEventListener('storage', onStorage)
   })
 
-  return { moduleOrderIds, resolvedOrder, setModuleOrder }
+  function reloadFromStorage(): void {
+    syncFromStorage()
+  }
+
+  return { moduleOrderIds, resolvedOrder, setModuleOrder, reloadFromStorage }
 }
