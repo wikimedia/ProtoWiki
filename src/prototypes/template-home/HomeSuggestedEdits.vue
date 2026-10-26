@@ -9,6 +9,8 @@ import { computed, ref, watch } from 'vue'
 import { CdxButton } from '@wikimedia/codex'
 import { cdxIconLightbulb } from '@wikimedia/codex-icons'
 
+import { VISUAL_EDITOR_TEMPLATE_PATH } from '@/composables/webTemplatePaths'
+
 import HomeArticleCards from './HomeArticleCards.vue'
 import HomeShowMore from './HomeShowMore.vue'
 import { loadSuggestedEdits } from './loadSuggestedEdits'
@@ -67,6 +69,7 @@ function collapse(): void {
     <template v-else>
       <HomeArticleCards
         :cards="visible"
+        :to="VISUAL_EDITOR_TEMPLATE_PATH"
         :loading="loading"
         :skeletons="PAGE_SIZE"
         :supporting-icon="cdxIconLightbulb"

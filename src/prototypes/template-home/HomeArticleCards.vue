@@ -1,11 +1,13 @@
 <script setup lang="ts">
 /**
  * A module's list of article cards: Codex `CdxCard`s with a large thumbnail and a
- * supporting line under the text, opening the article template. While loading
+ * supporting line under the text, opening the article template (or another
+ * template, via `to`, such as the Visual Editor for suggested edits). While loading
  * it shows flat skeletons of the same shape, so the cards land without moving
  * the page. As a `feed` (a module's own page) the cards are divider rows, like
  * the Saved pages template's mobile list.
  */
+import { computed } from 'vue'
 import { CdxCard, CdxIcon } from '@wikimedia/codex'
 import type { Icon } from '@wikimedia/codex-icons'
 
@@ -20,8 +22,10 @@ export interface HomeArticleCard {
   supportingText?: string
 }
 
-defineProps<{
+const props = defineProps<{
   cards: readonly HomeArticleCard[]
+  /** Template route each card opens with its title; the article template by default. */
+  to?: string
   loading?: boolean
   /** Skeletons shown while loading. */
   skeletons: number
@@ -35,16 +39,18 @@ defineProps<{
 
 const { navigateToWikiPrototype, resolveWikiPrototypeUrl } = useWikiPrototypeNavigation()
 
+const target = computed(() => props.to ?? ARTICLE_TEMPLATE_PATH)
+
 function thumbnail(card: HomeArticleCard) {
   return card.thumbnailUrl ? { url: card.thumbnailUrl } : null
 }
 
-/** Cards open the article template; modified clicks still open a new tab. */
+/** Cards open their template; modified clicks still open a new tab. */
 function onClick(event: MouseEvent, card: HomeArticleCard): void {
   if (event.defaultPrevented || event.button !== 0) return
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
   event.preventDefault()
-  navigateToWikiPrototype(ARTICLE_TEMPLATE_PATH, card.title)
+  navigateToWikiPrototype(target.value, card.title)
 }
 </script>
 
@@ -65,7 +71,7 @@ function onClick(event: MouseEvent, card: HomeArticleCard): void {
       v-else
       :key="card.title"
       class="home-article-cards__card"
-      :url="resolveWikiPrototypeUrl(ARTICLE_TEMPLATE_PATH, card.title) ?? undefined"
+      :url="resolveWikiPrototypeUrl(target, card.title) ?? undefined"
       :thumbnail="thumbnail(card)"
       thumbnail-size="large"
       force-thumbnail
