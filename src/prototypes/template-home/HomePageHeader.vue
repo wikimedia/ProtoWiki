@@ -2,24 +2,14 @@
 /**
  * The Home's title over its tabs — Home (this page), User page and
  * Talk — styled as each skin's page tabs: Vector 2022's under the title rule,
- * Minerva's bold grey strip. User page and Talk are the account's pages on
- * Wikipedia.
+ * Minerva's bold grey strip. User page and Talk are static: they look like
+ * tabs but go nowhere.
  */
-import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-
-import { useConfig } from '@/composables/useConfig'
 
 defineProps<{ title: string }>()
 
 const route = useRoute()
-const { displayName, lang } = useConfig()
-
-const wikiUrl = (page: string) =>
-  `https://${lang.value || 'en'}.wikipedia.org/wiki/${encodeURIComponent(page.replace(/ /g, '_')).replace(/%3A/g, ':')}`
-
-const userPageHref = computed(() => wikiUrl(`User:${displayName.value}`))
-const talkHref = computed(() => wikiUrl(`User talk:${displayName.value}`))
 </script>
 
 <template>
@@ -33,8 +23,8 @@ const talkHref = computed(() => wikiUrl(`User talk:${displayName.value}`))
       >
         Home
       </RouterLink>
-      <a :href="userPageHref" class="home-page-header__tab">User page</a>
-      <a :href="talkHref" class="home-page-header__tab">Talk</a>
+      <a href="#" class="home-page-header__tab" @click.prevent>User page</a>
+      <a href="#" class="home-page-header__tab" @click.prevent>Talk</a>
     </nav>
   </header>
 </template>
