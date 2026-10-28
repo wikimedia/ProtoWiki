@@ -1,6 +1,6 @@
 import { computed, onUnmounted, ref, watch, type Ref } from 'vue'
 
-/** Same cap as preloadImages — one dead image must not leave a slot stuck. */
+/** One dead image must not leave a slot stuck. */
 export const THUMBNAIL_DECODE_TIMEOUT_MS = 1500
 
 /**
@@ -9,6 +9,7 @@ export const THUMBNAIL_DECODE_TIMEOUT_MS = 1500
  */
 export function useThumbnailSlotReady(thumbnailUrl: Ref<string | undefined>) {
   const decoded = ref(!thumbnailUrl.value)
+  const failed = ref(false)
 
   let timer: ReturnType<typeof setTimeout> | undefined
   let image: HTMLImageElement | null = null
@@ -22,6 +23,8 @@ export function useThumbnailSlotReady(thumbnailUrl: Ref<string | undefined>) {
         image.onerror = null
         image = null
       }
+
+      failed.value = false
 
       if (!url) {
         decoded.value = true
@@ -38,7 +41,10 @@ export function useThumbnailSlotReady(thumbnailUrl: Ref<string | undefined>) {
 
       timer = setTimeout(finish, THUMBNAIL_DECODE_TIMEOUT_MS)
       image.onload = finish
-      image.onerror = finish
+      image.onerror = () => {
+        failed.value = true
+        finish()
+      }
       image.src = url
     },
     { immediate: true },
@@ -51,5 +57,8 @@ export function useThumbnailSlotReady(thumbnailUrl: Ref<string | undefined>) {
   /** True only while a URL exists and the image has not finished decoding. */
   const showThumbnailPending = computed(() => Boolean(thumbnailUrl.value) && !decoded.value)
 
-  return { showThumbnailPending }
+  /** The URL could not be loaded — Codex's broken-image placeholder is the honest state. */
+  const thumbnailFailed = computed(() => Boolean(thumbnailUrl.value) && failed.value)
+
+  return { showThumbnailPending, thumbnailFailed }
 }

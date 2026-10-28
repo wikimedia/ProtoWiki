@@ -8,7 +8,7 @@ import type { WikitabFeed, WikitabSectionId } from '../sections'
  * resource, so the first open of a day fetches and every open after it paints
  * from this cache.
  */
-const CACHE_KEY = 'wikitab-feed-cache-v19'
+export const CACHE_KEY = 'wikitab-feed-cache-v20'
 
 /** Active discussions can go stale within a day — shorter TTL than other slices. */
 export const DISCUSSIONS_TTL_MS = 5 * 60 * 1000

@@ -2,8 +2,10 @@
 import { computed, ref, toRef } from 'vue'
 import { CdxTab, CdxTabs } from '@wikimedia/codex'
 
-import WikitabSearchActivityCard from './WikitabSearchActivityCard.vue'
-import WikitabSearchContributeCard from './WikitabSearchContributeCard.vue'
+import WikitabCard from './WikitabCard.vue'
+import { wikitabCardBindProps } from './data/wikitabCardPresentation'
+import { wikitabCardPropsForSearchActivityItem } from './data/wikitabSearchActivityWikitabCard'
+import { wikitabCardPropsForSearchContributeItem } from './data/wikitabSearchContributeWikitabCard'
 import WikitabSearchImageGrid from './WikitabSearchImageGrid.vue'
 import WikitabSearchImageSkeletonGrid from './WikitabSearchImageSkeletonGrid.vue'
 import WikitabSearchLoadingCard from './WikitabSearchLoadingCard.vue'
@@ -85,9 +87,18 @@ const {
   loadingMore: activityLoadingMore,
   hasMore: activityHasMore,
   resolvedCount: activityResolvedCount,
+  metadataPending: activityMetadataPending,
   loadMore: loadMoreActivity,
   dismissActivity,
 } = useWikitabSearchActivity(searchQueryRef, knownTitles, loading, activityEnabled)
+
+function onSearchActivityMenuSelect(value: string, item: WikitabSearchActivityItem) {
+  if (value === 'save') emit('toggle-save-activity', item)
+  if (value === 'thank') {
+    window.open(item.thankUrl, '_blank', 'noopener,noreferrer')
+  }
+  if (value === 'dismiss') dismissActivity(item.revisionId)
+}
 
 const {
   slots: contributeSlots,
@@ -153,6 +164,9 @@ useInfiniteScroll({
     void loadMoreContribute()
   },
 })
+
+const activitySkeletonProps = wikitabCardBindProps('edit', { loading: true })
+const contributeSkeletonProps = wikitabCardBindProps('suggestion', { loading: true })
 
 const INITIAL_SKELETON_COUNT = 3
 const TAIL_SKELETON_COUNT = 2
@@ -245,40 +259,44 @@ const INITIAL_IMAGE_SKELETON_COUNT = 16
               activityResolvedCount === 0
             "
           >
-            <WikitabSearchLoadingCard
+            <WikitabCard
               v-for="index in INITIAL_SKELETON_COUNT"
               :key="index"
-              variant="activity"
+              v-bind="activitySkeletonProps"
             />
           </template>
 
           <template
             v-for="slot in activitySlots"
-            :key="slot.kind === 'resolved' ? slot.item.revid : slot.kind"
+            :key="slot.kind === 'resolved' ? slot.item.revisionId : slot.kind"
           >
-            <WikitabSearchActivityCard
+            <WikitabCard
               v-if="slot.kind === 'resolved'"
-              :item="slot.item"
-              show-save-menu
-              :is-saved="isCardSaved(changeSavedId(slot.item.revid))"
-              @dismiss="dismissActivity"
-              @toggle-save="emit('toggle-save-activity', slot.item)"
+              v-bind="
+                wikitabCardPropsForSearchActivityItem(slot.item, {
+                  includeSave: true,
+                  isSaved: isCardSaved(changeSavedId(slot.item.revisionId)),
+                  loading:
+                    activityMetadataPending && !slot.item.thumbnailUrl ? { thumbnail: true } : false,
+                })
+              "
+              @menu-select="onSearchActivityMenuSelect($event, slot.item)"
             />
           </template>
 
           <template v-if="activityLoadingTail">
-            <WikitabSearchLoadingCard
+            <WikitabCard
               v-for="index in TAIL_SKELETON_COUNT"
               :key="`activity-tail-${index}`"
-              variant="activity"
+              v-bind="activitySkeletonProps"
             />
           </template>
 
           <template v-if="activityLoadingMore">
-            <WikitabSearchLoadingCard
+            <WikitabCard
               v-for="index in LOAD_MORE_SKELETON_COUNT"
               :key="`activity-more-${index}`"
-              variant="activity"
+              v-bind="activitySkeletonProps"
             />
           </template>
 
@@ -303,10 +321,10 @@ const INITIAL_IMAGE_SKELETON_COUNT = 16
               contributeResolvedCount === 0
             "
           >
-            <WikitabSearchLoadingCard
+            <WikitabCard
               v-for="index in INITIAL_SKELETON_COUNT"
               :key="index"
-              variant="activity"
+              v-bind="contributeSkeletonProps"
             />
           </template>
 
@@ -314,28 +332,30 @@ const INITIAL_IMAGE_SKELETON_COUNT = 16
             v-for="slot in contributeSlots"
             :key="slot.kind === 'resolved' ? slot.item.pageid : slot.kind"
           >
-            <WikitabSearchContributeCard
+            <WikitabCard
               v-if="slot.kind === 'resolved'"
-              :item="slot.item"
-              show-save-menu
-              :is-saved="isCardSaved(suggestionSavedId(slot.item.pageid, slot.item.need))"
+              v-bind="
+                wikitabCardPropsForSearchContributeItem(slot.item, {
+                  isSaved: isCardSaved(suggestionSavedId(slot.item.pageid, slot.item.task)),
+                })
+              "
               @toggle-save="emit('toggle-save-contribute', slot.item)"
             />
           </template>
 
           <template v-if="contributeLoadingTail">
-            <WikitabSearchLoadingCard
+            <WikitabCard
               v-for="index in TAIL_SKELETON_COUNT"
               :key="`contribute-tail-${index}`"
-              variant="activity"
+              v-bind="contributeSkeletonProps"
             />
           </template>
 
           <template v-if="contributeLoadingMore">
-            <WikitabSearchLoadingCard
+            <WikitabCard
               v-for="index in LOAD_MORE_SKELETON_COUNT"
               :key="`contribute-more-${index}`"
-              variant="activity"
+              v-bind="contributeSkeletonProps"
             />
           </template>
 

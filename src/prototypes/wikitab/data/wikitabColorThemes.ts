@@ -311,42 +311,15 @@ export const WIKITAB_COLOR_THEME_STYLES: Record<WikitabColorThemeId, WikitabColo
   },
 }
 
-const LEGACY_THEME_ALIASES: Record<string, WikitabColorThemeId> = {
-  'gray-bold': 'off-black',
-  'red-bold': 'red-light',
-  'red-dark': 'red-light',
-  brown: 'orange-light',
-  'brown-light': 'orange-light',
-  'orange-dark': 'orange-light',
-  'orange-bold': 'orange-light',
-  'yellow-bold': 'yellow-light',
-  'yellow-dark': 'yellow-light',
-  'lime-bold': 'lime-light',
-  'lime-dark': 'lime-light',
-  'green-dark': 'green-light',
-  'blue-dark': 'blue-bold',
-  'purple-dark': 'purple-bold',
-  'pink-bold': 'pink-light',
-  'pink-dark': 'pink-light',
-  'maroon-bold': 'maroon-light',
-  'maroon-dark': 'maroon-light',
-}
-
 const VALID_THEME_IDS = new Set<WikitabColorThemeId>(
   WIKITAB_COLOR_THEME_ITEMS.map((item) => item.id),
 )
 
-export function resolveColorThemeId(value: string): WikitabColorThemeId | null {
-  if (VALID_THEME_IDS.has(value as WikitabColorThemeId)) {
-    return value as WikitabColorThemeId
-  }
-  return LEGACY_THEME_ALIASES[value] ?? null
-}
-
+/** Current ids only — renamed themes are aliased by `wikitabStorageMigration.ts`. */
 export function normalizeColorThemeId(raw: unknown): WikitabColorThemeId | null {
-  if (raw === null || raw === undefined || raw === '') return null
   if (typeof raw !== 'string') return null
-  return resolveColorThemeId(raw.trim())
+  const id = raw.trim()
+  return VALID_THEME_IDS.has(id as WikitabColorThemeId) ? (id as WikitabColorThemeId) : null
 }
 
 /** Progressive accent on the saturated page tint (Show more, tab underline). */

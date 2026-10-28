@@ -7,10 +7,11 @@ import {
 import type { WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
 import { articleTitleKey } from './data/wikitabHtml'
 import type { WikitabCardData } from './sections'
+import { wikitabCardMenuArticleTitle } from './data/wikitabCardLinkLabel'
 
 function cardArticleTitleKey(card: WikitabCardData): string | null {
-  const title = card.linkTitle ?? card.title
-  if (!title?.trim()) return null
+  const title = wikitabCardMenuArticleTitle(card)
+  if (!title.trim()) return null
   return articleTitleKey(title)
 }
 
@@ -63,8 +64,10 @@ export function useWikitabHiddenArticles() {
     if (!hiddenKeys.value.length) return items
 
     return items.filter((item) => {
-      const key = articleTitleKey(item.title)
-      return !key || !hiddenSet.value.has(key)
+      const title = item.articleTitle
+      if (!title?.trim()) return true
+      const key = articleTitleKey(title)
+      return !hiddenSet.value.has(key)
     })
   }
 

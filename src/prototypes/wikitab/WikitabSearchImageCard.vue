@@ -47,7 +47,27 @@ watch(selection, (value) => {
 const thumbnailUrl = toRef(() => props.image.thumbnailUrl)
 const { showThumbnailPending } = useThumbnailSlotReady(thumbnailUrl)
 
-const aspectRatio = computed(() => `${props.image.width} / ${props.image.height}`)
+const decodedSize = ref<{ width: number; height: number } | null>(null)
+
+watch(thumbnailUrl, () => {
+  decodedSize.value = null
+})
+
+function onThumbnailLoad(event: Event): void {
+  const img = event.target
+  if (!(img instanceof HTMLImageElement)) return
+  if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+    decodedSize.value = { width: img.naturalWidth, height: img.naturalHeight }
+  }
+}
+
+const aspectRatio = computed(() => {
+  const { width, height } = props.image
+  if (width > 0 && height > 0) return `${width} / ${height}`
+  const decoded = decodedSize.value
+  if (decoded) return `${decoded.width} / ${decoded.height}`
+  return '1 / 1'
+})
 
 const altText = computed(() => imageCardTitle(props.image))
 
@@ -79,6 +99,7 @@ watch(
         :alt="altText"
         loading="lazy"
         decoding="async"
+        @load="onThumbnailLoad"
       />
 
       <a

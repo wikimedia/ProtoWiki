@@ -6,8 +6,10 @@ import {
   isExcludedEditOpportunityNeed,
   resolveEditOpportunityCopy,
 } from './editOpportunityCopy'
-import { cdxIconLightbulb } from '@wikimedia/codex-icons'
 import type { WikitabCardData } from '../sections'
+import {
+  searchContributeItemToFeedSuggestedEditsCard,
+} from './wikitabCardPayloadMappers'
 import {
   fetchWikitabSearchTopTitles,
   type WikitabSearchTopTitle,
@@ -16,6 +18,7 @@ import { fetchWikitabPageSummary } from './fetchWikitabPageSummary'
 import {
   articleTitleKey,
   EN_WIKI_HOST,
+  isEnWikiMainNamespaceArticleTitle,
   visualEditorUrl,
 } from './wikitabHtml'
 
@@ -56,14 +59,14 @@ export interface WikitabContributeSeed {
 
 export interface WikitabSearchContributeItem {
   pageid: number
-  title: string
+  articleTitle: string
   description?: string
   thumbnailUrl?: string
   suggestionLabel: string
   body: string
-  need: string
+  task: string
   relatedToTitle?: string
-  editHref: string
+  editUrl: string
 }
 
 /** Session cache — one resolved card (or a miss) per page, filled as cards stream in. */
@@ -180,6 +183,12 @@ async function resolveContributeItem(
   relatedToTitle: string | undefined,
   signal: AbortSignal | undefined,
 ): Promise<WikitabSearchContributeItem | null> {
+  if (!isEnWikiMainNamespaceArticleTitle(page.title)) {
+    const titleKey = articleTitleKey(page.title)
+    if (titleKey) setCachedContribute(page.pageid, titleKey, 'none')
+    return null
+  }
+
   const titleKey = articleTitleKey(page.title)
   const cached = getCachedContribute(page.pageid, titleKey)
   if (cached === 'none') return null
@@ -214,16 +223,21 @@ async function resolveContributeItem(
     }
   }
 
+  if (!isEnWikiMainNamespaceArticleTitle(title)) {
+    setCachedContribute(pageid, articleTitleKey(title), 'none')
+    return null
+  }
+
   const item: WikitabSearchContributeItem = {
     pageid,
-    title,
+    articleTitle: title,
     description: description || undefined,
     thumbnailUrl,
     suggestionLabel: copy.title,
     body: copy.body,
-    need: top.need,
+    task: top.need,
     relatedToTitle,
-    editHref: visualEditorUrl(title),
+    editUrl: visualEditorUrl(title),
   }
 
   setCachedContribute(pageid, articleTitleKey(title), {
@@ -239,26 +253,7 @@ function displayTitle(title: string): string {
 
 /** Map a Contribute feed item to home-feed `WikitabCardData`. */
 export function contributeItemToCard(item: WikitabSearchContributeItem): WikitabCardData {
-  const title = displayTitle(item.title)
-  return {
-    key: `suggested-edits:${item.pageid}`,
-    href: item.editHref,
-    linkTitle: `Edit ${title}: ${item.suggestionLabel}`,
-    title,
-    description: item.description || undefined,
-    thumbnailUrl: item.thumbnailUrl,
-    pageid: item.pageid,
-    suggestionNeed: item.need,
-    suggestionBody: item.body,
-    suggestionLabel: item.suggestionLabel,
-    editHref: item.editHref,
-    supportingSignals: [
-      {
-        icon: cdxIconLightbulb,
-        text: item.suggestionLabel,
-      },
-    ],
-  }
+  return searchContributeItemToFeedSuggestedEditsCard(item)
 }
 
 function titlesPerSeed(seedCount: number): number {
@@ -358,6 +353,7 @@ export class WikitabSearchContributeFeed {
       this.directIndex++
 
       if (seed.pageid != null && this.emittedPageids.has(seed.pageid)) continue
+      if (!isEnWikiMainNamespaceArticleTitle(seed.title)) continue
 
       const item = await resolveContributeItem(
         {
@@ -424,6 +420,7 @@ export class WikitabSearchContributeFeed {
         let added = 0
         for (const title of titles) {
           if (added >= perSeed) break
+          if (!isEnWikiMainNamespaceArticleTitle(title)) continue
 
           const key = articleTitleKey(title)
           if (!key || this.seenTitles.has(key) || this.excludedTitleKeys.has(key)) continue

@@ -1,0 +1,210 @@
+[
+  {
+    "id": "primitive-article",
+    "group": "primitives",
+    "label": "Primitive — Article",
+    "componentPath": "WikitabCard.vue",
+    "dataProp": "card",
+    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+    "typeName": "WikitabArticleCardPayload",
+    "primitiveId": "article"
+  },
+  {
+    "id": "primitive-snippet",
+    "group": "primitives",
+    "label": "Primitive — Snippet",
+    "componentPath": "WikitabCard.vue",
+    "dataProp": "card",
+    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+    "typeName": "WikitabFeedDykCardPayload",
+    "primitiveId": "snippet"
+  },
+  {
+    "id": "primitive-discussion",
+    "group": "primitives",
+    "label": "Primitive — Discussion",
+    "componentPath": "WikitabCard.vue",
+    "dataProp": "card",
+    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+    "typeName": "WikitabFeedDiscussionCardPayload",
+    "primitiveId": "discussion"
+  },
+  {
+    "id": "primitive-suggestion",
+    "group": "primitives",
+    "label": "Primitive — Suggestion",
+    "componentPath": "WikitabCard.vue",
+    "dataProp": "card",
+    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+    "typeName": "WikitabFeedSuggestedEditsCardPayload",
+    "primitiveId": "suggestion"
+  },
+  {
+    "id": "primitive-image",
+    "group": "primitives",
+    "label": "Primitive — Image",
+    "componentPath": "WikitabCard.vue",
+    "dataProp": "card",
+    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+    "typeName": "WikitabFeaturedImageCardPayload",
+    "primitiveId": "image"
+  },
+  {
+    "id": "primitive-word",
+    "group": "primitives",
+    "label": "Primitive — Word",
+    "componentPath": "WikitabCard.vue",
+    "dataProp": "card",
+    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+    "typeName": "WikitabFeaturedWordCardPayload",
+    "primitiveId": "word"
+  },
+  {
+    "id": "primitive-quote",
+    "group": "primitives",
+    "label": "Primitive — Quote",
+    "componentPath": "WikitabCard.vue",
+    "dataProp": "card",
+    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+    "typeName": "WikitabFeaturedQuoteCardPayload",
+    "primitiveId": "quote"
+  },
+  {
+    "id": "primitive-list",
+    "group": "primitives",
+    "label": "Primitive — List",
+    "componentPath": "WikitabCard.vue",
+    "dataProp": "card",
+    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+    "typeName": "WikitabFeaturedListCardPayload",
+    "primitiveId": "list"
+  },
+  {
+    "id": "primitive-edit",
+    "group": "primitives",
+    "label": "Primitive — Edit",
+    "componentPath": "WikitabCard.vue",
+    "dataProp": "card",
+    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+    "typeName": "WikitabSearchActivityCardPayload",
+    "primitiveId": "edit"
+  },
+  {
+    "id": "search-contribute",
+    "group": "search",
+    "label": "Search — Contribute card",
+    "componentPath": "WikitabCard.vue",
+    "dataProp": "card",
+    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+    "typeName": "WikitabSearchContributeCardPayload",
+    "primitiveId": "suggestion"
+  },
+  {
+    "id": "search-result",
+    "group": "search",
+    "label": "Search — Article result card",
+    "componentPath": "WikitabSearchResultCard.vue",
+    "dataProp": "article",
+    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+    "typeName": "WikitabSearchResultCardPayload"
+  },
+  {
+    "id": "search-image",
+    "group": "search",
+    "label": "Search — Image card",
+    "componentPath": "WikitabCard.vue",
+    "dataProp": "card",
+    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+    "typeName": "WikitabSearchImageCardPayload",
+    "primitiveId": "image"
+  },
+  {
+    "id": "search-loading",
+    "group": "search",
+    "label": "Search — Loading placeholder",
+    "componentPath": "WikitabSearchLoadingCard.vue",
+    "dataProp": null,
+    "typeModulePath": null,
+    "typeName": null
+  },
+  {
+    "id": "saved-article",
+    "group": "saved",
+    "label": "Saved — Article",
+    "componentPath": "WikitabCard.vue",
+    "dataProp": "card",
+    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+    "typeName": "WikitabSavedArticleCardPayload",
+    "primitiveId": "article"
+  },
+  {
+    "id": "saved-word",
+    "group": "saved",
+    "label": "Saved — Word",
+    "componentPath": "WikitabCard.vue",
+    "dataProp": "card",
+    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+    "typeName": "WikitabFeaturedWordCardPayload",
+    "primitiveId": "word"
+  },
+  {
+    "id": "saved-quote",
+    "group": "saved",
+    "label": "Saved — Quote",
+    "componentPath": "WikitabCard.vue",
+    "dataProp": "card",
+    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+    "typeName": "WikitabFeaturedQuoteCardPayload",
+    "primitiveId": "quote"
+  },
+  {
+    "id": "saved-list",
+    "group": "saved",
+    "label": "Saved — List",
+    "componentPath": "WikitabCard.vue",
+    "dataProp": "card",
+    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+    "typeName": "WikitabFeaturedListCardPayload",
+    "primitiveId": "list"
+  },
+  {
+    "id": "saved-suggestion",
+    "group": "saved",
+    "label": "Saved — Suggestion",
+    "componentPath": "WikitabCard.vue",
+    "dataProp": "card",
+    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+    "typeName": "WikitabSavedSuggestionCardPayload",
+    "primitiveId": "suggestion"
+  },
+  {
+    "id": "saved-change",
+    "group": "saved",
+    "label": "Saved — Change",
+    "componentPath": "WikitabCard.vue",
+    "dataProp": "card",
+    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+    "typeName": "WikitabSearchActivityCardPayload",
+    "primitiveId": "edit"
+  },
+  {
+    "id": "saved-discussion",
+    "group": "saved",
+    "label": "Saved — Discussion",
+    "componentPath": "WikitabCard.vue",
+    "dataProp": "card",
+    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+    "typeName": "WikitabSavedDiscussionCardPayload",
+    "primitiveId": "discussion"
+  },
+  {
+    "id": "saved-image",
+    "group": "saved",
+    "label": "Saved — Image",
+    "componentPath": "WikitabCard.vue",
+    "dataProp": "card",
+    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+    "typeName": "WikitabSavedImageCardPayload",
+    "primitiveId": "image"
+  }
+]

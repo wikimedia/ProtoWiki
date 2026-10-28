@@ -1,0 +1,56 @@
+[
+  {
+    "id": "article",
+    "label": "Article",
+    "componentPath": "WikitabCard.vue",
+    "demoCatalogId": "primitive-article"
+  },
+  {
+    "id": "snippet",
+    "label": "Snippet",
+    "componentPath": "WikitabCard.vue",
+    "demoCatalogId": "primitive-snippet"
+  },
+  {
+    "id": "discussion",
+    "label": "Discussion",
+    "componentPath": "WikitabCard.vue",
+    "demoCatalogId": "primitive-discussion"
+  },
+  {
+    "id": "suggestion",
+    "label": "Suggestion",
+    "componentPath": "WikitabCard.vue",
+    "demoCatalogId": "primitive-suggestion"
+  },
+  {
+    "id": "image",
+    "label": "Image",
+    "componentPath": "WikitabCard.vue",
+    "demoCatalogId": "primitive-image"
+  },
+  {
+    "id": "word",
+    "label": "Word",
+    "componentPath": "WikitabCard.vue",
+    "demoCatalogId": "primitive-word"
+  },
+  {
+    "id": "quote",
+    "label": "Quote",
+    "componentPath": "WikitabCard.vue",
+    "demoCatalogId": "primitive-quote"
+  },
+  {
+    "id": "list",
+    "label": "List",
+    "componentPath": "WikitabCard.vue",
+    "demoCatalogId": "primitive-list"
+  },
+  {
+    "id": "edit",
+    "label": "Edit",
+    "componentPath": "WikitabCard.vue",
+    "demoCatalogId": "primitive-edit"
+  }
+]

@@ -9,7 +9,10 @@ import type { WikitabModuleId } from './sections'
 
 const props = defineProps<{
   moduleOrder: WikitabModuleId[]
+  pinnedIds: WikitabModuleId[]
   isHidden: (id: WikitabModuleId) => boolean
+  hasSavedItems: boolean
+  hasSavedSeedArticles: boolean
 }>()
 
 const emit = defineEmits<{
@@ -18,6 +21,7 @@ const emit = defineEmits<{
   show: [id: WikitabModuleId]
   hide: [id: WikitabModuleId]
   reorder: [order: WikitabModuleId[]]
+  unpin: [id: WikitabModuleId]
 }>()
 
 function onKeydown(event: KeyboardEvent): void {
@@ -55,10 +59,14 @@ onUnmounted(() => {
 
       <WikitabConfigureModuleList
         :order="props.moduleOrder"
+        :pinned-ids="props.pinnedIds"
         :is-hidden="props.isHidden"
+        :has-saved-items="props.hasSavedItems"
+        :has-saved-seed-articles="props.hasSavedSeedArticles"
         @show="emit('show', $event)"
         @hide="emit('hide', $event)"
         @reorder="emit('reorder', $event)"
+        @unpin="emit('unpin', $event)"
       />
 
       <div class="wikitab-configure-panel__footer">

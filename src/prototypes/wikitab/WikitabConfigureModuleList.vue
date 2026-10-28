@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 import { CdxButton, CdxIcon, CdxToggleSwitch } from '@wikimedia/codex'
-import { cdxIconDraggableVertical } from '@wikimedia/codex-icons'
+import { cdxIconDraggableVertical, cdxIconPushPin } from '@wikimedia/codex-icons'
 
-import { wikitabModuleHeading, type WikitabModuleId } from './sections'
+import {
+  isWikitabSavedGatedModule,
+  WIKITAB_REVIEW_CHANGES_MODULE_ID,
+  WIKITAB_SAVED_MODULE_ID,
+  wikitabModuleHeading,
+  type WikitabModuleId,
+} from './sections'
 
 /**
  * Pointer reordering for Configure module rows, ported from wikita-lite's
@@ -16,7 +22,11 @@ import { wikitabModuleHeading, type WikitabModuleId } from './sections'
  */
 interface Props {
   order: WikitabModuleId[]
+  /** Oldest pin first, as stored; shown newest first and never draggable. */
+  pinnedIds: WikitabModuleId[]
   isHidden: (id: WikitabModuleId) => boolean
+  hasSavedItems: boolean
+  hasSavedSeedArticles: boolean
 }
 
 /** How long a sibling takes to slide into the gap the dragged row leaves. */
@@ -28,19 +38,44 @@ const emit = defineEmits<{
   show: [id: WikitabModuleId]
   hide: [id: WikitabModuleId]
   reorder: [order: WikitabModuleId[]]
+  unpin: [id: WikitabModuleId]
 }>()
 
+const pinnedOrder = computed(() => [...props.pinnedIds].reverse())
+
+function unpinnedOrder(): WikitabModuleId[] {
+  const pinned = new Set(props.pinnedIds)
+  return props.order.filter((id) => !pinned.has(id))
+}
+
 const listEl = ref<HTMLElement | null>(null)
-const localOrder = ref<WikitabModuleId[]>([...props.order])
+const localOrder = ref<WikitabModuleId[]>(unpinnedOrder())
 const draggingIndex = ref<number | null>(null)
 
 watch(
-  () => props.order,
-  (next) => {
+  () => [props.order, props.pinnedIds],
+  () => {
     if (draggingIndex.value !== null) return
-    localOrder.value = [...next]
+    localOrder.value = unpinnedOrder()
   },
 )
+
+/**
+ * Drops the reordered unpinned rows back into the slots unpinned modules held
+ * in the full order, so each pinned module keeps the slot it returns to on unpin.
+ */
+function mergeUnpinnedOrder(unpinnedNext: readonly WikitabModuleId[]): WikitabModuleId[] {
+  const pinned = new Set(props.pinnedIds)
+  const queue = [...unpinnedNext]
+  return props.order.map((id) => (pinned.has(id) ? id : queue.shift()!))
+}
+
+/** Saved shows for any saved item; the other gated modules need a saved seed article. */
+function showsSavedGateHint(id: WikitabModuleId): boolean {
+  if (id === WIKITAB_SAVED_MODULE_ID) return !props.hasSavedItems
+  if (id === WIKITAB_REVIEW_CHANGES_MODULE_ID) return false
+  return isWikitabSavedGatedModule(id) && !props.hasSavedSeedArticles
+}
 
 function onToggle(id: WikitabModuleId, visible: boolean): void {
   if (visible) emit('show', id)
@@ -65,7 +100,7 @@ function commitMove(from: number, to: number): void {
   next.splice(to, 0, moved)
   localOrder.value = next
 
-  emit('reorder', next)
+  emit('reorder', mergeUnpinnedOrder(next))
 }
 
 function onHandlePointerDown(event: PointerEvent, index: number): void {
@@ -83,9 +118,17 @@ function onHandlePointerDown(event: PointerEvent, index: number): void {
     // Synthetic or already-released pointers: the listeners below still fire.
   }
 
+  // Rows differ in height (some have a description), so slot centres and
+  // sibling shifts come from each row's own rect rather than a fixed step.
   const rects = rows.map((row) => row.getBoundingClientRect())
-  const rowStep = rects[1].top - rects[0].top
   const from = index
+  const draggedHeight = rects[from].height
+  const rowGap = rects[1].top - rects[0].bottom
+  const siblingShift = draggedHeight + rowGap
+  const slotCenters = rects.map((rect, i) => {
+    const top = i > from ? rect.bottom - draggedHeight : rect.top
+    return top + draggedHeight / 2
+  })
   const startY = event.clientY
   let target = index
 
@@ -99,16 +142,18 @@ function onHandlePointerDown(event: PointerEvent, index: number): void {
     const dy = moveEvent.clientY - startY
     rows[from].style.transform = `translateY(${dy}px)`
 
-    const centerY = rects[from].top + rects[from].height / 2 + dy
-    const firstCenterY = rects[0].top + rects[0].height / 2
-    target = Math.round((centerY - firstCenterY) / rowStep)
-    target = Math.max(0, Math.min(rows.length - 1, target))
+    const centerY = rects[from].top + draggedHeight / 2 + dy
+    target = slotCenters.reduce(
+      (best, slotCenter, i) =>
+        Math.abs(centerY - slotCenter) < Math.abs(centerY - slotCenters[best]) ? i : best,
+      0,
+    )
 
     rows.forEach((row, i) => {
       if (i === from) return
       let shift = 0
-      if (from < i && i <= target) shift = -rowStep
-      else if (target <= i && i < from) shift = rowStep
+      if (from < i && i <= target) shift = -siblingShift
+      else if (target <= i && i < from) shift = siblingShift
       row.style.transform = shift ? `translateY(${shift}px)` : ''
     })
   }
@@ -154,46 +199,83 @@ onBeforeUnmount(() => setGrabbingCursor(false))
 </script>
 
 <template>
-  <ul
-    ref="listEl"
+  <div
     class="wikitab-configure-module-list"
     :class="{ 'wikitab-configure-module-list--dragging': draggingIndex !== null }"
-    @contextmenu.capture.prevent="suppressLongPress"
   >
-    <li
-      v-for="(moduleId, index) in localOrder"
-      :key="moduleId"
-      class="wikitab-configure-module-list__item"
-      :class="{
-        'wikitab-configure-module-list__item--dragging': draggingIndex === index,
-      }"
-      :data-module-id="moduleId"
+    <ul v-if="pinnedOrder.length" class="wikitab-configure-module-list__group">
+      <li
+        v-for="moduleId in pinnedOrder"
+        :key="moduleId"
+        class="wikitab-configure-module-list__item"
+        :class="{ 'wikitab-configure-module-list__item--gated': showsSavedGateHint(moduleId) }"
+        :data-module-id="moduleId"
+      >
+        <CdxButton
+          class="wikitab-configure-module-list__pin"
+          weight="quiet"
+          :aria-label="`Unpin ${wikitabModuleHeading(moduleId)}`"
+          @click="emit('unpin', moduleId)"
+        >
+          <CdxIcon :icon="cdxIconPushPin" />
+        </CdxButton>
+        <CdxToggleSwitch
+          class="wikitab-configure-module-list__toggle"
+          :model-value="!isHidden(moduleId)"
+          @update:model-value="onToggle(moduleId, $event)"
+        >
+          {{ wikitabModuleHeading(moduleId) }}
+          <template v-if="showsSavedGateHint(moduleId)" #description>
+            Appears when you save something
+          </template>
+        </CdxToggleSwitch>
+      </li>
+    </ul>
+    <ul
+      ref="listEl"
+      class="wikitab-configure-module-list__group"
+      @contextmenu.capture.prevent="suppressLongPress"
     >
-      <CdxButton
-        class="wikitab-configure-module-list__handle"
-        weight="quiet"
-        aria-label="Drag to reorder"
-        @pointerdown="onHandlePointerDown($event, index)"
-        @keydown="onHandleKeydown($event, index)"
-        @touchstart.prevent="suppressLongPress"
-        @contextmenu.prevent="suppressLongPress"
-        @selectstart.prevent="suppressLongPress"
+      <li
+        v-for="(moduleId, index) in localOrder"
+        :key="moduleId"
+        class="wikitab-configure-module-list__item"
+        :class="{
+          'wikitab-configure-module-list__item--dragging': draggingIndex === index,
+          'wikitab-configure-module-list__item--gated': showsSavedGateHint(moduleId),
+        }"
+        :data-module-id="moduleId"
       >
-        <CdxIcon :icon="cdxIconDraggableVertical" />
-      </CdxButton>
-      <CdxToggleSwitch
-        class="wikitab-configure-module-list__toggle"
-        :model-value="!isHidden(moduleId)"
-        @update:model-value="onToggle(moduleId, $event)"
-      >
-        {{ wikitabModuleHeading(moduleId) }}
-      </CdxToggleSwitch>
-    </li>
-  </ul>
+        <CdxButton
+          class="wikitab-configure-module-list__handle"
+          weight="quiet"
+          aria-label="Drag to reorder"
+          @pointerdown="onHandlePointerDown($event, index)"
+          @keydown="onHandleKeydown($event, index)"
+          @touchstart.prevent="suppressLongPress"
+          @contextmenu.prevent="suppressLongPress"
+          @selectstart.prevent="suppressLongPress"
+        >
+          <CdxIcon :icon="cdxIconDraggableVertical" />
+        </CdxButton>
+        <CdxToggleSwitch
+          class="wikitab-configure-module-list__toggle"
+          :model-value="!isHidden(moduleId)"
+          @update:model-value="onToggle(moduleId, $event)"
+        >
+          {{ wikitabModuleHeading(moduleId) }}
+          <template v-if="showsSavedGateHint(moduleId)" #description>
+            Appears when you save something
+          </template>
+        </CdxToggleSwitch>
+      </li>
+    </ul>
+  </div>
 </template>
 
 <style scoped>
-.wikitab-configure-module-list {
+.wikitab-configure-module-list,
+.wikitab-configure-module-list__group {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-100);
@@ -224,6 +306,10 @@ onBeforeUnmount(() => setGrabbingCursor(false))
 .wikitab-configure-module-list__item--dragging {
   z-index: 1;
   background-color: transparent;
+}
+
+.wikitab-configure-module-list__pin {
+  flex-shrink: 0;
 }
 
 .wikitab-configure-module-list__handle {
@@ -265,6 +351,13 @@ onBeforeUnmount(() => setGrabbingCursor(false))
 .wikitab-configure-module-list__toggle :deep(.cdx-toggle-switch__label) {
   flex: 1 1 auto;
   min-width: min-content;
+}
+
+.wikitab-configure-module-list__item--gated .wikitab-configure-module-list__handle :deep(.cdx-icon),
+.wikitab-configure-module-list__item--gated .wikitab-configure-module-list__pin :deep(.cdx-icon),
+.wikitab-configure-module-list__item--gated :deep(.cdx-label__label__text),
+.wikitab-configure-module-list__item--gated :deep(.cdx-label__description) {
+  color: var(--color-disabled);
 }
 
 .wikitab-configure-module-list__toggle :deep(.cdx-toggle-switch__switch) {

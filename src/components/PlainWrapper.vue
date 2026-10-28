@@ -19,12 +19,15 @@ interface Props {
    * Omit both this and `#heading` when the surface has no primary title.
    */
   heading?: string
+  /** `wide` — centred column up to 60rem; default stays 45rem. */
+  layout?: 'default' | 'wide'
 }
 
 const props = withDefaults(defineProps<Props>(), {
   lang: undefined,
   dir: undefined,
   heading: undefined,
+  layout: 'default',
 })
 
 const slots = useSlots()
@@ -38,7 +41,12 @@ const showHeading = computed(() => {
 </script>
 
 <template>
-  <main class="plain-wrapper" :lang="props.lang" :dir="props.dir">
+  <main
+    class="plain-wrapper"
+    :class="{ 'plain-wrapper--wide': props.layout === 'wide' }"
+    :lang="props.lang"
+    :dir="props.dir"
+  >
     <h1 v-if="showHeading" class="mw-first-heading">
       <slot name="heading">{{ props.heading }}</slot>
       <div v-if="slots.actions" class="plain-wrapper__header-actions">
@@ -56,6 +64,12 @@ main {
   margin: 0 auto;
   padding: var(--spacing-250) var(--spacing-100);
   background-color: var(--background-color-base);
+}
+
+main.plain-wrapper--wide {
+  max-width: 60rem;
+  width: 100%;
+  padding-inline: var(--spacing-150);
 }
 
 h1 {

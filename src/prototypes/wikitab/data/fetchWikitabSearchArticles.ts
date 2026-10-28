@@ -5,6 +5,7 @@ import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 import { fetchWikitabSearch, type WikitabSearchResult } from './fetchWikitabSearch'
 import { fetchWikitabPageSummary } from './fetchWikitabPageSummary'
 import { filterDisambiguationPageIds } from './filterDisambiguationPages'
+import { formatSearchArticleRelationRationaleHtml } from './formatSearchArticleRelation'
 import { EN_WIKI_HOST, articleUrl } from './wikitabHtml'
 
 const GENERATOR_BATCH_SIZE = 20
@@ -17,6 +18,13 @@ const MAX_NEAR = 1
 const MAX_MATCH = 1
 export type WikitabSearchRelation = 'exact' | 'near' | 'match' | 'related'
 
+export const WIKITAB_SEARCH_RELATIONS = [
+  'exact',
+  'near',
+  'match',
+  'related',
+] as const satisfies readonly WikitabSearchRelation[]
+
 export interface WikitabSearchArticle {
   pageid: number
   title: string
@@ -25,9 +33,11 @@ export interface WikitabSearchArticle {
   /** Full-text hit context — `searchmatch` spans converted to `<strong>`. */
   matchSnippetHtml?: string
   thumbnailUrl?: string
-  href: string
+  url: string
   relation: WikitabSearchRelation
   seedTitle?: string
+  /** “Why am I seeing this?” dialog body (HTML). */
+  rationaleHtml?: string
 }
 
 export interface WikitabSearchArticlesBatch {
@@ -128,6 +138,8 @@ function formatSearchMatchSnippet(snippet: string, articleTitle: string): string
   let html = snippet
     .replace(/<span class="searchmatch">/gi, '<strong>')
     .replace(/<\/span>/gi, '</strong>')
+    .replace(/<mark(\s[^>]*)?>/gi, '<strong>')
+    .replace(/<\/mark>/gi, '</strong>')
 
   const plain = stripSnippetHtml(html)
   if (snippetNeedsLeadingEllipsis(plain, articleTitle)) {
@@ -160,7 +172,7 @@ function mapPage(
       : stripEmptyParentheses((raw.extract ?? '').trim()),
     matchSnippetHtml,
     thumbnailUrl: normalizeThumbnailUrl(raw.thumbnail?.source),
-    href: articleUrl(raw.title),
+    url: articleUrl(raw.title),
     relation,
     seedTitle: relation === 'related' ? meta.seedTitle : undefined,
   }
@@ -245,6 +257,11 @@ async function fetchSearchGeneratorBatch(
     .map((page) => mapPage(page, relation, { seedTitle }))
     .filter((article): article is WikitabSearchArticle => article !== null)
 
+  const rationaleQuery = relation === 'match' ? gsrsearch : ''
+  for (const article of articles) {
+    article.rationaleHtml = formatSearchArticleRelationRationaleHtml(article, rationaleQuery)
+  }
+
   return {
     articles: await filterArticles(articles, excludePageids, signal),
     nextOffset,
@@ -280,6 +297,7 @@ export async function resolveWikitabSearchTitleHits(
 export async function enrichTitleHits(
   hits: WikitabSearchResult[],
   relationByPageid: Map<number, 'exact' | 'near'>,
+  searchQuery: string,
   signal: AbortSignal | undefined,
 ): Promise<WikitabSearchArticle[]> {
   if (!hits.length) return []
@@ -299,6 +317,7 @@ export async function enrichTitleHits(
 
     if (!mapped.description && hit.description) mapped.description = hit.description
     if (!mapped.thumbnailUrl && hit.thumbnailUrl) mapped.thumbnailUrl = hit.thumbnailUrl
+    mapped.rationaleHtml = formatSearchArticleRelationRationaleHtml(mapped, searchQuery)
     articles.push(mapped)
   }
 
@@ -403,6 +422,7 @@ export async function fetchWikitabSearchArticlesCurated(
     const titleArticles = await enrichTitleHits(
       titleHitsToEnrich,
       buildTitleRelationMap(exactHit, nearHits),
+      trimmed,
       signal,
     )
     for (const article of titleArticles) {

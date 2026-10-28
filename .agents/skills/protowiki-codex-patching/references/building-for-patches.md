@@ -10,19 +10,11 @@ small `CdxToggleButton` (padding, border, hover outline, active inset, focus
 ring) state by state. The patch changed toggle-button styling, and the tabs
 didn't follow.
 
-**After.** One `CdxToggleButton size="small"` per tab inside a
-`role="tablist"` row. Wikitab CSS keeps:
-
-- layout (flex row, gap, horizontal scroll, 1px padding so focus outlines
-  aren't clipped);
-- `font-weight: normal` (the design wants regular weight; Codex buttons are bold);
-- the toggled-on colour remapped from progressive blue to
-  `--background-color-inverted` / `--color-inverted`, including its hover,
-  focus and active states.
-
-Everything else — unselected rest, hover, active, disabled — comes from
-whatever Codex is installed. The test: deleting the override block should give
-you plain Codex toggle buttons, not broken markup.
+**After.** One framed `CdxToggleButton` per tab inside a
+`role="tablist"` row. Wikitab CSS keeps only layout (flex row, gap, horizontal
+scroll, 1px padding so focus outlines aren't clipped, `flex: 0 0 auto` on each
+button). Rest, hover, toggled-on, focus, active, and disabled all come from
+whatever Codex is installed — no colour or typography overrides on the buttons.
 
 ## Thumbnails: known upstream gap (deferred)
 

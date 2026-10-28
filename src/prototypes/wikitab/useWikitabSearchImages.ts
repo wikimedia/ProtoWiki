@@ -5,8 +5,24 @@ import {
   type WikitabSearchImage,
   type WikitabSearchImagesContinue,
 } from './data/fetchWikitabSearchImages'
+import { resolveWikitabSearchTitleHits } from './data/fetchWikitabSearchArticles'
+import { seedArticle, type WikitabSeedArticle } from './data/wikitabSeedArticle'
 import { useWikitabHiddenImages } from './useWikitabHiddenImages'
 import { resetWikitabSearchImageDecode } from './useWikitabSearchImageDecode'
+
+/** Exact title match, else the nearest — free-text queries with neither get no seed. */
+async function resolveQuerySeedArticle(
+  query: string,
+  signal: AbortSignal,
+): Promise<WikitabSeedArticle | undefined> {
+  try {
+    const { exactHit, nearHits } = await resolveWikitabSearchTitleHits(query, { signal })
+    return seedArticle((exactHit ?? nearHits[0])?.title, 'search-query')
+  } catch (err) {
+    if ((err as Error)?.name === 'AbortError') throw err
+    return undefined
+  }
+}
 
 export function useWikitabSearchImages(searchQuery: Ref<string>, enabled: Ref<boolean>) {
   const { hiddenPageIds, isHidden, hideImage: persistHiddenImage } = useWikitabHiddenImages()
@@ -19,6 +35,12 @@ export function useWikitabSearchImages(searchQuery: Ref<string>, enabled: Ref<bo
   let continueParams: WikitabSearchImagesContinue | null = null
   let abortController: AbortController | null = null
   let loadedForQuery = ''
+  let querySeed: WikitabSeedArticle | undefined
+
+  function withQuerySeed(items: WikitabSearchImage[]): WikitabSearchImage[] {
+    if (!querySeed) return items
+    return items.map((item) => ({ ...item, seedArticle: querySeed }))
+  }
 
   function filterHidden(items: WikitabSearchImage[]): WikitabSearchImage[] {
     if (!hiddenPageIds.value.length) return items
@@ -31,6 +53,7 @@ export function useWikitabSearchImages(searchQuery: Ref<string>, enabled: Ref<bo
     loadingMore.value = false
     hasMore.value = false
     continueParams = null
+    querySeed = undefined
     resetWikitabSearchImageDecode()
   }
 
@@ -61,10 +84,14 @@ export function useWikitabSearchImages(searchQuery: Ref<string>, enabled: Ref<bo
     loading.value = true
 
     try {
-      const result = await fetchWikitabSearchImages(fetchQuery, { signal })
+      const [result, seed] = await Promise.all([
+        fetchWikitabSearchImages(fetchQuery, { signal }),
+        resolveQuerySeedArticle(fetchQuery, signal),
+      ])
       if (signal.aborted || searchQuery.value.trim() !== fetchQuery) return
 
-      images.value = filterHidden(result.images)
+      querySeed = seed
+      images.value = filterHidden(withQuerySeed(result.images))
       continueParams = result.continueParams
       hasMore.value = continueParams !== null
       loadedForQuery = fetchQuery
@@ -97,7 +124,7 @@ export function useWikitabSearchImages(searchQuery: Ref<string>, enabled: Ref<bo
       if (abortController?.signal.aborted) return
       if (searchQuery.value.trim() !== query) return
 
-      appendImages(result.images)
+      appendImages(withQuerySeed(result.images))
       continueParams = result.continueParams
       hasMore.value = continueParams !== null
     } catch (err) {

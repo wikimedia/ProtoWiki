@@ -7,7 +7,15 @@ import {
   type WikitabSearchTopTitle,
 } from './fetchWikitabSearchArticles'
 import { fetchWikitabPageSummaryThumbnails } from './fetchWikitabPageSummary'
+import { formatActivityEditSummary } from './wikitabActivityEditSummary'
 import { articleUrl, EN_WIKI_HOST } from './wikitabHtml'
+import { formatWikitabEditRelativeTime } from './wikitabRelativeTime'
+
+export {
+  formatWikitabEditRelativeTime,
+  formatWikitabRelativeTime,
+  parseMediaWikiTimestamp,
+} from './wikitabRelativeTime'
 
 export { fetchWikitabSearchTopTitles, type WikitabSearchTopTitle }
 
@@ -18,23 +26,31 @@ const USERS_PER_FETCH = 50
 
 export type EditorKind = 'bot' | 'temporary' | 'user' | 'anonymous'
 
+export const WIKITAB_EDITOR_KINDS = [
+  'bot',
+  'temporary',
+  'user',
+  'anonymous',
+] as const satisfies readonly EditorKind[]
+
 export interface WikitabSearchActivityItem {
   pageid: number
-  title: string
+  articleTitle: string
   editSummary: string
   thumbnailUrl?: string
-  charsAdded?: number
-  charsRemoved?: number
-  articleHref: string
+  delta?: number
+  articleUrl: string
   diffUrl: string
   thankUrl: string
-  revid: number
+  revisionId: number
   reverted: boolean
   /** Set asynchronously after Lift Wing revert-risk lookup. */
   highRevertRisk?: boolean
-  isLatest: boolean
+  /** ORES `rcshow=oresreview` row (Recent changes “needs review”). */
+  needsReview?: boolean
+  isLatestRevision: boolean
   editorName: string
-  editorHref: string
+  editorUrl: string
   editedRelative: string
   editedTimestamp: string
   editorKind: EditorKind
@@ -50,8 +66,7 @@ interface RevisionRow {
   parsedComment: string
   timestamp: string
   reverted: boolean
-  charsAdded?: number
-  charsRemoved?: number
+  delta?: number
 }
 
 interface ActivityCandidate {
@@ -101,7 +116,7 @@ function userKey(user: string): string {
   return user.trim()
 }
 
-function classifyEditor(userid: number, groups: string[] | undefined): EditorKind {
+export function classifyEditor(userid: number, groups: string[] | undefined): EditorKind {
   if (userid === 0) return 'anonymous'
   if (groups?.includes('bot')) return 'bot'
   if (groups?.includes('temp')) return 'temporary'
@@ -141,15 +156,12 @@ function parseRevisionRow(revision: RevisionApiRow): RevisionRow | null {
 function computeDiffSize(
   revision: Pick<RevisionRow, 'parentid' | 'size'>,
   revSizesById: Map<number, number>,
-): Pick<RevisionRow, 'charsAdded' | 'charsRemoved'> | null {
+): number | null {
   if (!revision.parentid) return null
   const parentSize = revSizesById.get(revision.parentid)
   if (parentSize == null) return null
 
-  const delta = revision.size - parentSize
-  if (delta > 0) return { charsAdded: delta, charsRemoved: 0 }
-  if (delta < 0) return { charsAdded: 0, charsRemoved: -delta }
-  return { charsAdded: 0, charsRemoved: 0 }
+  return revision.size - parentSize
 }
 
 function attachDiffSizes(revisions: RevisionRow[], revSizesById: Map<number, number>): void {
@@ -158,10 +170,9 @@ function attachDiffSizes(revisions: RevisionRow[], revSizesById: Map<number, num
   }
 
   for (const revision of revisions) {
-    const diffSize = computeDiffSize(revision, revSizesById)
-    if (!diffSize) continue
-    revision.charsAdded = diffSize.charsAdded
-    revision.charsRemoved = diffSize.charsRemoved
+    const delta = computeDiffSize(revision, revSizesById)
+    if (delta == null) continue
+    revision.delta = delta
   }
 }
 
@@ -222,44 +233,17 @@ async function ensureParentSizes(
   }
 }
 
-function diffUrl(title: string, revid: number): string {
+export function wikitabRevisionDiffUrl(title: string, revisionId: number): string {
   const params = new URLSearchParams({
     title: title.replace(/ /g, '_'),
     diff: 'prev',
-    oldid: String(revid),
+    oldid: String(revisionId),
   })
   return `https://${EN_WIKI_HOST}/w/index.php?${params.toString()}`
 }
 
-function thankUrl(revid: number): string {
-  return `https://${EN_WIKI_HOST}/wiki/Special:Thanks/${revid}`
-}
-
-function parseMediaWikiTimestamp(timestamp: string): Date {
-  const trimmed = timestamp.trim()
-  if (!trimmed.length) return new Date(Number.NaN)
-  if (trimmed.includes('T')) {
-    return new Date(trimmed.endsWith('Z') ? trimmed : `${trimmed}Z`)
-  }
-  return new Date(trimmed.replace(' ', 'T') + 'Z')
-}
-
-function formatRelativeTime(isoTimestamp: string): string {
-  const then = parseMediaWikiTimestamp(isoTimestamp).getTime()
-  if (Number.isNaN(then)) return '—'
-  const diffMs = Date.now() - then
-  if (diffMs < 0) return 'just now'
-
-  const minutes = Math.floor(diffMs / (1000 * 60))
-  const hours = Math.floor(diffMs / (1000 * 60 * 60))
-  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-
-  if (minutes < 1) return 'just now'
-  if (minutes < 60) return `${minutes}m ago`
-  if (hours < 24) return `${hours}h ago`
-  if (days < 30) return `${days}d ago`
-  const months = Math.floor(days / 30)
-  return `${months}mo ago`
+export function wikitabRevisionThankUrl(revisionId: number): string {
+  return `https://${EN_WIKI_HOST}/wiki/Special:Thanks/${revisionId}`
 }
 
 function editorDisplayName(user: string): string {
@@ -294,11 +278,10 @@ function formatRawWikitextComment(comment: string): string {
 
   const sectionMatch = trimmed.match(/^\/\*(.+?)\*\/\s*(.*)$/s)
   if (sectionMatch) {
-    const section = sectionMatch[1].trim()
-    const userText = sectionMatch[2].trim()
-    const prefix = `→${section}: `
-    if (userText) return `${prefix}"${userText}"`
-    return `→${section}`
+    return formatActivityEditSummary({
+      section: sectionMatch[1].trim(),
+      editSummary: sectionMatch[2].trim(),
+    })
   }
 
   const doc = new DOMParser().parseFromString(trimmed, 'text/html')
@@ -358,6 +341,12 @@ function wrapInternetArchiveBotSummary(summary: string, user: string): string {
   if (!summary || user.trim() !== 'InternetArchiveBot') return summary
   if (summary.startsWith('(')) return summary
   return `(${summary})`
+}
+
+/** Raw `comment` from Action API (e.g. recentchanges) — no `parsedcomment` HTML. */
+export function formatWikitabRevisionComment(comment: string, user = ''): string {
+  const summary = formatEditSummary('', comment)
+  return wrapInternetArchiveBotSummary(summary, user)
 }
 
 async function fetchRevisionsForTitle(
@@ -458,7 +447,7 @@ async function fetchEditorKindsForBatch(
   return kinds
 }
 
-async function fetchEditorKinds(
+export async function fetchEditorKinds(
   usernames: string[],
   signal: AbortSignal | undefined,
 ): Promise<Map<string, EditorKind>> {
@@ -485,11 +474,12 @@ function mapCandidate(
 ): WikitabSearchActivityItem {
   const key = titleKey(candidate.title)
   const wikiLatestRevid = latestRevidByTitle.get(key)
-  const isLatest = wikiLatestRevid != null && candidate.revision.revid === wikiLatestRevid
+  const isLatestRevision =
+    wikiLatestRevid != null && candidate.revision.revid === wikiLatestRevid
 
   return {
     pageid: candidate.pageid,
-    title: candidate.title,
+    articleTitle: candidate.title,
     editSummary: wrapInternetArchiveBotSummary(
       formatEditSummary(
         candidate.revision.parsedComment,
@@ -498,17 +488,16 @@ function mapCandidate(
       candidate.revision.user,
     ),
     thumbnailUrl: thumbnailByTitle.get(key),
-    charsAdded: candidate.revision.charsAdded,
-    charsRemoved: candidate.revision.charsRemoved,
-    articleHref: articleUrl(candidate.title),
-    diffUrl: diffUrl(candidate.title, candidate.revision.revid),
-    thankUrl: thankUrl(candidate.revision.revid),
-    revid: candidate.revision.revid,
+    delta: candidate.revision.delta,
+    articleUrl: articleUrl(candidate.title),
+    diffUrl: wikitabRevisionDiffUrl(candidate.title, candidate.revision.revid),
+    thankUrl: wikitabRevisionThankUrl(candidate.revision.revid),
+    revisionId: candidate.revision.revid,
     reverted: candidate.revision.reverted,
-    isLatest,
+    isLatestRevision,
     editorName: editorDisplayName(candidate.revision.user),
-    editorHref: editorUrl(candidate.revision.user, candidate.revision.userid),
-    editedRelative: formatRelativeTime(candidate.revision.timestamp),
+    editorUrl: editorUrl(candidate.revision.user, candidate.revision.userid),
+    editedRelative: formatWikitabEditRelativeTime(candidate.revision.timestamp),
     editedTimestamp: candidate.revision.timestamp,
     editorKind:
       editorKindByUser.get(userKey(candidate.revision.user)) ??
@@ -579,6 +568,8 @@ export class WikitabSearchActivityFeed {
   private latestRevidByTitle = new Map<string, number>()
   private thumbnailByTitle = new Map<string, string>()
   private readonly editorKindByUser = new Map<string, EditorKind>()
+  private readonly editorKindLookups = new Map<string, Promise<void>>()
+  private readonly editorByRevid = new Map<number, { user: string; userid: number }>()
 
   constructor(
     titles: WikitabSearchTopTitle[],
@@ -636,7 +627,14 @@ export class WikitabSearchActivityFeed {
     return fetchedThumbnails
   }
 
-  async takeNext(signal: AbortSignal): Promise<WikitabSearchActivityItem | null> {
+  /**
+   * With `deferEditorKind`, an uncached editor gets a provisional kind —
+   * check {@link isEditorKindKnown} and patch via {@link resolveEditorKind}.
+   */
+  async takeNext(
+    signal: AbortSignal,
+    options: { deferEditorKind?: boolean } = {},
+  ): Promise<WikitabSearchActivityItem | null> {
     if (!this.queue.length) {
       await this.refillQueue(signal)
     }
@@ -644,7 +642,11 @@ export class WikitabSearchActivityFeed {
     const candidate = this.queue.shift()
     if (!candidate) return null
 
-    await this.ensureEditorKindForCandidate(candidate, signal)
+    const { revid, user, userid } = candidate.revision
+    this.editorByRevid.set(revid, { user, userid })
+    if (!options.deferEditorKind) {
+      await this.ensureEditorKind(user, userid, signal)
+    }
 
     return mapCandidate(
       candidate,
@@ -654,11 +656,33 @@ export class WikitabSearchActivityFeed {
     )
   }
 
-  private async ensureEditorKindForCandidate(
-    candidate: ActivityCandidate,
+  isEditorKindKnown(item: WikitabSearchActivityItem): boolean {
+    const editor = this.editorByRevid.get(item.revisionId)
+    if (!editor || editor.userid === 0) return true
+    return this.editorKindByUser.has(userKey(editor.user))
+  }
+
+  async resolveEditorKind(
+    item: WikitabSearchActivityItem,
+    signal: AbortSignal,
+  ): Promise<EditorKind> {
+    const editor = this.editorByRevid.get(item.revisionId)
+    if (!editor) return item.editorKind
+    await this.ensureEditorKind(editor.user, editor.userid, signal)
+    return this.editorKindByUser.get(userKey(editor.user)) ?? item.editorKind
+  }
+
+  /** `undefined` until {@link prefetchMetadata} has the title's latest revid. */
+  isLatestRevision(item: WikitabSearchActivityItem): boolean | undefined {
+    const latest = this.latestRevidByTitle.get(titleKey(item.articleTitle))
+    return latest == null ? undefined : latest === item.revisionId
+  }
+
+  private async ensureEditorKind(
+    user: string,
+    userid: number,
     signal: AbortSignal,
   ): Promise<void> {
-    const { user, userid } = candidate.revision
     const key = userKey(user)
     if (this.editorKindByUser.has(key)) return
 
@@ -667,9 +691,18 @@ export class WikitabSearchActivityFeed {
       return
     }
 
-    const fetched = await fetchEditorKinds([user], signal)
-    const kind = fetched.get(key) ?? 'user'
-    this.editorKindByUser.set(key, kind)
+    let lookup = this.editorKindLookups.get(key)
+    if (!lookup) {
+      lookup = fetchEditorKinds([user], signal)
+        .then((fetched) => {
+          this.editorKindByUser.set(key, fetched.get(key) ?? 'user')
+        })
+        .finally(() => {
+          this.editorKindLookups.delete(key)
+        })
+      this.editorKindLookups.set(key, lookup)
+    }
+    await lookup
   }
 
   private async refillQueue(signal: AbortSignal): Promise<void> {

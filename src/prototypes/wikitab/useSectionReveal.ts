@@ -1,7 +1,6 @@
-import { computed, onUnmounted, ref, watch, type Ref } from 'vue'
-import { resolveDykThumbnails } from './data/resolveDykThumbnails'
-import { preloadImages } from './preloadImages'
-import type { WikitabCardData, WikitabSectionSpec } from './sections'
+import { computed, onUnmounted, reactive, ref, watch, type Ref } from 'vue'
+import { cardNeedsThumbnailLookup, resolveDykThumbnails } from './data/resolveDykThumbnails'
+import type { WikitabCardData, WikitabCardLoading, WikitabSectionSpec } from './sections'
 
 function itemsUnchanged(
   list: WikitabCardData[],
@@ -19,12 +18,14 @@ function itemsUnchanged(
 }
 
 /**
- * How much of a section is reserved on screen versus actually paintable.
+ * How much of a section is reserved on screen, and what each reserved slot is
+ * still waiting for.
  *
- * `reserved` slots always render — as a card when its index is below `ready`,
- * and as a fixed-height placeholder otherwise. Revealing a page raises
- * `reserved` immediately and `ready` only once that page has fully resolved, so
- * a scroll gesture always has somewhere to go and the layout never shifts.
+ * `reserved` slots always render. Revealing a page raises `reserved`
+ * immediately; each slot then paints as soon as its own data is known —
+ * `slotLoading(i)` is `true` while there is no item, `{ thumbnail: true }` while
+ * its DYK-style thumbnail lookup is in flight, and `false` once it is complete.
+ * Thumbnail decode is handled per card by `WikitabCard`.
  */
 export function useSectionReveal(
   spec: Pick<WikitabSectionSpec, 'initialCount' | 'pageSize'>,
@@ -33,8 +34,10 @@ export function useSectionReveal(
   loading?: Ref<boolean>,
 ) {
   const reserved = ref(spec.initialCount)
-  const ready = ref(0)
   const revealing = ref(false)
+  const pendingThumbnailKeys = reactive(new Set<string>())
+  /** Lookup results by card key — cards are passed down by reference, so a fresh object carries them. */
+  const resolvedThumbnails = reactive(new Map<string, string>())
 
   const controller = new AbortController()
   onUnmounted(() => controller.abort())
@@ -42,32 +45,29 @@ export function useSectionReveal(
   const hasMore = computed(() => items.value.length > reserved.value)
 
   function applyEmptyListState(): void {
-    if (loading?.value) {
-      reserved.value = spec.initialCount
-      ready.value = 0
-    } else {
-      reserved.value = 0
-      ready.value = 0
-    }
+    reserved.value = loading?.value ? spec.initialCount : 0
   }
 
   async function prepare(from: number, to: number): Promise<void> {
+    const page = items.value.slice(from, to).filter(cardNeedsThumbnailLookup)
+    if (!page.length) return
+
     revealing.value = true
-    const page = items.value.slice(from, to)
+    for (const card of page) pendingThumbnailKeys.add(card.key)
 
     try {
-      // A no-op unless the page carries thumbnail titles, as DYK hooks do.
-      await resolveDykThumbnails(page, controller.signal)
-      if (controller.signal.aborted) return
-      await preloadImages(page.map((card) => card.thumbnailUrl))
-      if (controller.signal.aborted) return
-      ready.value = to
+      await resolveDykThumbnails(page, controller.signal, (card, thumbnailUrl) => {
+        if (thumbnailUrl) resolvedThumbnails.set(card.key, thumbnailUrl)
+        pendingThumbnailKeys.delete(card.key)
+      })
     } catch (cause) {
       if ((cause as Error)?.name === 'AbortError') return
-      // Thumbnails are decoration — reveal the page's text regardless.
-      ready.value = to
     } finally {
-      if (!controller.signal.aborted) revealing.value = false
+      if (!controller.signal.aborted) {
+        // Thumbnails are decoration — a failed lookup must not hold the card back.
+        for (const card of page) pendingThumbnailKeys.delete(card.key)
+        revealing.value = false
+      }
     }
   }
 
@@ -79,6 +79,22 @@ export function useSectionReveal(
     reserved.value = to
     void prepare(from, to)
   }
+
+  function slotCard(index: number): WikitabCardData | undefined {
+    const card = items.value[index]
+    if (!card) return undefined
+    const thumbnailUrl = resolvedThumbnails.get(card.key)
+    return thumbnailUrl && card.thumbnailUrl !== thumbnailUrl ? { ...card, thumbnailUrl } : card
+  }
+
+  function slotLoading(index: number): WikitabCardLoading {
+    const card = items.value[index]
+    if (!card) return true
+    return pendingThumbnailKeys.has(card.key) ? { thumbnail: true } : false
+  }
+
+  /** Changes whenever any slot's loading state does — for layout watchers. */
+  const pendingCount = computed(() => pendingThumbnailKeys.size)
 
   watch(
     items,
@@ -106,7 +122,6 @@ export function useSectionReveal(
         reserved.value = Math.min(reserved.value, list.length)
       }
 
-      ready.value = 0
       void prepare(0, reserved.value)
     },
     { immediate: true },
@@ -118,5 +133,5 @@ export function useSectionReveal(
     })
   }
 
-  return { reserved, ready, revealing, hasMore, revealMore }
+  return { reserved, revealing, hasMore, revealMore, slotCard, slotLoading, pendingCount }
 }

@@ -7,8 +7,9 @@ import {
 } from './savedCardHelpers'
 import { loadWikitabConfig, type WikitabSavedItem } from './wikitabConfig'
 import { filterDisambiguationPageIds } from './filterDisambiguationPages'
-import { fetchWikitabPageSummary } from './fetchWikitabPageSummary'
 import type { WikitabCardData } from '../sections'
+import { feedDailyReadsPayloadToCardData } from './wikitabCardPayloadMappers'
+import type { WikitabFeedDailyReadsCardPayload } from './wikitabCardPayloadTypes'
 import { EN_WIKI_HOST, articleTitleKey, articleUrl } from './wikitabHtml'
 
 const MAX_SEEDS = 4
@@ -156,37 +157,18 @@ function mapPage(raw: RawPage): DailyReadsHit | null {
 }
 
 
-function hitToCard({ hit, seedTitle }: DailyReadsMergedHit): WikitabCardData {
+function hitToPayload({ hit, seedTitle }: DailyReadsMergedHit): WikitabFeedDailyReadsCardPayload {
   const title = displayTitle(hit.title)
   return {
     key: `daily-reads:${hit.pageid}`,
-    href: articleUrl(hit.title),
-    linkTitle: title,
+    url: articleUrl(hit.title),
     title,
     description: hit.description ?? hit.extract,
     thumbnailUrl: hit.thumbnailUrl,
-    supportingText: `Related to ${seedTitle}`,
+    seedTitle,
   }
 }
 
-async function enrichDailyReadsCard(
-  merged: DailyReadsMergedHit,
-  signal: AbortSignal | undefined,
-): Promise<WikitabCardData> {
-  const card = hitToCard(merged)
-
-  const summary = await fetchWikitabPageSummary(
-    merged.hit.title,
-    signal,
-    'wikitab-daily-reads-summary',
-  )
-  if (summary) {
-    card.thumbnailUrl = summary.thumbnailUrl ?? card.thumbnailUrl
-    card.description = card.description ?? summary.description
-  }
-
-  return card
-}
 
 function dailyMergeRng(day: string, seeds: readonly WikitabSavedArticleSeed[]): () => number {
   const fingerprint = seeds
@@ -468,7 +450,10 @@ export class DailyReadsFeed {
     return false
   }
 
-  /** Next shuffled card, enriched via REST `/page/summary/`. */
+  /**
+   * Next shuffled card, straight from its morelike hit. A missing thumbnail or
+   * description is backfilled by the caller after the card is on screen.
+   */
   async takeNext(signal: AbortSignal | undefined): Promise<WikitabCardData | null> {
     while (true) {
       if (this.loadError) throw this.loadError
@@ -480,7 +465,7 @@ export class DailyReadsFeed {
       }
 
       const merged = this.takeOneRandom()
-      if (merged) return enrichDailyReadsCard(merged, signal)
+      if (merged) return feedDailyReadsPayloadToCardData(hitToPayload(merged))
 
       if (await this.refillAnyQueue(signal)) continue
 

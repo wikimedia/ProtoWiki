@@ -3,19 +3,27 @@
 Wikitab splits persistence into three layers. Keep them separate — do not fold
 feed cache into user config, and do not persist transient view state.
 
-## Authoritative config (`wikitab-config-v*`)
+## Authoritative config (`wikitab-config-v3`)
 
 User preferences for this browser profile live in
 [`data/wikitabConfig.ts`](../../../../src/prototypes/wikitab/data/wikitabConfig.ts).
 
-- Storage key: `wikitab-config-v3` (bump the suffix on breaking shape changes)
+- Storage key: **`wikitab-config-v3`** — do not bump the suffix. Old shapes are
+  upgraded in place on load by
+  [`data/wikitabStorageMigration.ts`](../../../../src/prototypes/wikitab/data/wikitabStorageMigration.ts).
 - API: `loadWikitabConfig()`, `saveWikitabConfig()`, `patchWikitabConfig()`
-- Each field is normalized on read and write (unknown section ids dropped, etc.)
+- **Current shape only:** `normalizeWikitabConfig()` and `normalizeSavedItems()`
+  validate the present schema (unknown section ids dropped, etc.). All knowledge
+  of v1/v2 keys, renamed fields, theme aliases, and dodgy rows lives in the
+  migration module — nowhere else in the app.
 
 **Grow one field at a time.** Add a property to `WikitabConfig`, a default in
-`DEFAULT_WIKITAB_CONFIG`, and a line in `normalizeConfig`. Do not pre-build a
-wikita-lite-style mega schema — the old prototype's 772-line `urlStateSchema.ts`
-is the anti-pattern.
+`DEFAULT_WIKITAB_CONFIG`, and a line in `normalizeWikitabConfig`. When you
+rename or reshape stored data, teach `wikitabStorageMigration.ts` to read the old
+form; do not add a second migration step or runtime fallbacks in components.
+
+Do not pre-build a wikita-lite-style mega schema — the old prototype's 772-line
+`urlStateSchema.ts` is the anti-pattern.
 
 Current fields:
 
@@ -29,19 +37,20 @@ Current fields:
   the home feed (`useWikitabHiddenArticles.ts`)
 - `dismissedActivityRevids` — Activity-tab revision ids permanently dismissed
   via the card ellipsis menu (`useWikitabDismissedActivity.ts`)
+- `reviewChangesShowSavedEdits` / `reviewChangesShowRecentRiskyEdits` — Review
+  changes home module feed sources (both default on); section **Configure** menu
+  → full-screen panel (`useWikitabReviewChangesSettings.ts`)
 - `savedItems` — typed saved entries (`WikitabSavedItem` discriminated union in
-  `data/wikitabSavedItems.ts`): **article**, **snippet**, **suggestion**,
-  **change**, **discussion**, **image**. Most recently saved first (`savedAt`). No
-  cross-source dedup — each source keeps its own stable id. Legacy v1
-  `savedArticles` and v2 `savedCards` migrate on load via
-  `savedItemMigration.ts` (v2 DYK/OTD/News → Snippet with html preserved;
-  Trending/Birthdays → normalized Article). Composable:
+  `data/wikitabSavedItems.ts`): **article**, **snippet**, **word**, **quote**,
+  **list**, **suggestion**, **change**, **discussion**, **image**. Each row carries
+  `primitive` and optional `seedArticle`. Most recently saved first (`savedAt`).
+  No cross-source dedup — each source keeps its own stable id. Composable:
   `useWikitabSavedArticles.ts`.
 
 **Article seeds for recommendations** — Daily reads, Suggested edits, and Review
-changes seed from **Article, Snippet, and Suggestion** items only
-(`uniqueArticleSeedsFromSavedItems` in `savedCardHelpers.ts`). Discussion,
-Change, and Image saves are excluded.
+changes seed from **Article and Suggestion** items only
+(`uniqueArticleSeedsFromSavedItems` in `savedCardHelpers.ts`). Word, Quote, List,
+Discussion, Change, and Image saves are excluded.
 
 ## Cache-only feed storage (`wikitab-feed-cache-v*`)
 
@@ -106,7 +115,8 @@ Daily reads.
 
 ## Transient component state
 
-Revealed page counts (`useSectionReveal`: `reserved` / `ready`) stay in memory
+Revealed page counts and per-card thumbnail lookups (`useSectionReveal`:
+`reserved`, pending thumbnail keys) stay in memory
 only. A new tab opens fresh every time; persisting scroll/reveal depth would add
 complexity with little benefit.
 
@@ -123,11 +133,21 @@ ProtoWiki-global params (`?theme=`, `?skin=`) are unrelated — they are resolve
 onto `<html>` at boot by [`src/theme.ts`](../../../../src/theme.ts) and
 [`protowiki-skins`](../protowiki-skins/SKILL.md).
 
-## Legacy migration
+## One-step storage migration
 
-On first load, if stored config has empty `pinnedSectionIds` and the URL still
-carries `?pinned=trending,dyk`, those ids are imported into config and the param
-is stripped via `history.replaceState`.
+[`wikitabStorageMigration.ts`](../../../../src/prototypes/wikitab/data/wikitabStorageMigration.ts)
+runs once per page load (via `loadWikitabConfig()` / `patchWikitabConfig()`):
+
+- Reads `wikitab-config-v3`, v2, and v1; merges `savedItems` from all sources
+  (latest `savedAt` wins per id).
+- Best-effort upgrade: v1 `savedArticles`, v2 `savedCards`, pre-typed `snippet`
+  rows, renamed fields, theme aliases, missing `primitive` / `seedArticle`, old
+  `?pinned=` when pins are empty.
+- Writes v3 if the normalized config changed; deletes legacy config keys and any
+  `wikitab-*` localStorage key that is not the config key or a current cache
+  `CACHE_KEY` (feed, daily reads, suggested edits, review changes, POTD, featured).
+
+Caches are disposable; config is not.
 
 ## Cross-tab sync
 

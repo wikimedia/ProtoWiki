@@ -1,7 +1,10 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import type { WikitabCardData } from '../sections'
+import { feedOtdPayloadToCardData } from './wikitabCardPayloadMappers'
+import type { WikitabFeedOtdCardPayload } from './wikitabCardPayloadTypes'
 import { EN_WIKI_HOST, articleUrl, normalizeFeedHtml, primaryLinkTitle } from './wikitabHtml'
+import { seedArticle } from './wikitabSeedArticle'
 
 interface ParseResponse {
   parse?: { text?: string }
@@ -54,18 +57,16 @@ function parseMainPageOtdHtml(html: string): WikitabCardData[] {
     if (!hook) return []
 
     const subject = primaryLinkTitle(hook)
+    if (!subject) return []
     const pictured = li.innerHTML.includes('(pictured)')
 
-    return [
-      {
-        key: `otd-mp-${year}-${index}`,
-        html: hook,
-        href: subject ? articleUrl(subject) : undefined,
-        linkTitle: subject,
-        thumbnailUrl: pictured ? picturedUrl : undefined,
-        thumbnailTitle: !pictured && subject ? subject : undefined,
-      },
-    ]
+    const payload: WikitabFeedOtdCardPayload = {
+      key: `otd-mp-${year}-${index}`,
+      description: hook,
+      url: articleUrl(subject),
+      thumbnailUrl: pictured ? picturedUrl : undefined,
+    }
+    return [{ ...feedOtdPayloadToCardData(payload), seedArticle: seedArticle(subject, 'hook-link') }]
   })
 }
 

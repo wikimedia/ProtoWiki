@@ -1,6 +1,8 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import type { WikitabCardData } from '../sections'
+import { feedBirthsPayloadToCardData } from './wikitabCardPayloadMappers'
+import type { WikitabFeedBirthsCardPayload } from './wikitabCardPayloadTypes'
 import { WIKITAB_FEED_CARD_THUMB_WIDTH, wikimediaThumbnailAtLeast } from './wikimediaThumbnailUrl'
 import { EN_WIKI_HOST, articleUrl } from './wikitabHtml'
 
@@ -48,24 +50,22 @@ function mapBirthItem(
   item: OnThisDayItem & { year: number },
   index: number,
   feedDay: string,
-): WikitabCardData {
+): WikitabFeedBirthsCardPayload | null {
   const lead = item.pages?.[0]
-  const linkTitle = lead?.normalizedtitle ?? lead?.title?.replace(/_/g, ' ')
-  const title = linkTitle ?? item.text ?? `Birth ${item.year}`
+  const title = lead?.normalizedtitle ?? lead?.title?.replace(/_/g, ' ')
+  const url = lead ? summaryUrl(lead) : undefined
+  if (!url || !title) return null
 
   return {
     key: `births-${item.year}-${index}`,
+    url,
     title,
-    supportingText: `${ageInYears(item.year, feedDay)} years old`,
-    description: lead?.description || subtitleFromText(item.text ?? '', linkTitle),
-    href: lead ? summaryUrl(lead) : undefined,
-    linkTitle,
+    ageYears: ageInYears(item.year, feedDay),
+    description: lead?.description || subtitleFromText(item.text ?? '', title),
     thumbnailUrl: wikimediaThumbnailAtLeast(
       lead?.thumbnail?.source,
       WIKITAB_FEED_CARD_THUMB_WIDTH,
     ),
-    thumbnailTitle:
-      !lead?.thumbnail?.source && linkTitle ? linkTitle : undefined,
   }
 }
 
@@ -90,6 +90,8 @@ export async function fetchBirthsOnThisDay(
     return (payload.births ?? [])
       .filter((item): item is OnThisDayItem & { year: number } => typeof item.year === 'number')
       .map((item, index) => mapBirthItem(item, index, day))
+      .filter((payload): payload is WikitabFeedBirthsCardPayload => payload !== null)
+      .map(feedBirthsPayloadToCardData)
   } catch (error) {
     if ((error as Error)?.name === 'AbortError') throw error
     return []

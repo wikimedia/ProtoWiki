@@ -10,9 +10,15 @@ import {
 } from '@wikimedia/codex-icons'
 
 import { useSkin } from '@/composables/useSkin'
+import { wikitabCardBindProps } from './data/wikitabCardPresentation'
+import { wikitabCardFeedMenuItems } from './data/wikitabCardMenuItems'
 import WikitabCard from './WikitabCard.vue'
 import { suggestionSavedId } from './data/savedCardHelpers'
-import { WIKITAB_SUGGESTED_EDITS_MODULE_SPEC, type WikitabCardData } from './sections'
+import {
+  WIKITAB_SUGGESTED_EDITS_MODULE_SPEC,
+  type WikitabCardData,
+  type WikitabCardLoading,
+} from './sections'
 import type { SaveItemPayload } from './data/savedCardHelpers'
 import { useEqualRowHeights } from './useEqualRowHeights'
 import { usePreventHorizontalSwipeNavigation } from './usePreventHorizontalSwipeNavigation'
@@ -22,6 +28,8 @@ const spec = WIKITAB_SUGGESTED_EDITS_MODULE_SPEC
 
 const props = defineProps<{
   items: WikitabCardData[]
+  /** Card key → fields whose backfill is still in flight. */
+  pendingByKey?: Map<string, WikitabCardLoading>
   loading: boolean
   fillingInitial: boolean
   pending: boolean
@@ -118,6 +126,7 @@ useEqualRowHeights({
     computed(() => reserved.value),
     computed(() => props.items.length),
     computed(() => props.loading),
+    computed(() => props.pendingByKey),
   ],
 })
 
@@ -125,15 +134,17 @@ const slots = computed(() => {
   if (isInitialLoading.value) {
     return Array.from({ length: spec.initialCount }, () => ({
       card: undefined as WikitabCardData | undefined,
-      loading: true,
+      loading: true as WikitabCardLoading,
     }))
   }
 
-  return Array.from({ length: reserved.value }, (_, index) => ({
-    card: props.items[index],
-    loading:
-      (props.fillingInitial || props.loadingMore) && index >= props.items.length,
-  }))
+  return Array.from({ length: reserved.value }, (_, index) => {
+    const card = props.items[index]
+    const loading: WikitabCardLoading = card
+      ? (props.pendingByKey?.get(card.key) ?? false)
+      : props.fillingInitial || props.loadingMore
+    return { card, loading }
+  })
 })
 
 watch(() => props.items.length, syncReservedToItems, { immediate: true })
@@ -268,22 +279,27 @@ function revealMore(): void {
       <WikitabCard
         v-for="(slot, index) in slots"
         :key="slot.card?.key ?? index"
-        class="wikitab-suggested-edits-section__card"
-        :variant="spec.variant"
-        :height="spec.cardHeight"
-        :thumbnail-size="spec.thumbnailSize"
-        :card="slot.card"
-        supporting-progressive
-        :loading="slot.loading"
-        :show-article-menu="!slot.loading && !!slot.card"
-        :hide-menu-section-heading="!slot.loading && slot.card ? spec.heading : undefined"
-        :is-saved="
-          slot.card && slot.card.pageid !== undefined && slot.card.suggestionNeed
-            ? isCardSaved(suggestionSavedId(slot.card.pageid, slot.card.suggestionNeed))
-            : false
+        class="wikitab-suggested-edits-section__card wikitab-section__card"
+        v-bind="
+          wikitabCardBindProps(spec.primitive, {
+            card: slot.card,
+            loading: slot.loading,
+            menu:
+              slot.loading !== true && slot.card
+                ? wikitabCardFeedMenuItems({
+                    save: {
+                      isSaved:
+                        slot.card.pageid !== undefined && slot.card.task
+                          ? isCardSaved(suggestionSavedId(slot.card.pageid, slot.card.task))
+                          : false,
+                    },
+                    hideFromHeading: spec.heading,
+                  })
+                : undefined,
+          })
         "
         @hide-article="emit('hide-article', $event)"
-        @toggle-save="slot.card && emit('toggle-save', { kind: 'suggestion', card: slot.card })"
+        @toggle-save="slot.card && emit('toggle-save', { primitive: 'suggestion', card: slot.card })"
       />
       <div ref="sentinel" class="wikitab-suggested-edits-section__sentinel" aria-hidden="true" />
     </div>

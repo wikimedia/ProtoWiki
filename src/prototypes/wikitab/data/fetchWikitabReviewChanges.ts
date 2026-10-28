@@ -1,8 +1,10 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 
+import { RecentChangesHighRiskFeed } from './fetchWikitabRecentChangesRisky'
 import {
   WikitabSearchActivityFeed,
+  type EditorKind,
   type WikitabSearchActivityItem,
   type WikitabSearchTopTitle,
 } from './fetchWikitabSearchActivity'
@@ -14,6 +16,14 @@ import { articleTitleKey, EN_WIKI_HOST } from './wikitabHtml'
 
 const MAX_SEEDS = 6
 const THUMBNAIL_SIZE = 96
+
+export interface ReviewChangesFeedOptions {
+  showSavedEdits: boolean
+  showRecentRiskyEdits: boolean
+  savedItems: readonly WikitabSavedItem[]
+  day: string
+  seenRevids?: Iterable<number>
+}
 
 function normalizeThumbnailUrl(url: string | undefined): string | undefined {
   if (!url) return undefined
@@ -92,12 +102,27 @@ export class ReviewChangesFeed {
     return this.inner.prefetchMetadata(signal)
   }
 
+  /** Never waits on the editor-kind lookup — see {@link resolveEditorKind}. */
   async takeNext(signal: AbortSignal | undefined): Promise<WikitabSearchActivityItem | null> {
-    return this.inner.takeNext(signal ?? new AbortController().signal)
+    return this.inner.takeNext(signal ?? new AbortController().signal, {
+      deferEditorKind: true,
+    })
+  }
+
+  isEditorKindKnown(item: WikitabSearchActivityItem): boolean {
+    return this.inner.isEditorKindKnown(item)
+  }
+
+  resolveEditorKind(item: WikitabSearchActivityItem, signal: AbortSignal): Promise<EditorKind> {
+    return this.inner.resolveEditorKind(item, signal)
+  }
+
+  isLatestRevision(item: WikitabSearchActivityItem): boolean | undefined {
+    return this.inner.isLatestRevision(item)
   }
 }
 
-export async function createReviewChangesFeed(
+async function createSavedArticleReviewChangesFeed(
   savedItems: readonly WikitabSavedItem[],
   day: string,
   signal: AbortSignal,
@@ -118,7 +143,140 @@ export async function createReviewChangesFeed(
   const titles = await resolveTitlesForActivity(seeds, thumbnailByTitleKey, signal)
   if (!titles.length) return null
 
-  return new ReviewChangesFeed(
-    new WikitabSearchActivityFeed(titles, { seenRevids }),
-  )
+  return new ReviewChangesFeed(new WikitabSearchActivityFeed(titles, { seenRevids }))
+}
+
+/**
+ * Merges saved-seed edits and ORES Recent changes: first pick is the newer of the two
+ * queue heads, then alternates by source. Each source stays in its own fetch order.
+ */
+export class MergedReviewChangesFeed {
+  private readonly saved: ReviewChangesFeed | null
+  private readonly rc: RecentChangesHighRiskFeed | null
+  private savedHead: WikitabSearchActivityItem | null = null
+  private rcHead: WikitabSearchActivityItem | null = null
+  private readonly rcRevids = new Set<number>()
+  /** First dual-source pick uses newest `editedTimestamp`; then alternates. */
+  private firstMergePick = true
+  /** When both sources have a ready item, the next pick prefers saved if true. */
+  private preferSavedNext = true
+
+  constructor(saved: ReviewChangesFeed | null, rc: RecentChangesHighRiskFeed | null) {
+    this.saved = saved
+    this.rc = rc
+  }
+
+  hasPending(): boolean {
+    return (
+      this.savedHead !== null ||
+      this.rcHead !== null ||
+      (this.saved?.hasPending() ?? false) ||
+      (this.rc?.hasPending() ?? false)
+    )
+  }
+
+  async start(signal: AbortSignal): Promise<void> {
+    await Promise.all([
+      this.saved?.start(signal) ?? Promise.resolve(),
+      this.rc?.start(signal) ?? Promise.resolve(),
+    ])
+  }
+
+  async prefetchMetadata(signal: AbortSignal): Promise<Map<string, string>> {
+    const merged = new Map<string, string>()
+    const [fromSaved, fromRc] = await Promise.all([
+      this.saved?.prefetchMetadata(signal) ?? Promise.resolve(new Map<string, string>()),
+      this.rc?.prefetchMetadata(signal) ?? Promise.resolve(new Map<string, string>()),
+    ])
+    for (const [key, url] of fromSaved.entries()) merged.set(key, url)
+    for (const [key, url] of fromRc.entries()) merged.set(key, url)
+    return merged
+  }
+
+  async takeNext(signal: AbortSignal | undefined): Promise<WikitabSearchActivityItem | null> {
+    const activeSignal = signal ?? new AbortController().signal
+
+    if (!this.savedHead && this.saved?.hasPending()) {
+      this.savedHead = await this.saved.takeNext(activeSignal)
+    }
+    if (!this.rcHead && this.rc?.hasPending()) {
+      this.rcHead = await this.rc.takeNext(activeSignal)
+    }
+
+    const savedItem = this.savedHead
+    const rcItem = this.rcHead
+
+    if (!savedItem && !rcItem) return null
+
+    if (savedItem && !rcItem) {
+      this.savedHead = null
+      return savedItem
+    }
+    if (rcItem && !savedItem) {
+      this.rcHead = null
+      this.rcRevids.add(rcItem.revisionId)
+      return rcItem
+    }
+
+    let pickSaved: boolean
+    if (this.firstMergePick) {
+      this.firstMergePick = false
+      pickSaved = savedItem!.editedTimestamp >= rcItem!.editedTimestamp
+      this.preferSavedNext = !pickSaved
+    } else {
+      pickSaved = this.preferSavedNext
+      this.preferSavedNext = !this.preferSavedNext
+    }
+
+    if (pickSaved) {
+      this.savedHead = null
+      return savedItem!
+    }
+
+    this.rcHead = null
+    this.rcRevids.add(rcItem!.revisionId)
+    return rcItem!
+  }
+
+  isEditorKindKnown(item: WikitabSearchActivityItem): boolean {
+    if (this.rcRevids.has(item.revisionId)) {
+      return this.rc?.isEditorKindKnown(item) ?? true
+    }
+    if (this.saved) return this.saved.isEditorKindKnown(item)
+    return true
+  }
+
+  resolveEditorKind(item: WikitabSearchActivityItem, signal: AbortSignal): Promise<EditorKind> {
+    if (this.rcRevids.has(item.revisionId)) {
+      return this.rc!.resolveEditorKind(item, signal)
+    }
+    if (this.saved) return this.saved.resolveEditorKind(item, signal)
+    return Promise.resolve(item.editorKind)
+  }
+
+  isLatestRevision(item: WikitabSearchActivityItem): boolean | undefined {
+    if (this.rcRevids.has(item.revisionId)) {
+      return this.rc?.isLatestRevision(item)
+    }
+    if (this.saved) return this.saved.isLatestRevision(item)
+    return undefined
+  }
+}
+
+export async function createReviewChangesFeed(
+  options: ReviewChangesFeedOptions,
+  signal: AbortSignal,
+): Promise<MergedReviewChangesFeed | null> {
+  const { showSavedEdits, showRecentRiskyEdits, savedItems, day, seenRevids } = options
+
+  if (!showSavedEdits && !showRecentRiskyEdits) return null
+
+  const saved = showSavedEdits
+    ? await createSavedArticleReviewChangesFeed(savedItems, day, signal, seenRevids)
+    : null
+  const rc = showRecentRiskyEdits ? new RecentChangesHighRiskFeed({ seenRevids }) : null
+
+  if (!saved && !rc) return null
+
+  return new MergedReviewChangesFeed(saved, rc)
 }

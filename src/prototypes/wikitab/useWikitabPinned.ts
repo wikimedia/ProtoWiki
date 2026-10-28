@@ -57,5 +57,9 @@ export function useWikitabPinned() {
     window.removeEventListener('storage', onStorage)
   })
 
-  return { pinnedIds, isPinned, togglePin, orderSections }
+  function reloadFromStorage(): void {
+    syncFromStorage()
+  }
+
+  return { pinnedIds, isPinned, togglePin, orderSections, reloadFromStorage }
 }

@@ -1,7 +1,44 @@
 export const EN_WIKI_HOST = 'en.wikipedia.org'
 
 export function articleUrl(title: string): string {
-  return `https://${EN_WIKI_HOST}/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`
+  return wikiArticleUrl(EN_WIKI_HOST, title)
+}
+
+/** Page title from a `/wiki/Title` URL (fragment ignored). */
+export function articleTitleFromWikiUrl(url: string): string | undefined {
+  try {
+    const pathname = new URL(url).pathname
+    const slug = pathname.replace(/^\/wiki\//, '')
+    if (!slug) return undefined
+    const decoded = decodeURIComponent(slug).replace(/_/g, ' ').trim()
+    return decoded || undefined
+  } catch {
+    return undefined
+  }
+}
+
+export function wikiArticleUrl(host: string, title: string): string {
+  return `https://${host}/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`
+}
+
+/** Noticeboard page title from a thread URL (path segment before `#`). */
+/** DiscussionTools thread id from a noticeboard thread URL hash. */
+export function discussionThreadIdFromUrl(url: string | undefined): string | undefined {
+  if (!url) return undefined
+  const hashIndex = url.indexOf('#')
+  if (hashIndex === -1) return undefined
+  return url.slice(hashIndex + 1).trim() || undefined
+}
+
+export function noticeboardPageFromDiscussionUrl(discussionUrl: string): string | undefined {
+  try {
+    const url = new URL(discussionUrl)
+    const path = decodeURIComponent(url.pathname.replace(/^\/wiki\//, ''))
+    const normalized = path.replace(/_/g, ' ').trim()
+    return normalized || undefined
+  } catch {
+    return undefined
+  }
 }
 
 export function visualEditorUrl(title: string): string {
@@ -11,6 +48,39 @@ export function visualEditorUrl(title: string): string {
 /** Canonical lowercase key for matching article titles across feed cards. */
 export function articleTitleKey(title: string): string {
   return title.trim().replace(/_/g, ' ').replace(/\s+/g, ' ').toLowerCase()
+}
+
+/** False for project / talk / file titles — e.g. `Wikipedia:Picture of the day`. */
+export function isEnWikiMainNamespaceArticleTitle(title: string): boolean {
+  const normalized = title.trim().replace(/_/g, ' ')
+  if (!normalized) return false
+
+  const nonMainPrefixes = [
+    'Wikipedia:',
+    'Wikipedia talk:',
+    'Template:',
+    'Template talk:',
+    'Category:',
+    'Category talk:',
+    'File:',
+    'File talk:',
+    'Help:',
+    'Help talk:',
+    'Portal:',
+    'Portal talk:',
+    'Draft:',
+    'Draft talk:',
+    'Module:',
+    'Module talk:',
+    'MediaWiki:',
+    'MediaWiki talk:',
+    'Special:',
+    'Talk:',
+    'User:',
+    'User talk:',
+  ] as const
+
+  return !nonMainPrefixes.some((prefix) => normalized.startsWith(prefix))
 }
 
 function parseFragment(html: string): HTMLElement {
@@ -73,7 +143,7 @@ export function normalizeFeedHtml(html: string): string {
 }
 
 /** Wikifeeds DYK hooks start with `...`; Main Page shows "Did you know" instead. */
-export function expandDykHookHtml(html: string): string {
+export function expandDykSnippetHtml(html: string): string {
   return html.replace(/^\.\.\.\s*/, 'Did you know ')
 }
 

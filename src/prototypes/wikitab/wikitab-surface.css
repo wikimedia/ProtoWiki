@@ -15,7 +15,7 @@
  *    under html[data-codex-patched] (set by src/theme.ts). The same
  *    --wikitab-card-transition-duration drives card ⋯ menu opacity fades.
  *
- * 3. `.wikitab-panel` — full-page overlays (Configure, Saved, Color theme).
+ * 3. `.wikitab-panel` — full-page overlays (Configure, Saved, Color theme, Review changes settings).
  */
 
 .wikitab {
@@ -57,7 +57,6 @@
 .wikitab :where(
   .wikitab-card__menu-button,
   .wikitab-search-result-card__menu-button,
-  .wikitab-search-activity-card__menu-button,
   .wikitab-search-contribute-card__menu-button,
   .wikitab-search-image-card__menu-button
 ) {
@@ -75,7 +74,6 @@
  * (Border/frame quirks on the Gerrit trial are a separate upstream gap — not handled here.)
  */
 .wikitab :is(
-  .wikitab-search-activity-card__thumbnail,
   .wikitab-search-contribute-card__thumbnail,
   .wikitab-search__menu .cdx-menu-item__thumbnail.cdx-thumbnail,
   .cdx-card__thumbnail.cdx-thumbnail,
@@ -87,7 +85,6 @@
 }
 
 .wikitab :is(
-  .wikitab-search-activity-card__thumbnail,
   .wikitab-search-contribute-card__thumbnail,
   .wikitab-search__menu .cdx-menu-item__thumbnail.cdx-thumbnail,
   .cdx-card__thumbnail.cdx-thumbnail,
@@ -98,7 +95,6 @@
 }
 
 html:not([data-codex-patched]) .wikitab :is(
-  .wikitab-search-activity-card__thumbnail,
   .wikitab-search-contribute-card__thumbnail,
   .wikitab-search__menu .cdx-menu-item__thumbnail.cdx-thumbnail,
   .cdx-card__thumbnail.cdx-thumbnail,
@@ -106,6 +102,15 @@ html:not([data-codex-patched]) .wikitab :is(
 ) :is(.cdx-thumbnail__placeholder, .cdx-thumbnail__image) {
   border: var(--border-width-base) var(--border-style-base) var(--border-color-subtle);
   border-radius: var(--border-radius-base);
+}
+
+/* Thumbnail skeletons are a flat block — no border. Specificity matches the rule above. */
+html
+  .wikitab
+  .wikitab-card.wikitab-card--thumbnail-slot-loading
+  .cdx-card__thumbnail.cdx-thumbnail
+  .cdx-thumbnail__placeholder {
+  border-color: transparent;
 }
 
 /*
@@ -121,7 +126,6 @@ html:not([data-codex-patched]) .wikitab :is(
 }
 
 .wikitab :is(
-  .wikitab-search-activity-card__thumbnail,
   .wikitab-search-contribute-card__thumbnail,
   .wikitab-search__menu .cdx-menu-item__thumbnail.cdx-thumbnail,
   .cdx-card__thumbnail.cdx-thumbnail,
@@ -135,7 +139,6 @@ html:not([data-codex-patched]) .wikitab :is(
 }
 
 .wikitab :is(
-  .wikitab-search-activity-card__thumbnail,
   .wikitab-search-contribute-card__thumbnail,
   .wikitab-search__menu .cdx-menu-item__thumbnail.cdx-thumbnail,
   .cdx-card__thumbnail.cdx-thumbnail,
@@ -146,6 +149,50 @@ html:not([data-codex-patched]) .wikitab :is(
   min-width: 0;
   min-height: 0;
   box-sizing: border-box;
+  background-position: center top;
+}
+
+/*
+ * Block-start (portrait) cards — full-width 4∶3 image in normal flow. Overrides
+ * Codex block-start 16∶9 and the absolute inset fill above (which needs a fixed
+ * slot height and fights aspect-ratio on the visible image).
+ */
+.wikitab .wikitab-card--block-start .cdx-card__thumbnail.cdx-thumbnail {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: var(--wikitab-block-start-thumb-aspect, 4 / 3);
+  height: auto;
+  min-height: 0;
+}
+
+.wikitab
+  .wikitab-card--block-start
+  .cdx-card__thumbnail.cdx-thumbnail
+  :is(.cdx-thumbnail__placeholder, .cdx-thumbnail__image) {
+  position: relative;
+  inset: auto;
+  aspect-ratio: var(--wikitab-block-start-thumb-aspect, 4 / 3);
+  width: 100%;
+  height: auto;
+  background-size: cover;
+  background-position: center top;
+}
+
+/*
+ * Supporting icon + label rows — 12×12 inline icon; label leads with nbsp in markup.
+ */
+.wikitab .wikitab-supporting-icon-row .cdx-icon {
+  display: inline-flex;
+  box-sizing: border-box;
+  width: 12px;
+  height: 12px;
+  min-width: 12px;
+  min-height: 12px;
+  max-width: 12px;
+  max-height: 12px;
+  flex: none;
+  color: inherit;
 }
 
 /*
@@ -155,12 +202,21 @@ html:not([data-codex-patched]) .wikitab :is(
  */
 .wikitab :where(
   .wikitab-card--menu-on-hover .wikitab-card__menu,
-  .wikitab-search-activity-card--menu-on-hover .wikitab-search-activity-card__menu,
   .wikitab-search-image-card__menu,
   [data-skin='desktop'] .wikitab-potd-attribution__close
 ) {
   transition: var(--transition-property-fade) var(--wikitab-card-transition-duration)
     var(--transition-timing-function-system);
+}
+
+/* Suggestion primitive — task label in `supportingHtml` (see `wikitabSuggestionTaskSupportingHtml`). */
+.wikitab .wikitab-suggestion-task {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-progressive);
+}
+
+.wikitab .wikitab-card__supporting:has(.wikitab-suggestion-task) .cdx-icon {
+  color: var(--color-progressive);
 }
 
 html[data-codex-patched] .wikitab {
@@ -200,12 +256,14 @@ html:not([data-codex-patched]) .wikitab.wikitab--themed .cdx-button.cdx-button--
  * Card ⋯ pressed / open — shell stays at rest; the quiet MenuButton owns feedback.
  * Beats `.cdx-card--is-link:hover` on the same element (search Activity / Contribute / Image).
  */
-.wikitab-search-activity-card.cdx-card.cdx-card--is-link:where(
-    :has(.wikitab-search-activity-card__menu:hover),
-    :has(.wikitab-search-activity-card__menu:focus-within),
-    :has(.wikitab-search-activity-card__menu :active),
-    :has(.wikitab-search-activity-card__menu [aria-expanded='true'])
-  ),
+.wikitab-card--has-menu:where(
+    :has(.wikitab-card__menu:hover),
+    :has(.wikitab-card__menu:focus-within),
+    :has(.wikitab-card__menu :active),
+    :has(.wikitab-card__menu [aria-expanded='true'])
+  )
+  .wikitab-card--link-overlay
+  .cdx-card,
 .wikitab-search-contribute-card.cdx-card.cdx-card--is-link:where(
     :has(.wikitab-search-contribute-card__menu:hover),
     :has(.wikitab-search-contribute-card__menu:focus-within),
@@ -235,6 +293,38 @@ html:not([data-codex-patched]) .wikitab.wikitab--themed .cdx-button.cdx-button--
     :has(.wikitab-search-image-card__menu [aria-expanded='true'])
   ) {
   border-color: var(--border-color-subtle);
+}
+
+.wikitab-card .wikitab-activity-description-block {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.wikitab-card .wikitab-activity-diff-size {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-50);
+  margin: 0;
+  font-size: var(--font-size-medium);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-small);
+}
+
+.wikitab-card .wikitab-activity-diff-size-added {
+  color: var(--color-success);
+}
+
+.wikitab-card .wikitab-activity-diff-size-removed {
+  color: var(--color-error);
+}
+
+.wikitab-card .wikitab-activity-diff-size-neutral {
+  color: var(--color-subtle);
+}
+
+.wikitab-card .wikitab-activity-description {
+  margin: 0;
 }
 
 .wikitab-panel {

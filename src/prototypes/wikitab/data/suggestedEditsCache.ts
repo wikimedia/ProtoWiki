@@ -1,11 +1,12 @@
 import type { WikitabCardData } from '../sections'
+import { isEnWikiMainNamespaceArticleTitle } from './wikitabHtml'
 import { isCacheBypassed, utcDayKey } from './feedCache'
 
 /**
  * Cache only — nothing here is authoritative. Clearing it costs one refetch and
  * nothing else. User preferences live in `wikitabConfig.ts`, not here.
  */
-const CACHE_KEY = 'wikitab-suggested-edits-cache-v1'
+export const CACHE_KEY = 'wikitab-suggested-edits-cache-v2'
 
 interface CacheEntry {
   day: string
@@ -40,6 +41,9 @@ function dedupeCachedItems(items: WikitabCardData[]): WikitabCardData[] {
       if (seen.has(pageid)) continue
       seen.add(pageid)
     }
+    const title = item.title ?? ''
+    if (title && !isEnWikiMainNamespaceArticleTitle(title)) continue
+
     deduped.push(item)
   }
 

@@ -1,4 +1,9 @@
 import type { Icon } from '@wikimedia/codex-icons'
+
+import {
+  isWikitabSuggestedEditTaskNeed,
+  type WikitabSuggestedEditTaskNeed,
+} from './wikitabSuggestedEditTaskNeed'
 import {
   cdxIconEdit,
   cdxIconImage,
@@ -9,7 +14,7 @@ import {
   cdxIconTemplateAdd,
 } from '@wikimedia/codex-icons'
 
-const EDIT_OPPORTUNITY_ICONS: Record<string, Icon> = {
+const EDIT_OPPORTUNITY_ICONS: Record<WikitabSuggestedEditTaskNeed, Icon> = {
   'Add more references': cdxIconReference,
   'Add more internal wikilinks': cdxIconLink,
   'Improve article section headings': cdxIconListBullet,
@@ -21,5 +26,6 @@ const EDIT_OPPORTUNITY_ICONS: Record<string, Icon> = {
 }
 
 export function resolveEditOpportunityIcon(need: string): Icon {
-  return EDIT_OPPORTUNITY_ICONS[need] ?? cdxIconEdit
+  if (isWikitabSuggestedEditTaskNeed(need)) return EDIT_OPPORTUNITY_ICONS[need]
+  return cdxIconEdit
 }

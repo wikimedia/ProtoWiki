@@ -1,24 +1,32 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import {
+  WIKITAB_QUOTE_CARD_LEADING_ICON,
+  WIKITAB_WORD_CARD_LEADING_ICON,
+  type WikitabCardLoading,
+} from './sections'
+import { wikitabCardBindProps } from './data/wikitabCardPresentation'
+import { wikitabSavedItemPrimitive } from './data/wikitabSavedItems'
 import WikitabCard from './WikitabCard.vue'
-import WikitabSearchActivityCard from './WikitabSearchActivityCard.vue'
 import {
   savedDiscussionToWikitabCard,
   savedImageToWikitabCard,
   savedItemToActivityItem,
   savedItemToWikitabCard,
+  savedListToWikitabCard,
+  savedQuoteToWikitabCard,
   savedSnippetToWikitabCard,
   savedSuggestionToWikitabCard,
+  savedWordToWikitabCard,
 } from './data/savedCardHelpers'
+import { wikitabCardPropsForSearchActivityItem } from './data/wikitabSearchActivityWikitabCard'
+import { wikitabCardSaveMenuItem } from './data/wikitabCardMenuItems'
 import type { WikitabSavedItem } from './data/wikitabConfig'
-import { WIKITAB_SAVED_MODULE_SPEC, WIKITAB_SUGGESTED_EDITS_MODULE_SPEC } from './sections'
-import { cdxIconQuotes } from '@wikimedia/codex-icons'
-import { resolveSavedIcon } from './data/wikitabSavedIcons'
 
 const props = defineProps<{
   saved: WikitabSavedItem
-  loading?: boolean
+  loading?: WikitabCardLoading
   showArticleMenu?: boolean
   isSaved?: boolean
 }>()
@@ -27,109 +35,80 @@ const emit = defineEmits<{
   'toggle-save': []
 }>()
 
-const articleSpec = WIKITAB_SAVED_MODULE_SPEC
-const suggestionSpec = WIKITAB_SUGGESTED_EDITS_MODULE_SPEC
+const card = computed(() => {
+  switch (props.saved.type) {
+    case 'article':
+      return savedItemToWikitabCard(props.saved)
+    case 'snippet':
+      return savedSnippetToWikitabCard(props.saved)
+    case 'word':
+      return savedWordToWikitabCard(props.saved)
+    case 'quote':
+      return savedQuoteToWikitabCard(props.saved)
+    case 'list':
+      return savedListToWikitabCard(props.saved)
+    case 'suggestion':
+      return savedSuggestionToWikitabCard(props.saved)
+    case 'change':
+      return null
+    case 'discussion':
+      return savedDiscussionToWikitabCard(props.saved)
+    case 'image':
+      return savedImageToWikitabCard(props.saved)
+    default:
+      return null
+  }
+})
 
-const articleCard = computed(() =>
-  props.saved.type === 'article' ? savedItemToWikitabCard(props.saved) : null,
-)
-
-const snippetCard = computed(() =>
-  props.saved.type === 'snippet' ? savedSnippetToWikitabCard(props.saved) : null,
-)
-
-const snippetPresentation = computed(() =>
-  props.saved.type === 'snippet' ? props.saved.presentation : null,
-)
-
-const discussionCard = computed(() =>
-  props.saved.type === 'discussion' ? savedDiscussionToWikitabCard(props.saved) : null,
-)
-
-const suggestionCard = computed(() =>
-  props.saved.type === 'suggestion' ? savedSuggestionToWikitabCard(props.saved) : null,
-)
+const primitive = computed(() => wikitabSavedItemPrimitive(props.saved))
 
 const activityItem = computed(() =>
   props.saved.type === 'change' ? savedItemToActivityItem(props.saved) : null,
 )
 
-const imageCard = computed(() =>
-  props.saved.type === 'image' ? savedImageToWikitabCard(props.saved) : null,
-)
+const activityBindProps = computed(() => {
+  if (!activityItem.value) return null
+  return wikitabCardPropsForSearchActivityItem(activityItem.value, {
+    loading: props.loading,
+    includeSave: props.showArticleMenu,
+    isSaved: props.isSaved,
+    revisionActionsMenu: false,
+    showThumbnail: false,
+  })
+})
+
+const bindProps = computed(() => {
+  const data = card.value
+  if (!data) return {}
+
+  const extra: Record<string, unknown> = {
+    card: data,
+    loading: props.loading,
+    menu: props.showArticleMenu
+      ? [wikitabCardSaveMenuItem({ isSaved: props.isSaved })]
+      : undefined,
+  }
+
+  if (props.saved.type === 'word') {
+    extra.icon = WIKITAB_WORD_CARD_LEADING_ICON
+  }
+  if (props.saved.type === 'quote') {
+    extra.icon = WIKITAB_QUOTE_CARD_LEADING_ICON
+  }
+
+  return wikitabCardBindProps(primitive.value, extra)
+})
+
+function onActivityMenuSelect(value: string) {
+  if (value === 'save') emit('toggle-save')
+}
 </script>
 
 <template>
   <WikitabCard
-    v-if="saved.type === 'article' && articleCard"
-    :variant="articleSpec.variant"
-    :height="articleSpec.cardHeight"
-    :thumbnail-size="articleSpec.thumbnailSize"
-    :card="articleCard"
-    :loading="loading"
-    :show-article-menu="showArticleMenu"
-    :is-saved="isSaved"
-    @toggle-save="emit('toggle-save')"
+    v-if="activityItem && activityBindProps"
+    v-bind="activityBindProps"
+    @menu-select="onActivityMenuSelect"
   />
-
-  <WikitabCard
-    v-else-if="saved.type === 'snippet' && snippetCard && snippetPresentation"
-    :variant="snippetPresentation.variant"
-    :height="snippetPresentation.cardHeight"
-    :thumbnail-size="snippetPresentation.thumbnailSize"
-    :card="snippetCard"
-    :supporting-icon="resolveSavedIcon(snippetPresentation.supportingIcon)"
-    :hook-leading-icon="cdxIconQuotes"
-    :full-hook="snippetPresentation.fullHook"
-    :loading="loading"
-    :show-article-menu="showArticleMenu"
-    :is-saved="isSaved"
-    @toggle-save="emit('toggle-save')"
-  />
-
-  <WikitabCard
-    v-else-if="saved.type === 'suggestion' && suggestionCard"
-    :variant="suggestionSpec.variant"
-    :height="suggestionSpec.cardHeight"
-    :thumbnail-size="suggestionSpec.thumbnailSize"
-    :card="suggestionCard"
-    supporting-progressive
-    :loading="loading"
-    :show-article-menu="showArticleMenu"
-    :is-saved="isSaved"
-    @toggle-save="emit('toggle-save')"
-  />
-
-  <WikitabSearchActivityCard
-    v-else-if="saved.type === 'change' && activityItem"
-    :item="activityItem"
-    :show-thumbnail="false"
-    :is-saved="isSaved"
-    show-save-menu
-    @toggle-save="emit('toggle-save')"
-  />
-
-  <WikitabCard
-    v-else-if="saved.type === 'discussion' && discussionCard"
-    variant="text"
-    :height="98"
-    :thumbnail-size="96"
-    :card="discussionCard"
-    :loading="loading"
-    :show-article-menu="showArticleMenu"
-    :is-saved="isSaved"
-    @toggle-save="emit('toggle-save')"
-  />
-
-  <WikitabCard
-    v-else-if="saved.type === 'image' && imageCard"
-    :variant="articleSpec.variant"
-    :height="articleSpec.cardHeight"
-    :thumbnail-size="articleSpec.thumbnailSize"
-    :card="imageCard"
-    :loading="loading"
-    :show-article-menu="showArticleMenu"
-    :is-saved="isSaved"
-    @toggle-save="emit('toggle-save')"
-  />
+  <WikitabCard v-else-if="card" v-bind="bindProps" @toggle-save="emit('toggle-save')" />
 </template>

@@ -1,9 +1,14 @@
+import {
+  isWikitabSuggestedEditTaskNeed,
+  type WikitabSuggestedEditTaskNeed,
+} from './wikitabSuggestedEditTaskNeed'
+
 export interface EditOpportunityCopy {
   title: string
   body: string
 }
 
-const EDIT_OPPORTUNITY_COPY: Record<string, EditOpportunityCopy> = {
+const EDIT_OPPORTUNITY_COPY: Record<WikitabSuggestedEditTaskNeed, EditOpportunityCopy> = {
   'Add more references': {
     title: 'Find a reference',
     body: 'Help readers understand where this information is coming from.',
@@ -49,7 +54,6 @@ export function isExcludedEditOpportunityNeed(need: string): boolean {
 }
 
 export function resolveEditOpportunityCopy(need: string): EditOpportunityCopy {
-  const mapped = EDIT_OPPORTUNITY_COPY[need]
-  if (mapped) return mapped
+  if (isWikitabSuggestedEditTaskNeed(need)) return EDIT_OPPORTUNITY_COPY[need]
   return { title: need, body: '' }
 }

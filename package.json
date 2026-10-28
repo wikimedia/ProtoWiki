@@ -17,7 +17,8 @@
     "codex:use-stock": "node scripts/codex.mjs stock",
     "codex:use-patch": "node scripts/codex.mjs patched",
     "codex:patch": "node scripts/patch-codex.mjs",
-    "codex:reset": "node scripts/patch-codex.mjs --reset"
+    "codex:reset": "node scripts/patch-codex.mjs --reset",
+    "wikitab:card-types": "node scripts/generate-wikitab-card-type-schema.mjs"
   },
   "dependencies": {
     "@wikimedia/codex": "^2.7.0",

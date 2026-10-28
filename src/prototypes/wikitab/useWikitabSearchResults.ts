@@ -115,7 +115,12 @@ export function useWikitabSearchResults(searchQuery: Ref<string>) {
         if (exactHit) relationByPageid.set(exactHit.id, 'exact')
         for (const hit of nearHits) relationByPageid.set(hit.id, 'near')
 
-        const titleArticles = await enrichTitleHits(titleHitsToEnrich, relationByPageid, signal)
+        const titleArticles = await enrichTitleHits(
+          titleHitsToEnrich,
+          relationByPageid,
+          trimmed,
+          signal,
+        )
         if (signal.aborted || searchQuery.value.trim() !== fetchQuery) return
 
         const exactArticles = titleArticles.filter((article) => article.relation === 'exact')

@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { CdxButton, CdxIcon, CdxMenuButton } from '@wikimedia/codex'
 import {
+  CdxButton,
+  CdxIcon,
+  CdxMenuButton,
+  type MenuButtonItemData,
+  type MenuGroupData,
+} from '@wikimedia/codex'
+import {
+  cdxIconConfigure,
   cdxIconEllipsis,
   cdxIconEyeClosed,
   cdxIconHelpNotice,
@@ -12,9 +19,10 @@ import {
 import { useSkin } from '@/composables/useSkin'
 import { changeSavedId } from './data/savedCardHelpers'
 import type { WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
+import { wikitabCardBindProps } from './data/wikitabCardPresentation'
+import { wikitabCardPropsForSearchActivityItem } from './data/wikitabSearchActivityWikitabCard'
 import { WIKITAB_REVIEW_CHANGES_MODULE_SPEC } from './sections'
-import WikitabSearchActivityCard from './WikitabSearchActivityCard.vue'
-import WikitabSearchLoadingCard from './WikitabSearchLoadingCard.vue'
+import WikitabCard from './WikitabCard.vue'
 import { usePreventHorizontalSwipeNavigation } from './usePreventHorizontalSwipeNavigation'
 import { useRevealOnScrollEnd } from './useRevealOnScrollEnd'
 
@@ -22,6 +30,8 @@ const spec = WIKITAB_REVIEW_CHANGES_MODULE_SPEC
 
 const props = defineProps<{
   items: WikitabSearchActivityItem[]
+  /** Revids whose editor kind is still being looked up. */
+  editorKindPending?: Set<number>
   loading: boolean
   fillingInitial: boolean
   pending: boolean
@@ -36,6 +46,7 @@ const emit = defineEmits<{
   'toggle-pin': []
   'refresh-section': []
   'hide-section': []
+  'open-configure': []
   'load-more': []
   dismiss: [revid: number]
   'toggle-save': [item: WikitabSearchActivityItem]
@@ -64,6 +75,14 @@ const isEmpty = computed(
     !props.error &&
     props.items.length === 0,
 )
+
+function onReviewChangeMenuSelect(value: string, item: WikitabSearchActivityItem) {
+  if (value === 'save') emit('toggle-save', item)
+  if (value === 'thank') {
+    window.open(item.thankUrl, '_blank', 'noopener,noreferrer')
+  }
+  if (value === 'dismiss') emit('dismiss', item.revisionId)
+}
 
 function shouldClampReserved(): boolean {
   return (
@@ -120,7 +139,7 @@ const slots = computed(() => {
     item: props.items[index],
     loading:
       (props.fillingInitial || props.loadingMore) && index >= props.items.length,
-    key: props.items[index]?.revid ?? `slot-${index}`,
+    key: props.items[index]?.revisionId ?? `slot-${index}`,
   }))
 })
 
@@ -153,11 +172,21 @@ watch(
   },
 )
 
+/*
+ * Row always reserved while skeletons or cards are on screen — disabled until we
+ * know there is nothing more (same no-jump contract as feed sections).
+ */
 const canShowMore = computed(
   () =>
     !props.error &&
     !isEmpty.value &&
-    (props.items.length > 0 || props.loadingMore),
+    (isInitialLoading.value ||
+      props.loading ||
+      props.pending ||
+      props.fillingInitial ||
+      props.items.length > 0 ||
+      props.loadingMore ||
+      props.hasMore),
 )
 
 const showMoreDisabled = computed(
@@ -170,7 +199,7 @@ const showMoreDisabled = computed(
 )
 
 const selection = ref<string | number | null>(null)
-const menuItems = computed(() => [
+const menuItems = computed((): (MenuButtonItemData | MenuGroupData)[] => [
   {
     value: 'refresh',
     label: 'Refresh',
@@ -186,6 +215,17 @@ const menuItems = computed(() => [
     label: 'Hide',
     icon: cdxIconEyeClosed,
   },
+  {
+    label: '',
+    hideLabel: true,
+    items: [
+      {
+        value: 'configure',
+        label: 'Configure',
+        icon: cdxIconConfigure,
+      },
+    ],
+  },
 ])
 const footerItem = computed(() => ({
   value: 'about',
@@ -194,6 +234,7 @@ const footerItem = computed(() => ({
 }))
 
 watch(selection, (value) => {
+  if (value === 'configure') emit('open-configure')
   if (value === 'pin') emit('toggle-pin')
   if (value === 'refresh') emit('refresh-section')
   if (value === 'hide') emit('hide-section')
@@ -251,20 +292,25 @@ function revealMore(): void {
 
     <div v-else ref="scroller" class="wikitab-review-changes-section__cards">
       <template v-for="slot in slots" :key="slot.key">
-        <WikitabSearchLoadingCard
-          v-if="slot.loading"
+        <WikitabCard
+          v-if="slot.item"
           class="wikitab-review-changes-section__card"
-          variant="activity"
+          v-bind="
+            wikitabCardPropsForSearchActivityItem(slot.item, {
+              includeSave: true,
+              isSaved: isCardSaved(changeSavedId(slot.item.revisionId)),
+              loading: editorKindPending?.has(slot.item.revisionId)
+                ? { supporting: true }
+                : false,
+              showThumbnail: false,
+            })
+          "
+          @menu-select="onReviewChangeMenuSelect($event, slot.item)"
         />
-        <WikitabSearchActivityCard
-          v-else-if="slot.item"
+        <WikitabCard
+          v-else-if="slot.loading"
           class="wikitab-review-changes-section__card"
-          :item="slot.item"
-          :show-thumbnail="false"
-          show-save-menu
-          :is-saved="isCardSaved(changeSavedId(slot.item.revid))"
-          @dismiss="emit('dismiss', $event)"
-          @toggle-save="emit('toggle-save', slot.item)"
+          v-bind="wikitabCardBindProps('edit', { loading: true })"
         />
       </template>
       <div ref="sentinel" class="wikitab-review-changes-section__sentinel" aria-hidden="true" />
@@ -358,19 +404,9 @@ function revealMore(): void {
   gap: var(--spacing-100);
 }
 
-[data-skin='desktop'] .wikitab-review-changes-section__card:not(.wikitab-search-loading-card) {
+/* Resolved cards hug content; skeleton slots keep their inline `loadingHeight` floor. */
+[data-skin='desktop'] .wikitab-review-changes-section__card {
   min-height: 0;
-}
-
-/*
- * No-thumbnail activity cards: optional chip + title, delta, summary, supporting.
- * Desktop grid used to zero min-height on all slots, collapsing these skeletons.
- */
-.wikitab-review-changes-section__cards :deep(.wikitab-search-loading-card--activity) {
-  min-height: calc(
-    2 * var(--spacing-75) + var(--spacing-50) + 1.5rem + 4 * var(--line-height-small) +
-      var(--spacing-25) + var(--spacing-50)
-  );
 }
 
 [data-skin='mobile'] .wikitab-review-changes-section__cards {

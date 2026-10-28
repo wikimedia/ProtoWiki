@@ -3,10 +3,10 @@ import { computed, onScopeDispose, ref, watch, type Ref } from 'vue'
 import {
   formatCompactCount,
   formatLastUpdatedTooltip,
-  formatSearchLastUpdatedLabel,
   pageViewsTooltip,
   referenceCountTooltip,
 } from '@/components/attribution/formatAttribution'
+import { formatWikitabRelativeTime } from './data/wikitabRelativeTime'
 import { AttributionApiError, type AttributionTrustAndRelevance } from '@/components/attribution/types'
 
 import {
@@ -36,7 +36,7 @@ function labelsFromTrust(trust: AttributionTrustAndRelevance | undefined): {
       typeof referenceCount === 'number' && referenceCount > 0
         ? formatReferenceCount(referenceCount)
         : null,
-    lastUpdatedLabel: lastUpdated ? formatSearchLastUpdatedLabel(lastUpdated) : null,
+    lastUpdatedLabel: lastUpdated ? formatWikitabRelativeTime(lastUpdated) : null,
     pageViewsTooltipText: typeof pageViews === 'number' ? pageViewsTooltip(pageViews) : null,
     referenceCountTooltipText:
       typeof referenceCount === 'number' && referenceCount > 0
@@ -46,7 +46,10 @@ function labelsFromTrust(trust: AttributionTrustAndRelevance | undefined): {
   }
 }
 
-export function useWikitabSearchArticleAttribution(title: Ref<string>): {
+export function useWikitabSearchArticleAttribution(
+  title: Ref<string>,
+  staticTrust?: Ref<AttributionTrustAndRelevance | undefined>,
+): {
   pageViewsLabel: Ref<string | null>
   referenceCountLabel: Ref<string | null>
   lastUpdatedLabel: Ref<string | null>
@@ -122,8 +125,14 @@ export function useWikitabSearchArticleAttribution(title: Ref<string>): {
   }
 
   watch(
-    () => title.value,
-    (nextTitle) => {
+    [() => title.value, () => staticTrust?.value],
+    ([nextTitle, trust]) => {
+      if (trust) {
+        abortController?.abort()
+        applyLabels(trust)
+        loading.value = false
+        return
+      }
       void load(nextTitle)
     },
     { immediate: true },

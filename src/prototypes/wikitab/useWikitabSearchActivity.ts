@@ -36,6 +36,8 @@ export function useWikitabSearchActivity(
   const fillingInitial = ref(false)
   const loadingMore = ref(false)
   const hasMore = ref(false)
+  /** Thumbnails arrive in a separate batch after items; cards without one skeleton it until then. */
+  const metadataPending = ref(false)
 
   let feed: WikitabSearchActivityFeed | null = null
   let abortController: AbortController | null = null
@@ -50,7 +52,7 @@ export function useWikitabSearchActivity(
   }
 
   function applyCachedRevertRisk(item: WikitabSearchActivityItem): void {
-    if (getCachedHighRevertRisk(item.revid) === true) {
+    if (getCachedHighRevertRisk(item.revisionId) === true) {
       item.highRevertRisk = true
     }
   }
@@ -59,19 +61,22 @@ export function useWikitabSearchActivity(
     if (!highRisk) return
 
     for (const slot of slots.value) {
-      if (slot.kind === 'resolved' && slot.item.revid === revid) {
+      if (slot.kind === 'resolved' && slot.item.revisionId === revid) {
         slot.item.highRevertRisk = true
       }
     }
   }
 
-  function patchThumbnails(thumbnailMap: Map<string, string>): void {
-    if (!thumbnailMap.size) return
-
+  function patchMetadata(
+    source: WikitabSearchActivityFeed,
+    thumbnailMap: Map<string, string>,
+  ): void {
     for (const slot of slots.value) {
       if (slot.kind !== 'resolved') continue
-      const url = thumbnailMap.get(articleTitleKey(slot.item.title))
+      const url = thumbnailMap.get(articleTitleKey(slot.item.articleTitle))
       if (url) slot.item.thumbnailUrl = url
+      const isLatest = source.isLatestRevision(slot.item)
+      if (isLatest !== undefined) slot.item.isLatestRevision = isLatest
     }
   }
 
@@ -100,7 +105,7 @@ export function useWikitabSearchActivity(
 
   function scheduleRevertRiskForItem(item: WikitabSearchActivityItem): void {
     applyCachedRevertRisk(item)
-    enqueueRevertRiskLookup(item.revid)
+    enqueueRevertRiskLookup(item.revisionId)
   }
 
   function retryRevertRiskForResolvedSlots(): void {
@@ -117,6 +122,7 @@ export function useWikitabSearchActivity(
     fillingInitial.value = false
     loadingMore.value = false
     hasMore.value = false
+    metadataPending.value = false
     feed = null
   }
 
@@ -133,7 +139,7 @@ export function useWikitabSearchActivity(
         syncHasMore()
 
         if (!item) return false
-        if (isDismissed(item.revid)) continue
+        if (isDismissed(item.revisionId)) continue
 
         slots.value.push({ kind: 'resolved', item })
         scheduleRevertRiskForItem(item)
@@ -149,7 +155,7 @@ export function useWikitabSearchActivity(
   function dismissActivity(revid: number): void {
     persistDismissedActivity(revid)
     slots.value = slots.value.filter(
-      (slot) => slot.kind !== 'resolved' || slot.item.revid !== revid,
+      (slot) => slot.kind !== 'resolved' || slot.item.revisionId !== revid,
     )
 
     if (
@@ -213,14 +219,19 @@ export function useWikitabSearchActivity(
 
       syncHasMore()
 
-      void feed
+      metadataPending.value = true
+      const activeFeed = feed
+      void activeFeed
         .prefetchMetadata(signal)
         .then((fetchedThumbnails) => {
           if (signal.aborted) return
-          patchThumbnails(fetchedThumbnails)
+          patchMetadata(activeFeed, fetchedThumbnails)
         })
         .catch((err) => {
           if ((err as Error)?.name === 'AbortError') return
+        })
+        .finally(() => {
+          if (!signal.aborted) metadataPending.value = false
         })
 
       await feed.start(signal)
@@ -268,7 +279,7 @@ export function useWikitabSearchActivity(
 
   watch(dismissedRevids, () => {
     slots.value = slots.value.filter(
-      (slot) => slot.kind !== 'resolved' || !isDismissed(slot.item.revid),
+      (slot) => slot.kind !== 'resolved' || !isDismissed(slot.item.revisionId),
     )
   })
 
@@ -311,6 +322,7 @@ export function useWikitabSearchActivity(
     loadingTail,
     loadingMore,
     hasMore,
+    metadataPending,
     resolvedCount,
     loadMore,
     dismissActivity,

@@ -1,0 +1,1106 @@
+[
+  {
+    "catalogId": "primitive-article",
+    "schemas": [
+      {
+        "typeName": "WikitabArticleCardPayload",
+        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+        "properties": [
+          {
+            "name": "key",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "url",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "title",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "thumbnailUrl",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingText",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingIcon",
+            "type": "CodexIconName",
+            "optional": true
+          },
+          {
+            "name": "supportingHtml",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingTextEnd",
+            "type": "string",
+            "optional": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "catalogId": "primitive-snippet",
+    "schemas": [
+      {
+        "typeName": "WikitabFeedDykCardPayload",
+        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+        "properties": [
+          {
+            "name": "key",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "url",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "thumbnailUrl",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingText",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingIcon",
+            "type": "CodexIconName",
+            "optional": true
+          },
+          {
+            "name": "supportingHtml",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingTextEnd",
+            "type": "string",
+            "optional": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "catalogId": "primitive-discussion",
+    "schemas": [
+      {
+        "typeName": "WikitabFeedDiscussionCardPayload",
+        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+        "properties": [
+          {
+            "name": "key",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "url",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "title",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "noticeboardTitle",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "commentCount",
+            "type": "number",
+            "optional": false
+          },
+          {
+            "name": "latestReplyTimestamp",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "supportingText",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingIcon",
+            "type": "CodexIconName",
+            "optional": true
+          },
+          {
+            "name": "supportingHtml",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingTextEnd",
+            "type": "string",
+            "optional": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "catalogId": "primitive-suggestion",
+    "schemas": [
+      {
+        "typeName": "WikitabFeedSuggestedEditsCardPayload",
+        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+        "properties": [
+          {
+            "name": "key",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "url",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "title",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "task",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "thumbnailUrl",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingTextEnd",
+            "type": "string",
+            "optional": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "catalogId": "primitive-image",
+    "schemas": [
+      {
+        "typeName": "WikitabFeaturedImageCardPayload",
+        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+        "properties": [
+          {
+            "name": "key",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "url",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "caption",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "thumbnailUrl",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingText",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingIcon",
+            "type": "CodexIconName",
+            "optional": true
+          },
+          {
+            "name": "supportingHtml",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingTextEnd",
+            "type": "string",
+            "optional": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "catalogId": "primitive-word",
+    "schemas": [
+      {
+        "typeName": "WikitabFeaturedWordCardPayload",
+        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+        "properties": [
+          {
+            "name": "key",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "url",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "word",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "definition",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "thumbnailUrl",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingText",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingIcon",
+            "type": "CodexIconName",
+            "optional": true
+          },
+          {
+            "name": "supportingHtml",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingTextEnd",
+            "type": "string",
+            "optional": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "catalogId": "primitive-quote",
+    "schemas": [
+      {
+        "typeName": "WikitabFeaturedQuoteCardPayload",
+        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+        "properties": [
+          {
+            "name": "key",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "url",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "quote",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "thumbnailUrl",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingText",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingIcon",
+            "type": "CodexIconName",
+            "optional": true
+          },
+          {
+            "name": "supportingHtml",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingTextEnd",
+            "type": "string",
+            "optional": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "catalogId": "primitive-list",
+    "schemas": [
+      {
+        "typeName": "WikitabFeaturedListCardPayload",
+        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+        "properties": [
+          {
+            "name": "key",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "url",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "title",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "thumbnailUrl",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingText",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingIcon",
+            "type": "CodexIconName",
+            "optional": true
+          },
+          {
+            "name": "supportingHtml",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingTextEnd",
+            "type": "string",
+            "optional": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "catalogId": "primitive-edit",
+    "schemas": [
+      {
+        "typeName": "WikitabSearchActivityCardPayload",
+        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+        "properties": [
+          {
+            "name": "title",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "section",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "editSummary",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "thumbnailUrl",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "delta",
+            "type": "number",
+            "optional": true
+          },
+          {
+            "name": "articleUrl",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "revisionId",
+            "type": "number",
+            "optional": false
+          },
+          {
+            "name": "reverted",
+            "type": "boolean",
+            "optional": false
+          },
+          {
+            "name": "highRevertRisk",
+            "type": "boolean",
+            "optional": false
+          },
+          {
+            "name": "isLatestRevision",
+            "type": "boolean",
+            "optional": false
+          },
+          {
+            "name": "editorName",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "editorUrl",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "editedTimestamp",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "editorKind",
+            "type": "EditorKind",
+            "optional": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "catalogId": "search-contribute",
+    "schemas": [
+      {
+        "typeName": "WikitabSearchContributeCardPayload",
+        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+        "properties": [
+          {
+            "name": "title",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "thumbnailUrl",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "task",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "url",
+            "type": "string",
+            "optional": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "catalogId": "search-result",
+    "schemas": [
+      {
+        "typeName": "WikitabSearchResultCardPayload",
+        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+        "properties": [
+          {
+            "name": "title",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "url",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "extractHtml",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "rationaleHtml",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "thumbnailUrl",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "pageViews",
+            "type": "number",
+            "optional": true
+          },
+          {
+            "name": "referenceCount",
+            "type": "number",
+            "optional": true
+          },
+          {
+            "name": "lastUpdated",
+            "type": "string",
+            "optional": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "catalogId": "search-image",
+    "schemas": [
+      {
+        "typeName": "WikitabSearchImageCardPayload",
+        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+        "properties": [
+          {
+            "name": "thumbnailUrl",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "url",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "license",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "credit",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "caption",
+            "type": "string",
+            "optional": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "catalogId": "search-loading",
+    "schemas": []
+  },
+  {
+    "catalogId": "saved-article",
+    "schemas": [
+      {
+        "typeName": "WikitabSavedArticleCardPayload",
+        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+        "properties": [
+          {
+            "name": "key",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "url",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "title",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "thumbnailUrl",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingText",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingIcon",
+            "type": "CodexIconName",
+            "optional": true
+          },
+          {
+            "name": "supportingHtml",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingTextEnd",
+            "type": "string",
+            "optional": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "catalogId": "saved-word",
+    "schemas": [
+      {
+        "typeName": "WikitabFeaturedWordCardPayload",
+        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+        "properties": [
+          {
+            "name": "key",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "url",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "word",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "definition",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "thumbnailUrl",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingText",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingIcon",
+            "type": "CodexIconName",
+            "optional": true
+          },
+          {
+            "name": "supportingHtml",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingTextEnd",
+            "type": "string",
+            "optional": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "catalogId": "saved-quote",
+    "schemas": [
+      {
+        "typeName": "WikitabFeaturedQuoteCardPayload",
+        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+        "properties": [
+          {
+            "name": "key",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "url",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "quote",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "thumbnailUrl",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingText",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingIcon",
+            "type": "CodexIconName",
+            "optional": true
+          },
+          {
+            "name": "supportingHtml",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingTextEnd",
+            "type": "string",
+            "optional": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "catalogId": "saved-list",
+    "schemas": [
+      {
+        "typeName": "WikitabFeaturedListCardPayload",
+        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+        "properties": [
+          {
+            "name": "key",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "url",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "title",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "thumbnailUrl",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingText",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingIcon",
+            "type": "CodexIconName",
+            "optional": true
+          },
+          {
+            "name": "supportingHtml",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingTextEnd",
+            "type": "string",
+            "optional": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "catalogId": "saved-suggestion",
+    "schemas": [
+      {
+        "typeName": "WikitabSavedSuggestionCardPayload",
+        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+        "properties": [
+          {
+            "name": "key",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "url",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "title",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "task",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "thumbnailUrl",
+            "type": "string",
+            "optional": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "catalogId": "saved-change",
+    "schemas": [
+      {
+        "typeName": "WikitabSearchActivityCardPayload",
+        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+        "properties": [
+          {
+            "name": "title",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "section",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "editSummary",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "thumbnailUrl",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "delta",
+            "type": "number",
+            "optional": true
+          },
+          {
+            "name": "articleUrl",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "revisionId",
+            "type": "number",
+            "optional": false
+          },
+          {
+            "name": "reverted",
+            "type": "boolean",
+            "optional": false
+          },
+          {
+            "name": "highRevertRisk",
+            "type": "boolean",
+            "optional": false
+          },
+          {
+            "name": "isLatestRevision",
+            "type": "boolean",
+            "optional": false
+          },
+          {
+            "name": "editorName",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "editorUrl",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "editedTimestamp",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "editorKind",
+            "type": "EditorKind",
+            "optional": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "catalogId": "saved-discussion",
+    "schemas": [
+      {
+        "typeName": "WikitabSavedDiscussionCardPayload",
+        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+        "properties": [
+          {
+            "name": "key",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "url",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "title",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "noticeboardTitle",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "commentCount",
+            "type": "number",
+            "optional": false
+          },
+          {
+            "name": "latestReplyRelativeLabel",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "supportingText",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingIcon",
+            "type": "CodexIconName",
+            "optional": true
+          },
+          {
+            "name": "supportingHtml",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingTextEnd",
+            "type": "string",
+            "optional": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "catalogId": "saved-image",
+    "schemas": [
+      {
+        "typeName": "WikitabSavedImageCardPayload",
+        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
+        "properties": [
+          {
+            "name": "key",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "url",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "thumbnailUrl",
+            "type": "string",
+            "optional": false
+          },
+          {
+            "name": "caption",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "attributionPlainText",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingText",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingIcon",
+            "type": "CodexIconName",
+            "optional": true
+          },
+          {
+            "name": "supportingHtml",
+            "type": "string",
+            "optional": true
+          },
+          {
+            "name": "supportingTextEnd",
+            "type": "string",
+            "optional": true
+          }
+        ]
+      }
+    ]
+  }
+]

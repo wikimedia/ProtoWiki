@@ -3,18 +3,53 @@ import type { Icon } from '@wikimedia/codex-icons'
 import {
   WIKITAB_SAVED_MODULE_SPEC,
   type WikitabCardData,
-  type WikitabCardVariant,
-  type WikitabModuleId,
-  type WikitabSectionSpec,
+  type WikitabFeaturedSpotlight,
+  type WikitabFeaturedSpotlightKind,
 } from '../sections'
+import { resolveEditOpportunityCopy } from './editOpportunityCopy'
 import type { WikitabSearchActivityItem } from './fetchWikitabSearchActivity'
 import type { WikitabSearchContributeItem } from './fetchWikitabSearchContribute'
+import type { WikitabSearchImage } from './fetchWikitabSearchImages'
 import {
-  formatImageAttribution,
-  imageDisplayTitle,
-  type WikitabSearchImage,
-} from './fetchWikitabSearchImages'
-import { articleUrl, articleTitleKey, expandDykHookHtml } from './wikitabHtml'
+  savedArticleItemToCardPayload,
+  savedArticlePayloadToCardData,
+  savedChangeItemToCardPayload,
+  savedDiscussionItemToCardPayload,
+  savedDiscussionPayloadToCardData,
+  savedImageItemToCardPayload,
+  savedImagePayloadToCardData,
+  featuredListPayloadToCardData,
+  featuredListPayloadToSpotlight,
+  featuredQuotePayloadToCardData,
+  featuredQuotePayloadToSpotlight,
+  featuredWordPayloadToCardData,
+  featuredWordPayloadToSpotlight,
+  savedListItemToFeaturedPayload,
+  savedQuoteItemToFeaturedPayload,
+  savedSnippetItemToCardPayload,
+  savedSnippetPayloadToCardData,
+  savedSuggestionItemToCardPayload,
+  savedSuggestionPayloadToCardData,
+  savedWordItemToFeaturedPayload,
+  searchActivityCardPayloadToItem,
+} from './wikitabCardPayloadMappers'
+import {
+  articleUrl,
+  articleTitleKey,
+  discussionThreadIdFromUrl,
+  noticeboardPageFromDiscussionUrl,
+} from './wikitabHtml'
+import { wikitabCardDescriptionText } from './wikitabCardDescription'
+import { wikitabCardMenuArticleTitle } from './wikitabCardLinkLabel'
+import {
+  listSavedId,
+  quoteSavedId,
+  savedIdForHookCard,
+  savedIdForSpotlight,
+  snippetSavedId,
+  wordSavedId,
+} from './savedItemIds'
+import { resolveFeaturedSpotlightFile } from './resolveFeaturedSpotlightFile'
 import {
   editOpportunityLabelToSavedIconId,
   iconToSavedId,
@@ -22,26 +57,42 @@ import {
 } from './wikitabSavedIcons'
 import type {
   WikitabSavedArticleItem,
-  WikitabSavedCardData,
   WikitabSavedChangeItem,
   WikitabSavedDiscussionItem,
   WikitabSavedImageItem,
   WikitabSavedItem,
+  WikitabSavedListItem,
+  WikitabSavedQuoteItem,
   WikitabSavedSnippetItem,
-  WikitabSavedSnippetPresentation,
+  WikitabSavedSnippetSource,
   WikitabSavedSuggestionItem,
+  WikitabSavedWordItem,
 } from './wikitabSavedItems'
+import { savedItemSeedArticle } from './wikitabSavedItems'
+import { seedArticle } from './wikitabSeedArticle'
 
 export type {
   WikitabSavedArticleItem,
-  WikitabSavedCardData,
   WikitabSavedChangeItem,
   WikitabSavedDiscussionItem,
   WikitabSavedImageItem,
   WikitabSavedItem,
+  WikitabSavedListItem,
+  WikitabSavedQuoteItem,
   WikitabSavedSnippetItem,
+  WikitabSavedSnippetSource,
   WikitabSavedSuggestionItem,
+  WikitabSavedWordItem,
 } from './wikitabSavedItems'
+
+export {
+  listSavedId,
+  quoteSavedId,
+  savedIdForHookCard,
+  savedIdForSpotlight,
+  snippetSavedId,
+  wordSavedId,
+} from './savedItemIds'
 
 export { cloneSavedItems } from './wikitabSavedItems'
 
@@ -54,38 +105,10 @@ function displayTitle(title: string): string {
   return title.trim().replace(/_/g, ' ')
 }
 
-export function articleTitleFromCard(card: Pick<WikitabCardData, 'linkTitle' | 'title'>): string {
-  return displayTitle(card.title ?? card.linkTitle ?? '')
-}
-
-function serializeSupportingSignals(
-  signals: WikitabCardData['supportingSignals'],
-): WikitabSavedCardData['supportingSignals'] {
-  if (!signals?.length) return undefined
-  return signals
-    .map((signal) => {
-      const iconId = iconToSavedId(signal.icon) ?? editOpportunityLabelToSavedIconId(signal.text)
-      return { icon: iconId, text: signal.text }
-    })
-    .filter((signal): signal is { icon: import('./wikitabSavedIcons').WikitabSavedIconId; text: string } =>
-      Boolean(signal.icon && signal.text),
-    )
-}
-
-function serializeCardData(card: WikitabCardData): WikitabSavedCardData {
-  return {
-    key: card.key,
-    href: card.href,
-    linkTitle: card.linkTitle,
-    title: card.title,
-    description: card.description,
-    html: card.html,
-    thumbnailUrl: card.thumbnailUrl,
-    thumbnailTitle: card.thumbnailTitle,
-    supportingText: card.supportingText,
-    supportingSignals: serializeSupportingSignals(card.supportingSignals),
-    supportingTextEnd: card.supportingTextEnd,
-  }
+export function articleTitleFromCard(
+  card: Pick<WikitabCardData, 'title' | 'description' | 'url'>,
+): string {
+  return wikitabCardMenuArticleTitle(card)
 }
 
 export function searchSavedCardId(title: string): string {
@@ -105,6 +128,11 @@ export function discussionSavedId(threadId: string): string {
   return `discussion:${threadId}`
 }
 
+export function discussionSavedIdFromUrl(url: string | undefined): string | null {
+  const threadId = discussionThreadIdFromUrl(url)
+  return threadId ? discussionSavedId(threadId) : null
+}
+
 export function imageSavedId(pageid: number): string {
   return `image:${pageid}`
 }
@@ -117,43 +145,182 @@ export function buildSavedArticleFromCard(card: WikitabCardData): WikitabSavedAr
   return {
     id: card.key,
     type: 'article',
+    primitive: 'article',
     savedAt: Date.now(),
     articleTitleKey: articleTitleKeyValue,
     articleTitle,
-    title: displayTitle(card.title ?? card.linkTitle ?? articleTitle),
-    href: card.href ?? articleUrl(articleTitle),
+    seedArticle: card.seedArticle ?? seedArticle(articleTitle, 'self'),
+    title: displayTitle(card.title ?? articleTitle),
+    url: card.url ?? articleUrl(articleTitle),
     description: card.description,
     thumbnailUrl: card.thumbnailUrl,
   }
 }
 
-export function buildSavedSnippet(
+/** DYK / In the news — save the hook itself; the bold link stays the identity and seed. */
+export function buildSavedSnippetFromCard(
   card: WikitabCardData,
-  spec: Pick<WikitabSectionSpec, 'id' | 'cardHeight' | 'thumbnailSize' | 'supportingIcon'>,
+  source: WikitabSavedSnippetSource,
 ): WikitabSavedSnippetItem | null {
-  if (spec.id !== 'dyk' && spec.id !== 'otd' && spec.id !== 'news') return null
-
-  const articleTitle = articleTitleFromCard(card)
-  const articleTitleKeyValue = articleTitleKey(articleTitle)
-  if (!articleTitleKeyValue || !card.key) return null
-
-  const presentation: WikitabSavedSnippetPresentation = {
-    variant: 'text',
-    cardHeight: spec.cardHeight,
-    thumbnailSize: spec.thumbnailSize,
-    fullHook: true,
-    supportingIcon: spec.supportingIcon ? iconToSavedId(spec.supportingIcon) : undefined,
-  }
+  const snippetHtml = wikitabCardDescriptionText(card)?.trim()
+  const title = articleTitleFromCard(card)
+  const key = articleTitleKey(title)
+  const id = snippetHtml ? snippetSavedId(source, snippetHtml) : ''
+  if (!snippetHtml || !key || !id || !card.url) return null
 
   return {
-    id: card.key,
+    id,
     type: 'snippet',
+    primitive: 'snippet',
     savedAt: Date.now(),
-    articleTitleKey: articleTitleKeyValue,
-    articleTitle,
-    source: spec.id,
-    presentation,
-    card: serializeCardData(card),
+    articleTitleKey: key,
+    articleTitle: title,
+    seedArticle: card.seedArticle ?? seedArticle(title, 'hook-link'),
+    source,
+    snippetHtml,
+    url: card.url,
+    thumbnailUrl: card.thumbnailUrl,
+  }
+}
+
+/** On this day — save the linked article, not the hook snapshot. */
+export function buildSavedArticleFromHookCard(card: WikitabCardData): WikitabSavedArticleItem | null {
+  const title = articleTitleFromCard(card)
+  const key = articleTitleKey(title)
+  if (!key || !card.url) return null
+
+  return {
+    id: searchSavedCardId(title),
+    type: 'article',
+    primitive: 'article',
+    savedAt: Date.now(),
+    articleTitleKey: key,
+    articleTitle: title,
+    seedArticle: card.seedArticle ?? seedArticle(title, 'hook-link'),
+    title,
+    url: card.url,
+    description: card.description,
+    thumbnailUrl: card.thumbnailUrl,
+  }
+}
+
+export function buildSavedWordFromSpotlight(
+  spot: WikitabFeaturedSpotlight,
+): WikitabSavedWordItem | null {
+  const word = displayTitle(spot.title ?? '')
+  const key = articleTitleKey(word)
+  if (!key || !spot.url) return null
+
+  return {
+    id: wordSavedId(word),
+    type: 'word',
+    primitive: 'word',
+    savedAt: Date.now(),
+    articleTitleKey: key,
+    articleTitle: word,
+    seedArticle: spot.seedArticle,
+    word,
+    url: spot.url,
+    description: wikitabCardDescriptionText(spot),
+  }
+}
+
+export function buildSavedQuoteFromSpotlight(
+  spot: WikitabFeaturedSpotlight,
+): WikitabSavedQuoteItem | null {
+  const quoteText = spot.title?.trim()
+  const personName = spot.description?.trim() || undefined
+  const key = articleTitleKey(personName ?? quoteText ?? 'quote')
+  if (!key || !spot.url || !quoteText) return null
+
+  return {
+    id: quoteSavedId(personName ?? key),
+    type: 'quote',
+    primitive: 'quote',
+    savedAt: Date.now(),
+    articleTitleKey: key,
+    articleTitle: personName ?? displayTitle(quoteText.slice(0, 80)),
+    seedArticle: spot.seedArticle,
+    url: spot.url,
+    quoteText,
+    personName,
+  }
+}
+
+export function buildSavedListFromSpotlight(
+  spot: WikitabFeaturedSpotlight,
+): WikitabSavedListItem | null {
+  const listTitle = displayTitle(spot.title ?? '')
+  const key = articleTitleKey(listTitle)
+  if (!key || !spot.url) return null
+
+  return {
+    id: listSavedId(listTitle),
+    type: 'list',
+    primitive: 'list',
+    savedAt: Date.now(),
+    articleTitleKey: key,
+    articleTitle: listTitle,
+    seedArticle: spot.seedArticle ?? seedArticle(listTitle, 'self'),
+    listTitle,
+    url: spot.url,
+    description: spot.description,
+    thumbnailUrl: spot.thumbnailUrl,
+  }
+}
+
+export async function buildSavedImageFromFeaturedSpotlight(
+  spot: WikitabFeaturedSpotlight,
+  signal?: AbortSignal,
+): Promise<WikitabSavedImageItem | null> {
+  if (spot.kind !== 'tfp' && spot.kind !== 'potd') return null
+
+  const resolved = await resolveFeaturedSpotlightFile(spot, signal)
+  const fallbackThumb = spot.thumbnailUrl ?? ''
+  const fallbackTitle = displayTitle(spot.title ?? spot.supportingText ?? 'Featured picture')
+
+  const stableId = spot.kind === 'tfp' ? 'image:featured:tfp' : 'image:featured:potd'
+
+  if (resolved && resolved.pageid > 0) {
+    const title = displayTitle(resolved.title)
+    const key = articleTitleKey(title)
+    if (!key) return null
+    return {
+      id: stableId,
+      type: 'image',
+      primitive: 'image',
+      savedAt: Date.now(),
+      articleTitleKey: key,
+      articleTitle: title,
+      seedArticle: spot.seedArticle,
+      pageid: resolved.pageid,
+      title: resolved.title,
+      description: resolved.description,
+      thumbnailUrl: resolved.thumbnailUrl,
+      filePageUrl: resolved.filePageUrl,
+      licenseType: resolved.licenseType,
+      artistHtml: resolved.artistHtml,
+      captionHtml: resolved.html ?? wikitabCardDescriptionText(spot),
+    }
+  }
+
+  if (!fallbackThumb && !wikitabCardDescriptionText(spot)) return null
+  return {
+    id: stableId,
+    type: 'image',
+    primitive: 'image',
+    savedAt: Date.now(),
+    articleTitleKey: stableId,
+    articleTitle: fallbackTitle,
+    seedArticle: spot.seedArticle,
+    pageid: 0,
+    title: fallbackTitle,
+    description: spot.description ?? '',
+    thumbnailUrl: fallbackThumb,
+    filePageUrl: spot.url ?? '',
+    licenseType: '',
+    artistHtml: '',
+    captionHtml: wikitabCardDescriptionText(spot),
   }
 }
 
@@ -171,18 +338,20 @@ export function buildSavedArticleFromSearch(input: {
   return {
     id,
     type: 'article',
+    primitive: 'article',
     savedAt: Date.now(),
     articleTitleKey: articleTitleKeyValue,
     articleTitle: title,
+    seedArticle: seedArticle(title, 'self'),
     title,
-    href: articleUrl(title),
+    url: articleUrl(title),
     description: input.description,
     thumbnailUrl: input.thumbnailUrl,
   }
 }
 
 export function buildSavedSuggestionFromCard(card: WikitabCardData): WikitabSavedSuggestionItem | null {
-  if (card.pageid === undefined || !card.suggestionNeed || !card.suggestionLabel || !card.editHref) {
+  if (card.pageid === undefined || !card.task || !card.url) {
     return null
   }
 
@@ -191,41 +360,45 @@ export function buildSavedSuggestionFromCard(card: WikitabCardData): WikitabSave
   if (!articleTitleKeyValue) return null
 
   return {
-    id: suggestionSavedId(card.pageid, card.suggestionNeed),
+    id: suggestionSavedId(card.pageid, card.task),
     type: 'suggestion',
+    primitive: 'suggestion',
     savedAt: Date.now(),
     articleTitleKey: articleTitleKeyValue,
     articleTitle,
+    seedArticle: card.seedArticle ?? seedArticle(articleTitle, 'self'),
     pageid: card.pageid,
-    need: card.suggestionNeed,
-    suggestionLabel: card.suggestionLabel,
-    body: card.suggestionBody ?? card.description ?? '',
+    task: card.task,
+    suggestionLabel: resolveEditOpportunityCopy(card.task).title,
+    body: card.suggestionBody ?? resolveEditOpportunityCopy(card.task).body,
     description: card.description,
     thumbnailUrl: card.thumbnailUrl,
-    editHref: card.editHref,
+    editUrl: card.url,
   }
 }
 
 export function buildSavedSuggestion(
   item: WikitabSearchContributeItem,
 ): WikitabSavedSuggestionItem | null {
-  const articleTitle = displayTitle(item.title)
+  const articleTitle = displayTitle(item.articleTitle)
   const articleTitleKeyValue = articleTitleKey(articleTitle)
   if (!articleTitleKeyValue) return null
 
   return {
-    id: suggestionSavedId(item.pageid, item.need),
+    id: suggestionSavedId(item.pageid, item.task),
     type: 'suggestion',
+    primitive: 'suggestion',
     savedAt: Date.now(),
     articleTitleKey: articleTitleKeyValue,
     articleTitle,
+    seedArticle: seedArticle(articleTitle, 'self'),
     pageid: item.pageid,
-    need: item.need,
+    task: item.task,
     suggestionLabel: item.suggestionLabel,
     body: item.body,
     description: item.description,
     thumbnailUrl: item.thumbnailUrl,
-    editHref: item.editHref,
+    editUrl: item.editUrl,
   }
 }
 
@@ -239,251 +412,166 @@ export function buildSavedImage(image: WikitabSearchImage): WikitabSavedImageIte
   return {
     id: imageSavedId(image.pageid),
     type: 'image',
+    primitive: 'image',
     savedAt: Date.now(),
     articleTitleKey: articleTitleKeyValue,
     articleTitle: title,
+    seedArticle: image.seedArticle,
     pageid: image.pageid,
     title,
-    description: image.description,
+    description: image.caption,
     thumbnailUrl: image.thumbnailUrl,
     filePageUrl: image.filePageUrl,
-    licenseType: image.licenseType,
-    artistHtml: image.artistHtml,
+    licenseType: image.license,
+    artistHtml: image.credit,
   }
 }
 
 export function buildSavedChange(item: WikitabSearchActivityItem): WikitabSavedChangeItem | null {
-  const articleTitle = displayTitle(item.title)
+  const articleTitle = displayTitle(item.articleTitle)
   const articleTitleKeyValue = articleTitleKey(articleTitle)
   if (!articleTitleKeyValue) return null
 
   return {
-    id: changeSavedId(item.revid),
+    id: changeSavedId(item.revisionId),
     type: 'change',
+    primitive: 'edit',
     savedAt: Date.now(),
     articleTitleKey: articleTitleKeyValue,
     articleTitle,
-    revid: item.revid,
+    seedArticle: seedArticle(articleTitle, 'edited-page'),
+    revisionId: item.revisionId,
     pageid: item.pageid,
     editSummary: item.editSummary,
     diffUrl: item.diffUrl,
-    thumbnailUrl: item.thumbnailUrl,
-    charsAdded: item.charsAdded,
-    charsRemoved: item.charsRemoved,
+    delta: item.delta,
     editorName: item.editorName,
     editorKind: item.editorKind,
     editedRelative: item.editedRelative,
+    editedTimestamp: item.editedTimestamp,
     highRevertRisk: item.highRevertRisk,
-    isLatest: item.isLatest,
+    isLatestRevision: item.isLatestRevision,
     reverted: item.reverted,
   }
 }
 
 export function buildSavedDiscussion(card: WikitabCardData): WikitabSavedDiscussionItem | null {
-  const threadId = card.threadId ?? parseThreadIdFromHref(card.href)
+  const threadId = discussionThreadIdFromUrl(card.url)
   if (!threadId || !card.title) return null
 
-  const noticeboardPage = card.noticeboardPage ?? parseNoticeboardPageFromHref(card.href) ?? ''
+  const noticeboardPage =
+    (card.url ? noticeboardPageFromDiscussionUrl(card.url) : undefined) ?? ''
   const noticeboardLabel = card.description ?? noticeboardPage
   const noticeboardKey = articleTitleKey(noticeboardPage.replace(/ /g, '_')) ?? threadId
 
   return {
     id: discussionSavedId(threadId),
     type: 'discussion',
+    primitive: 'discussion',
     savedAt: Date.now(),
     articleTitleKey: noticeboardKey,
     articleTitle: noticeboardPage || card.title,
-    threadId,
     title: card.title,
     noticeboardPage,
     noticeboardLabel,
-    commentCount: card.commentCount ?? parseCommentCountFromSignals(card.supportingSignals),
+    commentCount: card.commentCount ?? parseCommentCountFromSupportingText(card.supportingText),
     latestReplyRelative: card.supportingTextEnd ?? '',
-    href: card.href ?? '',
+    url: card.url ?? '',
   }
 }
 
-function parseThreadIdFromHref(href: string | undefined): string | undefined {
-  if (!href) return undefined
-  const hashIndex = href.indexOf('#')
-  if (hashIndex === -1) return undefined
-  return href.slice(hashIndex + 1).trim() || undefined
-}
 
-function parseNoticeboardPageFromHref(href: string | undefined): string | undefined {
-  if (!href) return undefined
-  try {
-    const url = new URL(href)
-    const path = decodeURIComponent(url.pathname.replace(/^\/wiki\//, ''))
-    const hashIndex = path.indexOf('#')
-    return (hashIndex === -1 ? path : path.slice(0, hashIndex)).replace(/_/g, ' ') || undefined
-  } catch {
-    return undefined
-  }
-}
-
-function parseCommentCountFromSignals(signals: WikitabCardData['supportingSignals']): number {
-  const text = signals?.[0]?.text ?? ''
+function parseCommentCountFromSupportingText(supportingText: string | undefined): number {
+  const text = supportingText ?? ''
   const match = text.match(/^(\d+)/)
   return match ? Number(match[1]) : 0
 }
 
 export function savedItemToActivityItem(item: WikitabSavedChangeItem): WikitabSearchActivityItem {
-  return {
-    pageid: item.pageid,
-    title: item.articleTitle,
-    editSummary: item.editSummary,
-    thumbnailUrl: item.thumbnailUrl,
-    charsAdded: item.charsAdded,
-    charsRemoved: item.charsRemoved,
-    articleHref: articleUrl(item.articleTitle),
-    diffUrl: item.diffUrl,
-    thankUrl: `https://en.wikipedia.org/wiki/Special:Thanks/${item.revid}`,
-    revid: item.revid,
-    reverted: item.reverted ?? false,
-    highRevertRisk: item.highRevertRisk,
-    isLatest: item.isLatest ?? false,
-    editorName: item.editorName,
-    editorHref: `https://en.wikipedia.org/wiki/User:${encodeURIComponent(item.editorName.replace(/ /g, '_'))}`,
-    editedRelative: item.editedRelative,
-    editedTimestamp: '',
-    editorKind: item.editorKind,
+  const activity = searchActivityCardPayloadToItem(savedChangeItemToCardPayload(item))
+  if (!item.editedTimestamp?.trim() && item.editedRelative) {
+    return { ...activity, editedRelative: item.editedRelative, editedTimestamp: '' }
   }
+  return activity
 }
 
 export function savedItemToContributeItem(item: WikitabSavedSuggestionItem): WikitabSearchContributeItem {
   return {
     pageid: item.pageid,
-    title: item.articleTitle,
+    articleTitle: item.articleTitle,
     description: item.description,
     thumbnailUrl: item.thumbnailUrl,
     suggestionLabel: item.suggestionLabel,
     body: item.body,
-    need: item.need,
-    editHref: item.editHref,
+    task: item.task,
+    editUrl: item.editUrl,
   }
 }
 
 export function savedItemToWikitabCard(item: WikitabSavedArticleItem): WikitabCardData {
   return {
-    key: item.id,
-    href: item.href,
-    linkTitle: item.title,
-    title: item.title,
-    description: item.description,
-    thumbnailUrl: item.thumbnailUrl,
-  }
-}
-
-/** Plain article title — legacy saves stored linkTitle ("Edit Foo: …") as articleTitle. */
-function suggestionArticleTitle(item: WikitabSavedSuggestionItem): string {
-  const raw = item.articleTitle.trim()
-  const legacy = raw.match(/^Edit\s+(.+?):\s+/i)
-  if (legacy) return displayTitle(legacy[1])
-  return displayTitle(raw)
-}
-
-/** Saved-module layout — mirrors {@link contributeItemToCard} / home Suggested edits. */
-export function savedSuggestionToWikitabCard(item: WikitabSavedSuggestionItem): WikitabCardData {
-  const title = suggestionArticleTitle(item)
-  return {
-    key: item.id,
-    href: item.editHref,
-    linkTitle: `Edit ${title}: ${item.suggestionLabel}`,
-    title,
-    description: item.description || undefined,
-    thumbnailUrl: item.thumbnailUrl,
-    supportingSignals: [
-      {
-        icon: resolveSavedIcon('lightbulb') ?? resolveSavedIcon('edit')!,
-        text: item.suggestionLabel,
-      },
-    ],
+    ...savedArticlePayloadToCardData(savedArticleItemToCardPayload(item)),
+    supportingText: item.supportingText,
+    supportingHtml: item.supportingHtml,
+    supportingTextEnd: item.supportingTextEnd,
   }
 }
 
 export function savedSnippetToWikitabCard(item: WikitabSavedSnippetItem): WikitabCardData {
-  const card = item.card
-  const html =
-    item.source === 'dyk' && card.html ? expandDykHookHtml(card.html) : card.html
-  return {
-    key: card.key,
-    href: card.href,
-    linkTitle: card.linkTitle,
-    title: card.title,
-    description: card.description,
-    html,
-    thumbnailUrl: card.thumbnailUrl,
-    thumbnailTitle: card.thumbnailTitle,
-    supportingText: card.supportingText,
-    supportingSignals: card.supportingSignals?.map((signal) => ({
-      icon: resolveSavedIcon(signal.icon) ?? resolveSavedIcon('edit')!,
-      text: signal.text,
-    })),
-    supportingTextEnd: card.supportingTextEnd,
-  }
+  return savedSnippetPayloadToCardData(savedSnippetItemToCardPayload(item))
+}
+
+export function savedSuggestionToWikitabCard(item: WikitabSavedSuggestionItem): WikitabCardData {
+  return savedSuggestionPayloadToCardData(savedSuggestionItemToCardPayload(item))
+}
+
+export function savedWordToSpotlight(item: WikitabSavedWordItem): WikitabFeaturedSpotlight {
+  return featuredWordPayloadToSpotlight(savedWordItemToFeaturedPayload(item))
+}
+
+export function savedWordToWikitabCard(item: WikitabSavedWordItem): WikitabCardData {
+  return featuredWordPayloadToCardData(savedWordItemToFeaturedPayload(item), {
+    showSpotlightLabel: false,
+  })
+}
+
+export function savedQuoteToSpotlight(item: WikitabSavedQuoteItem): WikitabFeaturedSpotlight {
+  return featuredQuotePayloadToSpotlight(savedQuoteItemToFeaturedPayload(item))
+}
+
+export function savedQuoteToWikitabCard(item: WikitabSavedQuoteItem): WikitabCardData {
+  return featuredQuotePayloadToCardData(savedQuoteItemToFeaturedPayload(item), {
+    showSpotlightLabel: false,
+  })
+}
+
+export function savedListToSpotlight(item: WikitabSavedListItem): WikitabFeaturedSpotlight {
+  return featuredListPayloadToSpotlight(savedListItemToFeaturedPayload(item))
+}
+
+export function savedListToWikitabCard(item: WikitabSavedListItem): WikitabCardData {
+  return featuredListPayloadToCardData(savedListItemToFeaturedPayload(item), {
+    showSpotlightLabel: false,
+  })
 }
 
 export function savedImageToWikitabCard(item: WikitabSavedImageItem): WikitabCardData {
-  const fileName = imageDisplayTitle(item.title)
-  const caption = item.description.trim()
-  const description = caption || fileName
-  const attribution = formatImageAttribution(item)
-
-  return {
-    key: item.id,
-    href: item.filePageUrl,
-    linkTitle: description,
-    description,
-    thumbnailUrl: item.thumbnailUrl,
-    supportingSignals: attribution
-      ? [
-          {
-            icon: resolveSavedIcon('image') ?? resolveSavedIcon('edit')!,
-            text: attribution,
-          },
-        ]
-      : undefined,
-  }
+  return savedImagePayloadToCardData(savedImageItemToCardPayload(item))
 }
 
 export function savedDiscussionToWikitabCard(item: WikitabSavedDiscussionItem): WikitabCardData {
-  return {
-    key: item.id,
-    href: item.href,
-    linkTitle: item.title,
-    title: item.title,
-    description: item.noticeboardLabel,
-    supportingSignals: [
-      {
-        icon: resolveSavedIcon('speechBubbles')!,
-        text: `${item.commentCount} ${item.commentCount === 1 ? 'comment' : 'comments'}`,
-      },
-    ],
-    supportingTextEnd: item.latestReplyRelative,
-  }
+  return savedDiscussionPayloadToCardData(savedDiscussionItemToCardPayload(item))
 }
 
-/** Unique article seeds — Article, Snippet, and Suggestion types only. */
 export function uniqueArticleSeedsFromSavedItems(
   items: readonly WikitabSavedItem[],
 ): WikitabSavedArticleSeed[] {
   const byKey = new Map<string, WikitabSavedArticleSeed>()
 
   for (const saved of items) {
-    if (
-      saved.type === 'discussion' ||
-      saved.type === 'change' ||
-      saved.type === 'image'
-    ) {
-      continue
-    }
-    if (!saved.articleTitleKey) continue
-    if (!byKey.has(saved.articleTitleKey)) {
-      byKey.set(saved.articleTitleKey, {
-        titleKey: saved.articleTitleKey,
-        title: saved.articleTitle,
-      })
+    const seed = savedItemSeedArticle(saved)
+    if (seed && !byKey.has(seed.titleKey)) {
+      byKey.set(seed.titleKey, { titleKey: seed.titleKey, title: seed.title })
     }
   }
 
@@ -494,29 +582,72 @@ export function savedItemRevealCard(item: WikitabSavedItem): WikitabCardData {
   return { key: item.id }
 }
 
-/** @deprecated Use uniqueArticleSeedsFromSavedItems */
-export function uniqueArticleSeedsFromSavedCards(
-  items: readonly WikitabSavedItem[],
-): WikitabSavedArticleSeed[] {
-  return uniqueArticleSeedsFromSavedItems(items)
+/** Save intent — always names the card {@link WikitabCardPrimitiveId}, not a feed module. */
+export type SaveItemPayload =
+  | { primitive: 'article'; card: WikitabCardData; hookArticle?: boolean }
+  | { primitive: 'snippet'; card: WikitabCardData; source: WikitabSavedSnippetSource }
+  | { primitive: 'word' | 'quote' | 'list' | 'image'; spotlight: WikitabFeaturedSpotlight }
+  | { primitive: 'suggestion' | 'discussion'; card: WikitabCardData }
+
+export function saveItemPayloadNeedsFeaturedImageFetch(payload: SaveItemPayload): boolean {
+  return payload.primitive === 'image'
 }
 
-export type SaveItemPayload =
-  | { kind: 'article'; card: WikitabCardData }
-  | { kind: 'snippet'; card: WikitabCardData; spec: Pick<WikitabSectionSpec, 'id' | 'cardHeight' | 'thumbnailSize' | 'supportingIcon'> }
-  | { kind: 'suggestion'; card: WikitabCardData }
-  | { kind: 'discussion'; card: WikitabCardData }
-
 export function buildSavedItemFromPayload(payload: SaveItemPayload): WikitabSavedItem | null {
-  switch (payload.kind) {
+  switch (payload.primitive) {
     case 'article':
-      return buildSavedArticleFromCard(payload.card)
+      return payload.hookArticle
+        ? buildSavedArticleFromHookCard(payload.card)
+        : buildSavedArticleFromCard(payload.card)
     case 'snippet':
-      return buildSavedSnippet(payload.card, payload.spec)
+      return buildSavedSnippetFromCard(payload.card, payload.source)
+    case 'word':
+      return buildSavedWordFromSpotlight(payload.spotlight)
+    case 'quote':
+      return buildSavedQuoteFromSpotlight(payload.spotlight)
+    case 'list':
+      return buildSavedListFromSpotlight(payload.spotlight)
     case 'suggestion':
       return buildSavedSuggestionFromCard(payload.card)
     case 'discussion':
       return buildSavedDiscussion(payload.card)
+    default:
+      return null
+  }
+}
+
+export async function buildSavedItemFromPayloadAsync(
+  payload: SaveItemPayload,
+  signal?: AbortSignal,
+): Promise<WikitabSavedItem | null> {
+  if (saveItemPayloadNeedsFeaturedImageFetch(payload)) {
+    return buildSavedImageFromFeaturedSpotlight(payload.spotlight, signal)
+  }
+  return buildSavedItemFromPayload(payload)
+}
+
+export function savedIdFromPayload(payload: SaveItemPayload): string | null {
+  switch (payload.primitive) {
+    case 'article': {
+      const built = payload.hookArticle
+        ? buildSavedArticleFromHookCard(payload.card)
+        : buildSavedArticleFromCard(payload.card)
+      return built?.id ?? null
+    }
+    case 'snippet':
+      return buildSavedSnippetFromCard(payload.card, payload.source)?.id ?? null
+    case 'word':
+      return buildSavedWordFromSpotlight(payload.spotlight)?.id ?? null
+    case 'quote':
+      return buildSavedQuoteFromSpotlight(payload.spotlight)?.id ?? null
+    case 'list':
+      return buildSavedListFromSpotlight(payload.spotlight)?.id ?? null
+    case 'image':
+      return savedIdForSpotlight(payload.spotlight)
+    case 'suggestion':
+      return buildSavedSuggestionFromCard(payload.card)?.id ?? null
+    case 'discussion':
+      return buildSavedDiscussion(payload.card)?.id ?? null
     default:
       return null
   }

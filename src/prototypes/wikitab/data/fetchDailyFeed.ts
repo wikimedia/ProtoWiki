@@ -17,12 +17,23 @@ import {
   wikimediaThumbnailAtLeast,
 } from './wikimediaThumbnailUrl'
 import {
+  feedDykPayloadToCardData,
+  feedNewsPayloadToCardData,
+  feedTrendingPayloadToCardData,
+} from './wikitabCardPayloadMappers'
+import type {
+  WikitabFeedDykCardPayload,
+  WikitabFeedNewsCardPayload,
+  WikitabFeedTrendingCardPayload,
+} from './wikitabCardPayloadTypes'
+import {
   EN_WIKI_HOST,
   articleUrl,
-  expandDykHookHtml,
+  expandDykSnippetHtml,
   normalizeFeedHtml,
   primaryLinkTitle,
 } from './wikitabHtml'
+import { seedArticle } from './wikitabSeedArticle'
 
 interface FeedThumbnail {
   source?: string
@@ -39,6 +50,7 @@ interface FeedSummary {
 }
 
 export interface FeaturedFeedResponse {
+  tfa?: FeedSummary & { extract_html?: string }
   mostread?: { date?: string; articles?: FeedSummary[] }
   dyk?: { html?: string; text?: string }[]
   news?: { story?: string; links?: FeedSummary[] }[]
@@ -96,96 +108,93 @@ function feedUrl(day: string): string {
   return `https://${EN_WIKI_HOST}/api/rest_v1/feed/featured/${year}/${month}/${date}`
 }
 
-function formatViews(views: number): string {
-  if (views >= 1_000_000) return `${(views / 1_000_000).toFixed(1)}M`
-  if (views >= 1_000) return `${(views / 1_000).toFixed(1)}K`
-  return String(views)
-}
-
-/** When `mostread.date` matches the requested feed day, suffix with "today". */
-function viewsPeriodLabel(mostreadDay: string | undefined, requestedDay: string): string {
-  const day = mostreadDay?.slice(0, 10)
-  if (day === requestedDay) return 'today'
-  return ''
-}
-
 function summaryUrl(summary: FeedSummary): string | undefined {
   const direct = summary.content_urls?.desktop?.page
   if (direct) return direct
   return summary.title ? articleUrl(summary.title) : undefined
 }
 
-function mapTrending(response: FeaturedFeedResponse, day: string): WikitabCardData[] {
-  const articles = response.mostread?.articles ?? []
-  const period = viewsPeriodLabel(response.mostread?.date, day)
+function trendingArticleToPayload(
+  article: FeedSummary & { rank?: number; views?: number },
+): WikitabFeedTrendingCardPayload | null {
+  const url = summaryUrl(article)
+  const title = article.normalizedtitle ?? article.title?.replace(/_/g, ' ')
+  if (!url || !title) return null
+  if (typeof article.views !== 'number') return null
 
+  return {
+    key: article.title ?? article.normalizedtitle ?? String(article.rank),
+    url,
+    title,
+    description: article.description || undefined,
+    pageViews: article.views,
+    thumbnailUrl: wikimediaThumbnailAtLeast(
+      article.thumbnail?.source,
+      WIKITAB_FEED_CARD_THUMB_WIDTH,
+    ),
+  }
+}
+
+function mapTrending(response: FeaturedFeedResponse): WikitabCardData[] {
+  const articles = response.mostread?.articles ?? []
   return [...articles]
     .sort((a, b) => (a.rank ?? Number.MAX_SAFE_INTEGER) - (b.rank ?? Number.MAX_SAFE_INTEGER))
-    .map((article) => ({
-      key: article.title ?? article.normalizedtitle ?? String(article.rank),
-      href: summaryUrl(article),
-      linkTitle: article.normalizedtitle ?? article.title?.replace(/_/g, ' '),
-      title: article.normalizedtitle ?? article.title?.replace(/_/g, ' '),
-      description: article.description || undefined,
-      supportingText:
-        typeof article.views === 'number'
-          ? `${formatViews(article.views)} views${period ? ` ${period}` : ''}`
-          : undefined,
-      thumbnailUrl: wikimediaThumbnailAtLeast(
-        article.thumbnail?.source,
-        WIKITAB_FEED_CARD_THUMB_WIDTH,
-      ),
-    }))
+    .map((article) => trendingArticleToPayload(article))
+    .filter((payload): payload is WikitabFeedTrendingCardPayload => payload !== null)
+    .map(feedTrendingPayloadToCardData)
 }
 
 function mapDyk(response: FeaturedFeedResponse): WikitabCardData[] {
   return (response.dyk ?? [])
     .filter((hook) => hook.html)
-    .map((hook, index) => {
+    .flatMap((hook, index) => {
       const html = hook.html as string
       const subject = primaryLinkTitle(html)
-      return {
+      if (!subject) return []
+
+      const payload: WikitabFeedDykCardPayload = {
         key: `dyk-${index}`,
-        html: expandDykHookHtml(normalizeFeedHtml(html)),
-        href: subject ? articleUrl(subject) : undefined,
-        linkTitle: subject,
-        thumbnailTitle: subject,
+        description: expandDykSnippetHtml(normalizeFeedHtml(html)),
+        url: articleUrl(subject),
       }
+      return [{ ...feedDykPayloadToCardData(payload), seedArticle: seedArticle(subject, 'hook-link') }]
     })
 }
 
 function mapNews(response: FeaturedFeedResponse): WikitabCardData[] {
   return (response.news ?? [])
     .filter((item) => item.story)
-    .map((item, index) => {
+    .flatMap((item, index) => {
       const story = item.story as string
       const subject = primaryLinkTitle(story)
-      /*
-       * The card points at the story's bolded link, so prefer that page's own
-       * summary for the thumbnail rather than whichever link happens to be first.
-       */
       const lead =
         item.links?.find(
           (link) =>
             link.normalizedtitle === subject ||
             link.title?.replace(/_/g, ' ') === subject,
         ) ?? item.links?.[0]
-      return {
+      const url = subject ? articleUrl(subject) : lead && summaryUrl(lead)
+      if (!url) return []
+
+      const payload: WikitabFeedNewsCardPayload = {
         key: `news-${index}`,
-        html: normalizeFeedHtml(story),
-        href: subject ? articleUrl(subject) : lead && summaryUrl(lead),
-        linkTitle: subject ?? lead?.normalizedtitle,
+        description: normalizeFeedHtml(story),
+        url,
         thumbnailUrl: wikimediaThumbnailAtLeast(
           lead?.thumbnail?.source,
           WIKITAB_FEED_CARD_THUMB_WIDTH,
         ),
       }
+      const seedTitle = subject ?? lead?.normalizedtitle ?? lead?.title
+      return [
+        { ...feedNewsPayloadToCardData(payload), seedArticle: seedArticle(seedTitle, 'hook-link') },
+      ]
     })
 }
 
 function mapFeaturedFeed(payload: FeaturedFeedResponse, day: string): WikitabFeed {
   return {
-    trending: mapTrending(payload, day),
+    trending: mapTrending(payload),
     news: mapNews(payload),
     dyk: mapDyk(payload),
     discussions: [],
@@ -226,13 +235,13 @@ async function resolveTrending(
   day: string,
   signal?: AbortSignal,
 ): Promise<WikitabCardData[]> {
-  let trending = mapTrending(payload, day)
+  let trending = mapTrending(payload)
   if (trending.length > 0) return trending
 
   try {
     const yesterday = previousUtcDay(day)
     const fallback = await getFeaturedPayload(yesterday, signal)
-    trending = mapTrending(fallback, yesterday)
+    trending = mapTrending(fallback)
   } catch {
     // Empty state keeps the section visible.
   }

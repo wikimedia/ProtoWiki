@@ -5,6 +5,9 @@ export type WikitabSavedItemTab = 'all' | WikitabSavedItemType
 export const WIKITAB_SAVED_ITEM_TAB_ORDER: readonly WikitabSavedItemType[] = [
   'article',
   'snippet',
+  'word',
+  'quote',
+  'list',
   'suggestion',
   'change',
   'discussion',
@@ -14,6 +17,9 @@ export const WIKITAB_SAVED_ITEM_TAB_ORDER: readonly WikitabSavedItemType[] = [
 export const WIKITAB_SAVED_ITEM_TAB_LABELS: Record<WikitabSavedItemType, string> = {
   article: 'Articles',
   snippet: 'Snippets',
+  word: 'Words',
+  quote: 'Quotes',
+  list: 'Lists',
   suggestion: 'Suggestions',
   change: 'Edits',
   discussion: 'Discussions',

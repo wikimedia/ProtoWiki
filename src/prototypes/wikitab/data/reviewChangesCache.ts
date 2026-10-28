@@ -5,11 +5,12 @@ import { isCacheBypassed, utcDayKey } from './feedCache'
  * Cache only — nothing here is authoritative. Clearing it costs one refetch and
  * nothing else. User preferences live in `wikitabConfig.ts`, not here.
  */
-const CACHE_KEY = 'wikitab-review-changes-cache-v1'
+export const CACHE_KEY = 'wikitab-review-changes-cache-v3'
 
 interface CacheEntry {
   day: string
   savedFingerprint: string
+  settingsFingerprint: string
   items: WikitabSearchActivityItem[]
   hasMore: boolean
 }
@@ -23,6 +24,13 @@ export function buildReviewChangesSavedFingerprint(titleKeys: readonly string[])
   return [...titleKeys].sort().join('|')
 }
 
+export function buildReviewChangesSettingsFingerprint(options: {
+  showSavedEdits: boolean
+  showRecentRiskyEdits: boolean
+}): string {
+  return `${options.showSavedEdits ? '1' : '0'}${options.showRecentRiskyEdits ? '1' : '0'}`
+}
+
 export { isCacheBypassed }
 
 function dedupeCachedItems(items: WikitabSearchActivityItem[]): WikitabSearchActivityItem[] {
@@ -30,8 +38,8 @@ function dedupeCachedItems(items: WikitabSearchActivityItem[]): WikitabSearchAct
   const deduped: WikitabSearchActivityItem[] = []
 
   for (const item of items) {
-    if (seen.has(item.revid)) continue
-    seen.add(item.revid)
+    if (seen.has(item.revisionId)) continue
+    seen.add(item.revisionId)
     deduped.push(item)
   }
 
@@ -41,6 +49,7 @@ function dedupeCachedItems(items: WikitabSearchActivityItem[]): WikitabSearchAct
 export function readCachedReviewChanges(
   day: string,
   savedFingerprint: string,
+  settingsFingerprint: string,
 ): CachedReviewChanges | null {
   if (isCacheBypassed()) return null
 
@@ -49,7 +58,12 @@ export function readCachedReviewChanges(
     if (!raw) return null
 
     const entry = JSON.parse(raw) as CacheEntry
-    if (entry?.day !== day || entry.savedFingerprint !== savedFingerprint || !entry.items) {
+    if (
+      entry?.day !== day ||
+      entry.savedFingerprint !== savedFingerprint ||
+      entry.settingsFingerprint !== settingsFingerprint ||
+      !entry.items
+    ) {
       return null
     }
 
@@ -65,13 +79,20 @@ export function readCachedReviewChanges(
 export function writeCachedReviewChanges(
   day: string,
   savedFingerprint: string,
+  settingsFingerprint: string,
   items: WikitabSearchActivityItem[],
   hasMore: boolean,
 ): void {
   try {
     window.localStorage.setItem(
       CACHE_KEY,
-      JSON.stringify({ day, savedFingerprint, items, hasMore } satisfies CacheEntry),
+      JSON.stringify({
+        day,
+        savedFingerprint,
+        settingsFingerprint,
+        items,
+        hasMore,
+      } satisfies CacheEntry),
     )
   } catch {
     // A full or unavailable localStorage must never break the page.

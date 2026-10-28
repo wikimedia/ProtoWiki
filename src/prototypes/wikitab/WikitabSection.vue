@@ -9,19 +9,26 @@ import {
   cdxIconReload,
 } from '@wikimedia/codex-icons'
 import { useSkin } from '@/composables/useSkin'
+import { wikitabCardBindProps } from './data/wikitabCardPresentation'
+import { wikitabCardFeedMenuItems } from './data/wikitabCardMenuItems'
 import WikitabCard from './WikitabCard.vue'
 import { useEqualRowHeights } from './useEqualRowHeights'
 import { usePreventHorizontalSwipeNavigation } from './usePreventHorizontalSwipeNavigation'
 import { useRevealOnScrollEnd } from './useRevealOnScrollEnd'
 import { useSectionReveal } from './useSectionReveal'
-import {
-  discussionSavedId,
-  type SaveItemPayload,
-} from './data/savedCardHelpers'
+import { discussionSavedIdFromUrl, type SaveItemPayload } from './data/savedCardHelpers'
+import { savedIdForHookCard, snippetSavedId } from './data/savedItemIds'
+import { wikitabCardDescriptionText } from './data/wikitabCardDescription'
+import type { WikitabSavedSnippetSource } from './data/wikitabSavedItems'
 import type { WikitabCardData, WikitabSectionId, WikitabSectionSpec } from './sections'
 
 const ARTICLE_SECTION_IDS = new Set<WikitabSectionId>(['trending', 'births'])
 const SNIPPET_SECTION_IDS = new Set<WikitabSectionId>(['dyk', 'otd', 'news'])
+
+/** Hook sections saved as the snippet itself; On this day still saves its article. */
+function snippetSourceForSection(id: WikitabSectionId): WikitabSavedSnippetSource | null {
+  return id === 'dyk' || id === 'news' ? id : null
+}
 const DISCUSSION_SECTION_IDS = new Set<WikitabSectionId>(['discussions'])
 
 const SAVE_SECTION_IDS = new Set<WikitabSectionId>([
@@ -48,33 +55,38 @@ const emit = defineEmits<{
 }>()
 
 function savedIdForCard(card: WikitabCardData): string {
-  if (props.spec.id === 'discussions' && card.threadId) {
-    return discussionSavedId(card.threadId)
+  if (props.spec.id === 'discussions') {
+    const id = discussionSavedIdFromUrl(card.url)
+    if (id) return id
+  }
+  const snippetSource = snippetSourceForSection(props.spec.id)
+  if (snippetSource) {
+    return snippetSavedId(snippetSource, wikitabCardDescriptionText(card) ?? '')
+  }
+  if (SNIPPET_SECTION_IDS.has(props.spec.id)) {
+    return savedIdForHookCard(card)
   }
   return card.key
 }
 
 function savePayloadForCard(card: WikitabCardData): SaveItemPayload {
+  const snippetSource = snippetSourceForSection(props.spec.id)
+  if (snippetSource) {
+    return { primitive: 'snippet', card, source: snippetSource }
+  }
   if (SNIPPET_SECTION_IDS.has(props.spec.id)) {
-    return {
-      kind: 'snippet',
-      card,
-      spec: props.spec,
-    }
+    return { primitive: 'article', card, hookArticle: true }
   }
   if (DISCUSSION_SECTION_IDS.has(props.spec.id)) {
-    return { kind: 'discussion', card }
+    return { primitive: 'discussion', card }
   }
-  return { kind: 'article', card }
+  return { primitive: 'article', card }
 }
 
 const items = computed(() => props.items)
 const loading = toRef(props, 'loading')
-const { reserved, ready, revealing, hasMore, revealMore } = useSectionReveal(
-  props.spec,
-  items,
-  loading,
-)
+const { reserved, revealing, hasMore, revealMore, slotCard, slotLoading, pendingCount } =
+  useSectionReveal(props.spec, items, loading)
 
 const skin = useSkin()
 
@@ -103,7 +115,7 @@ useEqualRowHeights({
   enabled: computed(() => !props.error),
   watchKeys: [
     computed(() => reserved.value),
-    computed(() => ready.value),
+    pendingCount,
     computed(() => props.items.length),
     computed(() => props.loading),
   ],
@@ -111,8 +123,8 @@ useEqualRowHeights({
 
 const slots = computed(() =>
   Array.from({ length: reserved.value }, (_, index) => ({
-    card: props.items[index],
-    loading: index >= ready.value,
+    card: slotCard(index),
+    loading: slotLoading(index),
   })),
 )
 
@@ -195,16 +207,21 @@ watch(selection, (value) => {
         v-for="(slot, index) in slots"
         :key="index"
         class="wikitab-section__card"
-        :variant="spec.variant"
-        :height="spec.cardHeight"
-        :thumbnail-size="spec.thumbnailSize"
-        :card="slot.card"
-        :supporting-icon="spec.supportingIcon"
-        :full-hook="spec.fullHook"
-        :loading="slot.loading"
-        :show-article-menu="SAVE_SECTION_IDS.has(spec.id) && !slot.loading && !!slot.card"
-        :hide-menu-section-heading="!slot.loading && slot.card ? spec.heading : undefined"
-        :is-saved="slot.card ? isCardSaved(savedIdForCard(slot.card)) : false"
+        v-bind="
+          wikitabCardBindProps(spec.primitive, {
+            supportingIcon: spec.supportingIcon,
+            card: slot.card,
+            loading: slot.loading,
+            menu: slot.card
+              ? wikitabCardFeedMenuItems({
+                  save: SAVE_SECTION_IDS.has(spec.id)
+                    ? { isSaved: isCardSaved(savedIdForCard(slot.card)) }
+                    : false,
+                  hideFromHeading: spec.heading,
+                })
+              : undefined,
+          })
+        "
         @hide-article="emit('hide-article', $event)"
         @toggle-save="slot.card && emit('toggle-save', savePayloadForCard(slot.card))"
       />

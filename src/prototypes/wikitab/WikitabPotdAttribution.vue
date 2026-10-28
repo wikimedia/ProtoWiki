@@ -6,6 +6,7 @@ import { cdxIconClose, cdxIconImage, cdxIconInfo } from '@wikimedia/codex-icons'
 import { potdHasAttribution, type WikitabPotd } from './data/fetchPictureOfTheDay'
 import { unwrapLinksInHtml } from './data/wikitabHtml'
 import { useWikitabPotdAttributionDismiss } from './useWikitabPotdAttributionDismiss'
+import { WIKITAB_SUPPORTING_ICON_TEXT_LEADING } from './data/wikitabSupportingIconText'
 
 const props = defineProps<{
   potd: WikitabPotd
@@ -19,7 +20,7 @@ const { isDismissed, dismiss, open } = useWikitabPotdAttributionDismiss()
 
 const show = computed(() => potdHasAttribution(props.potd))
 const isOpen = computed(() => show.value && !isDismissed.value)
-const cardUrl = computed(() => props.potd.href || undefined)
+const cardUrl = computed(() => props.potd.url || undefined)
 
 /** Artist arrives from the API as HTML with links; unwrap again for older cache entries. */
 const artistDisplayHtml = computed(() =>
@@ -182,15 +183,16 @@ const captionClampStyle = computed(() => ({
             </div>
           </template>
           <template v-if="artistDisplayHtml || potd.licenseType" #supporting-text>
-            <span class="wikitab-potd-attribution__supporting">
-              <CdxIcon :icon="cdxIconInfo" size="x-small" />
-              <span class="wikitab-potd-attribution__supporting-label">
-                <template v-if="potd.licenseType">{{ potd.licenseType }}</template>
+            <span class="wikitab-potd-attribution__supporting wikitab-supporting-icon-row"
+              ><CdxIcon :icon="cdxIconInfo" size="x-small" /><span
+                class="wikitab-potd-attribution__supporting-label"
+                >{{ WIKITAB_SUPPORTING_ICON_TEXT_LEADING
+                }}<template v-if="potd.licenseType">{{ potd.licenseType }}</template>
                 <template v-if="potd.licenseType && artistDisplayHtml">, </template>
                 <!-- eslint-disable-next-line vue/no-v-html -->
-                <span v-if="artistDisplayHtml" v-html="artistDisplayHtml" />
-              </span>
-            </span>
+                <span v-if="artistDisplayHtml" v-html="artistDisplayHtml" /></span
+              ></span
+            >
           </template>
         </CdxCard>
 
@@ -431,15 +433,7 @@ const captionClampStyle = computed(() => ({
 
 /* Same supporting-text row pattern as WikitabCard (icon + subtle label). */
 .wikitab-potd-attribution__supporting {
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--spacing-25);
   max-width: 100%;
-}
-
-.wikitab-potd-attribution__supporting :deep(.cdx-icon) {
-  flex-shrink: 0;
-  translate: 0 0.0625em;
 }
 
 .wikitab-potd-attribution__supporting-label :deep(a) {

@@ -15,7 +15,11 @@ import { fetchWikitabPageSummary } from './data/fetchWikitabPageSummary'
 import { loadWikitabConfig, type WikitabSavedItem } from './data/wikitabConfig'
 import { cloneSavedItems, uniqueArticleSeedsFromSavedItems } from './data/savedCardHelpers'
 import { articleTitleKey } from './data/wikitabHtml'
-import { WIKITAB_DAILY_READS_MODULE_SPEC, type WikitabCardData } from './sections'
+import {
+  WIKITAB_DAILY_READS_MODULE_SPEC,
+  type WikitabCardData,
+  type WikitabCardLoading,
+} from './sections'
 
 const { initialCount, pageSize } = WIKITAB_DAILY_READS_MODULE_SPEC
 
@@ -43,7 +47,7 @@ function visibleDailyReadsCount(cards: readonly WikitabCardData[]): number {
 
   const hiddenSet = new Set(hidden)
   return cards.filter((card) => {
-    const title = card.linkTitle ?? card.title ?? ''
+    const title = card.title ?? ''
     const key = articleTitleKey(title)
     return !key || !hiddenSet.has(key)
   }).length
@@ -51,6 +55,8 @@ function visibleDailyReadsCount(cards: readonly WikitabCardData[]): number {
 
 export function useWikitabDailyReads() {
   const items = ref<WikitabCardData[]>([])
+  /** Card key → fields whose summary backfill is still in flight. */
+  const pendingByKey = ref(new Map<string, WikitabCardLoading>())
   const loading = ref(false)
   const fillingInitial = ref(false)
   const loadingMore = ref(false)
@@ -80,22 +86,43 @@ export function useWikitabDailyReads() {
     })
   }
 
-  function scheduleThumbnailBackfill(card: WikitabCardData, signal: AbortSignal): void {
-    if (card.thumbnailUrl) return
+  function setPending(key: string, loading: WikitabCardLoading): void {
+    const next = new Map(pendingByKey.value)
+    if (loading) next.set(key, loading)
+    else next.delete(key)
+    pendingByKey.value = next
+  }
 
-    const title = card.linkTitle ?? card.title
-    if (!title) return
+  /** The only summary fetch — fills whatever the morelike hit lacked, after the card is shown. */
+  function scheduleSummaryBackfill(card: WikitabCardData, signal: AbortSignal): void {
+    const needsThumbnail = !card.thumbnailUrl
+    const needsDescription = !card.description
+    if (!needsThumbnail && !needsDescription) return
 
-    void fetchWikitabPageSummary(title, signal, 'wikitab-daily-reads-thumbnail')
+    const title = card.title
+    const pageid = cardPageid(card)
+    if (!title || pageid === null) return
+
+    setPending(card.key, {
+      ...(needsThumbnail ? { thumbnail: true } : {}),
+      ...(needsDescription ? { description: true } : {}),
+    })
+
+    void fetchWikitabPageSummary(title, signal, 'wikitab-daily-reads-summary')
       .then((summary) => {
-        if (signal.aborted || !summary?.thumbnailUrl) return
-        const pageid = cardPageid(card)
-        if (pageid === null) return
-        patchCard(pageid, { thumbnailUrl: summary.thumbnailUrl })
+        if (signal.aborted || !summary) return
+        const patch: Partial<WikitabCardData> = {}
+        if (needsThumbnail && summary.thumbnailUrl) patch.thumbnailUrl = summary.thumbnailUrl
+        if (needsDescription && summary.description) patch.description = summary.description
+        if (!Object.keys(patch).length) return
+        patchCard(pageid, patch)
         persistCache()
       })
       .catch((cause) => {
         if (signal.aborted || (cause as Error)?.name === 'AbortError') return
+      })
+      .finally(() => {
+        if (!signal.aborted) setPending(card.key, false)
       })
   }
 
@@ -127,6 +154,7 @@ export function useWikitabDailyReads() {
 
   function clearState(): void {
     items.value = []
+    pendingByKey.value = new Map()
     loading.value = false
     fillingInitial.value = false
     loadingMore.value = false
@@ -167,7 +195,7 @@ export function useWikitabDailyReads() {
       if (isDuplicateCard(card)) continue
 
       items.value = [...items.value, card]
-      scheduleThumbnailBackfill(card, signal ?? new AbortController().signal)
+      scheduleSummaryBackfill(card, signal ?? new AbortController().signal)
       persistCache()
       return card
     }
@@ -283,6 +311,7 @@ export function useWikitabDailyReads() {
     loadingMore.value = false
     error.value = null
     items.value = []
+    pendingByKey.value = new Map()
     loadedSessionKey = key
     hasMore.value = false
 
@@ -350,6 +379,7 @@ export function useWikitabDailyReads() {
 
   function abort(): void {
     controller?.abort()
+    pendingByKey.value = new Map()
     loading.value = false
     fillingInitial.value = false
     loadingMore.value = false
@@ -357,6 +387,7 @@ export function useWikitabDailyReads() {
 
   return {
     items,
+    pendingByKey,
     loading,
     fillingInitial,
     loadingMore,

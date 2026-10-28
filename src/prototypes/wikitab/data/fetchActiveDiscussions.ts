@@ -1,9 +1,10 @@
 import { wikimediaApiFetchHeaders } from '@/config'
-import { cdxIconSpeechBubbles } from '@wikimedia/codex-icons'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 import type { WikitabCardData } from '../sections'
 import { activeDiscussionCategoryLabel } from './activeDiscussionLabels'
+import { feedDiscussionPayloadToCardData } from './wikitabCardPayloadMappers'
+import type { WikitabFeedDiscussionCardPayload } from './wikitabCardPayloadTypes'
 import { EN_WIKI_HOST, articleUrl } from './wikitabHtml'
 
 /** Production enwiki noticeboards from wgPersonalDashboardActiveDiscussionsPages (T420785). */
@@ -60,33 +61,6 @@ function noticeboardUrl(noticeboardPage: string, fragment?: string): string {
   return `${base}#${fragment}`
 }
 
-function parseMediaWikiTimestamp(timestamp: string): Date {
-  const trimmed = timestamp.trim()
-  if (!trimmed.length) return new Date(Number.NaN)
-  if (trimmed.includes('T')) {
-    return new Date(trimmed.endsWith('Z') ? trimmed : `${trimmed}Z`)
-  }
-  return new Date(trimmed.replace(' ', 'T') + 'Z')
-}
-
-function formatRelativeTime(isoTimestamp: string): string {
-  const then = parseMediaWikiTimestamp(isoTimestamp).getTime()
-  if (Number.isNaN(then)) return '—'
-  const diffMs = Date.now() - then
-  if (diffMs < 0) return 'just now'
-
-  const minutes = Math.floor(diffMs / (1000 * 60))
-  const hours = Math.floor(diffMs / (1000 * 60 * 60))
-  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-
-  if (minutes < 1) return 'just now'
-  if (minutes < 60) return `${minutes}m ago`
-  if (hours < 24) return `${hours}h ago`
-  if (days < 30) return `${days}d ago`
-  const months = Math.floor(days / 30)
-  return `${months}mo ago`
-}
-
 function stripHtml(html: string): string {
   if (!html?.trim()) return ''
   const doc = new DOMParser().parseFromString(html, 'text/html')
@@ -114,26 +88,19 @@ function mapThreadToDiscussion(
   }
 }
 
-function formatCommentCount(count: number): string {
-  return `${count} ${count === 1 ? 'comment' : 'comments'}`
+function discussionToPayload(discussion: ActiveDiscussion): WikitabFeedDiscussionCardPayload {
+  return {
+    key: discussion.key,
+    url: noticeboardUrl(discussion.noticeboardPage, discussion.threadId),
+    title: discussion.title,
+    noticeboardTitle: activeDiscussionCategoryLabel(discussion.noticeboardPage),
+    commentCount: discussion.commentCount,
+    latestReplyTimestamp: discussion.latestReplyTimestamp,
+  }
 }
 
 function mapDiscussionToCard(discussion: ActiveDiscussion): WikitabCardData {
-  const relative = formatRelativeTime(discussion.latestReplyTimestamp)
-  return {
-    key: discussion.key,
-    title: discussion.title,
-    description: activeDiscussionCategoryLabel(discussion.noticeboardPage),
-    supportingSignals: [
-      { icon: cdxIconSpeechBubbles, text: formatCommentCount(discussion.commentCount) },
-    ],
-    supportingTextEnd: relative,
-    href: noticeboardUrl(discussion.noticeboardPage, discussion.threadId),
-    linkTitle: discussion.title,
-    threadId: discussion.threadId,
-    noticeboardPage: discussion.noticeboardPage,
-    commentCount: discussion.commentCount,
-  }
+  return feedDiscussionPayloadToCardData(discussionToPayload(discussion))
 }
 
 async function fetchNoticeboardDiscussions(

@@ -3,7 +3,7 @@ import { nextTick, onMounted, onUnmounted, watch, type ComputedRef, type Ref } f
 /**
  * Keeps cards in each visual row the same height — pairs on desktop, the whole
  * carousel on mobile — equal to the tallest card in that row (at least
- * `cardHeight`, the reserved placeholder size from sections.ts).
+ * `cardHeight`, the loading-placeholder floor from `wikitabCardSlotHeights.ts` / sections.ts).
  */
 export function useEqualRowHeights(options: {
   container: Ref<HTMLElement | null>
@@ -12,6 +12,11 @@ export function useEqualRowHeights(options: {
   enabled: ComputedRef<boolean>
   /** Re-run when slot count or readiness changes. */
   watchKeys: ComputedRef<unknown>[]
+  /**
+   * When false, `cardHeight` only floors rows that still hold a loading slot —
+   * resolved cards hug their content (mixed-type lists like Saved).
+   */
+  floorResolvedRows?: boolean
 }): void {
   let observer: ResizeObserver | null = null
   let rafId = 0
@@ -20,6 +25,16 @@ export function useEqualRowHeights(options: {
     const root = options.container.value
     if (!root) return []
     return Array.from(root.querySelectorAll<HTMLElement>(':scope > .wikitab-section__card'))
+  }
+
+  function isLoadingSlot(el: HTMLElement): boolean {
+    return el.matches('.wikitab-card--loading') || !!el.querySelector('.wikitab-card--loading')
+  }
+
+  /** Loading skeletons must not set the row max — only the reserved slot floor. */
+  function heightForRowMax(el: HTMLElement, floor: number): number {
+    if (isLoadingSlot(el)) return floor
+    return el.getBoundingClientRect().height
   }
 
   function equalize(): void {
@@ -37,6 +52,7 @@ export function useEqualRowHeights(options: {
     void items[0].offsetHeight
 
     const floor = options.cardHeight.value
+    const floorResolved = options.floorResolvedRows ?? true
     const cols = options.columns.value
     const rows: HTMLElement[][] =
       cols <= 1
@@ -46,7 +62,8 @@ export function useEqualRowHeights(options: {
           )
 
     for (const row of rows) {
-      const max = Math.max(floor, ...row.map((el) => el.getBoundingClientRect().height))
+      const rowFloor = floorResolved || row.some(isLoadingSlot) ? floor : 0
+      const max = Math.max(rowFloor, ...row.map((el) => heightForRowMax(el, floor)))
       const rowHeight = `${max}px`
       for (const el of row) {
         // Definite height so the bordered CdxCard can fill the slot (not just min-height).
@@ -98,8 +115,12 @@ export function useEqualRowHeights(options: {
   })
 
   watch([options.container, options.columns, options.cardHeight, options.enabled], setup)
-  watch(options.watchKeys, () => {
-    observeCards()
-    scheduleEqualize()
-  })
+  watch(
+    options.watchKeys,
+    () => {
+      observeCards()
+      scheduleEqualize()
+    },
+    { flush: 'post' },
+  )
 }

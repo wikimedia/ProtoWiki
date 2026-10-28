@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, toRef, watch } from 'vue'
+import { computed, nextTick, ref, toRef, watch } from 'vue'
 import {
   CdxDialog,
   CdxIcon,
@@ -16,10 +16,13 @@ import {
   cdxIconReference,
 } from '@wikimedia/codex-icons'
 
-import { formatSearchArticleRelationExplanation } from './data/formatSearchArticleRelation'
+import { formatSearchArticleRelationRationaleHtml } from './data/formatSearchArticleRelation'
 import { highlightSearchQuery } from './data/highlightSearchQuery'
 import type { WikitabSearchArticle } from './data/fetchWikitabSearchArticles'
 import { articleUrl } from './data/wikitabHtml'
+import type { AttributionTrustAndRelevance } from '@/components/attribution/types'
+
+import { WIKITAB_SUPPORTING_ICON_TEXT_LEADING } from './data/wikitabSupportingIconText'
 import { useThumbnailSlotReady } from './useThumbnailSlotReady'
 import { useWikitabSearchArticleAttribution } from './useWikitabSearchArticleAttribution'
 
@@ -28,6 +31,8 @@ const props = defineProps<{
   searchQuery: string
   thumbnailBackfillPending?: boolean
   isArticleSaved: boolean
+  /** When set, supporting signals use these values and the Attribution API is not called. */
+  attributionTrust?: AttributionTrustAndRelevance
 }>()
 
 const emit = defineEmits<{
@@ -35,6 +40,7 @@ const emit = defineEmits<{
 }>()
 
 const articleTitle = toRef(() => props.article.title)
+const attributionTrust = toRef(() => props.attributionTrust)
 const {
   pageViewsLabel,
   referenceCountLabel,
@@ -44,7 +50,7 @@ const {
   lastUpdatedTooltipText,
   loading: attributionLoading,
   showSupporting,
-} = useWikitabSearchArticleAttribution(articleTitle)
+} = useWikitabSearchArticleAttribution(articleTitle, attributionTrust)
 
 const thumbnailUrl = toRef(() => props.article.thumbnailUrl)
 const { showThumbnailPending } = useThumbnailSlotReady(thumbnailUrl)
@@ -81,13 +87,24 @@ const menuItems = computed(() => [
   { value: 'why', label: 'Why am I seeing this?', icon: cdxIconHelpNotice },
 ])
 
-const relationExplanation = computed(() =>
-  formatSearchArticleRelationExplanation(props.article, props.searchQuery),
+const rationaleHtml = computed(
+  () =>
+    props.article.rationaleHtml?.trim() ||
+    formatSearchArticleRelationRationaleHtml(props.article, props.searchQuery),
 )
 
-watch(selection, (value) => {
-  if (value === 'save') emit('toggle-save')
-  if (value === 'why') whyDialogOpen.value = true
+watch(selection, async (value) => {
+  if (value === 'save') {
+    emit('toggle-save')
+    selection.value = null
+    return
+  }
+  if (value === 'why') {
+    selection.value = null
+    await nextTick()
+    whyDialogOpen.value = true
+    return
+  }
   if (value !== null) selection.value = null
 })
 
@@ -114,27 +131,14 @@ const thumbnail = computed(() =>
     <CdxDialog
       v-model:open="whyDialogOpen"
       title="Why am I seeing this?"
-      :use-close-button="true"
+      close-button-label="Close"
       :dismissable="true"
     >
-      <p class="wikitab-search-result-card__why">
-        <template v-if="relationExplanation.kind === 'textMatch'">
-          Your query was found within the
-          <strong>{{ article.title }}</strong> article.
-        </template>
-        <template v-else-if="relationExplanation.kind === 'nearMatch'">
-          <strong>{{ article.title }}</strong> is the nearest match to your query "{{
-            relationExplanation.quotedQuery
-          }}".
-        </template>
-        <template v-else>
-          <strong>{{ article.title }}</strong>
-          {{ relationExplanation.tail }}
-          <template v-if="relationExplanation.seedTitle">
-            <strong>{{ relationExplanation.seedTitle }}</strong>.
-          </template>
-        </template>
-      </p>
+      <p
+        v-if="rationaleHtml"
+        class="wikitab-search-result-card__why"
+        v-html="rationaleHtml"
+      />
     </CdxDialog>
 
     <div
@@ -183,25 +187,24 @@ const thumbnail = computed(() =>
       </p>
       <p
         v-else-if="showSupporting"
-        class="wikitab-search-result-card__supporting cdx-card__text__supporting-text"
+        class="wikitab-search-result-card__supporting cdx-card__text__supporting-text wikitab-supporting-icon-row"
       >
         <span class="wikitab-search-result-card__supporting-start">
           <span
             v-if="pageViewsLabel"
             v-tooltip:top="pageViewsTooltipText ?? undefined"
             class="wikitab-search-result-card__supporting-signal"
+            ><CdxIcon :icon="cdxIconChartLine" size="x-small" />{{ WIKITAB_SUPPORTING_ICON_TEXT_LEADING
+            }}{{ pageViewsLabel }}</span
           >
-            <CdxIcon :icon="cdxIconChartLine" size="x-small" />
-            {{ pageViewsLabel }}
-          </span>
           <span
             v-if="referenceCountLabel"
             v-tooltip:top="referenceCountTooltipText ?? undefined"
             class="wikitab-search-result-card__supporting-signal"
+            ><CdxIcon :icon="cdxIconReference" size="x-small" />{{
+              WIKITAB_SUPPORTING_ICON_TEXT_LEADING
+            }}{{ referenceCountLabel }}</span
           >
-            <CdxIcon :icon="cdxIconReference" size="x-small" />
-            {{ referenceCountLabel }}
-          </span>
         </span>
         <span
           v-if="lastUpdatedLabel"
@@ -339,22 +342,19 @@ const thumbnail = computed(() =>
 }
 
 .wikitab-search-result-card__supporting-start {
-  display: inline-flex;
-  align-items: first baseline;
-  gap: var(--spacing-100);
+  display: inline;
   min-width: 0;
 }
 
 .wikitab-search-result-card__supporting-signal {
   display: inline-flex;
-  align-items: first baseline;
-  gap: var(--spacing-25);
+  align-items: center;
   flex-shrink: 0;
   cursor: default;
 }
 
-.wikitab-search-result-card__supporting :deep(.cdx-icon) {
-  color: inherit;
+.wikitab-search-result-card__supporting-signal + .wikitab-search-result-card__supporting-signal {
+  margin-inline-start: var(--spacing-100);
 }
 
 .wikitab-search-result-card__supporting-end {

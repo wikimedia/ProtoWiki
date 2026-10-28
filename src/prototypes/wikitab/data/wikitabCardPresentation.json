@@ -1,0 +1,68 @@
+{
+  "article": {
+    "descriptionFormat": "plain",
+    "titleLineClamp": 2,
+    "descriptionLineClamp": 2,
+    "thumbnailType": "force",
+    "thumbnailSize": 96,
+    "thumbnailLayout": "inline-start"
+  },
+  "snippet": {
+    "descriptionFormat": "html",
+    "thumbnailType": "optional",
+    "thumbnailSize": 96,
+    "thumbnailLayout": "inline-end"
+  },
+  "discussion": {
+    "descriptionFormat": "plain",
+    "titleLineClamp": 2,
+    "descriptionLineClamp": 2,
+    "thumbnailType": "none",
+    "supportingIcon": "cdxIconSpeechBubbles"
+  },
+  "suggestion": {
+    "descriptionFormat": "plain",
+    "titleLineClamp": 2,
+    "descriptionLineClamp": 2,
+    "thumbnailType": "force",
+    "thumbnailSize": 96,
+    "thumbnailLayout": "inline-start",
+    "supportingIcon": "cdxIconLightbulb"
+  },
+  "image": {
+    "descriptionFormat": "html",
+    "descriptionLineClamp": 4,
+    "thumbnailType": "optional",
+    "thumbnailSize": 96,
+    "thumbnailLayout": "inline-start"
+  },
+  "word": {
+    "descriptionFormat": "html",
+    "thumbnailType": "optional",
+    "thumbnailSize": 96,
+    "thumbnailLayout": "inline-end"
+  },
+  "quote": {
+    "descriptionFormat": "plain",
+    "titleLineClamp": 4,
+    "thumbnailType": "optional",
+    "thumbnailSize": 96,
+    "thumbnailLayout": "inline-end"
+  },
+  "list": {
+    "descriptionFormat": "plain",
+    "titleLineClamp": 2,
+    "descriptionLineClamp": 2,
+    "thumbnailType": "force",
+    "thumbnailSize": 96,
+    "thumbnailLayout": "inline-start"
+  },
+  "edit": {
+    "descriptionFormat": "html",
+    "titleLineClamp": 2,
+    "descriptionLineClamp": 2,
+    "thumbnailType": "optional",
+    "thumbnailSize": 96,
+    "thumbnailLayout": "inline-start"
+  }
+}

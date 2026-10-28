@@ -10,9 +10,15 @@ import {
 } from '@wikimedia/codex-icons'
 
 import { useSkin } from '@/composables/useSkin'
+import { wikitabCardBindProps } from './data/wikitabCardPresentation'
+import { wikitabCardFeedMenuItems } from './data/wikitabCardMenuItems'
 import WikitabCard from './WikitabCard.vue'
 import type { SaveItemPayload } from './data/savedCardHelpers'
-import { WIKITAB_DAILY_READS_MODULE_SPEC, type WikitabCardData } from './sections'
+import {
+  WIKITAB_DAILY_READS_MODULE_SPEC,
+  type WikitabCardData,
+  type WikitabCardLoading,
+} from './sections'
 import { useEqualRowHeights } from './useEqualRowHeights'
 import { usePreventHorizontalSwipeNavigation } from './usePreventHorizontalSwipeNavigation'
 import { useRevealOnScrollEnd } from './useRevealOnScrollEnd'
@@ -21,6 +27,8 @@ const spec = WIKITAB_DAILY_READS_MODULE_SPEC
 
 const props = defineProps<{
   items: WikitabCardData[]
+  /** Card key → fields whose summary backfill is still in flight. */
+  pendingByKey?: Map<string, WikitabCardLoading>
   loading: boolean
   fillingInitial: boolean
   loadingMore: boolean
@@ -102,6 +110,7 @@ useEqualRowHeights({
     computed(() => reserved.value),
     computed(() => props.items.length),
     computed(() => props.loading),
+    computed(() => props.pendingByKey),
   ],
 })
 
@@ -109,16 +118,17 @@ const slots = computed(() => {
   if (isInitialLoading.value) {
     return Array.from({ length: spec.initialCount }, () => ({
       card: undefined as WikitabCardData | undefined,
-      loading: true,
+      loading: true as WikitabCardLoading,
     }))
   }
 
-  return Array.from({ length: reserved.value }, (_, index) => ({
-    card: props.items[index],
-    loading:
-      index >= props.items.length &&
-      (props.fillingInitial || props.loadingMore || needsInitialTopUp.value),
-  }))
+  return Array.from({ length: reserved.value }, (_, index) => {
+    const card = props.items[index]
+    const loading: WikitabCardLoading = card
+      ? (props.pendingByKey?.get(card.key) ?? false)
+      : props.fillingInitial || props.loadingMore || needsInitialTopUp.value
+    return { card, loading }
+  })
 })
 
 watch(
@@ -259,18 +269,23 @@ function revealMore(): void {
       <WikitabCard
         v-for="(slot, index) in slots"
         :key="slot.card?.key ?? index"
-        class="wikitab-daily-reads-section__card"
-        :variant="spec.variant"
-        :height="spec.cardHeight"
-        :thumbnail-size="spec.thumbnailSize"
-        :card="slot.card"
-        :supporting-icon="spec.supportingIcon"
-        :loading="slot.loading"
-        :show-article-menu="!slot.loading && !!slot.card"
-        :hide-menu-section-heading="!slot.loading && slot.card ? spec.heading : undefined"
-        :is-saved="slot.card ? isCardSaved(slot.card.key) : false"
+        class="wikitab-daily-reads-section__card wikitab-section__card"
+        v-bind="
+          wikitabCardBindProps(spec.primitive, {
+            supportingIcon: spec.supportingIcon,
+            card: slot.card,
+            loading: slot.loading,
+            menu:
+              slot.loading !== true && slot.card
+                ? wikitabCardFeedMenuItems({
+                    save: { isSaved: isCardSaved(slot.card.key) },
+                    hideFromHeading: spec.heading,
+                  })
+                : undefined,
+          })
+        "
         @hide-article="emit('hide-article', $event)"
-        @toggle-save="slot.card && emit('toggle-save', { kind: 'article', card: slot.card })"
+        @toggle-save="slot.card && emit('toggle-save', { primitive: 'article', card: slot.card })"
       />
       <div ref="sentinel" class="wikitab-daily-reads-section__sentinel" aria-hidden="true" />
     </div>

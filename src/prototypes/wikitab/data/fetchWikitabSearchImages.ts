@@ -9,6 +9,7 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import { normalizeFeedHtml, unwrapLinksInHtml } from './wikitabHtml'
+import type { WikitabSeedArticle } from './wikitabSeedArticle'
 
 const COMMONS_HOST = 'commons.wikimedia.org'
 const COMMONS_API = `https://${COMMONS_HOST}/w/api.php`
@@ -35,11 +36,14 @@ export interface WikitabSearchImage {
   thumbnailUrl: string
   filePageUrl: string
   mime: string
-  licenseType: string
+  license: string
   licenseUrl: string
-  artistHtml: string
+  /** Plain-text creator credit from Commons Artist metadata (API HTML stripped). */
+  credit: string
   /** Plain-text caption from ImageDescription / ObjectName — used for saved card titles. */
-  description: string
+  caption: string
+  /** The search query's top title match — attached by the Images tab, not the fetch. */
+  seedArticle?: WikitabSeedArticle
 }
 
 type ExtMetadataField = { value?: string }
@@ -62,7 +66,7 @@ function htmlToPlainText(html: string): string {
   return doc.body.textContent?.replace(/\s+/g, ' ').trim() ?? ''
 }
 
-function parseArtistHtml(raw: string): string {
+function parseImageCredit(raw: string): string {
   if (!raw) return ''
   return htmlToPlainText(unwrapLinksInHtml(normalizeFeedHtml(raw)))
 }
@@ -132,10 +136,10 @@ function parseImagePage(page: {
   if (!thumbnailUrl) return null
 
   const extmetadata = info.extmetadata ?? {}
-  const licenseType = parseLicenseType(extMetadataValue(extmetadata.LicenseShortName))
+  const license = parseLicenseType(extMetadataValue(extmetadata.LicenseShortName))
   const licenseUrl = normalizeUrl(extMetadataValue(extmetadata.LicenseUrl)) ?? ''
-  const artistHtml = parseArtistHtml(extMetadataValue(extmetadata.Artist))
-  const description = resolveImageDescription(
+  const credit = parseImageCredit(extMetadataValue(extmetadata.Artist))
+  const caption = resolveImageDescription(
     extMetadataValue(extmetadata.ImageDescription),
     extMetadataValue(extmetadata.ObjectName),
     page.title,
@@ -149,10 +153,10 @@ function parseImagePage(page: {
     thumbnailUrl,
     filePageUrl: commonsFilePageUrl(page.title),
     mime,
-    licenseType,
+    license,
     licenseUrl,
-    artistHtml,
-    description,
+    credit,
+    caption,
   }
 }
 
@@ -161,22 +165,22 @@ export function imageDisplayTitle(title: string): string {
   return trimmed.startsWith('File:') ? trimmed.slice(5) : trimmed
 }
 
-export type ImageCardTitleFields = Pick<WikitabSearchImage, 'title' | 'description'>
+export type ImageCardTitleFields = Pick<WikitabSearchImage, 'title' | 'caption'>
 
-/** Human-readable card title — caption/description when available, else file name. */
+/** Human-readable card title — caption when available, else file name. */
 export function imageCardTitle(fields: ImageCardTitleFields): string {
-  const caption = fields.description.trim()
-  if (caption) return caption
+  const captionText = fields.caption.trim()
+  if (captionText) return captionText
   return imageDisplayTitle(fields.title)
 }
 
-export type ImageAttributionFields = Pick<WikitabSearchImage, 'licenseType' | 'artistHtml'>
+export type ImageAttributionFields = Pick<WikitabSearchImage, 'license' | 'credit'>
 
-function imageArtistText({ licenseType, artistHtml }: ImageAttributionFields): string {
-  let artist = artistHtml
-  if (licenseType && artist) {
+function imageCreditText({ license = '', credit = '' }: ImageAttributionFields): string {
+  let artist = credit
+  if (license && artist) {
     const licensePrefix = new RegExp(
-      `^${licenseType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*,?\\s*`,
+      `^${license.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*,?\\s*`,
       'i',
     )
     artist = artist.replace(licensePrefix, '').trim()
@@ -185,15 +189,15 @@ function imageArtistText({ licenseType, artistHtml }: ImageAttributionFields): s
 }
 
 export function formatImageAttribution(fields: ImageAttributionFields): string {
-  const license = fields.licenseType.trim()
-  const artist = imageArtistText(fields)
-  if (license && artist) return `${license}, ${artist}`
-  return license || artist
+  const licenseLabel = (fields.license ?? '').trim()
+  const artist = imageCreditText(fields)
+  if (licenseLabel && artist) return `${licenseLabel}, ${artist}`
+  return licenseLabel || artist
 }
 
 export function imageHasAttribution(image: WikitabSearchImage | null | undefined): boolean {
   if (!image) return false
-  return Boolean(image.licenseType || image.artistHtml)
+  return Boolean(image.license || image.credit)
 }
 
 export type WikitabSearchImagesContinue = Record<string, string>

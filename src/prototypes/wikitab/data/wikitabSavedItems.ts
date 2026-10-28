@@ -1,104 +1,142 @@
 import type { EditorKind } from './fetchWikitabSearchActivity'
-import {
-  isWikitabSavedIconId,
-  type WikitabSavedIconId,
-} from './wikitabSavedIcons'
-import { articleTitleKey } from './wikitabHtml'
+import type { WikitabCardPrimitiveId } from './wikitabCardTypeLinks'
+import { articleTitleKey, discussionThreadIdFromUrl } from './wikitabHtml'
+import { parseSeedArticle, type WikitabSeedArticle } from './wikitabSeedArticle'
 
 export type WikitabSavedItemType =
   | 'article'
   | 'snippet'
+  | 'word'
+  | 'quote'
+  | 'list'
   | 'suggestion'
   | 'change'
   | 'discussion'
   | 'image'
 
-export type WikitabSnippetSource = 'dyk' | 'otd' | 'news'
+const WIKITAB_CARD_PRIMITIVE_IDS = new Set<WikitabCardPrimitiveId>([
+  'article',
+  'snippet',
+  'discussion',
+  'suggestion',
+  'image',
+  'word',
+  'quote',
+  'list',
+  'edit',
+])
 
-export interface WikitabSavedCardData {
-  key: string
-  href?: string
-  linkTitle?: string
-  title?: string
-  description?: string
-  html?: string
-  thumbnailUrl?: string
-  thumbnailTitle?: string
-  supportingText?: string
-  supportingSignals?: { icon: WikitabSavedIconId; text: string }[]
-  supportingTextEnd?: string
+/** Maps persisted `type` to the card primitive used for presentation. */
+export function wikitabSavedItemTypeToPrimitive(type: WikitabSavedItemType): WikitabCardPrimitiveId {
+  if (type === 'change') return 'edit'
+  return type
 }
 
-export interface WikitabSavedSnippetPresentation {
-  variant: 'text'
-  cardHeight: number
-  thumbnailSize: number
-  fullHook: true
-  supportingIcon?: WikitabSavedIconId
+export function wikitabSavedItemPrimitive(
+  item: Pick<WikitabSavedItem, 'primitive'>,
+): WikitabCardPrimitiveId {
+  return item.primitive
+}
+
+export function isWikitabSavedItemPrimitive(raw: unknown): raw is WikitabCardPrimitiveId {
+  return typeof raw === 'string' && WIKITAB_CARD_PRIMITIVE_IDS.has(raw as WikitabCardPrimitiveId)
 }
 
 export interface WikitabSavedItemBase {
   id: string
   type: WikitabSavedItemType
+  /** Card primitive — drives `primitive-*` presentation when re-rendered in Saved. */
+  primitive: WikitabCardPrimitiveId
   savedAt: number
+  /** Identity for dedupe / hide — not necessarily an article. See {@link seedArticle}. */
   articleTitleKey: string
   articleTitle: string
+  /** The enwiki article this save contributes to saved-driven modules, if any. */
+  seedArticle?: WikitabSeedArticle
 }
 
 export interface WikitabSavedArticleItem extends WikitabSavedItemBase {
   type: 'article'
   title: string
-  href: string
+  url: string
   description?: string
   thumbnailUrl?: string
-  supportingSignals?: WikitabSavedCardData['supportingSignals']
+  supportingText?: string
+  supportingHtml?: string
   supportingTextEnd?: string
 }
 
+export type WikitabSavedSnippetSource = 'dyk' | 'news'
+
+/** A DYK hook or In the news story, saved as the snippet itself. */
 export interface WikitabSavedSnippetItem extends WikitabSavedItemBase {
   type: 'snippet'
-  source: WikitabSnippetSource
-  presentation: WikitabSavedSnippetPresentation
-  card: WikitabSavedCardData
+  source: WikitabSavedSnippetSource
+  /** Hook / story HTML with inline links. */
+  snippetHtml: string
+  url: string
+  thumbnailUrl?: string
+}
+
+export interface WikitabSavedWordItem extends WikitabSavedItemBase {
+  type: 'word'
+  word: string
+  url: string
+  /** Wiktionary gloss — usually HTML with inline links. */
+  description?: string
+}
+
+export interface WikitabSavedQuoteItem extends WikitabSavedItemBase {
+  type: 'quote'
+  url: string
+  quoteText: string
+  personName?: string
+}
+
+export interface WikitabSavedListItem extends WikitabSavedItemBase {
+  type: 'list'
+  listTitle: string
+  url: string
+  description?: string
+  thumbnailUrl?: string
 }
 
 export interface WikitabSavedSuggestionItem extends WikitabSavedItemBase {
   type: 'suggestion'
   pageid: number
-  need: string
+  task: string
   suggestionLabel: string
   body: string
   description?: string
   thumbnailUrl?: string
-  editHref: string
+  editUrl: string
 }
 
 export interface WikitabSavedChangeItem extends WikitabSavedItemBase {
   type: 'change'
-  revid: number
+  revisionId: number
   pageid: number
   editSummary: string
   diffUrl: string
-  thumbnailUrl?: string
-  charsAdded?: number
-  charsRemoved?: number
+  delta?: number
   editorName: string
   editorKind: EditorKind
   editedRelative: string
+  /** Revision time when saved from search activity. */
+  editedTimestamp?: string
   highRevertRisk?: boolean
-  isLatest?: boolean
+  isLatestRevision?: boolean
   reverted?: boolean
 }
 
 export interface WikitabSavedDiscussionItem extends WikitabSavedItemBase {
   type: 'discussion'
-  threadId: string
   title: string
   noticeboardPage: string
   noticeboardLabel: string
   commentCount: number
   latestReplyRelative: string
-  href: string
+  url: string
 }
 
 export interface WikitabSavedImageItem extends WikitabSavedItemBase {
@@ -112,17 +150,32 @@ export interface WikitabSavedImageItem extends WikitabSavedItemBase {
   filePageUrl: string
   licenseType: string
   artistHtml: string
+  /** Featured TFP/POTD hook HTML when saved from spotlight. */
+  captionHtml?: string
 }
 
 export type WikitabSavedItem =
   | WikitabSavedArticleItem
   | WikitabSavedSnippetItem
+  | WikitabSavedWordItem
+  | WikitabSavedQuoteItem
+  | WikitabSavedListItem
   | WikitabSavedSuggestionItem
   | WikitabSavedChangeItem
   | WikitabSavedDiscussionItem
   | WikitabSavedImageItem
 
-const SNIPPET_SOURCES = new Set<WikitabSnippetSource>(['dyk', 'otd', 'news'])
+const VALID_SAVED_ITEM_TYPES = new Set<string>([
+  'article',
+  'snippet',
+  'word',
+  'quote',
+  'list',
+  'suggestion',
+  'change',
+  'discussion',
+  'image',
+])
 
 const EDITOR_KINDS = new Set<EditorKind>(['bot', 'temporary', 'user', 'anonymous'])
 
@@ -137,78 +190,72 @@ function num(record: Record<string, unknown>, field: string): number | undefined
   return undefined
 }
 
-export function normalizeSavedCardData(raw: unknown): WikitabSavedCardData | null {
-  if (typeof raw !== 'object' || raw === null) return null
-  const record = raw as Record<string, unknown>
-  const key = str(record, 'key')
-  if (!key) return null
-
-  let supportingSignals: WikitabSavedCardData['supportingSignals']
-  if (Array.isArray(record.supportingSignals)) {
-    supportingSignals = []
-    for (const item of record.supportingSignals) {
-      if (typeof item !== 'object' || item === null) continue
-      const signal = item as Record<string, unknown>
-      const text = typeof signal.text === 'string' ? signal.text.trim() : ''
-      const iconRaw = typeof signal.icon === 'string' ? signal.icon.trim() : ''
-      if (!text || !isWikitabSavedIconId(iconRaw)) continue
-      supportingSignals.push({ icon: iconRaw, text })
-    }
-    if (!supportingSignals.length) supportingSignals = undefined
-  }
-
-  return {
-    key,
-    href: str(record, 'href'),
-    linkTitle: str(record, 'linkTitle'),
-    title: str(record, 'title'),
-    description: str(record, 'description'),
-    html: str(record, 'html'),
-    thumbnailUrl: str(record, 'thumbnailUrl'),
-    thumbnailTitle: str(record, 'thumbnailTitle'),
-    supportingText: str(record, 'supportingText'),
-    supportingSignals,
-    supportingTextEnd: str(record, 'supportingTextEnd'),
-  }
-}
-
-function normalizeSnippetPresentation(raw: unknown): WikitabSavedSnippetPresentation | null {
-  if (typeof raw !== 'object' || raw === null) return null
-  const record = raw as Record<string, unknown>
-  const cardHeight = num(record, 'cardHeight')
-  const thumbnailSize = num(record, 'thumbnailSize')
-  if (cardHeight === undefined || thumbnailSize === undefined) return null
-
-  const supportingIconRaw = str(record, 'supportingIcon')
-  const supportingIcon =
-    supportingIconRaw && isWikitabSavedIconId(supportingIconRaw) ? supportingIconRaw : undefined
-
-  return {
-    variant: 'text',
-    cardHeight,
-    thumbnailSize,
-    fullHook: true,
-    supportingIcon,
-  }
-}
-
 function normalizeSavedItemBase(record: Record<string, unknown>): WikitabSavedItemBase | null {
   const id = str(record, 'id')
-  const articleTitle = str(record, 'articleTitle')?.replace(/_/g, ' ') ?? ''
-  const articleTitleKeyValue = articleTitleKey(
-    str(record, 'articleTitleKey') ?? articleTitle,
-  )
-  const savedAt = num(record, 'savedAt') ?? Date.now()
+  const articleTitle = str(record, 'articleTitle')
+  const articleTitleKeyValue = articleTitleKey(str(record, 'articleTitleKey') ?? '')
+  const savedAt = num(record, 'savedAt')
   const typeRaw = str(record, 'type')
+  const primitive = record.primitive
 
-  if (!id || !articleTitleKeyValue || !articleTitle || !typeRaw) return null
+  if (!id || !articleTitleKeyValue || !articleTitle || savedAt === undefined) return null
+  if (!typeRaw || !VALID_SAVED_ITEM_TYPES.has(typeRaw)) return null
+  if (!isWikitabSavedItemPrimitive(primitive)) return null
 
   return {
     id,
     type: typeRaw as WikitabSavedItemType,
+    primitive,
     savedAt,
     articleTitleKey: articleTitleKeyValue,
     articleTitle,
+    seedArticle: parseSeedArticle(record.seedArticle),
+  }
+}
+
+function normalizeWordItem(record: Record<string, unknown>): WikitabSavedWordItem | null {
+  const base = normalizeSavedItemBase(record)
+  if (!base || base.type !== 'word') return null
+  const word = str(record, 'word')
+  const url = str(record, 'url')
+  if (!word || !url) return null
+  return {
+    ...base,
+    type: 'word',
+    word,
+    url,
+    description: str(record, 'description'),
+  }
+}
+
+function normalizeQuoteItem(record: Record<string, unknown>): WikitabSavedQuoteItem | null {
+  const base = normalizeSavedItemBase(record)
+  if (!base || base.type !== 'quote') return null
+  const url = str(record, 'url')
+  const quoteText = str(record, 'quoteText')
+  if (!url || !quoteText) return null
+  return {
+    ...base,
+    type: 'quote',
+    url,
+    quoteText,
+    personName: str(record, 'personName'),
+  }
+}
+
+function normalizeListItem(record: Record<string, unknown>): WikitabSavedListItem | null {
+  const base = normalizeSavedItemBase(record)
+  if (!base || base.type !== 'list') return null
+  const listTitle = str(record, 'listTitle')
+  const url = str(record, 'url')
+  if (!listTitle || !url) return null
+  return {
+    ...base,
+    type: 'list',
+    listTitle,
+    url,
+    description: str(record, 'description'),
+    thumbnailUrl: str(record, 'thumbnailUrl'),
   }
 }
 
@@ -216,40 +263,41 @@ function normalizeArticleItem(record: Record<string, unknown>): WikitabSavedArti
   const base = normalizeSavedItemBase(record)
   if (!base || base.type !== 'article') return null
 
-  const title = str(record, 'title') ?? base.articleTitle
-  const href = str(record, 'href')
-  if (!href) return null
+  const title = str(record, 'title')
+  const url = str(record, 'url')
+  if (!title || !url) return null
 
   return {
     ...base,
     type: 'article',
     title,
-    href,
+    url,
     description: str(record, 'description'),
     thumbnailUrl: str(record, 'thumbnailUrl'),
-    supportingSignals: normalizeSavedCardData({ supportingSignals: record.supportingSignals })
-      ?.supportingSignals,
+    supportingText: str(record, 'supportingText'),
+    supportingHtml: str(record, 'supportingHtml'),
     supportingTextEnd: str(record, 'supportingTextEnd'),
   }
 }
+
+const SNIPPET_SOURCES = new Set<WikitabSavedSnippetSource>(['dyk', 'news'])
 
 function normalizeSnippetItem(record: Record<string, unknown>): WikitabSavedSnippetItem | null {
   const base = normalizeSavedItemBase(record)
   if (!base || base.type !== 'snippet') return null
 
-  const source = str(record, 'source') as WikitabSnippetSource | undefined
-  if (!source || !SNIPPET_SOURCES.has(source)) return null
-
-  const presentation = normalizeSnippetPresentation(record.presentation)
-  const card = normalizeSavedCardData(record.card)
-  if (!presentation || !card) return null
+  const source = str(record, 'source') as WikitabSavedSnippetSource | undefined
+  const snippetHtml = str(record, 'snippetHtml')
+  const url = str(record, 'url')
+  if (!source || !SNIPPET_SOURCES.has(source) || !snippetHtml || !url) return null
 
   return {
     ...base,
     type: 'snippet',
     source,
-    presentation,
-    card: { ...card, key: card.key || base.id },
+    snippetHtml,
+    url,
+    thumbnailUrl: str(record, 'thumbnailUrl'),
   }
 }
 
@@ -258,22 +306,22 @@ function normalizeSuggestionItem(record: Record<string, unknown>): WikitabSavedS
   if (!base || base.type !== 'suggestion') return null
 
   const pageid = num(record, 'pageid')
-  const need = str(record, 'need')
+  const task = str(record, 'task')
   const suggestionLabel = str(record, 'suggestionLabel')
   const body = str(record, 'body') ?? ''
-  const editHref = str(record, 'editHref')
-  if (pageid === undefined || !need || !suggestionLabel || !editHref) return null
+  const editUrl = str(record, 'editUrl')
+  if (pageid === undefined || !task || !suggestionLabel || !editUrl) return null
 
   return {
     ...base,
     type: 'suggestion',
     pageid,
-    need,
+    task,
     suggestionLabel,
     body,
     description: str(record, 'description'),
     thumbnailUrl: str(record, 'thumbnailUrl'),
-    editHref,
+    editUrl,
   }
 }
 
@@ -281,7 +329,7 @@ function normalizeChangeItem(record: Record<string, unknown>): WikitabSavedChang
   const base = normalizeSavedItemBase(record)
   if (!base || base.type !== 'change') return null
 
-  const revid = num(record, 'revid')
+  const revisionId = num(record, 'revisionId')
   const pageid = num(record, 'pageid')
   const editSummary = str(record, 'editSummary') ?? ''
   const diffUrl = str(record, 'diffUrl')
@@ -289,7 +337,7 @@ function normalizeChangeItem(record: Record<string, unknown>): WikitabSavedChang
   const editorKindRaw = str(record, 'editorKind')
   const editedRelative = str(record, 'editedRelative') ?? ''
   if (
-    revid === undefined ||
+    revisionId === undefined ||
     pageid === undefined ||
     !diffUrl ||
     !editorName ||
@@ -302,18 +350,17 @@ function normalizeChangeItem(record: Record<string, unknown>): WikitabSavedChang
   return {
     ...base,
     type: 'change',
-    revid,
+    revisionId,
     pageid,
     editSummary,
     diffUrl,
-    thumbnailUrl: str(record, 'thumbnailUrl'),
-    charsAdded: num(record, 'charsAdded'),
-    charsRemoved: num(record, 'charsRemoved'),
+    delta: num(record, 'delta'),
     editorName,
     editorKind: editorKindRaw as EditorKind,
     editedRelative,
+    editedTimestamp: str(record, 'editedTimestamp'),
     highRevertRisk: record.highRevertRisk === true ? true : undefined,
-    isLatest: record.isLatest === true ? true : undefined,
+    isLatestRevision: record.isLatestRevision === true ? true : undefined,
     reverted: record.reverted === true ? true : undefined,
   }
 }
@@ -326,7 +373,11 @@ function normalizeImageItem(record: Record<string, unknown>): WikitabSavedImageI
   const title = str(record, 'title')
   const thumbnailUrl = str(record, 'thumbnailUrl')
   const filePageUrl = str(record, 'filePageUrl')
-  if (pageid === undefined || !title || !thumbnailUrl || !filePageUrl) return null
+  const isSpotlightFallback =
+    base.id.startsWith('image:spotlight:') || base.id.startsWith('image:featured:')
+  if (pageid === undefined || !title || !thumbnailUrl) return null
+  if (!filePageUrl && !isSpotlightFallback) return null
+  if (pageid <= 0 && !isSpotlightFallback) return null
 
   return {
     ...base,
@@ -334,10 +385,11 @@ function normalizeImageItem(record: Record<string, unknown>): WikitabSavedImageI
     pageid,
     title,
     thumbnailUrl,
-    filePageUrl,
+    filePageUrl: filePageUrl ?? '',
     description: str(record, 'description') ?? '',
     licenseType: str(record, 'licenseType') ?? '',
     artistHtml: str(record, 'artistHtml') ?? '',
+    captionHtml: str(record, 'captionHtml'),
   }
 }
 
@@ -345,20 +397,19 @@ function normalizeDiscussionItem(record: Record<string, unknown>): WikitabSavedD
   const base = normalizeSavedItemBase(record)
   if (!base || base.type !== 'discussion') return null
 
-  const threadId = str(record, 'threadId')
   const title = str(record, 'title')
   const noticeboardPage = str(record, 'noticeboardPage')
   const noticeboardLabel = str(record, 'noticeboardLabel')
   const commentCount = num(record, 'commentCount')
   const latestReplyRelative = str(record, 'latestReplyRelative') ?? ''
-  const href = str(record, 'href')
+  const url = str(record, 'url')
   if (
-    !threadId ||
+    !discussionThreadIdFromUrl(url) ||
     !title ||
     !noticeboardPage ||
     !noticeboardLabel ||
     commentCount === undefined ||
-    !href
+    !url
   ) {
     return null
   }
@@ -366,13 +417,12 @@ function normalizeDiscussionItem(record: Record<string, unknown>): WikitabSavedD
   return {
     ...base,
     type: 'discussion',
-    threadId,
     title,
     noticeboardPage,
     noticeboardLabel,
     commentCount,
     latestReplyRelative,
-    href,
+    url,
   }
 }
 
@@ -386,6 +436,12 @@ function normalizeSingleSavedItem(raw: unknown): WikitabSavedItem | null {
       return normalizeArticleItem(record)
     case 'snippet':
       return normalizeSnippetItem(record)
+    case 'word':
+      return normalizeWordItem(record)
+    case 'quote':
+      return normalizeQuoteItem(record)
+    case 'list':
+      return normalizeListItem(record)
     case 'suggestion':
       return normalizeSuggestionItem(record)
     case 'change':
@@ -404,15 +460,41 @@ export function normalizeSavedItems(raw: unknown): WikitabSavedItem[] {
   if (!Array.isArray(raw)) return []
 
   const byId = new Map<string, WikitabSavedItem>()
+  let dropped = 0
 
   for (const item of raw) {
     const normalized = normalizeSingleSavedItem(item)
-    if (!normalized) continue
+    if (!normalized) {
+      dropped += 1
+      continue
+    }
 
     const existing = byId.get(normalized.id)
     if (existing && existing.savedAt >= normalized.savedAt) continue
 
     byId.set(normalized.id, normalized)
+  }
+
+  if (import.meta.env.DEV && dropped > 0) {
+    console.warn(`[wikitab] ${dropped} saved item(s) could not be normalized`)
+  }
+
+  return [...byId.values()].sort((a, b) => b.savedAt - a.savedAt)
+}
+
+/** Merge lists; duplicate ids keep the entry with the latest `savedAt`. */
+export function mergeSavedItemsById(
+  ...lists: readonly (readonly WikitabSavedItem[])[]
+): WikitabSavedItem[] {
+  const byId = new Map<string, WikitabSavedItem>()
+
+  for (const list of lists) {
+    for (const item of list) {
+      const existing = byId.get(item.id)
+      if (!existing || existing.savedAt < item.savedAt) {
+        byId.set(item.id, item)
+      }
+    }
   }
 
   return [...byId.values()].sort((a, b) => b.savedAt - a.savedAt)
@@ -421,19 +503,11 @@ export function normalizeSavedItems(raw: unknown): WikitabSavedItem[] {
 export function cloneSavedItem(item: WikitabSavedItem): WikitabSavedItem {
   switch (item.type) {
     case 'article':
-      return {
-        ...item,
-        supportingSignals: item.supportingSignals?.map((signal) => ({ ...signal })),
-      }
+      return { ...item }
     case 'snippet':
-      return {
-        ...item,
-        presentation: { ...item.presentation },
-        card: {
-          ...item.card,
-          supportingSignals: item.card.supportingSignals?.map((signal) => ({ ...signal })),
-        },
-      }
+    case 'word':
+    case 'quote':
+    case 'list':
     case 'suggestion':
     case 'change':
     case 'discussion':
@@ -450,13 +524,14 @@ export function cloneSavedItems(items: readonly WikitabSavedItem[]): WikitabSave
 
 export function savedItemThumbnailUrl(item: WikitabSavedItem): string | undefined {
   if (item.type === 'article') return item.thumbnailUrl
+  if (item.type === 'snippet') return item.thumbnailUrl
   if (item.type === 'suggestion') return item.thumbnailUrl
-  if (item.type === 'snippet') return item.card.thumbnailUrl
-  if (item.type === 'change') return item.thumbnailUrl
+  if (item.type === 'list') return item.thumbnailUrl
   if (item.type === 'image') return item.thumbnailUrl
   return undefined
 }
 
-export function savedItemContributesArticleSeed(item: WikitabSavedItem): boolean {
-  return item.type === 'article' || item.type === 'snippet' || item.type === 'suggestion'
+/** The article this save feeds into saved-driven modules. */
+export function savedItemSeedArticle(item: WikitabSavedItem): WikitabSeedArticle | undefined {
+  return item.seedArticle
 }

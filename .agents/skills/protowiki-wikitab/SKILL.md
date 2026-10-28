@@ -16,10 +16,9 @@ from `?skin=` and the viewport at boot (see
 
 ## WIKITAB wordmark
 
-Hero wordmark: `WikitabWordmark.vue` — static **W-tabbed** SVG at
-`src/prototypes/wikitab/assets/wordmark/W-tabbed.svg` (140×43 viewBox). Source
-export: `public/images/W-tabbed.svg`. Re-copy or normalize manually when the
-Figma asset changes.
+Hero wordmark: `WikitabWordmark.vue` — static **`wikitab-wordmark`** SVG from
+`public/images/wikitab-wordmark.svg` (108×46 viewBox). Update that file when the
+Figma export changes.
 
 ## The section registry is the source of truth
 
@@ -31,12 +30,11 @@ never in a component:
 | --------------- | -------------------------------------------------------------------- |
 | `initialCount`  | Slots shown before any paging (4). Desktop renders these 2×2.         |
 | `pageSize`      | How many more one reveal adds (6).                                    |
-| `cardHeight`    | Placeholder slot height (px) and row floor. Real cards grow taller when content needs it; rows equalize via `useEqualRowHeights`. |
-| `variant`       | `thumbnail` (Trending, Birthdays — always shows thumbnail; thumbnail-slot loading) or `text` (Active discussions, On this day, DYK, news — optional thumbnail; full-card loading). See [Loading modes](#loading-modes). |
-| `thumbnailSize` | Thumbnail edge in px. Must fit inside `cardHeight`.                   |
-| `fullHook`      | Text variant only: no line-clamp; card grows past `cardHeight` (min). On this day, Did you know, and In the news. |
+| `primitive`     | Which card primitive the section's cards are (`article`, `snippet`, `discussion`, …). All layout comes from that primitive — see [Card presentation](#card-presentation). |
+| `cardHeight`    | Placeholder slot height (px) and row floor — the primitive's row in `wikitabCardSlotHeights.ts`. Real cards grow taller when content needs it; rows equalize via `useEqualRowHeights`. |
+| `supportingIcon` | Optional editable glyph the section sets on its primitive (Trending `cdxIconChartLine`, Birthdays `cdxIconCalendar`, Daily reads `cdxIconLink`). Only on primitives that don't pin one. |
 
-`cardHeight` and `thumbnailSize` are coupled: a 96px thumbnail needs a 122px card
+`cardHeight` and the primitive's `thumbnailSize` are coupled: a 96px thumbnail needs a 122px card
 (96 + 12px padding either side + 1px border), and a 40px one fits a 98px card.
 Change one without the other and the thumbnail either clips or floats in space.
 Trending and Birthdays use 122/96 thumbnail cards; On this day, Did you know, and In the news use the same 122/96 text-card layout (thumbnail only when one resolves). Active discussions uses a 98px text card with no thumbnail column.
@@ -48,8 +46,8 @@ This is the point of the prototype, so treat it as load-bearing.
 The heading and `…` button paint immediately. Each section then reserves exactly
 `initialCount` slots at exactly `cardHeight` — flat
 `background-color-neutral-subtle` blocks with **no border** — and "Show more"
-renders in `color-disabled`. How a slot looks while its page resolves depends
-on the section's **`variant`** in `sections.ts` (see [Loading modes](#loading-modes)).
+renders in `color-disabled`. Each slot then paints **as soon as its own data is
+known**, field by field (see [Loading states](#loading-states)).
 
 Four details make it actually not jump. Breaking any one of them reintroduces
 shift:
@@ -57,51 +55,93 @@ shift:
 1. **Loading placeholders use exact `cardHeight`,** not `min-height`. Real
    cards use `min-height: cardHeight` and grow with content; `useEqualRowHeights`
    keeps cards in the same row matched to the tallest. Clamped sections
-   (Trending, Birthdays) line-clamp title/description; `fullHook` sections
-   (On this day, Did you know, In the news) show the full hook with no clamp.
-2. **A page is only "ready" once its thumbnails have decoded** — see
-   `preloadImages.ts`, which preloads via `new Image()` with a 1.5s cap so one
-   dead image can't hold a slot open.
+   (Trending, Birthdays) line-clamp title/description; sections without
+   `descriptionLineClamp` (On this day, Did you know, In the news) show the full hook.
+2. **Optional-thumbnail cards stay whole skeletons until it is known whether they
+   have an image** — a thumbnail column appearing after the text painted would
+   reflow it. Forced-thumbnail cards paint text immediately and skeleton only the
+   (already reserved) image column.
 3. **The error state keeps the reserved height** rather than collapsing.
 4. **The "Show more" row is always rendered,** even when a section is exhausted
    and the control inside it is gone. Otherwise the sections below shift up the
    moment a short section finishes loading.
 
-`useSectionReveal.ts` expresses the contract as two numbers:
+`useSectionReveal.ts` expresses the contract per slot:
 
 - `reserved` — how many slots are on screen. Raised **immediately** on reveal.
-- `ready` — how many of them have fully resolved (thumbnails decoded, and for
-  DYK any per-hook summary fetch finished).
+- `slotLoading(i)` — `true` while slot `i` has no item, `{ thumbnail: true }`
+  while its DYK-style thumbnail lookup (`resolveDykThumbnails.ts`, resolved per
+  card) is in flight, `false` once complete.
+- `slotCard(i)` — the item, carrying any looked-up thumbnail.
 
-A slot at index `i` is `loading` when `i >= ready`.
+There is no page-level "ready" gate: thumbnail **decode** is tracked per card by
+`WikitabCard` itself (`useThumbnailSlotReady.ts`, 1.5s cap).
 
-### Loading modes
+### Loading states
 
-Controlled by `WikitabCardVariant` in the section registry — **do not** branch
-on section id in components; add or change a `variant` in `sections.ts` instead.
+`WikitabCard`'s `loading` prop (`WikitabCardLoading` in `sections.ts`) is the
+**only** way to show a skeleton for a `WikitabCard` — there is no separate
+skeleton component for it.
 
-| Variant | Sections | Thumbnail column | While `loading` |
-| ------- | -------- | ---------------- | --------------- |
-| `thumbnail` | Trending, Birthdays | Always — every item carries a feed thumbnail (or one fetched for the lead page) | **Thumbnail-slot loading:** card shell + title/description paint as soon as feed data lands; only the image area is a flat `background-color-neutral-subtle` block at `thumbnailSize` (no Codex image icon) until decode finishes. |
-| `text` | Active discussions, On this day, Did you know, In the news | **Only when a URL resolves** — omit the column entirely if there is no image | **Full-card loading:** the whole slot stays the borderless neutral skeleton until the page is ready. Never show an empty thumbnail column while summaries are fetched or while "no thumbnail" is still being determined. |
+| `loading` | Renders |
+| --------- | ------- |
+| `true` (or no `card` yet) | The flat borderless reserved block at `loadingHeight` (`wikitabCardSlotHeights.ts`; `wikitabCardBindProps` fills it in). |
+| `{ description: true }` | The real card; only the description is skeleton lines (`descriptionLineClamp` lines, default 2). |
+| `{ title, description, supporting, supportingEnd, thumbnail, chips }` | Any mix — each flagged field is skeletoned, everything else renders from `card`. `supporting` covers the whole supporting row; `supportingEnd` only its trailing `supportingTextEnd`. Description is always two skeleton lines (whatever the clamp); chips are one bar. Menu and overlay link hide while `title` loads. |
+| `false` / omitted | The real card. The thumbnail column still skeletons on its own while the image decodes. |
 
-Implementation lives in `WikitabCard.vue`: `showFullLoading` for the skeleton,
-`showThumbnail` (text variant checks `thumbnailUrl` only, not `thumbnailTitle`).
+Pass a field flag whenever that field arrives in a **separate fetch** — e.g.
+search Activity passes `{ thumbnail: true }` until `prefetchMetadata` patches
+thumbnails in. Get as granular as the data allows.
+
+Home modules do this per card. Each keeps its pending fields beside the items
+(a `Map` / record replaced on every change so it stays reactive, and listed in
+`useEqualRowHeights` `watchKeys`); the section resolves a slot's `loading` from it
+and shows the menu whenever `loading !== true`.
+
+| Module | Card appears after | Still loading (flag) |
+| ------ | ------------------ | -------------------- |
+| Featured | Shells for every kind at once (`featuredSpotlightShell`) | TFA / TFL `{ title, description, thumbnail }`, Word / Quote `{ title, description }`, others `true` (`featuredSpotlightInitialLoading`) until that kind's own fetch lands (`onSpotlight` in `fetchWikitabFeatured`); TFL then keeps `{ description }` for its summary |
+| Saved | The snapshot, immediately (`savedModuleDisplayItems`) | Article saves needing a summary: `{ description?, thumbnail? }` (`savedModuleItemPendingLoading`) until `enrichSavedModuleItems` patches that item |
+| Daily reads | The morelike hit (no summary wait) | `{ description?, thumbnail? }` while the summary backfill runs (`pendingByKey`) |
+| Suggested edits | Quality-check + summary (the summary supplies the `pageid` the key needs) | `{ thumbnail }` during the post-append thumbnail backfill |
+| Review changes | The revision row | `{ supporting }` while the editor-kind lookup runs (`editorKindPending`); the **Latest** chip pops in when `prefetchMetadata` lands |
+
+Chips that may not exist (Latest, high revert risk) **pop in** rather than
+skeleton. Modules still load **in series**, top to bottom
+(`refreshHomeModulesInOrder`): API etiquette asks for serial requests, and
+`fetchWikimedia` caps each host at two in flight — granular loading paints
+sooner without adding parallel requests.
+
+The strict rule for `thumbnailType: 'optional'`: when `loading.thumbnail` is set
+and the card has no `thumbnailUrl` yet, the **whole card** stays a skeleton
+(rule 2 above). This lives in `WikitabCard.vue` (`showFullLoading`) — sections
+just say what is still loading. **Do not** branch on section id in components;
+pick a different `primitive` for the section instead.
+
+| `thumbnailType` (resolved) | Meaning |
+| ---------------------- | ------- |
+| `force` | Always reserve the column; sets CdxCard `forceThumbnail`. |
+| `optional` | Column only when `card.thumbnailUrl` is set. Empty URL ⇒ no column. |
+| `none` | Never show a column. |
+
+DYK lookups use `wikitabCardMenuArticleTitle` in `resolveDykThumbnails.ts` when
+the hook has no feed thumbnail.
 
 ### Feed cards use `CdxCard`
 
 `WikitabCard.vue` is a thin adapter around Codex's `CdxCard` — not a hand-built
 border shell. Variant wiring:
 
-| Variant | `CdxCard` props | Link behaviour |
-| ------- | --------------- | -------------- |
-| `thumbnail` | `url`, `thumbnail`, `force-thumbnail` | Whole card is the link via `url`. |
-| `text` | No `url`; hook HTML in `#description`; thumbnail via CSS `order` at inline-end when an image resolves | Overlay `<a class="wikitab-card__link">` for the primary page — hooks carry nested anchors Codex forbids inside a linked card. |
+| Layout | `CdxCard` props | Link behaviour |
+| ------ | --------------- | -------------- |
+| Thumbnail + text | `thumbnail`, `force-thumbnail` — never `url` | Full-card overlay `<a class="wikitab-card__link">` to `card.url` so hook HTML can include nested anchors. |
+| Text / hook | Same — no `url` on `CdxCard` | Same overlay link when `card.url` is set. |
 
 Stock Codex 2.7 has no `CdxCard` `thumbnailSize` / `thumbnailPosition` props
 (and the Gerrit card patch removes them again) — large (96px) thumbnails and
 text-variant end placement are layout CSS in `WikitabCard.vue`, keyed off
-`sections.ts` `thumbnailSize`. **Never set `display: block` on the card root** — it overrides
+the primitive's `thumbnailSize`. **Never set `display: block` on the card root** — it overrides
 `.cdx-card { display: flex }` and breaks the fixed-height slot.
 
 **Typography:** card title, description, and supporting text use Codex's built-in
@@ -120,8 +160,124 @@ Supporting text is pinned to the bottom inner edge of that card with a flex
 supporting slot is preserved) and `align-items: stretch` on `.wikitab-card__cdx`
 (the Codex card root — the class merges onto `.cdx-card`, not a wrapper).
 
-When adding a section: if thumbnails are guaranteed from the feed, use
-`thumbnail`. If thumbnails are optional or need a follow-up fetch, use `text`.
+When adding a section: pick its `primitive` in `sections.ts` and set only that
+primitive's editable fields (e.g. `supportingIcon`). Loading UI follows
+automatically.
+
+### Card presentation
+
+**Presentations are primitives only.** Every `WikitabCard` is an instance of one
+of the primitives in `data/wikitabCardPrimitiveCatalog.json` — `article`,
+`snippet`, `discussion`, `suggestion`, `image`, `word`, `quote`, `list`, `edit`.
+`data/wikitabCardPresentation.json` has exactly one row per primitive, keyed by
+primitive id, and nothing else. There are no context rows: "Trending",
+"Featured quote", "Saved image" or "Search contribute" are not presentations, they
+are contexts that *use* a primitive.
+
+| Context | Primitive |
+| ------- | --------- |
+| Trending, Birthdays, Daily reads, Saved articles, Featured TFA | `article` |
+| In the news, Did you know, On this day, unavailable Featured spotlights | `snippet` |
+| Active discussions, saved discussions | `discussion` |
+| Suggested edits, search Contribute, saved suggestions | `suggestion` |
+| Featured TFP / POTD, saved images, search images (playground) | `image` |
+| Word of the day, saved words | `word` |
+| Quote of the day, saved quotes | `quote` |
+| Featured TFL, saved lists | `list` |
+| Search Activity, Review changes, saved changes | `edit` |
+
+The mappings live in code: `sections.ts` (`primitive` on each section / module
+spec), `featuredPrimitiveForSpotlightKind()` in `wikitabFeaturedSpotlightCard.ts`,
+`wikitabSavedItemPrimitive()` in `wikitabSavedItems.ts`, and `primitiveId` on
+each `wikitabCardTypeCatalog.json` entry (playground).
+
+#### Field tiers
+
+A primitive splits every `WikitabCard` field into three tiers:
+
+1. **Hardcoded** — fixed by the primitive's presentation row; no context can
+   change them.
+   - `descriptionFormat`, `titleLineClamp`, `descriptionLineClamp`,
+     `thumbnailType`, `thumbnailSize`, `thumbnailLayout` (inline-start = leading
+     thumb, inline-end = hook then trailing thumb, block-start = portrait).
+   - `supportingIcon` when the row pins one (`discussion` → speech bubbles,
+     `suggestion` → lightbulb).
+   - Bind props the primitive pins empty: `icon` on `article` / `snippet`,
+     `chips` on everything except `edit`.
+2. **Inferred** — derived by the primitive's mapper or by the surface; also not
+   editable.
+   - Discussion supporting row (comment count + latest reply time).
+   - Suggestion supporting line (from `task`).
+   - Edit editor + time.
+   - `menu`, which comes from the surface (feed, saved, search).
+3. **Editable** — left open on purpose. Any context (feed section, Featured,
+   saved, search, playground) may set these.
+   - Payload fields: title, description, url, thumbnail, supporting text / HTML
+     when not derived.
+   - `supportingIcon` when the row doesn't pin one (Trending's chart line,
+     the edit primitive's editor-kind icon).
+   - `icon` on `word` / `quote`; `chips` on `edit`; `loading`.
+
+Where each tier is enforced:
+
+- **Hardcoded:** the JSON row. `wikitabCardBindProps(primitive, options)` in
+  `data/wikitabCardPresentation.ts` spreads the presentation last so it always
+  wins, and in dev **throws** if `options` carries a hardcoded presentation field
+  or a `supportingIcon` on a primitive that pins one. To change how a context
+  looks, change the primitive (for everyone) or pick a different primitive.
+- **Inferred:** the mappers in `wikitabCardPayloadMappers.ts`; the playground
+  lists mapper-derived supporting fields in
+  `PLAYGROUND_MAPPER_DERIVED_SUPPORTING_FIELD_NAMES` (`wikitabCardTypePlayground.ts`).
+- **Editable:** passed through `wikitabCardBindProps` options / payload fields.
+  The playground shows them as editable rows; hardcoded and inferred rows are
+  read-only.
+
+Production feed sections, Featured, saved slots, search and the **Wikitab card
+playground** (`/example-wikitab-card-types`) all bind through
+`wikitabCardBindProps()`. Do not add component defaults or duplicate layout
+numbers in Vue files. `WikitabCard` requires an explicit `thumbnailLayout` on
+every instance.
+
+**Heights are not presentation:** resolved cards hug content; loading
+placeholders use exact px heights per primitive from
+`data/wikitabCardSlotHeights.ts` (`wikitabReservedSlotHeight(primitive)`, wired
+through `sections.ts` `cardHeight` + `useEqualRowHeights` row stretch). Feed
+section paging (`initialCount`, headings) stays in `sections.ts`.
+
+### Card data — no hidden behavior
+
+`WikitabCard.vue` renders what it is given: `card`, `supportingIcon`, `icon`,
+layout props from `wikitabCardBindProps()`, and nothing else. Do **not** infer
+labels, icons, or copy inside the component (no “if this looks like a quote,
+default to …”).
+
+- **Payload → card:** `wikitabCardPayloadMappers.ts` maps declared payload fields
+  only. Do not inject feed marketing strings (`Quote of the day`, module titles,
+  etc.) when a field is empty — fetchers, saved items, and the card playground
+  must set `supportingText` / `supportingHtml` explicitly when a row should show.
+  Derived supporting lines from other payload fields (e.g. page views, seed title,
+  task HTML) are fine; static copy fallbacks are not.
+- **Layout / icons:** the primitive's `wikitabCardPresentation.json` row +
+  `wikitabCardBindProps()` (e.g. `supportingIcon: cdxIconLightbulb` pinned on the
+  `suggestion` primitive); editable icons come from the context (`sections.ts`).
+- **Featured feed:** `fetchWikitabFeatured.ts` (and similar) owns module labels
+  on the spotlight/card data it builds; mappers stay dumb.
+- **Discussion cards:** supporting row is always derived in
+  `feedDiscussionPayloadToCardData` / `savedDiscussionPayloadToCardData` from
+  `commentCount` (+ `latestReplyTimestamp` or saved relative label). The card
+  playground omits editable `supportingText` / `supportingHtml` / `supportingIcon`
+  / `supportingTextEnd` on discussion catalogs; speech-bubble icon is pinned by
+  the `discussion` primitive in `wikitabCardPresentation.json`.
+- **Supporting fields are editable unless derived:** every payload with
+  `WikitabCardPayloadSupportingFields` (`supportingText`, `supportingIcon`,
+  `supportingHtml`, `supportingTextEnd`) passes them straight through its mapper.
+  There is no per-catalog “no supporting row” list. A supporting field is only
+  non-editable in the playground when the mapper derives it (discussion: text /
+  html / end from comment count + time; suggestion: text / html from `task`; edit:
+  editor + time) or presentation pins the icon. Record derived fields in
+  `PLAYGROUND_MAPPER_DERIVED_SUPPORTING_FIELD_NAMES` in
+  `wikitabCardTypePlayground.ts` when adding one.
+- **Playground defaults:** supporting fields default to empty for every catalog.
 
 ## Codex-agnostic styling
 
@@ -135,8 +291,8 @@ records how Wikitab applies them:
    `cdx-card cdx-card--is-link` on its root, so Codex's own stylesheet draws
    border, radius, padding, background, hover and active — whatever version is
    installed. The component keeps layout only (`flex-direction`,
-   `align-items: stretch`, gap). Used by `WikitabSearchActivityCard`,
-   `WikitabSearchContributeCard`, `WikitabSearchImageCard` (which resets
+   `align-items: stretch`, gap). Used by `WikitabSearchContributeCard`,
+   `WikitabSearchImageCard` (which resets
    `padding: 0` and a transparent background). This only works when the card
    root is an ancestor of whatever the pointer hits.
 2. **Tokens, never literals that equal a token.** Radius, transition duration,
@@ -173,8 +329,8 @@ records how Wikitab applies them:
      (the placeholder stays a flex child so its icon stays centred). Why:
      [building-for-patches → Thumbnails](../protowiki-codex-patching/references/building-for-patches.md#thumbnails-size-the-root-let-codex-fill).
 4. **Deliberate looks stay; structural overrides yield.** Saved filter tabs are
-   framed `CdxToggleButton size="small"` with only `font-weight: normal` and a
-   black (inverted) toggled-on state overridden. Themed quiet-button washes and
+   framed `CdxToggleButton` with layout-only CSS (horizontal scroll,
+   outline padding); toggled-on styling follows installed Codex. Themed quiet-button washes and
    themed card accents are Wikitab design and stay on stock and patched.
    Overrides that only exist to flatten stock Codex (the `box-shadow: none` on
    popovers and dialogs in `index.vue`) are gated behind
@@ -326,51 +482,111 @@ via `useWikitabModuleOrder.ts` (`resolveModuleOrder`, cross-tab `storage` sync).
 Home display and load order use `buildEffectiveHomeOrder(pinnedIds, resolvedOrder)`
 — pinning still pulls modules to the top; custom order applies to unpinned slots.
 
-**Saving** — six explicit saved types in `wikitab-config-v3` (`data/wikitabConfig.ts`
+**Saving** — typed entries in `wikitab-config-v3` (`data/wikitabConfig.ts`
 → `savedItems: WikitabSavedItem[]`). No cross-source dedup — Unsave only when
 that item's own id is saved.
 
 | Type | Sources | Stable id |
 | ---- | ------- | --------- |
-| **Article** | Trending, Birthdays, Search Articles, Daily reads | Per-source (`search:{titleKey}`, `daily-reads:{pageid}`, trending title, …) |
-| **Snippet** | Did you know, On this day, In the news | Feed `card.key` (`dyk-{n}`, …) — **preserves full feed presentation** (html hook, `fullHook`, inline-end thumbnail) |
+| **Article** | Trending, Birthdays, Search, Daily reads, Featured TFA, OTD (**linked article**) | Per-source (`search:{titleKey}`, `featured:tfa`, …) |
+| **Snippet** | DYK, In the news — the hook HTML itself (`snippetHtml`), rendered with `primitive-snippet` | `snippet:{dyk\|news}:{hash of hook text}` |
+| **Word** | Featured WOTD | `word:{titleKey}` |
+| **Quote** | Featured QOTD | `quote:{titleKey}` |
+| **List** | Featured TFL | `list:{titleKey}` |
 | **Suggestion** | Suggested edits home, Contribute tab | `suggestion:{pageid}:{need}` |
 | **Change** | Review changes home, Activity tab | `change:{revid}` |
 | **Discussion** | Active discussions | `discussion:{threadId}` |
-| **Image** | Search Images tab | `image:{pageid}` (Commons file page id) |
+| **Image** | Search Images; Featured TFP/POTD (Commons `File:` when resolved) | `image:{pageid}` or `image:featured:tfp` / `image:featured:potd` |
 
-Article / Snippet / Suggestion / Change carry `articleTitleKey` for recommendations;
-Discussion uses the noticeboard page titleKey; Image uses the Commons file titleKey.
-Discussion, Change, and Image are **excluded from article seeds**.
-`savedAt` sorts the list (most recent first) but is **not shown** on cards.
-Legacy v1 `savedArticles` and v2 `savedCards` migrate on load (`savedItemMigration.ts`).
-Helpers: `data/savedCardHelpers.ts`, `data/wikitabSavedItems.ts`,
+**Seed articles** — `articleTitleKey` / `articleTitle` are identity (dedupe,
+hide filter, exclusions), not "the article". A word's key is the word, an
+image's is its `File:` title. What drives Daily reads, Suggested edits and
+Review changes is the optional **`seedArticle`** (`{ title, titleKey, via }`,
+`data/wikitabSeedArticle.ts`). It is resolved **when the card is fetched** and
+set on `WikitabCardData` / `WikitabFeaturedSpotlight` / `WikitabSearchImage`.
+`buildSaved*` copies it onto the saved item, so saving never fetches. Only
+mainspace enwiki titles seed (`seedArticle()` returns `undefined` otherwise).
+
+| Saved from | `seedArticle` source | `via` |
+| ---------- | -------------------- | ----- |
+| Trending, Birthdays, Search, Daily reads, TFA, TFL | The article / list itself | `self` |
+| DYK, In the news (saved as **Snippet**), OTD (saved as Article) | Bold link (`primaryLinkTitle`) — set in `fetchDailyFeed.ts` / `fetchMainPageOtd.ts` | `hook-link` |
+| Suggestion | The article | `self` |
+| Change | The edited page | `edited-page` |
+| TFP | Bold link in the `#mp-tfp` caption | `caption-link` |
+| POTD | First enwiki link in the Commons caption (bold first), else none | `caption-link` |
+| QOTD | Author's Wikiquote page → Wikidata `wbgetentities` → enwiki sitelink | `quote-author` |
+| WOTD | Entry's English "Wikipedia has an article on" box (`.sister-wikipedia b[lang="en"]`), else none | `wiktionary-sister` |
+| Search Images | The query's exact title match, else the nearest (`resolveWikitabSearchTitleHits`, disambiguation-filtered), else none | `search-query` |
+| Discussion | Never | — |
+
+No free-text search fallback — a wrong seed shows a nonsensical "Related to X"
+card. `savedItemSeedArticle()` reads `seedArticle` on the item (backfilled on load
+for old rows by `data/wikitabStorageMigration.ts`). **Saved edits never show a
+thumbnail** — `WikitabSavedChangeItem` has no `thumbnailUrl` and
+`WikitabSavedItemSlot` passes `showThumbnail: false`, matching the Review changes
+module. `savedAt` sorts the list (most recent first) but is **not shown** on cards.
+Old localStorage shapes (v1/v2 config keys, renamed fields, pre-typed snippets) are
+upgraded once per load in **`wikitabStorageMigration.ts`** — the only place that
+knows legacy data. Helpers: `data/savedCardHelpers.ts`, `data/wikitabSavedItems.ts`,
 `data/wikitabSavedIcons.ts`; composable: `useWikitabSavedArticles.ts`.
 
 **Saved** (`saved`) — home feed cards and the Saved overlay panel come from a
 **snapshot** (`savedModuleItems` in `index.vue`), not live `savedItems`. Renders
 each entry through `WikitabSavedItemSlot.vue` with per-type layout: normalized
-Article / Discussion cards, preserved Snippet feed presentation, Contribute-style
-Suggestion, Activity-style Change, standard thumbnail card for Image (no `#title`
-slot — Commons ImageDescription in `#description`, file name as fallback;
-license/artist with `cdxIconImage` in supporting text; links to Commons). Hidden until a refresh runs (mount, search exit,
-overlay close); saving mid-session does not surface the module. Article items may
-get REST summary enrichment for missing thumbnail/description; other types skip
-enrich. Unsaving every item during the session clears the snapshot immediately.
+Article / Discussion cards, Featured-style Word / Quote / List via
+`WikitabFeaturedCard`, Contribute-style Suggestion, Activity-style Change,
+Search-style Image (or inline-start caption layout for resolved Featured pictures).
+Hidden until a refresh runs (mount, search exit,
+overlay close); saving mid-session does not surface the module. Cards paint from
+the snapshot at once; Article items missing a thumbnail/description get REST
+summary enrichment patched in per item (skeleton fields meanwhile — see
+[Loading states](#loading-states)); other types skip enrich. Unsaving every item during the session clears the snapshot immediately.
 
 **Saved type tabs** — when the snapshot contains **two or more** saved types,
 `WikitabSavedItemTabs.vue` renders below the heading on both the home Saved module
 (`WikitabSavedSection.vue`) and the Saved overlay panel
-(`WikitabSavedArticlesPanel.vue`). Labels: **All**, **Articles**, **Snippets**,
-**Suggestions**, **Edits** (internal `change`), **Discussions**, **Images** — only types
-present are shown, in that order. Uses Codex **framed** `CdxTabs` restyled via CSS
-to look like framed toggle buttons on a transparent background. Tab choice is
+(`WikitabSavedArticlesPanel.vue`). Labels: **All**, **Articles**, **Snippets**, **Words**,
+**Quotes**, **Lists**, **Suggestions**, **Edits** (internal `change`),
+**Discussions**, **Images** — only types present are shown, in that order. Uses
+framed `CdxToggleButton` per tab (stock Codex selected state). Tab choice is
 session-only; card paging (`useSectionReveal` on home, manual `reserved` in the
 panel) runs on the filtered list. Helpers: `data/wikitabSavedItemTabs.ts`;
 composable: `useWikitabSavedItemTabFilter.ts`.
 
+**Featured** (`featured`) — mixed carousel of six daily **spotlight** cards from
+sister wikis (not the same thing as phase-1 **`feed/featured`** in
+`fetchDailyFeed.ts`, which only powers Trending / In the news / Did you know).
+Module id `featured`; default home order places it after Trending. Paging:
+**4 initial slots**, **+6 per reveal** (six spotlights total). Cards use
+`WikitabFeaturedCard.vue` with supporting text equal to the spotlight label only
+(no project prefix). Failed fetches keep a fixed slot (`unavailable: true`) so
+layout does not jump. **Today's featured picture** (`#mp-tfp` on Main Page) and
+**Picture of the day** (Wikifeeds `image` / same source as POTD background) are
+separate image cards — slots 3–4 in catalog order (`WIKITAB_FEATURED_SPOTLIGHT_KINDS`
+in `sections.ts`). By default they use **122px text + inline-start thumbnail** (thumb on the
+leading edge; DYK-style inline-end is not used for TFP/POTD). `WIKITAB_FEATURED_USE_PORTRAIT_IMAGE_CARDS = false` in
+`sections.ts`). Set that flag to `true` to switch TFP/POTD to Codex block-start portrait
+cards (`thumbnailLayout: block-start` in `WikitabCard.vue`, full-width **4∶3** thumb).
+Sources (`data/fetchWikitabFeatured.ts`, parallel per UTC day):
+
+| Order | Spotlight | Origin |
+| ----- | --------- | ------ |
+| 1 | Today's featured article | `getFeaturedPayload` → `tfa` |
+| 2 | Today's featured list | Dated TFL subpage (list title + thumb); short `description` from REST page summary. If today's subpage is not ready, falls back to the **previous UTC day's** TFL subpage (same pattern as Trending). |
+| 3 | Today's featured picture | Main Page `#mp-tfp` (single-row or legacy two-row table), else `Template:POTD/YYYY-MM-DD`, else previous UTC day; links to matching `Template:POTD/…`. |
+| 4 | Picture of the day | `getFeaturedPayload` → `image` (Commons POTD caption HTML) |
+| 5 | Quote of the day | Wikiquote dated QOTD subpage (parse) |
+| 6 | Word of the day | Wiktionary dated WOTD subpage (`#WOTD-rss-description` — first non-empty `<li>`, skipping `mw-empty-elt`); gloss as HTML hook (usage labels italic via `.usage-label-sense`) |
+
+Quote of the day cards omit `descriptionLineClamp` (no line clamp) and link to the dated
+`Wikiquote:Quote of the day/{Month}_{day}` page, not the subject article.
+Cached under `wikitab-featured-cache-v17` (`data/featuredCache.ts`). Composable:
+`useWikitabFeatured.ts`; section: `WikitabFeaturedSection.vue`. **Color of the
+day** is reserved for a future spotlight kind — no v1 source.
+
 **Daily reads** (`daily-reads`) — morelike suggestions seeded from up to **four**
-**unique article titleKeys** from **Article, Snippet, and Suggestion** saves,
+**unique seed articles** (`uniqueArticleSeedsFromSavedItems` → each save's `seedArticle`),
 picked by a **deterministic daily shuffle** (UTC day + sorted titleKeys → seeded
 Fisher-Yates). Hidden when the Saved-module snapshot is empty. Action API `generator=search` with
 `gsrsearch=morelike:{title}` per seed (`DailyReadsFeed` in
@@ -383,7 +599,7 @@ and all saved `articleTitleKey`s. Cards are thumbnail variant with
 
 **Suggested edits** (`suggested-edits`) — edit-opportunity cards from the same
 Microtask `POST /quality-check` pipeline as the search **Contribute** tab, seeded
-from up to **six unique article titleKeys** (Article + Snippet + Suggestion saves)
+from up to **six unique seed articles** (see [Seed articles](#saved-adjacent-home-modules))
 via a separate daily shuffle salt
 (`pickSavedArticleSeeds.ts` → `SuggestedEditsFeed` in
 `data/fetchWikitabSuggestedEdits.ts`). Morelike expansion skips titles already in
@@ -391,20 +607,28 @@ the saved list. Same visibility rules as Daily reads. Paging: **2 initial cards*
 **+4 per reveal**. Cached under `wikitab-suggested-edits-cache-v1`
 (`data/suggestedEditsCache.ts`).
 
-**Review changes** (`review-changes`) — merged edit-revision cards from the same
-Action API revision pipeline as the search **Activity** tab
-(`WikitabSearchActivityFeed` in `data/fetchWikitabSearchActivity.ts`), seeded from
-up to **six unique article titleKeys** (Article + Snippet + Suggestion saves) via
-daily shuffle salt `'review-changes'` (`pickSavedArticleSeeds.ts` →
-`ReviewChangesFeed` in `data/fetchWikitabReviewChanges.ts`). Seed titles resolve
-to `pageid`s via Action API `query` + `pageimages`; thumbnails prefer Article and
-Suggestion saved items. Same visibility rules as Daily reads / Suggested edits.
-Paging: **2 initial cards**, **+4 per reveal**. Cards reuse
-`WikitabSearchActivityCard.vue` (diff delta, chips, Save/Unsave, Thank / Dismiss).
-Dismissed revision ids share `WikitabConfig.dismissedActivityRevids` with the search
-Activity tab. Cached under `wikitab-review-changes-cache-v1`
-(`data/reviewChangesCache.ts`). Composable: `useWikitabReviewChanges.ts`; section:
-`WikitabReviewChangesSection.vue`.
+**Review changes** (`review-changes`) — edit-revision cards merged from up to two
+sources (section ellipsis → **Configure** → full-screen panel, same `wikitab-panel`
+chrome as Modules / Color theme):
+
+1. **Saved articles** (toggle on by default) — same Action API revision pipeline as
+   the search **Activity** tab (`WikitabSearchActivityFeed`), seeded from up to **six**
+   unique Article/Suggestion saves via daily shuffle salt `'review-changes'`.
+2. **Recent risky edits** (toggle on by default) — main-namespace `list=recentchanges`
+   with **`rcshow=oresreview|!bot|!minor`** (ORES “needs review” in SQL). Cards get
+   **Needs review** (`needsReview: true`); **High revert risk** is added only when
+   sequential Lift Wing lookup (≥0.9) succeeds — feed is not filtered on revert risk.
+
+`MergedReviewChangesFeed` in `data/fetchWikitabReviewChanges.ts` leads with whichever
+source has the newer head edit, then alternates (saved, RC, saved, …); each source stays ordered. Both toggles off → empty module (still visible when not hidden). **Not**
+saved-gated — shows with zero saves when Recent risky is on. Settings:
+`WikitabConfig.reviewChangesShowSavedEdits` / `reviewChangesShowRecentRiskyEdits`
+(`useWikitabReviewChangesSettings.ts`). Paging: **2 initial**, **+4 per reveal**.
+Cards via `wikitabCardPropsForSearchActivityItem`. Dismissed revids share
+`dismissedActivityRevids` with Activity. Cache: `wikitab-review-changes-cache-v3`
+(day + saved fingerprint + settings fingerprint). Composable:
+`useWikitabReviewChanges.ts`; section: `WikitabReviewChangesSection.vue`; panel:
+`WikitabReviewChangesConfigurePanel.vue`.
 
 **Infinite-module pagination** — Daily reads, Suggested edits, and Review changes
 differ from finite feed sections (`WikitabSection`): desktop "Show more" stays
@@ -412,8 +636,9 @@ visible while cards are on screen; cached `hasMore: false` only records the last
 fetch state and does not remove the control. Clicks after exhaustion still call
 `loadMore()`.
 
-A render triggered on mount, search exit, or overlay close refreshes Saved, Daily
-reads, Suggested edits, and Review changes from the **same snapshot**. Network runs
+A render triggered on mount, search exit, or overlay close refreshes Featured
+(when visible), Saved, Daily reads, Suggested edits, and Review changes from the
+**same snapshot** (Featured does not use the saved snapshot). Network runs
 only on cache miss (saved list or UTC day changed). A full refresh after
 save/unsave waits for overlay close, search exit, or a new tab. `?nocache=1`
 bypasses caches.
@@ -425,8 +650,8 @@ feed orchestration phase (`useWikitabFeed` → `feedPhase` +
 `isSectionLoading`), and transient reveal counts (`useSectionReveal`) live in
 separate layers.
 See [references/state-and-storage.md](references/state-and-storage.md) for the
-full rules, migration from legacy `?pinned=`, and how to add future config
-fields without over-building a schema.
+full rules, the one-step **`wikitabStorageMigration.ts`** contract, and how to
+add future config fields without over-building a schema.
 
 **Pinning** — pinned sections move to the top. State is
 `WikitabConfig.pinnedSectionIds` in localStorage, wired through
@@ -554,12 +779,14 @@ composable memory for the search session. Switching tabs does not refetch or
 show skeletons again; Activity, Contribute, and Images abort in-flight requests
 when hidden but keep resolved results. Query change resets all four tabs.
 
-**Loading cards** — `WikitabSearchLoadingCard.vue` is the shared search-result
-placeholder. Variants: `article` (96px thumbnail stub), `activity` (no
-thumbnail column), and `image` (borderless aspect-ratio skeleton tile). Use
-these heavily while API work resolves — especially on Activity and Contribute,
-where cards stream in one at a time. Contribute reuses the **activity** skeleton
-variant (same compact list type).
+**Loading cards** — tabs whose results are `WikitabCard`s (Activity, Contribute)
+skeleton with `WikitabCard`'s own `loading` prop (see
+[Loading states](#loading-states)); bind props via
+`wikitabCardBindProps(catalogId, { loading: true })`. Articles and Images use
+other card components, so they keep `WikitabSearchLoadingCard.vue` — variants
+`article` (96px thumbnail stub) and `image` (borderless aspect-ratio skeleton
+tile). Use skeletons heavily while API work resolves — especially on Activity
+and Contribute, where cards stream in one at a time.
 
 **Articles tab** — `WikitabSearchResultCard.vue` per hit. Description, extract, and
 supporting rows wear Codex card text classes (`.cdx-card__text`,
@@ -579,7 +806,7 @@ dedupe — earlier slots win):
 **Supporting row** (all cards) — split row from the [Attribution API](https://www.mediawiki.org/wiki/Attribution_API) via `useWikitabSearchArticleAttribution.ts` (module cache keyed by title; fetches through `fetchWikimedia`):
 
 - **Start:** `cdxIconChartLine` + compact page-view count (`trust_and_relevance.page_views`, last 30 days) and `cdxIconReference` + reference count (`trust_and_relevance.reference_count`), 16px apart.
-- **End:** relative last update (`formatRelativeUpdate` on `trust_and_relevance.last_updated`).
+- **End:** relative last update (`formatWikitabRelativeTime` on `trust_and_relevance.last_updated`).
 - Row hidden while loading and when all three signals are null/missing. Partial rows show only available signals.
 
 **Card menu** — each resolved card has a top-right `CdxMenuButton` (`cdxIconEllipsis`, quiet weight, subtle icon — same pattern as section headings on the home feed). One row: **Why am I seeing this?** (`cdxIconHelpNotice`). Opens a dismissable `CdxDialog` whose body explains the hit from `article.relation` via `formatSearchArticleRelationExplanation()` in `data/formatSearchArticleRelation.ts` — **exact** / **related** use `{title} …`; **near** uses `{title} is the nearest match to your query "{query}".`; **match** uses `Your query was found within the {title} article.`
@@ -607,8 +834,8 @@ lands; when a `thumbnailUrl` exists, only the image area stays a flat
 borderless `background-color-neutral-subtle` block (no Codex image icon) until
 decode finishes (`useThumbnailSlotReady.ts`, 1.5s cap). When no thumbnail URL
 resolves, fall back to the default Codex placeholder icon — never keep the
-loading block. **Do not** call `preloadImages` before rendering search cards —
-unlike feed cards, which intentionally gate reveal on decode.
+loading block. Never gate rendering on image decode — feed cards follow the same
+rule.
 
 The **h3 title link** pivots search — updates `?search=` to that article title
 via `useWikitabSearchNavigation()` (Wikipedia is not opened from the results
@@ -702,9 +929,8 @@ those titles.
 
 **Progressive load** — mirrors the Articles tab skeleton phases:
 
-1. **Initial** — `WikitabSearchLoadingCard variant="activity"` while titles /
-   the first revision batch resolve (`loading`, or `fillingInitial` before the
-   first card).
+1. **Initial** — `WikitabCard` with `loading: true` while titles / the first
+   revision batch resolve (`loading`, or `fillingInitial` before the first card).
 2. **Resolved cards** — append one at a time as `takeNext()` completes.
 3. **Tail** — two activity skeletons below resolved cards while the initial
    batch is still streaming (`loadingTail`).
@@ -719,6 +945,10 @@ same shared cache as Articles / Contribute). Cards paint immediately with
 partial metadata; **Latest** chips and **40px thumbnails** patch onto already-
 rendered slots when prefetch settles (`patchThumbnails` in
 `useWikitabSearchActivity.ts`, same reactive pattern as revert-risk chips).
+While `metadataPending`, cards without a thumbnail get `loading: { thumbnail: true }`
+— edit cards are `thumbnailType: 'optional'`, so they stay whole skeletons until
+it is known whether a thumbnail column appears. Revert-risk chips are **not**
+skeletoned: most edits never get one.
 
 Rate-limit contract (mandatory):
 
@@ -733,23 +963,27 @@ Rate-limit contract (mandatory):
   (`fetchRevertRiskLanguageAgnostic.ts`) — serial queue, not a gate before
   paint; indefinite in-memory cache keyed by `revid`.
 - Editor kind resolved per card in `takeNext()` via cached
-  `list=users&usprop=groups` lookup (`bot` / `temp` groups).
+  `list=users&usprop=groups` lookup (`bot` / `temp` groups). Home Review changes
+  passes `deferEditorKind` instead: the card paints with `{ supporting: true }`
+  and `resolveEditorKind` patches it (one lookup at a time).
+- After `prefetchMetadata`, `isLatestRevision(item)` re-patches the **Latest** chip
+  on cards mapped before the latest revids arrived.
 - Tab fetch starts only when Activity is selected (`enabled` ref); abort
   in-flight work when hidden or on query change, but keep resolved results in
   memory when switching tabs.
 
-UI: resolved `WikitabSearchActivityCard` rows plus activity skeleton phases
-above. Resolved cards wear Codex's `cdx-card cdx-card--is-link` classes, so
-border, radius, padding and hover/active come from Codex — unlike Articles tab
-cards, which are borderless. Activity skeletons have **no thumbnail column**; resolved
-cards show a 40px thumbnail when one resolves. Description block: green **+n** / red **−n** character delta (from revision `size`
+UI: resolved `WikitabCard` rows (the `edit` primitive) plus activity skeleton phases
+above. Edit cards use `CdxCard` inside `WikitabCard` (chips in a full-width row above the
+stock thumbnail + text row). Unlike Articles tab
+cards, which are borderless. Activity skeletons (here and in home Review changes) use
+`WikitabCard` loading bind props; resolved edit cards show an optional
+96px inline-start thumbnail when `thumbnailUrl` is present. Description block: green **+n** / red **−n** character delta (from revision `size`
 vs parent), or subtle **±0** when size is unchanged, on its own line above the edit
-summary when the parent size is known. Chip row uses `CdxInfoChip` (in order):
-**High revert risk** (Lift Wing `revertrisk-language-agnostic`, ≥0.9 probability,
-every resolved edit — not latest-only; fetched per card in the background;
-indefinite in-memory cache keyed by `revid`), **Latest revision** (from
-background latest-revid prefetch), and **Reverted** (from revision `mw-reverted`
-tag). Multiple chips may appear on one card.
+summary when the parent size is known. Chip row uses `CdxInfoChip` (in order): **High revert risk** (Lift Wing
+`revertrisk-language-agnostic`, ≥0.9; background per card, in-memory cache by
+`revid`), **Needs review** (ORES `oresreview` rows in Review changes only), else
+**Latest revision** when not high-risk and not needs-review (from latest-revid
+prefetch), and **Reverted** (`mw-reverted` tag). Multiple chips may appear on one card.
 Top-right `CdxMenuButton` (`cdxIconEllipsis`, quiet) exposes **Thank** (opens
 `Special:Thanks/{revid}` on en.wikipedia.org in a new tab) and **Dismiss** — persists the revision id in
 `WikitabConfig.dismissedActivityRevids` and removes the card; dismissed diffs are
@@ -763,8 +997,8 @@ editor type — **Bot** (`cdxIconRobot`), **Temporary** (`cdxIconUserTemporary`)
 Implementation: `data/fetchWikitabSearchActivity.ts`,
 `data/fetchWikitabPageSummary.ts`, `data/fetchRevertRiskLanguageAgnostic.ts`,
 `useWikitabSearchActivity.ts`,
-`useWikitabDismissedActivity.ts`, `WikitabSearchActivityCard.vue`,
-`WikitabSearchLoadingCard.vue`.
+`useWikitabDismissedActivity.ts`, `data/wikitabSearchActivityWikitabCard.ts`,
+`WikitabCard.vue`.
 
 **Contribute tab** — edit-opportunity cards scoped to the search query's **top 6
 articles** (same `knownTitles` as Activity). Reuses Articles-tab titles when
@@ -777,8 +1011,8 @@ the first six titles rather than duplicating the Articles fetch pipeline.
   Action API `list=search` + `srsearch=morelike:{seed}` into related articles.
   Thumbnails and descriptions from Articles-tab cache or
   `fetchWikitabPageSummary.ts` (shared with Articles / Activity).
-- **Progressive load** — same skeleton phases as Activity (`variant="activity"`):
-  initial three skeletons → one resolved card per `takeNext()` → tail skeletons
+- **Progressive load** — same skeleton phases as Activity (`WikitabCard` with
+  `loading: true`, `search-contribute` bind props): initial three skeletons → one resolved card per `takeNext()` → tail skeletons
   while filling → load-more skeletons on infinite scroll.
 - **Rate-limit contract** — Wikipedia requests via `fetchWikimedia`; Microtask
   POST via `fetchWithTimeout` (not queued). **One resolved card per fetch cycle.**
@@ -798,8 +1032,7 @@ row end when from morelike. Whole card links to Visual Editor
 Implementation: `data/fetchWikitabSearchContribute.ts`,
 `data/fetchWikitabPageSummary.ts`, `data/editOpportunityCopy.ts`,
 `data/editOpportunityIcons.ts`,
-`useWikitabSearchContribute.ts`, `WikitabSearchContributeCard.vue`,
-`WikitabSearchLoadingCard.vue`.
+`useWikitabSearchContribute.ts`, `WikitabSearchContributeCard.vue`.
 
 ## What's inert
 

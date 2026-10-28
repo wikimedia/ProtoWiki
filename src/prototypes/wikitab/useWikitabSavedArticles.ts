@@ -6,7 +6,10 @@ import {
   buildSavedChange,
   buildSavedImage,
   buildSavedItemFromPayload,
+  buildSavedItemFromPayloadAsync,
   buildSavedSuggestion,
+  savedIdFromPayload,
+  saveItemPayloadNeedsFeaturedImageFetch,
   type SaveItemPayload,
 } from './data/savedCardHelpers'
 import type { WikitabSearchImage } from './data/fetchWikitabSearchImages'
@@ -22,6 +25,7 @@ import {
   type WikitabSavedItem,
 } from './data/wikitabConfig'
 import { cloneSavedItems } from './data/wikitabSavedItems'
+import type { WikitabCardLoading } from './sections'
 
 export interface SaveSearchArticleInput {
   title: string
@@ -34,75 +38,74 @@ export function snapshotSavedModuleItems(): WikitabSavedItem[] {
   return cloneSavedItems(loadWikitabConfig().savedItems)
 }
 
-/** @deprecated Use snapshotSavedModuleItems */
-export function snapshotSavedModuleCards(): WikitabSavedItem[] {
-  return snapshotSavedModuleItems()
-}
-
-function searchItemNeedsSummary(saved: WikitabSavedArticleItem): boolean {
-  if (!saved.id.startsWith('search:')) return false
+function savedArticleNeedsSummary(saved: WikitabSavedArticleItem): boolean {
   return !saved.description || !saved.thumbnailUrl
 }
 
-/** REST summary backfill for saved article items missing thumbnail/description. */
+/** Saved article cards in the home module never show a supporting row. */
+export function savedModuleDisplayItems(items: WikitabSavedItem[]): WikitabSavedItem[] {
+  return cloneSavedItems(items).map((saved) =>
+    saved.type === 'article'
+      ? {
+          ...saved,
+          supportingText: undefined,
+          supportingHtml: undefined,
+          supportingTextEnd: undefined,
+        }
+      : saved,
+  )
+}
+
+/** Fields `enrichSavedModuleItems` will still fill for this item, or `false`. */
+export function savedModuleItemPendingLoading(saved: WikitabSavedItem): WikitabCardLoading {
+  if (saved.type !== 'article' || !savedArticleNeedsSummary(saved)) return false
+  return {
+    ...(saved.description ? {} : { description: true }),
+    ...(saved.thumbnailUrl ? {} : { thumbnail: true }),
+  }
+}
+
+/**
+ * REST summary backfill for saved article items missing thumbnail/description.
+ * `onItem` reports each article as soon as its own summary lands.
+ */
 export async function enrichSavedModuleItems(
   items: WikitabSavedItem[],
   signal?: AbortSignal,
+  onItem?: (saved: WikitabSavedItem) => void,
 ): Promise<WikitabSavedItem[]> {
-  const articleItems = items.filter(
-    (item): item is WikitabSavedArticleItem => item.type === 'article',
-  )
-  if (!articleItems.length) return items
-
-  const enriched = cloneSavedItems(items)
+  const enriched = savedModuleDisplayItems(items)
   const indexById = new Map(enriched.map((saved, index) => [saved.id, index]))
+  const pending = enriched.filter(
+    (saved): saved is WikitabSavedArticleItem =>
+      saved.type === 'article' && savedArticleNeedsSummary(saved),
+  )
+  if (!pending.length) return enriched
 
-  const patches = await mapWithConcurrency(
-    articleItems,
+  await mapWithConcurrency(
+    pending,
     2,
     async (saved) => {
-      const needsSummary = searchItemNeedsSummary(saved)
-      if (!needsSummary) return { id: saved.id, description: undefined, thumbnailUrl: undefined }
-
       const summary = await fetchWikitabPageSummary(
         saved.articleTitle,
         signal,
         'wikitab-saved-module',
       )
+      const index = indexById.get(saved.id)
+      if (index === undefined) return
 
-      return {
-        id: saved.id,
-        description: summary?.description,
-        thumbnailUrl: summary?.thumbnailUrl,
+      const next: WikitabSavedArticleItem = {
+        ...saved,
+        description: saved.description ?? summary?.description,
+        thumbnailUrl: saved.thumbnailUrl ?? summary?.thumbnailUrl,
       }
+      enriched[index] = next
+      if (!signal?.aborted) onItem?.(next)
     },
     signal,
   )
 
-  for (const patch of patches) {
-    const index = indexById.get(patch.id)
-    if (index === undefined) continue
-    const current = enriched[index]
-    if (current.type !== 'article') continue
-
-    enriched[index] = {
-      ...current,
-      description: current.description ?? patch.description,
-      thumbnailUrl: current.thumbnailUrl ?? patch.thumbnailUrl,
-      supportingSignals: undefined,
-      supportingTextEnd: undefined,
-    }
-  }
-
   return enriched
-}
-
-/** @deprecated Use enrichSavedModuleItems */
-export async function enrichSavedModuleCards(
-  items: WikitabSavedItem[],
-  signal?: AbortSignal,
-): Promise<WikitabSavedItem[]> {
-  return enrichSavedModuleItems(items, signal)
 }
 
 function mergeMetadataIntoSavedItems(
@@ -127,7 +130,8 @@ function mergeMetadataIntoSavedItems(
       ...saved,
       description,
       thumbnailUrl,
-      supportingSignals: undefined,
+      supportingText: undefined,
+      supportingHtml: undefined,
       supportingTextEnd: undefined,
     }
   })
@@ -168,7 +172,6 @@ export function useWikitabSavedArticles() {
   lastAppliedRevision = initialConfig.configRevision
 
   const savedItems = ref<WikitabSavedItem[]>(cloneSavedItems(initialConfig.savedItems))
-  const savedCards = savedItems
 
   const savedIdSet = computed(() => new Set(savedItems.value.map((saved) => saved.id)))
 
@@ -262,24 +265,22 @@ export function useWikitabSavedArticles() {
     scheduleSavedItemsRetry(updated, rollback)
   }
 
-  /** @deprecated Use unsaveItem */
-  function unsaveCard(id: string): void {
-    unsaveItem(id)
-  }
+  async function toggleSaveFromPayload(payload: SaveItemPayload): Promise<void> {
+    const idHint = savedIdFromPayload(payload)
+    if (idHint && isSaved(idHint)) {
+      unsaveItem(idHint)
+      return
+    }
 
-  function toggleSaveFromPayload(payload: SaveItemPayload): void {
-    const built = buildSavedItemFromPayload(payload)
+    const built = saveItemPayloadNeedsFeaturedImageFetch(payload)
+      ? await buildSavedItemFromPayloadAsync(payload)
+      : buildSavedItemFromPayload(payload)
     if (!built) return
     if (isSaved(built.id)) {
       unsaveItem(built.id)
     } else {
       saveItem(built)
     }
-  }
-
-  /** @deprecated Use toggleSaveFromPayload */
-  function toggleSaveCard(payload: SaveItemPayload): void {
-    toggleSaveFromPayload(payload)
   }
 
   function toggleSaveSearchArticle(input: SaveSearchArticleInput): void {
@@ -347,14 +348,8 @@ export function useWikitabSavedArticles() {
     mergeMetadataIntoSavedItems(enriched, persistSavedItems)
   }
 
-  /** @deprecated Use persistEnrichedModuleItems */
-  function persistEnrichedModuleCards(enriched: WikitabSavedItem[]): void {
-    persistEnrichedModuleItems(enriched)
-  }
-
   return {
     savedItems,
-    savedCards: savedItems,
     isSaved,
     isCardSaved,
     saveItem,
@@ -364,14 +359,11 @@ export function useWikitabSavedArticles() {
     saveChange,
     saveImage,
     unsaveItem,
-    unsaveCard,
     toggleSaveFromPayload,
-    toggleSaveCard,
     toggleSaveSearchArticle,
     toggleSaveSuggestion,
     toggleSaveChange,
     toggleSaveImage,
     persistEnrichedModuleItems,
-    persistEnrichedModuleCards,
   }
 }

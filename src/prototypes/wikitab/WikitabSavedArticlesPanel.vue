@@ -45,12 +45,17 @@ useEqualRowHeights({
   columns: rowColumns,
   cardHeight: computed(() => CARD_HEIGHT),
   enabled: computed(() => visibleItems.value.length > 0),
-  watchKeys: [computed(() => visibleItems.value.length), computed(() => reserved.value)],
+  floorResolvedRows: false,
+  watchKeys: [
+    computed(() => visibleItems.value.length),
+    computed(() => reserved.value),
+    activeTab,
+  ],
 })
 
 function revealMore(): void {
   if (!hasMore.value) return
-  reserved.value = Math.min(props.savedItems.length, reserved.value + PAGE_SIZE)
+  reserved.value = Math.min(filteredItems.value.length, reserved.value + PAGE_SIZE)
 }
 
 function onKeydown(event: KeyboardEvent): void {
@@ -107,7 +112,7 @@ onUnmounted(() => {
           <WikitabSavedItemSlot
             v-for="saved in visibleItems"
             :key="saved.id"
-            class="wikitab-saved-articles-panel__card"
+            class="wikitab-saved-articles-panel__card wikitab-section__card"
             :saved="saved"
             :show-article-menu="true"
             :is-saved="isCardSaved(saved.id)"
@@ -156,6 +161,11 @@ onUnmounted(() => {
 
 .wikitab-saved-articles-panel__head:has(+ .wikitab-saved-item-tabs) {
   margin-bottom: calc(-1 * (var(--spacing-100) - var(--spacing-25)));
+}
+
+/* Column gap stacks on tabs' margin-bottom; home Saved has no flex gap there. */
+.wikitab-saved-articles-panel__column :deep(.wikitab-saved-item-tabs) {
+  margin-bottom: calc(var(--spacing-50) - var(--spacing-100));
 }
 
 .wikitab-saved-articles-panel__title {
@@ -213,7 +223,7 @@ onUnmounted(() => {
 }
 
 .wikitab-saved-articles-panel__card:has(.wikitab-card--has-menu [aria-expanded='true']),
-.wikitab-saved-articles-panel__card:has(.wikitab-search-activity-card__menu [aria-expanded='true']),
+.wikitab-saved-articles-panel__card:has(.wikitab-card__menu [aria-expanded='true']),
 .wikitab-saved-articles-panel__card:has(.wikitab-search-contribute-card__menu [aria-expanded='true']) {
   overflow: visible;
   z-index: 3;

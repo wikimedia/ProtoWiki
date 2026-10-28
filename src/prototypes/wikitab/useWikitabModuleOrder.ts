@@ -9,9 +9,8 @@ import {
 import { resolveModuleOrder, type WikitabModuleId } from './sections'
 
 /**
- * Pinned modules first (in configured module order), then unpinned modules in
- * the same order. Membership comes from `pinnedIds`; relative order among
- * pinned items follows `baseOrder`, not pin recency.
+ * Pinned modules first, most recently pinned first (`pinnedIds` is stored
+ * oldest pin first), then unpinned modules in `baseOrder`.
  */
 export function buildEffectiveHomeOrder(
   pinnedIds: readonly WikitabModuleId[],
@@ -21,13 +20,7 @@ export function buildEffectiveHomeOrder(
   const order: WikitabModuleId[] = []
   const seen = new Set<WikitabModuleId>()
 
-  for (const id of baseOrder) {
-    if (!pinnedSet.has(id)) continue
-    order.push(id)
-    seen.add(id)
-  }
-
-  for (const id of pinnedIds) {
+  for (const id of [...pinnedIds].reverse()) {
     if (seen.has(id)) continue
     order.push(id)
     seen.add(id)

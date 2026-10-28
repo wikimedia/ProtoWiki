@@ -10,12 +10,11 @@ import {
 } from '@wikimedia/codex-icons'
 
 import { useSkin } from '@/composables/useSkin'
-import WikitabCard from './WikitabCard.vue'
 import WikitabSavedItemSlot from './WikitabSavedItemSlot.vue'
 import WikitabSavedItemTabs from './WikitabSavedItemTabs.vue'
 import { savedItemRevealCard } from './data/savedCardHelpers'
 import type { WikitabSavedItem } from './data/wikitabConfig'
-import { WIKITAB_SAVED_MODULE_SPEC } from './sections'
+import { WIKITAB_SAVED_MODULE_SPEC, type WikitabCardLoading } from './sections'
 import { useEqualRowHeights } from './useEqualRowHeights'
 import { usePreventHorizontalSwipeNavigation } from './usePreventHorizontalSwipeNavigation'
 import { useRevealOnScrollEnd } from './useRevealOnScrollEnd'
@@ -26,6 +25,8 @@ const spec = WIKITAB_SAVED_MODULE_SPEC
 
 const props = defineProps<{
   savedItems: WikitabSavedItem[]
+  /** Saved id → fields still being enriched (description / thumbnail). */
+  itemLoading?: Map<string, WikitabCardLoading>
   loading: boolean
   pinned: boolean
   isCardSaved: (id: string) => boolean
@@ -44,7 +45,7 @@ const { activeTab, showTabs, tabs, filteredItems } = useWikitabSavedItemTabFilte
 const revealItems = computed(() => filteredItems.value.map(savedItemRevealCard))
 
 const loading = toRef(props, 'loading')
-const { reserved, ready, revealing, hasMore, revealMore } = useSectionReveal(
+const { reserved, revealing, hasMore, revealMore, slotLoading, pendingCount } = useSectionReveal(
   spec,
   revealItems,
   loading,
@@ -74,20 +75,35 @@ useEqualRowHeights({
   columns: rowColumns,
   cardHeight: computed(() => spec.cardHeight),
   enabled: computed(() => !props.loading || filteredItems.value.length > 0),
+  floorResolvedRows: false,
   watchKeys: [
     computed(() => reserved.value),
-    computed(() => ready.value),
+    pendingCount,
     computed(() => filteredItems.value.length),
     computed(() => props.loading),
+    computed(() => props.itemLoading),
     activeTab,
   ],
 })
 
+watch([activeTab, filteredItems], () => {
+  const count = filteredItems.value.length
+  if (count === 0) return
+  reserved.value = Math.min(spec.initialCount, count)
+})
+
+const visibleSlotCount = computed(() =>
+  Math.min(reserved.value, filteredItems.value.length),
+)
+
 const slots = computed(() =>
-  Array.from({ length: reserved.value }, (_, index) => ({
-    saved: filteredItems.value[index],
-    loading: index >= ready.value,
-  })),
+  Array.from({ length: visibleSlotCount.value }, (_, index) => {
+    const saved = filteredItems.value[index]!
+    const revealLoading = slotLoading(index)
+    const loading: WikitabCardLoading =
+      revealLoading === true ? true : (props.itemLoading?.get(saved.id) ?? revealLoading)
+    return { saved, loading }
+  }),
 )
 
 const isEmpty = computed(() => !props.loading && props.savedItems.length === 0)
@@ -162,25 +178,16 @@ watch(selection, (value) => {
     </p>
 
     <div v-else ref="scroller" class="wikitab-saved-section__cards">
-      <template v-for="(slot, index) in slots" :key="slot.saved?.id ?? index">
-        <WikitabSavedItemSlot
-          v-if="slot.saved"
-          class="wikitab-saved-section__card"
-          :saved="slot.saved"
-          :loading="slot.loading"
-          :show-article-menu="!slot.loading"
-          :is-saved="isCardSaved(slot.saved.id)"
-          @toggle-save="emit('toggle-save', slot.saved.id)"
-        />
-        <WikitabCard
-          v-else
-          class="wikitab-saved-section__card"
-          :variant="spec.variant"
-          :height="spec.cardHeight"
-          :thumbnail-size="spec.thumbnailSize"
-          loading
-        />
-      </template>
+      <WikitabSavedItemSlot
+        v-for="slot in slots"
+        :key="slot.saved.id"
+        class="wikitab-saved-section__card wikitab-section__card"
+        :saved="slot.saved"
+        :loading="slot.loading"
+        :show-article-menu="slot.loading !== true"
+        :is-saved="isCardSaved(slot.saved.id)"
+        @toggle-save="emit('toggle-save', slot.saved.id)"
+      />
       <div ref="sentinel" class="wikitab-saved-section__sentinel" aria-hidden="true" />
     </div>
 
@@ -280,7 +287,7 @@ watch(selection, (value) => {
 }
 
 .wikitab-saved-section__card:has(.wikitab-card--has-menu [aria-expanded='true']),
-.wikitab-saved-section__card:has(.wikitab-search-activity-card__menu [aria-expanded='true']),
+.wikitab-saved-section__card:has(.wikitab-card__menu [aria-expanded='true']),
 .wikitab-saved-section__card:has(.wikitab-search-contribute-card__menu [aria-expanded='true']) {
   overflow: visible;
   z-index: 3;

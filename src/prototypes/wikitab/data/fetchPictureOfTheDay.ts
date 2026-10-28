@@ -1,9 +1,9 @@
 import type { FeaturedFeedResponse } from './fetchDailyFeed'
 import { getFeaturedPayload } from './fetchDailyFeed'
 import { isCacheBypassed, utcDayKey } from './feedCache'
-import { normalizeFeedHtml, unwrapLinksInHtml } from './wikitabHtml'
+import { EN_WIKI_HOST, normalizeFeedHtml, unwrapLinksInHtml, wikiArticleUrl } from './wikitabHtml'
 
-const CACHE_KEY = 'wikitab-potd-cache-v7'
+export const CACHE_KEY = 'wikitab-potd-cache-v7'
 
 const COMMONS_POTD_PAGE = 'https://commons.wikimedia.org/wiki/Commons:Picture_of_the_day'
 
@@ -13,7 +13,7 @@ const POTD_BACKGROUND_WIDTH = 1920
 export interface WikitabPotd {
   thumbnailUrl: string | null
   /** Commons Picture of the day page, anchored to today's calendar day. */
-  href: string
+  url: string
   descriptionHtml: string
   artistHtml: string
   licenseType: string
@@ -22,7 +22,7 @@ export interface WikitabPotd {
 
 const EMPTY_POTD: WikitabPotd = {
   thumbnailUrl: null,
-  href: '',
+  url: '',
   descriptionHtml: '',
   artistHtml: '',
   licenseType: '',
@@ -107,6 +107,11 @@ function resolvePotdImageUrl(image: NonNullable<FeaturedFeedResponse['image']>):
   return null
 }
 
+/** Dated enwiki POTD entry — same target as `#mp-tfp` “archive” links on Main Page. */
+export function wikipediaPotdPageUrl(day: string = utcDayKey()): string {
+  return wikiArticleUrl(EN_WIKI_HOST, `Template:POTD/${day}`)
+}
+
 /** `Commons:Picture_of_the_day#28` — day-of-month anchor on the current-month POTD page. */
 export function commonsPotdPageUrl(day: string = utcDayKey()): string {
   const dayOfMonth = Number(day.slice(8, 10))
@@ -129,7 +134,7 @@ function mapPotd(payload: FeaturedFeedResponse, day: string): WikitabPotd {
       : ''
   const licenseType = image.license?.type ?? ''
   const licenseUrl = image.license?.url ?? ''
-  const href = commonsPotdPageUrl(day)
+  const url = commonsPotdPageUrl(day)
 
   if (!thumbnailUrl && !descriptionHtml && !artistHtml && !licenseType) {
     return { ...EMPTY_POTD }
@@ -137,7 +142,7 @@ function mapPotd(payload: FeaturedFeedResponse, day: string): WikitabPotd {
 
   return {
     thumbnailUrl,
-    href,
+    url,
     descriptionHtml,
     artistHtml,
     licenseType,

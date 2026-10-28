@@ -8,7 +8,7 @@ import { isCacheBypassed, utcDayKey } from './data/feedCache'
 
 const EMPTY_POTD: WikitabPotd = {
   thumbnailUrl: null,
-  href: '',
+  url: '',
   descriptionHtml: '',
   artistHtml: '',
   licenseType: '',

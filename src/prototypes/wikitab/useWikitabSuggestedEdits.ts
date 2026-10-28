@@ -14,7 +14,11 @@ import {
 } from './data/suggestedEditsCache'
 import type { WikitabSavedItem } from './data/wikitabConfig'
 import { cloneSavedItems, uniqueArticleSeedsFromSavedItems } from './data/savedCardHelpers'
-import { WIKITAB_SUGGESTED_EDITS_MODULE_SPEC, type WikitabCardData } from './sections'
+import {
+  WIKITAB_SUGGESTED_EDITS_MODULE_SPEC,
+  type WikitabCardData,
+  type WikitabCardLoading,
+} from './sections'
 
 const { initialCount, pageSize } = WIKITAB_SUGGESTED_EDITS_MODULE_SPEC
 
@@ -38,6 +42,8 @@ function sessionCacheKey(day: string, savedFingerprint: string): string {
 
 export function useWikitabSuggestedEdits() {
   const items = ref<WikitabCardData[]>([])
+  /** Card key → fields whose backfill is still in flight. */
+  const pendingByKey = ref(new Map<string, WikitabCardLoading>())
   const loading = ref(false)
   const fillingInitial = ref(false)
   const loadingMore = ref(false)
@@ -69,11 +75,20 @@ export function useWikitabSuggestedEdits() {
     })
   }
 
+  function setPending(key: string, loading: WikitabCardLoading): void {
+    const next = new Map(pendingByKey.value)
+    if (loading) next.set(key, loading)
+    else next.delete(key)
+    pendingByKey.value = next
+  }
+
   function scheduleThumbnailBackfill(card: WikitabCardData, signal: AbortSignal): void {
     if (card.thumbnailUrl) return
 
-    const title = card.title ?? card.linkTitle
+    const title = card.title
     if (!title) return
+
+    setPending(card.key, { thumbnail: true })
 
     void fetchWikitabPageSummary(title, signal, 'wikitab-suggested-edits-thumbnail')
       .then((summary) => {
@@ -85,6 +100,9 @@ export function useWikitabSuggestedEdits() {
       })
       .catch((cause) => {
         if (signal.aborted || (cause as Error)?.name === 'AbortError') return
+      })
+      .finally(() => {
+        if (!signal.aborted) setPending(card.key, false)
       })
   }
 
@@ -117,6 +135,7 @@ export function useWikitabSuggestedEdits() {
 
   function clearState(): void {
     items.value = []
+    pendingByKey.value = new Map()
     loading.value = false
     fillingInitial.value = false
     loadingMore.value = false
@@ -234,6 +253,7 @@ export function useWikitabSuggestedEdits() {
     loadingMore.value = false
     error.value = null
     items.value = []
+    pendingByKey.value = new Map()
     loadedSessionKey = key
     hasMore.value = false
     isLoaded.value = false
@@ -305,6 +325,7 @@ export function useWikitabSuggestedEdits() {
 
   function abort(): void {
     controller?.abort()
+    pendingByKey.value = new Map()
     loading.value = false
     fillingInitial.value = false
     loadingMore.value = false
@@ -312,6 +333,7 @@ export function useWikitabSuggestedEdits() {
 
   return {
     items,
+    pendingByKey,
     loading,
     fillingInitial,
     loadingMore,
