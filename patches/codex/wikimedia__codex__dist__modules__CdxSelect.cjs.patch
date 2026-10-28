@@ -1,0 +1,74 @@
+Index: dist/modules/CdxSelect.cjs
+===================================================================
+--- dist/modules/CdxSelect.cjs
++++ dist/modules/CdxSelect.cjs
+@@ -11,13 +11,13 @@
+ const t = require('vue'),
+   g = require('./Icon.js'),
+   w = require('./CdxMenu.cjs'),
+   D = require('./useModelWrapper.cjs'),
+-  F = require('./useFieldData.cjs'),
+-  H = require('./useSplitAttributes.cjs'),
+-  W = require('./useFloatingMenu.cjs'),
++  H = require('./useFieldData.cjs'),
++  W = require('./useSplitAttributes.cjs'),
++  j = require('./useFloatingMenu.cjs'),
+   p = require('./constants.js'),
+-  j = require('./_plugin-vue_export-helper.js'),
++  F = require('./_plugin-vue_export-helper.js'),
+   R = p.makeStringTypeValidator(p.ValidationStatusTypes),
+   T = t.defineComponent({
+     name: 'CdxSelect',
+     components: { CdxIcon: g.CdxIcon, CdxMenu: w },
+@@ -43,9 +43,9 @@
+         {
+           computedDisabled: c,
+           computedStatus: C,
+           computedInputId: S,
+-        } = F(t.toRef(e, 'disabled'), t.toRef(e, 'status'), l),
++        } = H(t.toRef(e, 'disabled'), t.toRef(e, 'status'), l),
+         h = D(t.toRef(e, 'selected'), n, 'update:selected'),
+         a = t.computed(() => {
+           var d
+           return (d = i.value) == null
+@@ -69,9 +69,9 @@
+           'cdx-select-vue--no-selections': !a.value,
+           'cdx-select-vue--has-start-icon': !!f.value,
+           ['cdx-select-vue--status-'.concat(C.value)]: !0,
+         })),
+-        { rootClasses: B, rootStyle: M, otherAttrs: V } = H(u, q),
++        { rootClasses: B, rootStyle: M, otherAttrs: V } = W(u, q),
+         x = t.computed(() => {
+           const I = V.value,
+             { id: d } = I
+           return b(I, ['id'])
+@@ -93,9 +93,9 @@
+         var s
+         c.value || (s = i.value) == null || s.delegateKeyNavigation(d, { characterNavigation: !0 })
+       }
+       return (
+-        W(o, i),
++        j(o, i),
+         {
+           handle: o,
+           menu: i,
+           computedHandleId: S,
+@@ -113,9 +113,9 @@
+           otherAttrsMinusId: x,
+           onClick: E,
+           onKeydown: L,
+           startIcon: f,
+-          cdxIconExpand: g.F6,
++          cdxIconExpand: g.y6,
+         }
+       )
+     },
+   }),
+@@ -219,6 +219,6 @@
+       z,
+     )
+   )
+ }
+-const G = j._export_sfc(T, [['render', U]])
++const G = F._export_sfc(T, [['render', U]])
+ module.exports = G

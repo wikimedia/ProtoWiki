@@ -1,0 +1,146 @@
+Index: dist/modules/CdxCard.css
+===================================================================
+--- dist/modules/CdxCard.css
++++ dist/modules/CdxCard.css
+@@ -2,90 +2,42 @@
+   background-color: var(--background-color-base, #fff);
+   display: flex;
+   align-items: flex-start;
+   position: relative;
+-  border: 1px solid var(--border-color-base, #a2a9b1);
+-  border-radius: 2px;
++  border: 1px solid var(--border-color-subtle, #cccccc);
++  border-radius: 4px;
+   padding: 12px;
+ }
+-.cdx-card--is-link {
+-  transition-property: background-color, color, border-color, box-shadow;
+-  transition-duration: 0.1s;
+-}
+ .cdx-card--is-link,
+ .cdx-card--is-link:hover,
+ .cdx-card--is-link:focus {
+   text-decoration: none;
+ }
+ .cdx-card--is-link:hover {
+-  border-color: var(--border-color-interactive--hover, #27292d);
++  border-color: var(--border-color-progressive, #1d5ee0);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-progressive--focus, #1d5ee0);
+ }
+-.cdx-card--is-link:active {
+-  border-color: var(--border-color-interactive--active, #202122);
+-}
+ .cdx-card--is-link:focus {
++  border-color: var(--border-color-progressive--focus, #1d5ee0);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-progressive--focus, #1d5ee0);
+   outline: 1px solid transparent;
+ }
++.cdx-card--is-link:active {
++  box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--focus, #1d5ee0);
++}
+ .cdx-card--is-link:focus-visible {
+-  border-color: var(--border-color-progressive--focus, #36c);
+-  box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--focus, #36c);
++  border-color: var(--border-color-progressive--focus, #1d5ee0);
++  box-shadow: 0 0 0 1px var(--box-shadow-color-progressive--focus, #1d5ee0);
+ }
+ @supports not selector(:focus-visible) {
+   .cdx-card--is-link:focus {
+-    border-color: var(--border-color-progressive--focus, #36c);
+-    box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--focus, #36c);
++    border-color: var(--border-color-progressive--focus, #1d5ee0);
++    box-shadow: inset 0 0 0 1px var(--box-shadow-color-progressive--focus, #1d5ee0);
+   }
+ }
+ .cdx-card--title-only {
+   align-items: center;
+ }
+-.cdx-card__thumbnail.cdx-thumbnail {
+-  margin-right: 12px;
+-}
+-.cdx-card__thumbnail.cdx-thumbnail .cdx-thumbnail__placeholder,
+-.cdx-card__thumbnail.cdx-thumbnail .cdx-thumbnail__image {
+-  width: 3rem;
+-  height: 3rem;
+-}
+-.cdx-card--thumbnail-size-large .cdx-card__thumbnail.cdx-thumbnail .cdx-thumbnail__placeholder,
+-.cdx-card--thumbnail-size-large .cdx-card__thumbnail.cdx-thumbnail .cdx-thumbnail__image {
+-  width: 6rem;
+-  height: 6rem;
+-}
+-.cdx-card--thumbnail-position-inline-end .cdx-card__thumbnail.cdx-thumbnail {
+-  order: 1;
+-  margin-right: 0;
+-  margin-left: 12px;
+-}
+-.cdx-card--thumbnail-position-block-start {
+-  flex-direction: column;
+-}
+-.cdx-card--thumbnail-position-block-start .cdx-card__thumbnail.cdx-thumbnail {
+-  width: 100%;
+-  margin-bottom: 12px;
+-}
+-@supports (aspect-ratio: 16 / 9) {
+-  .cdx-card--thumbnail-position-block-start
+-    .cdx-card__thumbnail.cdx-thumbnail
+-    .cdx-thumbnail__placeholder,
+-  .cdx-card--thumbnail-position-block-start
+-    .cdx-card__thumbnail.cdx-thumbnail
+-    .cdx-thumbnail__image {
+-    aspect-ratio: 16 / 9;
+-    width: 100%;
+-    height: auto;
+-  }
+-}
+-.cdx-card--separation-divider,
+-.cdx-card--separation-none {
+-  border: 0;
+-  border-radius: 0;
+-  padding-right: 0;
+-  padding-left: 0;
+-}
+-.cdx-card--separation-divider + .cdx-card--separation-divider {
+-  border-top: 1px solid var(--border-color-base, #a2a9b1);
+-}
+ .cdx-card__text {
+   display: flex;
+   flex-direction: column;
+   font-size: var(--font-size-medium, 1rem);
+@@ -114,26 +66,34 @@
+   -webkit-hyphens: auto;
+   hyphens: auto;
+ }
+ .cdx-card__text__title {
+-  color: var(--color-base, #202122);
++  color: var(--color-base, #171717);
+   font-weight: 700;
+   line-height: var(--line-height-small, 1.375rem);
+ }
+ .cdx-card__text__description,
+ .cdx-card__text__supporting-text,
+ .cdx-card__text__description .cdx-icon,
+ .cdx-card__text__supporting-text .cdx-icon {
+-  color: var(--color-subtle, #54595d);
++  color: var(--color-base, #171717);
+ }
+ .cdx-card__text__description {
+   margin-top: 4px;
+ }
+ .cdx-card__text__supporting-text {
+   margin-top: 8px;
+   font-size: var(--font-size-small, 0.875rem);
+ }
++.cdx-card__thumbnail.cdx-thumbnail {
++  margin-right: 12px;
++}
++.cdx-card__thumbnail.cdx-thumbnail .cdx-thumbnail__placeholder,
++.cdx-card__thumbnail.cdx-thumbnail .cdx-thumbnail__image {
++  width: 3rem;
++  height: 3rem;
++}
+ .cdx-card .cdx-card__icon {
+-  color: var(--color-subtle, #54595d);
++  color: var(--color-base, #171717);
+   height: var(--line-height-small, 1.375rem);
+   margin-right: 8px;
+ }

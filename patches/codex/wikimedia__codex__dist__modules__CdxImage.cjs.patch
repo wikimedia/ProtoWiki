@@ -1,0 +1,15 @@
+Index: dist/modules/CdxImage.cjs
+===================================================================
+--- dist/modules/CdxImage.cjs
++++ dist/modules/CdxImage.cjs
+@@ -76,9 +76,9 @@
+         otherAttrs: h,
+         placeholderStyles: p,
+         handleError: f,
+         handleLoad: y,
+-        cdxIconImage: m._6,
++        cdxIconImage: m.X6,
+         iconSizeClass: C,
+         placeholderClasses: _,
+       }
+     },

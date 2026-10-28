@@ -1,0 +1,63 @@
+Index: dist/modules/CdxMenuItem.cjs
+===================================================================
+--- dist/modules/CdxMenuItem.cjs
++++ dist/modules/CdxMenuItem.cjs
+@@ -31,15 +31,15 @@
+       multiselect: { type: Boolean, default: !1 },
+     },
+     emits: ['change'],
+     setup: (e, { emit: n }) => {
+-      const d = () => {
++      const r = () => {
+           e.highlighted || n('change', 'highlighted', !0)
+         },
+-        c = () => {
++        d = () => {
+           n('change', 'highlighted', !1)
+         },
+-        r = (s) => {
++        c = (s) => {
+           s.button === 0 && n('change', 'active', !0)
+         },
+         m = () => {
+           n('change', 'selected', !0)
+@@ -57,21 +57,23 @@
+           'cdx-menu-item--has-description': !!e.description,
+           'cdx-menu-item--hide-description-overflow': e.hideDescriptionOverflow,
+         })),
+         a = t.computed(() => (e.url ? 'a' : 'span')),
+-        l = t.computed(() => (e.url && e.urlNewTab ? { target: '_blank' } : {})),
++        l = t.computed(() =>
++          e.url && e.urlNewTab ? { target: '_blank', rel: 'noopener noreferrer' } : {},
++        ),
+         u = t.computed(() => e.label || String(e.value))
+       return {
+-        onMouseMove: d,
+-        onMouseLeave: c,
+-        onMouseDown: r,
++        onMouseMove: r,
++        onMouseLeave: d,
++        onMouseDown: c,
+         onClick: m,
+         highlightQuery: o,
+         rootClasses: i,
+         contentTag: a,
+         linkAttrs: l,
+         title: u,
+-        cdxIconCheck: f.c6,
++        cdxIconCheck: f._5,
+       }
+     },
+   }),
+   B = ['id', 'aria-disabled', 'aria-selected', 'aria-checked'],
+@@ -79,9 +81,9 @@
+   S = ['lang'],
+   M = ['lang'],
+   N = ['lang'],
+   T = ['lang']
+-function V(e, n, d, c, r, m) {
++function V(e, n, r, d, c, m) {
+   const o = t.resolveComponent('cdx-thumbnail'),
+     i = t.resolveComponent('cdx-icon'),
+     a = t.resolveComponent('cdx-search-result-title')
+   return (
