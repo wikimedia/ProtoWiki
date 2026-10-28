@@ -1,0 +1,1238 @@
+{
+  "subject": "tokens: Update color values",
+  "url": "https://gerrit.wikimedia.org/r/c/design/codex/+/1304941",
+  "change": "1304941",
+  "patchset": 34,
+  "revision": "a3ef6b606543a8eebcb1e9ee0a50f5d06f285f35",
+  "baseline": "1e211ac220d8985c77ffc4ebd3f8295aa925dec8",
+  "stackedChanges": [
+    {
+      "change": "1288878",
+      "subject": "tokens: Update base border-radius",
+      "url": "https://gerrit.wikimedia.org/r/c/design/codex/+/1288878"
+    },
+    {
+      "change": "1289449",
+      "subject": "components: Update the overlay color for light mode",
+      "url": "https://gerrit.wikimedia.org/r/c/design/codex/+/1289449"
+    },
+    {
+      "change": "1293831",
+      "subject": "components: Update border-radius for various components",
+      "url": "https://gerrit.wikimedia.org/r/c/design/codex/+/1293831"
+    },
+    {
+      "change": "1294317",
+      "subject": "Message, InfoChip: Remove borders",
+      "url": "https://gerrit.wikimedia.org/r/c/design/codex/+/1294317"
+    },
+    {
+      "change": "1294355",
+      "subject": "shadows: Revise elevation styles and applications",
+      "url": "https://gerrit.wikimedia.org/r/c/design/codex/+/1294355"
+    },
+    {
+      "change": "1295496",
+      "subject": "binary components: Update interactive and selected styles",
+      "url": "https://gerrit.wikimedia.org/r/c/design/codex/+/1295496"
+    },
+    {
+      "change": "1297211",
+      "subject": "Buttons: Update styles, availability and interactions",
+      "url": "https://gerrit.wikimedia.org/r/c/design/codex/+/1297211"
+    },
+    {
+      "change": "1299665",
+      "subject": "Inputs: update interactive styles",
+      "url": "https://gerrit.wikimedia.org/r/c/design/codex/+/1299665"
+    },
+    {
+      "change": "1300290",
+      "subject": "components: Update styles in various components",
+      "url": "https://gerrit.wikimedia.org/r/c/design/codex/+/1300290"
+    },
+    {
+      "change": "1304941",
+      "subject": "tokens: Update color values",
+      "url": "https://gerrit.wikimedia.org/r/c/design/codex/+/1304941"
+    }
+  ],
+  "stackedChangeCount": 9,
+  "generatedAt": "2026-10-28T18:28:33.807Z",
+  "codexVersions": {
+    "@wikimedia/codex": "2.7.0",
+    "@wikimedia/codex-design-tokens": "2.7.0",
+    "@wikimedia/codex-icons": "2.7.0"
+  },
+  "prettierVersion": "3.9.7",
+  "files": [
+    {
+      "target": "@wikimedia/codex/dist/codex.cjs",
+      "package": "@wikimedia/codex",
+      "rel": "dist/codex.cjs",
+      "patch": "wikimedia__codex__dist__codex.cjs.patch",
+      "baseSha": "087e440ff1d8a4494a5ad0cca818448146768448dd950d5a5439ef5f72df3bc3",
+      "patchedSha": "234711cd38daa4d595e95c879803c17e2975f28d27221f8bbee12a55d1d82feb"
+    },
+    {
+      "target": "@wikimedia/codex/dist/codex.js",
+      "package": "@wikimedia/codex",
+      "rel": "dist/codex.js",
+      "patch": "wikimedia__codex__dist__codex.js.patch",
+      "baseSha": "e0d85c0758a4c4e1fc56121f6e314ac01bc7c8b4d04fdd604ee470b8f39df87d",
+      "patchedSha": "4ab015da5bbc5bbddafcc9a55f8ef9d1f14e188b26af3ca0d081d61e82cd00ff"
+    },
+    {
+      "target": "@wikimedia/codex/dist/codex.style-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/codex.style-bidi.css",
+      "patch": "wikimedia__codex__dist__codex.style-bidi.css.patch",
+      "baseSha": "6494c7d418f61836c099e7a2dbdc9848a17df56efa2b7e8576f1f65f4843409f",
+      "patchedSha": "ffe1311a37bd84ae44af3afd4124b1bd24dc08baf5c2f3e5ffab779177eac32c"
+    },
+    {
+      "target": "@wikimedia/codex/dist/codex.style-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/codex.style-rtl.css",
+      "patch": "wikimedia__codex__dist__codex.style-rtl.css.patch",
+      "baseSha": "426d0f4b00bf972975da639e2618be347b1736fec27a15174464e4d2f5b4535c",
+      "patchedSha": "0f00e3240a92376213b3d4026e932ba8f65e1082af3344e5858a1ec174f8ef98"
+    },
+    {
+      "target": "@wikimedia/codex/dist/codex.style.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/codex.style.css",
+      "patch": "wikimedia__codex__dist__codex.style.css.patch",
+      "baseSha": "eb91b5a896d1130cddfc389315b7f49722b411477a8a0130abfb17b9083fbdb5",
+      "patchedSha": "18993ba0c17e53c7f88a3652310b63ebdf0d3cd0d6d9a908a3d3f0a58dbf81dc"
+    },
+    {
+      "target": "@wikimedia/codex/dist/codex.umd.cjs",
+      "package": "@wikimedia/codex",
+      "rel": "dist/codex.umd.cjs",
+      "patch": "wikimedia__codex__dist__codex.umd.cjs.patch",
+      "baseSha": "96bd25aa9fb52655a0b87aa9687e6a03cb01dd3aec598a2ff59309863911eb33",
+      "patchedSha": "12b7ddac2a2f6498fa5c9b62436d69e504848465bb9114e273deda2cb05a7687"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxAccordion-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxAccordion-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxAccordion-bidi.css.patch",
+      "baseSha": "34553a300cd5887c56599005a0d2525abfe0db813a3dd2faff3e4f1d23a8581c",
+      "patchedSha": "bfeab37067491fe4fc8817429f6102b557774c84285607020787b09cdc2e66e5"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxAccordion-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxAccordion-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxAccordion-rtl.css.patch",
+      "baseSha": "d02f5b35ac3a85fe6c26defe39f4aa0c2443f2e7be06d0a7f154e91c244d3869",
+      "patchedSha": "6100f0828b77d63643f584c5a899ca727d51f74f7445410418f6243048974c25"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxAccordion.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxAccordion.css",
+      "patch": "wikimedia__codex__dist__modules__CdxAccordion.css.patch",
+      "baseSha": "528979514927252c654feb74447ef64f38b19c3d5f8c41df65e65c43d59f7c63",
+      "patchedSha": "c751c42ed9257c6d7eff53f336f9aa68d5c02ccf48b13f05d00cc7a6f87823de"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxButton-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxButton-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxButton-bidi.css.patch",
+      "baseSha": "c4586344d5fb0dc6af11209259d7077b62ab2cb8acae0c87c8178e3c4a9e76ac",
+      "patchedSha": "24cfd2c0669128b08dde68ea1065e6339ebec5a77d6e54315f1214e1056cdf2a"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxButton-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxButton-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxButton-rtl.css.patch",
+      "baseSha": "27d1b9ed6c7edffc48dfe855106653ca19fa5a026df77031b2f7c26c0a4e49a6",
+      "patchedSha": "9efba64405a47f820b126c8636f69143ea45c36515eb31da1b5c1a4aef91f7c7"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxButton.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxButton.css",
+      "patch": "wikimedia__codex__dist__modules__CdxButton.css.patch",
+      "baseSha": "09ae3dbe1e3a0ab0aeb0a0e73df3e5a95c31b1d39225b7ef3feeac7caa0f5ba3",
+      "patchedSha": "76b97513ee52da661996a40099264699f79484c96e7b8fc5df965db90bd0c6a3"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxButtonGroup-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxButtonGroup-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxButtonGroup-bidi.css.patch",
+      "baseSha": "8feea7a6e06f819f1fb9f99d894cd223713738e7c1194807905a3745882d42ed",
+      "patchedSha": "483e61e05ef520e84a5b80026c6c082d8648e71e2707354d78fe63ef7217d3d2"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxButtonGroup-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxButtonGroup-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxButtonGroup-rtl.css.patch",
+      "baseSha": "e12301260e13fe99de0d651b2099b8d8d3bd3ed559a1feb02321feadcbad0662",
+      "patchedSha": "97d6f05ee6a924822a21f6583b51877e6061e8fbe3bfbb6938058cedaf92185c"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxButtonGroup.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxButtonGroup.css",
+      "patch": "wikimedia__codex__dist__modules__CdxButtonGroup.css.patch",
+      "baseSha": "289e7df75ec354536466e35b55a9f7eccf9928e4ad761fe98a8b23441d4a1c45",
+      "patchedSha": "0968efb31667e7a9f18579d4c8e94d3c34c88700ddcbbc9e969da8edcdfeac84"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxCard-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxCard-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxCard-bidi.css.patch",
+      "baseSha": "7b798c137e9a07f9aee10f7ce7c1e8ff4ce82936d97972ca4f0c678123354aba",
+      "patchedSha": "d463a4f2b577e3132b18660aba7dbfc9393c2f73a84cb26b50910d2f91357539"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxCard-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxCard-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxCard-rtl.css.patch",
+      "baseSha": "f01a3f15f02802baba4b3109dc6ae5c9155e8e3ae73ab670f7dfe69bc84f9449",
+      "patchedSha": "66f615d6ec6007b3625bccd5976352d943bbd76953a1e6703e68e0042a6c2aa0"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxCard.cjs",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxCard.cjs",
+      "patch": "wikimedia__codex__dist__modules__CdxCard.cjs.patch",
+      "baseSha": "6f354c18c404c39bc7884ca67fd0dcc17d49f95a40cbd911c4c8c4b44779bde9",
+      "patchedSha": "82102300c522a4d0b430d8da3f38f8a9503c91275877fbb0bc99a9e48e57084c"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxCard.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxCard.css",
+      "patch": "wikimedia__codex__dist__modules__CdxCard.css.patch",
+      "baseSha": "dda7c2332cd5be97c89ed6dbbf40949f4bb932a2c08335b4a1508845cb4d2ed8",
+      "patchedSha": "c36ceee6d853d95d1dd7a1334fe43c18d9cb77f3f3681403a56fa66df56ba23f"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxCheckbox-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxCheckbox-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxCheckbox-bidi.css.patch",
+      "baseSha": "68fd14666239c7f77872f09b474863f140a9265967e5ee3e3f0cb79309823f4a",
+      "patchedSha": "9a66bd030d35e3ee5fd6486c6f36b0569fe555aa32dfc22c03ec7cab7fb3622b"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxCheckbox-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxCheckbox-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxCheckbox-rtl.css.patch",
+      "baseSha": "5ab6e1effee90b0dbb1380eff524d7061c6c71e4afff3356a74734ef3835c017",
+      "patchedSha": "5e96e085e2819df3167100f456c6fb3905ff14ccd4e2ee5c83360b8a22b66f15"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxCheckbox.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxCheckbox.css",
+      "patch": "wikimedia__codex__dist__modules__CdxCheckbox.css.patch",
+      "baseSha": "8bbe0b3fe85ebf91b4bcb06dda962e183d1022ef1399c07e16e6887994fc69b7",
+      "patchedSha": "f0c0967c48b927c10ffe54846b49c93c77f2b2d05e86233daa697956c891552e"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxChipInput-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxChipInput-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxChipInput-bidi.css.patch",
+      "baseSha": "fc66cd9d85356b0b72903ce529e12e5a261956a303f6a966332c3e75ffc05504",
+      "patchedSha": "9e0375cbcba09cc0c05b2e55fcafbf93e5b15f95088d258bc1ae315a6520f63d"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxChipInput-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxChipInput-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxChipInput-rtl.css.patch",
+      "baseSha": "505ec39ed353514d3957ec7245db6c316a4503bc9cee76ad6350472da84524fd",
+      "patchedSha": "3e0877dda88ead5eb1fd478e1ecd918dfb556345d9f73a7254fc3bed92d00ed5"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxChipInput.cjs",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxChipInput.cjs",
+      "patch": "wikimedia__codex__dist__modules__CdxChipInput.cjs.patch",
+      "baseSha": "0a222759ec9d15a85c5b1ad6b49615898cc6d576d92271f66e3eed6253ae7486",
+      "patchedSha": "68ce0afb981b3ce9ee07f049af875a08c560c0c380444f5a41ca03a7e4e7b4e4"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxChipInput.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxChipInput.css",
+      "patch": "wikimedia__codex__dist__modules__CdxChipInput.css.patch",
+      "baseSha": "c88f2c7cb97665f3a3d5c2943a07b3420baaa147587f57e5992624e24bc230e8",
+      "patchedSha": "19cc0cbab3d737ba23c4c09ea720fd9bfae1c5e67daf6c25ac5dce15c32a0abc"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxDialog-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxDialog-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxDialog-bidi.css.patch",
+      "baseSha": "c1c83648100a85a8751a21d8a7b2afaa5a9c3411b74407297fadfb3d886f310e",
+      "patchedSha": "aa9493278c499cd0724dcae45db2fc4775dfc062f9c02db1776b3f58a1458fa2"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxDialog-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxDialog-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxDialog-rtl.css.patch",
+      "baseSha": "478d3560e13c421a757e48232ec44a5fad58646ab0ece355ab2fe4492e2d78fd",
+      "patchedSha": "34983aaf815a7d162394b4e1e34d22b2734567a5c6d608ecf736410c2722cfdb"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxDialog.cjs",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxDialog.cjs",
+      "patch": "wikimedia__codex__dist__modules__CdxDialog.cjs.patch",
+      "baseSha": "3727310db0510f3970d68b414e9110f1d7e946f0adca0f05ce70a222aaf628c4",
+      "patchedSha": "a5c783e6f413a4942c6ade4378960433a42b6e271eb5983affcb7d09bf971958"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxDialog.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxDialog.css",
+      "patch": "wikimedia__codex__dist__modules__CdxDialog.css.patch",
+      "baseSha": "aba137e09987f760ab633f44bd5fe2c8c099e2689acf708fddfc11e8995af9df",
+      "patchedSha": "539f976824943f75c2257f3ef2239de96724263bbb437cb8df64ae194821320b"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxField-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxField-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxField-bidi.css.patch",
+      "baseSha": "68d8404f62aa3217eb8837ae042a4ae8575f06e7da8028f7cb36ed6445358f4f",
+      "patchedSha": "7e5092099e8c1b9849c25df0ea44c7d2cb2dab8d60ea1e280e9297272ec436c0"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxField-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxField-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxField-rtl.css.patch",
+      "baseSha": "0204796343599fd0849516a8997599c81400690954d05efe98528d222c22bec5",
+      "patchedSha": "4c3b5634c1377bc24c65f5dd1140d309448f09c8d2e77fb9e6bd7e95325766ad"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxField.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxField.css",
+      "patch": "wikimedia__codex__dist__modules__CdxField.css.patch",
+      "baseSha": "0204796343599fd0849516a8997599c81400690954d05efe98528d222c22bec5",
+      "patchedSha": "4c3b5634c1377bc24c65f5dd1140d309448f09c8d2e77fb9e6bd7e95325766ad"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxImage-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxImage-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxImage-bidi.css.patch",
+      "baseSha": "b305aa18db29ad7260f186d4fa9add23ecb02b508ff9b5d156fb1030d74aa6b7",
+      "patchedSha": "ab868e8b3421718648fdc22d7cf0d4ec27a56c999c182c07508a6d63c3ca28e1"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxImage-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxImage-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxImage-rtl.css.patch",
+      "baseSha": "ce92123f06d7c971379d8110f82679c7a35d96d41568ac1e908a39c726fff6b6",
+      "patchedSha": "a03cf0037adc9d7547301fedba2dec3456d532a377d19077e63bd6688956405b"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxImage.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxImage.css",
+      "patch": "wikimedia__codex__dist__modules__CdxImage.css.patch",
+      "baseSha": "a9dfd04dc2ce2172a53bee6a6f210e8c0b84f9178ee7f55a55412405ba512114",
+      "patchedSha": "d3f469ff96a2a2cf85880eb666ca86e1b13ebfb48b3c53dc900ed6fc557d91ea"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxInfoChip-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxInfoChip-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxInfoChip-bidi.css.patch",
+      "baseSha": "79ab20f3a338265231f55b91705091bcce2ae940537081f160eb50c86153773e",
+      "patchedSha": "300109236d64c1d66d4664dcfb03add186c51a31115e252c5b3f29b469f4d6e5"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxInfoChip-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxInfoChip-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxInfoChip-rtl.css.patch",
+      "baseSha": "0f6e1b6a66792fb5da71b5989f5f89af8934287d0049b4c4aaee22b8e7fc627b",
+      "patchedSha": "01e89a506f02a537e0d4682426a85c2e167061159f8b8436fbc5d85c57478bc1"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxInfoChip.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxInfoChip.css",
+      "patch": "wikimedia__codex__dist__modules__CdxInfoChip.css.patch",
+      "baseSha": "0f6e1b6a66792fb5da71b5989f5f89af8934287d0049b4c4aaee22b8e7fc627b",
+      "patchedSha": "01e89a506f02a537e0d4682426a85c2e167061159f8b8436fbc5d85c57478bc1"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxLabel-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxLabel-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxLabel-bidi.css.patch",
+      "baseSha": "ec81ddc1021b66920dd46c60e4c09c621f325b1e0c2bb3049a6509644c6c91f8",
+      "patchedSha": "c9a66b989249c74383301307ea8b439880babae296baa7dc363c3f50f666f228"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxLabel-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxLabel-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxLabel-rtl.css.patch",
+      "baseSha": "681b40127bbf2dd3a33fccfdcc3f748f84745a9e1a4f86a465b36655b771bdd9",
+      "patchedSha": "193a087717f0d3e3e4404fb8aaa889137da767a8572a36004486aa32e542b195"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxLabel.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxLabel.css",
+      "patch": "wikimedia__codex__dist__modules__CdxLabel.css.patch",
+      "baseSha": "16fcda3e5965fd2942dd1c01970e0572c41f9a6b7e2586de6c1ff8a3d2e9dc6e",
+      "patchedSha": "ba22a0edce9a865ab18fa661f9005b709e13b321544f8cf44f6fb6ebfb21f691"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxLookup-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxLookup-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxLookup-bidi.css.patch",
+      "baseSha": "96fdb8a8272b8830d749313ba1e4f29cc184b26152899c13436aa6465570d3ab",
+      "patchedSha": "8ca0f5308b57691458e944b954c3119d9170b6c1e7f7662ddc1567263aeb1445"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxLookup-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxLookup-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxLookup-rtl.css.patch",
+      "baseSha": "1bf417f8be89e7a55eec4a5a1cc3c4c8b344c4d0d1514f21d4879dcf59742bd1",
+      "patchedSha": "b4edf3639b7d6106eee85652a77f9a1c6d9f30199ab9c93bf4c06b305ca99bdd"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxLookup.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxLookup.css",
+      "patch": "wikimedia__codex__dist__modules__CdxLookup.css.patch",
+      "baseSha": "c1bbe681da8db0d44aa6a45eef9e64e2e60508bfccce3bbba7f5a552b40aaa7f",
+      "patchedSha": "bedf4196926e47f13bafa15562613e9f41a077d3f8db867ab0962a56acbfa45b"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxMenu-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxMenu-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxMenu-bidi.css.patch",
+      "baseSha": "af87b08e3cbfea183ff06916fc093d6549b60b603395b9e4b7717d87546a5af4",
+      "patchedSha": "23ac725603ddcfa79e956737d026426d1bc49b99c848c8766b672bacdc88db53"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxMenu-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxMenu-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxMenu-rtl.css.patch",
+      "baseSha": "0cae371be5132921d2f87bc42e19d260f4e784d9cbc7629a9f109126ed320c0f",
+      "patchedSha": "8d8d40c3fbca9702c890fa0cb6b1c4bd71d8f0e399a39dc3153f9846d46e5dff"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxMenu.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxMenu.css",
+      "patch": "wikimedia__codex__dist__modules__CdxMenu.css.patch",
+      "baseSha": "d59543545b0c214ec6facb1f65d46d2f330fd064fc64372b68025a2592559a26",
+      "patchedSha": "48e88d3cb16e7e77bb67d1e48a0c0c825e5276cc558a05c2fdda10fea3e02907"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxMenuItem-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxMenuItem-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxMenuItem-bidi.css.patch",
+      "baseSha": "a37429b8bdf195e96a1c505e99a0edcf7ed9b8bdf577c3e81a37276d68fad4a3",
+      "patchedSha": "64b9bb81d17dfea29b9874e84feebdf0d7ae23a00cb8fc073ee8237f28d4bc2c"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxMenuItem-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxMenuItem-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxMenuItem-rtl.css.patch",
+      "baseSha": "5ccb370be47bced8568add39b49bb55002175a3f8e426da9a9505c8f47c5e5d8",
+      "patchedSha": "98411fa4c2da8c8f6d6dac5f1cb74c1b319296bd4c3b0cb955b8f7bac65a7fe7"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxMenuItem.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxMenuItem.css",
+      "patch": "wikimedia__codex__dist__modules__CdxMenuItem.css.patch",
+      "baseSha": "b6e0c94dbaf5a8c5e33cc0825c4c04554df94045319e0e02073082d724b01f74",
+      "patchedSha": "f8c37387ea7cdeebd8a3ea1c40fb6ec395db88b22af86d9e4f61b57df7ab341f"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxMessage-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxMessage-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxMessage-bidi.css.patch",
+      "baseSha": "092b18f460e1245a592660ad4eddcd08abe87ec9cd0c6d014a6b7b00beee093e",
+      "patchedSha": "7a68e7f8ba4d90f62d2f59a777c9de2a9d401b028182df0a3e82962d46ab0cae"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxMessage-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxMessage-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxMessage-rtl.css.patch",
+      "baseSha": "7fc4275f7999fdb02957299c6ba6dbfe5a9da2096b34a0c0b0459babb4552bb6",
+      "patchedSha": "370d772bb4db8c608ec124e073c459c32d8f3322f327c3c924400e3a6a8ec6cf"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxMessage.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxMessage.css",
+      "patch": "wikimedia__codex__dist__modules__CdxMessage.css.patch",
+      "baseSha": "d29508879136067fa4e056aedbd86a1cc3b2d62f9b7581fac78b780f59a94e3c",
+      "patchedSha": "8ee3dc479c2c05e7cddee816a1373c0cd14ca86dc94a2c71356fe930e506fe77"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxMultiselectLookup-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxMultiselectLookup-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxMultiselectLookup-bidi.css.patch",
+      "baseSha": "1050e1a09d907202c9252749833a0a0ee6b60a3af7eb28ba40a6c29ddb248bcc",
+      "patchedSha": "7886abc889a942139de2d4224f574060dfed519b2b88437f542b3d7bf626252d"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxMultiselectLookup-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxMultiselectLookup-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxMultiselectLookup-rtl.css.patch",
+      "baseSha": "4e53c7bd1e94175bd517d1085fb22e2da7b516348e5e560e51ece1a055d29763",
+      "patchedSha": "60bf1eb093698921cb3b5dc306cf7286f0f856d1919521bae2e4026ccc955477"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxMultiselectLookup.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxMultiselectLookup.css",
+      "patch": "wikimedia__codex__dist__modules__CdxMultiselectLookup.css.patch",
+      "baseSha": "dbf1989fe81bfdee6bab3b3502fd4d83a4b49435ab306f65beccf1fa8bb87f61",
+      "patchedSha": "0bc3f333a5742241a241a1a8af0d56befed02d273aa4c792aab6ea8d654f2a52"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxPopover-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxPopover-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxPopover-bidi.css.patch",
+      "baseSha": "9957a71c7d483f82f37fddfc3b454ac602055416fc5fad95e6467e2a3ad34acc",
+      "patchedSha": "4046dd4019977bb605b384f512419b73c21039a56d73a81d5406900be114cce3"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxPopover-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxPopover-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxPopover-rtl.css.patch",
+      "baseSha": "e375bea0b49b741a7022f25e3e720f47a19a75c6a7cc59a0b1052fe05315ef37",
+      "patchedSha": "b5e5d5cdc43bf8e101785c84570bd22bb86ec9aed7a3670794f6306c9996cd15"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxPopover.cjs",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxPopover.cjs",
+      "patch": "wikimedia__codex__dist__modules__CdxPopover.cjs.patch",
+      "baseSha": "41e83c695f5386a74ccc30c37983c5ef64c387432d9c307d0a562552e7179f47",
+      "patchedSha": "5de9b2188583aeef34e35880887defaa2e5b58835bc27782196d3b7f876c665c"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxPopover.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxPopover.css",
+      "patch": "wikimedia__codex__dist__modules__CdxPopover.css.patch",
+      "baseSha": "218df2c10600769a0c7cdc1238ce752b5e9bd18ce2f0e457070102f2aa955cdc",
+      "patchedSha": "2e158207e8356671de6e1a5720038bd5151a6869e2634b16da94d22bf4cb4220"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxProgressBar-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxProgressBar-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxProgressBar-bidi.css.patch",
+      "baseSha": "7ff2afa9a25af0f834b6f247a2303b4a1457175617ffcb278a467bc3f678eb15",
+      "patchedSha": "b3cb69fecd2791b8187b3186eb9b9cd6d25475f7b23242b3efd2168b5c0ba84d"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxProgressBar-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxProgressBar-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxProgressBar-rtl.css.patch",
+      "baseSha": "f5cbb33d0b0f2bf7d3eb6b9b604684225c4c2559dec4cac413630059f5294734",
+      "patchedSha": "53649980b07ae37deb1f0f76c4793ee75a555497997ccf6f0ee70ba7be391d48"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxProgressBar.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxProgressBar.css",
+      "patch": "wikimedia__codex__dist__modules__CdxProgressBar.css.patch",
+      "baseSha": "bf665f0509623a33693cbcdce704ba606b72a04a2a76da4848aff94424cd54a8",
+      "patchedSha": "8eb74bf7110145acd434bbed1fa7ac8f1a97e60beb1276ef7a3f6cdd8245a7ca"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxProgressIndicator-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxProgressIndicator-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxProgressIndicator-bidi.css.patch",
+      "baseSha": "e94ec0d89fd7530e30f298237e22ce1f659668bdbdb6ba2703d845a09000e5fa",
+      "patchedSha": "26a56453479d1183113ef0a66581212b668a1dca8727ecd1e8cbcadd497f2ea8"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxProgressIndicator-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxProgressIndicator-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxProgressIndicator-rtl.css.patch",
+      "baseSha": "0b6c204dd782c17233f46b59e9d4d86eef0c1fd25f49373a0e3b88762883b03e",
+      "patchedSha": "fbb33e1c4db7b6b96156606dc324fdba3e074278b75486fb04fdc96302f1fc8e"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxProgressIndicator.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxProgressIndicator.css",
+      "patch": "wikimedia__codex__dist__modules__CdxProgressIndicator.css.patch",
+      "baseSha": "da2e069b9ac7bec11145b770dcbda2b1d5f7f4eb08bfbb0d8117131e6bcb6f76",
+      "patchedSha": "4a40f0bccb98874424ccc542087cc8a686ad318887403a1ad211baadad38a8fe"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxRadio-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxRadio-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxRadio-bidi.css.patch",
+      "baseSha": "e8af180637c2707cf99c880bd73080dc809adc2600868ce8979094c8cd88e650",
+      "patchedSha": "9f7efd5d9d157bae4b7d4ac794e1db47ded8b4002bd51aee9ebe0797f7825a8b"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxRadio-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxRadio-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxRadio-rtl.css.patch",
+      "baseSha": "4084a1ffa3152a3b4f4c58d97b04647021d922cb31b81514707f89854af02f7a",
+      "patchedSha": "c1da00873fc99514b9d4ea5c62ce0885bee01820f01e6baf3180f269f385e68d"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxRadio.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxRadio.css",
+      "patch": "wikimedia__codex__dist__modules__CdxRadio.css.patch",
+      "baseSha": "3c8f5b75b58763e84454f37a0f4d5fe19d6a2abaa85000653e5ec969c7eef31e",
+      "patchedSha": "bf7920c514af6ea093a70341f0dfed6cd2cf7c1d641c86cfa4022a8e73888db6"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxSearchInput-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxSearchInput-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxSearchInput-bidi.css.patch",
+      "baseSha": "8fc84d61d6eaa338ff623b76e94f3ae59e38a181e08b118a6e415b2da539d6a6",
+      "patchedSha": "1151d3a4c7cec8980a28b14a371cde6ace3533ae1822b45235c331d1f44edfa2"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxSearchInput-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxSearchInput-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxSearchInput-rtl.css.patch",
+      "baseSha": "fad5553aea81fca8c72d911e065c7a796d79f886298e3adb305091ac96e309f1",
+      "patchedSha": "417577e8d379026bf18be7527ef15ee30854bb3d9dec96546769f50780f352d6"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxSearchInput.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxSearchInput.css",
+      "patch": "wikimedia__codex__dist__modules__CdxSearchInput.css.patch",
+      "baseSha": "17d3abbba6ffa422f2a1c27e76b2166d794502e7370c638cdaadcd2147c84464",
+      "patchedSha": "19dcb2282bd7edcad2621054c5d96034fd72c6f35191d0d38ab15365b04fb8ee"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxSelect-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxSelect-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxSelect-bidi.css.patch",
+      "baseSha": "6fe60b9fbd129be84ac9b09ea7867bd0d1bbe7dd51f86e72160259a4798f6360",
+      "patchedSha": "8c73755ef53688d7987297eaeeda87de026ce7588a5c9ee1e57f6647b3f76fdd"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxSelect-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxSelect-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxSelect-rtl.css.patch",
+      "baseSha": "660ea9b1992ff8d27ad70def11d5872a705e3046bb10e22110def83f4cc7bf92",
+      "patchedSha": "95fbd0bdfa1a90ee966a92b978fdf457573cd828b823fe32a0bffc9c8650b90a"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxSelect.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxSelect.css",
+      "patch": "wikimedia__codex__dist__modules__CdxSelect.css.patch",
+      "baseSha": "4967cd722f819b96cbbdab537df235a66f4725eaabea21a7e2ce998dce26fd8e",
+      "patchedSha": "4d8f3091abb4cd58c39df752efa08703cd86e3dfd9a63e315af2147de9376d8f"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxTable-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxTable-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxTable-bidi.css.patch",
+      "baseSha": "a76c1091489b83f546e567c67e4128a880b8512a90c4d008d131aab446afd851",
+      "patchedSha": "900eed6e2948ffbe58cc95c5d67b4111f09dd3276bb7ddb4d0291b1fb768c8e8"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxTable-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxTable-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxTable-rtl.css.patch",
+      "baseSha": "da4b7e664086f553978a4ce66fa41331f2c3a64ffe1c3eaa04b09450bcd77026",
+      "patchedSha": "10c0817b6d9f0b0478a8db8f012b72e7b0cd37a95fda4cdd60c802902aac3a60"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxTable.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxTable.css",
+      "patch": "wikimedia__codex__dist__modules__CdxTable.css.patch",
+      "baseSha": "6f70b5231feb9685d6ef94f4199cef67c510fa33f01b4017f087984f9d87ff6a",
+      "patchedSha": "9ef734396b92a885c9970f352225087fffd582637d28f2d883da3864aa4b060c"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxTabs-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxTabs-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxTabs-bidi.css.patch",
+      "baseSha": "cf199b3741285ad9a3883b4ff3b95b7eee2f0ced512fcad1fbdd6235ea10d799",
+      "patchedSha": "e45f4b1852527f3418fd06d0950870397326c3848bbf2512405a16cd96c13228"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxTabs-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxTabs-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxTabs-rtl.css.patch",
+      "baseSha": "194c226006779a8478b4bd7ce3a2c9e4b30bcfd222b29124390cd9d1b582fe6e",
+      "patchedSha": "2b3640a48fa8a6483ec309f32a007a4af254975e13f4f5312d66b7498850ee3a"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxTabs.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxTabs.css",
+      "patch": "wikimedia__codex__dist__modules__CdxTabs.css.patch",
+      "baseSha": "68b2599b4f116dd77601ff720d9d3538dca3b6f227f4d05bf26fe675a3063b57",
+      "patchedSha": "890b920f1580f1dce0b1a7351468e073dff87f216a955091f3d1726781491540"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxTextArea-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxTextArea-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxTextArea-bidi.css.patch",
+      "baseSha": "0bc9a3f373a68a4dff3ff1d9ce94bf3ef433bb4f3ac948b9487c88109cd96b61",
+      "patchedSha": "178c66b931d938c4729abe6d7551ae5a6d06b46b61092a8cf8c3c9e0dcdf573d"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxTextArea-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxTextArea-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxTextArea-rtl.css.patch",
+      "baseSha": "9f4896af4cb37c8c839128237256221386e9cc0a423a593e05597dca6a80cb89",
+      "patchedSha": "b8728be332477f76012ef806523d63eaf52c2afbf135f78988be68209694bff2"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxTextArea.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxTextArea.css",
+      "patch": "wikimedia__codex__dist__modules__CdxTextArea.css.patch",
+      "baseSha": "4d00acaa4d3e09e945020518250ab35c404094d5b9b627e430e7f5f7fab0f9aa",
+      "patchedSha": "ba21f288c8c14b18c6c9ce71c7a0c5ad8296e3cd19022631a694aa9204eb5c6a"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxTextInput-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxTextInput-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxTextInput-bidi.css.patch",
+      "baseSha": "dabf04ef1fbacfa52118e8986ca41e24784e3a94f869822eb6e6c383fe863565",
+      "patchedSha": "4fbd9202a0adf8c9362b8229b1c21cbc057fb3b70b6f85b81ad1ec2c94276917"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxTextInput-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxTextInput-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxTextInput-rtl.css.patch",
+      "baseSha": "193d6f129ceb91c1b8425efdd595e8ee996c5f015d55968f40b343c99098dea3",
+      "patchedSha": "3667046a14acef8a12bfccd9313b2cbf36e370d8bc998478764b2c63dae3a2dc"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxTextInput.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxTextInput.css",
+      "patch": "wikimedia__codex__dist__modules__CdxTextInput.css.patch",
+      "baseSha": "120c9007f2c56c21ebb3c671cf0da9d7abeb28c5f4d2d74cdd53aa6e722d4fad",
+      "patchedSha": "e1819289694fdfc39c5117fe30109859969c38ffaa3f8466af98d78031110640"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxThumbnail-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxThumbnail-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxThumbnail-bidi.css.patch",
+      "baseSha": "fa46c0ffa78ffa39d7cbc23398039cd97d32feb21cc44ed9da7fc7c092b4b12d",
+      "patchedSha": "8a7aab4c03e62a36b759466c8e223d4b58482aae56aca6548103d53c071d04d4"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxThumbnail-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxThumbnail-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxThumbnail-rtl.css.patch",
+      "baseSha": "67114b1efe0c3777cc38a1470e41b0b4699879158ece67edb553c878c710fc67",
+      "patchedSha": "8afb1073fdf0ba7dc969db7f1b5df795dd3a499e24495551df5b5aeac2d2db7e"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxThumbnail.cjs",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxThumbnail.cjs",
+      "patch": "wikimedia__codex__dist__modules__CdxThumbnail.cjs.patch",
+      "baseSha": "f24096cb6cb00bb3eb4976de760f74216dda77a0086a629c0225640d988ef78f",
+      "patchedSha": "b4122424362379e4f642f1fed0f001f895681b3c6863453dfcbc02cd7d60efd1"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxThumbnail.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxThumbnail.css",
+      "patch": "wikimedia__codex__dist__modules__CdxThumbnail.css.patch",
+      "baseSha": "67114b1efe0c3777cc38a1470e41b0b4699879158ece67edb553c878c710fc67",
+      "patchedSha": "8afb1073fdf0ba7dc969db7f1b5df795dd3a499e24495551df5b5aeac2d2db7e"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxToggleButton-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxToggleButton-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxToggleButton-bidi.css.patch",
+      "baseSha": "5825b15dbf7d93cd51e9d09f8d8def54f2317339d2205589b26f8c0f447696df",
+      "patchedSha": "12279eed5d6635d36063a62b669b4dc8f0c70c1eefd3a3a89348099bda1e0d69"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxToggleButton-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxToggleButton-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxToggleButton-rtl.css.patch",
+      "baseSha": "a90a8d51c63b0ba159c6c060c585d77b7ea84e42c9860bc635bd0ac5daf97f7e",
+      "patchedSha": "3e1e97f12736a3c938e04dd2f395c445b8a26f4b61c9889b3ad1dcadc6551486"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxToggleButton.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxToggleButton.css",
+      "patch": "wikimedia__codex__dist__modules__CdxToggleButton.css.patch",
+      "baseSha": "21b48aad5a71da18a481558d5534599290103247bcdf4d21535f5fbc04aee363",
+      "patchedSha": "ef047a17b840f71dab0d31000021c0833f7bc33fd0954a5c6afd5db3c02189b3"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxToggleButtonGroup-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxToggleButtonGroup-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxToggleButtonGroup-bidi.css.patch",
+      "baseSha": "d6a94a53d5ef7c4a81bf9a252a6cba80ca81605482686b0bf48e9579a2d3ceb2",
+      "patchedSha": "c02285fbad4a06324659ef31388b6367c3f3427ac10779a580c433f08a411431"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxToggleButtonGroup-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxToggleButtonGroup-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxToggleButtonGroup-rtl.css.patch",
+      "baseSha": "47937ae7c36b3f1e7394642725c777e7a85d879145552fc6759affdcc71db2f8",
+      "patchedSha": "f17cec1783d0b4638f8f13eedd3d041d773a9a8201c2c843e5cc6a5b89beddb9"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxToggleButtonGroup.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxToggleButtonGroup.css",
+      "patch": "wikimedia__codex__dist__modules__CdxToggleButtonGroup.css.patch",
+      "baseSha": "f7e4496a0453519b91c8f4f2851f52eaa1667963050fbf3139b56ce8337670aa",
+      "patchedSha": "eb7bc09791bdb81819f62e8e8d5e959e32e94681184254a0434897f975a40f75"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxToggleSwitch-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxToggleSwitch-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxToggleSwitch-bidi.css.patch",
+      "baseSha": "ecbea88a679ac0837a7f17b3a5c878e8de4208a8b86445d649975abe8b5d014e",
+      "patchedSha": "3ebe487778e247dd488eb477b3a60af9f4c451609ee598d8b282454e812c3e08"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxToggleSwitch-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxToggleSwitch-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxToggleSwitch-rtl.css.patch",
+      "baseSha": "90b79abf5ba3f5890a27788c028883709554ec0001849b962a675234d621c51a",
+      "patchedSha": "7ed1024371601c733833f00b193b8353d2c8dd53a535a945ec2cdd6baef74086"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxToggleSwitch.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxToggleSwitch.css",
+      "patch": "wikimedia__codex__dist__modules__CdxToggleSwitch.css.patch",
+      "baseSha": "f346d7bbb550ae57c02c7812bb544750def490b6bbcbf98e0d70e0dc467d59b5",
+      "patchedSha": "54ddb732fcdf6c83284b3e158d0a3e7825d4d95727b3d1c00ed5304bbdf5a018"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxTooltip-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxTooltip-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxTooltip-bidi.css.patch",
+      "baseSha": "b67820f14f060843fa349e41b18a9c1de4a12940e3a361b871f2d315434d2582",
+      "patchedSha": "f514b0972961ad85fae826a7a1c1bf431288f7c7ee4cb5ad8176dc069764d3f5"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxTooltip-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxTooltip-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxTooltip-rtl.css.patch",
+      "baseSha": "b4a57ef45128b425bdefb3a41aab921e77fb1d5a987f81876c7750d55e62bb28",
+      "patchedSha": "cc7df58a48e2ccbff16d15b45e8e4acd556e563f23f31af19bf6bc73d9f1941f"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxTooltip.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxTooltip.css",
+      "patch": "wikimedia__codex__dist__modules__CdxTooltip.css.patch",
+      "baseSha": "b4a57ef45128b425bdefb3a41aab921e77fb1d5a987f81876c7750d55e62bb28",
+      "patchedSha": "cc7df58a48e2ccbff16d15b45e8e4acd556e563f23f31af19bf6bc73d9f1941f"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxTypeaheadSearch-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxTypeaheadSearch-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__CdxTypeaheadSearch-bidi.css.patch",
+      "baseSha": "fb4d7a1d863f2841ae9f86fe26c04694dff01d44886bf7009bbf8bbf2bed4226",
+      "patchedSha": "f9fd17fc3d5de3058ac8ae4b72aec6e48707449b59dc4ad5ab7f16c395b84cf4"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxTypeaheadSearch-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxTypeaheadSearch-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__CdxTypeaheadSearch-rtl.css.patch",
+      "baseSha": "007894f05a9f460d614bdb98e5f4d88d9ae4c25f8081a1332694e0b185f4e3af",
+      "patchedSha": "4c89f8a2fd73aac67bd656ef5edf82d5a4c99cc9c4782e39e41a084dfe37ec71"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/CdxTypeaheadSearch.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/CdxTypeaheadSearch.css",
+      "patch": "wikimedia__codex__dist__modules__CdxTypeaheadSearch.css.patch",
+      "baseSha": "b72334bbeb601e5cd367009d235687d8588c7b60c7f430b7cdd5501aca81122f",
+      "patchedSha": "cdef4b0a72a94f10e4ee0e41e2727eaeb4a990e18accb680c9e6393238783bf6"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/Icon-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/Icon-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__Icon-bidi.css.patch",
+      "baseSha": "9f5a0695b3d7354a62eb34d7a68edd58eb77264bb6f358139cd6c41364cb8893",
+      "patchedSha": "866e9ea4e5a5c92b973be80764d77fc50818fb3181e297aabb532abca44ad82c"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/Icon-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/Icon-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__Icon-rtl.css.patch",
+      "baseSha": "d37fc03344478f6e5a3f968ed189160300a3c627bdaa5b6f7d1e7dbae983a15b",
+      "patchedSha": "0c747f62480fd8cdaeae426307c207a58944669793caf01e00b0e431a7a6f107"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/Icon.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/Icon.css",
+      "patch": "wikimedia__codex__dist__modules__Icon.css.patch",
+      "baseSha": "d37fc03344478f6e5a3f968ed189160300a3c627bdaa5b6f7d1e7dbae983a15b",
+      "patchedSha": "0c747f62480fd8cdaeae426307c207a58944669793caf01e00b0e431a7a6f107"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/Icon.js",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/Icon.js",
+      "patch": "wikimedia__codex__dist__modules__Icon.js.patch",
+      "baseSha": "8e5260bb60657b3706909ffca20e5ef5e6efc55a22b26c42f8c6f506d2a43026",
+      "patchedSha": "a36059655db6bcc3668ce55f57bb2b12a034d34379ba994f9f9a91d94e05b66f"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/ToastDisplay-bidi.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/ToastDisplay-bidi.css",
+      "patch": "wikimedia__codex__dist__modules__ToastDisplay-bidi.css.patch",
+      "baseSha": "f98412a5aaba993a7af49099f456718dbbb81bcf0d20153752f1f82d0bb35a5d",
+      "patchedSha": "642168637c8d76c425db24d6b0c47fb029ca464417660a4d810592393ff267e1"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/ToastDisplay-rtl.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/ToastDisplay-rtl.css",
+      "patch": "wikimedia__codex__dist__modules__ToastDisplay-rtl.css.patch",
+      "baseSha": "24794ac9610f61d20d97dea6c4fdff3ac8413667f7a689ea7b1ce84db142e683",
+      "patchedSha": "c5c89fef12f9007730b7fed95b0e61594d338ba23949ad37131dbfb4ed108a15"
+    },
+    {
+      "target": "@wikimedia/codex/dist/modules/ToastDisplay.css",
+      "package": "@wikimedia/codex",
+      "rel": "dist/modules/ToastDisplay.css",
+      "patch": "wikimedia__codex__dist__modules__ToastDisplay.css.patch",
+      "baseSha": "a8fc24d860cde87287f3b91b9256a637d81e885481f992cadc4c89e74a05c9ec",
+      "patchedSha": "c1292f84c27613836430ba39203612f91c32373897ead59e0c53bd9fb789975a"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/dist/theme-wikimedia-ui-mixin-dark.less",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "dist/theme-wikimedia-ui-mixin-dark.less",
+      "patch": "wikimedia__codex-design-tokens__dist__theme-wikimedia-ui-mixin-dark.less.patch",
+      "baseSha": "ecd9f52edd397f187d57ad725fbeb71e026079012f386fc7f8446c877046d09b",
+      "patchedSha": "643d9b30edca4ff06f7193fbd284ef16edc89476ce90f3a04b7486df6a856612"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/dist/theme-wikimedia-ui-mixin-light.less",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "dist/theme-wikimedia-ui-mixin-light.less",
+      "patch": "wikimedia__codex-design-tokens__dist__theme-wikimedia-ui-mixin-light.less.patch",
+      "baseSha": "c310e41031b16755c8a7d954b9ef305a81b65ac2ffd03981619e26ae06c721ee",
+      "patchedSha": "e4fa980b44daa46b2ea044666547cedf3f32e4c737013cd0204dd80858631fea"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/dist/theme-wikimedia-ui-mixin-mode-reset.less",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "dist/theme-wikimedia-ui-mixin-mode-reset.less",
+      "patch": "wikimedia__codex-design-tokens__dist__theme-wikimedia-ui-mixin-mode-reset.less.patch",
+      "baseSha": "d07739fe63c3ac09af28b55dbeaf8451146451a6f234b955daa704b9105120c4",
+      "patchedSha": "1f75533a2a0fa3ced97fee27473e13d3a3a79374b13dc202cc3e171e8fea2825"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/dist/theme-wikimedia-ui-mode-dark.css",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "dist/theme-wikimedia-ui-mode-dark.css",
+      "patch": "wikimedia__codex-design-tokens__dist__theme-wikimedia-ui-mode-dark.css.patch",
+      "baseSha": "98cb2bdf9627501760fdc133338a9dbd2551e13ee9b39aa359063612b44b3d23",
+      "patchedSha": "e0823ebd8a2cd862e5042aaf49df269633aabe04162d3ee40bfd70da74610817"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/dist/theme-wikimedia-ui-mode-dark.json",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "dist/theme-wikimedia-ui-mode-dark.json",
+      "patch": "wikimedia__codex-design-tokens__dist__theme-wikimedia-ui-mode-dark.json.patch",
+      "baseSha": "1e725f6d62710ef596f7e5a727d5469d38d2ab459661afb2a33c539ddde992c4",
+      "patchedSha": "718614eb7e34628ab3e75f5154a1daeee3dc859678704fc58417d3fbd4a7385f"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/dist/theme-wikimedia-ui-mode-large.json",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "dist/theme-wikimedia-ui-mode-large.json",
+      "patch": "wikimedia__codex-design-tokens__dist__theme-wikimedia-ui-mode-large.json.patch",
+      "baseSha": "99753628986f4df723b7565880201e91ece50a8cdea68a5be9a796e7a94586a9",
+      "patchedSha": "c335ade5082a8a6c3ff0a3ca4e683d9cdfefec40c37ed3433deb3df151141fef"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/dist/theme-wikimedia-ui-mode-small.json",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "dist/theme-wikimedia-ui-mode-small.json",
+      "patch": "wikimedia__codex-design-tokens__dist__theme-wikimedia-ui-mode-small.json.patch",
+      "baseSha": "6d8b9ae66bcbfdf97699c2862da9a043a8fec1b8207dab0a071f130db9818628",
+      "patchedSha": "f4f2c7d31152d8f1ccbeec9b27e92253696fe5d3207a03d86172d9da90983f91"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/dist/theme-wikimedia-ui-mode-x-large.json",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "dist/theme-wikimedia-ui-mode-x-large.json",
+      "patch": "wikimedia__codex-design-tokens__dist__theme-wikimedia-ui-mode-x-large.json.patch",
+      "baseSha": "f5bbc6477f08865473c1d3dfe156ba2832e3062615b6d71398ebda5b994ff4ce",
+      "patchedSha": "0c173918cdd35f00d0f6aead001f149d71504512bed3c4edf3cadfdf5213a060"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/dist/theme-wikimedia-ui-root.css",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "dist/theme-wikimedia-ui-root.css",
+      "patch": "wikimedia__codex-design-tokens__dist__theme-wikimedia-ui-root.css.patch",
+      "baseSha": "575333bad32a5b86e45056942fcb8bd537a96f6373fa956248d9a3106fff13f0",
+      "patchedSha": "509613b0c1285d95af58bff88d3ab0bc81f57b4f899f29c1b8efa548899d21c2"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/dist/theme-wikimedia-ui.css",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "dist/theme-wikimedia-ui.css",
+      "patch": "wikimedia__codex-design-tokens__dist__theme-wikimedia-ui.css.patch",
+      "baseSha": "e8fb6f147ebdba6859dd3fe38aa17ecd245f8fa295a7b55e0e5313320449ea49",
+      "patchedSha": "c8a7b74a587b409e9e66067da8004404c4d6802b560c61815a3994205ba2f962"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/dist/theme-wikimedia-ui.js",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "dist/theme-wikimedia-ui.js",
+      "patch": "wikimedia__codex-design-tokens__dist__theme-wikimedia-ui.js.patch",
+      "baseSha": "7bdc1040d734c9f2a71728382e75efbfe0d6238204626db75eaea549776c34b3",
+      "patchedSha": "c239e06caa7830365eb103c1f50baaa40a2d94ca79b95ec6e46ae2aae3187a36"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/dist/theme-wikimedia-ui.json",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "dist/theme-wikimedia-ui.json",
+      "patch": "wikimedia__codex-design-tokens__dist__theme-wikimedia-ui.json.patch",
+      "baseSha": "dc1e0d38449f440659f98e584358cde2c44f4d329e6f71875b81a3e31d1101d1",
+      "patchedSha": "bb1d4922d71fe1c9f6908654c792564cc5c899d64eb27224491828a6eae0601f"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/dist/theme-wikimedia-ui.less",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "dist/theme-wikimedia-ui.less",
+      "patch": "wikimedia__codex-design-tokens__dist__theme-wikimedia-ui.less.patch",
+      "baseSha": "b5501db3920d2925d9a31caf36e44c010ade4fd356aacb6e51601661e8edeb0b",
+      "patchedSha": "2e32ce56542f11fc8c3f3aec45508d7f9a8b2f89948e928e4881ba5c0046a2da"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/dist/theme-wikimedia-ui.scss",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "dist/theme-wikimedia-ui.scss",
+      "patch": "wikimedia__codex-design-tokens__dist__theme-wikimedia-ui.scss.patch",
+      "baseSha": "7be62a0280b3127d2355aad891867311957b7518f10e34a21caf283da4c5a585",
+      "patchedSha": "dd5a98e99a42ad51c055080d520cdebc2955bdfa0d5f17b3d794827f06faf443"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/theme-wikimedia-ui-mixin-dark.less",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "theme-wikimedia-ui-mixin-dark.less",
+      "patch": "wikimedia__codex-design-tokens__theme-wikimedia-ui-mixin-dark.less.patch",
+      "baseSha": "ecd9f52edd397f187d57ad725fbeb71e026079012f386fc7f8446c877046d09b",
+      "patchedSha": "643d9b30edca4ff06f7193fbd284ef16edc89476ce90f3a04b7486df6a856612"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/theme-wikimedia-ui-mixin-light.less",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "theme-wikimedia-ui-mixin-light.less",
+      "patch": "wikimedia__codex-design-tokens__theme-wikimedia-ui-mixin-light.less.patch",
+      "baseSha": "c310e41031b16755c8a7d954b9ef305a81b65ac2ffd03981619e26ae06c721ee",
+      "patchedSha": "e4fa980b44daa46b2ea044666547cedf3f32e4c737013cd0204dd80858631fea"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/theme-wikimedia-ui-mixin-mode-reset.less",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "theme-wikimedia-ui-mixin-mode-reset.less",
+      "patch": "wikimedia__codex-design-tokens__theme-wikimedia-ui-mixin-mode-reset.less.patch",
+      "baseSha": "d07739fe63c3ac09af28b55dbeaf8451146451a6f234b955daa704b9105120c4",
+      "patchedSha": "1f75533a2a0fa3ced97fee27473e13d3a3a79374b13dc202cc3e171e8fea2825"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/theme-wikimedia-ui-mode-dark.css",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "theme-wikimedia-ui-mode-dark.css",
+      "patch": "wikimedia__codex-design-tokens__theme-wikimedia-ui-mode-dark.css.patch",
+      "baseSha": "98cb2bdf9627501760fdc133338a9dbd2551e13ee9b39aa359063612b44b3d23",
+      "patchedSha": "e0823ebd8a2cd862e5042aaf49df269633aabe04162d3ee40bfd70da74610817"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/theme-wikimedia-ui-mode-dark.json",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "theme-wikimedia-ui-mode-dark.json",
+      "patch": "wikimedia__codex-design-tokens__theme-wikimedia-ui-mode-dark.json.patch",
+      "baseSha": "1e725f6d62710ef596f7e5a727d5469d38d2ab459661afb2a33c539ddde992c4",
+      "patchedSha": "718614eb7e34628ab3e75f5154a1daeee3dc859678704fc58417d3fbd4a7385f"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/theme-wikimedia-ui-mode-large.json",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "theme-wikimedia-ui-mode-large.json",
+      "patch": "wikimedia__codex-design-tokens__theme-wikimedia-ui-mode-large.json.patch",
+      "baseSha": "99753628986f4df723b7565880201e91ece50a8cdea68a5be9a796e7a94586a9",
+      "patchedSha": "c335ade5082a8a6c3ff0a3ca4e683d9cdfefec40c37ed3433deb3df151141fef"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/theme-wikimedia-ui-mode-small.json",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "theme-wikimedia-ui-mode-small.json",
+      "patch": "wikimedia__codex-design-tokens__theme-wikimedia-ui-mode-small.json.patch",
+      "baseSha": "6d8b9ae66bcbfdf97699c2862da9a043a8fec1b8207dab0a071f130db9818628",
+      "patchedSha": "f4f2c7d31152d8f1ccbeec9b27e92253696fe5d3207a03d86172d9da90983f91"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/theme-wikimedia-ui-mode-x-large.json",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "theme-wikimedia-ui-mode-x-large.json",
+      "patch": "wikimedia__codex-design-tokens__theme-wikimedia-ui-mode-x-large.json.patch",
+      "baseSha": "f5bbc6477f08865473c1d3dfe156ba2832e3062615b6d71398ebda5b994ff4ce",
+      "patchedSha": "0c173918cdd35f00d0f6aead001f149d71504512bed3c4edf3cadfdf5213a060"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/theme-wikimedia-ui-root.css",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "theme-wikimedia-ui-root.css",
+      "patch": "wikimedia__codex-design-tokens__theme-wikimedia-ui-root.css.patch",
+      "baseSha": "575333bad32a5b86e45056942fcb8bd537a96f6373fa956248d9a3106fff13f0",
+      "patchedSha": "509613b0c1285d95af58bff88d3ab0bc81f57b4f899f29c1b8efa548899d21c2"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/theme-wikimedia-ui.css",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "theme-wikimedia-ui.css",
+      "patch": "wikimedia__codex-design-tokens__theme-wikimedia-ui.css.patch",
+      "baseSha": "e8fb6f147ebdba6859dd3fe38aa17ecd245f8fa295a7b55e0e5313320449ea49",
+      "patchedSha": "c8a7b74a587b409e9e66067da8004404c4d6802b560c61815a3994205ba2f962"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/theme-wikimedia-ui.js",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "theme-wikimedia-ui.js",
+      "patch": "wikimedia__codex-design-tokens__theme-wikimedia-ui.js.patch",
+      "baseSha": "7bdc1040d734c9f2a71728382e75efbfe0d6238204626db75eaea549776c34b3",
+      "patchedSha": "c239e06caa7830365eb103c1f50baaa40a2d94ca79b95ec6e46ae2aae3187a36"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/theme-wikimedia-ui.json",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "theme-wikimedia-ui.json",
+      "patch": "wikimedia__codex-design-tokens__theme-wikimedia-ui.json.patch",
+      "baseSha": "dc1e0d38449f440659f98e584358cde2c44f4d329e6f71875b81a3e31d1101d1",
+      "patchedSha": "bb1d4922d71fe1c9f6908654c792564cc5c899d64eb27224491828a6eae0601f"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/theme-wikimedia-ui.less",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "theme-wikimedia-ui.less",
+      "patch": "wikimedia__codex-design-tokens__theme-wikimedia-ui.less.patch",
+      "baseSha": "b5501db3920d2925d9a31caf36e44c010ade4fd356aacb6e51601661e8edeb0b",
+      "patchedSha": "2e32ce56542f11fc8c3f3aec45508d7f9a8b2f89948e928e4881ba5c0046a2da"
+    },
+    {
+      "target": "@wikimedia/codex-design-tokens/theme-wikimedia-ui.scss",
+      "package": "@wikimedia/codex-design-tokens",
+      "rel": "theme-wikimedia-ui.scss",
+      "patch": "wikimedia__codex-design-tokens__theme-wikimedia-ui.scss.patch",
+      "baseSha": "7be62a0280b3127d2355aad891867311957b7518f10e34a21caf283da4c5a585",
+      "patchedSha": "dd5a98e99a42ad51c055080d520cdebc2955bdfa0d5f17b3d794827f06faf443"
+    },
+    {
+      "target": "@wikimedia/codex-icons/dist/codex-icon-paths.less",
+      "package": "@wikimedia/codex-icons",
+      "rel": "dist/codex-icon-paths.less",
+      "patch": "wikimedia__codex-icons__dist__codex-icon-paths.less.patch",
+      "baseSha": "d481c28df5c7a80b76c578755c1e43a0550cbecb2fe977cc7b34c870207dc8cb",
+      "patchedSha": "77aca75d109b38d09a9ef21e7ce320c1a0c30d19eb1333e3bc27353b24a2a4ef"
+    },
+    {
+      "target": "@wikimedia/codex-icons/dist/codex-icons.cjs",
+      "package": "@wikimedia/codex-icons",
+      "rel": "dist/codex-icons.cjs",
+      "patch": "wikimedia__codex-icons__dist__codex-icons.cjs.patch",
+      "baseSha": "dff7dca88b8bf1e81058b21926c5981ee846b0288f02bba14eb582fe24db173b",
+      "patchedSha": "5f21c0b5fba983f95bfaabc8d7740ff26ff1b3c91fec33195819230ff234edac"
+    },
+    {
+      "target": "@wikimedia/codex-icons/dist/codex-icons.js",
+      "package": "@wikimedia/codex-icons",
+      "rel": "dist/codex-icons.js",
+      "patch": "wikimedia__codex-icons__dist__codex-icons.js.patch",
+      "baseSha": "bb01c1f8b63cd10bcaeaa44ab6e689d23c56be49497955d5ea9f0c3956e35e33",
+      "patchedSha": "246ccdb3803f364cd03e23dcaddfc45331156738d9fe1ee6c15b3faba76656fb"
+    },
+    {
+      "target": "@wikimedia/codex-icons/dist/codex-icons.json",
+      "package": "@wikimedia/codex-icons",
+      "rel": "dist/codex-icons.json",
+      "patch": "wikimedia__codex-icons__dist__codex-icons.json.patch",
+      "baseSha": "c893590cc95420548f567855413c31f49a5b519b8c43cfebb7ecc6077f846169",
+      "patchedSha": "e38480a18787c92fb601567a4cd32611f2b661bc0406fd79c94d765945e0c3dd"
+    }
+  ]
+}

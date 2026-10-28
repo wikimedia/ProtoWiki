@@ -1,0 +1,381 @@
+Index: dist/modules/CdxPopover.cjs
+===================================================================
+--- dist/modules/CdxPopover.cjs
++++ dist/modules/CdxPopover.cjs
+@@ -68,27 +68,27 @@
+           e.toRef(o, 'closeButtonLabel'),
+           'cdx-popover-close-button-label',
+           'Close',
+         ),
+-        k = e.computed(() => (n.value ? 'cdx-popover-bottom-sheet' : 'cdx-popover-floating')),
+-        a = e.computed(() => !!o.title || !!o.icon || o.useCloseButton),
++        y = e.computed(() => (n.value ? 'cdx-popover-bottom-sheet' : 'cdx-popover-floating')),
++        r = e.computed(() => !!o.title || !!o.icon || o.useCloseButton),
+         Y = e.computed(() => !!o.primaryAction || !!o.defaultAction),
+-        E = e.ref(!1),
++        S = e.ref(!1),
+         G = e.computed(() => ({ 'cdx-popover__footer__actions--vertical': o.stackedActions })),
+         J = e.computed(() => ({
+           'cdx-popover__backdrop--bottom-sheet': n.value,
+           'cdx-popover__backdrop--no-backdrop': n.value && o.hideBackdrop,
+         })),
+         Q = e.computed(() => ({
+           'cdx-popover--bottom-sheet': n.value,
+-          'cdx-popover--dividers': n.value && E.value,
++          'cdx-popover--dividers': n.value && S.value,
+         })),
+         Z = e.toRef(o, 'placement'),
+         s = e.ref(),
+         P = e.ref(),
+         H = e.ref(),
+         p = e.ref(),
+-        S = e.toRef(o, 'anchor'),
++        E = e.toRef(o, 'anchor'),
+         $ = 16,
+         ee = 192,
+         oe = 200,
+         te = 512,
+@@ -96,46 +96,46 @@
+         F = Math.sqrt(O ** 2 + 16 ** 2) / 2,
+         ne = Math.ceil(F - O / 2) + 2,
+         x = 4,
+         ie = e.computed(() => (o.hideArrow ? x : F + x)),
+-        re = e.computed(() =>
++        ae = e.computed(() =>
+           n.value
+             ? []
+             : [
+                 w.offset(ie.value),
+                 w.flip(),
+                 w.shift({ padding: $, limiter: w.limitShift() }),
+                 w.size({
+                   padding: $,
+-                  apply({ availableWidth: t, availableHeight: r, elements: d }) {
++                  apply({ availableWidth: t, availableHeight: a, elements: d }) {
+                     const u = Math.min(te, t)
+                     Object.assign(d.floating.style, {
+                       maxWidth: ''.concat(Math.max(ee, u), 'px'),
+-                      maxHeight: ''.concat(Math.max(oe, r), 'px'),
++                      maxHeight: ''.concat(Math.max(oe, a), 'px'),
+                     })
+                   },
+                 }),
+                 ...(o.hideArrow ? [] : [U.arrow({ element: H, padding: ne })]),
+               ],
+         ),
+         {
+-          floatingStyles: ae,
++          floatingStyles: re,
+           middlewareData: _,
+           placement: se,
+           x: le,
+           y: de,
+-        } = U.useFloating(S, s, {
++        } = U.useFloating(E, s, {
+           whileElementsMounted: w.autoUpdate,
+           placement: Z,
+-          middleware: re,
++          middleware: ae,
+         }),
+         c = e.reactive({ left: '0', top: '0', right: '0', bottom: '0', transform: 'none' }),
+         q = e.computed(() => $e.oppositeSides[se.value])
+       e.watch([le, de], () => {
+         if (n.value || !_.value.arrow) return
+-        const { x: t, y: r } = _.value.arrow
++        const { x: t, y: a } = _.value.arrow
+         ;((c.left = t !== void 0 ? ''.concat(t, 'px') : ''),
+-          (c.top = r !== void 0 ? ''.concat(r, 'px') : ''),
++          (c.top = a !== void 0 ? ''.concat(a, 'px') : ''),
+           (c.right = ''),
+           (c.bottom = ''),
+           (c[q.value] = ''.concat(-16 / 2 - 1, 'px')))
+         const d = {
+@@ -151,10 +151,10 @@
+         C = e.ref(0)
+       function ce() {
+         ;((B.value = window.innerHeight), (L.value = 0), (C.value = 0))
+       }
+-      function R(t, r) {
+-        ;((B.value = t), (L.value = r))
++      function R(t, a) {
++        ;((B.value = t), (L.value = a))
+       }
+       let f = 0
+       function I() {
+         f !== 0 && (cancelAnimationFrame(f), (f = 0))
+@@ -181,10 +181,10 @@
+       }
+       const pe = e.computed(() => {
+           if (!n.value) return {}
+           const t = B.value > 0 ? B.value : C.value || window.innerHeight,
+-            r = L.value,
+-            u = (C.value || window.innerHeight) - t - r,
++            a = L.value,
++            u = (C.value || window.innerHeight) - t - a,
+             g = u > 100 ? Math.max(0, u) : 0
+           return g <= 0 ? {} : { paddingBottom: ''.concat(g, 'px') }
+         }),
+         fe = Pe(p),
+@@ -192,14 +192,14 @@
+           var t
+           return (t = fe.value.height) != null ? t : 0
+         })
+       ;(e.watch(me, () => {
+-        !n.value || !p.value || (E.value = p.value.clientHeight < p.value.scrollHeight)
++        !n.value || !p.value || (S.value = p.value.clientHeight < p.value.scrollHeight)
+       }),
+         e.watch(n, () => {
+-          n.value || (E.value = !1)
++          n.value || (S.value = !1)
+         }))
+-      const ve = e.computed(() => (n.value ? pe.value : ae.value)),
++      const ve = e.computed(() => (n.value ? pe.value : re.value)),
+         we = e.computed(() => o.open && n.value)
+       X.useScrollLock(we)
+       let z = !1
+       function V() {
+@@ -207,24 +207,24 @@
+       }
+       function he(t) {
+         n.value && t.stopPropagation()
+       }
+-      function ke(t) {
++      function ye(t) {
+         n.value && (z = t.target === P.value)
+       }
+-      function ye() {
++      function ke() {
+         !n.value || !z || V()
+       }
+-      function y(t) {
++      function k(t) {
+         t.key === 'Escape' && V()
+       }
+       function v(t) {
+         if (n.value) return
+-        const r = He.unwrapElement(S.value)
++        const a = He.unwrapElement(E.value)
+         t.target !== document.documentElement &&
+           s.value &&
+           !s.value.contains(t.target) &&
+-          !(r != null && r.contains(t.target)) &&
++          !(a != null && a.contains(t.target)) &&
+           V()
+       }
+       const {
+         focusTrapStart: ge,
+@@ -233,40 +233,40 @@
+         focusFirst: Ce,
+         focusLast: Ve,
+         activateFocusTrap: D,
+         deactivateFocusTrap: A,
+-      } = X.useFocusTrap({ containerRef: s, bodyRef: p, anchorRef: S, preventScroll: !0 })
+-      function Ee() {
+-        ;(document.removeEventListener('keydown', y),
++      } = X.useFocusTrap({ containerRef: s, bodyRef: p, anchorRef: E, preventScroll: !0 })
++      function Se() {
++        ;(document.removeEventListener('keydown', k),
+           document.removeEventListener('mousedown', v),
+           document.removeEventListener('focusin', v),
+           A())
+       }
+-      async function Se() {
+-        ;(document.addEventListener('keydown', y),
++      async function Ee() {
++        ;(document.addEventListener('keydown', k),
+           document.addEventListener('mousedown', v),
+           document.addEventListener('focusin', v),
+           await D())
+       }
+       function Le() {
+-        var t, r, d, u, g
++        var t, a, d, u, g
+         ;((t = s.value) == null || t.style.removeProperty('max-width'),
+-          (r = s.value) == null || r.style.removeProperty('max-height'),
++          (a = s.value) == null || a.style.removeProperty('max-height'),
+           (d = s.value) == null || d.style.removeProperty('left'),
+           (u = s.value) == null || u.style.removeProperty('top'),
+           (g = s.value) == null || g.style.removeProperty('position'))
+       }
+       async function Ae() {
+-        ;(Le(), document.addEventListener('keydown', y), m(), ue(), await D())
++        ;(Le(), document.addEventListener('keydown', k), m(), ue(), await D())
+       }
+       function Te() {
+-        ;(document.removeEventListener('keydown', y), j(), I(), ce(), A())
++        ;(document.removeEventListener('keydown', k), j(), I(), ce(), A())
+       }
+       function W(t) {
+-        t ? Te() : Ee()
++        t ? Te() : Se()
+       }
+       async function T(t) {
+-        t ? ((C.value = document.documentElement.clientHeight), await Ae()) : await Se()
++        t ? ((C.value = document.documentElement.clientHeight), await Ae()) : await Ee()
+       }
+       return (
+         e.watch(
+           () => o.open,
+@@ -277,22 +277,23 @@
+             }
+             W(n.value)
+           },
+         ),
+-        e.watch(n, async (t, r) => {
+-          !o.open || t === r || (W(r), await T(t))
++        e.watch(n, async (t, a) => {
++          !o.open || t === a || (W(a), await T(t))
+         }),
+         e.onMounted(async () => {
+           ;(o.open && (await T(n.value)),
+             n.value && m(),
+             await e.nextTick(),
+             o.anchor === null &&
++              o.useBottomSheet !== 'always' &&
+               console.warn(
+-                '[CdxPopover]: The "anchor" prop must be provided to position the popover in floating mode.',
++                '[CdxPopover]: The "anchor" prop must be provided to position the popover in floating mode (useBottomSheet !== \'always\').',
+               ))
+         }),
+         e.onUnmounted(() => {
+-          ;(document.removeEventListener('keydown', y),
++          ;(document.removeEventListener('keydown', k),
+             document.removeEventListener('mousedown', v),
+             document.removeEventListener('focusin', v),
+             j(),
+             I(),
+@@ -300,14 +301,14 @@
+         }),
+         {
+           computedTarget: N,
+           translatedCloseButtonLabel: b,
+-          showHeader: a,
++          showHeader: r,
+           showFooter: Y,
+           footerActionsClasses: G,
+           close: V,
+           cdxIconClose: K.o6,
+-          transitionName: k,
++          transitionName: y,
+           backdropClassObject: J,
+           panelClassObject: Q,
+           panelInlineStyles: ve,
+           backdrop: P,
+@@ -320,10 +321,10 @@
+           bodyEl: p,
+           focusFirst: Ce,
+           focusLast: Ve,
+           isBottomSheet: n,
+-          onBackdropMouseDown: ke,
+-          onBackdropClick: ye,
++          onBackdropMouseDown: ye,
++          onBackdropClick: ke,
+           onPanelClick: he,
+         }
+       )
+     },
+@@ -335,9 +336,9 @@
+   je = { class: 'cdx-popover__header__button-wrapper' },
+   ze = { key: 1, class: 'cdx-popover__footer' }
+ function De(o, i, l, n, M, N) {
+   const b = e.resolveComponent('cdx-icon'),
+-    k = e.resolveComponent('cdx-button')
++    y = e.resolveComponent('cdx-button')
+   return (
+     e.openBlock(),
+     e.createBlock(
+       e.Teleport,
+@@ -350,9 +351,9 @@
+               {
+                 key: 0,
+                 ref: 'focusTrapStart',
+                 tabindex: '0',
+-                onFocus: i[0] || (i[0] = (...a) => o.focusLast && o.focusLast(...a)),
++                onFocus: i[0] || (i[0] = (...r) => o.focusLast && o.focusLast(...r)),
+               },
+               null,
+               544,
+             ))
+@@ -371,11 +372,11 @@
+                       ref: 'backdrop',
+                       class: e.normalizeClass(['cdx-popover__backdrop', o.backdropClassObject]),
+                       onMousedown:
+                         i[4] ||
+-                        (i[4] = (...a) => o.onBackdropMouseDown && o.onBackdropMouseDown(...a)),
++                        (i[4] = (...r) => o.onBackdropMouseDown && o.onBackdropMouseDown(...r)),
+                       onClick:
+-                        i[5] || (i[5] = (...a) => o.onBackdropClick && o.onBackdropClick(...a)),
++                        i[5] || (i[5] = (...r) => o.onBackdropClick && o.onBackdropClick(...r)),
+                     },
+                     [
+                       e.createElementVNode(
+                         'div',
+@@ -389,9 +390,9 @@
+                           },
+                           o.$attrs,
+                           {
+                             onClick:
+-                              i[3] || (i[3] = (...a) => o.onPanelClick && o.onPanelClick(...a)),
++                              i[3] || (i[3] = (...r) => o.onPanelClick && o.onPanelClick(...r)),
+                           },
+                         ),
+                         [
+                           e.createElementVNode('div', qe, null, 512),
+@@ -425,9 +426,9 @@
+                                   e.createElementVNode('div', je, [
+                                     o.useCloseButton
+                                       ? (e.openBlock(),
+                                         e.createBlock(
+-                                          k,
++                                          y,
+                                           {
+                                             key: 0,
+                                             class: 'cdx-popover__header__close-button',
+                                             weight: 'quiet',
+@@ -480,16 +481,16 @@
+                                     [
+                                       o.primaryAction
+                                         ? (e.openBlock(),
+                                           e.createBlock(
+-                                            k,
++                                            y,
+                                             {
+                                               key: 0,
+                                               class: 'cdx-popover__footer__primary-action',
+                                               weight: 'primary',
+                                               action: o.primaryAction.actionType,
+                                               disabled: o.primaryAction.disabled,
+-                                              onClick: i[1] || (i[1] = (a) => o.$emit('primary')),
++                                              onClick: i[1] || (i[1] = (r) => o.$emit('primary')),
+                                             },
+                                             {
+                                               default: e.withCtx(() => [
+                                                 e.createTextVNode(
+@@ -505,14 +506,14 @@
+                                         : e.createCommentVNode('v-if', !0),
+                                       o.defaultAction
+                                         ? (e.openBlock(),
+                                           e.createBlock(
+-                                            k,
++                                            y,
+                                             {
+                                               key: 1,
+                                               class: 'cdx-popover__footer__default-action',
+                                               disabled: o.defaultAction.disabled,
+-                                              onClick: i[2] || (i[2] = (a) => o.$emit('default')),
++                                              onClick: i[2] || (i[2] = (r) => o.$emit('default')),
+                                             },
+                                             {
+                                               default: e.withCtx(() => [
+                                                 e.createTextVNode(
+@@ -567,9 +568,9 @@
+               {
+                 key: 1,
+                 ref: 'focusTrapEnd',
+                 tabindex: '0',
+-                onFocus: i[6] || (i[6] = (...a) => o.focusFirst && o.focusFirst(...a)),
++                onFocus: i[6] || (i[6] = (...r) => o.focusFirst && o.focusFirst(...r)),
+               },
+               null,
+               544,
+             ))
