@@ -3,6 +3,7 @@ import {
   cdxIconChartLine,
   cdxIconLanguage,
   cdxIconLink,
+  cdxIconMapPin,
   cdxIconQuotes,
   type Icon,
 } from '@wikimedia/codex-icons'
@@ -23,12 +24,14 @@ export const WIKITAB_FEATURED_MODULE_ID = 'featured' as const
 export const WIKITAB_DAILY_READS_MODULE_ID = 'daily-reads' as const
 export const WIKITAB_SUGGESTED_EDITS_MODULE_ID = 'suggested-edits' as const
 export const WIKITAB_REVIEW_CHANGES_MODULE_ID = 'review-changes' as const
+export const WIKITAB_NEARBY_MODULE_ID = 'nearby' as const
 
 export type WikitabModuleId =
   | WikitabSectionId
   | typeof WIKITAB_SAVED_MODULE_ID
   | typeof WIKITAB_FEATURED_MODULE_ID
   | typeof WIKITAB_DAILY_READS_MODULE_ID
+  | typeof WIKITAB_NEARBY_MODULE_ID
   | typeof WIKITAB_SUGGESTED_EDITS_MODULE_ID
   | typeof WIKITAB_REVIEW_CHANGES_MODULE_ID
 
@@ -129,6 +132,7 @@ export const WIKITAB_SECTIONS: readonly WikitabSectionSpec[] = FEED_SECTION_BASE
 export const WIKITAB_HOME_MODULE_ORDER: readonly WikitabModuleId[] = [
   'trending',
   WIKITAB_FEATURED_MODULE_ID,
+  WIKITAB_NEARBY_MODULE_ID,
   WIKITAB_DAILY_READS_MODULE_ID,
   'dyk',
   'news',
@@ -179,6 +183,17 @@ export const WIKITAB_DAILY_READS_MODULE_SPEC = {
   supportingIcon: cdxIconLink,
 }
 
+/** Home Nearby module — geosearch articles near the reader's location (consent-gated). */
+export const WIKITAB_NEARBY_MODULE_SPEC = {
+  id: WIKITAB_NEARBY_MODULE_ID,
+  heading: 'Nearby',
+  initialCount: 4,
+  pageSize: 6,
+  primitive: 'article' as const,
+  cardHeight: wikitabReservedSlotHeight('article'),
+  supportingIcon: cdxIconMapPin,
+}
+
 /** Home Suggested edits module — quality-check tasks from daily-random saved seeds. */
 export const WIKITAB_SUGGESTED_EDITS_MODULE_SPEC = {
   id: WIKITAB_SUGGESTED_EDITS_MODULE_ID,
@@ -210,6 +225,9 @@ export const WIKITAB_CONFIGURE_MODULES: ReadonlyArray<{
   }
   if (id === WIKITAB_DAILY_READS_MODULE_ID) {
     return { id, heading: WIKITAB_DAILY_READS_MODULE_SPEC.heading }
+  }
+  if (id === WIKITAB_NEARBY_MODULE_ID) {
+    return { id, heading: WIKITAB_NEARBY_MODULE_SPEC.heading }
   }
   if (id === WIKITAB_SUGGESTED_EDITS_MODULE_ID) {
     return { id, heading: WIKITAB_SUGGESTED_EDITS_MODULE_SPEC.heading }

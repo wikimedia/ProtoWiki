@@ -7,6 +7,8 @@ import {
   WIKITAB_CONFIG_STORAGE_KEY,
   writeWikitabConfig,
   type WikitabConfig,
+  type WikitabNearbyCardsCache,
+  type WikitabNearbyLastCoord,
 } from './wikitabConfigNormalize'
 
 export type {
@@ -28,6 +30,7 @@ export {
   normalizeHiddenCommonsImagePageIds,
   normalizeHiddenSectionIds,
   normalizeModuleOrderIds,
+  normalizeNearbyLastCoord,
   normalizePinnedSectionIds,
   normalizePotdAttributionExpandedDay,
   normalizeWikitabConfig,
@@ -35,6 +38,8 @@ export {
   WIKITAB_CONFIG_STORAGE_KEY,
   writeWikitabConfig,
   type WikitabConfig,
+  type WikitabNearbyCardsCache,
+  type WikitabNearbyLastCoord,
 } from './wikitabConfigNormalize'
 
 /** Cache-only localStorage keys — safe to delete when config writes hit quota. */
@@ -45,6 +50,8 @@ const WIKITAB_CACHE_KEY_PREFIXES = [
   'wikitab-review-changes-cache-v',
   'wikitab-potd-cache-v',
   'wikitab-featured-cache-v',
+  // Legacy Nearby standalone keys (cards now live in WikitabConfig.nearbyCardsCache).
+  'wikitab-nearby-cache-v',
 ] as const
 
 export interface WikitabConfigPatchResult {
@@ -113,6 +120,14 @@ export function saveWikitabConfig(config: WikitabConfig): boolean {
 export function loadWikitabConfig(): WikitabConfig {
   migrateWikitabStorage()
   return readConfigFromStorage()
+}
+
+export function loadNearbyLastCoord(): WikitabNearbyLastCoord | null {
+  return loadWikitabConfig().nearbyLastCoord
+}
+
+export function persistNearbyLastCoord(coord: WikitabNearbyLastCoord | null): void {
+  patchWikitabConfig({ nearbyLastCoord: coord })
 }
 
 const PATCH_MAX_ATTEMPTS = 6

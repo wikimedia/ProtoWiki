@@ -32,7 +32,7 @@ never in a component:
 | `pageSize`      | How many more one reveal adds (6).                                    |
 | `primitive`     | Which card primitive the section's cards are (`article`, `snippet`, `discussion`, …). All layout comes from that primitive — see [Card presentation](#card-presentation). |
 | `cardHeight`    | Placeholder slot height (px) and row floor — the primitive's row in `wikitabCardSlotHeights.ts`. Real cards grow taller when content needs it; rows equalize via `useEqualRowHeights`. |
-| `supportingIcon` | Optional editable glyph the section sets on its primitive (Trending `cdxIconChartLine`, Birthdays `cdxIconCalendar`, Daily reads `cdxIconLink`). Only on primitives that don't pin one. |
+| `supportingIcon` | Optional editable glyph the section sets on its primitive (Trending `cdxIconChartLine`, Birthdays `cdxIconCalendar`, Daily reads `cdxIconLink`, Nearby `cdxIconMapPin`). Only on primitives that don't pin one. |
 
 `cardHeight` and the primitive's `thumbnailSize` are coupled: a 96px thumbnail needs a 122px card
 (96 + 12px padding either side + 1px border), and a 40px one fits a 98px card.
@@ -104,6 +104,7 @@ and shows the menu whenever `loading !== true`.
 | Featured | Shells for every kind at once (`featuredSpotlightShell`) | TFA / TFL `{ title, description, thumbnail }`, Word / Quote `{ title, description }`, others `true` (`featuredSpotlightInitialLoading`) until that kind's own fetch lands (`onSpotlight` in `fetchWikitabFeatured`); TFL then keeps `{ description }` for its summary |
 | Saved | The snapshot, immediately (`savedModuleDisplayItems`) | Article saves needing a summary: `{ description?, thumbnail? }` (`savedModuleItemPendingLoading`) until `enrichSavedModuleItems` patches that item |
 | Daily reads | The morelike hit (no summary wait) | `{ description?, thumbnail? }` while the summary backfill runs (`pendingByKey`) |
+| Nearby | Geosearch hit (description/thumbnail from batch query) | `{ description?, thumbnail? }` while the summary backfill runs (`pendingByKey`) |
 | Suggested edits | Quality-check + summary (the summary supplies the `pageid` the key needs) | `{ thumbnail }` during the post-append thumbnail backfill |
 | Review changes | The revision row | `{ supporting }` while the editor-kind lookup runs (`editorKindPending`); the **Latest** chip pops in when `prefetchMetadata` lands |
 
@@ -176,7 +177,7 @@ are contexts that *use* a primitive.
 
 | Context | Primitive |
 | ------- | --------- |
-| Trending, Birthdays, Daily reads, Saved articles, Featured TFA | `article` |
+| Trending, Birthdays, Daily reads, Nearby, Saved articles, Featured TFA | `article` |
 | In the news, Did you know, On this day, unavailable Featured spotlights | `snippet` |
 | Active discussions, saved discussions | `discussion` |
 | Suggested edits, search Contribute, saved suggestions | `suggestion` |
@@ -585,10 +586,28 @@ Cached under `wikitab-featured-cache-v18` (`data/featuredCache.ts`). Composable:
 `useWikitabFeatured.ts`; section: `WikitabFeaturedSection.vue`. **Color of the
 day** is reserved for a future spotlight kind — no v1 source.
 
+**Nearby** (`nearby`) — geotagged enwiki articles from the reader's location.
+**Never** calls `navigator.geolocation` on home load; first paint is a neutral
+consent panel with **Show nearby articles**. On click → geolocation → persist
+`WikitabConfig.nearbyLastCoord` → Action API `list=geosearch` (10 km radius,
+50 hits) plus a batch `prop=pageimages|description`; disambiguation pages
+filtered. Cards are `article` primitive with `supportingText` distance
+(`fetchWikitabNearby.ts`). Return visits with stored coords auto-refetch on
+ordered home load (no re-prompt). Menu **Refresh** reuses stored coords.
+Paging: **4 initial**, **+6 per reveal** — all hits buffered client-side
+(geosearch has no offset). Full card payloads live in
+`WikitabConfig.nearbyCardsCache` (with `nearbyLastCoord`) — **not** a standalone
+cache key that `evictWikitabCaches()` can wipe. Warm cache paints on the first
+tick with **no network**. Same **5-minute TTL** as Active discussions: fresh →
+`refresh()` is a no-op; stale → keep painted cards and refetch in the
+background. Menu **Refresh** with `force` clears the cache. Composable:
+`useWikitabNearby.ts`; section: `WikitabNearbySection.vue`. Default order: after
+Featured. Not saved-gated.
+
 **Daily reads** (`daily-reads`) — morelike suggestions seeded from up to **four**
 **unique seed articles** (`uniqueArticleSeedsFromSavedItems` → each save's `seedArticle`),
 picked by a **deterministic daily shuffle** (UTC day + sorted titleKeys → seeded
-Fisher-Yates). Hidden when the Saved-module snapshot is empty. Action API `generator=search` with
+Fisher-Yates). Hidden when there are no saved seed articles. Action API `generator=search` with
 `gsrsearch=morelike:{title}` per seed (`DailyReadsFeed` in
 `data/fetchWikitabDailyReads.ts`); seeds load in parallel but cards resolve **one
 at a time** via `takeNext()`. Excludes disambiguation pages, duplicate `pageid`s,
@@ -603,7 +622,7 @@ from up to **six unique seed articles** (see [Seed articles](#saved-adjacent-hom
 via a separate daily shuffle salt
 (`pickSavedArticleSeeds.ts` → `SuggestedEditsFeed` in
 `data/fetchWikitabSuggestedEdits.ts`). Morelike expansion skips titles already in
-the saved list. Same visibility rules as Daily reads. Paging: **2 initial cards**,
+the saved list. Hidden when there are no saved seed articles (same gate as Daily reads). Paging: **2 initial cards**,
 **+4 per reveal**. Cached under `wikitab-suggested-edits-cache-v1`
 (`data/suggestedEditsCache.ts`).
 
@@ -630,14 +649,16 @@ Cards via `wikitabCardPropsForSearchActivityItem`. Dismissed revids share
 `useWikitabReviewChanges.ts`; section: `WikitabReviewChangesSection.vue`; panel:
 `WikitabReviewChangesConfigurePanel.vue`.
 
-**Infinite-module pagination** — Daily reads, Suggested edits, and Review changes
+**Infinite-module pagination** — Nearby (client buffer only), Daily reads,
+Suggested edits, and Review changes
 differ from finite feed sections (`WikitabSection`): desktop "Show more" stays
 visible while cards are on screen; cached `hasMore: false` only records the last
 fetch state and does not remove the control. Clicks after exhaustion still call
 `loadMore()`.
 
 A render triggered on mount, search exit, or overlay close refreshes Featured
-(when visible), Saved, Daily reads, Suggested edits, and Review changes from the
+(when visible), Nearby (when stored coords exist), Saved, Daily reads,
+Suggested edits, and Review changes from the
 **same snapshot** (Featured does not use the saved snapshot). Network runs
 only on cache miss (saved list or UTC day changed). A full refresh after
 save/unsave waits for overlay close, search exit, or a new tab. `?nocache=1`

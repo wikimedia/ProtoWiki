@@ -14,6 +14,7 @@ import WikitabSavedArticlesButton from './WikitabSavedArticlesButton.vue'
 import WikitabSavedArticlesPanel from './WikitabSavedArticlesPanel.vue'
 import WikitabFeaturedSection from './WikitabFeaturedSection.vue'
 import WikitabDailyReadsSection from './WikitabDailyReadsSection.vue'
+import WikitabNearbySection from './WikitabNearbySection.vue'
 import WikitabSuggestedEditsSection from './WikitabSuggestedEditsSection.vue'
 import WikitabReviewChangesSection from './WikitabReviewChangesSection.vue'
 import WikitabReviewChangesConfigurePanel from './WikitabReviewChangesConfigurePanel.vue'
@@ -27,6 +28,7 @@ import {
   isWikitabSavedGatedModule,
   WIKITAB_DAILY_READS_MODULE_ID,
   WIKITAB_FEATURED_MODULE_ID,
+  WIKITAB_NEARBY_MODULE_ID,
   WIKITAB_SAVED_MODULE_ID,
   WIKITAB_SECTIONS,
   WIKITAB_REVIEW_CHANGES_MODULE_ID,
@@ -55,6 +57,7 @@ import { useWikitabHiddenArticles } from './useWikitabHiddenArticles'
 import { useWikitabHiddenSections } from './useWikitabHiddenSections'
 import { useWikitabFeatured } from './useWikitabFeatured'
 import { useWikitabDailyReads } from './useWikitabDailyReads'
+import { useWikitabNearby } from './useWikitabNearby'
 import { useWikitabSuggestedEdits } from './useWikitabSuggestedEdits'
 import { useWikitabReviewChanges } from './useWikitabReviewChanges'
 import { useWikitabReviewChangesSettings } from './useWikitabReviewChangesSettings'
@@ -102,6 +105,7 @@ const feedEnabled = computed(() => !isSearchMode.value)
 const CUSTOM_MODULE_IDS = new Set<WikitabModuleId>([
   WIKITAB_SAVED_MODULE_ID,
   WIKITAB_FEATURED_MODULE_ID,
+  WIKITAB_NEARBY_MODULE_ID,
   WIKITAB_DAILY_READS_MODULE_ID,
   WIKITAB_SUGGESTED_EDITS_MODULE_ID,
   WIKITAB_REVIEW_CHANGES_MODULE_ID,
@@ -158,6 +162,21 @@ const {
   abort: abortDailyReads,
 } = useWikitabDailyReads()
 const {
+  items: nearbyItems,
+  pendingByKey: nearbyPendingByKey,
+  consentPhase: nearbyConsentPhase,
+  promptError: nearbyPromptError,
+  loading: nearbyLoading,
+  fillingInitial: nearbyFillingInitial,
+  loadingMore: nearbyLoadingMore,
+  hasMore: nearbyHasMore,
+  error: nearbyError,
+  refresh: refreshNearby,
+  requestNearby,
+  loadMore: loadMoreNearby,
+  abort: abortNearby,
+} = useWikitabNearby()
+const {
   items: featuredItems,
   loadingByKind: featuredLoadingByKind,
   loading: featuredLoading,
@@ -174,7 +193,6 @@ const {
   loadingMore: suggestedEditsLoadingMore,
   hasMore: suggestedEditsHasMore,
   error: suggestedEditsError,
-  isLoaded: suggestedEditsLoaded,
   refresh: refreshSuggestedEdits,
   loadMore: loadMoreSuggestedEdits,
   abort: abortSuggestedEdits,
@@ -276,12 +294,20 @@ function isFeedSectionId(id: WikitabModuleId): id is WikitabSectionId {
 
 /** Load order from pin state + configured order — skips hidden and saved-gated modules. */
 function computeHomeModuleLoadOrder(): WikitabModuleId[] {
-  const hasSaved = loadWikitabConfig().savedItems.length > 0
+  const config = loadWikitabConfig()
+  const hasSaved = config.savedItems.length > 0
+  const hasSeedArticles = uniqueArticleSeedsFromSavedItems(config.savedItems).length > 0
   const order: WikitabModuleId[] = []
 
   for (const id of buildEffectiveHomeOrder(pinnedIds.value, resolvedOrder.value)) {
     if (isHidden(id)) continue
     if (isWikitabSavedGatedModule(id) && !hasSaved) continue
+    if (
+      (id === WIKITAB_DAILY_READS_MODULE_ID || id === WIKITAB_SUGGESTED_EDITS_MODULE_ID) &&
+      !hasSeedArticles
+    ) {
+      continue
+    }
     order.push(id)
   }
 
@@ -367,6 +393,11 @@ async function refreshHomeModulesInOrder(): Promise<void> {
       continue
     }
 
+    if (id === WIKITAB_NEARBY_MODULE_ID) {
+      await refreshNearby()
+      continue
+    }
+
     if (isSavedAdjacentModuleId(id)) {
       const batch: WikitabModuleId[] = []
       while (index < order.length && isSavedAdjacentModuleId(order[index])) {
@@ -401,6 +432,11 @@ async function refreshHomeModule(moduleId: WikitabModuleId): Promise<void> {
 
   if (moduleId === WIKITAB_DAILY_READS_MODULE_ID) {
     await refreshDailyReads(savedModuleItems.value, { force: true })
+    return
+  }
+
+  if (moduleId === WIKITAB_NEARBY_MODULE_ID) {
+    await refreshNearby({ force: true })
     return
   }
 
@@ -616,6 +652,10 @@ const visibleFeaturedItems = computed(() => filterCards(featuredItems.value))
 
 const visibleDailyReadsItems = computed(() => filterCards(dailyReadsItems.value))
 
+const visibleNearbyItems = computed(() => filterCards(nearbyItems.value))
+
+const showNearbyModule = computed(() => !isHidden(WIKITAB_NEARBY_MODULE_ID))
+
 const hasSavedArticlesForModules = computed(
   () => savedItems.value.length > 0 || savedModuleItems.value.length > 0,
 )
@@ -635,7 +675,7 @@ const reviewChangesPendingOnHome = computed(
 const showDailyReadsModule = computed(
   () =>
     !isHidden(WIKITAB_DAILY_READS_MODULE_ID) &&
-    hasSavedArticlesForModules.value &&
+    hasSavedSeedArticles.value &&
     (dailyReadsPendingOnHome.value ||
       dailyReadsLoading.value ||
       dailyReadsFillingInitial.value ||
@@ -647,13 +687,12 @@ const visibleSuggestedEditsItems = computed(() => filterCards(suggestedEditsItem
 const showSuggestedEditsModule = computed(
   () =>
     !isHidden(WIKITAB_SUGGESTED_EDITS_MODULE_ID) &&
-    (savedModuleLoading.value || savedModuleItems.value.length > 0) &&
+    hasSavedSeedArticles.value &&
     (suggestedEditsPendingOnHome.value ||
       suggestedEditsLoading.value ||
       suggestedEditsFillingInitial.value ||
       visibleSuggestedEditsItems.value.length > 0 ||
-      suggestedEditsError.value ||
-      suggestedEditsLoaded.value),
+      suggestedEditsError.value),
 )
 
 const visibleReviewChangesItems = computed(() => filterActivityItems(reviewChangesItems.value))
@@ -666,6 +705,7 @@ const showReviewChangesModule = computed(
 type HomeModuleEntry =
   | { kind: 'saved' }
   | { kind: 'featured' }
+  | { kind: 'nearby' }
   | { kind: 'daily-reads' }
   | { kind: 'suggested-edits' }
   | { kind: 'review-changes' }
@@ -682,6 +722,11 @@ const orderedHomeModules = computed((): HomeModuleEntry[] => {
 
     if (id === WIKITAB_FEATURED_MODULE_ID) {
       if (showFeaturedModule.value) modules.push({ kind: 'featured' })
+      return
+    }
+
+    if (id === WIKITAB_NEARBY_MODULE_ID) {
+      if (showNearbyModule.value) modules.push({ kind: 'nearby' })
       return
     }
 
@@ -726,6 +771,17 @@ watch(
   },
 )
 
+watch(
+  () => uniqueArticleSeedsFromSavedItems(savedItems.value).length,
+  (next, prev) => {
+    if (prev > 0 && next === 0) {
+      suggestedEditsPending.value = false
+      void refreshDailyReads([])
+      void refreshSuggestedEdits([])
+    }
+  },
+)
+
 onMounted(() => {
   void refreshHomeModulesInOrder()
 })
@@ -733,6 +789,7 @@ onMounted(() => {
 onUnmounted(() => {
   savedModuleAbort?.abort()
   abortFeatured()
+  abortNearby()
   abortDailyReads()
   abortSuggestedEdits()
   abortReviewChanges()
@@ -836,8 +893,10 @@ watch(searchQuery, (next, prev) => {
               ? 'saved'
               : entry.kind === 'featured'
                 ? 'featured'
-                : entry.kind === 'daily-reads'
-                  ? 'daily-reads'
+                : entry.kind === 'nearby'
+                  ? 'nearby'
+                  : entry.kind === 'daily-reads'
+                    ? 'daily-reads'
                   : entry.kind === 'suggested-edits'
                     ? 'suggested-edits'
                     : entry.kind === 'review-changes'
@@ -870,6 +929,27 @@ watch(searchQuery, (next, prev) => {
             @hide-section="hideSection(WIKITAB_FEATURED_MODULE_ID)"
             @hide-article="hideArticle"
             @toggle-save="toggleSaveFromCard"
+          />
+          <WikitabNearbySection
+            v-else-if="entry.kind === 'nearby'"
+            :items="visibleNearbyItems"
+            :pending-by-key="nearbyPendingByKey"
+            :consent-phase="nearbyConsentPhase"
+            :prompt-error="nearbyPromptError"
+            :loading="nearbyLoading"
+            :filling-initial="nearbyFillingInitial"
+            :loading-more="nearbyLoadingMore"
+            :has-more="nearbyHasMore"
+            :error="nearbyError"
+            :pinned="isPinned(WIKITAB_NEARBY_MODULE_ID)"
+            :is-card-saved="isCardSaved"
+            @toggle-pin="togglePin(WIKITAB_NEARBY_MODULE_ID)"
+            @refresh-section="refreshHomeModule(WIKITAB_NEARBY_MODULE_ID)"
+            @hide-section="hideSection(WIKITAB_NEARBY_MODULE_ID)"
+            @hide-article="hideArticle"
+            @toggle-save="toggleSaveFromCard"
+            @load-more="loadMoreNearby"
+            @request-nearby="requestNearby"
           />
           <WikitabDailyReadsSection
             v-else-if="entry.kind === 'daily-reads'"

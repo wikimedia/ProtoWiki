@@ -2,10 +2,12 @@ import {
   WIKITAB_CONFIGURE_MODULES,
   WIKITAB_DAILY_READS_MODULE_ID,
   WIKITAB_FEATURED_MODULE_ID,
+  WIKITAB_NEARBY_MODULE_ID,
   WIKITAB_REVIEW_CHANGES_MODULE_ID,
   WIKITAB_SAVED_MODULE_ID,
   WIKITAB_SECTIONS,
   WIKITAB_SUGGESTED_EDITS_MODULE_ID,
+  type WikitabCardData,
   type WikitabModuleId,
   type WikitabSectionId,
 } from '../sections'
@@ -15,6 +17,22 @@ import { articleTitleKey } from './wikitabHtml'
 
 /** Never bump — old shapes upgrade in `wikitabStorageMigration.ts`. */
 export const WIKITAB_CONFIG_STORAGE_KEY = 'wikitab-config-v3'
+
+export interface WikitabNearbyLastCoord {
+  lat: number
+  lon: number
+  updatedAt: number
+}
+
+/** Durable Nearby card payload — kept with consent coords so eviction of feed caches cannot wipe it. */
+export interface WikitabNearbyCardsCache {
+  coordKey: string
+  lat: number
+  lon: number
+  items: WikitabCardData[]
+  hasMore: boolean
+  fetchedAt: number
+}
 
 export interface WikitabConfig {
   pinnedSectionIds: WikitabModuleId[]
@@ -27,6 +45,10 @@ export interface WikitabConfig {
   colorThemeId: WikitabColorThemeId | null
   reviewChangesShowSavedEdits: boolean
   reviewChangesShowRecentRiskyEdits: boolean
+  /** Last successful Nearby geolocation — refetch without re-prompting when set. */
+  nearbyLastCoord: WikitabNearbyLastCoord | null
+  /** Full Nearby card list for `nearbyLastCoord` — paints with no network when fresh. */
+  nearbyCardsCache: WikitabNearbyCardsCache | null
   savedItems: WikitabSavedItem[]
   configRevision: number
 }
@@ -42,6 +64,8 @@ export const DEFAULT_WIKITAB_CONFIG: WikitabConfig = {
   colorThemeId: null,
   reviewChangesShowSavedEdits: true,
   reviewChangesShowRecentRiskyEdits: true,
+  nearbyLastCoord: null,
+  nearbyCardsCache: null,
   savedItems: [],
   configRevision: 0,
 }
@@ -55,6 +79,7 @@ const VALID_MODULE_IDS = new Set<WikitabModuleId>([
   WIKITAB_SAVED_MODULE_ID,
   WIKITAB_FEATURED_MODULE_ID,
   WIKITAB_DAILY_READS_MODULE_ID,
+  WIKITAB_NEARBY_MODULE_ID,
   WIKITAB_SUGGESTED_EDITS_MODULE_ID,
   WIKITAB_REVIEW_CHANGES_MODULE_ID,
 ])
@@ -186,6 +211,72 @@ function normalizeReviewChangesBool(raw: unknown, defaultValue: boolean): boolea
   return raw
 }
 
+export function normalizeNearbyLastCoord(raw: unknown): WikitabNearbyLastCoord | null {
+  if (typeof raw !== 'object' || raw === null) return null
+
+  const record = raw as Record<string, unknown>
+  const lat = typeof record.lat === 'number' ? record.lat : Number(record.lat)
+  const lon = typeof record.lon === 'number' ? record.lon : Number(record.lon)
+  const updatedAt =
+    typeof record.updatedAt === 'number' ? record.updatedAt : Number(record.updatedAt)
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(updatedAt)) {
+    return null
+  }
+  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null
+
+  return { lat, lon, updatedAt: Math.max(0, Math.floor(updatedAt)) }
+}
+
+function normalizeNearbyCardItem(raw: unknown): WikitabCardData | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const record = raw as Record<string, unknown>
+  if (typeof record.key !== 'string' || !record.key.trim()) return null
+
+  const item: WikitabCardData = { key: record.key.trim() }
+  if (typeof record.url === 'string') item.url = record.url
+  if (typeof record.title === 'string') item.title = record.title
+  if (typeof record.description === 'string') item.description = record.description
+  if (typeof record.thumbnailUrl === 'string') item.thumbnailUrl = record.thumbnailUrl
+  if (typeof record.supportingText === 'string') item.supportingText = record.supportingText
+  return item
+}
+
+export function normalizeNearbyCardsCache(raw: unknown): WikitabNearbyCardsCache | null {
+  if (typeof raw !== 'object' || raw === null) return null
+
+  const record = raw as Record<string, unknown>
+  const lat = typeof record.lat === 'number' ? record.lat : Number(record.lat)
+  const lon = typeof record.lon === 'number' ? record.lon : Number(record.lon)
+  const fetchedAt =
+    typeof record.fetchedAt === 'number' ? record.fetchedAt : Number(record.fetchedAt)
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(fetchedAt)) return null
+  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null
+  if (!Array.isArray(record.items)) return null
+
+  const items: WikitabCardData[] = []
+  for (const entry of record.items) {
+    const item = normalizeNearbyCardItem(entry)
+    if (item) items.push(item)
+  }
+  if (!items.length) return null
+
+  const coordKey =
+    typeof record.coordKey === 'string' && record.coordKey.trim()
+      ? record.coordKey.trim()
+      : `${lat.toFixed(5)}|${lon.toFixed(5)}`
+
+  return {
+    coordKey,
+    lat,
+    lon,
+    items,
+    hasMore: record.hasMore === true,
+    fetchedAt: Math.max(0, Math.floor(fetchedAt)),
+  }
+}
+
 export function normalizeWikitabConfig(raw: unknown): WikitabConfig {
   if (typeof raw !== 'object' || raw === null) {
     return cloneWikitabConfig(DEFAULT_WIKITAB_CONFIG)
@@ -212,6 +303,8 @@ export function normalizeWikitabConfig(raw: unknown): WikitabConfig {
       record.reviewChangesShowRecentRiskyEdits,
       true,
     ),
+    nearbyLastCoord: normalizeNearbyLastCoord(record.nearbyLastCoord),
+    nearbyCardsCache: normalizeNearbyCardsCache(record.nearbyCardsCache),
     savedItems: normalizeSavedItems(record.savedItems),
     configRevision: normalizeConfigRevision(record.configRevision),
   }
@@ -229,6 +322,15 @@ export function cloneWikitabConfig(config: WikitabConfig): WikitabConfig {
     colorThemeId: config.colorThemeId,
     reviewChangesShowSavedEdits: config.reviewChangesShowSavedEdits,
     reviewChangesShowRecentRiskyEdits: config.reviewChangesShowRecentRiskyEdits,
+    nearbyLastCoord: config.nearbyLastCoord
+      ? { ...config.nearbyLastCoord }
+      : null,
+    nearbyCardsCache: config.nearbyCardsCache
+      ? {
+          ...config.nearbyCardsCache,
+          items: config.nearbyCardsCache.items.map((item) => ({ ...item })),
+        }
+      : null,
     savedItems: cloneSavedItems(config.savedItems),
     configRevision: config.configRevision,
   }
