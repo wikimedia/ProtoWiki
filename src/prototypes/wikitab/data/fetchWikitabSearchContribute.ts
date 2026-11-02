@@ -21,6 +21,7 @@ import {
   isEnWikiMainNamespaceArticleTitle,
   visualEditorUrl,
 } from './wikitabHtml'
+import { seedArticle, type WikitabSeedArticle } from './wikitabSeedArticle'
 
 export { fetchWikitabSearchTopTitles, type WikitabSearchTopTitle }
 
@@ -67,6 +68,8 @@ export interface WikitabSearchContributeItem {
   task: string
   relatedToTitle?: string
   editUrl: string
+  /** Resolved at fetch — drives Save article when set. */
+  seedArticle?: WikitabSeedArticle
 }
 
 /** Session cache — one resolved card (or a miss) per page, filled as cards stream in. */
@@ -238,6 +241,7 @@ async function resolveContributeItem(
     task: top.need,
     relatedToTitle,
     editUrl: visualEditorUrl(title),
+    seedArticle: seedArticle(title, 'self'),
   }
 
   setCachedContribute(pageid, articleTitleKey(title), {

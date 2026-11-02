@@ -7,6 +7,7 @@ import { useSkin } from '@/composables/useSkin'
 import WikitabSavedItemSlot from './WikitabSavedItemSlot.vue'
 import WikitabSavedItemTabs from './WikitabSavedItemTabs.vue'
 import type { WikitabSavedItem } from './data/wikitabConfig'
+import type { WikitabSaveArticleMenuLookup } from './data/savedCardHelpers'
 import { useEqualRowHeights } from './useEqualRowHeights'
 import { useWikitabSavedItemTabFilter } from './useWikitabSavedItemTabFilter'
 
@@ -17,6 +18,7 @@ const CARD_HEIGHT = 122
 const props = defineProps<{
   savedItems: WikitabSavedItem[]
   isCardSaved: (id: string) => boolean
+  saveArticleMenuLookup: WikitabSaveArticleMenuLookup
 }>()
 
 const emit = defineEmits<{
@@ -118,6 +120,7 @@ onUnmounted(() => {
             :show-article-menu="true"
             :is-saved="isCardSaved(saved.id)"
             :is-card-saved="isCardSaved"
+            :save-article-menu-lookup="saveArticleMenuLookup"
             @toggle-save="emit('toggle-save', saved.id)"
             @toggle-save-article="emit('toggle-save-article', saved.id)"
           />

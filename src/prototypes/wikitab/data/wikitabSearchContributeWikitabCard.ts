@@ -1,27 +1,27 @@
 import type { WikitabSearchContributeItem } from './fetchWikitabSearchContribute'
-import { wikitabCardSaveArticleMenuOption } from './savedCardHelpers'
+import {
+  wikitabCardSaveArticleMenuOption,
+  type WikitabSaveArticleMenuLookup,
+} from './savedCardHelpers'
 import { searchContributeItemToCardData } from './wikitabCardPayloadMappers'
 import { wikitabCardFeedMenuItems } from './wikitabCardMenuItems'
 import { wikitabCardBindProps } from './wikitabCardPresentation'
-import { seedArticle } from './wikitabSeedArticle'
-
 export function wikitabCardPropsForSearchContributeItem(
   item: WikitabSearchContributeItem,
   options: {
     isSaved?: boolean
-    isCardSaved?: (id: string) => boolean
+    saveArticleMenuLookup?: WikitabSaveArticleMenuLookup
   } = {},
 ): Record<string, unknown> {
-  const articleSeed = seedArticle(item.articleTitle, 'self')
   return wikitabCardBindProps('suggestion', {
     card: {
       ...searchContributeItemToCardData(item),
       pageid: item.pageid,
     },
     menu: wikitabCardFeedMenuItems({
-      save: { isSaved: options.isSaved },
-      saveArticle: options.isCardSaved
-        ? wikitabCardSaveArticleMenuOption(articleSeed, options.isCardSaved)
+      save: { isSaved: options.isSaved, primitiveId: 'suggestion' },
+      saveArticle: options.saveArticleMenuLookup
+        ? wikitabCardSaveArticleMenuOption(item.seedArticle, options.saveArticleMenuLookup)
         : false,
     }),
   })

@@ -120,14 +120,49 @@ export function savedArticleIdFromSeed(seed: WikitabSeedArticle): string {
   return searchSavedCardId(seed.title)
 }
 
+/** Any persisted article row for this seed title (feed key, search key, etc.). */
+export function findSavedArticleIdForSeed(
+  seed: WikitabSeedArticle,
+  savedItems: readonly WikitabSavedItem[],
+): string | null {
+  const canonicalId = savedArticleIdFromSeed(seed)
+  if (canonicalId && savedItems.some((item) => item.id === canonicalId)) {
+    return canonicalId
+  }
+  const key = articleTitleKey(displayTitle(seed.title))
+  if (!key) return null
+  const match = savedItems.find(
+    (item) => item.type === 'article' && item.articleTitleKey === key,
+  )
+  return match?.id ?? null
+}
+
+export interface WikitabSaveArticleMenuLookup {
+  isSaved: (id: string) => boolean
+  savedItems: () => readonly WikitabSavedItem[]
+}
+
+export function isSavedArticleForSeed(
+  seed: WikitabSeedArticle,
+  lookup: WikitabSaveArticleMenuLookup,
+): boolean {
+  const id = findSavedArticleIdForSeed(seed, lookup.savedItems())
+  if (id) return lookup.isSaved(id)
+  const canonicalId = savedArticleIdFromSeed(seed)
+  return canonicalId ? lookup.isSaved(canonicalId) : false
+}
+
 export function wikitabCardSaveArticleMenuOption(
   seed: WikitabSeedArticle | undefined,
-  isCardSaved: (id: string) => boolean,
+  lookup: ((id: string) => boolean) | WikitabSaveArticleMenuLookup,
 ): false | { isSaved?: boolean } {
   if (!seed) return false
-  const id = savedArticleIdFromSeed(seed)
-  if (!id) return false
-  return { isSaved: isCardSaved(id) }
+  const canonicalId = savedArticleIdFromSeed(seed)
+  if (!canonicalId) return false
+  if (typeof lookup === 'function') {
+    return { isSaved: lookup(canonicalId) }
+  }
+  return { isSaved: isSavedArticleForSeed(seed, lookup) }
 }
 
 export function suggestionSavedId(pageid: number, need: string): string {

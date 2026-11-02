@@ -16,6 +16,7 @@ import {
   parseActivityEditSummaryDisplay,
 } from './wikitabActivityEditSummary'
 import { searchActivityItemToCardData } from './wikitabSearchActivityWikitabCard'
+import { seedArticle } from './wikitabSeedArticle'
 import type {
   WikitabArticleCardPayload,
   WikitabFeaturedArticleCardPayload,
@@ -493,6 +494,7 @@ export function searchActivityCardPayloadToItem(
     editedRelative: payload.editedTimestamp.trim()
       ? formatWikitabEditRelativeTime(payload.editedTimestamp)
       : '',
+    seedArticle: seedArticle(title, 'edited-page'),
   }
 }
 
@@ -506,6 +508,7 @@ export function searchContributeItemToCardData(
     thumbnailUrl: item.thumbnailUrl,
     supportingHtml: wikitabSuggestionTaskSupportingHtml(item.task),
     task: item.task,
+    ...(item.seedArticle ? { seedArticle: item.seedArticle } : {}),
   }
 }
 
@@ -527,6 +530,7 @@ export function searchImagePayloadToCardData(
     thumbnailUrl: image.thumbnailUrl,
     ...(caption ? { description: caption } : {}),
     supportingText: attribution || undefined,
+    ...(image.seedArticle ? { seedArticle: image.seedArticle } : {}),
   }
 }
 
@@ -569,6 +573,7 @@ export function searchContributeCardPayloadToItem(
     body: resolveEditOpportunityCopy(payload.task).body,
     task: payload.task,
     editUrl: payload.url,
+    seedArticle: seedArticle(payload.title, 'self'),
   }
 }
 
@@ -590,6 +595,7 @@ export function searchContributeItemToFeedSuggestedEditsCard(
   return {
     ...feedSuggestedEditsPayloadToCardData(searchContributeItemToFeedSuggestedPayload(item)),
     pageid: item.pageid,
+    ...(item.seedArticle ? { seedArticle: item.seedArticle } : {}),
   }
 }
 

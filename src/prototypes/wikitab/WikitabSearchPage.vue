@@ -16,8 +16,8 @@ import {
   searchSavedCardId,
   suggestionSavedId,
   wikitabCardSaveArticleMenuOption,
+  type WikitabSaveArticleMenuLookup,
 } from './data/savedCardHelpers'
-import { seedArticle } from './data/wikitabSeedArticle'
 import type { WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
 import type { WikitabSearchContributeItem } from './data/fetchWikitabSearchContribute'
 import type { WikitabSearchImage } from './data/fetchWikitabSearchImages'
@@ -33,6 +33,7 @@ import { useWikitabSearchImageColumnCount } from './useWikitabSearchImageColumns
 const props = defineProps<{
   searchQuery: string
   isCardSaved: (id: string) => boolean
+  saveArticleMenuLookup: WikitabSaveArticleMenuLookup
 }>()
 
 const emit = defineEmits<{
@@ -42,7 +43,6 @@ const emit = defineEmits<{
   'toggle-save-contribute': [item: WikitabSearchContributeItem]
   'toggle-save-contribute-article': [item: WikitabSearchContributeItem]
   'toggle-save-image': [image: WikitabSearchImage]
-  'toggle-save-image-article': [image: WikitabSearchImage]
 }>()
 
 const searchQueryRef = toRef(props, 'searchQuery')
@@ -247,11 +247,9 @@ const INITIAL_IMAGE_SKELETON_COUNT = 16
             :loading-more="imagesLoadingMore"
             :scroll-enabled="imagesScrollEnabled"
             :is-image-saved="(pageid) => isCardSaved(imageSavedId(pageid))"
-            :is-card-saved="isCardSaved"
             @reach="loadMoreImages"
             @hide="hideImage"
             @toggle-save-image="emit('toggle-save-image', $event)"
-            @toggle-save-image-article="emit('toggle-save-image-article', $event)"
           />
         </div>
       </CdxTab>
@@ -285,8 +283,8 @@ const INITIAL_IMAGE_SKELETON_COUNT = 16
                   includeSave: true,
                   isSaved: isCardSaved(changeSavedId(slot.item.revisionId)),
                   saveArticle: wikitabCardSaveArticleMenuOption(
-                    seedArticle(slot.item.articleTitle, 'edited-page'),
-                    isCardSaved,
+                    slot.item.seedArticle,
+                    saveArticleMenuLookup,
                   ),
                   loading:
                     activityMetadataPending && !slot.item.thumbnailUrl ? { thumbnail: true } : false,
@@ -350,7 +348,7 @@ const INITIAL_IMAGE_SKELETON_COUNT = 16
               v-bind="
                 wikitabCardPropsForSearchContributeItem(slot.item, {
                   isSaved: isCardSaved(suggestionSavedId(slot.item.pageid, slot.item.task)),
-                  isCardSaved,
+                  saveArticleMenuLookup,
                 })
               "
               @toggle-save="emit('toggle-save-contribute', slot.item)"

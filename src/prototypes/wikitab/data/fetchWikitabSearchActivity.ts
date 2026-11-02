@@ -9,6 +9,7 @@ import {
 import { fetchWikitabPageSummaryThumbnails } from './fetchWikitabPageSummary'
 import { formatActivityEditSummary } from './wikitabActivityEditSummary'
 import { articleUrl, EN_WIKI_HOST } from './wikitabHtml'
+import { seedArticle, type WikitabSeedArticle } from './wikitabSeedArticle'
 import { formatWikitabEditRelativeTime } from './wikitabRelativeTime'
 
 export {
@@ -56,6 +57,8 @@ export interface WikitabSearchActivityItem {
   editorKind: EditorKind
   /** Review changes cache — which feed source produced this row. */
   reviewChangesSource?: 'saved' | 'risky'
+  /** Resolved at fetch — drives Save article when set. */
+  seedArticle?: WikitabSeedArticle
 }
 
 interface RevisionRow {
@@ -504,6 +507,7 @@ function mapCandidate(
     editorKind:
       editorKindByUser.get(userKey(candidate.revision.user)) ??
       classifyEditor(candidate.revision.userid, undefined),
+    seedArticle: seedArticle(candidate.title, 'edited-page'),
   }
 }
 

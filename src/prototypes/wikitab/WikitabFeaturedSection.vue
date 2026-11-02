@@ -10,7 +10,7 @@ import {
 } from '@wikimedia/codex-icons'
 
 import { useSkin } from '@/composables/useSkin'
-import type { SaveItemPayload } from './data/savedCardHelpers'
+import type { SaveItemPayload, WikitabSaveArticleMenuLookup } from './data/savedCardHelpers'
 import { savedIdForSpotlight } from './data/savedItemIds'
 import WikitabCard from './WikitabCard.vue'
 import { featuredSpotlightWikitabCardBindProps } from './data/wikitabFeaturedSpotlightCard'
@@ -40,6 +40,7 @@ const props = defineProps<{
   error: string | null
   pinned: boolean
   isCardSaved: (id: string) => boolean
+  saveArticleMenuLookup: WikitabSaveArticleMenuLookup
 }>()
 
 const emit = defineEmits<{
@@ -266,7 +267,7 @@ function revealMore(): void {
             showCardMenu: canShowCardMenu(slot.spotlight, slot.loading),
             sectionHeading: spec.heading,
             isSaved: slot.spotlight ? isCardSaved(savedIdForSpotlight(slot.spotlight)) : false,
-            isCardSaved,
+            saveArticleMenuLookup,
           })
         "
         @hide-article="emit('hide-article', $event)"

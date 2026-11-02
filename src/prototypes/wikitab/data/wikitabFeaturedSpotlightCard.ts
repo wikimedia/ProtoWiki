@@ -9,8 +9,14 @@ import {
   type WikitabFeaturedSpotlightKind,
 } from '../sections'
 import { wikitabCardBindProps } from './wikitabCardPresentation'
-import { wikitabCardFeedMenuItems } from './wikitabCardMenuItems'
-import { wikitabCardSaveArticleMenuOption } from './savedCardHelpers'
+import {
+  wikitabCardFeedMenuItems,
+  wikitabPrimitiveShowsSaveArticleMenu,
+} from './wikitabCardMenuItems'
+import {
+  wikitabCardSaveArticleMenuOption,
+  type WikitabSaveArticleMenuLookup,
+} from './savedCardHelpers'
 import { wikitabReservedSlotHeight } from './wikitabCardSlotHeights'
 import type { WikitabCardPrimitiveId } from './wikitabCardTypeLinks'
 
@@ -141,7 +147,7 @@ export function featuredSpotlightWikitabCardBindProps(options: {
   showCardMenu?: boolean
   sectionHeading?: string
   isSaved?: boolean
-  isCardSaved?: (id: string) => boolean
+  saveArticleMenuLookup?: WikitabSaveArticleMenuLookup
 }): Record<string, unknown> {
   const kind = options.spotlight?.kind ?? options.slotKind
   const unavailable = options.spotlight?.unavailable
@@ -154,8 +160,11 @@ export function featuredSpotlightWikitabCardBindProps(options: {
     : undefined
 
   const saveArticle =
-    kind !== 'tfa' && options.isCardSaved
-      ? wikitabCardSaveArticleMenuOption(options.spotlight?.seedArticle, options.isCardSaved)
+    wikitabPrimitiveShowsSaveArticleMenu(primitive) && options.saveArticleMenuLookup
+      ? wikitabCardSaveArticleMenuOption(
+          options.spotlight?.seedArticle,
+          options.saveArticleMenuLookup,
+        )
       : false
 
   return wikitabCardBindProps(primitive, {
@@ -165,7 +174,7 @@ export function featuredSpotlightWikitabCardBindProps(options: {
     menu:
       options.showCardMenu && options.sectionHeading
         ? wikitabCardFeedMenuItems({
-            save: { isSaved: options.isSaved },
+            save: { isSaved: options.isSaved, primitiveId: primitive },
             saveArticle,
             hideFromHeading: options.sectionHeading,
           })

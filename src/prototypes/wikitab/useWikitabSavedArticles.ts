@@ -9,9 +9,11 @@ import {
   buildSavedItemFromPayload,
   buildSavedItemFromPayloadAsync,
   buildSavedSuggestion,
+  findSavedArticleIdForSeed,
   savedIdFromPayload,
   saveItemPayloadNeedsFeaturedImageFetch,
   type SaveItemPayload,
+  type WikitabSaveArticleMenuLookup,
 } from './data/savedCardHelpers'
 import type { WikitabSeedArticle } from './data/wikitabSeedArticle'
 import type { WikitabSearchImage } from './data/fetchWikitabSearchImages'
@@ -296,9 +298,15 @@ export function useWikitabSavedArticles() {
   }
 
   function toggleSaveArticleFromSeed(
-    seed: WikitabSeedArticle,
+    seed: WikitabSeedArticle | undefined,
     hints: { thumbnailUrl?: string; description?: string } = {},
   ): void {
+    if (!seed) return
+    const existingId = findSavedArticleIdForSeed(seed, savedItems.value)
+    if (existingId && isSaved(existingId)) {
+      unsaveItem(existingId)
+      return
+    }
     const built = buildSavedArticleFromSeedArticle(seed, hints)
     if (!built) return
     if (isSaved(built.id)) {
@@ -306,6 +314,11 @@ export function useWikitabSavedArticles() {
     } else {
       saveItem(built)
     }
+  }
+
+  const saveArticleMenuLookup: WikitabSaveArticleMenuLookup = {
+    isSaved,
+    savedItems: () => savedItems.value,
   }
 
   function toggleSaveSuggestion(item: WikitabSearchContributeItem): void {
@@ -367,6 +380,7 @@ export function useWikitabSavedArticles() {
     savedItems,
     isSaved,
     isCardSaved,
+    saveArticleMenuLookup,
     saveItem,
     saveFromPayload,
     saveSearchArticle,

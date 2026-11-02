@@ -490,7 +490,7 @@ that item's own id is saved.
 
 | Type | Sources | Stable id |
 | ---- | ------- | --------- |
-| **Article** | Trending, Birthdays, Search, Daily reads, Featured TFA; **Save article** on non-article cards (see below) | Per-source (`search:{titleKey}`, `featured:tfa`, …) |
+| **Article** | Trending, Birthdays, Search, Daily reads, Featured TFA | Per-source (`search:{titleKey}`, `featured:tfa`, …) |
 | **Snippet** | DYK, In the news, On this day — the hook HTML itself (`snippetHtml`), rendered with `primitive-snippet` | `snippet:{dyk\|news\|otd}:{hash of hook text}` |
 | **Word** | Featured WOTD | `word:{titleKey}` |
 | **Quote** | Featured QOTD | `quote:{titleKey}` |
@@ -501,15 +501,18 @@ that item's own id is saved.
 | **Image** | Search Images; Featured TFP/POTD (Commons `File:` when resolved) | `image:{pageid}` or `image:featured:tfp` / `image:featured:potd` |
 
 **Card overflow — Save vs Save article** — `wikitabCardFeedMenuItems` and
-activity/image menus (`data/wikitabCardMenuItems.ts`). **Save** persists the
-card's primitive (snippet, word, suggestion, change, image, …). When the card
-has a resolved **`seedArticle`**, a second row **Save article** / **Unsave
-article** (`value: save-article`, icon `cdxIconBookmarkList`) sits directly
-under Save and stores an **Article** via
-`buildSavedArticleFromSeedArticle` (`search:{titleKey}`).
-Pure article surfaces (Trending, Birthdays, Daily reads, Featured TFA, Search
-Articles tab) only show Save. `WikitabCard.vue` emits `@toggle-save-article`;
-handlers live in `index.vue` (`toggleSaveArticleFromSeed`).
+activity menus (`data/wikitabCardMenuItems.ts`). Primary **Save** labels name
+the primitive (`Save article`, `Save snippet`, `Save word`, `Save edit`, … via
+`wikitabCardSaveMenuLabelForPrimitive`). **Save**
+persists that primitive. A second row
+**Save article** / **Unsave article** appears only for **`snippet`**,
+**`suggestion`**, and **`edit`** (`wikitabPrimitiveShowsSaveArticleMenu`) when
+`seedArticle` is set — it stores an **Article** via
+`buildSavedArticleFromSeedArticle` (`search:{titleKey}`). Word, quote, list,
+image, discussion, and article cards keep **Save** only (seed still drives
+modules). Search Articles tab result cards only show Save.
+`WikitabCard.vue` emits `@toggle-save-article`; handlers live in `index.vue`
+(`toggleSaveArticleFromSeed`).
 
 **Seed articles** — `articleTitleKey` / `articleTitle` are identity (dedupe,
 hide filter, exclusions), not "the article". A word's key is the word, an
@@ -951,8 +954,7 @@ description page.
   `WikitabSearchImageGrid.vue` reveals slots top-to-bottom only when every
   image above in that column has finished decoding (including the 1.5s cap).
 - **Card menu** — top-right `CdxMenuButton` (`cdxIconEllipsis`, quiet) exposes
-  **Save / Unsave** (`image:{pageid}` in `savedItems`), **Save article** when
-  `seedArticle` is set, and **Hide**
+  **Save / Unsave** (`image:{pageid}` in `savedItems`) and **Hide**
   (`hiddenCommonsImagePageIds` — separate from save). License/artist overlay in
   the bottom-left uses `formatImageAttribution()` from
   `fetchWikitabSearchImages.ts` (same string as saved Image supporting text).

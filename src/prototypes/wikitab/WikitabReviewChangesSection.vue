@@ -17,8 +17,11 @@ import {
 } from '@wikimedia/codex-icons'
 
 import { useSkin } from '@/composables/useSkin'
-import { changeSavedId, wikitabCardSaveArticleMenuOption } from './data/savedCardHelpers'
-import { seedArticle } from './data/wikitabSeedArticle'
+import {
+  changeSavedId,
+  wikitabCardSaveArticleMenuOption,
+  type WikitabSaveArticleMenuLookup,
+} from './data/savedCardHelpers'
 import type { WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
 import { wikitabCardBindProps } from './data/wikitabCardPresentation'
 import { wikitabCardPropsForSearchActivityItem } from './data/wikitabSearchActivityWikitabCard'
@@ -41,6 +44,7 @@ const props = defineProps<{
   error: string | null
   pinned: boolean
   isCardSaved: (id: string) => boolean
+  saveArticleMenuLookup: WikitabSaveArticleMenuLookup
 }>()
 
 const emit = defineEmits<{
@@ -303,8 +307,8 @@ function revealMore(): void {
               includeSave: true,
               isSaved: isCardSaved(changeSavedId(slot.item.revisionId)),
               saveArticle: wikitabCardSaveArticleMenuOption(
-                seedArticle(slot.item.articleTitle, 'edited-page'),
-                isCardSaved,
+                slot.item.seedArticle,
+                saveArticleMenuLookup,
               ),
               loading: editorKindPending?.has(slot.item.revisionId)
                 ? { supporting: true }

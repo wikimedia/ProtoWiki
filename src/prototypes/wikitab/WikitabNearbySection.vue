@@ -316,7 +316,10 @@ function onRequestNearby(): void {
               menu:
                 slot.loading !== true && slot.card
                   ? wikitabCardFeedMenuItems({
-                      save: { isSaved: isCardSaved(slot.card.key) },
+                      save: {
+                        isSaved: isCardSaved(slot.card.key),
+                        primitiveId: 'article',
+                      },
                       hideFromHeading: spec.heading,
                     })
                   : undefined,

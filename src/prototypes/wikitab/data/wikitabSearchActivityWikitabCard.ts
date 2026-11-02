@@ -145,7 +145,7 @@ export function searchActivityMenuItems(options: {
     { value: 'dismiss', label: 'Dismiss', icon: cdxIconCheck },
   ]
   if (options.includeSave) {
-    items.unshift(wikitabCardSaveMenuItem({ isSaved: options.isSaved }))
+    items.unshift(wikitabCardSaveMenuItem({ isSaved: options.isSaved, primitiveId: 'edit' }))
     if (options.saveArticle) {
       items.splice(1, 0, wikitabCardSaveArticleMenuItem(options.saveArticle))
     }
@@ -159,7 +159,7 @@ export function searchActivitySavedMenuItems(options: {
   saveArticle?: false | { isSaved?: boolean }
 }): WikitabCardMenuItem[] {
   const items: WikitabCardMenuItem[] = [
-    wikitabCardSaveMenuItem({ isSaved: options.isSaved }),
+    wikitabCardSaveMenuItem({ isSaved: options.isSaved, primitiveId: 'edit' }),
   ]
   if (options.saveArticle) {
     items.push(wikitabCardSaveArticleMenuItem(options.saveArticle))
@@ -186,6 +186,7 @@ export function searchActivityItemToCardData(
       options,
     ),
     ...(editedEnd ? { supportingTextEnd: editedEnd } : {}),
+    ...(item.seedArticle ? { seedArticle: item.seedArticle } : {}),
   }
 }
 

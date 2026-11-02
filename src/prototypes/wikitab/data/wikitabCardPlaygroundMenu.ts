@@ -6,6 +6,8 @@ import {
   wikitabCardHideMenuItem,
   wikitabCardSaveArticleMenuItem,
   wikitabCardSaveMenuItem,
+  wikitabCardSaveMenuLabelForPrimitive,
+  wikitabPrimitiveShowsSaveArticleMenu,
 } from './wikitabCardMenuItems'
 
 /** Playground Fields table — value + label only (icons resolved at preview time). */
@@ -19,21 +21,28 @@ export type PlaygroundInferredMenuRow = { value: string; label: string }
 export function playgroundInferredMenuRows(
   entry: WikitabCardCatalogEntry,
 ): PlaygroundInferredMenuRow[] {
+  const saveRowLabel = (primitiveId: WikitabCardCatalogEntry['primitiveId']) =>
+    primitiveId
+      ? wikitabCardSaveMenuLabelForPrimitive(primitiveId, false)
+      : 'Save'
+
   if (entry.id === 'saved-change') {
-    return [{ value: 'save', label: 'Save' }]
+    return [{ value: 'save', label: saveRowLabel('edit') }]
   }
   if (entry.typeName === 'WikitabSearchActivityCardPayload') {
     return [
-      { value: 'save', label: 'Save' },
+      { value: 'save', label: saveRowLabel('edit') },
       { value: 'thank', label: 'Thank' },
       { value: 'dismiss', label: 'Dismiss' },
     ]
   }
   if (entry.group === 'saved') {
-    return [{ value: 'save', label: 'Save' }]
+    return [{ value: 'save', label: saveRowLabel(entry.primitiveId) }]
   }
-  const rows: PlaygroundInferredMenuRow[] = [{ value: 'save', label: 'Save' }]
-  if (entry.group !== 'saved' && entry.primitiveId !== 'article') {
+  const rows: PlaygroundInferredMenuRow[] = [
+    { value: 'save', label: saveRowLabel(entry.primitiveId) },
+  ]
+  if (entry.group !== 'saved' && wikitabPrimitiveShowsSaveArticleMenu(entry.primitiveId)) {
     rows.push({ value: 'save-article', label: 'Save article' })
   }
   rows.push({ value: 'hide', label: 'Hide' })
@@ -42,12 +51,11 @@ export function playgroundInferredMenuRows(
 
 function playgroundMenuItemFromInferredRow(row: PlaygroundInferredMenuRow): WikitabCardMenuItem {
   switch (row.value) {
-    case 'save': {
-      const genericSave = row.label === 'Save' || row.label === 'Unsave'
+    case 'save':
       return wikitabCardSaveMenuItem({
-        label: genericSave ? undefined : row.label,
+        saveLabel: row.label.startsWith('Unsave ') ? row.label.replace(/^Unsave /, 'Save ') : row.label,
+        isSaved: row.label.startsWith('Unsave '),
       })
-    }
     case 'save-article':
       return wikitabCardSaveArticleMenuItem({ isSaved: row.label === 'Unsave article' })
     case 'hide':

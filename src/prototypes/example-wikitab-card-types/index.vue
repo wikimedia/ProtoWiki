@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { CdxField, CdxTab, CdxTabs, CdxTextInput } from '@wikimedia/codex'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { CdxField, CdxInfoChip, CdxTab, CdxTabs, CdxTextInput } from '@wikimedia/codex'
 
 import PlainWrapper from '@/components/PlainWrapper.vue'
 
@@ -13,7 +14,12 @@ import {
   type WikitabCardPrimitiveEntry,
 } from '../wikitab/data/wikitabCardTypeLinks'
 import WikitabCardComponentPreview from './WikitabCardComponentPreview.vue'
+import WikitabCardSeedInlinePreview from './WikitabCardSeedInlinePreview.vue'
 import WikitabCardTypePreview from './WikitabCardTypePreview.vue'
+import {
+  formatSeedArticleDisplay,
+  wikitabCardTypeSeedArticleRows,
+} from '../wikitab/data/wikitabCardTypeSeedArticle'
 
 definePage({
   meta: {
@@ -23,7 +29,10 @@ definePage({
   },
 })
 
-type TabId = 'card' | 'primitives' | 'loading'
+type TabId = 'card' | 'primitives' | 'loading' | 'seed-articles'
+
+const DEFAULT_TAB: TabId = 'primitives'
+const VALID_TABS = new Set<TabId>(['card', 'primitives', 'loading', 'seed-articles'])
 
 interface LoadingCase {
   id: string
@@ -97,8 +106,45 @@ const LOADING_CASES: LoadingCase[] = [
   },
 ]
 
-const activeTab = ref<TabId>('primitives')
+const route = useRoute()
+const router = useRouter()
+
+function tabFromQuery(tab: unknown): TabId {
+  if (typeof tab === 'string' && VALID_TABS.has(tab as TabId)) {
+    return tab as TabId
+  }
+  return DEFAULT_TAB
+}
+
+const activeTab = ref<TabId>(tabFromQuery(route.query.tab))
 const filterText = ref('')
+
+function applyQueryToTab(): void {
+  const fromQuery = tabFromQuery(route.query.tab)
+  if (activeTab.value !== fromQuery) {
+    activeTab.value = fromQuery
+  }
+}
+
+function syncTabToQuery(mode: 'push' | 'replace' = 'push'): void {
+  if (route.query.tab === activeTab.value) return
+
+  const query = { ...route.query, tab: activeTab.value }
+  const navigate = mode === 'replace' ? router.replace : router.push
+  void navigate({ path: route.path, query })
+}
+
+onMounted(() => {
+  applyQueryToTab()
+  // Ensure every tab (including Primitives) is in the URL; replace so HMR /
+  // first paint doesn't add a history entry.
+  syncTabToQuery('replace')
+})
+
+watch(() => route.query.tab, applyQueryToTab)
+watch(activeTab, () => {
+  syncTabToQuery('push')
+})
 
 function matchesFilter(haystack: string): boolean {
   const q = filterText.value.trim().toLowerCase()
@@ -115,6 +161,18 @@ const filteredPrimitives = computed(() =>
 const filteredLoadingCases = computed(() =>
   LOADING_CASES.filter((loadingCase) =>
     matchesFilter([loadingCase.label, loadingCase.fields.loading].join(' ')),
+  ),
+)
+
+const seedArticleRows = computed(() => wikitabCardTypeSeedArticleRows())
+
+const filteredSeedArticleRows = computed(() =>
+  seedArticleRows.value.filter((row) =>
+    matchesFilter(
+      [row.label, row.catalogId, row.productionContext, formatSeedArticleDisplay(row.seed)].join(
+        ' ',
+      ),
+    ),
   ),
 )
 
@@ -188,6 +246,57 @@ function primitiveAnchor(id: string): string {
             </article>
             <p v-if="!filteredPrimitives.length" class="wikitab-card-types__empty">No matches.</p>
           </div>
+        </CdxTab>
+
+        <CdxTab name="seed-articles" label="Seed articles">
+          <div class="wikitab-card-types__list">
+            <article
+              v-for="row in filteredSeedArticleRows"
+              :key="row.catalogId"
+              class="wikitab-card-types__entry wikitab-card-types__seed-entry"
+            >
+              <h4 class="wikitab-card-types__entry-title">{{ row.label }}</h4>
+              <WikitabCardSeedInlinePreview
+                class="wikitab-card-types__seed-preview"
+                :catalog-id="row.catalogId"
+              />
+              <dl class="wikitab-card-types__seed-meta">
+                <div class="wikitab-card-types__seed-meta-row">
+                  <dt>Examples</dt>
+                  <dd>{{ row.productionContext }}</dd>
+                </div>
+                <div class="wikitab-card-types__seed-meta-row">
+                  <dt>Seed article</dt>
+                  <dd>
+                    <code v-if="row.seed">{{ formatSeedArticleDisplay(row.seed) }}</code>
+                    <span v-else class="wikitab-card-types__seed-none">—</span>
+                  </dd>
+                </div>
+                <div class="wikitab-card-types__seed-meta-row">
+                  <dt>Save article menu</dt>
+                  <dd>
+                    <CdxInfoChip
+                      v-if="row.saveArticleMenu"
+                      status="success"
+                      class="wikitab-card-types__seed-flag-chip"
+                    >
+                      Yes
+                    </CdxInfoChip>
+                    <CdxInfoChip
+                      v-else
+                      status="subtle"
+                      class="wikitab-card-types__seed-flag-chip"
+                    >
+                      No
+                    </CdxInfoChip>
+                  </dd>
+                </div>
+              </dl>
+            </article>
+          </div>
+          <p v-if="!filteredSeedArticleRows.length" class="wikitab-card-types__empty">
+            No matches.
+          </p>
         </CdxTab>
 
         <CdxTab name="loading" label="Loading">
@@ -265,6 +374,61 @@ function primitiveAnchor(id: string): string {
 
 .wikitab-card-types__empty {
   margin: var(--spacing-150) 0;
+  color: var(--color-subtle);
+}
+
+.wikitab-card-types__seed-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-100);
+}
+
+.wikitab-card-types__seed-meta {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: var(--spacing-100);
+  margin: 0;
+  width: fit-content;
+  max-width: 36rem;
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.wikitab-card-types__seed-meta-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: baseline;
+  padding: var(--spacing-25) 0;
+  border-bottom: var(--border-width-base) solid var(--border-color-subtle);
+}
+
+.wikitab-card-types__seed-meta-row:last-child {
+  border-bottom: none;
+}
+
+@supports not (grid-template-columns: subgrid) {
+  .wikitab-card-types__seed-meta-row {
+    grid-template-columns: 11.5rem minmax(0, 1fr);
+  }
+}
+
+.wikitab-card-types__seed-meta dt {
+  margin: 0;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-subtle);
+}
+
+.wikitab-card-types__seed-meta dd {
+  margin: 0;
+}
+
+.wikitab-card-types__seed-flag-chip {
+  vertical-align: middle;
+}
+
+.wikitab-card-types__seed-none {
   color: var(--color-subtle);
 }
 

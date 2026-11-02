@@ -21,8 +21,14 @@ import {
   savedWordToWikitabCard,
 } from './data/savedCardHelpers'
 import { wikitabCardPropsForSearchActivityItem } from './data/wikitabSearchActivityWikitabCard'
-import { wikitabCardFeedMenuItems } from './data/wikitabCardMenuItems'
-import { wikitabCardSaveArticleMenuOption } from './data/savedCardHelpers'
+import {
+  wikitabCardFeedMenuItems,
+  wikitabPrimitiveShowsSaveArticleMenu,
+} from './data/wikitabCardMenuItems'
+import {
+  wikitabCardSaveArticleMenuOption,
+  type WikitabSaveArticleMenuLookup,
+} from './data/savedCardHelpers'
 import { savedItemSeedArticle } from './data/wikitabSavedItems'
 import type { WikitabSavedItem } from './data/wikitabConfig'
 
@@ -32,6 +38,7 @@ const props = defineProps<{
   showArticleMenu?: boolean
   isSaved?: boolean
   isCardSaved?: (id: string) => boolean
+  saveArticleMenuLookup?: WikitabSaveArticleMenuLookup
 }>()
 
 const emit = defineEmits<{
@@ -78,8 +85,10 @@ const activityBindProps = computed(() => {
     includeSave: props.showArticleMenu,
     isSaved: props.isSaved,
     saveArticle:
-      props.saved.type !== 'article' && props.isCardSaved
-        ? wikitabCardSaveArticleMenuOption(seed, props.isCardSaved)
+      props.saved.type !== 'article' &&
+      wikitabPrimitiveShowsSaveArticleMenu(primitive.value) &&
+      props.saveArticleMenuLookup
+        ? wikitabCardSaveArticleMenuOption(seed, props.saveArticleMenuLookup)
         : false,
     revisionActionsMenu: false,
     showThumbnail: false,
@@ -96,10 +105,12 @@ const bindProps = computed(() => {
     loading: props.loading,
     menu: props.showArticleMenu
       ? wikitabCardFeedMenuItems({
-          save: { isSaved: props.isSaved },
+          save: { isSaved: props.isSaved, primitiveId: primitive.value },
           saveArticle:
-            props.saved.type !== 'article' && props.isCardSaved
-              ? wikitabCardSaveArticleMenuOption(seed, props.isCardSaved)
+            props.saved.type !== 'article' &&
+            wikitabPrimitiveShowsSaveArticleMenu(primitive.value) &&
+            props.saveArticleMenuLookup
+              ? wikitabCardSaveArticleMenuOption(seed, props.saveArticleMenuLookup)
               : false,
         })
       : undefined,

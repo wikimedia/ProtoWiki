@@ -71,7 +71,6 @@ import {
 } from './data/wikitabConfig'
 import { wikitabCardDescriptionText } from './data/wikitabCardDescription'
 import { uniqueArticleSeedsFromSavedItems, type SaveItemPayload } from './data/savedCardHelpers'
-import { seedArticle } from './data/wikitabSeedArticle'
 import { savedItemSeedArticle } from './data/wikitabSavedItems'
 import type { WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
 import type { WikitabSearchContributeItem } from './data/fetchWikitabSearchContribute'
@@ -145,6 +144,7 @@ const { filterCards, filterActivityItems, hideArticle } = useWikitabHiddenArticl
 const {
   savedItems,
   isCardSaved,
+  saveArticleMenuLookup,
   toggleSaveFromPayload,
   toggleSaveSearchArticle,
   toggleSaveArticleFromSeed,
@@ -632,23 +632,16 @@ function toggleSaveArticleFromSpotlight(spot: WikitabFeaturedSpotlight): void {
 }
 
 function toggleSaveArticleFromActivity(item: WikitabSearchActivityItem): void {
-  const articleSeed = seedArticle(item.articleTitle, 'edited-page')
-  if (!articleSeed) return
-  toggleSaveArticleFromSeed(articleSeed, { thumbnailUrl: item.thumbnailUrl })
+  if (!item.seedArticle) return
+  toggleSaveArticleFromSeed(item.seedArticle, { thumbnailUrl: item.thumbnailUrl })
 }
 
 function toggleSaveArticleFromContribute(item: WikitabSearchContributeItem): void {
-  const articleSeed = seedArticle(item.articleTitle, 'self')
-  if (!articleSeed) return
-  toggleSaveArticleFromSeed(articleSeed, {
+  if (!item.seedArticle) return
+  toggleSaveArticleFromSeed(item.seedArticle, {
     thumbnailUrl: item.thumbnailUrl,
     description: item.description,
   })
-}
-
-function toggleSaveArticleFromSearchImage(image: WikitabSearchImage): void {
-  if (!image.seedArticle) return
-  toggleSaveArticleFromSeed(image.seedArticle)
 }
 
 function toggleSaveArticleFromSavedModule(id: string): void {
@@ -959,13 +952,13 @@ watch(searchQuery, (next, prev) => {
           class="wikitab__search-page"
           :search-query="searchQuery"
           :is-card-saved="isCardSaved"
+          :save-article-menu-lookup="saveArticleMenuLookup"
           @toggle-save-article="toggleSaveFromSearch"
           @toggle-save-activity="toggleSaveFromActivity"
           @toggle-save-activity-article="toggleSaveArticleFromActivity"
           @toggle-save-contribute="toggleSaveFromContribute"
           @toggle-save-contribute-article="toggleSaveArticleFromContribute"
           @toggle-save-image="toggleSaveFromSearchImage"
-          @toggle-save-image-article="toggleSaveArticleFromSearchImage"
         />
       </header>
 
@@ -995,6 +988,7 @@ watch(searchQuery, (next, prev) => {
             :loading="savedModuleLoading"
             :pinned="isPinned(WIKITAB_SAVED_MODULE_ID)"
             :is-card-saved="isCardSaved"
+            :save-article-menu-lookup="saveArticleMenuLookup"
             @toggle-pin="togglePin(WIKITAB_SAVED_MODULE_ID)"
             @refresh-section="refreshHomeModule(WIKITAB_SAVED_MODULE_ID)"
             @hide-section="hideSection(WIKITAB_SAVED_MODULE_ID)"
@@ -1009,6 +1003,7 @@ watch(searchQuery, (next, prev) => {
             :error="featuredError"
             :pinned="isPinned(WIKITAB_FEATURED_MODULE_ID)"
             :is-card-saved="isCardSaved"
+            :save-article-menu-lookup="saveArticleMenuLookup"
             @toggle-pin="togglePin(WIKITAB_FEATURED_MODULE_ID)"
             @refresh-section="refreshHomeModule(WIKITAB_FEATURED_MODULE_ID)"
             @hide-section="hideSection(WIKITAB_FEATURED_MODULE_ID)"
@@ -1067,6 +1062,7 @@ watch(searchQuery, (next, prev) => {
             :error="suggestedEditsError"
             :pinned="isPinned(WIKITAB_SUGGESTED_EDITS_MODULE_ID)"
             :is-card-saved="isCardSaved"
+            :save-article-menu-lookup="saveArticleMenuLookup"
             @toggle-pin="togglePin(WIKITAB_SUGGESTED_EDITS_MODULE_ID)"
             @refresh-section="refreshHomeModule(WIKITAB_SUGGESTED_EDITS_MODULE_ID)"
             @hide-section="hideSection(WIKITAB_SUGGESTED_EDITS_MODULE_ID)"
@@ -1096,6 +1092,7 @@ watch(searchQuery, (next, prev) => {
             @open-configure="openReviewChangesConfigure"
             @load-more="loadMoreReviewChanges"
             :is-card-saved="isCardSaved"
+            :save-article-menu-lookup="saveArticleMenuLookup"
             @dismiss="dismissReviewChange"
             @toggle-save="toggleSaveFromActivity"
             @toggle-save-article="toggleSaveArticleFromActivity"
@@ -1108,6 +1105,7 @@ watch(searchQuery, (next, prev) => {
             :error="error"
             :pinned="isPinned(entry.section.spec.id)"
             :is-card-saved="isCardSaved"
+            :save-article-menu-lookup="saveArticleMenuLookup"
             @toggle-pin="togglePin(entry.section.spec.id)"
             @refresh-section="refreshHomeModule(entry.section.spec.id)"
             @hide-section="hideSection(entry.section.spec.id)"
@@ -1170,6 +1168,7 @@ watch(searchQuery, (next, prev) => {
       v-if="savedPanelOpen && !potdAttributionFocus"
       :saved-items="savedItems"
       :is-card-saved="isCardSaved"
+      :save-article-menu-lookup="saveArticleMenuLookup"
       @close="closeSavedPanel"
       @toggle-save="toggleSaveFromSavedModule"
       @toggle-save-article="toggleSaveArticleFromSavedModule"

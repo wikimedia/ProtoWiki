@@ -13,7 +13,11 @@ import { useSkin } from '@/composables/useSkin'
 import { wikitabCardBindProps } from './data/wikitabCardPresentation'
 import { wikitabCardFeedMenuItems } from './data/wikitabCardMenuItems'
 import WikitabCard from './WikitabCard.vue'
-import { suggestionSavedId, wikitabCardSaveArticleMenuOption } from './data/savedCardHelpers'
+import {
+  suggestionSavedId,
+  wikitabCardSaveArticleMenuOption,
+  type WikitabSaveArticleMenuLookup,
+} from './data/savedCardHelpers'
 import {
   WIKITAB_SUGGESTED_EDITS_MODULE_SPEC,
   type WikitabCardData,
@@ -38,6 +42,7 @@ const props = defineProps<{
   error: string | null
   pinned: boolean
   isCardSaved: (id: string) => boolean
+  saveArticleMenuLookup: WikitabSaveArticleMenuLookup
 }>()
 
 const emit = defineEmits<{
@@ -293,10 +298,11 @@ function revealMore(): void {
                         slot.card.pageid !== undefined && slot.card.task
                           ? isCardSaved(suggestionSavedId(slot.card.pageid, slot.card.task))
                           : false,
+                      primitiveId: 'suggestion',
                     },
                     saveArticle: wikitabCardSaveArticleMenuOption(
                       slot.card.seedArticle,
-                      isCardSaved,
+                      saveArticleMenuLookup,
                     ),
                     hideFromHeading: spec.heading,
                   })

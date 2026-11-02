@@ -12,7 +12,7 @@ import {
 import { useSkin } from '@/composables/useSkin'
 import WikitabSavedItemSlot from './WikitabSavedItemSlot.vue'
 import WikitabSavedItemTabs from './WikitabSavedItemTabs.vue'
-import { savedItemRevealCard } from './data/savedCardHelpers'
+import { savedItemRevealCard, type WikitabSaveArticleMenuLookup } from './data/savedCardHelpers'
 import type { WikitabSavedItem } from './data/wikitabConfig'
 import { WIKITAB_SAVED_MODULE_SPEC, type WikitabCardLoading } from './sections'
 import { useEqualRowHeights } from './useEqualRowHeights'
@@ -30,6 +30,7 @@ const props = defineProps<{
   loading: boolean
   pinned: boolean
   isCardSaved: (id: string) => boolean
+  saveArticleMenuLookup: WikitabSaveArticleMenuLookup
 }>()
 
 const emit = defineEmits<{
@@ -188,6 +189,7 @@ watch(selection, (value) => {
         :show-article-menu="slot.loading !== true"
         :is-saved="isCardSaved(slot.saved.id)"
         :is-card-saved="isCardSaved"
+        :save-article-menu-lookup="saveArticleMenuLookup"
         @toggle-save="emit('toggle-save', slot.saved.id)"
         @toggle-save-article="emit('toggle-save-article', slot.saved.id)"
       />

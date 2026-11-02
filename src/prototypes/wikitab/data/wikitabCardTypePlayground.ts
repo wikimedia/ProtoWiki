@@ -3,6 +3,7 @@ import type { AttributionTrustAndRelevance } from '@/components/attribution/type
 import { WIKITAB_EDITOR_KINDS } from './fetchWikitabSearchActivity'
 import {
   catalogEntryById,
+  schemaForCatalogId,
   type WikitabCardCatalogEntry,
   type WikitabCardPrimitiveId,
   type WikitabCardTypePropertySchema,
@@ -49,7 +50,9 @@ import {
   searchImagePayloadToCardData,
   searchResultCardPayloadToArticle,
 } from './wikitabCardPayloadMappers'
+import { searchActivityItemToCardData } from './wikitabSearchActivityWikitabCard'
 import { wikitabCardPropsForSearchActivityItem } from './wikitabSearchActivityWikitabCard'
+import { wikitabCardSaveArticleMenuOption } from './savedCardHelpers'
 import type { WikitabCardTypeMap } from './wikitabCardTypeLinks'
 import {
   wikitabCardBindProps,
@@ -304,6 +307,35 @@ function sampleValueForProperty(name: string, type: string, catalogId: string): 
   return ''
 }
 
+/** Demo fixture → `WikitabCardData` (no presentation bind props). */
+export function demoCardDataForCatalogEntry(
+  entry: WikitabCardCatalogEntry,
+  schemaIndex = 0,
+): WikitabCardData | null {
+  if (!entry.typeName || entry.id === 'search-loading') return null
+  const schemaEntry = schemaForCatalogId(entry.id)
+  const schema = schemaEntry?.schemas[schemaIndex]
+  if (!schema) return null
+
+  const fields = defaultFieldValues(entry.id, schema, schemaIndex)
+  const payload = payloadFromFieldValues(schema, fields)
+
+  if (entry.typeName === 'WikitabSearchActivityCardPayload') {
+    const item = searchActivityCardPayloadToItem(payload as WikitabSearchActivityCardPayload)
+    return searchActivityItemToCardData(item)
+  }
+  if (entry.typeName === 'WikitabSearchContributeCardPayload') {
+    return searchContributePayloadToCardData(payload as WikitabSearchContributeCardPayload)
+  }
+  if (entry.typeName === 'WikitabSearchResultCardPayload') {
+    return null
+  }
+
+  const mapped = mapPayload(entry.typeName, payload, entry.id)
+  if (!mapped || typeof mapped !== 'object' || !('key' in mapped)) return null
+  return mapped as WikitabCardData
+}
+
 export function defaultFieldValues(
   catalogId: string,
   schema: WikitabCardTypeSchema,
@@ -423,6 +455,9 @@ function wikitabCardPreviewBaseProps(
     return wikitabCardPropsForSearchActivityItem(item, {
       includeSave: true,
       isSaved: false,
+      saveArticle: item.seedArticle
+        ? wikitabCardSaveArticleMenuOption(item.seedArticle, () => false)
+        : false,
       revisionActionsMenu: !savedCatalog,
     })
   }

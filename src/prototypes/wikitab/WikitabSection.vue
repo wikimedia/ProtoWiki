@@ -20,6 +20,7 @@ import {
   discussionSavedIdFromUrl,
   wikitabCardSaveArticleMenuOption,
   type SaveItemPayload,
+  type WikitabSaveArticleMenuLookup,
 } from './data/savedCardHelpers'
 import { snippetSavedId } from './data/savedItemIds'
 import { wikitabCardDescriptionText } from './data/wikitabCardDescription'
@@ -49,6 +50,7 @@ const props = defineProps<{
   error: string | null
   pinned: boolean
   isCardSaved: (id: string) => boolean
+  saveArticleMenuLookup: WikitabSaveArticleMenuLookup
 }>()
 
 const emit = defineEmits<{
@@ -215,11 +217,17 @@ watch(selection, (value) => {
             menu: slot.card
               ? wikitabCardFeedMenuItems({
                   save: SAVE_SECTION_IDS.has(spec.id)
-                    ? { isSaved: isCardSaved(savedIdForCard(slot.card)) }
+                    ? {
+                        isSaved: isCardSaved(savedIdForCard(slot.card)),
+                        primitiveId: spec.primitive,
+                      }
                     : false,
                   saveArticle:
                     snippetSourceForSection(spec.id) && slot.card
-                      ? wikitabCardSaveArticleMenuOption(slot.card.seedArticle, isCardSaved)
+                      ? wikitabCardSaveArticleMenuOption(
+                          slot.card.seedArticle,
+                          saveArticleMenuLookup,
+                        )
                       : false,
                   hideFromHeading: spec.heading,
                 })
