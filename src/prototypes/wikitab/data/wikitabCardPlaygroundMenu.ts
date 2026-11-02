@@ -4,6 +4,7 @@ import type { WikitabCardMenuItem } from '../sections'
 import type { WikitabCardCatalogEntry } from './wikitabCardTypeLinks'
 import {
   wikitabCardHideMenuItem,
+  wikitabCardSaveArticleMenuItem,
   wikitabCardSaveMenuItem,
 } from './wikitabCardMenuItems'
 
@@ -12,7 +13,8 @@ export type PlaygroundInferredMenuRow = { value: string; label: string }
 
 /**
  * Inferred overflow menu when the slot does not pass `menu` — documents production patterns.
- * Save + Hide (feed); Save + Thank + Dismiss (activity); Save only (saved change / saved slots).
+ * Save + optional Save article + Hide (feed non-article cards with seedArticle); Save + Thank +
+ * Dismiss (activity); Save only (saved change / saved slots).
  */
 export function playgroundInferredMenuRows(
   entry: WikitabCardCatalogEntry,
@@ -30,10 +32,12 @@ export function playgroundInferredMenuRows(
   if (entry.group === 'saved') {
     return [{ value: 'save', label: 'Save' }]
   }
-  return [
-    { value: 'save', label: 'Save' },
-    { value: 'hide', label: 'Hide' },
-  ]
+  const rows: PlaygroundInferredMenuRow[] = [{ value: 'save', label: 'Save' }]
+  if (entry.group !== 'saved' && entry.primitiveId !== 'article') {
+    rows.push({ value: 'save-article', label: 'Save article' })
+  }
+  rows.push({ value: 'hide', label: 'Hide' })
+  return rows
 }
 
 function playgroundMenuItemFromInferredRow(row: PlaygroundInferredMenuRow): WikitabCardMenuItem {
@@ -44,6 +48,8 @@ function playgroundMenuItemFromInferredRow(row: PlaygroundInferredMenuRow): Wiki
         label: genericSave ? undefined : row.label,
       })
     }
+    case 'save-article':
+      return wikitabCardSaveArticleMenuItem({ isSaved: row.label === 'Unsave article' })
     case 'hide':
       if (row.label === 'Hide') {
         return { value: 'hide', label: 'Hide', icon: cdxIconEyeClosed }

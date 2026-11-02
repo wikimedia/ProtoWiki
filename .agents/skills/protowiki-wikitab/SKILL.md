@@ -106,13 +106,13 @@ and shows the menu whenever `loading !== true`.
 | Daily reads | The morelike hit (no summary wait) | `{ description?, thumbnail? }` while the summary backfill runs (`pendingByKey`) |
 | Nearby | Geosearch hit (description/thumbnail from batch query) | `{ description?, thumbnail? }` while the summary backfill runs (`pendingByKey`) |
 | Suggested edits | Quality-check + summary (the summary supplies the `pageid` the key needs) | `{ thumbnail }` during the post-append thumbnail backfill |
-| Review changes | The revision row | `{ supporting }` while the editor-kind lookup runs (`editorKindPending`); the **Latest** chip pops in when `prefetchMetadata` lands |
+| Review changes | The revision row | `{ supporting }` while the editor-kind lookup runs (`editorKindPending`) |
 
-Chips that may not exist (Latest, high revert risk) **pop in** rather than
-skeleton. Modules still load **in series**, top to bottom
-(`refreshHomeModulesInOrder`): API etiquette asks for serial requests, and
-`fetchWikimedia` caps each host at two in flight — granular loading paints
-sooner without adding parallel requests.
+Chips that may not exist (high revert risk on Review changes; **Latest** on
+Activity only) **pop in** rather than skeleton. Modules still load **in series**,
+top to bottom (`refreshHomeModulesInOrder`): API etiquette asks for serial
+requests, and `fetchWikimedia` caps each host at two in flight — granular loading
+paints sooner without adding parallel requests.
 
 The strict rule for `thumbnailType: 'optional'`: when `loading.thumbnail` is set
 and the card has no `thumbnailUrl` yet, the **whole card** stays a skeleton
@@ -490,8 +490,8 @@ that item's own id is saved.
 
 | Type | Sources | Stable id |
 | ---- | ------- | --------- |
-| **Article** | Trending, Birthdays, Search, Daily reads, Featured TFA, OTD (**linked article**) | Per-source (`search:{titleKey}`, `featured:tfa`, …) |
-| **Snippet** | DYK, In the news — the hook HTML itself (`snippetHtml`), rendered with `primitive-snippet` | `snippet:{dyk\|news}:{hash of hook text}` |
+| **Article** | Trending, Birthdays, Search, Daily reads, Featured TFA; **Save article** on non-article cards (see below) | Per-source (`search:{titleKey}`, `featured:tfa`, …) |
+| **Snippet** | DYK, In the news, On this day — the hook HTML itself (`snippetHtml`), rendered with `primitive-snippet` | `snippet:{dyk\|news\|otd}:{hash of hook text}` |
 | **Word** | Featured WOTD | `word:{titleKey}` |
 | **Quote** | Featured QOTD | `quote:{titleKey}` |
 | **List** | Featured TFL | `list:{titleKey}` |
@@ -499,6 +499,17 @@ that item's own id is saved.
 | **Change** | Review changes home, Activity tab | `change:{revid}` |
 | **Discussion** | Active discussions | `discussion:{threadId}` |
 | **Image** | Search Images; Featured TFP/POTD (Commons `File:` when resolved) | `image:{pageid}` or `image:featured:tfp` / `image:featured:potd` |
+
+**Card overflow — Save vs Save article** — `wikitabCardFeedMenuItems` and
+activity/image menus (`data/wikitabCardMenuItems.ts`). **Save** persists the
+card's primitive (snippet, word, suggestion, change, image, …). When the card
+has a resolved **`seedArticle`**, a second row **Save article** / **Unsave
+article** (`value: save-article`, icon `cdxIconBookmarkList`) sits directly
+under Save and stores an **Article** via
+`buildSavedArticleFromSeedArticle` (`search:{titleKey}`).
+Pure article surfaces (Trending, Birthdays, Daily reads, Featured TFA, Search
+Articles tab) only show Save. `WikitabCard.vue` emits `@toggle-save-article`;
+handlers live in `index.vue` (`toggleSaveArticleFromSeed`).
 
 **Seed articles** — `articleTitleKey` / `articleTitle` are identity (dedupe,
 hide filter, exclusions), not "the article". A word's key is the word, an
@@ -512,7 +523,7 @@ mainspace enwiki titles seed (`seedArticle()` returns `undefined` otherwise).
 | Saved from | `seedArticle` source | `via` |
 | ---------- | -------------------- | ----- |
 | Trending, Birthdays, Search, Daily reads, TFA, TFL | The article / list itself | `self` |
-| DYK, In the news (saved as **Snippet**), OTD (saved as Article) | Bold link (`primaryLinkTitle`) — set in `fetchDailyFeed.ts` / `fetchMainPageOtd.ts` | `hook-link` |
+| DYK, In the news, OTD (saved as **Snippet**; **Save article** for the bold link) | Bold link (`primaryLinkTitle`) — set in `fetchDailyFeed.ts` / `fetchMainPageOtd.ts` | `hook-link` |
 | Suggestion | The article | `self` |
 | Change | The edited page | `edited-page` |
 | TFP | Bold link in the `#mp-tfp` caption | `caption-link` |
@@ -632,13 +643,17 @@ the saved list. Hidden when there are no saved seed articles (same gate as Daily
 sources (section ellipsis → **Configure** → full-screen panel, same `wikitab-panel`
 chrome as Modules / Color theme):
 
-1. **Saved articles** (toggle on by default) — same Action API revision pipeline as
-   the search **Activity** tab (`WikitabSearchActivityFeed`), seeded from up to **six**
-   unique Article/Suggestion saves via daily shuffle salt `'review-changes'`.
+1. **Saved articles** (toggle on by default) — same Action API revision helpers as
+   the search **Activity** tab (`WikitabSearchActivityFeed` with **`latestOnly: true`**),
+   seeded from up to **six** unique Article/Suggestion saves via daily shuffle salt
+   `'review-changes'`. One tip revision per seed title (no history walk).
 2. **Recent risky edits** (toggle on by default) — main-namespace `list=recentchanges`
-   with **`rcshow=oresreview|!bot|!minor`** (ORES “needs review” in SQL). Cards get
-   **Needs review** (`needsReview: true`); **High revert risk** is added only when
-   sequential Lift Wing lookup (≥0.9) succeeds — feed is not filtered on revert risk.
+   with **`rcshow=oresreview|!bot|!minor`** and **`rctoponly=1`**. Cards get
+   **Needs review** (`needsReview: true`); sequential Lift Wing lookup (≥0.9) may
+   set **High revert risk** on the item — feed is not filtered on revert risk. The
+   card shows at most one status chip; when both apply, **High revert risk** wins over
+   **Needs review** (see Activity chip row below). Home omits the **Latest revision**
+   chip (`omitLatestRevisionChip`) — every row is already a tip.
 
 `MergedReviewChangesFeed` in `data/fetchWikitabReviewChanges.ts` leads with whichever
 source has the newer head edit, then alternates (saved, RC, saved, …); each source stays ordered. Both toggles off → empty module (still visible when not hidden). **Not**
@@ -646,7 +661,7 @@ saved-gated — shows with zero saves when Recent risky is on. Settings:
 `WikitabConfig.reviewChangesShowSavedEdits` / `reviewChangesShowRecentRiskyEdits`
 (`useWikitabReviewChangesSettings.ts`). Paging: **2 initial**, **+4 per reveal**.
 Cards via `wikitabCardPropsForSearchActivityItem`. Dismissed revids share
-`dismissedActivityRevids` with Activity. Cache: `wikitab-review-changes-cache-v4` (day + saved fingerprint + settings
+`dismissedActivityRevids` with Activity. Cache: `wikitab-review-changes-cache-v5` (day + saved fingerprint + settings
 fingerprint + `fetchedAtSaved` / `fetchedAtRisky` — **1 h** seed articles,
 **10 min** risky RC). Composable:
 `useWikitabReviewChanges.ts`; section: `WikitabReviewChangesSection.vue`; panel:
@@ -936,7 +951,8 @@ description page.
   `WikitabSearchImageGrid.vue` reveals slots top-to-bottom only when every
   image above in that column has finished decoding (including the 1.5s cap).
 - **Card menu** — top-right `CdxMenuButton` (`cdxIconEllipsis`, quiet) exposes
-  **Save / Unsave** (`image:{pageid}` in `savedItems`) and **Hide**
+  **Save / Unsave** (`image:{pageid}` in `savedItems`), **Save article** when
+  `seedArticle` is set, and **Hide**
   (`hiddenCommonsImagePageIds` — separate from save). License/artist overlay in
   the bottom-left uses `formatImageAttribution()` from
   `fetchWikitabSearchImages.ts` (same string as saved Image supporting text).
@@ -995,7 +1011,8 @@ Rate-limit contract (mandatory):
   passes `deferEditorKind` instead: the card paints with `{ supporting: true }`
   and `resolveEditorKind` patches it (one lookup at a time).
 - After `prefetchMetadata`, `isLatestRevision(item)` re-patches the **Latest** chip
-  on cards mapped before the latest revids arrived.
+  on Activity cards mapped before the latest revids arrived. Home Review changes
+  does not show that chip (`omitLatestRevisionChip`).
 - Tab fetch starts only when Activity is selected (`enabled` ref); abort
   in-flight work when hidden or on query change, but keep resolved results in
   memory when switching tabs.
@@ -1007,11 +1024,13 @@ cards, which are borderless. Activity skeletons (here and in home Review changes
 `WikitabCard` loading bind props; resolved edit cards show an optional
 96px inline-start thumbnail when `thumbnailUrl` is present. Description block: green **+n** / red **−n** character delta (from revision `size`
 vs parent), or subtle **±0** when size is unchanged, on its own line above the edit
-summary when the parent size is known. Chip row uses `CdxInfoChip` (in order): **High revert risk** (Lift Wing
+summary when the parent size is known. Chip row uses at most one `CdxInfoChip` per
+card (`searchActivityChipsFromItem` — first match wins): **High revert risk** (Lift Wing
 `revertrisk-language-agnostic`, ≥0.9; background per card, in-memory cache by
-`revid`), **Needs review** (ORES `oresreview` rows in Review changes only), else
-**Latest revision** when not high-risk and not needs-review (from latest-revid
-prefetch), and **Reverted** (`mw-reverted` tag). Multiple chips may appear on one card.
+`revid`), else **Needs review** (ORES `oresreview` rows in Review changes only), else
+**Reverted** (`mw-reverted` tag), else **Latest revision** (from latest-revid prefetch;
+Activity tab and saved-change rows only — Home Review changes passes
+`omitLatestRevisionChip`).
 Top-right `CdxMenuButton` (`cdxIconEllipsis`, quiet) exposes **Thank** (opens
 `Special:Thanks/{revid}` on en.wikipedia.org in a new tab) and **Dismiss** — persists the revision id in
 `WikitabConfig.dismissedActivityRevids` and removes the card; dismissed diffs are

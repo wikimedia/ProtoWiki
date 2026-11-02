@@ -35,6 +35,7 @@ import {
   WIKITAB_SUGGESTED_EDITS_MODULE_ID,
   type WikitabCardData,
   type WikitabCardLoading,
+  type WikitabFeaturedSpotlight,
   type WikitabModuleId,
   type WikitabSectionId,
 } from './sections'
@@ -68,7 +69,10 @@ import {
   resetWikitabModuleConfigure,
   type WikitabSavedItem,
 } from './data/wikitabConfig'
+import { wikitabCardDescriptionText } from './data/wikitabCardDescription'
 import { uniqueArticleSeedsFromSavedItems, type SaveItemPayload } from './data/savedCardHelpers'
+import { seedArticle } from './data/wikitabSeedArticle'
+import { savedItemSeedArticle } from './data/wikitabSavedItems'
 import type { WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
 import type { WikitabSearchContributeItem } from './data/fetchWikitabSearchContribute'
 import {
@@ -143,6 +147,7 @@ const {
   isCardSaved,
   toggleSaveFromPayload,
   toggleSaveSearchArticle,
+  toggleSaveArticleFromSeed,
   toggleSaveSuggestion,
   toggleSaveChange,
   toggleSaveImage,
@@ -610,6 +615,57 @@ function toggleSaveFromSearchImage(image: WikitabSearchImage): void {
   toggleSaveImage(image)
 }
 
+function toggleSaveArticleFromCard(card: WikitabCardData): void {
+  if (!card.seedArticle) return
+  toggleSaveArticleFromSeed(card.seedArticle, {
+    thumbnailUrl: card.thumbnailUrl,
+    description: card.description,
+  })
+}
+
+function toggleSaveArticleFromSpotlight(spot: WikitabFeaturedSpotlight): void {
+  if (!spot.seedArticle) return
+  toggleSaveArticleFromSeed(spot.seedArticle, {
+    thumbnailUrl: spot.thumbnailUrl,
+    description: wikitabCardDescriptionText(spot),
+  })
+}
+
+function toggleSaveArticleFromActivity(item: WikitabSearchActivityItem): void {
+  const articleSeed = seedArticle(item.articleTitle, 'edited-page')
+  if (!articleSeed) return
+  toggleSaveArticleFromSeed(articleSeed, { thumbnailUrl: item.thumbnailUrl })
+}
+
+function toggleSaveArticleFromContribute(item: WikitabSearchContributeItem): void {
+  const articleSeed = seedArticle(item.articleTitle, 'self')
+  if (!articleSeed) return
+  toggleSaveArticleFromSeed(articleSeed, {
+    thumbnailUrl: item.thumbnailUrl,
+    description: item.description,
+  })
+}
+
+function toggleSaveArticleFromSearchImage(image: WikitabSearchImage): void {
+  if (!image.seedArticle) return
+  toggleSaveArticleFromSeed(image.seedArticle)
+}
+
+function toggleSaveArticleFromSavedModule(id: string): void {
+  const saved = savedItems.value.find((item) => item.id === id)
+  if (!saved) return
+  const articleSeed = savedItemSeedArticle(saved)
+  if (!articleSeed) return
+  toggleSaveArticleFromSeed(articleSeed, {
+    thumbnailUrl:
+      saved.type === 'image' || saved.type === 'article' || saved.type === 'suggestion'
+        ? saved.thumbnailUrl
+        : undefined,
+    description:
+      saved.type === 'suggestion' || saved.type === 'article' ? saved.description : undefined,
+  })
+}
+
 function selectColorTheme(id: WikitabColorThemeId): void {
   setColorTheme(id)
 }
@@ -905,8 +961,11 @@ watch(searchQuery, (next, prev) => {
           :is-card-saved="isCardSaved"
           @toggle-save-article="toggleSaveFromSearch"
           @toggle-save-activity="toggleSaveFromActivity"
+          @toggle-save-activity-article="toggleSaveArticleFromActivity"
           @toggle-save-contribute="toggleSaveFromContribute"
+          @toggle-save-contribute-article="toggleSaveArticleFromContribute"
           @toggle-save-image="toggleSaveFromSearchImage"
+          @toggle-save-image-article="toggleSaveArticleFromSearchImage"
         />
       </header>
 
@@ -940,6 +999,7 @@ watch(searchQuery, (next, prev) => {
             @refresh-section="refreshHomeModule(WIKITAB_SAVED_MODULE_ID)"
             @hide-section="hideSection(WIKITAB_SAVED_MODULE_ID)"
             @toggle-save="toggleSaveFromSavedModule"
+            @toggle-save-article="toggleSaveArticleFromSavedModule"
           />
           <WikitabFeaturedSection
             v-else-if="entry.kind === 'featured'"
@@ -954,6 +1014,7 @@ watch(searchQuery, (next, prev) => {
             @hide-section="hideSection(WIKITAB_FEATURED_MODULE_ID)"
             @hide-article="hideArticle"
             @toggle-save="toggleSaveFromCard"
+            @toggle-save-article="toggleSaveArticleFromSpotlight"
           />
           <WikitabNearbySection
             v-else-if="entry.kind === 'nearby'"
@@ -1011,6 +1072,7 @@ watch(searchQuery, (next, prev) => {
             @hide-section="hideSection(WIKITAB_SUGGESTED_EDITS_MODULE_ID)"
             @hide-article="hideArticle"
             @toggle-save="toggleSaveFromCard"
+            @toggle-save-article="toggleSaveArticleFromCard"
             @load-more="loadMoreSuggestedEdits"
           />
           <WikitabReviewChangesSection
@@ -1036,6 +1098,7 @@ watch(searchQuery, (next, prev) => {
             :is-card-saved="isCardSaved"
             @dismiss="dismissReviewChange"
             @toggle-save="toggleSaveFromActivity"
+            @toggle-save-article="toggleSaveArticleFromActivity"
           />
           <WikitabSection
             v-else
@@ -1050,6 +1113,7 @@ watch(searchQuery, (next, prev) => {
             @hide-section="hideSection(entry.section.spec.id)"
             @hide-article="hideArticle"
             @toggle-save="toggleSaveFromCard"
+            @toggle-save-article="toggleSaveArticleFromCard"
           />
         </template>
       </div>
@@ -1108,6 +1172,7 @@ watch(searchQuery, (next, prev) => {
       :is-card-saved="isCardSaved"
       @close="closeSavedPanel"
       @toggle-save="toggleSaveFromSavedModule"
+      @toggle-save-article="toggleSaveArticleFromSavedModule"
     />
   </div>
 </template>

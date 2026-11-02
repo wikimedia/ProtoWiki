@@ -22,6 +22,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
   'toggle-save': [id: string]
+  'toggle-save-article': [id: string]
 }>()
 
 const skin = useSkin()
@@ -116,7 +117,9 @@ onUnmounted(() => {
             :saved="saved"
             :show-article-menu="true"
             :is-saved="isCardSaved(saved.id)"
+            :is-card-saved="isCardSaved"
             @toggle-save="emit('toggle-save', saved.id)"
+            @toggle-save-article="emit('toggle-save-article', saved.id)"
           />
         </div>
 

@@ -56,7 +56,10 @@ function hashString(input: string): string {
 }
 
 /** Keyed on the hook's text, so the same hook keeps its id across days and HTML tweaks. */
-export function snippetSavedId(source: 'dyk' | 'news', snippetHtml: string): string {
+export function snippetSavedId(
+  source: 'dyk' | 'news' | 'otd',
+  snippetHtml: string,
+): string {
   const text = snippetHtml.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
   return text ? `snippet:${source}:${hashString(text)}` : ''
 }

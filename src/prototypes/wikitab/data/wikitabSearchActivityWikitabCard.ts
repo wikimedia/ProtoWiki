@@ -20,7 +20,10 @@ import {
 import type { WikitabSearchActivityCardPayload } from './wikitabCardPayloadTypes'
 import { editorIconForKind } from './wikitabEditorKindIcons'
 import { wikitabCardBindProps } from './wikitabCardPresentation'
-import { wikitabCardSaveMenuItem } from './wikitabCardMenuItems'
+import {
+  wikitabCardSaveArticleMenuItem,
+  wikitabCardSaveMenuItem,
+} from './wikitabCardMenuItems'
 
 function escapeHtml(text: string): string {
   return text
@@ -84,50 +87,58 @@ export function searchActivityEditorSupportingHtml(
   return link
 }
 
-export function searchActivityChipsFromItem(item: WikitabSearchActivityItem): WikitabCardChip[] {
-  const chips: WikitabCardChip[] = []
+export function searchActivityChipsFromItem(
+  item: WikitabSearchActivityItem,
+  options: { omitLatestRevisionChip?: boolean } = {},
+): WikitabCardChip[] {
   if (item.highRevertRisk) {
-    chips.push({ text: 'High revert risk', icon: cdxIconAlert, type: 'warning' })
+    return [{ text: 'High revert risk', icon: cdxIconAlert, type: 'warning' }]
   }
   if (item.needsReview) {
-    chips.push({ text: 'Needs review', icon: cdxIconFlag, type: 'notice' })
-  } else if (!item.highRevertRisk && item.isLatestRevision) {
-    chips.push({ text: 'Latest revision', icon: cdxIconArticle, type: 'notice' })
+    return [{ text: 'Needs review', icon: cdxIconFlag, type: 'notice' }]
   }
   if (item.reverted) {
-    chips.push({ text: 'Reverted', icon: cdxIconEditUndo, type: 'notice' })
+    return [{ text: 'Reverted', icon: cdxIconEditUndo, type: 'notice' }]
   }
-  return chips
+  if (!options.omitLatestRevisionChip && item.isLatestRevision) {
+    return [{ text: 'Latest revision', icon: cdxIconArticle, type: 'notice' }]
+  }
+  return []
 }
 
 export function searchActivityChipsFromPayload(
   payload: WikitabSearchActivityCardPayload,
+  options: { omitLatestRevisionChip?: boolean } = {},
 ): WikitabCardChip[] {
-  return searchActivityChipsFromItem({
-    pageid: 0,
-    articleTitle: payload.title,
-    articleUrl: payload.articleUrl,
-    revisionId: payload.revisionId,
-    editSummary: '',
-    thumbnailUrl: payload.thumbnailUrl,
-    delta: payload.delta,
-    reverted: payload.reverted,
-    highRevertRisk: payload.highRevertRisk,
-    needsReview: payload.needsReview,
-    isLatestRevision: payload.isLatestRevision,
-    editorName: payload.editorName,
-    editorUrl: payload.editorUrl,
-    editedRelative: '',
-    editedTimestamp: payload.editedTimestamp,
-    editorKind: payload.editorKind,
-    diffUrl: '',
-    thankUrl: '',
-  })
+  return searchActivityChipsFromItem(
+    {
+      pageid: 0,
+      articleTitle: payload.title,
+      articleUrl: payload.articleUrl,
+      revisionId: payload.revisionId,
+      editSummary: '',
+      thumbnailUrl: payload.thumbnailUrl,
+      delta: payload.delta,
+      reverted: payload.reverted,
+      highRevertRisk: payload.highRevertRisk,
+      needsReview: payload.needsReview,
+      isLatestRevision: payload.isLatestRevision,
+      editorName: payload.editorName,
+      editorUrl: payload.editorUrl,
+      editedRelative: '',
+      editedTimestamp: payload.editedTimestamp,
+      editorKind: payload.editorKind,
+      diffUrl: '',
+      thankUrl: '',
+    },
+    options,
+  )
 }
 
 export function searchActivityMenuItems(options: {
   includeSave?: boolean
   isSaved?: boolean
+  saveArticle?: false | { isSaved?: boolean }
 }): WikitabCardMenuItem[] {
   const items: WikitabCardMenuItem[] = [
     { value: 'thank', label: 'Thank', icon: cdxIconHeartOutline },
@@ -135,6 +146,9 @@ export function searchActivityMenuItems(options: {
   ]
   if (options.includeSave) {
     items.unshift(wikitabCardSaveMenuItem({ isSaved: options.isSaved }))
+    if (options.saveArticle) {
+      items.splice(1, 0, wikitabCardSaveArticleMenuItem(options.saveArticle))
+    }
   }
   return items
 }
@@ -142,8 +156,15 @@ export function searchActivityMenuItems(options: {
 /** Saved-change rows — save only (no thank / dismiss). */
 export function searchActivitySavedMenuItems(options: {
   isSaved?: boolean
+  saveArticle?: false | { isSaved?: boolean }
 }): WikitabCardMenuItem[] {
-  return [wikitabCardSaveMenuItem({ isSaved: options.isSaved })]
+  const items: WikitabCardMenuItem[] = [
+    wikitabCardSaveMenuItem({ isSaved: options.isSaved }),
+  ]
+  if (options.saveArticle) {
+    items.push(wikitabCardSaveArticleMenuItem(options.saveArticle))
+  }
+  return items
 }
 
 /** Generic `WikitabCardData` — editor row via `supportingHtml` + `supportingIcon` bind prop. */
@@ -173,11 +194,14 @@ export function wikitabCardPropsForSearchActivityItem(
   options: {
     includeSave?: boolean
     isSaved?: boolean
+    saveArticle?: false | { isSaved?: boolean }
     loading?: WikitabCardLoading
     showThumbnail?: boolean
     linkEditor?: boolean
     /** When false, omit thank/dismiss (saved-change). */
     revisionActionsMenu?: boolean
+    /** Home Review changes — tip-only feed, chip would be redundant. */
+    omitLatestRevisionChip?: boolean
   } = {},
 ): Record<string, unknown> {
   const showThumbnail = options.showThumbnail !== false
@@ -187,13 +211,19 @@ export function wikitabCardPropsForSearchActivityItem(
     card = rest
   }
   const supportingIcon = editorIconForKind(item.editorKind)
-  const chips = searchActivityChipsFromItem(item)
+  const chips = searchActivityChipsFromItem(item, {
+    omitLatestRevisionChip: options.omitLatestRevisionChip,
+  })
   const menu =
     options.revisionActionsMenu === false
-      ? searchActivitySavedMenuItems({ isSaved: options.isSaved })
+      ? searchActivitySavedMenuItems({
+          isSaved: options.isSaved,
+          saveArticle: options.saveArticle,
+        })
       : searchActivityMenuItems({
           includeSave: options.includeSave,
           isSaved: options.isSaved,
+          saveArticle: options.saveArticle,
         })
 
   return wikitabCardBindProps('edit', {

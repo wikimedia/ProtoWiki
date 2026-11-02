@@ -37,6 +37,7 @@ const emit = defineEmits<{
   'refresh-section': []
   'hide-section': []
   'toggle-save': [id: string]
+  'toggle-save-article': [id: string]
 }>()
 
 const savedItems = toRef(props, 'savedItems')
@@ -186,7 +187,9 @@ watch(selection, (value) => {
         :loading="slot.loading"
         :show-article-menu="slot.loading !== true"
         :is-saved="isCardSaved(slot.saved.id)"
+        :is-card-saved="isCardSaved"
         @toggle-save="emit('toggle-save', slot.saved.id)"
+        @toggle-save-article="emit('toggle-save-article', slot.saved.id)"
       />
       <div ref="sentinel" class="wikitab-saved-section__sentinel" aria-hidden="true" />
     </div>

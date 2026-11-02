@@ -1,5 +1,6 @@
 import {
   cdxIconBookmark,
+  cdxIconBookmarkList,
   cdxIconBookmarkOutline,
   cdxIconEyeClosed,
 } from '@wikimedia/codex-icons'
@@ -18,6 +19,16 @@ export function wikitabCardSaveMenuItem(options: {
   }
 }
 
+export function wikitabCardSaveArticleMenuItem(options: {
+  isSaved?: boolean
+} = {}): WikitabCardMenuItem {
+  return {
+    value: 'save-article',
+    label: options.isSaved ? 'Unsave article' : 'Save article',
+    icon: cdxIconBookmarkList,
+  }
+}
+
 export function wikitabCardHideMenuItem(sectionHeading: string): WikitabCardMenuItem {
   return {
     value: 'hide',
@@ -26,14 +37,18 @@ export function wikitabCardHideMenuItem(sectionHeading: string): WikitabCardMenu
   }
 }
 
-/** Feed / module card overflow — save and/or hide rows. */
+/** Feed / module card overflow — save, optional save-article, and/or hide rows. */
 export function wikitabCardFeedMenuItems(options: {
   save?: false | { isSaved?: boolean; label?: string }
+  saveArticle?: false | { isSaved?: boolean }
   hideFromHeading?: string
 }): WikitabCardMenuItem[] {
   const items: WikitabCardMenuItem[] = []
   if (options.save) {
     items.push(wikitabCardSaveMenuItem(options.save))
+  }
+  if (options.saveArticle) {
+    items.push(wikitabCardSaveArticleMenuItem(options.saveArticle))
   }
   if (options.hideFromHeading) {
     items.push(wikitabCardHideMenuItem(options.hideFromHeading))

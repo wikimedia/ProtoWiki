@@ -69,7 +69,7 @@ import type {
   WikitabSavedWordItem,
 } from './wikitabSavedItems'
 import { savedItemSeedArticle } from './wikitabSavedItems'
-import { seedArticle } from './wikitabSeedArticle'
+import { seedArticle, type WikitabSeedArticle } from './wikitabSeedArticle'
 
 export type {
   WikitabSavedArticleItem,
@@ -114,6 +114,20 @@ export function articleTitleFromCard(
 export function searchSavedCardId(title: string): string {
   const key = articleTitleKey(displayTitle(title))
   return key ? `search:${key}` : ''
+}
+
+export function savedArticleIdFromSeed(seed: WikitabSeedArticle): string {
+  return searchSavedCardId(seed.title)
+}
+
+export function wikitabCardSaveArticleMenuOption(
+  seed: WikitabSeedArticle | undefined,
+  isCardSaved: (id: string) => boolean,
+): false | { isSaved?: boolean } {
+  if (!seed) return false
+  const id = savedArticleIdFromSeed(seed)
+  if (!id) return false
+  return { isSaved: isCardSaved(id) }
 }
 
 export function suggestionSavedId(pageid: number, need: string): string {
@@ -347,6 +361,32 @@ export function buildSavedArticleFromSearch(input: {
     url: articleUrl(title),
     description: input.description,
     thumbnailUrl: input.thumbnailUrl,
+  }
+}
+
+export function buildSavedArticleFromSeedArticle(
+  seed: WikitabSeedArticle,
+  hints: { thumbnailUrl?: string; description?: string } = {},
+): WikitabSavedArticleItem | null {
+  const title = displayTitle(seed.title)
+  const articleTitleKeyValue = articleTitleKey(title)
+  if (!articleTitleKeyValue) return null
+
+  const id = savedArticleIdFromSeed(seed)
+  if (!id) return null
+
+  return {
+    id,
+    type: 'article',
+    primitive: 'article',
+    savedAt: Date.now(),
+    articleTitleKey: articleTitleKeyValue,
+    articleTitle: title,
+    seedArticle: seed,
+    title,
+    url: articleUrl(title),
+    description: hints.description,
+    thumbnailUrl: hints.thumbnailUrl,
   }
 }
 

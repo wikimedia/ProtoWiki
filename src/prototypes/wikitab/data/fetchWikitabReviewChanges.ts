@@ -143,7 +143,9 @@ export async function createSavedArticleReviewChangesFeed(
   const titles = await resolveTitlesForActivity(seeds, thumbnailByTitleKey, signal)
   if (!titles.length) return null
 
-  return new ReviewChangesFeed(new WikitabSearchActivityFeed(titles, { seenRevids }))
+  return new ReviewChangesFeed(
+    new WikitabSearchActivityFeed(titles, { seenRevids, latestOnly: true }),
+  )
 }
 
 /**

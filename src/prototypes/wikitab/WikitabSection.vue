@@ -16,8 +16,12 @@ import { useEqualRowHeights } from './useEqualRowHeights'
 import { usePreventHorizontalSwipeNavigation } from './usePreventHorizontalSwipeNavigation'
 import { useRevealOnScrollEnd } from './useRevealOnScrollEnd'
 import { useSectionReveal } from './useSectionReveal'
-import { discussionSavedIdFromUrl, type SaveItemPayload } from './data/savedCardHelpers'
-import { savedIdForHookCard, snippetSavedId } from './data/savedItemIds'
+import {
+  discussionSavedIdFromUrl,
+  wikitabCardSaveArticleMenuOption,
+  type SaveItemPayload,
+} from './data/savedCardHelpers'
+import { snippetSavedId } from './data/savedItemIds'
 import { wikitabCardDescriptionText } from './data/wikitabCardDescription'
 import type { WikitabSavedSnippetSource } from './data/wikitabSavedItems'
 import type { WikitabCardData, WikitabSectionId, WikitabSectionSpec } from './sections'
@@ -25,9 +29,10 @@ import type { WikitabCardData, WikitabSectionId, WikitabSectionSpec } from './se
 const ARTICLE_SECTION_IDS = new Set<WikitabSectionId>(['trending', 'births'])
 const SNIPPET_SECTION_IDS = new Set<WikitabSectionId>(['dyk', 'otd', 'news'])
 
-/** Hook sections saved as the snippet itself; On this day still saves its article. */
+/** Hook sections saved as the snippet itself (Save article saves the bold link). */
 function snippetSourceForSection(id: WikitabSectionId): WikitabSavedSnippetSource | null {
-  return id === 'dyk' || id === 'news' ? id : null
+  if (id === 'dyk' || id === 'news' || id === 'otd') return id
+  return null
 }
 const DISCUSSION_SECTION_IDS = new Set<WikitabSectionId>(['discussions'])
 
@@ -52,6 +57,7 @@ const emit = defineEmits<{
   'hide-section': []
   'hide-article': [title: string]
   'toggle-save': [payload: SaveItemPayload]
+  'toggle-save-article': [card: WikitabCardData]
 }>()
 
 function savedIdForCard(card: WikitabCardData): string {
@@ -63,9 +69,6 @@ function savedIdForCard(card: WikitabCardData): string {
   if (snippetSource) {
     return snippetSavedId(snippetSource, wikitabCardDescriptionText(card) ?? '')
   }
-  if (SNIPPET_SECTION_IDS.has(props.spec.id)) {
-    return savedIdForHookCard(card)
-  }
   return card.key
 }
 
@@ -73,9 +76,6 @@ function savePayloadForCard(card: WikitabCardData): SaveItemPayload {
   const snippetSource = snippetSourceForSection(props.spec.id)
   if (snippetSource) {
     return { primitive: 'snippet', card, source: snippetSource }
-  }
-  if (SNIPPET_SECTION_IDS.has(props.spec.id)) {
-    return { primitive: 'article', card, hookArticle: true }
   }
   if (DISCUSSION_SECTION_IDS.has(props.spec.id)) {
     return { primitive: 'discussion', card }
@@ -217,6 +217,10 @@ watch(selection, (value) => {
                   save: SAVE_SECTION_IDS.has(spec.id)
                     ? { isSaved: isCardSaved(savedIdForCard(slot.card)) }
                     : false,
+                  saveArticle:
+                    snippetSourceForSection(spec.id) && slot.card
+                      ? wikitabCardSaveArticleMenuOption(slot.card.seedArticle, isCardSaved)
+                      : false,
                   hideFromHeading: spec.heading,
                 })
               : undefined,
@@ -224,6 +228,7 @@ watch(selection, (value) => {
         "
         @hide-article="emit('hide-article', $event)"
         @toggle-save="slot.card && emit('toggle-save', savePayloadForCard(slot.card))"
+        @toggle-save-article="slot.card && emit('toggle-save-article', slot.card)"
       />
       <div ref="sentinel" class="wikitab-section__sentinel" aria-hidden="true" />
     </div>

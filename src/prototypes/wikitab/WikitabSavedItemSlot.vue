@@ -21,7 +21,9 @@ import {
   savedWordToWikitabCard,
 } from './data/savedCardHelpers'
 import { wikitabCardPropsForSearchActivityItem } from './data/wikitabSearchActivityWikitabCard'
-import { wikitabCardSaveMenuItem } from './data/wikitabCardMenuItems'
+import { wikitabCardFeedMenuItems } from './data/wikitabCardMenuItems'
+import { wikitabCardSaveArticleMenuOption } from './data/savedCardHelpers'
+import { savedItemSeedArticle } from './data/wikitabSavedItems'
 import type { WikitabSavedItem } from './data/wikitabConfig'
 
 const props = defineProps<{
@@ -29,10 +31,12 @@ const props = defineProps<{
   loading?: WikitabCardLoading
   showArticleMenu?: boolean
   isSaved?: boolean
+  isCardSaved?: (id: string) => boolean
 }>()
 
 const emit = defineEmits<{
   'toggle-save': []
+  'toggle-save-article': []
 }>()
 
 const card = computed(() => {
@@ -68,10 +72,15 @@ const activityItem = computed(() =>
 
 const activityBindProps = computed(() => {
   if (!activityItem.value) return null
+  const seed = savedItemSeedArticle(props.saved)
   return wikitabCardPropsForSearchActivityItem(activityItem.value, {
     loading: props.loading,
     includeSave: props.showArticleMenu,
     isSaved: props.isSaved,
+    saveArticle:
+      props.saved.type !== 'article' && props.isCardSaved
+        ? wikitabCardSaveArticleMenuOption(seed, props.isCardSaved)
+        : false,
     revisionActionsMenu: false,
     showThumbnail: false,
   })
@@ -81,11 +90,18 @@ const bindProps = computed(() => {
   const data = card.value
   if (!data) return {}
 
+  const seed = savedItemSeedArticle(props.saved)
   const extra: Record<string, unknown> = {
     card: data,
     loading: props.loading,
     menu: props.showArticleMenu
-      ? [wikitabCardSaveMenuItem({ isSaved: props.isSaved })]
+      ? wikitabCardFeedMenuItems({
+          save: { isSaved: props.isSaved },
+          saveArticle:
+            props.saved.type !== 'article' && props.isCardSaved
+              ? wikitabCardSaveArticleMenuOption(seed, props.isCardSaved)
+              : false,
+        })
       : undefined,
   }
 
@@ -101,6 +117,7 @@ const bindProps = computed(() => {
 
 function onActivityMenuSelect(value: string) {
   if (value === 'save') emit('toggle-save')
+  if (value === 'save-article') emit('toggle-save-article')
 }
 </script>
 
@@ -109,6 +126,12 @@ function onActivityMenuSelect(value: string) {
     v-if="activityItem && activityBindProps"
     v-bind="activityBindProps"
     @menu-select="onActivityMenuSelect"
+    @toggle-save-article="emit('toggle-save-article')"
   />
-  <WikitabCard v-else-if="card" v-bind="bindProps" @toggle-save="emit('toggle-save')" />
+  <WikitabCard
+    v-else-if="card"
+    v-bind="bindProps"
+    @toggle-save="emit('toggle-save')"
+    @toggle-save-article="emit('toggle-save-article')"
+  />
 </template>

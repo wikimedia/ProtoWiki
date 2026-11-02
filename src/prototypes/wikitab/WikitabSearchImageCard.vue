@@ -14,32 +14,39 @@ import {
   imageHasAttribution,
   type WikitabSearchImage,
 } from './data/fetchWikitabSearchImages'
+import { wikitabCardSaveArticleMenuOption } from './data/savedCardHelpers'
+import { wikitabCardFeedMenuItems } from './data/wikitabCardMenuItems'
 import { useThumbnailSlotReady } from './useThumbnailSlotReady'
 
 const props = defineProps<{
   image: WikitabSearchImage
   isSaved?: boolean
+  isCardSaved?: (id: string) => boolean
 }>()
 
 const emit = defineEmits<{
   decoded: []
   hide: [pageid: number]
   'toggle-save': []
+  'toggle-save-article': []
 }>()
 
 const selection = ref<string | number | null>(null)
 
-const menuItems = computed(() => [
-  {
-    value: 'save',
-    label: props.isSaved ? 'Unsave' : 'Save',
-    icon: props.isSaved ? cdxIconBookmark : cdxIconBookmarkOutline,
-  },
-  { value: 'hide', label: 'Hide', icon: cdxIconEyeClosed },
-])
+const menuItems = computed(() => {
+  const items = wikitabCardFeedMenuItems({
+    save: { isSaved: props.isSaved },
+    saveArticle: props.isCardSaved
+      ? wikitabCardSaveArticleMenuOption(props.image.seedArticle, props.isCardSaved)
+      : false,
+  })
+  items.push({ value: 'hide', label: 'Hide', icon: cdxIconEyeClosed })
+  return items
+})
 
 watch(selection, (value) => {
   if (value === 'save') emit('toggle-save')
+  if (value === 'save-article') emit('toggle-save-article')
   if (value === 'hide') emit('hide', props.image.pageid)
   if (value !== null) selection.value = null
 })

@@ -10,7 +10,7 @@ import {
  * Cache only — nothing here is authoritative. Clearing it costs one refetch and
  * nothing else. User preferences live in `wikitabConfig.ts`, not here.
  */
-export const CACHE_KEY = 'wikitab-review-changes-cache-v4'
+export const CACHE_KEY = 'wikitab-review-changes-cache-v5'
 
 interface CacheEntry {
   day: string

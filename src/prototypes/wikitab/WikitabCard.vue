@@ -45,7 +45,7 @@ const props = withDefaults(
   loading?: WikitabCardLoading
   /** Full-width info chips rendered above the CdxCard row (not in `#title`). */
   chips?: WikitabCardChip[]
-  /** Overflow ⋯ menu items (`value` `save` / `hide` still emit legacy events). */
+  /** Overflow ⋯ menu items (`save` / `save-article` / `hide` emit legacy events). */
   menu?: WikitabCardMenuItem[]
   }>(),
   {
@@ -57,6 +57,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   'hide-article': [title: string]
   'toggle-save': []
+  'toggle-save-article': []
   'menu-select': [value: string]
 }>()
 
@@ -72,6 +73,7 @@ const menuItems = computed((): WikitabCardMenuItem[] => props.menu ?? [])
 watch(selection, (value) => {
   if (value === null) return
   if (value === 'save') emit('toggle-save')
+  if (value === 'save-article') emit('toggle-save-article')
   if (value === 'hide' && articleTitle.value) emit('hide-article', articleTitle.value)
   emit('menu-select', String(value))
   selection.value = null

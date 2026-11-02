@@ -13,7 +13,7 @@ import { useSkin } from '@/composables/useSkin'
 import { wikitabCardBindProps } from './data/wikitabCardPresentation'
 import { wikitabCardFeedMenuItems } from './data/wikitabCardMenuItems'
 import WikitabCard from './WikitabCard.vue'
-import { suggestionSavedId } from './data/savedCardHelpers'
+import { suggestionSavedId, wikitabCardSaveArticleMenuOption } from './data/savedCardHelpers'
 import {
   WIKITAB_SUGGESTED_EDITS_MODULE_SPEC,
   type WikitabCardData,
@@ -46,6 +46,7 @@ const emit = defineEmits<{
   'hide-section': []
   'hide-article': [title: string]
   'toggle-save': [payload: SaveItemPayload]
+  'toggle-save-article': [card: WikitabCardData]
   'load-more': []
 }>()
 
@@ -293,6 +294,10 @@ function revealMore(): void {
                           ? isCardSaved(suggestionSavedId(slot.card.pageid, slot.card.task))
                           : false,
                     },
+                    saveArticle: wikitabCardSaveArticleMenuOption(
+                      slot.card.seedArticle,
+                      isCardSaved,
+                    ),
                     hideFromHeading: spec.heading,
                   })
                 : undefined,
@@ -300,6 +305,7 @@ function revealMore(): void {
         "
         @hide-article="emit('hide-article', $event)"
         @toggle-save="slot.card && emit('toggle-save', { primitive: 'suggestion', card: slot.card })"
+        @toggle-save-article="slot.card && emit('toggle-save-article', slot.card)"
       />
       <div ref="sentinel" class="wikitab-suggested-edits-section__sentinel" aria-hidden="true" />
     </div>

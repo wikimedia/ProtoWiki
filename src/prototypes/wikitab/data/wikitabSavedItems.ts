@@ -66,7 +66,7 @@ export interface WikitabSavedArticleItem extends WikitabSavedItemBase {
   supportingTextEnd?: string
 }
 
-export type WikitabSavedSnippetSource = 'dyk' | 'news'
+export type WikitabSavedSnippetSource = 'dyk' | 'news' | 'otd'
 
 /** A DYK hook or In the news story, saved as the snippet itself. */
 export interface WikitabSavedSnippetItem extends WikitabSavedItemBase {
@@ -280,7 +280,7 @@ function normalizeArticleItem(record: Record<string, unknown>): WikitabSavedArti
   }
 }
 
-const SNIPPET_SOURCES = new Set<WikitabSavedSnippetSource>(['dyk', 'news'])
+const SNIPPET_SOURCES = new Set<WikitabSavedSnippetSource>(['dyk', 'news', 'otd'])
 
 function normalizeSnippetItem(record: Record<string, unknown>): WikitabSavedSnippetItem | null {
   const base = normalizeSavedItemBase(record)

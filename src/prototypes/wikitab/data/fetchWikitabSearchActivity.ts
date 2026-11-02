@@ -511,8 +511,10 @@ async function fetchNextActivityCandidates(
   pageStates: PageRevisionState[],
   seenRevids: Set<number>,
   signal: AbortSignal | undefined,
-  limit = REVISIONS_PER_FETCH,
+  options: { limit?: number; latestOnly?: boolean } = {},
 ): Promise<ActivityCandidate[]> {
+  const latestOnly = options.latestOnly === true
+  const limit = latestOnly ? 1 : (options.limit ?? REVISIONS_PER_FETCH)
   const activePages = pageStates.filter((state) => !state.exhausted)
   if (!activePages.length) return []
 
@@ -523,7 +525,7 @@ async function fetchNextActivityCandidates(
       const revisions = await fetchRevisionsForTitle(
         state.title,
         limit,
-        state.oldestRevid,
+        latestOnly ? undefined : state.oldestRevid,
         signal,
       )
       return { state, revisions }
@@ -543,7 +545,8 @@ async function fetchNextActivityCandidates(
     attachDiffSizes(revisions, state.revSizesById)
 
     state.oldestRevid = revisions[revisions.length - 1].revid
-    if (revisions.length < limit) {
+    // Tip-only: one batch per title. Otherwise exhaust when the API returns a short page.
+    if (latestOnly || revisions.length < limit) {
       state.exhausted = true
     }
 
@@ -572,11 +575,13 @@ export class WikitabSearchActivityFeed {
   private readonly editorKindByUser = new Map<string, EditorKind>()
   private readonly editorKindLookups = new Map<string, Promise<void>>()
   private readonly editorByRevid = new Map<number, { user: string; userid: number }>()
+  private readonly latestOnly: boolean
 
   constructor(
     titles: WikitabSearchTopTitle[],
-    options: { seenRevids?: Iterable<number> } = {},
+    options: { seenRevids?: Iterable<number>; latestOnly?: boolean } = {},
   ) {
+    this.latestOnly = options.latestOnly === true
     this.pageStates = titles.map((title) => ({
       pageid: title.pageid,
       title: title.title,
@@ -712,6 +717,7 @@ export class WikitabSearchActivityFeed {
       this.pageStates,
       this.seenRevids,
       signal,
+      { latestOnly: this.latestOnly },
     )
     if (!fresh.length) return
 

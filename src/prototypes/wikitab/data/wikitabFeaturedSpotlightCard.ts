@@ -10,6 +10,7 @@ import {
 } from '../sections'
 import { wikitabCardBindProps } from './wikitabCardPresentation'
 import { wikitabCardFeedMenuItems } from './wikitabCardMenuItems'
+import { wikitabCardSaveArticleMenuOption } from './savedCardHelpers'
 import { wikitabReservedSlotHeight } from './wikitabCardSlotHeights'
 import type { WikitabCardPrimitiveId } from './wikitabCardTypeLinks'
 
@@ -140,6 +141,7 @@ export function featuredSpotlightWikitabCardBindProps(options: {
   showCardMenu?: boolean
   sectionHeading?: string
   isSaved?: boolean
+  isCardSaved?: (id: string) => boolean
 }): Record<string, unknown> {
   const kind = options.spotlight?.kind ?? options.slotKind
   const unavailable = options.spotlight?.unavailable
@@ -151,6 +153,11 @@ export function featuredSpotlightWikitabCardBindProps(options: {
     ? featuredSpotlightToCardData(options.spotlight, showLabel)
     : undefined
 
+  const saveArticle =
+    kind !== 'tfa' && options.isCardSaved
+      ? wikitabCardSaveArticleMenuOption(options.spotlight?.seedArticle, options.isCardSaved)
+      : false
+
   return wikitabCardBindProps(primitive, {
     card,
     loading: options.loading,
@@ -159,6 +166,7 @@ export function featuredSpotlightWikitabCardBindProps(options: {
       options.showCardMenu && options.sectionHeading
         ? wikitabCardFeedMenuItems({
             save: { isSaved: options.isSaved },
+            saveArticle,
             hideFromHeading: options.sectionHeading,
           })
         : undefined,

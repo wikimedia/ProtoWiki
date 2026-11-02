@@ -17,7 +17,8 @@ import {
 } from '@wikimedia/codex-icons'
 
 import { useSkin } from '@/composables/useSkin'
-import { changeSavedId } from './data/savedCardHelpers'
+import { changeSavedId, wikitabCardSaveArticleMenuOption } from './data/savedCardHelpers'
+import { seedArticle } from './data/wikitabSeedArticle'
 import type { WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
 import { wikitabCardBindProps } from './data/wikitabCardPresentation'
 import { wikitabCardPropsForSearchActivityItem } from './data/wikitabSearchActivityWikitabCard'
@@ -50,6 +51,7 @@ const emit = defineEmits<{
   'load-more': []
   dismiss: [revid: number]
   'toggle-save': [item: WikitabSearchActivityItem]
+  'toggle-save-article': [item: WikitabSearchActivityItem]
 }>()
 
 const skin = useSkin()
@@ -78,6 +80,7 @@ const isEmpty = computed(
 
 function onReviewChangeMenuSelect(value: string, item: WikitabSearchActivityItem) {
   if (value === 'save') emit('toggle-save', item)
+  if (value === 'save-article') emit('toggle-save-article', item)
   if (value === 'thank') {
     window.open(item.thankUrl, '_blank', 'noopener,noreferrer')
   }
@@ -299,13 +302,19 @@ function revealMore(): void {
             wikitabCardPropsForSearchActivityItem(slot.item, {
               includeSave: true,
               isSaved: isCardSaved(changeSavedId(slot.item.revisionId)),
+              saveArticle: wikitabCardSaveArticleMenuOption(
+                seedArticle(slot.item.articleTitle, 'edited-page'),
+                isCardSaved,
+              ),
               loading: editorKindPending?.has(slot.item.revisionId)
                 ? { supporting: true }
                 : false,
               showThumbnail: false,
+              omitLatestRevisionChip: true,
             })
           "
           @menu-select="onReviewChangeMenuSelect($event, slot.item)"
+          @toggle-save-article="emit('toggle-save-article', slot.item)"
         />
         <WikitabCard
           v-else-if="slot.loading"

@@ -3,6 +3,7 @@ import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 
 import {
   buildSavedArticleFromSearch,
+  buildSavedArticleFromSeedArticle,
   buildSavedChange,
   buildSavedImage,
   buildSavedItemFromPayload,
@@ -12,6 +13,7 @@ import {
   saveItemPayloadNeedsFeaturedImageFetch,
   type SaveItemPayload,
 } from './data/savedCardHelpers'
+import type { WikitabSeedArticle } from './data/wikitabSeedArticle'
 import type { WikitabSearchImage } from './data/fetchWikitabSearchImages'
 import { fetchWikitabPageSummary } from './data/fetchWikitabPageSummary'
 import type { WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
@@ -293,6 +295,19 @@ export function useWikitabSavedArticles() {
     }
   }
 
+  function toggleSaveArticleFromSeed(
+    seed: WikitabSeedArticle,
+    hints: { thumbnailUrl?: string; description?: string } = {},
+  ): void {
+    const built = buildSavedArticleFromSeedArticle(seed, hints)
+    if (!built) return
+    if (isSaved(built.id)) {
+      unsaveItem(built.id)
+    } else {
+      saveItem(built)
+    }
+  }
+
   function toggleSaveSuggestion(item: WikitabSearchContributeItem): void {
     const built = buildSavedSuggestion(item)
     if (!built) return
@@ -361,6 +376,7 @@ export function useWikitabSavedArticles() {
     unsaveItem,
     toggleSaveFromPayload,
     toggleSaveSearchArticle,
+    toggleSaveArticleFromSeed,
     toggleSaveSuggestion,
     toggleSaveChange,
     toggleSaveImage,

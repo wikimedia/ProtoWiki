@@ -48,6 +48,7 @@ const emit = defineEmits<{
   'hide-section': []
   'hide-article': [title: string]
   'toggle-save': [payload: SaveItemPayload]
+  'toggle-save-article': [spotlight: WikitabFeaturedSpotlight]
 }>()
 
 function canShowCardMenu(
@@ -265,10 +266,14 @@ function revealMore(): void {
             showCardMenu: canShowCardMenu(slot.spotlight, slot.loading),
             sectionHeading: spec.heading,
             isSaved: slot.spotlight ? isCardSaved(savedIdForSpotlight(slot.spotlight)) : false,
+            isCardSaved,
           })
         "
         @hide-article="emit('hide-article', $event)"
         @toggle-save="slot.spotlight && emit('toggle-save', savePayloadForSpotlight(slot.spotlight))"
+        @toggle-save-article="
+          slot.spotlight && emit('toggle-save-article', slot.spotlight)
+        "
       />
       <div ref="sentinel" class="wikitab-featured-section__sentinel" aria-hidden="true" />
     </div>
