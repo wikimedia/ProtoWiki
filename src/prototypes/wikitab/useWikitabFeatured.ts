@@ -3,7 +3,8 @@ import { ref } from 'vue'
 import { featuredSpotlightShell, fetchWikitabFeatured } from './data/fetchWikitabFeatured'
 import {
   clearCachedFeatured,
-  readCachedFeatured,
+  isFeaturedCacheFresh,
+  readCachedFeaturedEntry,
   utcDayKey,
   writeCachedFeatured,
 } from './data/featuredCache'
@@ -29,6 +30,7 @@ export function useWikitabFeatured() {
 
   let controller: AbortController | null = null
   let loadedDay: string | null = null
+  let staleRefreshInFlight = false
 
   function abortFeatured(): void {
     controller?.abort()
@@ -47,6 +49,48 @@ export function useWikitabFeatured() {
     loadingByKind.value = { ...loadingByKind.value, [spotlight.kind]: fieldLoading }
   }
 
+  async function fetchFromNetwork(
+    day: string,
+    signal: AbortSignal,
+    options: { progressive?: boolean } = {},
+  ): Promise<void> {
+    if (options.progressive) {
+      showShells()
+    }
+
+    const spotlights = await fetchWikitabFeatured(
+      day,
+      signal,
+      options.progressive ? patchSpotlight : undefined,
+      { skipCache: true },
+    )
+    if (signal.aborted) return
+
+    items.value = spotlights
+    loadingByKind.value = {}
+    writeCachedFeatured(day, spotlights)
+    loadedDay = day
+    loaded.value = true
+    error.value = null
+  }
+
+  function scheduleStaleFeaturedRefresh(day: string): void {
+    if (staleRefreshInFlight) return
+    staleRefreshInFlight = true
+
+    abortFeatured()
+    controller = new AbortController()
+    const { signal } = controller
+
+    void fetchFromNetwork(day, signal, { progressive: false })
+      .catch((cause) => {
+        if (signal.aborted || (cause as Error)?.name === 'AbortError') return
+      })
+      .finally(() => {
+        if (controller?.signal === signal) staleRefreshInFlight = false
+      })
+  }
+
   async function refresh(options: { force?: boolean } = {}): Promise<void> {
     const day = utcDayKey()
 
@@ -56,14 +100,18 @@ export function useWikitabFeatured() {
     }
 
     if (!options.force) {
-      const cached = readCachedFeatured(day)
-      if (cached?.length) {
-        items.value = cached
+      const cached = readCachedFeaturedEntry(day)
+      if (cached?.items.length) {
+        items.value = cached.items
         loadingByKind.value = {}
         loadedDay = day
         loaded.value = true
         error.value = null
         loading.value = false
+
+        if (!isFeaturedCacheFresh(cached.fetchedAt)) {
+          scheduleStaleFeaturedRefresh(day)
+        }
         return
       }
     } else {
@@ -79,14 +127,7 @@ export function useWikitabFeatured() {
     showShells()
 
     try {
-      const spotlights = await fetchWikitabFeatured(day, signal, patchSpotlight)
-      if (signal.aborted) return
-
-      items.value = spotlights
-      loadingByKind.value = {}
-      writeCachedFeatured(day, spotlights)
-      loadedDay = day
-      loaded.value = true
+      await fetchFromNetwork(day, signal, { progressive: true })
     } catch (cause) {
       if (signal.aborted || (cause as Error)?.name === 'AbortError') return
       items.value = []

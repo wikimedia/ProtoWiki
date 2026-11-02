@@ -4,7 +4,7 @@ import { WIKITAB_SECTIONS, type WikitabCardData, type WikitabFeed, type WikitabS
 import { fetchActiveDiscussions } from './fetchActiveDiscussions'
 import { fetchBirthsOnThisDay } from './fetchBirthsOnThisDay'
 import {
-  isDiscussionsCacheStale,
+  isFeedSliceStale,
   persistPartialFeed,
   previousUtcDay,
   readCachedFeed,
@@ -78,7 +78,7 @@ const featuredPayloadByDay = new Map<string, Promise<FeaturedFeedResponse>>()
 
 const ALL_SECTION_IDS = new Set<WikitabSectionId>(WIKITAB_SECTIONS.map((section) => section.id))
 
-const FEATURED_SECTION_IDS: readonly WikitabSectionId[] = ['trending', 'news', 'dyk']
+export const FEATURED_SECTION_IDS: readonly WikitabSectionId[] = ['trending', 'news', 'dyk']
 
 export interface FetchDailyFeedOptions {
   enabledSections?: ReadonlySet<WikitabSectionId>
@@ -351,6 +351,91 @@ export interface FetchWikitabSectionFeedOptions {
   force?: boolean
 }
 
+export function listStaleEnabledFeedSections(
+  day: string,
+  enabled: ReadonlySet<WikitabSectionId>,
+): WikitabSectionId[] {
+  return WIKITAB_SECTIONS.map((section) => section.id).filter(
+    (id) => enabled.has(id) && isFeedSliceStale(day, id),
+  )
+}
+
+async function refetchFeaturedFeedSlices(
+  day: string,
+  enabledFeatured: readonly WikitabSectionId[],
+  signal?: AbortSignal,
+): Promise<Partial<Pick<WikitabFeed, 'trending' | 'news' | 'dyk'>>> {
+  featuredPayloadByDay.delete(day)
+  const payload = await getFeaturedPayload(day, signal)
+  const out: Partial<Pick<WikitabFeed, 'trending' | 'news' | 'dyk'>> = {}
+
+  if (enabledFeatured.includes('trending')) {
+    out.trending = await resolveTrending(payload, day, signal)
+  }
+  if (enabledFeatured.includes('news')) {
+    out.news = mapNews(payload)
+  }
+  if (enabledFeatured.includes('dyk')) {
+    out.dyk = mapDyk(payload)
+  }
+
+  return out
+}
+
+async function refetchSecondaryFeedSlice(
+  sectionId: WikitabSectionId,
+  day: string,
+  signal?: AbortSignal,
+): Promise<WikitabCardData[]> {
+  switch (sectionId) {
+    case 'otd':
+      return fetchMainPageOtd(signal).catch(() => [])
+    case 'births':
+      return fetchBirthsOnThisDay(day, signal).catch(() => [])
+    case 'discussions':
+      return fetchActiveDiscussions(signal).catch(() => [])
+    default:
+      return []
+  }
+}
+
+/** Background refresh for slices that exceeded TTL — does not block on cache paint. */
+export async function refreshStaleFeedSections(
+  day: string,
+  staleSectionIds: readonly WikitabSectionId[],
+  enabled: ReadonlySet<WikitabSectionId>,
+  signal: AbortSignal | undefined,
+  onUpdate: (feed: WikitabFeed) => void,
+  baseFeed: WikitabFeed,
+): Promise<WikitabFeed> {
+  let feed: WikitabFeed = { ...baseFeed }
+
+  const featuredStale = staleSectionIds.filter((id) =>
+    FEATURED_SECTION_IDS.includes(id as (typeof FEATURED_SECTION_IDS)[number]),
+  )
+  const secondaryStale = staleSectionIds.filter(
+    (id) => !FEATURED_SECTION_IDS.includes(id as (typeof FEATURED_SECTION_IDS)[number]),
+  )
+
+  if (featuredStale.length) {
+    const enabledFeatured = FEATURED_SECTION_IDS.filter((id) => enabled.has(id))
+    const slices = await refetchFeaturedFeedSlices(day, enabledFeatured, signal)
+    feed = { ...feed, ...slices }
+    persistPartialFeed(day, feed, Date.now(), enabledFeatured)
+    onUpdate(feed)
+  }
+
+  for (const sectionId of secondaryStale) {
+    if (signal?.aborted) break
+    const items = await refetchSecondaryFeedSlice(sectionId, day, signal)
+    feed = { ...feed, [sectionId]: items }
+    persistPartialFeed(day, feed, Date.now(), [sectionId])
+    onUpdate(feed)
+  }
+
+  return feed
+}
+
 /** Fetches one section's feed slice — for late unhide after initial load. */
 export async function fetchWikitabSectionFeed(
   sectionId: WikitabSectionId,
@@ -414,19 +499,15 @@ export function fetchDailyFeedProgressive(
 
   const cached = readCachedFeed(day)
   if (cached) {
-    if (enabled.has('discussions') && isDiscussionsCacheStale(day)) {
-      onUpdate(cached)
-      return fetchActiveDiscussions(signal)
-        .then((discussions) => {
-          const updated = { ...cached, discussions }
-          persistPartialFeed(day, updated)
-          onUpdate(updated)
-          return updated
-        })
-        .catch(() => cached)
+    onUpdate(cached)
+
+    const stale = listStaleEnabledFeedSections(day, enabled)
+    if (stale.length) {
+      return refreshStaleFeedSections(day, stale, enabled, signal, onUpdate, cached).catch(
+        () => cached,
+      )
     }
 
-    onUpdate(cached)
     return Promise.resolve(cached)
   }
 

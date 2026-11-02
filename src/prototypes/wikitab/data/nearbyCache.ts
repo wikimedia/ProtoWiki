@@ -1,5 +1,6 @@
 import type { WikitabCardData } from '../sections'
-import { DISCUSSIONS_TTL_MS, isCacheBypassed } from './feedCache'
+import { isCacheBypassed } from './feedCache'
+import { NEARBY_TTL_MS, isTimestampFresh } from './wikitabCacheTtl'
 import {
   loadWikitabConfig,
   patchWikitabConfig,
@@ -12,9 +13,9 @@ import {
  * store as `nearbyLastCoord`) — not a separate localStorage key that
  * `evictWikitabCaches()` deletes whenever a config write hits quota.
  *
- * Warm cache → paint on first tick, no network. TTL matches Active discussions.
+ * Warm cache → paint on first tick, no network.
  */
-export const NEARBY_TTL_MS = DISCUSSIONS_TTL_MS
+export { NEARBY_TTL_MS } from './wikitabCacheTtl'
 
 /** Legacy standalone key — migrated once into config, then removed. */
 const LEGACY_CACHE_KEY = 'wikitab-nearby-cache-v2'
@@ -32,7 +33,7 @@ export function buildNearbyCoordKey(coord: Pick<WikitabNearbyLastCoord, 'lat' | 
 }
 
 export function isNearbyCacheFresh(fetchedAt: number, now = Date.now()): boolean {
-  return now - fetchedAt < NEARBY_TTL_MS
+  return isTimestampFresh(fetchedAt, NEARBY_TTL_MS, now)
 }
 
 export { isCacheBypassed }

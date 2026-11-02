@@ -1,6 +1,13 @@
 import { computed, onUnmounted, reactive, ref, watch, type Ref } from 'vue'
 import { cardNeedsThumbnailLookup, resolveDykThumbnails } from './data/resolveDykThumbnails'
-import type { WikitabCardData, WikitabCardLoading, WikitabSectionSpec } from './sections'
+import type {
+  WikitabCardData,
+  WikitabCardLoading,
+  WikitabSectionId,
+  WikitabSectionSpec,
+} from './sections'
+
+const THUMBNAIL_PERSIST_SECTIONS = new Set<WikitabSectionId>(['dyk', 'news', 'otd'])
 
 function itemsUnchanged(
   list: WikitabCardData[],
@@ -12,6 +19,7 @@ function itemsUnchanged(
   for (let i = 0; i < list.length; i++) {
     if (list[i].key !== prevList[i].key) return false
     if (list[i].thumbnailUrl !== prevList[i].thumbnailUrl) return false
+    if (list[i].thumbnailLookupComplete !== prevList[i].thumbnailLookupComplete) return false
   }
 
   return true
@@ -28,7 +36,7 @@ function itemsUnchanged(
  * Thumbnail decode is handled per card by `WikitabCard`.
  */
 export function useSectionReveal(
-  spec: Pick<WikitabSectionSpec, 'initialCount' | 'pageSize'>,
+  spec: Pick<WikitabSectionSpec, 'id' | 'initialCount' | 'pageSize'>,
   items: Ref<WikitabCardData[]>,
   /** When true and `items` is still empty, reserve initial skeleton slots (feed + home modules). */
   loading?: Ref<boolean>,
@@ -56,10 +64,19 @@ export function useSectionReveal(
     for (const card of page) pendingThumbnailKeys.add(card.key)
 
     try {
-      await resolveDykThumbnails(page, controller.signal, (card, thumbnailUrl) => {
-        if (thumbnailUrl) resolvedThumbnails.set(card.key, thumbnailUrl)
-        pendingThumbnailKeys.delete(card.key)
-      })
+      const persistSectionId = THUMBNAIL_PERSIST_SECTIONS.has(spec.id)
+        ? (spec.id as 'dyk' | 'news' | 'otd')
+        : undefined
+
+      await resolveDykThumbnails(
+        page,
+        controller.signal,
+        (card, thumbnailUrl) => {
+          if (thumbnailUrl) resolvedThumbnails.set(card.key, thumbnailUrl)
+          pendingThumbnailKeys.delete(card.key)
+        },
+        persistSectionId ? { persistSectionId } : undefined,
+      )
     } catch (cause) {
       if ((cause as Error)?.name === 'AbortError') return
     } finally {

@@ -219,13 +219,15 @@ const {
   setShowRecentRiskyEdits: setReviewChangesShowRecentRiskyEdits,
 } = useWikitabReviewChangesSettings()
 
+/** Skeleton before Daily reads refresh starts (saved snapshot ready, load queued). */
+const dailyReadsPending = ref(false)
 /** Skeleton before Suggested edits refresh starts (saved snapshot ready, load queued). */
 const suggestedEditsPending = ref(false)
 /** Skeleton before Review changes refresh starts (saved snapshot ready, load queued). */
 const reviewChangesPending = ref(false)
 
 const dailyReadsPendingOnHome = computed(
-  () => isPinned(WIKITAB_DAILY_READS_MODULE_ID) && savedModuleLoading.value,
+  () => dailyReadsPending.value || savedModuleLoading.value,
 )
 
 const suggestedEditsPendingOnHome = computed(
@@ -324,11 +326,25 @@ function isSavedAdjacentModuleId(id: WikitabModuleId): boolean {
   )
 }
 
+function moduleNeedsSavedSnapshot(moduleId: WikitabModuleId): boolean {
+  if (moduleId === WIKITAB_DAILY_READS_MODULE_ID) return true
+  if (moduleId === WIKITAB_SUGGESTED_EDITS_MODULE_ID) return true
+  if (moduleId === WIKITAB_REVIEW_CHANGES_MODULE_ID) {
+    return (
+      reviewChangesShowSavedEdits.value &&
+      loadWikitabConfig().savedItems.length > 0
+    )
+  }
+  return false
+}
+
 async function refreshSavedAdjacentModules(
   batch: readonly WikitabModuleId[],
 ): Promise<void> {
+  const runsDailyReads = batch.includes(WIKITAB_DAILY_READS_MODULE_ID)
   const runsSuggestedEdits = batch.includes(WIKITAB_SUGGESTED_EDITS_MODULE_ID)
   const runsReviewChanges = batch.includes(WIKITAB_REVIEW_CHANGES_MODULE_ID)
+  if (runsDailyReads) dailyReadsPending.value = true
   if (runsSuggestedEdits) suggestedEditsPending.value = true
   if (runsReviewChanges) reviewChangesPending.value = true
 
@@ -345,6 +361,7 @@ async function refreshSavedAdjacentModules(
       }),
     )
   } finally {
+    if (runsDailyReads) dailyReadsPending.value = false
     if (runsSuggestedEdits) suggestedEditsPending.value = false
     if (runsReviewChanges) reviewChangesPending.value = false
   }
@@ -355,26 +372,32 @@ async function refreshHomeModulesInOrder(): Promise<void> {
   if (isSearchMode.value) return
 
   const generation = ++homeLoadGeneration
+  dailyReadsPending.value = false
   suggestedEditsPending.value = false
   reviewChangesPending.value = false
   prepareForOrderedLoad()
 
   const order = computeHomeModuleLoadOrder()
 
-  const needsSavedSnapshot = order.some((moduleId) => {
-    if (moduleId === WIKITAB_DAILY_READS_MODULE_ID) return true
-    if (moduleId === WIKITAB_SUGGESTED_EDITS_MODULE_ID) return true
-    if (moduleId === WIKITAB_REVIEW_CHANGES_MODULE_ID) {
-      return (
-        reviewChangesShowSavedEdits.value &&
-        loadWikitabConfig().savedItems.length > 0
-      )
-    }
-    return false
-  })
-
-  if (needsSavedSnapshot && !order.includes(WIKITAB_SAVED_MODULE_ID)) {
+  // Daily reads (default order) sits above Saved. Seed-adjacent modules need the
+  // Saved-module snapshot before they refresh — otherwise they clear against [].
+  // Refresh Saved once up front when any dependent appears before it (or Saved is
+  // hidden), then skip a second refresh when Saved's own slot arrives.
+  let savedModuleRefreshed = false
+  async function ensureSavedModuleRefreshed(): Promise<void> {
+    if (savedModuleRefreshed) return
     await refreshSavedModule()
+    if (generation !== homeLoadGeneration) return
+    savedModuleRefreshed = true
+  }
+
+  const savedIndex = order.indexOf(WIKITAB_SAVED_MODULE_ID)
+  const firstDependentIndex = order.findIndex(moduleNeedsSavedSnapshot)
+  if (
+    firstDependentIndex !== -1 &&
+    (savedIndex === -1 || firstDependentIndex < savedIndex)
+  ) {
+    await ensureSavedModuleRefreshed()
     if (generation !== homeLoadGeneration) return
   }
 
@@ -384,7 +407,7 @@ async function refreshHomeModulesInOrder(): Promise<void> {
     const id = order[index]
 
     if (id === WIKITAB_SAVED_MODULE_ID) {
-      await refreshSavedModule()
+      await ensureSavedModuleRefreshed()
       continue
     }
 
@@ -762,6 +785,7 @@ watch(
     if (next === 0) {
       savedModuleItems.value = []
       savedModuleLoading.value = false
+      dailyReadsPending.value = false
       suggestedEditsPending.value = false
       reviewChangesPending.value = false
       void refreshDailyReads([])
@@ -775,6 +799,7 @@ watch(
   () => uniqueArticleSeedsFromSavedItems(savedItems.value).length,
   (next, prev) => {
     if (prev > 0 && next === 0) {
+      dailyReadsPending.value = false
       suggestedEditsPending.value = false
       void refreshDailyReads([])
       void refreshSuggestedEdits([])

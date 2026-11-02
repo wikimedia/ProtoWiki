@@ -308,6 +308,8 @@ export interface WikitabCardData {
   /** Optional end-aligned caption (e.g. discussion relative time) alongside `supportingText`. */
   supportingTextEnd?: string
   thumbnailUrl?: string
+  /** Hook cards: set when a lead-page thumbnail lookup finished (hit or miss). */
+  thumbnailLookupComplete?: boolean
   /** Active discussions — comment count for saves. */
   commentCount?: number
   /** Suggested edits — page id and task id for saves (same as suggestion payload `task`). */

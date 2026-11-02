@@ -122,7 +122,7 @@ export class ReviewChangesFeed {
   }
 }
 
-async function createSavedArticleReviewChangesFeed(
+export async function createSavedArticleReviewChangesFeed(
   savedItems: readonly WikitabSavedItem[],
   day: string,
   signal: AbortSignal,
@@ -260,6 +260,10 @@ export class MergedReviewChangesFeed {
     }
     if (this.saved) return this.saved.isLatestRevision(item)
     return undefined
+  }
+
+  reviewChangesSource(item: WikitabSearchActivityItem): 'saved' | 'risky' {
+    return this.rcRevids.has(item.revisionId) ? 'risky' : 'saved'
   }
 }
 

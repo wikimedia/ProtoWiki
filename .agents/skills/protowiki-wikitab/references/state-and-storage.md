@@ -62,35 +62,43 @@ is authoritative — clearing it must only ever cost one refetch.
 A new-tab page opens dozens of times a day; caching the daily feed is both fast
 and good API etiquette. Writing today's entry evicts older days.
 
-**Active discussions TTL** — the discussions slice carries
-`sliceFetchedAt.discussions` (epoch ms). `readCachedSectionSlice('discussions')`
-and `readCachedFeed()` treat the slice as a miss after **5 minutes**
-(`DISCUSSIONS_TTL_MS`). Other slices remain on the UTC-day key. Legacy entries
-without a timestamp are treated as stale. `persistPartialFeed()` stamps the time
-when a non-empty discussions slice lands.
+**Per-slice TTL (stale-while-revalidate)** — constants live in
+[`data/wikitabCacheTtl.ts`](../../../../src/prototypes/wikitab/data/wikitabCacheTtl.ts).
+Each slice stores `sliceFetchedAt.<id>` (epoch ms) on write. Reads **always**
+return cached card data for the UTC day; when TTL expires, modules paint the
+cache first and refetch in the background (same contract as Nearby).
+
+| Slice | TTL |
+| ----- | --- |
+| Trending | 1 h |
+| In the news | 4 h |
+| Did you know | 4 h |
+| Active discussions | 10 min |
+| On this day | 4 h |
+| Birthdays | UTC day only (new date) |
+
+Legacy entries without timestamps are **displayable** but treated as stale
+(background refetch). `persistPartialFeed()` merges non-empty slices and stamps
+timestamps only for sections updated in that write. It persists when **any**
+slice is non-empty (not only when Trending is populated).
+
+**Hook thumbnails (DYK / news / OTD)** — resolved lead-page thumbnails and
+`thumbnailLookupComplete` are patched into the feed cache via
+`patchCachedFeedCardThumbnails()` so a new tab does not repeat full-card
+skeletons for known hooks.
 
 **Ordered home load** (`index.vue` → `refreshHomeModulesInOrder` →
 `useWikitabFeed.loadSection`) reads and writes through the same cache:
 
-- `prepareForOrderedLoad()` hydrates `feed.value` from `readCachedFeed()` when
-  the day key hits, marking cached sections as already fetched via
-  `readCachedSectionSlice()` (so stale discussions are not marked fetched).
-- Each `loadSection` call reads its slice via `fetchWikitabSectionFeed` (cache
-  before network) and patches localStorage via `persistPartialFeed()` after each
-  non-empty slice lands. Empty slices are not cached so a later open can retry.
+- `prepareForOrderedLoad()` hydrates from `readCachedFeed()`, marks sections with
+  cached items as fetched, then `scheduleStaleFeedRefresh()` for TTL-expired slices.
+- Cache miss → `loadSection` → network → `persistPartialFeed(..., [sectionId])`.
 - `feed/featured` is deduped in-memory per UTC day when Trending, News, and DYK
-  load separately on a cache miss (`getFeaturedPayload` in
-  `fetchDailyFeed.ts`).
-- `fetchDailyFeedProgressive()` refetches discussions only when the rest of the
-  day cache hits but discussions exceeded the TTL.
+  load separately on a miss (`getFeaturedPayload` in `fetchDailyFeed.ts`).
+- Stale featured slices share one `feed/featured` request when any of Trending /
+  News / DYK needs refresh.
 
-Skip caching when Trending is still empty (early UTC) so the next tab open can
-retry. `?nocache=1` bypasses reads and writes.
-
-**DYK / In the news** — both are "current day only" in the Wikifeeds API. DYK
-normally updates once at ~00:00 UTC; enwiki can switch to twice daily (~00:00 and
-~12:00 UTC) during nomination backlog. UTC-day cache is sufficient for normal
-days; no separate TTL unless parity with the midday rotation is needed later.
+`?nocache=1` bypasses reads and writes.
 
 ## Cache-only Daily reads storage (`wikitab-daily-reads-cache-v*`)
 
@@ -113,12 +121,27 @@ with `seenPageidsFromCards()` so cached cards are not duplicated. Cached
 `hasMore: false` does not remove desktop "Show more" — same retry contract as
 Daily reads.
 
+## Cache-only Featured module storage (`wikitab-featured-cache-v*`)
+
+[`data/featuredCache.ts`](../../../../src/prototypes/wikitab/data/featuredCache.ts)
+stores sister-wiki spotlights under `{ day, items, fetchedAt }`. **4-hour TTL**
+(`FEATURED_MODULE_TTL_MS`); stale entries paint from cache then background-refetch
+via `useWikitabFeatured.ts`.
+
+## Cache-only Review changes storage (`wikitab-review-changes-cache-v*`)
+
+[`data/reviewChangesCache.ts`](../../../../src/prototypes/wikitab/data/reviewChangesCache.ts)
+stores `{ day, savedFingerprint, settingsFingerprint, items, hasMore,
+fetchedAtSaved, fetchedAtRisky }`. Each item may carry `reviewChangesSource`:
+`'saved' | 'risky'`. TTL: seed-article pipeline **1 h**, Recent risky **10 min**.
+Stale-while-revalidate refreshes only expired sources in the background.
+
 ## Transient component state
 
-Revealed page counts and per-card thumbnail lookups (`useSectionReveal`:
-`reserved`, pending thumbnail keys) stay in memory
-only. A new tab opens fresh every time; persisting scroll/reveal depth would add
-complexity with little benefit.
+Revealed page counts (`useSectionReveal`: `reserved`) stay in memory only.
+Hook lead-page thumbnails for DYK / news / OTD are persisted on the feed cache
+(`thumbnailUrl`, `thumbnailLookupComplete`). A new tab opens fresh reveal depth;
+scroll position is not persisted.
 
 ## URL
 

@@ -760,14 +760,22 @@ async function fetchSpotlightsForDay(
   return assembleFeaturedSpotlights(mapped)
 }
 
+export interface FetchWikitabFeaturedOptions {
+  /** When true, always hits the network (used for manual refresh and stale background refresh). */
+  skipCache?: boolean
+}
+
 /** Daily sister-wiki spotlights for the Featured home module. */
 export async function fetchWikitabFeatured(
   day: string = utcDayKey(),
   signal?: AbortSignal,
   onSpotlight?: WikitabFeaturedSpotlightUpdate,
+  options?: FetchWikitabFeaturedOptions,
 ): Promise<WikitabFeaturedSpotlight[]> {
-  const cached = readCachedFeatured(day)
-  if (cached) return cached
+  if (!options?.skipCache) {
+    const cached = readCachedFeatured(day)
+    if (cached) return cached
+  }
 
   const items = await fetchSpotlightsForDay(day, signal, onSpotlight)
   writeCachedFeatured(day, items)

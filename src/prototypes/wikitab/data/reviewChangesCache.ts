@@ -1,11 +1,16 @@
 import type { WikitabSearchActivityItem } from './fetchWikitabSearchActivity'
 import { isCacheBypassed, utcDayKey } from './feedCache'
+import {
+  isTimestampFresh,
+  REVIEW_CHANGES_RISKY_TTL_MS,
+  REVIEW_CHANGES_SAVED_TTL_MS,
+} from './wikitabCacheTtl'
 
 /**
  * Cache only — nothing here is authoritative. Clearing it costs one refetch and
  * nothing else. User preferences live in `wikitabConfig.ts`, not here.
  */
-export const CACHE_KEY = 'wikitab-review-changes-cache-v3'
+export const CACHE_KEY = 'wikitab-review-changes-cache-v4'
 
 interface CacheEntry {
   day: string
@@ -13,11 +18,15 @@ interface CacheEntry {
   settingsFingerprint: string
   items: WikitabSearchActivityItem[]
   hasMore: boolean
+  fetchedAtSaved?: number
+  fetchedAtRisky?: number
 }
 
 export interface CachedReviewChanges {
   items: WikitabSearchActivityItem[]
   hasMore: boolean
+  fetchedAtSaved?: number
+  fetchedAtRisky?: number
 }
 
 export function buildReviewChangesSavedFingerprint(titleKeys: readonly string[]): string {
@@ -70,10 +79,26 @@ export function readCachedReviewChanges(
     return {
       items: dedupeCachedItems(entry.items.map((item) => ({ ...item }))),
       hasMore: entry.hasMore === true,
+      fetchedAtSaved: entry.fetchedAtSaved,
+      fetchedAtRisky: entry.fetchedAtRisky,
     }
   } catch {
     return null
   }
+}
+
+export function isReviewChangesSavedCacheFresh(
+  fetchedAt: number | undefined,
+  now = Date.now(),
+): boolean {
+  return isTimestampFresh(fetchedAt, REVIEW_CHANGES_SAVED_TTL_MS, now)
+}
+
+export function isReviewChangesRiskyCacheFresh(
+  fetchedAt: number | undefined,
+  now = Date.now(),
+): boolean {
+  return isTimestampFresh(fetchedAt, REVIEW_CHANGES_RISKY_TTL_MS, now)
 }
 
 export function writeCachedReviewChanges(
@@ -82,8 +107,29 @@ export function writeCachedReviewChanges(
   settingsFingerprint: string,
   items: WikitabSearchActivityItem[],
   hasMore: boolean,
+  fetchedAt?: { saved?: number; risky?: number },
 ): void {
   try {
+    const existingRaw = window.localStorage.getItem(CACHE_KEY)
+    let fetchedAtSaved = fetchedAt?.saved
+    let fetchedAtRisky = fetchedAt?.risky
+
+    if (existingRaw) {
+      try {
+        const existing = JSON.parse(existingRaw) as CacheEntry
+        if (
+          existing.day === day &&
+          existing.savedFingerprint === savedFingerprint &&
+          existing.settingsFingerprint === settingsFingerprint
+        ) {
+          if (fetchedAtSaved === undefined) fetchedAtSaved = existing.fetchedAtSaved
+          if (fetchedAtRisky === undefined) fetchedAtRisky = existing.fetchedAtRisky
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     window.localStorage.setItem(
       CACHE_KEY,
       JSON.stringify({
@@ -92,6 +138,8 @@ export function writeCachedReviewChanges(
         settingsFingerprint,
         items,
         hasMore,
+        fetchedAtSaved,
+        fetchedAtRisky,
       } satisfies CacheEntry),
     )
   } catch {

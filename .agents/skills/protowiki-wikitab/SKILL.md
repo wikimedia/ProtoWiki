@@ -381,9 +381,10 @@ Feed errors show the same reserved-height error row per section.
 resolve while slower secondary APIs are still in flight. All six sections are
 cached under one UTC-day blob (`wikitab-feed-cache-v*`); slices patch in via
 `persistPartialFeed()` as each section resolves during ordered home load.
-**Active discussions** is the exception: its slice carries a **5-minute TTL**
-(`DISCUSSIONS_TTL_MS` in `feedCache.ts`) so noticeboard threads stay reasonably
-fresh without refetching the whole daily feed.
+Per-slice refresh windows are centralized in `data/wikitabCacheTtl.ts` (Trending
+1 h, News/DYK/OTD 4 h, Active discussions 10 min, Birthdays on UTC day rollover).
+Cached slices **always paint first**; TTL expiry triggers a background refetch
+without clearing cards (see [State and storage](references/state-and-storage.md)).
 
 **Phase 1 — featured (blocking):**
 
@@ -582,7 +583,8 @@ Sources (`data/fetchWikitabFeatured.ts`, parallel per UTC day):
 
 Quote of the day cards omit `descriptionLineClamp` (no line clamp) and link to the dated
 `Wikiquote:Quote of the day/{Month}_{day}` page, not the subject article.
-Cached under `wikitab-featured-cache-v18` (`data/featuredCache.ts`). Composable:
+Cached under `wikitab-featured-cache-v19` (`data/featuredCache.ts`) with
+`fetchedAt` and a **4-hour TTL** (stale-while-revalidate). Composable:
 `useWikitabFeatured.ts`; section: `WikitabFeaturedSection.vue`. **Color of the
 day** is reserved for a future spotlight kind — no v1 source.
 
@@ -598,7 +600,7 @@ Paging: **4 initial**, **+6 per reveal** — all hits buffered client-side
 (geosearch has no offset). Full card payloads live in
 `WikitabConfig.nearbyCardsCache` (with `nearbyLastCoord`) — **not** a standalone
 cache key that `evictWikitabCaches()` can wipe. Warm cache paints on the first
-tick with **no network**. Same **5-minute TTL** as Active discussions: fresh →
+tick with **no network**. **30-minute TTL** (`NEARBY_TTL_MS`): fresh →
 `refresh()` is a no-op; stale → keep painted cards and refetch in the
 background. Menu **Refresh** with `force` clears the cache. Composable:
 `useWikitabNearby.ts`; section: `WikitabNearbySection.vue`. Default order: after
@@ -644,8 +646,9 @@ saved-gated — shows with zero saves when Recent risky is on. Settings:
 `WikitabConfig.reviewChangesShowSavedEdits` / `reviewChangesShowRecentRiskyEdits`
 (`useWikitabReviewChangesSettings.ts`). Paging: **2 initial**, **+4 per reveal**.
 Cards via `wikitabCardPropsForSearchActivityItem`. Dismissed revids share
-`dismissedActivityRevids` with Activity. Cache: `wikitab-review-changes-cache-v3`
-(day + saved fingerprint + settings fingerprint). Composable:
+`dismissedActivityRevids` with Activity. Cache: `wikitab-review-changes-cache-v4` (day + saved fingerprint + settings
+fingerprint + `fetchedAtSaved` / `fetchedAtRisky` — **1 h** seed articles,
+**10 min** risky RC). Composable:
 `useWikitabReviewChanges.ts`; section: `WikitabReviewChangesSection.vue`; panel:
 `WikitabReviewChangesConfigurePanel.vue`.
 
@@ -659,10 +662,14 @@ fetch state and does not remove the control. Clicks after exhaustion still call
 A render triggered on mount, search exit, or overlay close refreshes Featured
 (when visible), Nearby (when stored coords exist), Saved, Daily reads,
 Suggested edits, and Review changes from the
-**same snapshot** (Featured does not use the saved snapshot). Network runs
-only on cache miss (saved list or UTC day changed). A full refresh after
-save/unsave waits for overlay close, search exit, or a new tab. `?nocache=1`
-bypasses caches.
+**same snapshot** (Featured does not use the saved snapshot). Because Daily
+reads sits above Saved in the default order, `refreshHomeModulesInOrder`
+builds that snapshot **before** any seed-adjacent module that appears earlier
+than Saved (or when Saved is hidden) — otherwise Daily reads would refresh
+against `[]` and stay hidden until a later overlay-close refresh. Cached
+modules paint immediately; network runs on cache miss, TTL expiry
+(background), or manual **Refresh**. Daily reads / Suggested edits still key
+off UTC day + saved-articles fingerprint only. `?nocache=1` bypasses caches.
 
 ## State and storage
 
@@ -684,13 +691,13 @@ beside the heading; the ellipsis menu toggles "Pin to top" / "Unpin from top".
 Pinning reorders by `spec.id` and does not affect the no-jump loading contract.
 
 The full daily feed (featured + Active discussions + Main Page OTD + births) is
-cached under a UTC-day key; ordered per-section loading reads and writes through
-the same cache, with one in-session `feed/featured` request shared across
-Trending / News / DYK on a cache miss. **Active discussions** refetches when its
-5-minute TTL expires — other slices still hit the day cache. Stale discussions
-are stripped on hydrate so skeleton slots show until the refetch lands.
-`?nocache=1` forces a refetch. After the first load of the day you mostly won't
-see loading slots — use `?nocache=1` when working on them.
+cached under a UTC-day key with per-slice `sliceFetchedAt` timestamps; ordered
+per-section loading reads and writes through the same cache, with one in-session
+`feed/featured` request shared across Trending / News / DYK on a miss or stale
+featured refresh. **Featured** (sister-wiki module) and **Review changes** use
+their own caches with `fetchedAt` / per-source timestamps and the same
+stale-while-revalidate pattern. `?nocache=1` forces a refetch — use it when
+working on loading states.
 
 ## Layout
 

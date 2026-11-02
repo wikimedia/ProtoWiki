@@ -1,8 +1,10 @@
 import { ref, watch } from 'vue'
 
+import { RecentChangesHighRiskFeed } from './data/fetchWikitabRecentChangesRisky'
 import {
   createReviewChangesFeed,
-  type MergedReviewChangesFeed,
+  createSavedArticleReviewChangesFeed,
+  MergedReviewChangesFeed,
 } from './data/fetchWikitabReviewChanges'
 import type { WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
 import {
@@ -13,6 +15,8 @@ import {
   buildReviewChangesSavedFingerprint,
   buildReviewChangesSettingsFingerprint,
   isCacheBypassed,
+  isReviewChangesRiskyCacheFresh,
+  isReviewChangesSavedCacheFresh,
   readCachedReviewChanges,
   utcDayKey,
   writeCachedReviewChanges,
@@ -86,6 +90,9 @@ export function useWikitabReviewChanges() {
   let savedItemsSnapshot: WikitabSavedItem[] = []
   let loadedSessionKey: string | null = null
   let feedLock: Promise<void> = Promise.resolve()
+  let cacheFetchedAtSaved: number | undefined
+  let cacheFetchedAtRisky: number | undefined
+  let staleReviewRefreshInFlight = false
 
   function withFeedLock<T>(operation: () => Promise<T>): Promise<T> {
     const run = feedLock.then(operation, operation)
@@ -204,14 +211,18 @@ export function useWikitabReviewChanges() {
     enqueueRevertRiskLookup(item.revisionId, signal)
   }
 
-  function persistCache(): void {
+  function persistCache(fetchedAtOverride?: { saved?: number; risky?: number }): void {
     if (!cacheContext) return
+    if (fetchedAtOverride?.saved !== undefined) cacheFetchedAtSaved = fetchedAtOverride.saved
+    if (fetchedAtOverride?.risky !== undefined) cacheFetchedAtRisky = fetchedAtOverride.risky
+
     writeCachedReviewChanges(
       cacheContext.day,
       cacheContext.savedFingerprint,
       cacheContext.settingsFingerprint,
       items.value,
       activeFeed?.hasPending() ?? hasMore.value,
+      { saved: cacheFetchedAtSaved, risky: cacheFetchedAtRisky },
     )
   }
 
@@ -221,16 +232,109 @@ export function useWikitabReviewChanges() {
     day: string,
     savedFingerprint: string,
     settingsFingerprint: string,
+    fetchedAtSaved?: number,
+    fetchedAtRisky?: number,
   ): void {
     items.value = cached
     loadedSessionKey = sessionCacheKey(day, savedFingerprint, settingsFingerprint)
     cacheContext = { day, savedFingerprint, settingsFingerprint }
+    cacheFetchedAtSaved = fetchedAtSaved
+    cacheFetchedAtRisky = fetchedAtRisky
     activeFeed = null
     loading.value = false
     loadingMore.value = false
     error.value = null
     hasMore.value = cachedHasMore || cached.length > initialCount
     isLoaded.value = true
+    scheduleStaleReviewChangesRefresh()
+  }
+
+  async function refreshStaleReviewChangesSources(signal: AbortSignal): Promise<void> {
+    if (!cacheContext) return
+
+    const { showSavedEdits, showRecentRiskyEdits } = readReviewChangesSettings()
+    const savedStale =
+      showSavedEdits && !isReviewChangesSavedCacheFresh(cacheFetchedAtSaved)
+    const riskyStale =
+      showRecentRiskyEdits && !isReviewChangesRiskyCacheFresh(cacheFetchedAtRisky)
+    if (!savedStale && !riskyStale) return
+
+    const kept = items.value.filter((item) => {
+      const src = item.reviewChangesSource ?? 'saved'
+      if (savedStale && src === 'saved') return false
+      if (riskyStale && src === 'risky') return false
+      return !isDismissed(item.revisionId)
+    })
+
+    const seen = seenRevidsFromItems(kept)
+
+    const savedFeed =
+      savedStale && showSavedEdits
+        ? await createSavedArticleReviewChangesFeed(
+            savedItemsSnapshot,
+            cacheContext.day,
+            signal,
+            seen,
+          )
+        : null
+    const rcFeed =
+      riskyStale && showRecentRiskyEdits
+        ? new RecentChangesHighRiskFeed({ seenRevids: seen })
+        : null
+
+    if (!savedFeed && !rcFeed) return
+
+    const merged = new MergedReviewChangesFeed(savedFeed, rcFeed)
+    await merged.start(signal)
+    prefetchMetadata(merged, signal)
+
+    const newItems: WikitabSearchActivityItem[] = []
+    while (kept.length + newItems.length < initialCount) {
+      const item = await merged.takeNext(signal)
+      if (!item || signal.aborted) break
+      if (isDismissed(item.revisionId)) continue
+      if (kept.some((existing) => existing.revisionId === item.revisionId)) continue
+
+      const sourced: WikitabSearchActivityItem = {
+        ...item,
+        reviewChangesSource: merged.reviewChangesSource(item),
+      }
+      newItems.push(sourced)
+      scheduleRevertRiskForItem(sourced, signal)
+      scheduleEditorKind(merged, sourced, signal)
+    }
+
+    if (signal.aborted) return
+
+    items.value = [...kept, ...newItems]
+    const now = Date.now()
+    persistCache({
+      ...(savedStale ? { saved: now } : {}),
+      ...(riskyStale ? { risky: now } : {}),
+    })
+  }
+
+  function scheduleStaleReviewChangesRefresh(): void {
+    if (staleReviewRefreshInFlight || !cacheContext) return
+
+    const { showSavedEdits, showRecentRiskyEdits } = readReviewChangesSettings()
+    const savedStale =
+      showSavedEdits && !isReviewChangesSavedCacheFresh(cacheFetchedAtSaved)
+    const riskyStale =
+      showRecentRiskyEdits && !isReviewChangesRiskyCacheFresh(cacheFetchedAtRisky)
+    if (!savedStale && !riskyStale) return
+
+    staleReviewRefreshInFlight = true
+    const local = new AbortController()
+    revertRiskAbortController = new AbortController()
+
+    void refreshStaleReviewChangesSources(local.signal)
+      .catch((cause) => {
+        if ((cause as Error)?.name === 'AbortError') return
+      })
+      .finally(() => {
+        staleReviewRefreshInFlight = false
+      })
   }
 
   function clearState(): void {
@@ -245,6 +349,8 @@ export function useWikitabReviewChanges() {
     cacheContext = null
     savedItemsSnapshot = []
     loadedSessionKey = null
+    cacheFetchedAtSaved = undefined
+    cacheFetchedAtRisky = undefined
   }
 
   async function buildFeed(signal: AbortSignal): Promise<MergedReviewChangesFeed | null> {
@@ -290,11 +396,15 @@ export function useWikitabReviewChanges() {
       if (isDismissed(item.revisionId)) continue
       if (isDuplicateItem(item)) continue
 
-      items.value = [...items.value, item]
-      scheduleRevertRiskForItem(item, signal)
-      scheduleEditorKind(activeFeed, item, signal)
+      const sourced: WikitabSearchActivityItem = {
+        ...item,
+        reviewChangesSource: activeFeed.reviewChangesSource(item),
+      }
+      items.value = [...items.value, sourced]
+      scheduleRevertRiskForItem(sourced, signal)
+      scheduleEditorKind(activeFeed, sourced, signal)
       persistCache()
-      return item
+      return sourced
     }
 
     return null
@@ -374,6 +484,8 @@ export function useWikitabReviewChanges() {
           day,
           savedFingerprint,
           settingsFingerprint,
+          cached.fetchedAtSaved,
+          cached.fetchedAtRisky,
         )
         return
       }
@@ -408,7 +520,12 @@ export function useWikitabReviewChanges() {
       if (signal.aborted) return
 
       hasMore.value = activeFeed?.hasPending() ?? false
-      persistCache()
+      const now = Date.now()
+      const { showSavedEdits, showRecentRiskyEdits } = readReviewChangesSettings()
+      persistCache({
+        ...(showSavedEdits ? { saved: now } : {}),
+        ...(showRecentRiskyEdits ? { risky: now } : {}),
+      })
       isLoaded.value = true
     } catch (cause) {
       if (signal.aborted || (cause as Error)?.name === 'AbortError') return

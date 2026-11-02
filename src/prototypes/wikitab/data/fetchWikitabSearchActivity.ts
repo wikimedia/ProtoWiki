@@ -54,6 +54,8 @@ export interface WikitabSearchActivityItem {
   editedRelative: string
   editedTimestamp: string
   editorKind: EditorKind
+  /** Review changes cache — which feed source produced this row. */
+  reviewChangesSource?: 'saved' | 'risky'
 }
 
 interface RevisionRow {

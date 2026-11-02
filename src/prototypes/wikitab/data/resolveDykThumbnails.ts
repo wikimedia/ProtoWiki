@@ -5,6 +5,7 @@ import type { WikitabCardData } from '../sections'
 import { wikitabCardDescriptionHasHtmlMarkup, wikitabCardDescriptionText } from './wikitabCardDescription'
 import { wikitabCardMenuArticleTitle } from './wikitabCardLinkLabel'
 import { WIKITAB_FEED_CARD_THUMB_WIDTH, wikimediaThumbnailAtLeast } from './wikimediaThumbnailUrl'
+import { patchCachedFeedCardThumbnails, utcDayKey } from './feedCache'
 import { EN_WIKI_HOST, isEnWikiMainNamespaceArticleTitle } from './wikitabHtml'
 
 const CONCURRENCY = 3
@@ -42,6 +43,8 @@ function hookThumbnailSubject(card: WikitabCardData): string | null {
 
 /** True when the card has no thumbnail yet but its subject page might supply one. */
 export function cardNeedsThumbnailLookup(card: WikitabCardData): boolean {
+  if (card.thumbnailLookupComplete) return false
+  if (card.thumbnailUrl) return false
   return hookThumbnailSubject(card) !== null
 }
 
@@ -55,7 +58,19 @@ export async function resolveDykThumbnails(
   cards: WikitabCardData[],
   signal?: AbortSignal,
   onResolved?: (card: WikitabCardData, thumbnailUrl: string | null) => void,
+  options?: { persistSectionId?: 'dyk' | 'news' | 'otd' },
 ): Promise<void> {
+  const persistDay = options?.persistSectionId ? utcDayKey() : null
+  const persistSectionId = options?.persistSectionId
+
+  function persistCardResult(card: WikitabCardData, thumbnailUrl: string | null): void {
+    if (!persistDay || !persistSectionId) return
+    patchCachedFeedCardThumbnails(persistDay, persistSectionId, card.key, {
+      ...(thumbnailUrl ? { thumbnailUrl } : {}),
+      thumbnailLookupComplete: true,
+    })
+  }
+
   const cardsBySubject = new Map<string, WikitabCardData[]>()
   for (const card of cards) {
     const subject = hookThumbnailSubject(card)
@@ -72,6 +87,8 @@ export async function resolveDykThumbnails(
       : null
     for (const card of cardsBySubject.get(subject) ?? []) {
       if (thumbnailUrl) card.thumbnailUrl = thumbnailUrl
+      card.thumbnailLookupComplete = true
+      persistCardResult(card, thumbnailUrl)
       onResolved?.(card, thumbnailUrl)
     }
   }
