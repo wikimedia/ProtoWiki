@@ -573,7 +573,7 @@ Sources (`data/fetchWikitabFeatured.ts`, parallel per UTC day):
 | Order | Spotlight | Origin |
 | ----- | --------- | ------ |
 | 1 | Today's featured article | `getFeaturedPayload` → `tfa` |
-| 2 | Today's featured list | Dated TFL subpage (list title + thumb); short `description` from REST page summary. If today's subpage is not ready, falls back to the **previous UTC day's** TFL subpage (same pattern as Trending). |
+| 2 | Today's featured list | Dated TFL subpage (list title + thumb); short `description` from REST page summary. If today's subpage is missing or not ready, walks back up to **14 UTC calendar days** for the latest published TFL subpage. If none resolve, the slot is **omitted** (no unavailable card). Supporting label stays "Today's featured list" on fallback days. |
 | 3 | Today's featured picture | Main Page `#mp-tfp` (single-row or legacy two-row table), else `Template:POTD/YYYY-MM-DD`, else previous UTC day; links to matching `Template:POTD/…`. |
 | 4 | Picture of the day | `getFeaturedPayload` → `image` (Commons POTD caption HTML) |
 | 5 | Quote of the day | Wikiquote dated QOTD subpage (parse) |
@@ -581,7 +581,7 @@ Sources (`data/fetchWikitabFeatured.ts`, parallel per UTC day):
 
 Quote of the day cards omit `descriptionLineClamp` (no line clamp) and link to the dated
 `Wikiquote:Quote of the day/{Month}_{day}` page, not the subject article.
-Cached under `wikitab-featured-cache-v17` (`data/featuredCache.ts`). Composable:
+Cached under `wikitab-featured-cache-v18` (`data/featuredCache.ts`). Composable:
 `useWikitabFeatured.ts`; section: `WikitabFeaturedSection.vue`. **Color of the
 day** is reserved for a future spotlight kind — no v1 source.
 

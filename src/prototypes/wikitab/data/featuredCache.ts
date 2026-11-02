@@ -1,7 +1,7 @@
 import type { WikitabFeaturedSpotlight } from '../sections'
 import { isCacheBypassed, utcDayKey } from './feedCache'
 
-export const CACHE_KEY = 'wikitab-featured-cache-v17'
+export const CACHE_KEY = 'wikitab-featured-cache-v18'
 
 interface CacheEntry {
   day: string

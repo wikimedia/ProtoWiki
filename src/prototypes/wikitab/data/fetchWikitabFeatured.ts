@@ -30,6 +30,9 @@ import {
 const WIKTIONARY_HOST = 'en.wiktionary.org'
 const WIKIQUOTE_HOST = 'en.wikiquote.org'
 
+/** UTC days to try for TFL (today + walkback when subpages are missing or not yet published). */
+const TFL_FALLBACK_MAX_DAYS = 14
+
 interface ParseResponse {
   parse?: { text?: string; title?: string }
 }
@@ -372,6 +375,54 @@ async function mapTflFromSubpage(
   }
 }
 
+async function fetchTflSpotlightForDay(
+  candidateDay: string,
+  signal: AbortSignal | undefined,
+  purpose: string,
+  report?: (spotlight: WikitabFeaturedSpotlight, loading: WikitabCardLoading) => void,
+): Promise<WikitabFeaturedSpotlight | null> {
+  const page = spotlightDates(candidateDay).tflPage
+  const html = await fetchParseHtml(EN_WIKI_HOST, page, purpose, signal)
+  const parsed = html ? parseTflHtml(html) : null
+  if (parsed) {
+    report?.({ ...parsed.spotlight, kind: 'tfl' }, { description: true })
+  }
+  if (!html || !parsed) return null
+  return mapTflFromSubpage(html, signal)
+}
+
+/** Walk back UTC calendar days until a TFL subpage parses (skips missing publish dates). */
+async function resolveTflFallbackSpotlights(
+  firstFallbackDay: string,
+  maxDays: number,
+  signal: AbortSignal | undefined,
+  report?: (spotlight: WikitabFeaturedSpotlight, loading: WikitabCardLoading) => void,
+): Promise<WikitabFeaturedSpotlight | null> {
+  let candidateDay = firstFallbackDay
+  for (let attempt = 0; attempt < maxDays; attempt++) {
+    const tfl = await fetchTflSpotlightForDay(
+      candidateDay,
+      signal,
+      attempt === 0 ? 'wikitab-featured-tfl-fallback' : 'wikitab-featured-tfl-fallback-walk',
+      report,
+    )
+    if (tfl) return tfl
+    candidateDay = previousUtcDay(candidateDay)
+  }
+  return null
+}
+
+function assembleFeaturedSpotlights(
+  mapped: Partial<Record<WikitabFeaturedSpotlightKind, WikitabFeaturedSpotlight>>,
+): WikitabFeaturedSpotlight[] {
+  return SPOTLIGHT_CATALOG.flatMap((meta) => {
+    if (meta.kind === 'tfl') {
+      return mapped.tfl ? [mapped.tfl] : []
+    }
+    return [mapped[meta.kind] ?? unavailableSpotlight(meta)]
+  })
+}
+
 function mapPotd(payload: FeaturedFeedResponse, day: string): WikitabFeaturedSpotlight | null {
   const meta = metaFor('potd')
   const image = payload.image
@@ -696,24 +747,17 @@ async function fetchSpotlightsForDay(
   }
 
   if (!mapped.tfl) {
-    const yesterday = previousUtcDay(day)
-    const fallbackPage = spotlightDates(yesterday).tflPage
-    const fallbackHtml = await fetchParseHtml(
-      EN_WIKI_HOST,
-      fallbackPage,
-      'wikitab-featured-tfl-fallback',
-      signal,
-    )
-    const parsed = fallbackHtml ? parseTflHtml(fallbackHtml) : null
-    if (fallbackHtml && parsed) {
-      report({ ...parsed.spotlight, kind: 'tfl' }, { description: true })
-      const tfl = await mapTflFromSubpage(fallbackHtml, signal)
-      if (tfl) mapped.tfl = tfl
-    }
+    mapped.tfl =
+      (await resolveTflFallbackSpotlights(
+        previousUtcDay(day),
+        TFL_FALLBACK_MAX_DAYS - 1,
+        signal,
+        report,
+      )) ?? undefined
   }
   if (mapped.tfl) report(mapped.tfl)
 
-  return SPOTLIGHT_CATALOG.map((meta) => mapped[meta.kind] ?? unavailableSpotlight(meta))
+  return assembleFeaturedSpotlights(mapped)
 }
 
 /** Daily sister-wiki spotlights for the Featured home module. */

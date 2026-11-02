@@ -65,7 +65,7 @@ export type {
 } from './data/wikitabCardPresentation'
 export interface WikitabFeaturedSpotlight extends WikitabCardData {
   kind: WikitabFeaturedSpotlightKind
-  /** When true, card shows a fixed-height unavailable state instead of omitting the slot. */
+  /** When true, card shows a fixed-height unavailable state instead of omitting the slot. TFL omits the slot when unset. */
   unavailable?: boolean
 }
 
