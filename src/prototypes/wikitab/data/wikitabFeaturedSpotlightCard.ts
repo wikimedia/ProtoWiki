@@ -1,6 +1,7 @@
 import type { Icon } from '@wikimedia/codex-icons'
 
 import {
+  WIKITAB_FEATURED_MODULE_SPEC,
   WIKITAB_QUOTE_CARD_LEADING_ICON,
   WIKITAB_WORD_CARD_LEADING_ICON,
   type WikitabCardData,
@@ -59,8 +60,6 @@ export function featuredPrimitiveForSpotlightKind(
       return 'word'
     case 'qotd':
       return 'quote'
-    case 'tfl':
-      return 'list'
     default:
       return 'article'
   }
@@ -88,13 +87,6 @@ export function featuredSpotlightToCardData(
     return pickWikitabCardData({
       ...spot,
       supportingText,
-    })
-  }
-
-  if (spot.kind === 'tfl') {
-    return pickWikitabCardData({
-      ...spot,
-      supportingText: showSpotlightLabel ? spot.supportingText : undefined,
     })
   }
 
@@ -171,6 +163,7 @@ export function featuredSpotlightWikitabCardBindProps(options: {
     card,
     loading: options.loading,
     loadingHeight: featuredSpotlightPlaceholderHeight(kind),
+    supportingIcon: WIKITAB_FEATURED_MODULE_SPEC.supportingIcon,
     menu:
       options.showCardMenu && options.sectionHeading
         ? wikitabCardFeedMenuItems({

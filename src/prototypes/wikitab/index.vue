@@ -226,9 +226,9 @@ const {
 
 /** Skeleton before Daily reads refresh starts (saved snapshot ready, load queued). */
 const dailyReadsPending = ref(false)
-/** Skeleton before Suggested edits refresh starts (saved snapshot ready, load queued). */
+/** Skeleton before Help wanted refresh starts (saved snapshot ready, load queued). */
 const suggestedEditsPending = ref(false)
-/** Skeleton before Review changes refresh starts (saved snapshot ready, load queued). */
+/** Skeleton before Recent edits refresh starts (saved snapshot ready, load queued). */
 const reviewChangesPending = ref(false)
 
 const dailyReadsPendingOnHome = computed(
@@ -384,10 +384,10 @@ async function refreshHomeModulesInOrder(): Promise<void> {
 
   const order = computeHomeModuleLoadOrder()
 
-  // Daily reads (default order) sits above Saved. Seed-adjacent modules need the
-  // Saved-module snapshot before they refresh — otherwise they clear against [].
-  // Refresh Saved once up front when any dependent appears before it (or Saved is
-  // hidden), then skip a second refresh when Saved's own slot arrives.
+  // Seed-adjacent modules need the Saved-module snapshot before they refresh —
+  // otherwise they clear against []. Refresh Saved once up front when any
+  // dependent appears before it (or Saved is hidden — the default), then skip a
+  // second refresh when Saved's own slot arrives.
   let savedModuleRefreshed = false
   async function ensureSavedModuleRefreshed(): Promise<void> {
     if (savedModuleRefreshed) return

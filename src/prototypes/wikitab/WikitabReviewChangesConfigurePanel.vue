@@ -37,11 +37,11 @@ onUnmounted(() => {
     class="wikitab-review-changes-configure-panel wikitab-panel"
     role="dialog"
     aria-modal="true"
-    aria-label="Review changes"
+    aria-label="Recent edits"
   >
     <div class="wikitab-review-changes-configure-panel__column">
       <header class="wikitab-review-changes-configure-panel__head">
-        <h2 class="wikitab-review-changes-configure-panel__title">Review changes</h2>
+        <h2 class="wikitab-review-changes-configure-panel__title">Recent edits</h2>
         <CdxButton
           class="wikitab-review-changes-configure-panel__close"
           weight="quiet"

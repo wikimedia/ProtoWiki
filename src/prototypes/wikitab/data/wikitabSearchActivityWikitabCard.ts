@@ -201,7 +201,7 @@ export function wikitabCardPropsForSearchActivityItem(
     linkEditor?: boolean
     /** When false, omit thank/dismiss (saved-change). */
     revisionActionsMenu?: boolean
-    /** Home Review changes — tip-only feed, chip would be redundant. */
+    /** Home Recent edits — tip-only feed, chip would be redundant. */
     omitLatestRevisionChip?: boolean
   } = {},
 ): Record<string, unknown> {

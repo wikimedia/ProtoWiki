@@ -15,7 +15,7 @@
  *    under html[data-codex-patched] (set by src/theme.ts). The same
  *    --wikitab-card-transition-duration drives card ⋯ menu opacity fades.
  *
- * 3. `.wikitab-panel` — full-page overlays (Configure, Saved, Color theme, Review changes settings).
+ * 3. `.wikitab-panel` — full-page overlays (Configure, Saved, Color theme, Recent edits settings).
  */
 
 .wikitab {

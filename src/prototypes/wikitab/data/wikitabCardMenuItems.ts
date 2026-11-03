@@ -27,7 +27,6 @@ const WIKITAB_SAVE_MENU_NOUN_BY_PRIMITIVE: Record<WikitabCardPrimitiveId, string
   image: 'image',
   word: 'word',
   quote: 'quote',
-  list: 'list',
   edit: 'edit',
 }
 

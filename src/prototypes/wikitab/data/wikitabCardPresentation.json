@@ -49,14 +49,6 @@
     "thumbnailSize": 96,
     "thumbnailLayout": "inline-end"
   },
-  "list": {
-    "descriptionFormat": "plain",
-    "titleLineClamp": 2,
-    "descriptionLineClamp": 2,
-    "thumbnailType": "force",
-    "thumbnailSize": 96,
-    "thumbnailLayout": "inline-start"
-  },
   "edit": {
     "descriptionFormat": "html",
     "titleLineClamp": 2,

@@ -125,7 +125,7 @@ export type WikitabFeedDailyReadsCardPayload = WikitabCardPayloadKey &
     thumbnailUrl?: string
   } & WikitabCardPayloadSupportingFields
 
-/** Suggested edits home module (`WikitabCard`). */
+/** Help wanted home module (`WikitabCard`). */
 export type WikitabFeedSuggestedEditsCardPayload = WikitabCardPayloadKey & {
   url: string
   title: string
@@ -154,13 +154,6 @@ export type WikitabFeaturedImageCardPayload = WikitabCardPayloadKey &
   WikitabCardPayloadFilePageLink & {
     /** Caption plain text or HTML — maps to card `description` (`descriptionFormat: 'html'` when HTML). */
     caption?: string
-    thumbnailUrl?: string
-  } & WikitabCardPayloadSupportingFields
-
-/** Featured / saved list (`WikitabFeaturedCard`, kind `tfl`). */
-export type WikitabFeaturedListCardPayload = WikitabCardPayloadKey &
-  WikitabCardPayloadArticleLink & {
-    description?: string
     thumbnailUrl?: string
   } & WikitabCardPayloadSupportingFields
 

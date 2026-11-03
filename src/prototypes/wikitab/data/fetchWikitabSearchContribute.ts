@@ -272,7 +272,7 @@ function shuffleSeeds(seeds: SeedCursor[]): void {
 }
 
 export interface WikitabSearchContributeFeedOptions {
-  /** Skip morelike titles already saved (home Suggested edits). */
+  /** Skip morelike titles already saved (home Help wanted). */
   excludedTitleKeys?: Set<string>
   /** Page ids already emitted — for cache resume. */
   seenPageids?: Iterable<number>

@@ -17,17 +17,14 @@ export function quoteSavedId(personOrKey: string): string {
   return key ? `quote:${key}` : ''
 }
 
-export function listSavedId(listTitle: string): string {
-  const key = articleTitleKey(displayTitle(listTitle))
-  return key ? `list:${key}` : ''
-}
-
 export function savedIdForSpotlight(spot: WikitabFeaturedSpotlight): string {
   switch (spot.kind) {
     case 'tfa':
       return spot.key
-    case 'tfl':
-      return listSavedId(spot.title ?? '')
+    case 'tfl': {
+      const key = articleTitleKey(displayTitle(spot.title ?? ''))
+      return key ? `search:${key}` : ''
+    }
     case 'wotd':
       return wordSavedId(spot.title ?? '')
     case 'qotd':

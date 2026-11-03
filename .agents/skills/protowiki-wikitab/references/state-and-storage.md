@@ -32,25 +32,28 @@ Current fields:
   empty uses `defaultModuleOrder()` from `sections.ts`; unknown ids dropped and
   new modules appended on read
 - `hiddenSectionIds` — section ids hidden from the home feed and skipped for
-  fetching (`useWikitabHiddenSections.ts`)
+  fetching (`useWikitabHiddenSections.ts`); defaults to
+  `WIKITAB_DEFAULT_HIDDEN_MODULE_IDS` (Saved off)
 - `hiddenArticleTitleKeys` — normalized article titles hidden from Trending on
   the home feed (`useWikitabHiddenArticles.ts`)
 - `dismissedActivityRevids` — Activity-tab revision ids permanently dismissed
   via the card ellipsis menu (`useWikitabDismissedActivity.ts`)
-- `reviewChangesShowSavedEdits` / `reviewChangesShowRecentRiskyEdits` — Review
-  changes home module feed sources (both default on); section **Configure** menu
+- `reviewChangesShowSavedEdits` / `reviewChangesShowRecentRiskyEdits` — Recent
+  edits home module feed sources (both default on); section **Configure** menu
   → full-screen panel (`useWikitabReviewChangesSettings.ts`)
 - `savedItems` — typed saved entries (`WikitabSavedItem` discriminated union in
   `data/wikitabSavedItems.ts`): **article**, **snippet**, **word**, **quote**,
-  **list**, **suggestion**, **change**, **discussion**, **image**. Each row carries
+  **suggestion**, **change**, **discussion**, **image**. Each row carries
   `primitive` and optional `seedArticle`. Most recently saved first (`savedAt`).
   No cross-source dedup — each source keeps its own stable id. Composable:
-  `useWikitabSavedArticles.ts`.
+  `useWikitabSavedArticles.ts`. Legacy `type: 'list'` / `list:{titleKey}` rows
+  migrate to **article** / `search:{titleKey}` in `wikitabStorageMigration.ts`.
 
-**Article seeds for recommendations** — Daily reads, Suggested edits, and Review
-changes seed from **Article and Suggestion** items only
-(`uniqueArticleSeedsFromSavedItems` in `savedCardHelpers.ts`). Word, Quote, List,
-Discussion, Change, and Image saves are excluded.
+**Article seeds for recommendations** — Daily reads, Help wanted, and Recent
+edits seed from items with `seedArticle` set
+(`uniqueArticleSeedsFromSavedItems` in `savedCardHelpers.ts`). Word, Quote,
+Discussion, Change, and Image saves typically have no article seed (or a
+non-mainspace one) and do not feed those modules.
 
 ## Cache-only feed storage (`wikitab-feed-cache-v*`)
 
@@ -111,7 +114,7 @@ additional cards fetch on Show more. Cached `hasMore: false` reflects the last
 fetch only — it does not hide desktop "Show more"; clicks can still retry
 `loadMore()`. Same `?nocache=1` bypass as the feed cache.
 
-## Cache-only Suggested edits storage (`wikitab-suggested-edits-cache-v*`)
+## Cache-only Help wanted storage (`wikitab-suggested-edits-cache-v*`)
 
 [`data/suggestedEditsCache.ts`](../../../../src/prototypes/wikitab/data/suggestedEditsCache.ts)
 mirrors Daily reads: `{ day, savedFingerprint, items, hasMore }`. Same refresh
@@ -128,7 +131,7 @@ stores sister-wiki spotlights under `{ day, items, fetchedAt }`. **4-hour TTL**
 (`FEATURED_MODULE_TTL_MS`); stale entries paint from cache then background-refetch
 via `useWikitabFeatured.ts`.
 
-## Cache-only Review changes storage (`wikitab-review-changes-cache-v*`)
+## Cache-only Recent edits storage (`wikitab-review-changes-cache-v*`)
 
 [`data/reviewChangesCache.ts`](../../../../src/prototypes/wikitab/data/reviewChangesCache.ts)
 stores `{ day, savedFingerprint, settingsFingerprint, items, hasMore,

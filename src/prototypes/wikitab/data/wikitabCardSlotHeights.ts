@@ -12,7 +12,6 @@ export const WIKITAB_CARD_RESERVED_SLOT_HEIGHT: Record<WikitabCardPrimitiveId, n
   image: 122,
   word: 122,
   quote: 122,
-  list: 122,
   /** Chip row + title, delta, two-line summary, supporting — taller than article cards. */
   edit: 148,
 }

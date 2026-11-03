@@ -18,7 +18,6 @@ import {
   resolveCodexIcon,
 } from './wikitabCardSupportingIcons'
 import type { Icon } from '@wikimedia/codex-icons'
-import { WIKITAB_DEMO_LIST_MCU } from './wikitabCardTypeDemoListMcu'
 import { WIKITAB_DEMO_QUOTE_WET_LEG } from './wikitabCardTypeDemoQuoteWetLeg'
 import { WIKITAB_DEMO_WORD_WET } from './wikitabCardTypeDemoWordWet'
 import {
@@ -32,7 +31,6 @@ import type {
 } from './wikitabCardPayloadTypes'
 import {
   featuredImagePayloadToCardData,
-  featuredListPayloadToCardData,
   featuredQuotePayloadToCardData,
   featuredWordPayloadToCardData,
   feedDiscussionPayloadToCardData,
@@ -146,10 +144,6 @@ function playgroundPayloadSupportingIconEditable(entry: WikitabCardCatalogEntry)
   return !wikitabPrimitiveHardcodesSupportingIcon(entry.primitiveId)
 }
 
-function isListDemoCatalog(catalogId: string): boolean {
-  return catalogId === 'primitive-list' || catalogId === 'saved-list'
-}
-
 function isDiscussionDemoCatalog(catalogId: string): boolean {
   return catalogId === 'primitive-discussion' || catalogId === 'saved-discussion'
 }
@@ -181,22 +175,6 @@ function quoteDemoField(name: string, catalogId: string): string | undefined {
       return WIKITAB_DEMO_QUOTE_WET_LEG.quote
     case 'thumbnailUrl':
       return ''
-    default:
-      return undefined
-  }
-}
-
-function listDemoField(name: string, catalogId: string): string | undefined {
-  if (!isListDemoCatalog(catalogId)) return undefined
-  switch (name) {
-    case 'url':
-      return WIKITAB_DEMO_LIST_MCU.url
-    case 'title':
-      return WIKITAB_DEMO_LIST_MCU.title
-    case 'description':
-      return WIKITAB_DEMO_LIST_MCU.description
-    case 'thumbnailUrl':
-      return WIKITAB_DEMO_LIST_MCU.thumbnailUrl
     default:
       return undefined
   }
@@ -247,8 +225,8 @@ function sampleValueForProperty(name: string, type: string, catalogId: string): 
     articleUrl: WET_LEG.url,
     revisionId: '1234567890',
     reverted: 'false',
-    highRevertRisk: 'false',
-    isLatestRevision: 'true',
+    highRevertRisk: 'true',
+    isLatestRevision: 'false',
     editorName: 'ExampleEditor',
     editorUrl: 'https://en.wikipedia.org/wiki/User:ExampleEditor',
     editedTimestamp: '2026-03-27T12:26:00Z',
@@ -285,8 +263,6 @@ function sampleValueForProperty(name: string, type: string, catalogId: string): 
   if (wordDemo !== undefined) return wordDemo
   const quoteDemo = quoteDemoField(name, catalogId)
   if (quoteDemo !== undefined) return quoteDemo
-  const listDemo = listDemoField(name, catalogId)
-  if (listDemo !== undefined) return listDemo
   if (name === 'thumbnailUrl' && catalogId === 'primitive-edit') {
     return ''
   }
@@ -396,8 +372,6 @@ function mapPayload(
       return feedDiscussionPayloadToCardData(p)
     case 'WikitabFeedSuggestedEditsCardPayload':
       return feedSuggestedEditsPayloadToCardData(p)
-    case 'WikitabFeaturedListCardPayload':
-      return featuredListPayloadToCardData(p, { showSpotlightLabel })
     case 'WikitabFeaturedImageCardPayload':
       return featuredImagePayloadToCardData(p, { showSpotlightLabel })
     case 'WikitabFeaturedQuoteCardPayload':

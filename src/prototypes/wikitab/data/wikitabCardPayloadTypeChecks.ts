@@ -11,7 +11,6 @@ import {
   articleCardPayloadToCardData,
   featuredArticlePayloadToSpotlight,
   featuredImagePayloadToSpotlight,
-  featuredListPayloadToSpotlight,
   featuredQuotePayloadToSpotlight,
   featuredWordPayloadToSpotlight,
   feedBirthsPayloadToCardData,
@@ -62,9 +61,6 @@ type _FeaturedArticleOut = ReturnType<typeof featuredArticlePayloadToSpotlight> 
   ? true
   : never
 type _FeaturedImageOut = ReturnType<typeof featuredImagePayloadToSpotlight> extends _Spotlight
-  ? true
-  : never
-type _FeaturedListOut = ReturnType<typeof featuredListPayloadToSpotlight> extends _Spotlight
   ? true
   : never
 type _FeaturedQuoteOut = ReturnType<typeof featuredQuotePayloadToSpotlight> extends _Spotlight

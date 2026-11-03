@@ -18,13 +18,10 @@ import {
   savedDiscussionPayloadToCardData,
   savedImageItemToCardPayload,
   savedImagePayloadToCardData,
-  featuredListPayloadToCardData,
-  featuredListPayloadToSpotlight,
   featuredQuotePayloadToCardData,
   featuredQuotePayloadToSpotlight,
   featuredWordPayloadToCardData,
   featuredWordPayloadToSpotlight,
-  savedListItemToFeaturedPayload,
   savedQuoteItemToFeaturedPayload,
   savedSnippetItemToCardPayload,
   savedSnippetPayloadToCardData,
@@ -42,7 +39,6 @@ import {
 import { wikitabCardDescriptionText } from './wikitabCardDescription'
 import { wikitabCardMenuArticleTitle } from './wikitabCardLinkLabel'
 import {
-  listSavedId,
   quoteSavedId,
   savedIdForHookCard,
   savedIdForSpotlight,
@@ -61,7 +57,6 @@ import type {
   WikitabSavedDiscussionItem,
   WikitabSavedImageItem,
   WikitabSavedItem,
-  WikitabSavedListItem,
   WikitabSavedQuoteItem,
   WikitabSavedSnippetItem,
   WikitabSavedSnippetSource,
@@ -77,7 +72,6 @@ export type {
   WikitabSavedDiscussionItem,
   WikitabSavedImageItem,
   WikitabSavedItem,
-  WikitabSavedListItem,
   WikitabSavedQuoteItem,
   WikitabSavedSnippetItem,
   WikitabSavedSnippetSource,
@@ -86,7 +80,6 @@ export type {
 } from './wikitabSavedItems'
 
 export {
-  listSavedId,
   quoteSavedId,
   savedIdForHookCard,
   savedIdForSpotlight,
@@ -293,28 +286,6 @@ export function buildSavedQuoteFromSpotlight(
     url: spot.url,
     quoteText,
     personName,
-  }
-}
-
-export function buildSavedListFromSpotlight(
-  spot: WikitabFeaturedSpotlight,
-): WikitabSavedListItem | null {
-  const listTitle = displayTitle(spot.title ?? '')
-  const key = articleTitleKey(listTitle)
-  if (!key || !spot.url) return null
-
-  return {
-    id: listSavedId(listTitle),
-    type: 'list',
-    primitive: 'list',
-    savedAt: Date.now(),
-    articleTitleKey: key,
-    articleTitle: listTitle,
-    seedArticle: spot.seedArticle ?? seedArticle(listTitle, 'self'),
-    listTitle,
-    url: spot.url,
-    description: spot.description,
-    thumbnailUrl: spot.thumbnailUrl,
   }
 }
 
@@ -620,16 +591,6 @@ export function savedQuoteToWikitabCard(item: WikitabSavedQuoteItem): WikitabCar
   })
 }
 
-export function savedListToSpotlight(item: WikitabSavedListItem): WikitabFeaturedSpotlight {
-  return featuredListPayloadToSpotlight(savedListItemToFeaturedPayload(item))
-}
-
-export function savedListToWikitabCard(item: WikitabSavedListItem): WikitabCardData {
-  return featuredListPayloadToCardData(savedListItemToFeaturedPayload(item), {
-    showSpotlightLabel: false,
-  })
-}
-
 export function savedImageToWikitabCard(item: WikitabSavedImageItem): WikitabCardData {
   return savedImagePayloadToCardData(savedImageItemToCardPayload(item))
 }
@@ -661,10 +622,12 @@ export function savedItemRevealCard(item: WikitabSavedItem): WikitabCardData {
 export type SaveItemPayload =
   | { primitive: 'article'; card: WikitabCardData; hookArticle?: boolean }
   | { primitive: 'snippet'; card: WikitabCardData; source: WikitabSavedSnippetSource }
-  | { primitive: 'word' | 'quote' | 'list' | 'image'; spotlight: WikitabFeaturedSpotlight }
+  | { primitive: 'word' | 'quote' | 'image'; spotlight: WikitabFeaturedSpotlight }
   | { primitive: 'suggestion' | 'discussion'; card: WikitabCardData }
 
-export function saveItemPayloadNeedsFeaturedImageFetch(payload: SaveItemPayload): boolean {
+export function saveItemPayloadNeedsFeaturedImageFetch(
+  payload: SaveItemPayload,
+): payload is { primitive: 'image'; spotlight: WikitabFeaturedSpotlight } {
   return payload.primitive === 'image'
 }
 
@@ -680,8 +643,6 @@ export function buildSavedItemFromPayload(payload: SaveItemPayload): WikitabSave
       return buildSavedWordFromSpotlight(payload.spotlight)
     case 'quote':
       return buildSavedQuoteFromSpotlight(payload.spotlight)
-    case 'list':
-      return buildSavedListFromSpotlight(payload.spotlight)
     case 'suggestion':
       return buildSavedSuggestionFromCard(payload.card)
     case 'discussion':
@@ -715,8 +676,6 @@ export function savedIdFromPayload(payload: SaveItemPayload): string | null {
       return buildSavedWordFromSpotlight(payload.spotlight)?.id ?? null
     case 'quote':
       return buildSavedQuoteFromSpotlight(payload.spotlight)?.id ?? null
-    case 'list':
-      return buildSavedListFromSpotlight(payload.spotlight)?.id ?? null
     case 'image':
       return savedIdForSpotlight(payload.spotlight)
     case 'suggestion':

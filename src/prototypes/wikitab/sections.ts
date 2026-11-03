@@ -5,6 +5,7 @@ import {
   cdxIconLink,
   cdxIconMapPin,
   cdxIconQuotes,
+  cdxIconStar,
   type Icon,
 } from '@wikimedia/codex-icons'
 
@@ -128,20 +129,25 @@ export const WIKITAB_SECTIONS: readonly WikitabSectionSpec[] = FEED_SECTION_BASE
   cardHeight: wikitabReservedSlotHeight(base.primitive),
 }))
 
-/** Default home-feed / configure-panel module order (all modules visible). */
+/** Default home-feed / configure-panel module order. */
 export const WIKITAB_HOME_MODULE_ORDER: readonly WikitabModuleId[] = [
+  WIKITAB_SAVED_MODULE_ID,
   'trending',
   WIKITAB_FEATURED_MODULE_ID,
   WIKITAB_NEARBY_MODULE_ID,
   WIKITAB_DAILY_READS_MODULE_ID,
   'dyk',
   'news',
-  WIKITAB_SAVED_MODULE_ID,
   WIKITAB_SUGGESTED_EDITS_MODULE_ID,
   'discussions',
   WIKITAB_REVIEW_CHANGES_MODULE_ID,
   'otd',
   'births',
+]
+
+/** Modules off by default in Configure (Saved stays first in order but hidden). */
+export const WIKITAB_DEFAULT_HIDDEN_MODULE_IDS: readonly WikitabModuleId[] = [
+  WIKITAB_SAVED_MODULE_ID,
 ]
 
 /**
@@ -160,6 +166,7 @@ export const WIKITAB_FEATURED_MODULE_SPEC = {
   /** Placeholder floor for block-start spotlights (TFP, POTD): 4∶3 thumb + caption. */
   portraitCardHeight: 320,
   thumbnailSize: 96,
+  supportingIcon: cdxIconStar,
 }
 
 /** Home Saved module — same paging contract as feed sections. */
@@ -194,20 +201,20 @@ export const WIKITAB_NEARBY_MODULE_SPEC = {
   supportingIcon: cdxIconMapPin,
 }
 
-/** Home Suggested edits module — quality-check tasks from daily-random saved seeds. */
+/** Home Help wanted module — quality-check tasks from daily-random saved seeds. */
 export const WIKITAB_SUGGESTED_EDITS_MODULE_SPEC = {
   id: WIKITAB_SUGGESTED_EDITS_MODULE_ID,
-  heading: 'Suggested edits',
+  heading: 'Help wanted',
   initialCount: 2,
   pageSize: 4,
   primitive: 'suggestion' as const,
   cardHeight: wikitabReservedSlotHeight('suggestion'),
 }
 
-/** Home Review changes module — merged edits from daily-random saved article seeds. */
+/** Home Recent edits module — merged edits from daily-random saved article seeds. */
 export const WIKITAB_REVIEW_CHANGES_MODULE_SPEC = {
   id: WIKITAB_REVIEW_CHANGES_MODULE_ID,
-  heading: 'Review changes',
+  heading: 'Recent edits',
   initialCount: 2,
   pageSize: 4,
 }
@@ -312,7 +319,7 @@ export interface WikitabCardData {
   thumbnailLookupComplete?: boolean
   /** Active discussions — comment count for saves. */
   commentCount?: number
-  /** Suggested edits — page id and task id for saves (same as suggestion payload `task`). */
+  /** Help wanted — page id and task id for saves (same as suggestion payload `task`). */
   pageid?: number
   task?: string
   suggestionBody?: string

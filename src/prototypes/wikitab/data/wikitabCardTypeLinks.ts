@@ -11,7 +11,6 @@ export type WikitabCardTypeMap = {
   WikitabFeedDiscussionCardPayload: Payload.WikitabFeedDiscussionCardPayload
   WikitabFeedSuggestedEditsCardPayload: Payload.WikitabFeedSuggestedEditsCardPayload
   WikitabFeaturedImageCardPayload: Payload.WikitabFeaturedImageCardPayload
-  WikitabFeaturedListCardPayload: Payload.WikitabFeaturedListCardPayload
   WikitabFeaturedQuoteCardPayload: Payload.WikitabFeaturedQuoteCardPayload
   WikitabFeaturedWordCardPayload: Payload.WikitabFeaturedWordCardPayload
   WikitabSearchActivityCardPayload: Payload.WikitabSearchActivityCardPayload
@@ -53,7 +52,6 @@ export type WikitabCardPrimitiveId =
   | 'image'
   | 'word'
   | 'quote'
-  | 'list'
   | 'edit'
 
 export interface WikitabCardTypePropertySchema {

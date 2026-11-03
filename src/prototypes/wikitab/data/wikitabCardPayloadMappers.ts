@@ -21,7 +21,6 @@ import type {
   WikitabArticleCardPayload,
   WikitabFeaturedArticleCardPayload,
   WikitabFeaturedImageCardPayload,
-  WikitabFeaturedListCardPayload,
   WikitabFeaturedQuoteCardPayload,
   WikitabFeaturedWordCardPayload,
   WikitabFeedBirthsCardPayload,
@@ -48,7 +47,6 @@ import type {
   WikitabSavedDiscussionItem,
   WikitabSavedImageItem,
   WikitabSavedArticleItem,
-  WikitabSavedListItem,
   WikitabSavedQuoteItem,
   WikitabSavedSnippetItem,
   WikitabSavedSuggestionItem,
@@ -367,21 +365,6 @@ export function cardPayloadSupportingIcon(
   return payload.supportingIcon ? resolveCodexIcon(payload.supportingIcon) : undefined
 }
 
-export function featuredListPayloadToSpotlight(
-  payload: WikitabFeaturedListCardPayload,
-): WikitabFeaturedSpotlightComponentData {
-  return spotlightFromArticleLink(
-    { url: payload.url, title: payload.title },
-    {
-      kind: 'tfl',
-      title: payload.title,
-      description: payload.description,
-      thumbnailUrl: payload.thumbnailUrl,
-      ...cardPayloadSupportingFields(payload),
-    },
-  )
-}
-
 export function featuredWordPayloadToSpotlight(
   payload: WikitabFeaturedWordCardPayload,
 ): WikitabFeaturedSpotlightComponentData {
@@ -419,16 +402,6 @@ export function featuredArticlePayloadToCardData(
 ): WikitabCardComponentData {
   return featuredSpotlightToCardData(
     featuredArticlePayloadToSpotlight(payload, options),
-    options.showSpotlightLabel !== false,
-  )
-}
-
-export function featuredListPayloadToCardData(
-  payload: WikitabFeaturedListCardPayload,
-  options: { showSpotlightLabel?: boolean } = {},
-): WikitabCardComponentData {
-  return featuredSpotlightToCardData(
-    featuredListPayloadToSpotlight(payload),
     options.showSpotlightLabel !== false,
   )
 }
@@ -736,18 +709,6 @@ export function savedQuoteItemToFeaturedPayload(
     url: item.url,
     name: item.personName?.trim() || item.quoteText.slice(0, 80),
     quote: item.quoteText,
-  }
-}
-
-export function savedListItemToFeaturedPayload(
-  item: WikitabSavedListItem,
-): WikitabFeaturedListCardPayload {
-  return {
-    key: item.id,
-    url: item.url,
-    title: item.listTitle,
-    description: item.description,
-    thumbnailUrl: item.thumbnailUrl,
   }
 }
 

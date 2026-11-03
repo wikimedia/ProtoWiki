@@ -14,7 +14,6 @@ import {
   savedImageToWikitabCard,
   savedItemToActivityItem,
   savedItemToWikitabCard,
-  savedListToWikitabCard,
   savedQuoteToWikitabCard,
   savedSnippetToWikitabCard,
   savedSuggestionToWikitabCard,
@@ -56,8 +55,6 @@ const card = computed(() => {
       return savedWordToWikitabCard(props.saved)
     case 'quote':
       return savedQuoteToWikitabCard(props.saved)
-    case 'list':
-      return savedListToWikitabCard(props.saved)
     case 'suggestion':
       return savedSuggestionToWikitabCard(props.saved)
     case 'change':

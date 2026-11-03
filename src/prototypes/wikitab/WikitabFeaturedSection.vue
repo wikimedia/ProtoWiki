@@ -66,7 +66,7 @@ function savePayloadForSpotlight(spot: WikitabFeaturedSpotlight): SaveItemPayloa
     case 'qotd':
       return { primitive: 'quote', spotlight: spot }
     case 'tfl':
-      return { primitive: 'list', spotlight: spot }
+      return { primitive: 'article', card: spot, hookArticle: true }
     case 'tfp':
     case 'potd':
       return { primitive: 'image', spotlight: spot }

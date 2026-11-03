@@ -70,16 +70,6 @@
     "primitiveId": "quote"
   },
   {
-    "id": "primitive-list",
-    "group": "primitives",
-    "label": "Primitive — List",
-    "componentPath": "WikitabCard.vue",
-    "dataProp": "card",
-    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
-    "typeName": "WikitabFeaturedListCardPayload",
-    "primitiveId": "list"
-  },
-  {
     "id": "primitive-edit",
     "group": "primitives",
     "label": "Primitive — Edit",
@@ -156,16 +146,6 @@
     "typeModulePath": "data/wikitabCardPayloadTypes.ts",
     "typeName": "WikitabFeaturedQuoteCardPayload",
     "primitiveId": "quote"
-  },
-  {
-    "id": "saved-list",
-    "group": "saved",
-    "label": "Saved — List",
-    "componentPath": "WikitabCard.vue",
-    "dataProp": "card",
-    "typeModulePath": "data/wikitabCardPayloadTypes.ts",
-    "typeName": "WikitabFeaturedListCardPayload",
-    "primitiveId": "list"
   },
   {
     "id": "saved-suggestion",

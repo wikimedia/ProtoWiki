@@ -12,7 +12,7 @@ import { CACHE_KEY as FEATURED_CACHE_KEY } from './featuredCache'
 import { CACHE_KEY as FEED_CACHE_KEY, utcDayKey } from './feedCache'
 import { CACHE_KEY as POTD_CACHE_KEY, wikipediaPotdPageUrl } from './fetchPictureOfTheDay'
 import { CACHE_KEY as REVIEW_CHANGES_CACHE_KEY } from './reviewChangesCache'
-import { listSavedId, quoteSavedId, snippetSavedId, wordSavedId } from './savedItemIds'
+import { quoteSavedId, snippetSavedId, wordSavedId } from './savedItemIds'
 import { CACHE_KEY as SUGGESTED_EDITS_CACHE_KEY } from './suggestedEditsCache'
 import { wikitabCardMenuArticleTitle } from './wikitabCardLinkLabel'
 import type { WikitabColorThemeId } from './wikitabColorThemes'
@@ -243,9 +243,24 @@ function upgradeSavedItemRow(raw: Row): Row | null {
       fill(row, 'quoteText', row.description)
       fill(row, 'personName', row.title)
       break
-    case 'list':
-      fill(row, 'listTitle', row.articleTitle)
+    case 'list': {
+      const title =
+        str(row, 'listTitle') ?? str(row, 'articleTitle') ?? str(row, 'title')
+      if (!title) return null
+      const key = articleTitleKey(displayTitle(title))
+      if (!key) return null
+      row.type = 'article'
+      row.primitive = 'article'
+      row.title = displayTitle(title)
+      row.articleTitle = displayTitle(title)
+      row.articleTitleKey = key
+      const id = str(row, 'id')
+      if (!id || id.startsWith('list:')) {
+        row.id = `search:${key}`
+      }
+      delete row.listTitle
       break
+    }
   }
 
   return row
@@ -449,20 +464,21 @@ function featuredToItem(base: Row, card: LegacyCard): Row | null {
       }
     }
     case 'featured:tfl': {
-      const listTitle = displayTitle(card.title ?? fallbackTitle)
-      const key = articleTitleKey(listTitle)
+      const title = displayTitle(card.title ?? fallbackTitle)
+      const key = articleTitleKey(title)
       if (!key || !url) return null
       return {
         ...base,
-        id: listSavedId(listTitle),
-        type: 'list',
-        primitive: 'list',
+        id: `search:${key}`,
+        type: 'article',
+        primitive: 'article',
         articleTitleKey: key,
-        articleTitle: listTitle,
-        listTitle,
+        articleTitle: title,
+        title,
         url,
         description: card.description,
         thumbnailUrl: card.thumbnailUrl,
+        seedArticle: seedArticle(title, 'self'),
       }
     }
     case 'featured:tfp':

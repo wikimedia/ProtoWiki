@@ -8,7 +8,6 @@ export type WikitabSavedItemType =
   | 'snippet'
   | 'word'
   | 'quote'
-  | 'list'
   | 'suggestion'
   | 'change'
   | 'discussion'
@@ -22,7 +21,6 @@ const WIKITAB_CARD_PRIMITIVE_IDS = new Set<WikitabCardPrimitiveId>([
   'image',
   'word',
   'quote',
-  'list',
   'edit',
 ])
 
@@ -93,14 +91,6 @@ export interface WikitabSavedQuoteItem extends WikitabSavedItemBase {
   personName?: string
 }
 
-export interface WikitabSavedListItem extends WikitabSavedItemBase {
-  type: 'list'
-  listTitle: string
-  url: string
-  description?: string
-  thumbnailUrl?: string
-}
-
 export interface WikitabSavedSuggestionItem extends WikitabSavedItemBase {
   type: 'suggestion'
   pageid: number
@@ -159,7 +149,6 @@ export type WikitabSavedItem =
   | WikitabSavedSnippetItem
   | WikitabSavedWordItem
   | WikitabSavedQuoteItem
-  | WikitabSavedListItem
   | WikitabSavedSuggestionItem
   | WikitabSavedChangeItem
   | WikitabSavedDiscussionItem
@@ -170,7 +159,6 @@ const VALID_SAVED_ITEM_TYPES = new Set<string>([
   'snippet',
   'word',
   'quote',
-  'list',
   'suggestion',
   'change',
   'discussion',
@@ -240,22 +228,6 @@ function normalizeQuoteItem(record: Record<string, unknown>): WikitabSavedQuoteI
     url,
     quoteText,
     personName: str(record, 'personName'),
-  }
-}
-
-function normalizeListItem(record: Record<string, unknown>): WikitabSavedListItem | null {
-  const base = normalizeSavedItemBase(record)
-  if (!base || base.type !== 'list') return null
-  const listTitle = str(record, 'listTitle')
-  const url = str(record, 'url')
-  if (!listTitle || !url) return null
-  return {
-    ...base,
-    type: 'list',
-    listTitle,
-    url,
-    description: str(record, 'description'),
-    thumbnailUrl: str(record, 'thumbnailUrl'),
   }
 }
 
@@ -440,8 +412,6 @@ function normalizeSingleSavedItem(raw: unknown): WikitabSavedItem | null {
       return normalizeWordItem(record)
     case 'quote':
       return normalizeQuoteItem(record)
-    case 'list':
-      return normalizeListItem(record)
     case 'suggestion':
       return normalizeSuggestionItem(record)
     case 'change':
@@ -507,7 +477,6 @@ export function cloneSavedItem(item: WikitabSavedItem): WikitabSavedItem {
     case 'snippet':
     case 'word':
     case 'quote':
-    case 'list':
     case 'suggestion':
     case 'change':
     case 'discussion':
@@ -526,7 +495,6 @@ export function savedItemThumbnailUrl(item: WikitabSavedItem): string | undefine
   if (item.type === 'article') return item.thumbnailUrl
   if (item.type === 'snippet') return item.thumbnailUrl
   if (item.type === 'suggestion') return item.thumbnailUrl
-  if (item.type === 'list') return item.thumbnailUrl
   if (item.type === 'image') return item.thumbnailUrl
   return undefined
 }

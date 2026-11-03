@@ -377,62 +377,6 @@
     ]
   },
   {
-    "catalogId": "primitive-list",
-    "schemas": [
-      {
-        "typeName": "WikitabFeaturedListCardPayload",
-        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
-        "properties": [
-          {
-            "name": "key",
-            "type": "string",
-            "optional": false
-          },
-          {
-            "name": "url",
-            "type": "string",
-            "optional": false
-          },
-          {
-            "name": "title",
-            "type": "string",
-            "optional": false
-          },
-          {
-            "name": "description",
-            "type": "string",
-            "optional": true
-          },
-          {
-            "name": "thumbnailUrl",
-            "type": "string",
-            "optional": true
-          },
-          {
-            "name": "supportingText",
-            "type": "string",
-            "optional": true
-          },
-          {
-            "name": "supportingIcon",
-            "type": "CodexIconName",
-            "optional": true
-          },
-          {
-            "name": "supportingHtml",
-            "type": "string",
-            "optional": true
-          },
-          {
-            "name": "supportingTextEnd",
-            "type": "string",
-            "optional": true
-          }
-        ]
-      }
-    ]
-  },
-  {
     "catalogId": "primitive-edit",
     "schemas": [
       {
@@ -485,6 +429,11 @@
             "optional": false
           },
           {
+            "name": "needsReview",
+            "type": "boolean",
+            "optional": true
+          },
+          {
             "name": "isLatestRevision",
             "type": "boolean",
             "optional": false
@@ -524,6 +473,11 @@
             "name": "title",
             "type": "string",
             "optional": false
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "optional": true
           },
           {
             "name": "thumbnailUrl",
@@ -809,62 +763,6 @@
     ]
   },
   {
-    "catalogId": "saved-list",
-    "schemas": [
-      {
-        "typeName": "WikitabFeaturedListCardPayload",
-        "typeModulePath": "data/wikitabCardPayloadTypes.ts",
-        "properties": [
-          {
-            "name": "key",
-            "type": "string",
-            "optional": false
-          },
-          {
-            "name": "url",
-            "type": "string",
-            "optional": false
-          },
-          {
-            "name": "title",
-            "type": "string",
-            "optional": false
-          },
-          {
-            "name": "description",
-            "type": "string",
-            "optional": true
-          },
-          {
-            "name": "thumbnailUrl",
-            "type": "string",
-            "optional": true
-          },
-          {
-            "name": "supportingText",
-            "type": "string",
-            "optional": true
-          },
-          {
-            "name": "supportingIcon",
-            "type": "CodexIconName",
-            "optional": true
-          },
-          {
-            "name": "supportingHtml",
-            "type": "string",
-            "optional": true
-          },
-          {
-            "name": "supportingTextEnd",
-            "type": "string",
-            "optional": true
-          }
-        ]
-      }
-    ]
-  },
-  {
     "catalogId": "saved-suggestion",
     "schemas": [
       {
@@ -956,6 +854,11 @@
             "name": "highRevertRisk",
             "type": "boolean",
             "optional": false
+          },
+          {
+            "name": "needsReview",
+            "type": "boolean",
+            "optional": true
           },
           {
             "name": "isLatestRevision",

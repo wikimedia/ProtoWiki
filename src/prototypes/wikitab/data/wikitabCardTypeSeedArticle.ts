@@ -4,7 +4,6 @@ import {
   WIKITAB_CARD_TYPE_CATALOG,
   schemaForCatalogId,
 } from './wikitabCardTypeLinks'
-import { WIKITAB_DEMO_LIST_MCU } from './wikitabCardTypeDemoListMcu'
 import { WIKITAB_DEMO_QUOTE_WET_LEG } from './wikitabCardTypeDemoQuoteWetLeg'
 import { demoCardDataForCatalogEntry } from './wikitabCardTypePlayground'
 import { wikitabCardDescriptionText } from './wikitabCardDescription'
@@ -36,15 +35,14 @@ export interface WikitabCardTypeSeedArticleRow {
 }
 
 const PRODUCTION_CONTEXT: Record<string, string> = {
-  'primitive-article': 'Trending, Birthdays, Daily reads, Nearby, Featured TFA',
+  'primitive-article': 'Trending, Birthdays, Daily reads, Nearby, Featured TFA / TFL',
   'primitive-snippet': 'Did you know, In the news, On this day',
   'primitive-discussion': 'Active discussions',
-  'primitive-suggestion': 'Suggested edits (home)',
+  'primitive-suggestion': 'Help wanted (home)',
   'primitive-image': 'Featured TFP / POTD',
   'primitive-word': 'Featured word of the day',
   'primitive-quote': 'Featured quote of the day',
-  'primitive-list': 'Featured list of the day',
-  'primitive-edit': 'Search Activity, Review changes',
+  'primitive-edit': 'Search Activity, Recent edits',
   'search-contribute': 'Search Contribute tab',
   'search-result': 'Search Articles tab',
   'search-image': 'Search Images tab',
@@ -94,12 +92,6 @@ function enrichPlaygroundDemoSeedArticle(
       return {
         ...card,
         seedArticle: seedArticle(WIKITAB_DEMO_QUOTE_WET_LEG.name, 'quote-author'),
-      }
-    case 'primitive-list':
-    case 'saved-list':
-      return {
-        ...card,
-        seedArticle: seedArticle(WIKITAB_DEMO_LIST_MCU.title, 'self'),
       }
     default:
       return card

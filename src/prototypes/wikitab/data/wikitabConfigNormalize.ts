@@ -1,6 +1,7 @@
 import {
   WIKITAB_CONFIGURE_MODULES,
   WIKITAB_DAILY_READS_MODULE_ID,
+  WIKITAB_DEFAULT_HIDDEN_MODULE_IDS,
   WIKITAB_FEATURED_MODULE_ID,
   WIKITAB_NEARBY_MODULE_ID,
   WIKITAB_REVIEW_CHANGES_MODULE_ID,
@@ -55,7 +56,7 @@ export interface WikitabConfig {
 
 export const DEFAULT_WIKITAB_CONFIG: WikitabConfig = {
   pinnedSectionIds: [],
-  hiddenSectionIds: [],
+  hiddenSectionIds: [...WIKITAB_DEFAULT_HIDDEN_MODULE_IDS],
   moduleOrderIds: [],
   hiddenArticleTitleKeys: [],
   dismissedActivityRevids: [],

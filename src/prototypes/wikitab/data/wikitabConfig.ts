@@ -1,3 +1,4 @@
+import { WIKITAB_DEFAULT_HIDDEN_MODULE_IDS } from '../sections'
 import { migrateWikitabStorage } from './wikitabStorageMigration'
 import {
   cloneWikitabConfig,
@@ -17,7 +18,6 @@ export type {
   WikitabSavedDiscussionItem,
   WikitabSavedItem,
   WikitabSavedItemType,
-  WikitabSavedListItem,
   WikitabSavedQuoteItem,
   WikitabSavedSnippetItem,
   WikitabSavedSuggestionItem,
@@ -132,11 +132,11 @@ export function persistNearbyLastCoord(coord: WikitabNearbyLastCoord | null): vo
 
 const PATCH_MAX_ATTEMPTS = 6
 
-/** Restore configure-panel defaults: registry module order, all modules visible, no pins. */
+/** Restore configure-panel defaults: registry module order, default visibility, no pins. */
 export function resetWikitabModuleConfigure(): WikitabConfigPatchResult {
   return patchWikitabConfig({
     moduleOrderIds: [],
-    hiddenSectionIds: [],
+    hiddenSectionIds: [...WIKITAB_DEFAULT_HIDDEN_MODULE_IDS],
     pinnedSectionIds: [],
   })
 }
