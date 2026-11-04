@@ -4,13 +4,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { CdxButton, CdxIcon, CdxToggleSwitch } from '@wikimedia/codex'
 import { cdxIconDraggableVertical, cdxIconPushPin } from '@wikimedia/codex-icons'
 
-import {
-  isWikitabSavedGatedModule,
-  WIKITAB_REVIEW_CHANGES_MODULE_ID,
-  WIKITAB_SAVED_MODULE_ID,
-  wikitabModuleHeading,
-  type WikitabModuleId,
-} from './sections'
+import { wikitabModuleHeading, type WikitabModuleId } from './sections'
 
 /**
  * Pointer reordering for Configure module rows, ported from wikita-lite's
@@ -25,8 +19,6 @@ interface Props {
   /** Oldest pin first, as stored; shown newest first and never draggable. */
   pinnedIds: WikitabModuleId[]
   isHidden: (id: WikitabModuleId) => boolean
-  hasSavedItems: boolean
-  hasSavedSeedArticles: boolean
 }
 
 /** How long a sibling takes to slide into the gap the dragged row leaves. */
@@ -68,13 +60,6 @@ function mergeUnpinnedOrder(unpinnedNext: readonly WikitabModuleId[]): WikitabMo
   const pinned = new Set(props.pinnedIds)
   const queue = [...unpinnedNext]
   return props.order.map((id) => (pinned.has(id) ? id : queue.shift()!))
-}
-
-/** Saved shows for any saved item; the other gated modules need a saved seed article. */
-function showsSavedGateHint(id: WikitabModuleId): boolean {
-  if (id === WIKITAB_SAVED_MODULE_ID) return !props.hasSavedItems
-  if (id === WIKITAB_REVIEW_CHANGES_MODULE_ID) return false
-  return isWikitabSavedGatedModule(id) && !props.hasSavedSeedArticles
 }
 
 function onToggle(id: WikitabModuleId, visible: boolean): void {
@@ -208,7 +193,6 @@ onBeforeUnmount(() => setGrabbingCursor(false))
         v-for="moduleId in pinnedOrder"
         :key="moduleId"
         class="wikitab-configure-module-list__item"
-        :class="{ 'wikitab-configure-module-list__item--gated': showsSavedGateHint(moduleId) }"
         :data-module-id="moduleId"
       >
         <CdxButton
@@ -225,9 +209,6 @@ onBeforeUnmount(() => setGrabbingCursor(false))
           @update:model-value="onToggle(moduleId, $event)"
         >
           {{ wikitabModuleHeading(moduleId) }}
-          <template v-if="showsSavedGateHint(moduleId)" #description>
-            Appears when you save something
-          </template>
         </CdxToggleSwitch>
       </li>
     </ul>
@@ -242,7 +223,6 @@ onBeforeUnmount(() => setGrabbingCursor(false))
         class="wikitab-configure-module-list__item"
         :class="{
           'wikitab-configure-module-list__item--dragging': draggingIndex === index,
-          'wikitab-configure-module-list__item--gated': showsSavedGateHint(moduleId),
         }"
         :data-module-id="moduleId"
       >
@@ -264,9 +244,6 @@ onBeforeUnmount(() => setGrabbingCursor(false))
           @update:model-value="onToggle(moduleId, $event)"
         >
           {{ wikitabModuleHeading(moduleId) }}
-          <template v-if="showsSavedGateHint(moduleId)" #description>
-            Appears when you save something
-          </template>
         </CdxToggleSwitch>
       </li>
     </ul>
@@ -351,13 +328,6 @@ onBeforeUnmount(() => setGrabbingCursor(false))
 .wikitab-configure-module-list__toggle :deep(.cdx-toggle-switch__label) {
   flex: 1 1 auto;
   min-width: min-content;
-}
-
-.wikitab-configure-module-list__item--gated .wikitab-configure-module-list__handle :deep(.cdx-icon),
-.wikitab-configure-module-list__item--gated .wikitab-configure-module-list__pin :deep(.cdx-icon),
-.wikitab-configure-module-list__item--gated :deep(.cdx-label__label__text),
-.wikitab-configure-module-list__item--gated :deep(.cdx-label__description) {
-  color: var(--color-disabled);
 }
 
 .wikitab-configure-module-list__toggle :deep(.cdx-toggle-switch__switch) {

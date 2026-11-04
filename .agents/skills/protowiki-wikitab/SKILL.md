@@ -1,6 +1,6 @@
 ---
 name: protowiki-wikitab
-description: The Wikitab new-tab prototype — its section registry, the reserved-slot "no-jump" loading contract that keeps the layout perfectly still, the shared reveal-more engine (desktop Show more button vs mobile continuous scroll), the daily feed orchestrator (featured + Active discussions + Main Page OTD + births), and the localStorage config / feed-cache split. Use when editing src/prototypes/wikitab/, adding a section, changing card sizes, or debugging layout shift or paging there.
+description: The Wikitab new-tab prototype — its section registry, the reserved-slot "no-jump" loading contract that keeps the layout perfectly still, the shared reveal-more engine (desktop Show more button vs mobile continuous scroll), the daily feed orchestrator (featured + Main Page OTD + births), Active discussions / Recent edits dual-source home modules, and the localStorage config / feed-cache split. Use when editing src/prototypes/wikitab/, adding a section, changing card sizes, or debugging layout shift or paging there.
 ---
 
 # ProtoWiki — Wikitab
@@ -46,8 +46,11 @@ This is the point of the prototype, so treat it as load-bearing.
 The heading and `…` button paint immediately. Each section then reserves exactly
 `initialCount` slots at exactly `cardHeight` — flat
 `background-color-neutral-subtle` blocks with **no border** — and "Show more"
-renders in `color-disabled`. Each slot then paints **as soon as its own data is
-known**, field by field (see [Loading states](#loading-states)).
+renders in `color-disabled` only while the section still has **no real cards**
+(`wikitabShowMoreDisabled.ts`). Once at least one card is on screen, the control
+stays progressive and clickable; background enrichment must not grey it again.
+Each slot then paints **as soon as its own data is known**, field by field (see
+[Loading states](#loading-states)).
 
 Four details make it actually not jump. Breaking any one of them reintroduces
 shift:
@@ -316,8 +319,12 @@ records how Wikitab applies them:
      patch changes `CdxCard.css`.
    - `.wikitab-surface--subtle` — keeps the historical subtle rest border on
      Contribute / Image cards (stock `CdxCard` uses base; patched uses subtle).
-   - `.wikitab-panel` — the full-page overlay shell shared by Configure, Saved
-     and Color theme.
+   - `.wikitab-panel` — the full-page overlay shell shared by Configure, Saved,
+     Color theme, module screens, Recent edits configure, and Active discussions
+     configure. Open state syncs to `?screen=` (chrome values or any home module
+     id — title click opens `?screen=<moduleId>`) via
+     `useWikitabOverlayNavigation.ts` — see
+     [state-and-storage → URL](references/state-and-storage.md#url).
    - `--wikitab-menu-font-size-*` / `--wikitab-menu-line-height-*` and
      `--wikitab-menu-color-*` — snapshotted on `.wikitab` and re-applied on every
      `.cdx-menu` and card `*__menu-button` wrapper so compact card-grid type and
@@ -347,14 +354,18 @@ the patched hover reads.
 
 One engine, two triggers:
 
+- **Desktop (all sections)** — Shared gate: `wikitabShowMoreDisabled` disables
+  Show more only when `itemCount === 0` and module refresh is in flight, or
+  while `loadingMore` / `revealing` (user paging). Per-card skeleton fields
+  (thumbnail, `{ supporting }`, etc.) do **not** disable the button.
 - **Desktop (finite feed sections)** — "Show more" reveals `min(pageSize,
-  remaining)`. Hidden once the day's slice is exhausted; `color-disabled` while a
-  page resolves. The `__more` row keeps its min-height so sections below do not
-  jump.
-- **Desktop (infinite home modules — Daily reads, Help wanted)** — "Show
-  more" is **never hidden** while cards are showing (hidden only on error, or
-  Daily reads empty). Disabled only during load; still clickable after
-  exhaustion to retry `loadMore()` (recreates the feed via `ensureActiveFeed`).
+  remaining)`. Hidden once the day's slice is exhausted; grey only in the empty
+  skeleton phase or while `revealing` prepares the next page. The `__more` row
+  keeps its min-height so sections below do not jump.
+- **Desktop (infinite home modules — Daily reads, Help wanted, Recent edits)** —
+  "Show more" is **never hidden** while cards are showing (hidden only on error,
+  or Daily reads empty). Still clickable after exhaustion to retry `loadMore()`
+  (recreates the feed via `ensureActiveFeed`).
 - **Mobile** — no button. `useRevealOnScrollEnd.ts` observes a sentinel at the
   end of the horizontal scroller (`root` = the scroller, `rootMargin` about one
   card wide) and reveals as it approaches. Finite sections tear down the observer
@@ -368,22 +379,25 @@ into previous days. Depth varies by day, so `hasMore` always derives from the
 actual list length — never hardcode it. Typically Trending has ~44 items, On this day ~5 (Main Page event bullets),
 Birthdays ~294 (Wikifeeds births, newest first), Did you know ~9,
 In the news ~4 (which exactly fills the initial slots, so no control ever
-renders for it), and Active discussions ~20 (merged from six noticeboards).
-All registered sections **always render**. While a section's slice is still
-loading, skeleton slots show; once resolved with zero items, a reserved empty
-state (`"Nothing to show right now."`) appears instead of removing the section.
-Feed errors show the same reserved-height error row per section.
+renders for it). Active discussions is a custom home module (noticeboards +
+batched saved-talk seeds), not a daily-feed slice. All registered feed sections **always render**. While a
+section's slice is still loading, skeleton slots show; once resolved with zero
+items, a top-aligned subtle empty state (`"{heading} will appear here."`) appears
+instead of removing the section. Feed errors keep the reserved-height error row
+per section. Home modules use the same empty pattern with module-specific copy
+(Saved / Daily reads / Help wanted / Nearby / Recent edits / Active discussions —
+see each module below); never the old generic `"Nothing to show right now."` line.
 
 ## Daily feed sources
 
 `data/fetchDailyFeed.ts` loads the feed in **two phases** so top sections can
-resolve while slower secondary APIs are still in flight. All six sections are
+resolve while slower secondary APIs are still in flight. Five feed sections are
 cached under one UTC-day blob (`wikitab-feed-cache-v*`); slices patch in via
 `persistPartialFeed()` as each section resolves during ordered home load.
 Per-slice refresh windows are centralized in `data/wikitabCacheTtl.ts` (Trending
-1 h, News/DYK/OTD 4 h, Active discussions 10 min, Birthdays on UTC day rollover).
-Cached slices **always paint first**; TTL expiry triggers a background refetch
-without clearing cards (see [State and storage](references/state-and-storage.md)).
+1 h, News/DYK 4 h, OTD UTC day + 4 h, Birthdays on UTC day rollover). Cached
+slices **always paint first**; TTL expiry triggers a background refetch without
+clearing cards (see [State and storage](references/state-and-storage.md)).
 
 **Phase 1 — featured (blocking):**
 
@@ -396,17 +410,16 @@ card pages begin resolving.
 
 **Phase 2 — secondary (parallel, patched as each settles):**
 
-- **Action API `discussiontoolspageinfo`** — Active discussions (six noticeboards)
 - **Action API parse of `Main_Page`** — On this day event bullets (`#mp-otd > ul > li`)
 - **`feed/onthisday/births/{mm}/{dd}`** — Birthdays
 
 Each secondary request patches its slice into the feed and calls `onUpdate`
-again. `feedPhase` stays `'featured'` until all three settle, then becomes
+again. `feedPhase` stays `'featured'` until both settle, then becomes
 `'complete'`. Secondary sections keep skeleton slots until their slice arrives;
 they no longer block Trending / In the news / Did you know above them.
 
-Featured failure fails the whole load; Main Page OTD, births, or Active
-discussions failure yields an empty section for that part only.
+Featured failure fails the whole load; Main Page OTD or births failure yields
+an empty section for that part only.
 
 Every card links as a whole to the **bolded** link inside it — the page the feed
 marks as the item's subject — via `primaryLinkTitle()`. For news that means
@@ -447,17 +460,6 @@ you touch the card's stacking.
   normal days; the midday rotation is a rare edge case.
 - **In the news** ← `news[]`. Each story has `links[]` of full summaries, so
   again no follow-up requests.
-- **Active discussions** ← `data/fetchActiveDiscussions.ts` queries
-  `discussiontoolspageinfo` with `prop=threaditemshtml` and
-  `threaditemsflags=noreplies|excludesignatures|activity` on six enwiki
-  noticeboards (Help desk + five Village pumps — same list as Personal
-  Dashboard, T420785). Threads need `authorCount > 1` and a latest reply;
-  merged newest-first with at least two per noticeboard, capped at ~20. Cards:
-  discussion title, noticeboard as plain `#description`, supporting row
-  `cdxIconSpeechBubbles` + `"{n} comments"` at row start, compact relative time at row end.
-  Links to the
-  noticeboard URL with a `#` fragment to the thread. No thumbnails, no per-card follow-up fetches. Home / Configure order lives in
-  `WIKITAB_HOME_MODULE_ORDER` (Saved first but off by default).
 
 `data/wikitabHtml.ts` normalises feed HTML. Note the asymmetry it exists for:
 `news` stories use relative `./Page_Title` hrefs, which would otherwise resolve
@@ -465,15 +467,16 @@ against our own origin, while `dyk` hooks use absolute ones.
 
 ## Saved-adjacent home modules
 
-Four home modules sit beside the daily feed — not in `WIKITAB_SECTIONS` or
-`useWikitabFeed`. Saved, Daily reads, and Help wanted use the feed paging
-contract (`initialCount` 4 / `pageSize` 6 for Saved and Daily reads; Suggested
-edits uses `initialCount` 2 / `pageSize` 4). Default home order
-(`WIKITAB_HOME_MODULE_ORDER` / `defaultModuleOrder()`): Saved → Trending →
-Featured → Nearby → Daily reads → Did you know → In the news → Help wanted →
-Active discussions → Recent edits → On this day → Birthdays. Saved is
-**hidden by default** (`WIKITAB_DEFAULT_HIDDEN_MODULE_IDS`); every other module
-starts on. All appear in Configure and support pin / hide / drag reorder.
+Custom home modules sit beside the daily feed — not in `WIKITAB_SECTIONS` or
+`useWikitabFeed`. Saved, Daily reads, Active discussions, and Suggested edits use
+the feed paging contract (`initialCount` 4 / `pageSize` 6 for Saved, Daily
+reads, and Active discussions; Suggested edits uses `initialCount` 2 /
+`pageSize` 4). Default home order (`WIKITAB_HOME_MODULE_ORDER` /
+`defaultModuleOrder()`): Saved → Trending → Featured → Daily reads →
+Suggested edits → Did you know → In the news → Nearby → Active discussions →
+Recent edits → On this day → Birthdays. Saved is **hidden by default**
+(`WIKITAB_DEFAULT_HIDDEN_MODULE_IDS`); every other module starts on. All appear
+in Configure and support pin / hide / drag reorder.
 
 **Configure module order** — `WikitabConfigureModuleList.vue` (ported from
 wikita-lite) renders a quiet `cdxIconDraggableVertical` handle left of each
@@ -503,11 +506,12 @@ activity menus (`data/wikitabCardMenuItems.ts`). Primary **Save** labels name
 the primitive (`Save article`, `Save snippet`, `Save word`, `Save edit`, … via
 `wikitabCardSaveMenuLabelForPrimitive`). **Save**
 persists that primitive. A second row
-**Save article** / **Unsave article** appears only for **`snippet`**,
-**`suggestion`**, and **`edit`** (`wikitabPrimitiveShowsSaveArticleMenu`) when
-`seedArticle` is set — it stores an **Article** via
-`buildSavedArticleFromSeedArticle` (`search:{titleKey}`). Word, quote,
-image, discussion, and article cards keep **Save** only (seed still drives
+**Save article** / **Unsave article** appears for **`snippet`**,
+**`suggestion`**, **`edit`**, and **`discussion`**
+(`wikitabPrimitiveShowsSaveArticleMenu`) when `seedArticle` is set — it stores
+an **Article** via `buildSavedArticleFromSeedArticle` (`search:{titleKey}`).
+Talk-page Active discussions cards seed the article; noticeboards do not.
+Word, quote, image, and article cards keep **Save** only (seed still drives
 modules). Search Articles tab result cards only show Save.
 `WikitabCard.vue` emits `@toggle-save-article`; handlers live in `index.vue`
 (`toggleSaveArticleFromSeed`).
@@ -532,7 +536,8 @@ mainspace enwiki titles seed (`seedArticle()` returns `undefined` otherwise).
 | QOTD | Author's Wikiquote page → Wikidata `wbgetentities` → enwiki sitelink | `quote-author` |
 | WOTD | Entry's English "Wikipedia has an article on" box (`.sister-wikipedia b[lang="en"]`), else none | `wiktionary-sister` |
 | Search Images | The query's exact title match, else the nearest (`resolveWikitabSearchTitleHits`, disambiguation-filtered), else none | `search-query` |
-| Discussion | Never | — |
+| Discussion (saved-article talk) | The article the talk page is about | `talk-page` |
+| Discussion (noticeboard) | Never | — |
 
 No free-text search fallback — a wrong seed shows a nonsensical "Related to X"
 card. `savedItemSeedArticle()` reads `seedArticle` on the item (backfilled on load
@@ -551,22 +556,25 @@ each entry through `WikitabSavedItemSlot.vue` with per-type layout: normalized
 Article / Discussion cards, Featured-style Word / Quote via
 `WikitabFeaturedCard`, Contribute-style Suggestion, Activity-style Change,
 Search-style Image (or inline-start caption layout for resolved Featured pictures).
-Hidden until a refresh runs (mount, search exit,
-overlay close); saving mid-session does not surface the module. Cards paint from
-the snapshot at once; Article items missing a thumbnail/description get REST
-summary enrichment patched in per item (skeleton fields meanwhile — see
-[Loading states](#loading-states)); other types skip enrich. Unsaving every item during the session clears the snapshot immediately.
+**Default-hidden** in Configure (`WIKITAB_DEFAULT_HIDDEN_MODULE_IDS`) but **always
+renders when enabled** — empty snapshot shows `"Saved items will appear here."`
+(heading + ⋯ stay). Cards paint from the snapshot at once; Article items missing
+a thumbnail/description get REST summary enrichment patched in per item (skeleton
+fields meanwhile — see [Loading states](#loading-states)); other types skip enrich.
+Unsaving every item during the session clears the snapshot and leaves the empty
+placeholder (module stays mounted while enabled).
 
 **Saved type tabs** — when the snapshot contains **two or more** saved types,
-`WikitabSavedItemTabs.vue` renders below the heading on both the home Saved module
-(`WikitabSavedSection.vue`) and the Saved overlay panel
-(`WikitabSavedArticlesPanel.vue`). Labels: **All**, **Articles**, **Snippets**, **Words**,
-**Quotes**, **Suggestions**, **Edits** (internal `change`),
-**Discussions**, **Images** — only types present are shown, in that order. Uses
-framed `CdxToggleButton` per tab (stock Codex selected state). Tab choice is
-session-only; card paging (`useSectionReveal` on home, manual `reserved` in the
-panel) runs on the filtered list. Helpers: `data/wikitabSavedItemTabs.ts`;
-composable: `useWikitabSavedItemTabFilter.ts`.
+`WikitabSavedItemTabs.vue` (shared framed `CdxToggleButton` row) renders below
+the heading on both the home Saved module (`WikitabSavedSection.vue`) and the
+Saved overlay panel (`WikitabSavedArticlesPanel.vue`). Labels: **All**,
+**Articles**, **Snippets**, **Words**, **Quotes**, **Suggestions**, **Edits**
+(internal `change`), **Discussions**, **Images** — only types present are shown,
+in that order. Tab choice is session-only; card paging (`useSectionReveal` on
+home, manual `reserved` in the panel) runs on the filtered list. Helpers:
+`data/wikitabSavedItemTabs.ts`; composable: `useWikitabSavedItemTabFilter.ts`.
+Active discussions reuses the same tabs component with **All** /
+**Noticeboards** / **Articles** (see Active discussions above).
 
 **Featured** (`featured`) — mixed carousel of six daily **spotlight** cards from
 sister wikis (not the same thing as phase-1 **`feed/featured`** in
@@ -591,11 +599,11 @@ Sources (`data/fetchWikitabFeatured.ts`, parallel per UTC day):
 | 3 | Today's featured picture | Main Page `#mp-tfp` (single-row or legacy two-row table), else `Template:POTD/YYYY-MM-DD`, else previous UTC day; links to matching `Template:POTD/…`. |
 | 4 | Picture of the day | `getFeaturedPayload` → `image` (Commons POTD caption HTML) |
 | 5 | Quote of the day | Wikiquote dated QOTD subpage (parse) |
-| 6 | Word of the day | Wiktionary dated WOTD subpage (`#WOTD-rss-description` — first non-empty `<li>`, skipping `mw-empty-elt`); gloss as HTML hook (usage labels italic via `.usage-label-sense`) |
+| 6 | Word of the day | Wiktionary dated WOTD subpage (`#WOTD-rss-description` — first non-empty top-level `<li>`, nested sense lists stripped, skipping `mw-empty-elt`); gloss as HTML hook with `descriptionLineClamp: 4` (usage labels italic via `.usage-label-sense`) |
 
 Quote of the day cards omit `descriptionLineClamp` (no line clamp) and link to the dated
 `Wikiquote:Quote of the day/{Month}_{day}` page, not the subject article.
-Cached under `wikitab-featured-cache-v19` (`data/featuredCache.ts`) with
+Cached under `wikitab-featured-cache-v20` (`data/featuredCache.ts`) with
 `fetchedAt` and a **4-hour TTL** (stale-while-revalidate). Composable:
 `useWikitabFeatured.ts`; section: `WikitabFeaturedSection.vue`. **Color of the
 day** is reserved for a future spotlight kind — no v1 source.
@@ -612,23 +620,28 @@ Paging: **4 initial**, **+6 per reveal** — all hits buffered client-side
 (geosearch has no offset). Full card payloads live in
 `WikitabConfig.nearbyCardsCache` (with `nearbyLastCoord`) — **not** a standalone
 cache key that `evictWikitabCaches()` can wipe. Warm cache paints on the first
-tick with **no network**. **30-minute TTL** (`NEARBY_TTL_MS`): fresh →
+tick with **no network**. Primary invalidation is **coord change** (epsilon
+~0.002° ≈ 200 m); **4-hour TTL** (`NEARBY_TTL_MS`) is a safety net — fresh →
 `refresh()` is a no-op; stale → keep painted cards and refetch in the
 background. Menu **Refresh** with `force` clears the cache. Composable:
 `useWikitabNearby.ts`; section: `WikitabNearbySection.vue`. Default order: after
-Featured. Not saved-gated.
+Featured. Always visible when enabled; consent ready with zero hits →
+`"Nearby articles will appear here."`
 
 **Daily reads** (`daily-reads`) — morelike suggestions seeded from up to **four**
 **unique seed articles** (`uniqueArticleSeedsFromSavedItems` → each save's `seedArticle`),
 picked by a **deterministic daily shuffle** (UTC day + sorted titleKeys → seeded
-Fisher-Yates). Hidden when there are no saved seed articles. Action API `generator=search` with
+Fisher-Yates). **Always visible when enabled** — with no seed articles (or a
+settled empty fetch), shows `"Save some articles to get daily reading suggestions."`
+immediately (no skeleton). Action API `generator=search` with
 `gsrsearch=morelike:{title}` per seed (`DailyReadsFeed` in
 `data/fetchWikitabDailyReads.ts`); seeds load in parallel but cards resolve **one
 at a time** via `takeNext()`. Excludes disambiguation pages, duplicate `pageid`s,
 and all saved `articleTitleKey`s. Cards are thumbnail variant with
 `supportingText: "Related to {seed title}"`. Cached under
-`wikitab-daily-reads-cache-v3` keyed by `{ utcDay, savedFingerprint }`
-(`data/dailyReadsCache.ts`).
+`wikitab-daily-reads-cache-v5` by UTC day (`data/dailyReadsCache.ts`); the
+entry stores `savedFingerprint` but a fingerprint change does **not** auto-refetch —
+a quiet title reload appears instead (see below).
 
 **Help wanted** (`suggested-edits`) — edit-opportunity cards from the same
 Microtask `POST /quality-check` pipeline as the search **Contribute** tab, seeded
@@ -636,13 +649,65 @@ from up to **six unique seed articles** (see [Seed articles](#saved-adjacent-hom
 via a separate daily shuffle salt
 (`pickSavedArticleSeeds.ts` → `SuggestedEditsFeed` in
 `data/fetchWikitabSuggestedEdits.ts`). Morelike expansion skips titles already in
-the saved list. Hidden when there are no saved seed articles (same gate as Daily reads). Paging: **2 initial cards**,
-**+4 per reveal**. Cached under `wikitab-suggested-edits-cache-v1`
-(`data/suggestedEditsCache.ts`).
+the saved list. **Always visible when enabled** — same no-seed / empty placeholder
+pattern as Daily reads with `"Save some articles to get editing suggestions."`
+Paging: **2 initial cards**, **+4 per reveal**. Cached under
+`wikitab-suggested-edits-cache-v2` (`data/suggestedEditsCache.ts`) — same day-keyed /
+signature-gated refresh as Daily reads.
+
+**Active discussions** (`discussions`) — discussion cards merged from up to two
+sources (section ellipsis → **Configure** → full-screen panel at
+`?screen=active-discussions-settings`, same `wikitab-panel` chrome as Recent
+edits / Modules / Color theme):
+
+1. **Noticeboards** (toggle on by default) — Action API `discussiontoolspageinfo`
+   with `prop=threaditemshtml` and
+   `threaditemsflags=noreplies|excludesignatures|activity` on six enwiki
+   noticeboards (Help desk + five Village pumps — same list as Personal
+   Dashboard, T420785). Threads need a latest reply (single-author threads
+   included); at least two per noticeboard before filling by recency.
+2. **Saved article talk pages** (toggle on by default) — unique seed articles
+   via daily shuffle salt `'active-discussions'`, opened in batches of **six**
+   (`ACTIVE_DISCUSSIONS_SEED_BATCH`); same DiscussionTools call/filters on
+   `Talk:{title}`. Card **title** is the **article title** (no `Talk:` prefix);
+   description is the thread topic.
+
+`fetchActiveDiscussionsFeed` in `data/fetchActiveDiscussions.ts` returns
+**per-source pools** (uncapped threads; noticeboards keep per-board diversity).
+Saved-talk seeds are windowed (`seedOffset` / `seedLimit`). Each card carries
+`discussionSource` (`noticeboard` \| `article`) and `latestReplyTimestamp` for
+All-tab merge. Cards: noticeboards use thread title + board label as
+description; article talk flips that (article title + thread topic). Supporting
+row `cdxIconSpeechBubbles` + `"{n} comments"` at row start, compact relative
+time at row end. Links to the page URL with a `#` fragment to the thread. No
+thumbnails.
+Both toggles off → placeholder with primary **Show active discussions** (turns
+both on); module stays visible when not hidden. Sources on with zero cards →
+`"Active discussions will appear here."` Settings:
+`WikitabConfig.discussionsShowNoticeboards` / `discussionsShowSavedTalk`
+(`useWikitabActiveDiscussionsSettings.ts`). **Source tabs** when both Configure
+sources are **enabled**: **All** / **Noticeboards** / **Articles** via
+`WikitabSavedItemTabs` + `useWikitabActiveDiscussionsTabFilter.ts`
+(session-only). Tabs select **which pool to page** — Noticeboards and Articles
+are the per-source lists; **All** is a chronological merge
+(`mergeActiveDiscussionCardLists`). Paging: **4 initial**, **+6 per Show more**.
+When the active list runs short and more saved-talk seeds remain, Show more
+calls `loadMore()` (`fetchActiveDiscussionsArticleBatch`) and merges new article
+threads newest-first (`mergeDiscussionCardsChronologically`). Noticeboards are
+complete after the first fetch. Cache: `wikitab-active-discussions-cache-v11`
+(day + settings fingerprint; stores `noticeboards` + `articles` +
+`articleSeedOffset` + `savedFingerprint` + `fetchedAtNoticeboards` /
+`fetchedAtArticles` — noticeboards **10 min**, saved talk **1 h**).
+Saved-fingerprint change does **not** auto-refetch (title reload only when
+**Saved article talk pages** is enabled — same idea as Recent edits); settings
+toggles still `force` refresh. Composable:
+`useWikitabActiveDiscussions.ts`; section:
+`WikitabActiveDiscussionsSection.vue`; panel:
+`WikitabActiveDiscussionsConfigurePanel.vue`.
 
 **Recent edits** (`review-changes`) — edit-revision cards merged from up to two
-sources (section ellipsis → **Configure** → full-screen panel, same `wikitab-panel`
-chrome as Modules / Color theme):
+sources (section ellipsis → **Configure** → full-screen panel at
+`?screen=recent-edits-settings`, same `wikitab-panel` chrome as Modules / Color theme):
 
 1. **Saved articles** (toggle on by default) — same Action API revision helpers as
    the search **Activity** tab (`WikitabSearchActivityFeed` with **`latestOnly: true`**),
@@ -657,35 +722,41 @@ chrome as Modules / Color theme):
    chip (`omitLatestRevisionChip`) — every row is already a tip.
 
 `MergedReviewChangesFeed` in `data/fetchWikitabReviewChanges.ts` leads with whichever
-source has the newer head edit, then alternates (saved, RC, saved, …); each source stays ordered. Both toggles off → empty module (still visible when not hidden). **Not**
-saved-gated — shows with zero saves when Recent risky is on. Settings:
+source has the newer head edit, then alternates (saved, RC, saved, …); each source stays ordered. Both toggles off → Nearby-style placeholder with primary **Show recent edits** (turns both sources on); sources on with a settled empty feed → `"Recent edits will appear here."` Module stays visible when not hidden. Settings:
 `WikitabConfig.reviewChangesShowSavedEdits` / `reviewChangesShowRecentRiskyEdits`
 (`useWikitabReviewChangesSettings.ts`). Paging: **2 initial**, **+4 per reveal**.
 Cards via `wikitabCardPropsForSearchActivityItem`. Dismissed revids share
-`dismissedActivityRevids` with Activity. Cache: `wikitab-review-changes-cache-v5` (day + saved fingerprint + settings
-fingerprint + `fetchedAtSaved` / `fetchedAtRisky` — **1 h** seed articles,
-**10 min** risky RC). Composable:
+`dismissedActivityRevids` with Activity. Cache: `wikitab-review-changes-cache-v5`
+(day + settings fingerprint for hits; stored `savedFingerprint` +
+`fetchedAtSaved` / `fetchedAtRisky` — **1 h** seed articles, **10 min** risky RC).
+Saved-fingerprint change does **not** auto-refetch (title reload only when
+**Saved articles** is enabled); settings toggles still `force` refresh. Composable:
 `useWikitabReviewChanges.ts`; section: `WikitabReviewChangesSection.vue`; panel:
 `WikitabReviewChangesConfigurePanel.vue`.
 
 **Infinite-module pagination** — Nearby (client buffer only), Daily reads,
-Help wanted, and Recent edits
-differ from finite feed sections (`WikitabSection`): desktop "Show more" stays
-visible while cards are on screen; cached `hasMore: false` only records the last
-fetch state and does not remove the control. Clicks after exhaustion still call
-`loadMore()`.
+and Help wanted differ from finite feed sections (`WikitabSection`): desktop
+"Show more" stays visible while cards are on screen; cached `hasMore: false`
+only records the last fetch state and does not remove the control. Clicks after
+exhaustion may still call `loadMore()`. **Recent edits** and **Active
+discussions** hide desktop "Show more" once every loaded card is revealed and
+the feed has no pending items (`bufferedHasMore` / `hasMore` / fetch-more).
+Active discussions also fetches further saved-talk seed batches on Show more
+when needed (noticeboards are one-shot).
 
 A render triggered on mount, search exit, or overlay close refreshes Featured
 (when visible), Nearby (when stored coords exist), Saved, Daily reads,
-Help wanted, and Recent edits from the
+Help wanted, Active discussions, and Recent edits from the
 **same snapshot** (Featured does not use the saved snapshot). Saved is first in
 the default Configure order but **hidden by default**, so
 `refreshHomeModulesInOrder` builds that snapshot **before** any seed-adjacent
 module when Saved is hidden or ordered below it — otherwise Daily reads would
 refresh against `[]` and stay hidden until a later overlay-close refresh. Cached
-modules paint immediately; network runs on cache miss, TTL expiry
-(background), or manual **Refresh**. Daily reads / Help wanted still key
-off UTC day + saved-articles fingerprint only. `?nocache=1` bypasses caches.
+modules paint immediately; network runs on day/settings miss, TTL expiry
+(background), or manual **Refresh**. A change to the saved-articles fingerprint
+keeps the last fetch painted and shows a quiet icon-only reload beside the
+module title until the user refreshes (title button or ⋯ → Refresh — both
+snapshot Saved first). `?nocache=1` bypasses caches.
 
 ## State and storage
 
@@ -706,11 +777,11 @@ Pinned sections show `cdxIconPushPin`
 beside the heading; the ellipsis menu toggles "Pin to top" / "Unpin from top".
 Pinning reorders by `spec.id` and does not affect the no-jump loading contract.
 
-The full daily feed (featured + Active discussions + Main Page OTD + births) is
-cached under a UTC-day key with per-slice `sliceFetchedAt` timestamps; ordered
-per-section loading reads and writes through the same cache, with one in-session
+The full daily feed (featured + Main Page OTD + births) is cached under a
+UTC-day key with per-slice `sliceFetchedAt` timestamps; ordered per-section
+loading reads and writes through the same cache, with one in-session
 `feed/featured` request shared across Trending / News / DYK on a miss or stale
-featured refresh. **Featured** (sister-wiki module) and **Recent edits** use
+featured refresh. **Featured**, **Active discussions**, and **Recent edits** use
 their own caches with `fetchedAt` / per-source timestamps and the same
 stale-while-revalidate pattern. `?nocache=1` forces a refetch — use it when
 working on loading states.
@@ -1022,19 +1093,25 @@ above. Edit cards use `CdxCard` inside `WikitabCard` (chips in a full-width row 
 stock thumbnail + text row). Unlike Articles tab
 cards, which are borderless. Activity skeletons (here and in home Recent edits) use
 `WikitabCard` loading bind props; resolved edit cards show an optional
-96px inline-start thumbnail when `thumbnailUrl` is present. Description block: green **+n** / red **−n** character delta (from revision `size`
-vs parent), or subtle **±0** when size is unchanged, on its own line above the edit
-summary when the parent size is known. Chip row uses at most one `CdxInfoChip` per
-card (`searchActivityChipsFromItem` — first match wins): **High revert risk** (Lift Wing
-`revertrisk-language-agnostic`, ≥0.9; background per card, in-memory cache by
-`revid`), else **Needs review** (ORES `oresreview` rows in Recent edits only), else
-**Reverted** (`mw-reverted` tag), else **Latest revision** (from latest-revid prefetch;
-Activity tab and saved-change rows only — Home Recent edits passes
+96px inline-start thumbnail when `thumbnailUrl` is present. Title is the article
+name with nested read-mode links (`titleHtml`); when the edit targeted a section,
+the title continues as **`Article →Section`** (Unicode `→`, space before, none
+after; both linked — article page and `#Section` fragment). Plain `title` stays the article name only (menus / hide /
+save). Description is one inline row: parenthesized character delta — green
+**(+n)** / red **(−n)** / subtle **(±0)** (from revision `size` vs parent when
+known) — then the quoted free-text edit summary (section is not repeated here).
+Chip row uses at most one `CdxInfoChip` per
+card (`searchActivityChipsFromItem` — first match wins): **Reverted** (`mw-reverted`
+tag), else **High revert risk** (Lift Wing `revertrisk-language-agnostic`, ≥0.9;
+background per card, in-memory cache by `revid`), else **Needs review** (ORES
+`oresreview` rows in Recent edits only), else **Latest revision** (from latest-revid
+prefetch; Activity tab and saved-change rows only — Home Recent edits passes
 `omitLatestRevisionChip`).
 Top-right `CdxMenuButton` (`cdxIconEllipsis`, quiet) exposes **Thank** (opens
 `Special:Thanks/{revid}` on en.wikipedia.org in a new tab) and **Dismiss** — persists the revision id in
 `WikitabConfig.dismissedActivityRevids` and removes the card; dismissed diffs are
-skipped on future loads. Card links go to the en.wikipedia.org diff. Chips sit above the entire card (above the thumbnail +
+skipped on future loads. Card-wide link goes to the en.wikipedia.org diff; nested
+title / editor links open read mode (article, section, user). Chips sit above the entire card (above the thumbnail +
 content row); supporting row is editor + relative time, with a Codex icon for
 editor type — **Bot** (`cdxIconRobot`), **Temporary** (`cdxIconUserTemporary`),
 **User** (`cdxIconUserAvatar`). IP edits (`userid === 0`) use the same

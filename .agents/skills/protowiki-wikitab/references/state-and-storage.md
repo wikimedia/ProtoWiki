@@ -41,6 +41,9 @@ Current fields:
 - `reviewChangesShowSavedEdits` / `reviewChangesShowRecentRiskyEdits` — Recent
   edits home module feed sources (both default on); section **Configure** menu
   → full-screen panel (`useWikitabReviewChangesSettings.ts`)
+- `discussionsShowNoticeboards` / `discussionsShowSavedTalk` — Active
+  discussions home module feed sources (both default on); section **Configure**
+  menu → full-screen panel (`useWikitabActiveDiscussionsSettings.ts`)
 - `savedItems` — typed saved entries (`WikitabSavedItem` discriminated union in
   `data/wikitabSavedItems.ts`): **article**, **snippet**, **word**, **quote**,
   **suggestion**, **change**, **discussion**, **image**. Each row carries
@@ -49,8 +52,8 @@ Current fields:
   `useWikitabSavedArticles.ts`. Legacy `type: 'list'` / `list:{titleKey}` rows
   migrate to **article** / `search:{titleKey}` in `wikitabStorageMigration.ts`.
 
-**Article seeds for recommendations** — Daily reads, Help wanted, and Recent
-edits seed from items with `seedArticle` set
+**Article seeds for recommendations** — Daily reads, Help wanted, Recent edits,
+and Active discussions (talk-page source) seed from items with `seedArticle` set
 (`uniqueArticleSeedsFromSavedItems` in `savedCardHelpers.ts`). Word, Quote,
 Discussion, Change, and Image saves typically have no article seed (or a
 non-mainspace one) and do not feed those modules.
@@ -58,27 +61,29 @@ non-mainspace one) and do not feed those modules.
 ## Cache-only feed storage (`wikitab-feed-cache-v*`)
 
 [`data/feedCache.ts`](../../../../src/prototypes/wikitab/data/feedCache.ts) caches
-the full daily feed — all six sections (Trending, In the news, Did you know,
-Active discussions, On this day, Birthdays) — under a UTC-day key. Nothing here
-is authoritative — clearing it must only ever cost one refetch.
+the full daily feed — five sections (Trending, In the news, Did you know, On
+this day, Birthdays) — under a UTC-day key. Nothing here is authoritative —
+clearing it must only ever cost one refetch. Active discussions lives in its
+own cache (below).
 
 A new-tab page opens dozens of times a day; caching the daily feed is both fast
 and good API etiquette. Writing today's entry evicts older days.
 
-**Per-slice TTL (stale-while-revalidate)** — constants live in
+**Per-slice freshness** — constants live in
 [`data/wikitabCacheTtl.ts`](../../../../src/prototypes/wikitab/data/wikitabCacheTtl.ts).
-Each slice stores `sliceFetchedAt.<id>` (epoch ms) on write. Reads **always**
-return cached card data for the UTC day; when TTL expires, modules paint the
-cache first and refetch in the background (same contract as Nearby).
+Each slice stores `sliceFetchedAt.<id>` (epoch ms) on write. Trending / News /
+DYK use wall-clock TTL only (they survive UTC midnight). On this day needs a
+matching UTC day **and** a 4 h TTL. Birthdays miss on UTC day rollover only.
+When TTL expires, modules paint the cache first and refetch in the background
+(same contract as Nearby).
 
-| Slice | TTL |
+| Slice | Freshness |
 | ----- | --- |
-| Trending | 1 h |
-| In the news | 4 h |
-| Did you know | 4 h |
-| Active discussions | 10 min |
-| On this day | 4 h |
-| Birthdays | UTC day only (new date) |
+| Trending | 1 h TTL |
+| In the news | 4 h TTL |
+| Did you know | 4 h TTL |
+| On this day | UTC day · 4 h TTL |
+| Birthdays | UTC day only |
 
 Legacy entries without timestamps are **displayable** but treated as stale
 (background refetch). `persistPartialFeed()` merges non-empty slices and stamps
@@ -106,21 +111,22 @@ skeletons for known hooks.
 ## Cache-only Daily reads storage (`wikitab-daily-reads-cache-v*`)
 
 [`data/dailyReadsCache.ts`](../../../../src/prototypes/wikitab/data/dailyReadsCache.ts)
-caches the loaded card list plus `hasMore` under `{ day, savedFingerprint }`.
-Refetch only when that key misses (saved pages changed, UTC day rolled, or first
-visit) and a Daily reads render is triggered via `refreshHomeSavedModules()` —
-not on every save during the session. Only the first batch loads on refresh;
-additional cards fetch on Show more. Cached `hasMore: false` reflects the last
-fetch only — it does not hide desktop "Show more"; clicks can still retry
-`loadMore()`. Same `?nocache=1` bypass as the feed cache.
+caches `{ day, savedFingerprint, items, hasMore }`. Reads hit on **UTC day**
+only — a saved-fingerprint change is not a miss. Home refresh
+(`refreshHomeModulesInOrder`) keeps the painted cards; when live seed
+fingerprint ≠ `fetchedSavedFingerprint`, the section shows a quiet title reload
+(and ⋯ → Refresh still force-refetches). Network on day rollover, empty cache,
+`force`, or `?nocache=1`. Only the first batch loads on refresh; additional
+cards fetch on Show more. Cached `hasMore: false` reflects the last fetch only
+— it does not hide desktop "Show more"; clicks can still retry `loadMore()`.
 
 ## Cache-only Help wanted storage (`wikitab-suggested-edits-cache-v*`)
 
 [`data/suggestedEditsCache.ts`](../../../../src/prototypes/wikitab/data/suggestedEditsCache.ts)
-mirrors Daily reads: `{ day, savedFingerprint, items, hasMore }`. Same refresh
-cadence via `refreshHomeSavedModules()` and the Saved-module snapshot. Resumable
-partial loads — `hasMore: true` lets `loadMore()` recreate the Contribute feed
-with `seenPageidsFromCards()` so cached cards are not duplicated. Cached
+mirrors Daily reads: `{ day, savedFingerprint, items, hasMore }` with the same
+day-keyed read and signature-gated title refresh. Resumable partial loads —
+`hasMore: true` lets `loadMore()` recreate the Contribute feed with
+`seenPageidsFromCards()` so cached cards are not duplicated. Cached
 `hasMore: false` does not remove desktop "Show more" — same retry contract as
 Daily reads.
 
@@ -135,9 +141,25 @@ via `useWikitabFeatured.ts`.
 
 [`data/reviewChangesCache.ts`](../../../../src/prototypes/wikitab/data/reviewChangesCache.ts)
 stores `{ day, savedFingerprint, settingsFingerprint, items, hasMore,
-fetchedAtSaved, fetchedAtRisky }`. Each item may carry `reviewChangesSource`:
-`'saved' | 'risky'`. TTL: seed-article pipeline **1 h**, Recent risky **10 min**.
-Stale-while-revalidate refreshes only expired sources in the background.
+fetchedAtSaved, fetchedAtRisky }`. Reads hit on **day + settings fingerprint**;
+saved-fingerprint mismatch keeps painted cards and surfaces the title reload
+only when the Saved articles source is on. Settings toggles still force
+refresh. Each item may carry `reviewChangesSource`: `'saved' | 'risky'`. TTL:
+seed-article pipeline **1 h**, Recent risky **10 min**. Stale-while-revalidate
+refreshes only expired sources in the background.
+
+## Cache-only Active discussions storage (`wikitab-active-discussions-cache-v*`)
+
+[`data/activeDiscussionsCache.ts`](../../../../src/prototypes/wikitab/data/activeDiscussionsCache.ts)
+stores `{ day, savedFingerprint, settingsFingerprint, noticeboards, articles,
+articleSeedOffset, fetchedAtNoticeboards, fetchedAtArticles }`
+(`wikitab-active-discussions-cache-v11`; legacy single `fetchedAt` still reads).
+Reads hit on **day + settings fingerprint**; saved-fingerprint mismatch keeps
+painted cards and surfaces the title reload only when Saved talk is on. Settings
+toggles still force refresh. Per-source TTL: noticeboards **10 min**, saved talk
+**1 h**. While home is mounted, a timer soft-refetches only the expired source(s)
+— paint stays; Show more does not reset either clock. Show more may still append
+further saved-talk seed batches via `loadMore()`.
 
 ## Transient component state
 
@@ -151,9 +173,19 @@ scroll position is not persisted.
 Wikitab does **not** use the URL for user preferences. A browser new-tab URL is
 fixed — pin state would never survive between opens if it lived in query params.
 
-The sole Wikitab-specific URL escape hatch is **`?nocache=1`**, read inline in
-`feedCache.ts` to force a feed refetch when developing against the loading
-contract.
+Transient **view** state may live in query params (search and full-screen overlays).
+Preferences stay in `wikitab-config-v3`.
+
+| Param | Meaning |
+| ----- | ------- |
+| **`?search=`** / **`?tab=`** | Search results page and active results tab (`useWikitabSearchNavigation.ts`, `useWikitabSearchTab.ts`) |
+| **`?screen=`** | Full-screen overlay: chrome (`configure` \| `color` \| `recent-edits-settings` \| `active-discussions-settings`) or any home module id (`saved`, `trending`, `featured`, …). Module titles open `?screen=<moduleId>`; Saved also opens from the bookmark button. |
+| **`?nocache=1`** | Dev escape hatch — force feed refetch (`feedCache.ts`) |
+
+`?screen=` open/close **push** history via
+[`useWikitabOverlayNavigation.ts`](../../../../src/prototypes/wikitab/useWikitabOverlayNavigation.ts)
+so Back closes the panel. Unknown values are stripped. POTD attribution
+open/dismiss stays in config (`potdAttributionExpandedDay`), not the URL.
 
 ProtoWiki-global params (`?theme=`, `?skin=`) are unrelated — they are resolved
 onto `<html>` at boot by [`src/theme.ts`](../../../../src/theme.ts) and

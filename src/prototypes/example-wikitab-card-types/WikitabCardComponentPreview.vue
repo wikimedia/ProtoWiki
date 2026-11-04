@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { CdxAccordion, CdxCheckbox, CdxSelect, CdxTextInput } from '@wikimedia/codex'
+import { CdxAccordion, CdxCheckbox, CdxSelect, CdxTable, CdxTextInput } from '@wikimedia/codex'
 
 import WikitabCard from '../wikitab/WikitabCard.vue'
 import {
@@ -29,6 +29,23 @@ const fieldsOpen = ref(props.defaultOpen)
 const fields = ref({ ...defaultWikitabCardComponentFieldValues(), ...props.initialFields })
 
 const tableProperties = computed(() => wikitabCardComponentPlaygroundProperties())
+
+const tableColumns = [
+  { id: 'field', label: 'Field', width: '28%' },
+  { id: 'type', label: 'Type', width: '28%' },
+  { id: 'value', label: 'Value', width: '44%' },
+]
+
+const tableData = computed(() =>
+  tableProperties.value.map((prop) => ({
+    id: `component-${prop.name}`,
+    field: `${prop.name}${prop.optional ? '?' : ''}`,
+    type: prop.type,
+    rowKind: 'options' as const,
+    name: prop.name,
+    propType: prop.type,
+  })),
+)
 
 const preview = computed(() => previewModelForWikitabCardComponent(fields.value))
 
@@ -61,54 +78,48 @@ function onSelect(name: string, value: string | number | null) {
     >
       <template #title>Fields</template>
       <div class="wikitab-card-type-preview__table-wrap">
-        <table class="wikitab-card-type-preview__table">
-          <thead>
-            <tr>
-              <th scope="col">Field</th>
-              <th scope="col">Type</th>
-              <th scope="col">Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="prop in tableProperties"
-              :key="`component-${prop.name}`"
-              :class="playgroundFieldRowClass('options')"
-            >
-              <td>
-                <code>{{ prop.name }}{{ prop.optional ? '?' : '' }}</code>
-              </td>
-              <td>
-                <code class="wikitab-card-type-preview__type-cell">{{ prop.type }}</code>
-              </td>
-              <td>
-                <CdxCheckbox
-                  v-if="componentPlaygroundFieldUsesCheckbox(prop.name, prop.type)"
-                  :model-value="fields[prop.name] === 'true'"
-                  @update:model-value="onCheckbox(prop.name, $event)"
-                />
-                <textarea
-                  v-else-if="componentPlaygroundFieldUsesTextarea(prop.name)"
-                  class="wikitab-card-type-preview__textarea"
-                  :value="fields[prop.name] ?? ''"
-                  :rows="playgroundFieldTextareaRows(fields[prop.name] ?? '')"
-                  @input="onFieldInput(prop.name, ($event.target as HTMLTextAreaElement).value)"
-                />
-                <CdxSelect
-                  v-else-if="componentPlaygroundFieldUsesSelect(prop.name, prop.type)"
-                  :selected="fields[prop.name] ?? ''"
-                  :menu-items="fieldSelectMenuItems(prop)"
-                  @update:selected="onSelect(prop.name, $event)"
-                />
-                <CdxTextInput
-                  v-else
-                  :model-value="fields[prop.name] ?? ''"
-                  @update:model-value="onFieldInput(prop.name, $event)"
-                />
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <CdxTable
+          class="wikitab-card-type-preview__table"
+          caption="WikitabCard fields"
+          hide-caption
+          :columns="tableColumns"
+          :data="tableData"
+          :show-vertical-borders="false"
+        >
+          <template #item-field="{ row }">
+            <code :class="playgroundFieldRowClass(row.rowKind)">{{ row.field }}</code>
+          </template>
+
+          <template #item-type="{ row }">
+            <code class="wikitab-card-type-preview__type-cell">{{ row.type }}</code>
+          </template>
+
+          <template #item-value="{ row }">
+            <CdxCheckbox
+              v-if="componentPlaygroundFieldUsesCheckbox(row.name, row.propType)"
+              :model-value="fields[row.name] === 'true'"
+              @update:model-value="onCheckbox(row.name, $event)"
+            />
+            <textarea
+              v-else-if="componentPlaygroundFieldUsesTextarea(row.name)"
+              class="wikitab-card-type-preview__textarea"
+              :value="fields[row.name] ?? ''"
+              :rows="playgroundFieldTextareaRows(fields[row.name] ?? '')"
+              @input="onFieldInput(row.name, ($event.target as HTMLTextAreaElement).value)"
+            />
+            <CdxSelect
+              v-else-if="componentPlaygroundFieldUsesSelect(row.name, row.propType)"
+              :selected="fields[row.name] ?? ''"
+              :menu-items="fieldSelectMenuItems({ name: row.name, type: row.propType })"
+              @update:selected="onSelect(row.name, $event)"
+            />
+            <CdxTextInput
+              v-else
+              :model-value="fields[row.name] ?? ''"
+              @update:model-value="onFieldInput(row.name, $event)"
+            />
+          </template>
+        </CdxTable>
       </div>
     </CdxAccordion>
   </div>
@@ -127,6 +138,11 @@ function onSelect(name: string, value: string | number | null) {
   box-sizing: border-box;
   width: fit-content;
   max-width: 100%;
+  position: sticky;
+  top: var(--spacing-100);
+  align-self: flex-start;
+  z-index: 1;
+  background-color: var(--background-color-base);
 }
 
 .wikitab-card-type-preview__wikitab {
@@ -147,49 +163,24 @@ function onSelect(name: string, value: string | number | null) {
 }
 
 .wikitab-card-type-preview__table-wrap {
-  overflow-x: auto;
   max-width: 100%;
+  overflow-x: hidden;
 }
 
 .wikitab-card-type-preview__table {
   width: 100%;
-  min-width: 32rem;
-  border-collapse: collapse;
-  table-layout: fixed;
+  max-width: 100%;
 }
 
-.wikitab-card-type-preview__table th,
-.wikitab-card-type-preview__table td {
+.wikitab-card-type-preview__table :deep(th),
+.wikitab-card-type-preview__table :deep(td) {
   padding: var(--spacing-50) var(--spacing-75);
-  border: var(--border-width-base) solid var(--border-color-subtle);
-  text-align: start;
   vertical-align: middle;
-}
-
-.wikitab-card-type-preview__table th {
-  background: var(--background-color-neutral-subtle);
-}
-
-.wikitab-card-type-preview__table th:nth-child(1),
-.wikitab-card-type-preview__table td:nth-child(1) {
-  width: 28%;
   word-break: break-word;
 }
 
-.wikitab-card-type-preview__table th:nth-child(2),
-.wikitab-card-type-preview__table td:nth-child(2) {
-  width: 28%;
-  word-break: break-word;
-}
-
-.wikitab-card-type-preview__table th:nth-child(3),
-.wikitab-card-type-preview__table td:nth-child(3) {
-  width: 44%;
-  min-width: 0;
-}
-
-.wikitab-card-type-preview__table td:last-child :deep(.cdx-text-input),
-.wikitab-card-type-preview__table td:last-child :deep(.cdx-select) {
+.wikitab-card-type-preview__table :deep(td:last-child) .cdx-text-input,
+.wikitab-card-type-preview__table :deep(td:last-child) .cdx-select {
   max-width: 100%;
 }
 
@@ -207,7 +198,7 @@ function onSelect(name: string, value: string | number | null) {
   resize: vertical;
 }
 
-.wikitab-card-type-preview__row--options td {
+.wikitab-card-type-preview__table :deep(tr:has(.wikitab-card-type-preview__row--options)) td {
   background-color: var(--background-color-base, #fff);
 }
 </style>

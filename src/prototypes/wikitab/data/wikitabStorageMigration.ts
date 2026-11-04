@@ -7,6 +7,7 @@
  * Wikitab reads the current shape only. When the shape changes, teach this file
  * to read the old form — never add a version step or a fallback elsewhere.
  */
+import { CACHE_KEY as ACTIVE_DISCUSSIONS_CACHE_KEY } from './activeDiscussionsCache'
 import { CACHE_KEY as DAILY_READS_CACHE_KEY } from './dailyReadsCache'
 import { CACHE_KEY as FEATURED_CACHE_KEY } from './featuredCache'
 import { CACHE_KEY as FEED_CACHE_KEY, utcDayKey } from './feedCache'
@@ -43,12 +44,18 @@ import { parseSeedArticle, seedArticle } from './wikitabSeedArticle'
 const CONFIG_KEY_V2 = 'wikitab-config-v2'
 const CONFIG_KEY_V1 = 'wikitab-config-v1'
 
+/**
+ * Live localStorage keys. Anything else starting with `wikitab-` is deleted on
+ * migrate — when you add a cache module, register its `CACHE_KEY` here or every
+ * page load will wipe it (and that module will refetch every time).
+ */
 const CURRENT_KEYS = new Set<string>([
   WIKITAB_CONFIG_STORAGE_KEY,
   FEED_CACHE_KEY,
   DAILY_READS_CACHE_KEY,
   SUGGESTED_EDITS_CACHE_KEY,
   REVIEW_CHANGES_CACHE_KEY,
+  ACTIVE_DISCUSSIONS_CACHE_KEY,
   POTD_CACHE_KEY,
   FEATURED_CACHE_KEY,
 ])

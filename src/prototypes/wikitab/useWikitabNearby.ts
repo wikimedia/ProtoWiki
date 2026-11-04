@@ -103,10 +103,14 @@ export function useWikitabNearby() {
   const loading = ref(false)
   const fillingInitial = ref(false)
   const loadingMore = ref(false)
+  /*
+   * Nearby loads the full geosearch page in one request (`loadMore` is a no-op).
+   * `hasMore` only means "still short of the initial grid" so the section can
+   * top up — never "fetch another page". Extra buffered cards are revealed
+   * client-side via `reserved` vs `items.length`.
+   */
   const hasMore = ref(
-    initialCached
-      ? initialCached.hasMore || initialCached.items.length > initialCount
-      : false,
+    initialCached ? initialCached.items.length > 0 && initialCached.items.length < initialCount : false,
   )
   const error = ref<string | null>(null)
   const hasActivated = ref(Boolean(initialCached?.items.length || initialStoredCoord))
@@ -124,12 +128,7 @@ export function useWikitabNearby() {
   function persistItems(cards: WikitabCardData[] = items.value): void {
     if (!activeCoord) return
     const fetchedAt = cacheFetchedAt ?? Date.now()
-    writeCachedNearby(
-      activeCoord,
-      cards,
-      hasMore.value || cards.length > initialCount,
-      fetchedAt,
-    )
+    writeCachedNearby(activeCoord, cards, false, fetchedAt)
   }
 
   function setPending(key: string, loadingState: WikitabCardLoading): void {
@@ -191,7 +190,7 @@ export function useWikitabNearby() {
 
   function paintFromCache(cached: CachedNearby, coord: WikitabNearbyLastCoord): void {
     items.value = cached.items
-    hasMore.value = cached.hasMore || cached.items.length > initialCount
+    hasMore.value = cached.items.length > 0 && cached.items.length < initialCount
     consentPhase.value = 'ready'
     hasActivated.value = true
     promptError.value = null
@@ -239,7 +238,7 @@ export function useWikitabNearby() {
       }
 
       items.value = cards
-      hasMore.value = cards.length > initialCount
+      hasMore.value = cards.length > 0 && cards.length < initialCount
       consentPhase.value = 'ready'
       hasActivated.value = true
       promptError.value = null
@@ -394,8 +393,10 @@ export function useWikitabNearby() {
     }
   }
 
+  /** Nearby has no paged API — the section reveals from the in-memory list only. */
   async function loadMore(): Promise<void> {
     loadingMore.value = false
+    hasMore.value = items.value.length > 0 && items.value.length < initialCount
   }
 
   function abort(): void {

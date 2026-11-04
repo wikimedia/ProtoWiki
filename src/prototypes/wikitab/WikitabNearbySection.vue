@@ -13,6 +13,7 @@ import { useSkin } from '@/composables/useSkin'
 import { wikitabCardBindProps } from './data/wikitabCardPresentation'
 import { wikitabCardFeedMenuItems } from './data/wikitabCardMenuItems'
 import WikitabCard from './WikitabCard.vue'
+import WikitabModuleHead from './WikitabModuleHead.vue'
 import type { SaveItemPayload } from './data/savedCardHelpers'
 import {
   WIKITAB_NEARBY_MODULE_SPEC,
@@ -21,24 +22,32 @@ import {
 } from './sections'
 import type { WikitabNearbyConsentPhase } from './useWikitabNearby'
 import { useEqualRowHeights } from './useEqualRowHeights'
+import { useInfiniteScroll } from './useInfiniteScroll'
 import { usePreventHorizontalSwipeNavigation } from './usePreventHorizontalSwipeNavigation'
+import { useRestoreReservedOnScreenClose } from './useRestoreReservedOnScreenClose'
 import { useRevealOnScrollEnd } from './useRevealOnScrollEnd'
+import { wikitabShowMoreDisabled } from './wikitabShowMoreDisabled'
 
 const spec = WIKITAB_NEARBY_MODULE_SPEC
 
-const props = defineProps<{
-  items: WikitabCardData[]
-  pendingByKey?: Map<string, WikitabCardLoading>
-  consentPhase: WikitabNearbyConsentPhase
-  promptError: string | null
-  loading: boolean
-  fillingInitial: boolean
-  loadingMore: boolean
-  hasMore: boolean
-  error: string | null
-  pinned: boolean
-  isCardSaved: (id: string) => boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    items: WikitabCardData[]
+    pendingByKey?: Map<string, WikitabCardLoading>
+    consentPhase: WikitabNearbyConsentPhase
+    promptError: string | null
+    loading: boolean
+    fillingInitial: boolean
+    loadingMore: boolean
+    hasMore: boolean
+    error: string | null
+    pinned: boolean
+    isCardSaved: (id: string) => boolean
+    /** Home feed vs fullscreen module screen (`?screen=`). */
+    variant?: 'home' | 'screen'
+  }>(),
+  { variant: 'home' },
+)
 
 const emit = defineEmits<{
   'toggle-pin': []
@@ -48,13 +57,24 @@ const emit = defineEmits<{
   'toggle-save': [payload: SaveItemPayload]
   'load-more': []
   'request-nearby': []
+  'open-screen': []
+  'close-screen': []
 }>()
+
+const isScreen = computed(() => props.variant === 'screen')
 
 const skin = useSkin()
 const scroller = ref<HTMLElement | null>(null)
 const sentinel = ref<HTMLElement | null>(null)
+const panelRoot = computed(() => scroller.value?.closest('.wikitab-panel') ?? null)
 
 const reserved = ref(spec.initialCount)
+
+useRestoreReservedOnScreenClose(
+  isScreen,
+  reserved,
+  computed(() => props.items.length),
+)
 
 const showConsentPanel = computed(
   () => props.consentPhase === 'prompt' || props.consentPhase === 'locating',
@@ -95,12 +115,12 @@ function shouldClampReserved(): boolean {
 
 const observeScrollEnd = computed(
   () =>
+    !isScreen.value &&
     skin.value === 'mobile' &&
     !showConsentPanel.value &&
     !props.error &&
-    !isEmpty.value &&
-    !isInitialLoading.value &&
-    (bufferedHasMore.value || props.items.length > 0),
+    !props.loadingMore &&
+    bufferedHasMore.value,
 )
 
 useRevealOnScrollEnd({
@@ -112,7 +132,7 @@ useRevealOnScrollEnd({
 
 usePreventHorizontalSwipeNavigation({
   scroller,
-  enabled: computed(() => skin.value === 'mobile'),
+  enabled: computed(() => !isScreen.value && skin.value === 'mobile'),
 })
 
 const rowColumns = computed(() => (skin.value === 'desktop' ? 2 : 1))
@@ -151,7 +171,9 @@ watch(
   () => props.loadingMore,
   (loadingMore, wasLoadingMore) => {
     if (wasLoadingMore && !loadingMore) {
-      reserved.value = props.items.length
+      // Clamp only — never expand past what revealMore already reserved
+      // (otherwise a late fetch after leaving fullscreen would re-show those cards).
+      reserved.value = Math.min(reserved.value, props.items.length)
     }
   },
 )
@@ -192,15 +214,38 @@ watch(
   },
 )
 
-const canShowMore = computed(() => !props.error && !isEmpty.value && !showConsentPanel.value)
-
-const showMoreDisabled = computed(
+/** Nearby fetches its full list in one shot — "more" means more buffered cards to reveal. */
+const canShowMore = computed(
   () =>
-    props.loading ||
-    props.fillingInitial ||
-    isInitialLoading.value ||
-    props.loadingMore,
+    !props.error &&
+    !isEmpty.value &&
+    !showConsentPanel.value &&
+    (bufferedHasMore.value || props.fillingInitial || needsInitialTopUp.value),
 )
+
+const showMoreDisabled = computed(() =>
+  wikitabShowMoreDisabled({
+    itemCount: props.items.length,
+    loading: props.loading,
+    fillingInitial: props.fillingInitial,
+    loadingMore: props.loadingMore,
+  }),
+)
+
+const observeScreenInfinite = computed(
+  () =>
+    isScreen.value &&
+    canShowMore.value &&
+    !showMoreDisabled.value &&
+    bufferedHasMore.value,
+)
+
+useInfiniteScroll({
+  sentinel,
+  root: panelRoot,
+  enabled: observeScreenInfinite,
+  onReach: revealMore,
+})
 
 const consentBusy = computed(() => props.consentPhase === 'locating')
 
@@ -237,14 +282,9 @@ watch(selection, (value) => {
 
 function revealMore(): void {
   if (showMoreDisabled.value) return
-
-  if (bufferedHasMore.value) {
-    reserved.value = Math.min(reserved.value + spec.pageSize, props.items.length)
-    return
-  }
-
-  reserved.value += spec.pageSize
-  emit('load-more')
+  // No server pages for Nearby — never reserve empty skeleton slots past `items`.
+  if (!bufferedHasMore.value) return
+  reserved.value = Math.min(reserved.value + spec.pageSize, props.items.length)
 }
 
 function onRequestNearby(): void {
@@ -255,30 +295,35 @@ function onRequestNearby(): void {
 
 <template>
   <section
+    :id="`wikitab-module-${spec.id}`"
     class="wikitab-nearby-section"
+    :class="{
+      'wikitab-nearby-section--screen': isScreen,
+      'wikitab-panel': isScreen,
+      'wikitab-module-screen': isScreen,
+    }"
     :style="{ '--wikitab-card-height': `${spec.cardHeight}px` }"
   >
-    <div class="wikitab-nearby-section__head">
-      <div class="wikitab-nearby-section__title">
-        <CdxIcon
-          v-if="pinned"
-          class="wikitab-nearby-section__pin"
-          :icon="cdxIconPushPin"
-          icon-label="Pinned to top"
-        />
-        <h2 class="wikitab-nearby-section__heading">{{ spec.heading }}</h2>
-      </div>
-      <CdxMenuButton
-        v-model:selected="selection"
-        class="wikitab-nearby-section__menu"
-        weight="quiet"
-        :menu-items="menuItems"
-        :footer="footerItem"
-        :aria-label="`${spec.heading} options`"
-      >
-        <CdxIcon :icon="cdxIconEllipsis" />
-      </CdxMenuButton>
-    </div>
+    <WikitabModuleHead
+      :title="spec.heading"
+      :pinned="pinned"
+      :variant="isScreen ? 'screen' : 'home'"
+      @open-screen="emit('open-screen')"
+      @close="emit('close-screen')"
+    >
+      <template v-if="!isScreen" #action>
+        <CdxMenuButton
+          v-model:selected="selection"
+          class="wikitab-nearby-section__menu"
+          weight="quiet"
+          :menu-items="menuItems"
+          :footer="footerItem"
+          :aria-label="`${spec.heading} options`"
+        >
+          <CdxIcon :icon="cdxIconEllipsis" />
+        </CdxMenuButton>
+      </template>
+    </WikitabModuleHead>
 
     <div v-if="showConsentPanel" class="wikitab-nearby-section__consent">
       <p v-if="promptError" class="wikitab-nearby-section__consent-error">
@@ -287,6 +332,7 @@ function onRequestNearby(): void {
       <CdxButton
         class="wikitab-nearby-section__consent-button"
         action="progressive"
+        weight="primary"
         :disabled="consentBusy"
         @click="onRequestNearby"
       >
@@ -297,10 +343,6 @@ function onRequestNearby(): void {
     <template v-else>
       <p v-if="error" class="wikitab-nearby-section__error">
         <small>{{ error }}</small>
-      </p>
-
-      <p v-else-if="isEmpty" class="wikitab-nearby-section__empty">
-        <small>Nothing to show right now.</small>
       </p>
 
       <div v-else ref="scroller" class="wikitab-nearby-section__cards">
@@ -328,10 +370,22 @@ function onRequestNearby(): void {
           @hide-article="emit('hide-article', $event)"
           @toggle-save="slot.card && emit('toggle-save', { primitive: 'article', card: slot.card })"
         />
-        <div ref="sentinel" class="wikitab-nearby-section__sentinel" aria-hidden="true" />
+        <div
+          v-if="!isScreen"
+          ref="sentinel"
+          class="wikitab-nearby-section__sentinel"
+          aria-hidden="true"
+        />
       </div>
 
-      <div class="wikitab-nearby-section__more">
+      <div
+        v-if="isScreen"
+        ref="sentinel"
+        class="wikitab-nearby-section__sentinel wikitab-nearby-section__sentinel--screen"
+        aria-hidden="true"
+      />
+
+      <div v-if="!isScreen" class="wikitab-nearby-section__more">
         <CdxButton
           v-if="canShowMore"
           class="wikitab-nearby-section__more-button"
@@ -353,36 +407,6 @@ function onRequestNearby(): void {
   flex-direction: column;
 }
 
-.wikitab-nearby-section__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--spacing-50);
-  margin-bottom: var(--spacing-50);
-}
-
-.wikitab-nearby-section__title {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-25);
-  min-width: 0;
-}
-
-.wikitab-nearby-section__pin {
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-}
-
-.wikitab-nearby-section__heading {
-  margin: 0;
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-large);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-large);
-  color: var(--color-base);
-}
-
 .wikitab-nearby-section__consent {
   display: flex;
   flex-direction: column;
@@ -401,12 +425,16 @@ function onRequestNearby(): void {
   color: var(--color-subtle);
 }
 
-.wikitab-nearby-section__error,
-.wikitab-nearby-section__empty {
+.wikitab-nearby-section__error {
   display: flex;
   align-items: center;
   margin: 0;
   min-height: var(--wikitab-card-height);
+  color: var(--color-subtle);
+}
+
+.wikitab-nearby-section__empty {
+  margin: 0;
   color: var(--color-subtle);
 }
 
@@ -442,12 +470,12 @@ function onRequestNearby(): void {
   min-height: 0;
 }
 
-[data-skin='mobile'] .wikitab-nearby-section__cards {
+[data-skin='mobile'] .wikitab-nearby-section:not(.wikitab-nearby-section--screen) .wikitab-nearby-section__cards {
   display: flex;
   align-items: stretch;
   gap: var(--spacing-100);
   margin-inline: calc(var(--wikitab-page-gutter) * -1);
-  padding-inline: var(--wikitab-page-gutter);
+  padding-inline: var(--wikitab-page-gutter) 0;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
@@ -455,23 +483,41 @@ function onRequestNearby(): void {
   scrollbar-width: none;
 }
 
-[data-skin='mobile'] .wikitab-nearby-section__cards::-webkit-scrollbar {
+[data-skin='mobile'] .wikitab-nearby-section:not(.wikitab-nearby-section--screen) .wikitab-nearby-section__cards::-webkit-scrollbar {
   display: none;
 }
 
-[data-skin='mobile'] .wikitab-nearby-section__card {
+[data-skin='mobile'] .wikitab-nearby-section:not(.wikitab-nearby-section--screen) .wikitab-nearby-section__card {
   flex: 0 0 320px;
   align-self: stretch;
   min-height: var(--wikitab-card-height);
   scroll-snap-align: start;
 }
 
-[data-skin='desktop'] .wikitab-nearby-section__sentinel {
+[data-skin='desktop']
+  .wikitab-nearby-section__sentinel:not(.wikitab-nearby-section__sentinel--screen) {
   display: none;
 }
 
-[data-skin='mobile'] .wikitab-nearby-section__more {
+[data-skin='mobile'] .wikitab-nearby-section:not(.wikitab-nearby-section--screen) .wikitab-nearby-section__more {
   display: none;
+}
+
+[data-skin='mobile'] .wikitab-nearby-section--screen .wikitab-nearby-section__cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: var(--spacing-100);
+}
+
+[data-skin='mobile'] .wikitab-nearby-section--screen .wikitab-nearby-section__card {
+  min-height: 0;
+}
+
+.wikitab-nearby-section__sentinel--screen {
+  flex: none;
+  width: 100%;
+  height: 1px;
 }
 
 .wikitab-nearby-section__card:has(.wikitab-card--has-menu [aria-expanded='true']) {

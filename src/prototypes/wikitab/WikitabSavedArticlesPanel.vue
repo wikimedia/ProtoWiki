@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, toRef, watch } from 'vue'
-import { CdxButton, CdxIcon } from '@wikimedia/codex'
-import { cdxIconClose } from '@wikimedia/codex-icons'
+import { computed, ref, toRef, watch } from 'vue'
 
 import { useSkin } from '@/composables/useSkin'
+import WikitabModuleHead from './WikitabModuleHead.vue'
+import WikitabNothingSavedYet from './WikitabNothingSavedYet.vue'
 import WikitabSavedItemSlot from './WikitabSavedItemSlot.vue'
 import WikitabSavedItemTabs from './WikitabSavedItemTabs.vue'
 import type { WikitabSavedItem } from './data/wikitabConfig'
 import type { WikitabSaveArticleMenuLookup } from './data/savedCardHelpers'
 import { useEqualRowHeights } from './useEqualRowHeights'
+import { useInfiniteScroll } from './useInfiniteScroll'
+import { useWikitabOverlayScrollLock } from './useWikitabOverlayScrollLock'
 import { useWikitabSavedItemTabFilter } from './useWikitabSavedItemTabFilter'
 
 const INITIAL_COUNT = 6
@@ -28,7 +30,9 @@ const emit = defineEmits<{
 }>()
 
 const skin = useSkin()
+const panelRoot = ref<HTMLElement | null>(null)
 const scroller = ref<HTMLElement | null>(null)
+const sentinel = ref<HTMLElement | null>(null)
 const reserved = ref(INITIAL_COUNT)
 
 const savedItems = toRef(props, 'savedItems')
@@ -61,25 +65,19 @@ function revealMore(): void {
   reserved.value = Math.min(filteredItems.value.length, reserved.value + PAGE_SIZE)
 }
 
-function onKeydown(event: KeyboardEvent): void {
-  if (event.key === 'Escape') emit('close')
-}
-
-const SCROLL_LOCK_CLASS = 'wikitab-saved-panel-open'
-
-onMounted(() => {
-  document.documentElement.classList.add(SCROLL_LOCK_CLASS)
-  document.addEventListener('keydown', onKeydown)
+useInfiniteScroll({
+  sentinel,
+  root: panelRoot,
+  enabled: hasMore,
+  onReach: revealMore,
 })
 
-onUnmounted(() => {
-  document.documentElement.classList.remove(SCROLL_LOCK_CLASS)
-  document.removeEventListener('keydown', onKeydown)
-})
+useWikitabOverlayScrollLock('wikitab-saved-panel-open', ref(true))
 </script>
 
 <template>
   <div
+    ref="panelRoot"
     class="wikitab-saved-articles-panel wikitab-panel"
     role="dialog"
     aria-modal="true"
@@ -87,18 +85,7 @@ onUnmounted(() => {
     :style="{ '--wikitab-card-height': `${CARD_HEIGHT}px` }"
   >
     <div class="wikitab-saved-articles-panel__column">
-      <header class="wikitab-saved-articles-panel__head">
-        <h2 class="wikitab-saved-articles-panel__title">Saved</h2>
-        <CdxButton
-          class="wikitab-saved-articles-panel__close"
-          weight="quiet"
-          :icon-only="true"
-          aria-label="Close"
-          @click="emit('close')"
-        >
-          <CdxIcon :icon="cdxIconClose" />
-        </CdxButton>
-      </header>
+      <WikitabModuleHead title="Saved" variant="screen" @close="emit('close')" />
 
       <WikitabSavedItemTabs
         v-if="showTabs && savedItems.length > 0"
@@ -106,9 +93,7 @@ onUnmounted(() => {
         :tabs="tabs"
       />
 
-      <p v-if="savedItems.length === 0" class="wikitab-saved-articles-panel__empty">
-        Nothing saved yet.
-      </p>
+      <WikitabNothingSavedYet v-if="savedItems.length === 0" />
 
       <template v-else>
         <div ref="scroller" class="wikitab-saved-articles-panel__cards">
@@ -126,17 +111,11 @@ onUnmounted(() => {
           />
         </div>
 
-        <div class="wikitab-saved-articles-panel__more">
-          <CdxButton
-            v-if="hasMore"
-            class="wikitab-saved-articles-panel__more-button"
-            action="progressive"
-            weight="quiet"
-            @click="revealMore"
-          >
-            Show more
-          </CdxButton>
-        </div>
+        <div
+          ref="sentinel"
+          class="wikitab-saved-articles-panel__sentinel"
+          aria-hidden="true"
+        />
       </template>
     </div>
   </div>
@@ -151,54 +130,9 @@ onUnmounted(() => {
 .wikitab-saved-articles-panel__column {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-100);
+  gap: 0;
   width: 100%;
-  max-width: 640px;
   margin-inline: auto;
-}
-
-.wikitab-saved-articles-panel__head {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-50);
-  width: 100%;
-  padding-top: var(--spacing-200);
-}
-
-.wikitab-saved-articles-panel__head:has(+ .wikitab-saved-item-tabs) {
-  margin-bottom: calc(-1 * (var(--spacing-100) - var(--spacing-25)));
-}
-
-/* Column gap stacks on tabs' margin-bottom; home Saved has no flex gap there. */
-.wikitab-saved-articles-panel__column :deep(.wikitab-saved-item-tabs) {
-  margin-bottom: calc(var(--spacing-50) - var(--spacing-100));
-}
-
-.wikitab-saved-articles-panel__title {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-large);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-large);
-  color: var(--wikitab-theme-fg, var(--color-base));
-}
-
-.wikitab-saved-articles-panel__close {
-  flex-shrink: 0;
-  width: var(--min-size-interactive-touch);
-  min-width: var(--min-size-interactive-touch);
-  height: var(--min-size-interactive-touch);
-  min-height: var(--min-size-interactive-touch);
-}
-
-.wikitab-saved-articles-panel__empty {
-  margin: 0;
-  padding-bottom: var(--spacing-400);
-  font-size: var(--font-size-medium);
-  line-height: var(--line-height-small);
-  color: var(--color-subtle);
 }
 
 .wikitab-saved-articles-panel__cards {
@@ -235,11 +169,10 @@ onUnmounted(() => {
   z-index: 3;
 }
 
-.wikitab-saved-articles-panel__more {
-  display: flex;
-  justify-content: center;
-  min-height: var(--line-height-small);
-  padding-bottom: var(--spacing-400);
+.wikitab-saved-articles-panel__sentinel {
+  width: 100%;
+  height: 1px;
+  margin-bottom: var(--spacing-400);
 }
 
 @media (max-width: 767px) {
@@ -251,15 +184,15 @@ onUnmounted(() => {
     padding-top: var(--wikitab-chrome-inset);
     padding-inline: var(--spacing-100);
   }
-
-  .wikitab-saved-articles-panel__head {
-    padding-top: 0;
-  }
 }
 
 @media (min-width: 768px) {
   [data-skin='desktop'] .wikitab-saved-articles-panel {
     --wikitab-page-gutter: var(--spacing-400);
+  }
+
+  [data-skin='desktop'] .wikitab-saved-articles-panel__column {
+    max-width: 640px;
   }
 }
 </style>

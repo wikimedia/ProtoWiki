@@ -67,8 +67,8 @@ export type WikitabCardComponentData = WikitabCardData
 export type WikitabFeaturedSpotlightComponentData = WikitabFeaturedSpotlight
 
 function formatPageViews(views: number): string {
-  if (views >= 1_000_000) return `${(views / 1_000_000).toFixed(1)}M`
-  if (views >= 1_000) return `${(views / 1_000).toFixed(1)}K`
+  if (views >= 1_000_000) return `${Math.round(views / 1_000_000)}M`
+  if (views >= 1_000) return `${Math.round(views / 1_000)}K`
   return String(views)
 }
 

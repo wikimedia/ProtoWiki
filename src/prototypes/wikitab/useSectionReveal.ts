@@ -36,7 +36,7 @@ function itemsUnchanged(
  * Thumbnail decode is handled per card by `WikitabCard`.
  */
 export function useSectionReveal(
-  spec: Pick<WikitabSectionSpec, 'id' | 'initialCount' | 'pageSize'>,
+  spec: Pick<WikitabSectionSpec, 'initialCount' | 'pageSize'> & { id: string },
   items: Ref<WikitabCardData[]>,
   /** When true and `items` is still empty, reserve initial skeleton slots (feed + home modules). */
   loading?: Ref<boolean>,
@@ -64,7 +64,9 @@ export function useSectionReveal(
     for (const card of page) pendingThumbnailKeys.add(card.key)
 
     try {
-      const persistSectionId = THUMBNAIL_PERSIST_SECTIONS.has(spec.id)
+      const persistSectionId = THUMBNAIL_PERSIST_SECTIONS.has(
+        spec.id as WikitabSectionId,
+      )
         ? (spec.id as 'dyk' | 'news' | 'otd')
         : undefined
 

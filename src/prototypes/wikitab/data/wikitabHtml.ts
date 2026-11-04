@@ -4,6 +4,13 @@ export function articleUrl(title: string): string {
   return wikiArticleUrl(EN_WIKI_HOST, title)
 }
 
+/** Read-mode URL for an article section (MediaWiki fragment: spaces → `_`). */
+export function articleSectionUrl(pageUrl: string, section: string): string {
+  const base = pageUrl.replace(/#.*$/, '')
+  const fragment = encodeURIComponent(section.trim().replace(/ /g, '_'))
+  return fragment ? `${base}#${fragment}` : base
+}
+
 /** Page title from a `/wiki/Title` URL (fragment ignored). */
 export function articleTitleFromWikiUrl(url: string): string | undefined {
   try {

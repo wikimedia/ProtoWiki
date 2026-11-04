@@ -38,12 +38,11 @@ const PRODUCTION_CONTEXT: Record<string, string> = {
   'primitive-article': 'Trending, Birthdays, Daily reads, Nearby, Featured TFA / TFL',
   'primitive-snippet': 'Did you know, In the news, On this day',
   'primitive-discussion': 'Active discussions',
-  'primitive-suggestion': 'Help wanted (home)',
+  'primitive-suggestion': 'Suggested edits (home), Search Contribute tab',
   'primitive-image': 'Featured TFP / POTD',
   'primitive-word': 'Featured word of the day',
   'primitive-quote': 'Featured quote of the day',
   'primitive-edit': 'Search Activity, Recent edits',
-  'search-contribute': 'Search Contribute tab',
   'search-result': 'Search Articles tab',
   'search-image': 'Search Images tab',
   'search-loading': 'Search skeleton',
@@ -130,11 +129,15 @@ function saveArticleMenuForEntry(
   return true
 }
 
-const SEED_ARTICLE_CATALOG_EXCLUDE = new Set(['search-image', 'search-loading'])
+const SEED_ARTICLE_CATALOG_EXCLUDE = new Set([
+  'search-contribute', // same card as Primitive — Suggestion
+  'search-image',
+  'search-loading',
+])
 
 /** Seed-articles tab titles — shorter than full catalog labels. */
 function seedArticleRowLabel(entry: WikitabCardCatalogEntry): string {
-  if (entry.id === 'search-contribute') return 'Search'
+  if (entry.id === 'search-result') return 'Search'
   if (entry.label.startsWith('Primitive — ')) {
     return entry.label.slice('Primitive — '.length)
   }

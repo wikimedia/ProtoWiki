@@ -18,6 +18,8 @@ import WikitabNearbySection from './WikitabNearbySection.vue'
 import WikitabSuggestedEditsSection from './WikitabSuggestedEditsSection.vue'
 import WikitabReviewChangesSection from './WikitabReviewChangesSection.vue'
 import WikitabReviewChangesConfigurePanel from './WikitabReviewChangesConfigurePanel.vue'
+import WikitabActiveDiscussionsSection from './WikitabActiveDiscussionsSection.vue'
+import WikitabActiveDiscussionsConfigurePanel from './WikitabActiveDiscussionsConfigurePanel.vue'
 import WikitabSavedSection from './WikitabSavedSection.vue'
 import WikitabSearch from './WikitabSearch.vue'
 import WikitabSearchPage from './WikitabSearchPage.vue'
@@ -25,8 +27,8 @@ import WikitabSection from './WikitabSection.vue'
 import type { WikitabSearchImage } from './data/fetchWikitabSearchImages'
 import type { WikitabSearchArticle } from './data/fetchWikitabSearchArticles'
 import {
-  isWikitabSavedGatedModule,
   WIKITAB_DAILY_READS_MODULE_ID,
+  WIKITAB_DISCUSSIONS_MODULE_ID,
   WIKITAB_FEATURED_MODULE_ID,
   WIKITAB_NEARBY_MODULE_ID,
   WIKITAB_SAVED_MODULE_ID,
@@ -62,6 +64,8 @@ import { useWikitabNearby } from './useWikitabNearby'
 import { useWikitabSuggestedEdits } from './useWikitabSuggestedEdits'
 import { useWikitabReviewChanges } from './useWikitabReviewChanges'
 import { useWikitabReviewChangesSettings } from './useWikitabReviewChangesSettings'
+import { useWikitabActiveDiscussions } from './useWikitabActiveDiscussions'
+import { useWikitabActiveDiscussionsSettings } from './useWikitabActiveDiscussionsSettings'
 import { useWikitabPinned } from './useWikitabPinned'
 import { buildEffectiveHomeOrder, useWikitabModuleOrder } from './useWikitabModuleOrder'
 import {
@@ -70,6 +74,7 @@ import {
   type WikitabSavedItem,
 } from './data/wikitabConfig'
 import { wikitabCardDescriptionText } from './data/wikitabCardDescription'
+import { buildDailyReadsSavedFingerprint } from './data/dailyReadsCache'
 import { uniqueArticleSeedsFromSavedItems, type SaveItemPayload } from './data/savedCardHelpers'
 import { savedItemSeedArticle } from './data/wikitabSavedItems'
 import type { WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
@@ -83,6 +88,8 @@ import {
 } from './useWikitabSavedArticles'
 import { articleUrl } from './data/wikitabHtml'
 import { bumpWikitabSearchMountKey, useWikitabSearchMountKey } from './useWikitabSearchMount'
+import { useWikitabOverlayNavigation } from './useWikitabOverlayNavigation'
+import { useWikitabOverlayScrollLock } from './useWikitabOverlayScrollLock'
 import { useWikitabSearchTab } from './useWikitabSearchTab'
 import { cdxIconLogoWikipedia } from '@wikimedia/codex-icons'
 
@@ -111,6 +118,7 @@ const CUSTOM_MODULE_IDS = new Set<WikitabModuleId>([
   WIKITAB_NEARBY_MODULE_ID,
   WIKITAB_DAILY_READS_MODULE_ID,
   WIKITAB_SUGGESTED_EDITS_MODULE_ID,
+  WIKITAB_DISCUSSIONS_MODULE_ID,
   WIKITAB_REVIEW_CHANGES_MODULE_ID,
 ])
 
@@ -162,6 +170,7 @@ const {
   loadingMore: dailyReadsLoadingMore,
   hasMore: dailyReadsHasMore,
   error: dailyReadsError,
+  fetchedSavedFingerprint: dailyReadsFetchedSavedFingerprint,
   refresh: refreshDailyReads,
   loadMore: loadMoreDailyReads,
   abort: abortDailyReads,
@@ -198,6 +207,8 @@ const {
   loadingMore: suggestedEditsLoadingMore,
   hasMore: suggestedEditsHasMore,
   error: suggestedEditsError,
+  isLoaded: suggestedEditsLoaded,
+  fetchedSavedFingerprint: suggestedEditsFetchedSavedFingerprint,
   refresh: refreshSuggestedEdits,
   loadMore: loadMoreSuggestedEdits,
   abort: abortSuggestedEdits,
@@ -211,6 +222,7 @@ const {
   hasMore: reviewChangesHasMore,
   error: reviewChangesError,
   isLoaded: reviewChangesLoaded,
+  fetchedSavedFingerprint: reviewChangesFetchedSavedFingerprint,
   refresh: refreshReviewChanges,
   loadMore: loadMoreReviewChanges,
   dismissActivity: dismissReviewChange,
@@ -224,20 +236,35 @@ const {
   setShowRecentRiskyEdits: setReviewChangesShowRecentRiskyEdits,
 } = useWikitabReviewChangesSettings()
 
+const {
+  noticeboardItems: activeDiscussionsNoticeboardItems,
+  articleItems: activeDiscussionsArticleItems,
+  loading: activeDiscussionsLoading,
+  loadingMore: activeDiscussionsLoadingMore,
+  hasMore: activeDiscussionsHasMore,
+  error: activeDiscussionsError,
+  isLoaded: activeDiscussionsLoaded,
+  fetchedSavedFingerprint: activeDiscussionsFetchedSavedFingerprint,
+  refresh: refreshActiveDiscussions,
+  loadMore: loadMoreActiveDiscussions,
+  abort: abortActiveDiscussions,
+} = useWikitabActiveDiscussions()
+
+const {
+  showNoticeboards: discussionsShowNoticeboards,
+  showSavedTalk: discussionsShowSavedTalk,
+  setShowNoticeboards: setDiscussionsShowNoticeboards,
+  setShowSavedTalk: setDiscussionsShowSavedTalk,
+} = useWikitabActiveDiscussionsSettings()
+
 /** Skeleton before Daily reads refresh starts (saved snapshot ready, load queued). */
 const dailyReadsPending = ref(false)
-/** Skeleton before Help wanted refresh starts (saved snapshot ready, load queued). */
+/** Skeleton before Suggested edits refresh starts (saved snapshot ready, load queued). */
 const suggestedEditsPending = ref(false)
 /** Skeleton before Recent edits refresh starts (saved snapshot ready, load queued). */
 const reviewChangesPending = ref(false)
-
-const dailyReadsPendingOnHome = computed(
-  () => dailyReadsPending.value || savedModuleLoading.value,
-)
-
-const suggestedEditsPendingOnHome = computed(
-  () => suggestedEditsPending.value || savedModuleLoading.value,
-)
+/** Skeleton before Active discussions refresh starts (saved snapshot ready, load queued). */
+const activeDiscussionsPending = ref(false)
 
 /** Home Saved module cards — shown from the snapshot at once; enrich patches them in place. */
 const savedModuleItems = ref<WikitabSavedItem[]>([])
@@ -299,22 +326,12 @@ function isFeedSectionId(id: WikitabModuleId): id is WikitabSectionId {
   return FEED_SECTION_IDS.has(id as WikitabSectionId)
 }
 
-/** Load order from pin state + configured order — skips hidden and saved-gated modules. */
+/** Load order from pin state + configured order — skips hidden modules only. */
 function computeHomeModuleLoadOrder(): WikitabModuleId[] {
-  const config = loadWikitabConfig()
-  const hasSaved = config.savedItems.length > 0
-  const hasSeedArticles = uniqueArticleSeedsFromSavedItems(config.savedItems).length > 0
   const order: WikitabModuleId[] = []
 
   for (const id of buildEffectiveHomeOrder(pinnedIds.value, resolvedOrder.value)) {
     if (isHidden(id)) continue
-    if (isWikitabSavedGatedModule(id) && !hasSaved) continue
-    if (
-      (id === WIKITAB_DAILY_READS_MODULE_ID || id === WIKITAB_SUGGESTED_EDITS_MODULE_ID) &&
-      !hasSeedArticles
-    ) {
-      continue
-    }
     order.push(id)
   }
 
@@ -327,13 +344,23 @@ function isSavedAdjacentModuleId(id: WikitabModuleId): boolean {
   return (
     id === WIKITAB_DAILY_READS_MODULE_ID ||
     id === WIKITAB_SUGGESTED_EDITS_MODULE_ID ||
+    id === WIKITAB_DISCUSSIONS_MODULE_ID ||
     id === WIKITAB_REVIEW_CHANGES_MODULE_ID
   )
 }
 
+function configHasSavedSeedArticles(): boolean {
+  return uniqueArticleSeedsFromSavedItems(loadWikitabConfig().savedItems).length > 0
+}
+
 function moduleNeedsSavedSnapshot(moduleId: WikitabModuleId): boolean {
-  if (moduleId === WIKITAB_DAILY_READS_MODULE_ID) return true
-  if (moduleId === WIKITAB_SUGGESTED_EDITS_MODULE_ID) return true
+  // Daily reads / Suggested edits only need the snapshot when there are seed articles to fetch.
+  if (moduleId === WIKITAB_DAILY_READS_MODULE_ID || moduleId === WIKITAB_SUGGESTED_EDITS_MODULE_ID) {
+    return configHasSavedSeedArticles()
+  }
+  // Active discussions seeds from config saves directly — it does not need the
+  // enriched Saved-module snapshot (that wait was flashing skeletons on every load).
+  if (moduleId === WIKITAB_DISCUSSIONS_MODULE_ID) return false
   if (moduleId === WIKITAB_REVIEW_CHANGES_MODULE_ID) {
     return (
       reviewChangesShowSavedEdits.value &&
@@ -346,28 +373,44 @@ function moduleNeedsSavedSnapshot(moduleId: WikitabModuleId): boolean {
 async function refreshSavedAdjacentModules(
   batch: readonly WikitabModuleId[],
 ): Promise<void> {
+  const hasSeeds = configHasSavedSeedArticles()
   const runsDailyReads = batch.includes(WIKITAB_DAILY_READS_MODULE_ID)
   const runsSuggestedEdits = batch.includes(WIKITAB_SUGGESTED_EDITS_MODULE_ID)
+  const runsDiscussions = batch.includes(WIKITAB_DISCUSSIONS_MODULE_ID)
   const runsReviewChanges = batch.includes(WIKITAB_REVIEW_CHANGES_MODULE_ID)
-  if (runsDailyReads) dailyReadsPending.value = true
-  if (runsSuggestedEdits) suggestedEditsPending.value = true
+  // No seed articles → clear without a pending/skeleton flash (placeholder shows immediately).
+  if (runsDailyReads && hasSeeds) dailyReadsPending.value = true
+  if (runsSuggestedEdits && hasSeeds) suggestedEditsPending.value = true
+  if (
+    runsDiscussions &&
+    !activeDiscussionsLoaded.value &&
+    activeDiscussionsNoticeboardItems.value.length === 0 &&
+    activeDiscussionsArticleItems.value.length === 0
+  ) {
+    activeDiscussionsPending.value = true
+  }
   if (runsReviewChanges) reviewChangesPending.value = true
 
   try {
     await Promise.all(
       batch.map((moduleId) => {
         if (moduleId === WIKITAB_DAILY_READS_MODULE_ID) {
-          return refreshDailyReads(savedModuleItems.value)
+          return refreshDailyReads(hasSeeds ? savedModuleItems.value : [])
         }
         if (moduleId === WIKITAB_SUGGESTED_EDITS_MODULE_ID) {
-          return refreshSuggestedEdits(savedModuleItems.value)
+          return refreshSuggestedEdits(hasSeeds ? savedModuleItems.value : [])
+        }
+        if (moduleId === WIKITAB_DISCUSSIONS_MODULE_ID) {
+          // Seed from authoritative saves — no need to wait for Saved-module enrich.
+          return refreshActiveDiscussions(savedItems.value)
         }
         return refreshReviewChanges(savedModuleItems.value)
       }),
     )
   } finally {
-    if (runsDailyReads) dailyReadsPending.value = false
-    if (runsSuggestedEdits) suggestedEditsPending.value = false
+    if (runsDailyReads && hasSeeds) dailyReadsPending.value = false
+    if (runsSuggestedEdits && hasSeeds) suggestedEditsPending.value = false
+    if (runsDiscussions) activeDiscussionsPending.value = false
     if (runsReviewChanges) reviewChangesPending.value = false
   }
 }
@@ -377,8 +420,13 @@ async function refreshHomeModulesInOrder(): Promise<void> {
   if (isSearchMode.value) return
 
   const generation = ++homeLoadGeneration
-  dailyReadsPending.value = false
-  suggestedEditsPending.value = false
+  // Keep seed-dependent modules in a pending/skeleton state from the start of
+  // the home load — otherwise they flash the "save some articles" placeholder
+  // while earlier modules (Featured, etc.) are still loading.
+  const hasSeedsAtLoadStart = configHasSavedSeedArticles()
+  dailyReadsPending.value = showDailyReadsModule.value && hasSeedsAtLoadStart
+  suggestedEditsPending.value = showSuggestedEditsModule.value && hasSeedsAtLoadStart
+  activeDiscussionsPending.value = false
   reviewChangesPending.value = false
   prepareForOrderedLoad()
 
@@ -394,6 +442,14 @@ async function refreshHomeModulesInOrder(): Promise<void> {
     await refreshSavedModule()
     if (generation !== homeLoadGeneration) return
     savedModuleRefreshed = true
+  }
+
+  // Active discussions only needs config seeds (not Saved-module enrich). Kick it
+  // off immediately so a cache hit paints before earlier modules finish loading.
+  let discussionsRefreshedEarly = false
+  if (order.includes(WIKITAB_DISCUSSIONS_MODULE_ID)) {
+    discussionsRefreshedEarly = true
+    void refreshActiveDiscussions(savedItems.value)
   }
 
   const savedIndex = order.indexOf(WIKITAB_SAVED_MODULE_ID)
@@ -429,12 +485,18 @@ async function refreshHomeModulesInOrder(): Promise<void> {
     if (isSavedAdjacentModuleId(id)) {
       const batch: WikitabModuleId[] = []
       while (index < order.length && isSavedAdjacentModuleId(order[index])) {
-        batch.push(order[index])
+        const nextId = order[index]
+        // Already started at the top of this load — don't refresh twice.
+        if (discussionsRefreshedEarly && nextId === WIKITAB_DISCUSSIONS_MODULE_ID) {
+          index++
+          continue
+        }
+        batch.push(nextId)
         index++
       }
       index--
 
-      await refreshSavedAdjacentModules(batch)
+      if (batch.length) await refreshSavedAdjacentModules(batch)
       continue
     }
 
@@ -459,6 +521,7 @@ async function refreshHomeModule(moduleId: WikitabModuleId): Promise<void> {
   }
 
   if (moduleId === WIKITAB_DAILY_READS_MODULE_ID) {
+    await refreshSavedModule()
     await refreshDailyReads(savedModuleItems.value, { force: true })
     return
   }
@@ -471,6 +534,7 @@ async function refreshHomeModule(moduleId: WikitabModuleId): Promise<void> {
   if (moduleId === WIKITAB_SUGGESTED_EDITS_MODULE_ID) {
     suggestedEditsPending.value = true
     try {
+      await refreshSavedModule()
       await refreshSuggestedEdits(savedModuleItems.value, { force: true })
     } finally {
       suggestedEditsPending.value = false
@@ -478,9 +542,20 @@ async function refreshHomeModule(moduleId: WikitabModuleId): Promise<void> {
     return
   }
 
+  if (moduleId === WIKITAB_DISCUSSIONS_MODULE_ID) {
+    activeDiscussionsPending.value = true
+    try {
+      await refreshActiveDiscussions(savedItems.value, { force: true })
+    } finally {
+      activeDiscussionsPending.value = false
+    }
+    return
+  }
+
   if (moduleId === WIKITAB_REVIEW_CHANGES_MODULE_ID) {
     reviewChangesPending.value = true
     try {
+      await refreshSavedModule()
       await refreshReviewChanges(savedModuleItems.value, { force: true })
     } finally {
       reviewChangesPending.value = false
@@ -497,40 +572,100 @@ const { potd, potdImageUrl } = useWikitabPotdBackground()
 const { colorThemeId, themeStyle, setColorTheme } = useWikitabColorTheme(potdImageUrl)
 const { activeTab: searchTab } = useWikitabSearchTab()
 
-const colorPickerOpen = ref(false)
-const configureOpen = ref(false)
-const reviewChangesConfigureOpen = ref(false)
-const savedPanelOpen = ref(false)
+const {
+  moduleScreen,
+  colorPickerOpen,
+  configureOpen,
+  reviewChangesConfigureOpen,
+  activeDiscussionsConfigureOpen,
+  savedPanelOpen,
+  openColorPicker,
+  openConfigure,
+  openReviewChangesConfigure,
+  openActiveDiscussionsConfigure,
+  openSavedPanel: openSavedPanelRoute,
+  openModuleScreen,
+  closeColorPicker: closeColorPickerRoute,
+  closeConfigure: closeConfigureRoute,
+  closeReviewChangesConfigure,
+  closeActiveDiscussionsConfigure,
+  closeSavedPanel: closeSavedPanelRoute,
+  closeModuleScreen: closeModuleScreenRoute,
+} = useWikitabOverlayNavigation()
+
 const colorThemeButton = ref<InstanceType<typeof WikitabColorThemeButton> | null>(null)
 const configureButton = ref<InstanceType<typeof WikitabConfigureButton> | null>(null)
 const savedArticlesButton = ref<InstanceType<typeof WikitabSavedArticlesButton> | null>(null)
 
-async function openColorPicker(): Promise<void> {
-  colorPickerOpen.value = true
+const REVIEW_CHANGES_MODULE_ANCHOR = `wikitab-module-${WIKITAB_REVIEW_CHANGES_MODULE_ID}`
+const DISCUSSIONS_MODULE_ANCHOR = `wikitab-module-${WIKITAB_DISCUSSIONS_MODULE_ID}`
+
+/** Nudge above the module anchor after closing its settings (Codex spacing-100). */
+const MODULE_SETTINGS_CLOSE_SCROLL_OFFSET_PX = 16
+
+function scrollToModuleAfterSettingsClose(anchorId: string): void {
+  const el = document.getElementById(anchorId)
+  if (!el) return
+  // Instant jump — `instant` where supported, else `auto` (no smooth animation).
+  el.scrollIntoView({ behavior: 'instant', block: 'start' })
+  window.scrollBy({
+    top: -MODULE_SETTINGS_CLOSE_SCROLL_OFFSET_PX,
+    left: 0,
+    behavior: 'instant',
+  })
+}
+
+/**
+ * After closing a module fullscreen, scroll so the home module title sits at the
+ * same viewport Y as the fullscreen title did (captured while the screen chrome
+ * is still mounted — call from a pre-flush watch).
+ *
+ * Unlock restores the pre-open `scrollY` in a post flush (after the home module
+ * re-enters document flow). We wait for that + a frame before measuring.
+ */
+function scrollHomeTitleToMatchFullscreenTitle(moduleId: WikitabModuleId): void {
+  const fullscreenTitle =
+    document.querySelector<HTMLElement>(
+      '.wikitab-module-head--screen .wikitab-module-head__title',
+    )
+  const targetTop = fullscreenTitle?.getBoundingClientRect().top
+  // If the panel was scrolled and the title left the viewport (Escape / Back),
+  // fall back to the settings-close snap.
+  const targetInView =
+    targetTop != null && targetTop >= 0 && targetTop < window.innerHeight
+
+  void nextTick(() => {
+    requestAnimationFrame(() => {
+      const moduleEl = document.getElementById(`wikitab-module-${moduleId}`)
+      if (!moduleEl) return
+
+      const homeTitle = moduleEl.querySelector<HTMLElement>('.wikitab-module-head__title')
+      if (!homeTitle) {
+        scrollToModuleAfterSettingsClose(`wikitab-module-${moduleId}`)
+        return
+      }
+
+      const desiredTop =
+        targetInView && targetTop != null
+          ? targetTop
+          : MODULE_SETTINGS_CLOSE_SCROLL_OFFSET_PX
+      const delta = homeTitle.getBoundingClientRect().top - desiredTop
+      if (Math.abs(delta) < 1) return
+      window.scrollBy({ top: delta, left: 0, behavior: 'instant' })
+    })
+  })
 }
 
 async function closeColorPicker(): Promise<void> {
-  colorPickerOpen.value = false
+  closeColorPickerRoute()
   await nextTick()
   colorThemeButton.value?.focusPalette()
 }
 
-async function openConfigure(): Promise<void> {
-  configureOpen.value = true
-}
-
 async function closeConfigure(): Promise<void> {
-  configureOpen.value = false
+  closeConfigureRoute()
   await nextTick()
   configureButton.value?.focusButton()
-}
-
-function openReviewChangesConfigure(): void {
-  reviewChangesConfigureOpen.value = true
-}
-
-async function closeReviewChangesConfigure(): Promise<void> {
-  reviewChangesConfigureOpen.value = false
 }
 
 async function onReviewChangesShowSavedEdits(value: boolean): Promise<void> {
@@ -553,6 +688,48 @@ async function onReviewChangesShowRecentRiskyEdits(value: boolean): Promise<void
   }
 }
 
+async function onReviewChangesEnableSources(): Promise<void> {
+  setReviewChangesShowSavedEdits(true)
+  setReviewChangesShowRecentRiskyEdits(true)
+  reviewChangesPending.value = true
+  try {
+    await refreshReviewChanges(savedModuleItems.value, { force: true })
+  } finally {
+    reviewChangesPending.value = false
+  }
+}
+
+async function onDiscussionsShowNoticeboards(value: boolean): Promise<void> {
+  setDiscussionsShowNoticeboards(value)
+  activeDiscussionsPending.value = true
+  try {
+    await refreshActiveDiscussions(savedItems.value, { force: true })
+  } finally {
+    activeDiscussionsPending.value = false
+  }
+}
+
+async function onDiscussionsShowSavedTalk(value: boolean): Promise<void> {
+  setDiscussionsShowSavedTalk(value)
+  activeDiscussionsPending.value = true
+  try {
+    await refreshActiveDiscussions(savedItems.value, { force: true })
+  } finally {
+    activeDiscussionsPending.value = false
+  }
+}
+
+async function onDiscussionsEnableSources(): Promise<void> {
+  setDiscussionsShowNoticeboards(true)
+  setDiscussionsShowSavedTalk(true)
+  activeDiscussionsPending.value = true
+  try {
+    await refreshActiveDiscussions(savedItems.value, { force: true })
+  } finally {
+    activeDiscussionsPending.value = false
+  }
+}
+
 function resetModuleConfigure(): void {
   resetWikitabModuleConfigure()
   reloadModuleOrder()
@@ -561,9 +738,31 @@ function resetModuleConfigure(): void {
   void refreshHomeModulesInOrder()
 }
 
-async function openSavedPanel(): Promise<void> {
-  savedPanelOpen.value = true
+/**
+ * Saved fullscreen can open from the chrome button or the home module title.
+ * Only title opens should scroll the home Saved heading into place on close.
+ */
+const scrollToSavedModuleOnClose = ref(false)
 
+function openSavedPanel(): void {
+  scrollToSavedModuleOnClose.value = false
+  openSavedPanelRoute()
+}
+
+function openModuleFromTitle(id: WikitabModuleId): void {
+  scrollToSavedModuleOnClose.value = id === WIKITAB_SAVED_MODULE_ID
+  openModuleScreen(id)
+}
+
+async function closeModuleScreen(): Promise<void> {
+  if (moduleScreen.value === WIKITAB_SAVED_MODULE_ID) {
+    await closeSavedPanel()
+    return
+  }
+  closeModuleScreenRoute()
+}
+
+async function enrichSavedPanelItems(): Promise<void> {
   const snapshot = snapshotSavedModuleItems()
   if (!snapshot.length) return
 
@@ -579,7 +778,7 @@ async function openSavedPanel(): Promise<void> {
 }
 
 async function closeSavedPanel(): Promise<void> {
-  savedPanelOpen.value = false
+  closeSavedPanelRoute()
   await nextTick()
   savedArticlesButton.value?.focusButton()
 }
@@ -672,7 +871,38 @@ const overlayOpen = computed(
     colorPickerOpen.value ||
     configureOpen.value ||
     reviewChangesConfigureOpen.value ||
+    activeDiscussionsConfigureOpen.value ||
+    moduleScreen.value !== null,
+)
+
+/**
+ * Hide the home feed with `v-show` for chrome overlays / Saved.
+ * Non-saved module screens keep the feed mounted and promote the home module
+ * instance in place (`variant="screen"` + `.wikitab-panel`) so cards don't remount.
+ */
+const hideFeedForOverlay = computed(
+  () =>
+    colorPickerOpen.value ||
+    configureOpen.value ||
+    reviewChangesConfigureOpen.value ||
+    activeDiscussionsConfigureOpen.value ||
     savedPanelOpen.value,
+)
+
+/** Feed section payload for a non-saved module screen (works even when the module is hidden on home). */
+const moduleScreenFeedSection = computed(() => {
+  const id = moduleScreen.value
+  if (!id || !isFeedSectionId(id)) return null
+  const section = sections.value.find((entry) => entry.spec.id === id)
+  if (!section) return null
+  return {
+    ...section,
+    items: filterCards(section.items),
+  }
+})
+
+const showNonSavedModuleScreen = computed(
+  () => moduleScreen.value !== null && moduleScreen.value !== WIKITAB_SAVED_MODULE_ID,
 )
 
 const showConfigureButton = computed(() => !overlayOpen.value)
@@ -696,6 +926,13 @@ const potdAttributionFocus = computed(
   () => potdAttributionOpen.value && showPotdBackground.value,
 )
 
+const moduleScreenPanelActive = computed(
+  () => showNonSavedModuleScreen.value && !potdAttributionFocus.value,
+)
+
+/** Scroll-lock while a non-saved module is fullscreen (home-promoted or hidden fallback). */
+useWikitabOverlayScrollLock('wikitab-module-screen-open', moduleScreenPanelActive)
+
 const visibleSections = computed(() =>
   orderSections(sections.value, resolvedOrder.value)
     .filter((section) => !isHidden(section.spec.id))
@@ -705,11 +942,8 @@ const visibleSections = computed(() =>
     })),
 )
 
-const showSavedModule = computed(
-  () =>
-    !isHidden(WIKITAB_SAVED_MODULE_ID) &&
-    (savedModuleLoading.value || savedModuleItems.value.length > 0),
-)
+/** Visible whenever enabled in Modules settings — seed empty copy is "Nothing saved yet." */
+const showSavedModule = computed(() => !isHidden(WIKITAB_SAVED_MODULE_ID))
 
 const showFeaturedModule = computed(
   () =>
@@ -720,7 +954,9 @@ const showFeaturedModule = computed(
       featuredLoaded.value),
 )
 
-const visibleFeaturedItems = computed(() => filterCards(featuredItems.value))
+const visibleFeaturedItems = computed(
+  () => filterCards(featuredItems.value) as WikitabFeaturedSpotlight[],
+)
 
 const visibleDailyReadsItems = computed(() => filterCards(dailyReadsItems.value))
 
@@ -736,6 +972,23 @@ const hasSavedSeedArticles = computed(
   () => uniqueArticleSeedsFromSavedItems(savedItems.value).length > 0,
 )
 
+const dailyReadsPendingOnHome = computed(() => {
+  // No article seeds → show the save-prompt immediately (no skeleton wait).
+  if (!hasSavedSeedArticles.value) return false
+  return dailyReadsPending.value || savedModuleLoading.value
+})
+
+const suggestedEditsPendingOnHome = computed(() => {
+  // No article seeds → show the save-prompt immediately (no skeleton wait).
+  if (!hasSavedSeedArticles.value) return false
+  return (
+    suggestedEditsPending.value ||
+    savedModuleLoading.value ||
+    // Cover the gap before this module's refresh starts (home loads top-down).
+    (!suggestedEditsLoaded.value && suggestedEditsItems.value.length === 0)
+  )
+})
+
 const reviewChangesPendingOnHome = computed(
   () =>
     reviewChangesPending.value ||
@@ -744,34 +997,81 @@ const reviewChangesPendingOnHome = computed(
       savedModuleLoading.value),
 )
 
-const showDailyReadsModule = computed(
+const hasActiveDiscussionCards = computed(
   () =>
-    !isHidden(WIKITAB_DAILY_READS_MODULE_ID) &&
-    hasSavedSeedArticles.value &&
-    (dailyReadsPendingOnHome.value ||
-      dailyReadsLoading.value ||
-      dailyReadsFillingInitial.value ||
-      visibleDailyReadsItems.value.length > 0),
+    activeDiscussionsNoticeboardItems.value.length > 0 ||
+    activeDiscussionsArticleItems.value.length > 0,
 )
+
+/** Pending only when we have nothing to paint yet — never flash over cached cards. */
+const activeDiscussionsPendingOnHome = computed(() => {
+  if (hasActiveDiscussionCards.value) return false
+  return activeDiscussionsPending.value
+})
+
+/** Live seed-article fingerprint from authoritative saves (not the home snapshot). */
+const liveSavedArticlesFingerprint = computed(() =>
+  buildDailyReadsSavedFingerprint(
+    uniqueArticleSeedsFromSavedItems(savedItems.value).map((seed) => seed.titleKey),
+  ),
+)
+
+const showDailyReadsSavedRefresh = computed(
+  () =>
+    dailyReadsFetchedSavedFingerprint.value !== null &&
+    dailyReadsFetchedSavedFingerprint.value !== liveSavedArticlesFingerprint.value &&
+    !dailyReadsLoading.value &&
+    !dailyReadsPendingOnHome.value,
+)
+
+const showSuggestedEditsSavedRefresh = computed(
+  () =>
+    suggestedEditsFetchedSavedFingerprint.value !== null &&
+    suggestedEditsFetchedSavedFingerprint.value !== liveSavedArticlesFingerprint.value &&
+    !suggestedEditsLoading.value &&
+    !suggestedEditsPendingOnHome.value,
+)
+
+const showReviewChangesSavedRefresh = computed(
+  () =>
+    reviewChangesShowSavedEdits.value &&
+    reviewChangesFetchedSavedFingerprint.value !== null &&
+    reviewChangesFetchedSavedFingerprint.value !== liveSavedArticlesFingerprint.value &&
+    !reviewChangesLoading.value &&
+    !reviewChangesPendingOnHome.value,
+)
+
+const showActiveDiscussionsSavedRefresh = computed(
+  () =>
+    discussionsShowSavedTalk.value &&
+    activeDiscussionsFetchedSavedFingerprint.value !== null &&
+    activeDiscussionsFetchedSavedFingerprint.value !== liveSavedArticlesFingerprint.value &&
+    !activeDiscussionsLoading.value &&
+    !activeDiscussionsPendingOnHome.value,
+)
+
+const showDailyReadsModule = computed(() => !isHidden(WIKITAB_DAILY_READS_MODULE_ID))
 
 const visibleSuggestedEditsItems = computed(() => filterCards(suggestedEditsItems.value))
 
-const showSuggestedEditsModule = computed(
-  () =>
-    !isHidden(WIKITAB_SUGGESTED_EDITS_MODULE_ID) &&
-    hasSavedSeedArticles.value &&
-    (suggestedEditsPendingOnHome.value ||
-      suggestedEditsLoading.value ||
-      suggestedEditsFillingInitial.value ||
-      visibleSuggestedEditsItems.value.length > 0 ||
-      suggestedEditsError.value),
-)
+const showSuggestedEditsModule = computed(() => !isHidden(WIKITAB_SUGGESTED_EDITS_MODULE_ID))
 
 const visibleReviewChangesItems = computed(() => filterActivityItems(reviewChangesItems.value))
+
+const visibleActiveDiscussionsNoticeboardItems = computed(() =>
+  filterCards(activeDiscussionsNoticeboardItems.value),
+)
+const visibleActiveDiscussionsArticleItems = computed(() =>
+  filterCards(activeDiscussionsArticleItems.value),
+)
 
 /** Visible whenever enabled in Modules settings — same as feed sections, not gated on fetch state. */
 const showReviewChangesModule = computed(
   () => !isHidden(WIKITAB_REVIEW_CHANGES_MODULE_ID),
+)
+
+const showActiveDiscussionsModule = computed(
+  () => !isHidden(WIKITAB_DISCUSSIONS_MODULE_ID),
 )
 
 type HomeModuleEntry =
@@ -780,6 +1080,7 @@ type HomeModuleEntry =
   | { kind: 'nearby' }
   | { kind: 'daily-reads' }
   | { kind: 'suggested-edits' }
+  | { kind: 'discussions' }
   | { kind: 'review-changes' }
   | { kind: 'feed'; section: WikitabSectionState & { items: WikitabCardData[] } }
 
@@ -812,6 +1113,11 @@ const orderedHomeModules = computed((): HomeModuleEntry[] => {
       return
     }
 
+    if (id === WIKITAB_DISCUSSIONS_MODULE_ID) {
+      if (showActiveDiscussionsModule.value) modules.push({ kind: 'discussions' })
+      return
+    }
+
     if (id === WIKITAB_REVIEW_CHANGES_MODULE_ID) {
       if (showReviewChangesModule.value) modules.push({ kind: 'review-changes' })
       return
@@ -828,6 +1134,30 @@ const orderedHomeModules = computed((): HomeModuleEntry[] => {
   return modules
 })
 
+function homeEntryModuleId(entry: HomeModuleEntry): WikitabModuleId {
+  if (entry.kind === 'feed') return entry.section.spec.id
+  if (entry.kind === 'saved') return WIKITAB_SAVED_MODULE_ID
+  if (entry.kind === 'featured') return WIKITAB_FEATURED_MODULE_ID
+  if (entry.kind === 'nearby') return WIKITAB_NEARBY_MODULE_ID
+  if (entry.kind === 'daily-reads') return WIKITAB_DAILY_READS_MODULE_ID
+  if (entry.kind === 'suggested-edits') return WIKITAB_SUGGESTED_EDITS_MODULE_ID
+  if (entry.kind === 'discussions') return WIKITAB_DISCUSSIONS_MODULE_ID
+  return WIKITAB_REVIEW_CHANGES_MODULE_ID
+}
+
+/** Promote the existing home instance in place (no card remount / thumbnail flash). */
+function isEntryOnModuleScreen(entry: HomeModuleEntry): boolean {
+  if (!moduleScreenPanelActive.value) return false
+  return moduleScreen.value === homeEntryModuleId(entry)
+}
+
+/** Hidden modules aren't on the home list — fall back to a one-off screen mount. */
+const moduleScreenHostedOnHome = computed(() => {
+  const id = moduleScreen.value
+  if (!id || id === WIKITAB_SAVED_MODULE_ID) return false
+  return orderedHomeModules.value.some((entry) => homeEntryModuleId(entry) === id)
+})
+
 watch(
   () => savedItems.value.length,
   (next) => {
@@ -836,9 +1166,11 @@ watch(
       savedModuleLoading.value = false
       dailyReadsPending.value = false
       suggestedEditsPending.value = false
+      activeDiscussionsPending.value = false
       reviewChangesPending.value = false
       void refreshDailyReads([])
       void refreshSuggestedEdits([])
+      void refreshActiveDiscussions([])
       void refreshReviewChanges([])
     }
   },
@@ -866,6 +1198,7 @@ onUnmounted(() => {
   abortNearby()
   abortDailyReads()
   abortSuggestedEdits()
+  abortActiveDiscussions()
   abortReviewChanges()
 })
 
@@ -880,6 +1213,57 @@ watch(overlayOpen, (open, wasOpen) => {
     void refreshHomeModulesInOrder()
   }
 })
+
+watch(reviewChangesConfigureOpen, (open, wasOpen) => {
+  if (!wasOpen || open) return
+  // After the panel unmounts and scroll-lock clears, jump to the module (no animation).
+  void nextTick(() => {
+    scrollToModuleAfterSettingsClose(REVIEW_CHANGES_MODULE_ANCHOR)
+  })
+})
+
+watch(activeDiscussionsConfigureOpen, (open, wasOpen) => {
+  if (!wasOpen || open) return
+  void nextTick(() => {
+    scrollToModuleAfterSettingsClose(DISCUSSIONS_MODULE_ANCHOR)
+  })
+})
+
+watch(
+  savedPanelOpen,
+  (open, wasOpen) => {
+    if (open && !wasOpen) {
+      void enrichSavedPanelItems()
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  moduleScreen,
+  (id, prevId) => {
+    if (id === prevId) return
+
+    // Closing a module fullscreen — align the home title with where the
+    // fullscreen title was (capture runs before the panel unmounts).
+    if (!id && prevId) {
+      const skipSavedScroll =
+        prevId === WIKITAB_SAVED_MODULE_ID && !scrollToSavedModuleOnClose.value
+      scrollToSavedModuleOnClose.value = false
+      if (!skipSavedScroll) scrollHomeTitleToMatchFullscreenTitle(prevId)
+      return
+    }
+
+    if (!id) return
+    if (id === WIKITAB_SAVED_MODULE_ID) return
+    if (isSearchMode.value) return
+    // Visible home modules are already covered by ordered load; refresh when the
+    // module is hidden (deep link) so the screen still has data.
+    if (!isHidden(id)) return
+    void refreshHomeModule(id)
+  },
+  { immediate: true },
+)
 
 watch(searchQuery, (next, prev) => {
   if (prev.length > 0 && next.length === 0) {
@@ -926,7 +1310,7 @@ watch(searchQuery, (next, prev) => {
     </div>
 
     <div
-      v-show="!overlayOpen && !potdAttributionFocus"
+      v-show="!hideFeedForOverlay && !potdAttributionFocus"
       class="wikitab__main"
       :aria-hidden="overlayOpen || potdAttributionFocus"
     >
@@ -974,11 +1358,13 @@ watch(searchQuery, (next, prev) => {
                   ? 'nearby'
                   : entry.kind === 'daily-reads'
                     ? 'daily-reads'
-                  : entry.kind === 'suggested-edits'
-                    ? 'suggested-edits'
-                    : entry.kind === 'review-changes'
-                      ? 'review-changes'
-                      : entry.section.spec.id
+                    : entry.kind === 'suggested-edits'
+                      ? 'suggested-edits'
+                      : entry.kind === 'discussions'
+                        ? 'discussions'
+                        : entry.kind === 'review-changes'
+                          ? 'review-changes'
+                          : entry.section.spec.id
           "
         >
           <WikitabSavedSection
@@ -994,12 +1380,15 @@ watch(searchQuery, (next, prev) => {
             @hide-section="hideSection(WIKITAB_SAVED_MODULE_ID)"
             @toggle-save="toggleSaveFromSavedModule"
             @toggle-save-article="toggleSaveArticleFromSavedModule"
+            @open-screen="openModuleFromTitle(WIKITAB_SAVED_MODULE_ID)"
           />
           <WikitabFeaturedSection
             v-else-if="entry.kind === 'featured'"
+            :variant="isEntryOnModuleScreen(entry) ? 'screen' : 'home'"
             :items="visibleFeaturedItems"
             :loading-by-kind="featuredLoadingByKind"
             :loading="featuredLoading"
+            :loaded="featuredLoaded"
             :error="featuredError"
             :pinned="isPinned(WIKITAB_FEATURED_MODULE_ID)"
             :is-card-saved="isCardSaved"
@@ -1010,9 +1399,12 @@ watch(searchQuery, (next, prev) => {
             @hide-article="hideArticle"
             @toggle-save="toggleSaveFromCard"
             @toggle-save-article="toggleSaveArticleFromSpotlight"
+            @open-screen="openModuleFromTitle(WIKITAB_FEATURED_MODULE_ID)"
+            @close-screen="closeModuleScreen"
           />
           <WikitabNearbySection
             v-else-if="entry.kind === 'nearby'"
+            :variant="isEntryOnModuleScreen(entry) ? 'screen' : 'home'"
             :items="visibleNearbyItems"
             :pending-by-key="nearbyPendingByKey"
             :consent-phase="nearbyConsentPhase"
@@ -1031,9 +1423,12 @@ watch(searchQuery, (next, prev) => {
             @toggle-save="toggleSaveFromCard"
             @load-more="loadMoreNearby"
             @request-nearby="requestNearby"
+            @open-screen="openModuleFromTitle(WIKITAB_NEARBY_MODULE_ID)"
+            @close-screen="closeModuleScreen"
           />
           <WikitabDailyReadsSection
             v-else-if="entry.kind === 'daily-reads'"
+            :variant="isEntryOnModuleScreen(entry) ? 'screen' : 'home'"
             :items="visibleDailyReadsItems"
             :pending-by-key="dailyReadsPendingByKey"
             :loading="dailyReadsLoading || dailyReadsPendingOnHome"
@@ -1042,6 +1437,8 @@ watch(searchQuery, (next, prev) => {
             :has-more="dailyReadsHasMore"
             :error="dailyReadsError"
             :pinned="isPinned(WIKITAB_DAILY_READS_MODULE_ID)"
+            :has-seed-articles="hasSavedSeedArticles"
+            :show-saved-refresh="showDailyReadsSavedRefresh"
             :is-card-saved="isCardSaved"
             @toggle-pin="togglePin(WIKITAB_DAILY_READS_MODULE_ID)"
             @refresh-section="refreshHomeModule(WIKITAB_DAILY_READS_MODULE_ID)"
@@ -1049,9 +1446,12 @@ watch(searchQuery, (next, prev) => {
             @hide-article="hideArticle"
             @toggle-save="toggleSaveFromCard"
             @load-more="loadMoreDailyReads"
+            @open-screen="openModuleFromTitle(WIKITAB_DAILY_READS_MODULE_ID)"
+            @close-screen="closeModuleScreen"
           />
           <WikitabSuggestedEditsSection
             v-else-if="entry.kind === 'suggested-edits'"
+            :variant="isEntryOnModuleScreen(entry) ? 'screen' : 'home'"
             :items="visibleSuggestedEditsItems"
             :pending-by-key="suggestedEditsPendingByKey"
             :loading="suggestedEditsLoading || suggestedEditsPendingOnHome"
@@ -1061,6 +1461,8 @@ watch(searchQuery, (next, prev) => {
             :has-more="suggestedEditsHasMore"
             :error="suggestedEditsError"
             :pinned="isPinned(WIKITAB_SUGGESTED_EDITS_MODULE_ID)"
+            :has-seed-articles="hasSavedSeedArticles"
+            :show-saved-refresh="showSuggestedEditsSavedRefresh"
             :is-card-saved="isCardSaved"
             :save-article-menu-lookup="saveArticleMenuLookup"
             @toggle-pin="togglePin(WIKITAB_SUGGESTED_EDITS_MODULE_ID)"
@@ -1070,9 +1472,45 @@ watch(searchQuery, (next, prev) => {
             @toggle-save="toggleSaveFromCard"
             @toggle-save-article="toggleSaveArticleFromCard"
             @load-more="loadMoreSuggestedEdits"
+            @open-screen="openModuleFromTitle(WIKITAB_SUGGESTED_EDITS_MODULE_ID)"
+            @close-screen="closeModuleScreen"
+          />
+          <WikitabActiveDiscussionsSection
+            v-else-if="entry.kind === 'discussions'"
+            :variant="isEntryOnModuleScreen(entry) ? 'screen' : 'home'"
+            :noticeboard-items="visibleActiveDiscussionsNoticeboardItems"
+            :article-items="visibleActiveDiscussionsArticleItems"
+            :loading="
+              !hasActiveDiscussionCards &&
+              (activeDiscussionsLoading ||
+                activeDiscussionsPendingOnHome ||
+                !activeDiscussionsLoaded)
+            "
+            :pending="activeDiscussionsPendingOnHome"
+            :loading-more="activeDiscussionsLoadingMore"
+            :has-more="activeDiscussionsHasMore"
+            :error="activeDiscussionsError"
+            :pinned="isPinned(WIKITAB_DISCUSSIONS_MODULE_ID)"
+            :sources-enabled="discussionsShowNoticeboards || discussionsShowSavedTalk"
+            :show-noticeboards="discussionsShowNoticeboards"
+            :show-saved-talk="discussionsShowSavedTalk"
+            :show-saved-refresh="showActiveDiscussionsSavedRefresh"
+            :is-card-saved="isCardSaved"
+            :save-article-menu-lookup="saveArticleMenuLookup"
+            @toggle-pin="togglePin(WIKITAB_DISCUSSIONS_MODULE_ID)"
+            @refresh-section="refreshHomeModule(WIKITAB_DISCUSSIONS_MODULE_ID)"
+            @hide-section="hideSection(WIKITAB_DISCUSSIONS_MODULE_ID)"
+            @open-configure="openActiveDiscussionsConfigure"
+            @enable-sources="onDiscussionsEnableSources"
+            @toggle-save="toggleSaveFromCard"
+            @toggle-save-article="toggleSaveArticleFromCard"
+            @load-more="loadMoreActiveDiscussions"
+            @open-screen="openModuleFromTitle(WIKITAB_DISCUSSIONS_MODULE_ID)"
+            @close-screen="closeModuleScreen"
           />
           <WikitabReviewChangesSection
             v-else-if="entry.kind === 'review-changes'"
+            :variant="isEntryOnModuleScreen(entry) ? 'screen' : 'home'"
             :items="visibleReviewChangesItems"
             :editor-kind-pending="reviewChangesEditorKindPending"
             :loading="
@@ -1086,19 +1524,29 @@ watch(searchQuery, (next, prev) => {
             :has-more="reviewChangesHasMore"
             :error="reviewChangesError"
             :pinned="isPinned(WIKITAB_REVIEW_CHANGES_MODULE_ID)"
+            :sources-enabled="
+              reviewChangesShowSavedEdits || reviewChangesShowRecentRiskyEdits
+            "
+            :show-saved-edits="reviewChangesShowSavedEdits"
+            :show-recent-risky-edits="reviewChangesShowRecentRiskyEdits"
+            :show-saved-refresh="showReviewChangesSavedRefresh"
             @toggle-pin="togglePin(WIKITAB_REVIEW_CHANGES_MODULE_ID)"
             @refresh-section="refreshHomeModule(WIKITAB_REVIEW_CHANGES_MODULE_ID)"
             @hide-section="hideSection(WIKITAB_REVIEW_CHANGES_MODULE_ID)"
             @open-configure="openReviewChangesConfigure"
+            @enable-sources="onReviewChangesEnableSources"
             @load-more="loadMoreReviewChanges"
             :is-card-saved="isCardSaved"
             :save-article-menu-lookup="saveArticleMenuLookup"
             @dismiss="dismissReviewChange"
             @toggle-save="toggleSaveFromActivity"
             @toggle-save-article="toggleSaveArticleFromActivity"
+            @open-screen="openModuleFromTitle(WIKITAB_REVIEW_CHANGES_MODULE_ID)"
+            @close-screen="closeModuleScreen"
           />
           <WikitabSection
             v-else
+            :variant="isEntryOnModuleScreen(entry) ? 'screen' : 'home'"
             :spec="entry.section.spec"
             :items="entry.section.items"
             :loading="isSectionLoading(entry.section.spec.id)"
@@ -1112,6 +1560,8 @@ watch(searchQuery, (next, prev) => {
             @hide-article="hideArticle"
             @toggle-save="toggleSaveFromCard"
             @toggle-save-article="toggleSaveArticleFromCard"
+            @open-screen="openModuleFromTitle(entry.section.spec.id)"
+            @close-screen="closeModuleScreen"
           />
         </template>
       </div>
@@ -1137,8 +1587,6 @@ watch(searchQuery, (next, prev) => {
       :module-order="resolvedOrder"
       :pinned-ids="pinnedIds"
       :is-hidden="isHidden"
-      :has-saved-items="hasSavedArticlesForModules"
-      :has-saved-seed-articles="hasSavedSeedArticles"
       @close="closeConfigure"
       @reset="resetModuleConfigure"
       @show="showSection"
@@ -1163,6 +1611,14 @@ watch(searchQuery, (next, prev) => {
       @update:show-saved-edits="onReviewChangesShowSavedEdits"
       @update:show-recent-risky-edits="onReviewChangesShowRecentRiskyEdits"
     />
+    <WikitabActiveDiscussionsConfigurePanel
+      v-if="activeDiscussionsConfigureOpen && !potdAttributionFocus"
+      :show-noticeboards="discussionsShowNoticeboards"
+      :show-saved-talk="discussionsShowSavedTalk"
+      @close="closeActiveDiscussionsConfigure"
+      @update:show-noticeboards="onDiscussionsShowNoticeboards"
+      @update:show-saved-talk="onDiscussionsShowSavedTalk"
+    />
 
     <WikitabSavedArticlesPanel
       v-if="savedPanelOpen && !potdAttributionFocus"
@@ -1173,6 +1629,171 @@ watch(searchQuery, (next, prev) => {
       @toggle-save="toggleSaveFromSavedModule"
       @toggle-save-article="toggleSaveArticleFromSavedModule"
     />
+
+    <!--
+      Hidden modules aren't on the home list — mount a one-off screen instance.
+      Visible home modules promote in place (variant=screen) to avoid card remount.
+    -->
+    <template v-if="moduleScreenPanelActive && moduleScreen && !moduleScreenHostedOnHome">
+        <WikitabFeaturedSection
+          v-if="moduleScreen === WIKITAB_FEATURED_MODULE_ID"
+          variant="screen"
+          :items="visibleFeaturedItems"
+          :loading-by-kind="featuredLoadingByKind"
+          :loading="featuredLoading"
+          :loaded="featuredLoaded"
+          :error="featuredError"
+          :pinned="isPinned(WIKITAB_FEATURED_MODULE_ID)"
+          :is-card-saved="isCardSaved"
+          :save-article-menu-lookup="saveArticleMenuLookup"
+          @refresh-section="refreshHomeModule(WIKITAB_FEATURED_MODULE_ID)"
+          @hide-article="hideArticle"
+          @toggle-save="toggleSaveFromCard"
+          @toggle-save-article="toggleSaveArticleFromSpotlight"
+          @close-screen="closeModuleScreen"
+        />
+        <WikitabNearbySection
+          v-else-if="moduleScreen === WIKITAB_NEARBY_MODULE_ID"
+          variant="screen"
+          :items="visibleNearbyItems"
+          :pending-by-key="nearbyPendingByKey"
+          :consent-phase="nearbyConsentPhase"
+          :prompt-error="nearbyPromptError"
+          :loading="nearbyLoading"
+          :filling-initial="nearbyFillingInitial"
+          :loading-more="nearbyLoadingMore"
+          :has-more="nearbyHasMore"
+          :error="nearbyError"
+          :pinned="isPinned(WIKITAB_NEARBY_MODULE_ID)"
+          :is-card-saved="isCardSaved"
+          @refresh-section="refreshHomeModule(WIKITAB_NEARBY_MODULE_ID)"
+          @hide-article="hideArticle"
+          @toggle-save="toggleSaveFromCard"
+          @load-more="loadMoreNearby"
+          @request-nearby="requestNearby"
+          @close-screen="closeModuleScreen"
+        />
+        <WikitabDailyReadsSection
+          v-else-if="moduleScreen === WIKITAB_DAILY_READS_MODULE_ID"
+          variant="screen"
+          :items="visibleDailyReadsItems"
+          :pending-by-key="dailyReadsPendingByKey"
+          :loading="dailyReadsLoading || dailyReadsPendingOnHome"
+          :filling-initial="dailyReadsFillingInitial"
+          :loading-more="dailyReadsLoadingMore"
+          :has-more="dailyReadsHasMore"
+          :error="dailyReadsError"
+          :pinned="isPinned(WIKITAB_DAILY_READS_MODULE_ID)"
+          :has-seed-articles="hasSavedSeedArticles"
+          :show-saved-refresh="showDailyReadsSavedRefresh"
+          :is-card-saved="isCardSaved"
+          @refresh-section="refreshHomeModule(WIKITAB_DAILY_READS_MODULE_ID)"
+          @hide-article="hideArticle"
+          @toggle-save="toggleSaveFromCard"
+          @load-more="loadMoreDailyReads"
+          @close-screen="closeModuleScreen"
+        />
+        <WikitabSuggestedEditsSection
+          v-else-if="moduleScreen === WIKITAB_SUGGESTED_EDITS_MODULE_ID"
+          variant="screen"
+          :items="visibleSuggestedEditsItems"
+          :pending-by-key="suggestedEditsPendingByKey"
+          :loading="suggestedEditsLoading || suggestedEditsPendingOnHome"
+          :filling-initial="suggestedEditsFillingInitial"
+          :pending="suggestedEditsPendingOnHome"
+          :loading-more="suggestedEditsLoadingMore"
+          :has-more="suggestedEditsHasMore"
+          :error="suggestedEditsError"
+          :pinned="isPinned(WIKITAB_SUGGESTED_EDITS_MODULE_ID)"
+          :has-seed-articles="hasSavedSeedArticles"
+          :show-saved-refresh="showSuggestedEditsSavedRefresh"
+          :is-card-saved="isCardSaved"
+          :save-article-menu-lookup="saveArticleMenuLookup"
+          @refresh-section="refreshHomeModule(WIKITAB_SUGGESTED_EDITS_MODULE_ID)"
+          @hide-article="hideArticle"
+          @toggle-save="toggleSaveFromCard"
+          @toggle-save-article="toggleSaveArticleFromCard"
+          @load-more="loadMoreSuggestedEdits"
+          @close-screen="closeModuleScreen"
+        />
+        <WikitabActiveDiscussionsSection
+          v-else-if="moduleScreen === WIKITAB_DISCUSSIONS_MODULE_ID"
+          variant="screen"
+          :noticeboard-items="visibleActiveDiscussionsNoticeboardItems"
+          :article-items="visibleActiveDiscussionsArticleItems"
+          :loading="
+            !hasActiveDiscussionCards &&
+            (activeDiscussionsLoading ||
+              activeDiscussionsPendingOnHome ||
+              !activeDiscussionsLoaded)
+          "
+          :pending="activeDiscussionsPendingOnHome"
+          :loading-more="activeDiscussionsLoadingMore"
+          :has-more="activeDiscussionsHasMore"
+          :error="activeDiscussionsError"
+          :pinned="isPinned(WIKITAB_DISCUSSIONS_MODULE_ID)"
+          :sources-enabled="discussionsShowNoticeboards || discussionsShowSavedTalk"
+          :show-noticeboards="discussionsShowNoticeboards"
+          :show-saved-talk="discussionsShowSavedTalk"
+          :show-saved-refresh="showActiveDiscussionsSavedRefresh"
+          :is-card-saved="isCardSaved"
+          :save-article-menu-lookup="saveArticleMenuLookup"
+          @refresh-section="refreshHomeModule(WIKITAB_DISCUSSIONS_MODULE_ID)"
+          @open-configure="openActiveDiscussionsConfigure"
+          @enable-sources="onDiscussionsEnableSources"
+          @toggle-save="toggleSaveFromCard"
+          @toggle-save-article="toggleSaveArticleFromCard"
+          @load-more="loadMoreActiveDiscussions"
+          @close-screen="closeModuleScreen"
+        />
+        <WikitabReviewChangesSection
+          v-else-if="moduleScreen === WIKITAB_REVIEW_CHANGES_MODULE_ID"
+          variant="screen"
+          :items="visibleReviewChangesItems"
+          :editor-kind-pending="reviewChangesEditorKindPending"
+          :loading="
+            reviewChangesLoading || reviewChangesPendingOnHome || !reviewChangesLoaded
+          "
+          :filling-initial="reviewChangesFillingInitial"
+          :pending="reviewChangesPendingOnHome"
+          :loading-more="reviewChangesLoadingMore"
+          :has-more="reviewChangesHasMore"
+          :error="reviewChangesError"
+          :pinned="isPinned(WIKITAB_REVIEW_CHANGES_MODULE_ID)"
+          :sources-enabled="
+            reviewChangesShowSavedEdits || reviewChangesShowRecentRiskyEdits
+          "
+          :show-saved-edits="reviewChangesShowSavedEdits"
+          :show-recent-risky-edits="reviewChangesShowRecentRiskyEdits"
+          :show-saved-refresh="showReviewChangesSavedRefresh"
+          :is-card-saved="isCardSaved"
+          :save-article-menu-lookup="saveArticleMenuLookup"
+          @refresh-section="refreshHomeModule(WIKITAB_REVIEW_CHANGES_MODULE_ID)"
+          @open-configure="openReviewChangesConfigure"
+          @enable-sources="onReviewChangesEnableSources"
+          @load-more="loadMoreReviewChanges"
+          @dismiss="dismissReviewChange"
+          @toggle-save="toggleSaveFromActivity"
+          @toggle-save-article="toggleSaveArticleFromActivity"
+          @close-screen="closeModuleScreen"
+        />
+        <WikitabSection
+          v-else-if="moduleScreenFeedSection"
+          variant="screen"
+          :spec="moduleScreenFeedSection.spec"
+          :items="moduleScreenFeedSection.items"
+          :loading="isSectionLoading(moduleScreenFeedSection.spec.id)"
+          :error="error"
+          :pinned="isPinned(moduleScreenFeedSection.spec.id)"
+          :is-card-saved="isCardSaved"
+          :save-article-menu-lookup="saveArticleMenuLookup"
+          @refresh-section="refreshHomeModule(moduleScreenFeedSection.spec.id)"
+          @hide-article="hideArticle"
+          @toggle-save="toggleSaveFromCard"
+          @toggle-save-article="toggleSaveArticleFromCard"
+          @close-screen="closeModuleScreen"
+        />
+    </template>
   </div>
 </template>
 
@@ -1419,6 +2040,7 @@ watch(searchQuery, (next, prev) => {
 .wikitab :deep(.wikitab-daily-reads-section__menu .cdx-menu),
 .wikitab :deep(.wikitab-saved-section__menu .cdx-menu),
 .wikitab :deep(.wikitab-suggested-edits-section__menu .cdx-menu),
+.wikitab :deep(.wikitab-active-discussions-section__menu .cdx-menu),
 .wikitab :deep(.wikitab-review-changes-section__menu .cdx-menu) {
   width: max-content !important;
   min-width: 12rem;
@@ -1429,6 +2051,7 @@ watch(searchQuery, (next, prev) => {
 .wikitab :deep(.wikitab-daily-reads-section__menu .cdx-menu-item__text__label),
 .wikitab :deep(.wikitab-saved-section__menu .cdx-menu-item__text__label),
 .wikitab :deep(.wikitab-suggested-edits-section__menu .cdx-menu-item__text__label),
+.wikitab :deep(.wikitab-active-discussions-section__menu .cdx-menu-item__text__label),
 .wikitab :deep(.wikitab-review-changes-section__menu .cdx-menu-item__text__label) {
   white-space: nowrap;
 }
@@ -1437,6 +2060,7 @@ watch(searchQuery, (next, prev) => {
 .wikitab :deep(.wikitab-daily-reads-section__menu .cdx-menu--has-footer .cdx-menu__listbox),
 .wikitab :deep(.wikitab-saved-section__menu .cdx-menu--has-footer .cdx-menu__listbox),
 .wikitab :deep(.wikitab-suggested-edits-section__menu .cdx-menu--has-footer .cdx-menu__listbox),
+.wikitab :deep(.wikitab-active-discussions-section__menu .cdx-menu--has-footer .cdx-menu__listbox),
 .wikitab :deep(.wikitab-review-changes-section__menu .cdx-menu--has-footer .cdx-menu__listbox) {
   margin-bottom: 0 !important;
 }
@@ -1445,6 +2069,7 @@ watch(searchQuery, (next, prev) => {
 .wikitab :deep(.wikitab-daily-reads-section__menu .cdx-menu--has-footer .cdx-menu__listbox > .cdx-menu-item:last-of-type),
 .wikitab :deep(.wikitab-saved-section__menu .cdx-menu--has-footer .cdx-menu__listbox > .cdx-menu-item:last-of-type),
 .wikitab :deep(.wikitab-suggested-edits-section__menu .cdx-menu--has-footer .cdx-menu__listbox > .cdx-menu-item:last-of-type),
+.wikitab :deep(.wikitab-active-discussions-section__menu .cdx-menu--has-footer .cdx-menu__listbox > .cdx-menu-item:last-of-type),
 .wikitab :deep(.wikitab-review-changes-section__menu .cdx-menu--has-footer .cdx-menu__listbox > .cdx-menu-item:last-of-type) {
   position: static;
   width: auto;
@@ -1456,7 +2081,7 @@ watch(searchQuery, (next, prev) => {
  * (Show more, tab underline) uses --color-progressive — white on lightCards tints.
  * lightCards remap card link tokens below.
  */
-.wikitab--themed :deep(.wikitab-section__heading) {
+.wikitab--themed :deep(.wikitab-module-head__title) {
   color: var(--wikitab-theme-fg);
 }
 
@@ -1515,27 +2140,15 @@ watch(searchQuery, (next, prev) => {
   --color-subtle: var(--wikitab-codex-subtle);
 }
 
-.wikitab--themed :deep(.wikitab-section__pin) {
+.wikitab--themed :deep(.wikitab-module-head__pin) {
   color: var(--wikitab-theme-fg);
 }
 
 .wikitab--themed :deep(.wikitab-color-theme-picker__close .cdx-icon),
 .wikitab--themed :deep(.wikitab-configure-panel__close .cdx-icon),
-.wikitab--themed :deep(.wikitab-saved-articles-panel__close .cdx-icon) {
-  color: var(--wikitab-theme-fg);
-}
-
-.wikitab--themed :deep(.wikitab-saved-section__heading),
-.wikitab--themed :deep(.wikitab-daily-reads-section__heading),
-.wikitab--themed :deep(.wikitab-suggested-edits-section__heading),
-.wikitab--themed :deep(.wikitab-review-changes-section__heading) {
-  color: var(--wikitab-theme-fg);
-}
-
-.wikitab--themed :deep(.wikitab-saved-section__pin),
-.wikitab--themed :deep(.wikitab-daily-reads-section__pin),
-.wikitab--themed :deep(.wikitab-suggested-edits-section__pin),
-.wikitab--themed :deep(.wikitab-review-changes-section__pin) {
+.wikitab--themed :deep(.wikitab-module-head__close .cdx-icon),
+.wikitab--themed :deep(.wikitab-review-changes-configure-panel__close .cdx-icon),
+.wikitab--themed :deep(.wikitab-active-discussions-configure-panel__close .cdx-icon) {
   color: var(--wikitab-theme-fg);
 }
 
@@ -1547,9 +2160,9 @@ watch(searchQuery, (next, prev) => {
 }
 
 .wikitab--themed.wikitab--tinted-subtle :deep(.wikitab-daily-reads-section__error),
-.wikitab--themed.wikitab--tinted-subtle :deep(.wikitab-daily-reads-section__empty),
 .wikitab--themed.wikitab--tinted-subtle :deep(.wikitab-suggested-edits-section__error),
-.wikitab--themed.wikitab--tinted-subtle :deep(.wikitab-review-changes-section__error) {
+.wikitab--themed.wikitab--tinted-subtle :deep(.wikitab-review-changes-section__error),
+.wikitab--themed.wikitab--tinted-subtle :deep(.wikitab-nothing-saved-yet) {
   color: var(--wikitab-theme-subtle);
 }
 

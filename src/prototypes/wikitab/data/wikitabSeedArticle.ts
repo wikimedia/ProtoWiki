@@ -8,6 +8,7 @@ export type WikitabSeedArticleVia =
   | 'quote-author'
   | 'wiktionary-sister'
   | 'search-query'
+  | 'talk-page'
 
 /**
  * The enwiki article a card (and anything saved from it) contributes to
@@ -27,6 +28,7 @@ const SEED_VIAS = new Set<WikitabSeedArticleVia>([
   'quote-author',
   'wiktionary-sister',
   'search-query',
+  'talk-page',
 ])
 
 /** `undefined` for empty or non-mainspace titles — those never seed. */

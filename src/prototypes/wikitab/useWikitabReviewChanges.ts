@@ -33,14 +33,6 @@ function seenRevidsFromItems(items: readonly WikitabSearchActivityItem[]): Set<n
   return new Set(items.map((item) => item.revisionId))
 }
 
-function sessionCacheKey(
-  day: string,
-  savedFingerprint: string,
-  settingsFingerprint: string,
-): string {
-  return `${day}:${savedFingerprint}:${settingsFingerprint}`
-}
-
 function readReviewChangesSettings(): {
   showSavedEdits: boolean
   showRecentRiskyEdits: boolean
@@ -76,6 +68,8 @@ export function useWikitabReviewChanges() {
   const error = ref<string | null>(null)
   /** True once a refresh has settled for the current saved snapshot. */
   const isLoaded = ref(false)
+  /** Saved-articles fingerprint of the cards currently painted (last fetch / cache). */
+  const fetchedSavedFingerprint = ref<string | null>(null)
 
   let controller: AbortController | null = null
   let revertRiskAbortController: AbortController | null = null
@@ -88,7 +82,6 @@ export function useWikitabReviewChanges() {
     settingsFingerprint: string
   } | null = null
   let savedItemsSnapshot: WikitabSavedItem[] = []
-  let loadedSessionKey: string | null = null
   let feedLock: Promise<void> = Promise.resolve()
   let cacheFetchedAtSaved: number | undefined
   let cacheFetchedAtRisky: number | undefined
@@ -236,8 +229,8 @@ export function useWikitabReviewChanges() {
     fetchedAtRisky?: number,
   ): void {
     items.value = cached
-    loadedSessionKey = sessionCacheKey(day, savedFingerprint, settingsFingerprint)
     cacheContext = { day, savedFingerprint, settingsFingerprint }
+    fetchedSavedFingerprint.value = savedFingerprint
     cacheFetchedAtSaved = fetchedAtSaved
     cacheFetchedAtRisky = fetchedAtRisky
     activeFeed = null
@@ -345,10 +338,10 @@ export function useWikitabReviewChanges() {
     hasMore.value = false
     error.value = null
     isLoaded.value = false
+    fetchedSavedFingerprint.value = null
     activeFeed = null
     cacheContext = null
     savedItemsSnapshot = []
-    loadedSessionKey = null
     cacheFetchedAtSaved = undefined
     cacheFetchedAtRisky = undefined
   }
@@ -449,16 +442,20 @@ export function useWikitabReviewChanges() {
     const savedFingerprint = buildReviewChangesSavedFingerprint(
       articleSeeds.map((seed) => seed.titleKey),
     )
-    const key = sessionCacheKey(day, savedFingerprint, settingsFingerprint)
 
+    // Same UTC day + settings with cards already painted — keep them even if
+    // the saved fingerprint changed. Do not overwrite cacheContext (that would
+    // hide the title refresh) or snapshot (Show more continues the last fetch).
     if (
       !force &&
       !isCacheBypassed() &&
-      loadedSessionKey === key &&
+      cacheContext?.day === day &&
+      cacheContext.settingsFingerprint === settingsFingerprint &&
       items.value.length > 0
     ) {
       hasMore.value = activeFeed?.hasPending() ?? hasMore.value
       error.value = null
+      fetchedSavedFingerprint.value = cacheContext.savedFingerprint
       isLoaded.value = true
       return
     }
@@ -473,16 +470,15 @@ export function useWikitabReviewChanges() {
 
     activeFeed = null
     savedItemsSnapshot = cloneSavedItems(savedItems)
-    cacheContext = { day, savedFingerprint, settingsFingerprint }
 
     if (!force) {
-      const cached = readCachedReviewChanges(day, savedFingerprint, settingsFingerprint)
+      const cached = readCachedReviewChanges(day, settingsFingerprint)
       if (cached) {
         applyCachedItems(
           cached.items,
           cached.hasMore,
           day,
-          savedFingerprint,
+          cached.savedFingerprint,
           settingsFingerprint,
           cached.fetchedAtSaved,
           cached.fetchedAtRisky,
@@ -495,7 +491,8 @@ export function useWikitabReviewChanges() {
     loadingMore.value = false
     error.value = null
     items.value = []
-    loadedSessionKey = key
+    cacheContext = { day, savedFingerprint, settingsFingerprint }
+    fetchedSavedFingerprint.value = savedFingerprint
     hasMore.value = false
     isLoaded.value = false
 
@@ -531,7 +528,8 @@ export function useWikitabReviewChanges() {
       if (signal.aborted || (cause as Error)?.name === 'AbortError') return
       error.value = 'Could not load recent edits.'
       items.value = []
-      loadedSessionKey = null
+      fetchedSavedFingerprint.value = null
+      cacheContext = null
       activeFeed = null
       isLoaded.value = true
     } finally {
@@ -624,6 +622,7 @@ export function useWikitabReviewChanges() {
     hasMore,
     error,
     isLoaded,
+    fetchedSavedFingerprint,
     refresh,
     loadMore,
     dismissActivity,

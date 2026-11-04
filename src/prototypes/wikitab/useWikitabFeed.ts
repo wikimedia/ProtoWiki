@@ -36,13 +36,7 @@ export interface WikitabSectionState {
   items: WikitabCardData[]
 }
 
-const SECONDARY_SECTION_IDS: readonly WikitabSectionId[] = ['otd', 'births', 'discussions']
-
 const ALL_SECTION_IDS = WIKITAB_SECTIONS.map((section) => section.id)
-
-function isSecondarySection(id: WikitabSectionId): boolean {
-  return SECONDARY_SECTION_IDS.includes(id)
-}
 
 function enabledSectionsFromHidden(hiddenSectionIds: readonly WikitabSectionId[]): Set<WikitabSectionId> {
   const hidden = new Set(hiddenSectionIds)
@@ -54,7 +48,6 @@ function emptyFeed(): WikitabFeed {
     trending: [],
     news: [],
     dyk: [],
-    discussions: [],
     otd: [],
     births: [],
   }
@@ -70,13 +63,17 @@ function patchFeedSlice(
   triggerRef(feedRef)
 }
 
+/**
+ * Whether an enabled, not-yet-fetched section should show loading skeletons.
+ * Callers gate on `fetchedSections` first. During `featured` (and `idle`) every
+ * remaining section is still loading — including dyk/news (the old secondary-only
+ * gate left those blank under the title until their turn).
+ */
 export function isSectionFeedLoading(
-  sectionId: WikitabSectionId,
+  _sectionId: WikitabSectionId,
   feedPhase: WikitabFeedPhase,
 ): boolean {
-  if (feedPhase === 'complete' || feedPhase === 'error') return false
-  if (feedPhase === 'featured') return isSecondarySection(sectionId)
-  return true
+  return feedPhase !== 'complete' && feedPhase !== 'error'
 }
 
 export function useWikitabFeed(

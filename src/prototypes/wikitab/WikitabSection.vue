@@ -12,12 +12,15 @@ import { useSkin } from '@/composables/useSkin'
 import { wikitabCardBindProps } from './data/wikitabCardPresentation'
 import { wikitabCardFeedMenuItems } from './data/wikitabCardMenuItems'
 import WikitabCard from './WikitabCard.vue'
+import WikitabModuleHead from './WikitabModuleHead.vue'
 import { useEqualRowHeights } from './useEqualRowHeights'
+import { useInfiniteScroll } from './useInfiniteScroll'
 import { usePreventHorizontalSwipeNavigation } from './usePreventHorizontalSwipeNavigation'
+import { useRestoreReservedOnScreenClose } from './useRestoreReservedOnScreenClose'
 import { useRevealOnScrollEnd } from './useRevealOnScrollEnd'
 import { useSectionReveal } from './useSectionReveal'
+import { wikitabShowMoreDisabled } from './wikitabShowMoreDisabled'
 import {
-  discussionSavedIdFromUrl,
   wikitabCardSaveArticleMenuOption,
   type SaveItemPayload,
   type WikitabSaveArticleMenuLookup,
@@ -35,23 +38,26 @@ function snippetSourceForSection(id: WikitabSectionId): WikitabSavedSnippetSourc
   if (id === 'dyk' || id === 'news' || id === 'otd') return id
   return null
 }
-const DISCUSSION_SECTION_IDS = new Set<WikitabSectionId>(['discussions'])
 
 const SAVE_SECTION_IDS = new Set<WikitabSectionId>([
   ...ARTICLE_SECTION_IDS,
   ...SNIPPET_SECTION_IDS,
-  ...DISCUSSION_SECTION_IDS,
 ])
 
-const props = defineProps<{
-  spec: WikitabSectionSpec
-  items: WikitabCardData[]
-  loading: boolean
-  error: string | null
-  pinned: boolean
-  isCardSaved: (id: string) => boolean
-  saveArticleMenuLookup: WikitabSaveArticleMenuLookup
-}>()
+const props = withDefaults(
+  defineProps<{
+    spec: WikitabSectionSpec
+    items: WikitabCardData[]
+    loading: boolean
+    error: string | null
+    pinned: boolean
+    isCardSaved: (id: string) => boolean
+    saveArticleMenuLookup: WikitabSaveArticleMenuLookup
+    /** Home feed vs fullscreen module screen (`?screen=`). */
+    variant?: 'home' | 'screen'
+  }>(),
+  { variant: 'home' },
+)
 
 const emit = defineEmits<{
   'toggle-pin': []
@@ -60,13 +66,13 @@ const emit = defineEmits<{
   'hide-article': [title: string]
   'toggle-save': [payload: SaveItemPayload]
   'toggle-save-article': [card: WikitabCardData]
+  'open-screen': []
+  'close-screen': []
 }>()
 
+const isScreen = computed(() => props.variant === 'screen')
+
 function savedIdForCard(card: WikitabCardData): string {
-  if (props.spec.id === 'discussions') {
-    const id = discussionSavedIdFromUrl(card.url)
-    if (id) return id
-  }
   const snippetSource = snippetSourceForSection(props.spec.id)
   if (snippetSource) {
     return snippetSavedId(snippetSource, wikitabCardDescriptionText(card) ?? '')
@@ -79,9 +85,6 @@ function savePayloadForCard(card: WikitabCardData): SaveItemPayload {
   if (snippetSource) {
     return { primitive: 'snippet', card, source: snippetSource }
   }
-  if (DISCUSSION_SECTION_IDS.has(props.spec.id)) {
-    return { primitive: 'discussion', card }
-  }
   return { primitive: 'article', card }
 }
 
@@ -90,11 +93,26 @@ const loading = toRef(props, 'loading')
 const { reserved, revealing, hasMore, revealMore, slotCard, slotLoading, pendingCount } =
   useSectionReveal(props.spec, items, loading)
 
+useRestoreReservedOnScreenClose(
+  isScreen,
+  reserved,
+  computed(() => props.items.length),
+)
+
 const skin = useSkin()
 
 const scroller = ref<HTMLElement | null>(null)
 const sentinel = ref<HTMLElement | null>(null)
-const observeScrollEnd = computed(() => skin.value === 'mobile' && !props.error && hasMore.value)
+const panelRoot = computed(() => scroller.value?.closest('.wikitab-panel') ?? null)
+
+const observeScrollEnd = computed(
+  () =>
+    !isScreen.value &&
+    skin.value === 'mobile' &&
+    !props.error &&
+    (props.items.length > 0 || hasMore.value) &&
+    !(props.items.length === 0 && props.loading),
+)
 
 useRevealOnScrollEnd({
   scroller,
@@ -105,7 +123,7 @@ useRevealOnScrollEnd({
 
 usePreventHorizontalSwipeNavigation({
   scroller,
-  enabled: computed(() => skin.value === 'mobile'),
+  enabled: computed(() => !isScreen.value && skin.value === 'mobile'),
 })
 
 const rowColumns = computed(() => (skin.value === 'desktop' ? 2 : 1))
@@ -123,12 +141,18 @@ useEqualRowHeights({
   ],
 })
 
-const slots = computed(() =>
-  Array.from({ length: reserved.value }, (_, index) => ({
+const slots = computed(() => {
+  // Keep initial skeleton slots while the section is still loading with no cards
+  // (reserved can briefly clamp to 0 if `loading` lags an empty items update).
+  const count =
+    props.loading && props.items.length === 0
+      ? Math.max(reserved.value, props.spec.initialCount)
+      : reserved.value
+  return Array.from({ length: count }, (_, index) => ({
     card: slotCard(index),
     loading: slotLoading(index),
-  })),
-)
+  }))
+})
 
 /*
  * The row is always rendered so the sections below never move; only the control
@@ -138,7 +162,30 @@ const slots = computed(() =>
 const isEmpty = computed(() => !props.loading && !props.error && props.items.length === 0)
 
 const canShowMore = computed(() => props.loading || hasMore.value)
-const showMoreDisabled = computed(() => props.loading || revealing.value)
+const showMoreDisabled = computed(() =>
+  wikitabShowMoreDisabled({
+    itemCount: props.items.length,
+    loading: props.loading,
+    revealing: revealing.value,
+  }),
+)
+
+/** Off while busy so reconnect re-checks the sentinel after load/reveal settles. */
+const observeScreenInfinite = computed(
+  () =>
+    isScreen.value &&
+    !props.error &&
+    !isEmpty.value &&
+    canShowMore.value &&
+    !showMoreDisabled.value,
+)
+
+useInfiniteScroll({
+  sentinel,
+  root: panelRoot,
+  enabled: observeScreenInfinite,
+  onReach: revealMore,
+})
 
 const selection = ref<string | number | null>(null)
 const menuItems = computed(() => [
@@ -173,37 +220,42 @@ watch(selection, (value) => {
 </script>
 
 <template>
-  <section class="wikitab-section" :style="{ '--wikitab-card-height': `${spec.cardHeight}px` }">
-    <div class="wikitab-section__head">
-      <div class="wikitab-section__title">
-        <CdxIcon
-          v-if="pinned"
-          class="wikitab-section__pin"
-          :icon="cdxIconPushPin"
-          icon-label="Pinned to top"
-        />
-        <h2 class="wikitab-section__heading">{{ spec.heading }}</h2>
-      </div>
-      <CdxMenuButton
-        v-model:selected="selection"
-        class="wikitab-section__menu"
-        weight="quiet"
-        :menu-items="menuItems"
-        :footer="footerItem"
-        :aria-label="`${spec.heading} options`"
-      >
-        <CdxIcon :icon="cdxIconEllipsis" />
-      </CdxMenuButton>
-    </div>
+  <section
+    :id="`wikitab-module-${spec.id}`"
+    class="wikitab-section"
+    :class="{
+      'wikitab-section--screen': isScreen,
+      'wikitab-panel': isScreen,
+      'wikitab-module-screen': isScreen,
+    }"
+    :style="{ '--wikitab-card-height': `${spec.cardHeight}px` }"
+  >
+    <WikitabModuleHead
+      :title="spec.heading"
+      :pinned="pinned"
+      :variant="isScreen ? 'screen' : 'home'"
+      @open-screen="emit('open-screen')"
+      @close="emit('close-screen')"
+    >
+      <template v-if="!isScreen" #action>
+        <CdxMenuButton
+          v-model:selected="selection"
+          class="wikitab-section__menu"
+          weight="quiet"
+          :menu-items="menuItems"
+          :footer="footerItem"
+          :aria-label="`${spec.heading} options`"
+        >
+          <CdxIcon :icon="cdxIconEllipsis" />
+        </CdxMenuButton>
+      </template>
+    </WikitabModuleHead>
 
     <p v-if="error" class="wikitab-section__error">
       <small>{{ error }}</small>
     </p>
 
-    <p v-else-if="isEmpty" class="wikitab-section__empty">
-      <small>Nothing to show right now.</small>
-    </p>
-
+    <!-- Feed modules never show an empty copy prompt — skeletons until cards land. -->
     <div v-else ref="scroller" class="wikitab-section__cards">
       <WikitabCard
         v-for="(slot, index) in slots"
@@ -238,10 +290,22 @@ watch(selection, (value) => {
         @toggle-save="slot.card && emit('toggle-save', savePayloadForCard(slot.card))"
         @toggle-save-article="slot.card && emit('toggle-save-article', slot.card)"
       />
-      <div ref="sentinel" class="wikitab-section__sentinel" aria-hidden="true" />
+      <div
+        v-if="!isScreen"
+        ref="sentinel"
+        class="wikitab-section__sentinel"
+        aria-hidden="true"
+      />
     </div>
 
-    <div class="wikitab-section__more">
+    <div
+      v-if="isScreen && !error && !isEmpty"
+      ref="sentinel"
+      class="wikitab-section__sentinel wikitab-section__sentinel--screen"
+      aria-hidden="true"
+    />
+
+    <div v-if="!isScreen" class="wikitab-section__more">
       <CdxButton
         v-if="canShowMore"
         class="wikitab-section__more-button"
@@ -262,43 +326,17 @@ watch(selection, (value) => {
   flex-direction: column;
 }
 
-.wikitab-section__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--spacing-50);
-  margin-bottom: var(--spacing-50);
-}
-
-.wikitab-section__title {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-25);
-  min-width: 0;
-}
-
-.wikitab-section__pin {
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-}
-
-.wikitab-section__heading {
-  margin: 0;
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-large);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-large);
-  color: var(--color-base);
-}
-
 /* Holds the reserved height rather than collapsing the section. */
-.wikitab-section__error,
-.wikitab-section__empty {
+.wikitab-section__error {
   display: flex;
   align-items: center;
   margin: 0;
   min-height: var(--wikitab-card-height);
+  color: var(--color-subtle);
+}
+
+.wikitab-section__empty {
+  margin: 0;
   color: var(--color-subtle);
 }
 
@@ -346,22 +384,25 @@ watch(selection, (value) => {
   z-index: 3;
 }
 
-[data-skin='desktop'] .wikitab-section__sentinel {
+/* Home mobile uses the in-scroller sentinel; desktop home uses Show more. */
+[data-skin='desktop'] .wikitab-section__sentinel:not(.wikitab-section__sentinel--screen) {
   display: none;
 }
 
 /*
  * Mobile: one horizontally scrolling row that deliberately bleeds past the right
- * edge, so it reads as continuable rather than complete.
+ * edge, so it reads as continuable rather than complete. No end padding — flex
+ * overflow drops padding-inline-end anyway; the row gap before the load-more
+ * sentinel leaves the last card’s end roughly on the section ⋯ column.
  */
-[data-skin='mobile'] .wikitab-section__cards {
+[data-skin='mobile'] .wikitab-section:not(.wikitab-section--screen) .wikitab-section__cards {
   display: flex;
   align-items: stretch;
   gap: var(--spacing-100);
-  /* Cancel the page gutter so the row scrolls edge to edge, then reinstate it
-     as padding so the first card still lines up with the heading. */
+  /* Cancel the page gutter so the row scrolls edge to edge, then reinstate
+     start padding so the first card still lines up with the heading. */
   margin-inline: calc(var(--wikitab-page-gutter) * -1);
-  padding-inline: var(--wikitab-page-gutter);
+  padding-inline: var(--wikitab-page-gutter) 0;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
@@ -371,19 +412,37 @@ watch(selection, (value) => {
   scrollbar-width: none;
 }
 
-[data-skin='mobile'] .wikitab-section__cards::-webkit-scrollbar {
+[data-skin='mobile'] .wikitab-section:not(.wikitab-section--screen) .wikitab-section__cards::-webkit-scrollbar {
   display: none;
 }
 
-[data-skin='mobile'] .wikitab-section__card {
+[data-skin='mobile'] .wikitab-section:not(.wikitab-section--screen) .wikitab-section__card {
   flex: 0 0 320px;
   align-self: stretch;
   min-height: var(--wikitab-card-height);
   scroll-snap-align: start;
 }
 
-/* Mobile reveals on scroll, so the button would be redundant. */
-[data-skin='mobile'] .wikitab-section__more {
+/* Mobile home reveals on scroll, so the button would be redundant. */
+[data-skin='mobile'] .wikitab-section:not(.wikitab-section--screen) .wikitab-section__more {
   display: none;
+}
+
+/* Fullscreen screen: vertical grid on both skins (Saved-panel layout). */
+[data-skin='mobile'] .wikitab-section--screen .wikitab-section__cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: var(--spacing-100);
+}
+
+[data-skin='mobile'] .wikitab-section--screen .wikitab-section__card {
+  min-height: 0;
+}
+
+.wikitab-section__sentinel--screen {
+  flex: none;
+  width: 100%;
+  height: 1px;
 }
 </style>

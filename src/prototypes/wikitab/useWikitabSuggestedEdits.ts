@@ -36,10 +36,6 @@ function seenPageidsFromCards(cards: readonly WikitabCardData[]): Set<number> {
   return seen
 }
 
-function sessionCacheKey(day: string, savedFingerprint: string): string {
-  return `${day}:${savedFingerprint}`
-}
-
 export function useWikitabSuggestedEdits() {
   const items = ref<WikitabCardData[]>([])
   /** Card key → fields whose backfill is still in flight. */
@@ -51,12 +47,13 @@ export function useWikitabSuggestedEdits() {
   const error = ref<string | null>(null)
   /** True once a refresh has settled for the current saved snapshot. */
   const isLoaded = ref(false)
+  /** Saved-articles fingerprint of the cards currently painted (last fetch / cache). */
+  const fetchedSavedFingerprint = ref<string | null>(null)
 
   let controller: AbortController | null = null
   let activeFeed: SuggestedEditsFeed | null = null
   let cacheContext: { day: string; savedFingerprint: string } | null = null
   let savedItemsSnapshot: WikitabSavedItem[] = []
-  let loadedSessionKey: string | null = null
   let feedLock: Promise<void> = Promise.resolve()
 
   function withFeedLock<T>(operation: () => Promise<T>): Promise<T> {
@@ -123,8 +120,8 @@ export function useWikitabSuggestedEdits() {
     savedFingerprint: string,
   ): void {
     items.value = cached
-    loadedSessionKey = sessionCacheKey(day, savedFingerprint)
     cacheContext = { day, savedFingerprint }
+    fetchedSavedFingerprint.value = savedFingerprint
     activeFeed = null
     loading.value = false
     loadingMore.value = false
@@ -141,11 +138,12 @@ export function useWikitabSuggestedEdits() {
     loadingMore.value = false
     hasMore.value = false
     error.value = null
-    isLoaded.value = false
+    // Settled empty (no seeds) — callers must not treat this as "still loading".
+    isLoaded.value = true
+    fetchedSavedFingerprint.value = null
     activeFeed = null
     cacheContext = null
     savedItemsSnapshot = []
-    loadedSessionKey = null
   }
 
   async function ensureActiveFeed(signal: AbortSignal | undefined): Promise<boolean> {
@@ -218,16 +216,19 @@ export function useWikitabSuggestedEdits() {
     const savedFingerprint = buildSuggestedEditsSavedFingerprint(
       articleSeeds.map((seed) => seed.titleKey),
     )
-    const key = sessionCacheKey(day, savedFingerprint)
 
+    // Same UTC day with cards already painted — keep them even if the saved
+    // fingerprint changed. Do not overwrite cacheContext (that would hide the
+    // title refresh) or snapshot (Show more continues the last fetch's feed).
     if (
       !force &&
       !isCacheBypassed() &&
-      loadedSessionKey === key &&
+      cacheContext?.day === day &&
       items.value.length > 0
     ) {
       hasMore.value = activeFeed?.hasPending() ?? hasMore.value
       error.value = null
+      fetchedSavedFingerprint.value = cacheContext.savedFingerprint
       isLoaded.value = true
       return
     }
@@ -239,12 +240,11 @@ export function useWikitabSuggestedEdits() {
 
     activeFeed = null
     savedItemsSnapshot = cloneSavedItems(savedItems)
-    cacheContext = { day, savedFingerprint }
 
     if (!force) {
-      const cached = readCachedSuggestedEdits(day, savedFingerprint)
+      const cached = readCachedSuggestedEdits(day)
       if (cached) {
-        applyCachedItems(cached.items, cached.hasMore, day, savedFingerprint)
+        applyCachedItems(cached.items, cached.hasMore, day, cached.savedFingerprint)
         return
       }
     }
@@ -254,7 +254,8 @@ export function useWikitabSuggestedEdits() {
     error.value = null
     items.value = []
     pendingByKey.value = new Map()
-    loadedSessionKey = key
+    cacheContext = { day, savedFingerprint }
+    fetchedSavedFingerprint.value = savedFingerprint
     hasMore.value = false
     isLoaded.value = false
 
@@ -276,7 +277,8 @@ export function useWikitabSuggestedEdits() {
       if (signal.aborted || (cause as Error)?.name === 'AbortError') return
       error.value = 'Could not load suggestions.'
       items.value = []
-      loadedSessionKey = null
+      fetchedSavedFingerprint.value = null
+      cacheContext = null
       activeFeed = null
       isLoaded.value = true
     } finally {
@@ -340,6 +342,7 @@ export function useWikitabSuggestedEdits() {
     hasMore,
     error,
     isLoaded,
+    fetchedSavedFingerprint,
     refresh,
     loadMore,
     abort,

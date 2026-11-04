@@ -11,6 +11,7 @@ const WIKITAB_SAVE_ARTICLE_MENU_PRIMITIVES = new Set<WikitabCardPrimitiveId>([
   'snippet',
   'suggestion',
   'edit',
+  'discussion',
 ])
 
 export function wikitabPrimitiveShowsSaveArticleMenu(

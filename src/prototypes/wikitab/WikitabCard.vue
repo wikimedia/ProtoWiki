@@ -156,11 +156,22 @@ const hasChips = computed(
   () => loadingFlags.value.chips || (props.chips?.length ?? 0) > 0,
 )
 
-/** Desktop: all cards. Mobile: cards with an optional inline-end thumbnail. */
-const menuRevealOnInteraction = computed(() => {
+/** Desktop: hide until hover/focus. Mobile: always show. */
+const menuRevealOnInteraction = computed(
+  () => showCardMenu.value && skin.value === 'desktop',
+)
+
+/**
+ * Menu is top-inline-end of the card. Only `inline-end` / `block-start` thumbs
+ * cover that corner — otherwise the ⋯ sits on the text column.
+ */
+const menuOverlaysText = computed(() => {
   if (!showCardMenu.value) return false
-  if (skin.value === 'desktop') return true
-  return showThumbnail.value
+  if (!showThumbnail.value) return true
+  return (
+    props.thumbnailLayout !== 'inline-end' &&
+    props.thumbnailLayout !== 'block-start'
+  )
 })
 
 /** Card-wide navigation — overlay so `#description` html can include nested anchors. */
@@ -216,6 +227,7 @@ const textIsClamped = computed(
       'wikitab-card--thumbnail-slot-loading': thumbnailSkeletonStyle,
       'wikitab-card--has-menu': showCardMenu,
       'wikitab-card--menu-on-hover': menuRevealOnInteraction,
+      'wikitab-card--menu-over-text': menuOverlaysText,
       'wikitab-card--block-start': thumbnailLayout === 'block-start',
       'wikitab-card--inline-start': thumbnailLayout === 'inline-start',
       'wikitab-card--inline-end': thumbnailLayout === 'inline-end',
@@ -292,8 +304,14 @@ const textIsClamped = computed(
           <span class="wikitab-card__skeleton-line" />
         </span>
       </template>
-      <template v-else-if="card?.title" #title>
-        <span class="wikitab-card__title-text">{{ card.title }}</span>
+      <template v-else-if="card?.titleHtml || card?.title" #title>
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <span
+          v-if="card.titleHtml"
+          class="wikitab-card__title-text"
+          v-html="card.titleHtml"
+        />
+        <span v-else class="wikitab-card__title-text">{{ card.title }}</span>
       </template>
       <template v-if="loadingFlags.description" #description>
         <span class="wikitab-card__skeleton" aria-hidden="true">
@@ -447,13 +465,13 @@ const textIsClamped = computed(
 
 /*
  * Quiet MenuButton is a 32×32 hit target, inset from the card corner — reserve
- * that width so titles truncate before reaching the ⋯.
+ * that width so titles truncate before reaching the ⋯ (when the menu overlays text).
  */
 .wikitab-card--has-menu {
   --wikitab-card-menu-reserve: calc(2rem + var(--spacing-75));
 }
 
-.wikitab-card--has-menu :deep(.cdx-card__text__title) {
+.wikitab-card--menu-over-text :deep(.cdx-card__text__title) {
   box-sizing: border-box;
   padding-inline-end: var(--wikitab-card-menu-reserve);
   overflow: hidden;
@@ -464,6 +482,18 @@ const textIsClamped = computed(
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
+}
+
+/*
+ * Full-hook snippets hide the empty title — float a corner spacer so the hook
+ * wraps around the absolute ⋯ instead of running underneath it.
+ */
+.wikitab-card--full-hook.wikitab-card--menu-over-text
+  :deep(.cdx-card__text__description)::before {
+  content: '';
+  float: inline-end;
+  width: var(--wikitab-card-menu-reserve);
+  height: 2rem; /* quiet MenuButton hit target */
 }
 
 /*
@@ -478,8 +508,8 @@ const textIsClamped = computed(
 }
 
 /*
- * Hide the menu until the card is hovered or focused. Desktop: every card.
- * Mobile: text cards with an inline-end thumbnail only (menu sits on the image).
+ * Hide the menu until the card is hovered or focused. Desktop only —
+ * mobile always shows the ⋯.
  */
 .wikitab-card--menu-on-hover .wikitab-card__menu {
   opacity: 0;
@@ -841,6 +871,23 @@ const textIsClamped = computed(
 
 .wikitab-card__title-text {
   font-weight: inherit;
+}
+
+.wikitab-card__title-text :deep(.wikitab-card__nested-link),
+.wikitab-card__title-text :deep(.wikitab-card__nested-link:link),
+.wikitab-card__title-text :deep(.wikitab-card__nested-link:visited) {
+  position: relative;
+  z-index: 2;
+  color: inherit;
+  font-weight: inherit;
+  text-decoration: none;
+}
+
+.wikitab-card__title-text :deep(.wikitab-card__nested-link:hover),
+.wikitab-card__title-text :deep(.wikitab-card__nested-link:focus-visible),
+.wikitab-card__title-text :deep(.wikitab-card__nested-link:visited:hover) {
+  color: inherit;
+  text-decoration: underline;
 }
 
 .wikitab-card__supporting-label :deep(.wikitab-card__nested-link) {

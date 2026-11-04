@@ -542,12 +542,29 @@ function wiktionarySisterWikipediaTitle(html: string): string | undefined {
   return undefined
 }
 
+/**
+ * WOTD `#WOTD-rss-description` is often a nested sense tree:
+ * `<ol><li>lead gloss<ol><li>sense…</li>…</ol></li></ol>`.
+ * Take the first non-empty top-level `<li>`, strip nested lists so the card
+ * shows only the lead gloss (not every subsense).
+ */
 function wotdGlossHtmlFromDescription(descEl: HTMLElement): string | undefined {
-  for (const li of descEl.querySelectorAll('li')) {
+  const topLevelItems: Element[] = []
+  for (const child of descEl.children) {
+    if (child.tagName !== 'OL' && child.tagName !== 'UL') continue
+    for (const item of child.children) {
+      if (item.tagName === 'LI') topLevelItems.push(item)
+    }
+  }
+  const candidates = topLevelItems.length > 0 ? topLevelItems : [...descEl.querySelectorAll('li')]
+
+  for (const li of candidates) {
     if (li.classList.contains('mw-empty-elt')) continue
-    const text = li.textContent?.replace(/\s+/g, ' ').trim()
+    const clone = li.cloneNode(true) as HTMLElement
+    for (const nested of clone.querySelectorAll('ol, ul')) nested.remove()
+    const text = clone.textContent?.replace(/\s+/g, ' ').trim()
     if (!text) continue
-    const glossHtml = normalizeWikiHtml(li.innerHTML.trim(), WIKTIONARY_HOST)
+    const glossHtml = normalizeWikiHtml(clone.innerHTML.trim(), WIKTIONARY_HOST)
     if (htmlToPlainText(glossHtml).trim()) return glossHtml
   }
 
@@ -558,6 +575,7 @@ function wotdGlossHtmlFromDescription(descEl: HTMLElement): string | undefined {
   const root = glossDoc.body.firstElementChild
   if (!root) return undefined
 
+  for (const nested of root.querySelectorAll('ol, ul')) nested.remove()
   for (const paragraph of root.querySelectorAll('p')) {
     if (paragraph.querySelector('img[src*="PointingHand"], a[href*="PointingHand"]')) {
       paragraph.remove()

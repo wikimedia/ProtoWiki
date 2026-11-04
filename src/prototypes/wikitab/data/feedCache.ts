@@ -1,5 +1,6 @@
 import type { WikitabFeed, WikitabSectionId } from '../sections'
 import {
+  feedSliceRequiresUtcDay,
   isFeedSliceFreshByTimestamp,
   type FeedSliceTtlSectionId,
 } from './wikitabCacheTtl'
@@ -8,7 +9,7 @@ import {
  * Cache only — nothing here is authoritative. Clearing it costs one refetch and
  * nothing else. User preferences live in `wikitabConfig.ts`, not here.
  */
-export const CACHE_KEY = 'wikitab-feed-cache-v21'
+export const CACHE_KEY = 'wikitab-feed-cache-v22'
 
 export type FeedSliceFetchedAt = Partial<Record<FeedSliceTtlSectionId, number>>
 
@@ -52,19 +53,31 @@ function readRawCacheEntry(): CacheEntry | null {
   }
 }
 
+/**
+ * Full entry for today's day-keyed blob. TTL-only slices (Trending / News / DYK)
+ * may still be read from a previous day's entry via `readCachedSectionSlice`.
+ */
 export function getFeedCacheEntry(day: string): CacheEntry | null {
   const entry = readRawCacheEntry()
   if (!entry || entry.day !== day) return null
   return entry
 }
 
+function feedEntryForSlice(day: string, sectionId: WikitabSectionId): CacheEntry | null {
+  const entry = readRawCacheEntry()
+  if (!entry) return null
+  if (feedSliceRequiresUtcDay(sectionId) && entry.day !== day) return null
+  return entry
+}
+
 export function isFeedSliceFresh(
   day: string,
   sectionId: WikitabSectionId,
-  entry: CacheEntry | null = getFeedCacheEntry(day),
+  entry: CacheEntry | null = feedEntryForSlice(day, sectionId),
   now = Date.now(),
 ): boolean {
-  if (!entry || entry.day !== day) return false
+  if (!entry) return false
+  if (feedSliceRequiresUtcDay(sectionId) && entry.day !== day) return false
   const slice = entry.feed[sectionId]
   if (!slice?.length) return false
 
@@ -82,21 +95,16 @@ export function isFeedSliceStale(
   sectionId: WikitabSectionId,
   now = Date.now(),
 ): boolean {
-  const entry = getFeedCacheEntry(day)
+  const entry = feedEntryForSlice(day, sectionId)
   if (!entry?.feed[sectionId]?.length) return false
   return !isFeedSliceFresh(day, sectionId, entry, now)
-}
-
-/** @deprecated Use isFeedSliceStale(day, 'discussions') */
-export function isDiscussionsCacheStale(day: string, now = Date.now()): boolean {
-  return isFeedSliceStale(day, 'discussions', now)
 }
 
 export function readCachedSectionSlice(
   day: string,
   sectionId: WikitabSectionId,
 ): WikitabFeed[WikitabSectionId] | null {
-  const entry = getFeedCacheEntry(day)
+  const entry = feedEntryForSlice(day, sectionId)
   if (!entry) return null
 
   const slice = entry.feed[sectionId]
@@ -106,15 +114,25 @@ export function readCachedSectionSlice(
 }
 
 export function readCachedFeed(day: string): WikitabFeed | null {
-  const entry = getFeedCacheEntry(day)
+  const entry = readRawCacheEntry()
   if (!entry) return null
 
   const feed = {} as WikitabFeed
+  let any = false
   for (const key of FEED_SLICE_KEYS) {
+    if (feedSliceRequiresUtcDay(key) && entry.day !== day) {
+      feed[key] = []
+      continue
+    }
     const slice = entry.feed[key]
-    feed[key] = slice?.length ? slice.map((item) => ({ ...item })) : []
+    if (slice?.length) {
+      feed[key] = slice.map((item) => ({ ...item }))
+      any = true
+    } else {
+      feed[key] = []
+    }
   }
-  return feed
+  return any ? feed : null
 }
 
 /** Storing a single entry means writing today's feed evicts every older day. */
@@ -138,7 +156,6 @@ const FEED_SLICE_KEYS: (keyof WikitabFeed)[] = [
   'trending',
   'news',
   'dyk',
-  'discussions',
   'otd',
   'births',
 ]
@@ -190,7 +207,6 @@ export function persistPartialFeed(
           trending: [],
           news: [],
           dyk: [],
-          discussions: [],
           otd: [],
           births: [],
         }

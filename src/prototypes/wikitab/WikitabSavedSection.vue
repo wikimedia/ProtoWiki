@@ -10,6 +10,8 @@ import {
 } from '@wikimedia/codex-icons'
 
 import { useSkin } from '@/composables/useSkin'
+import WikitabModuleHead from './WikitabModuleHead.vue'
+import WikitabNothingSavedYet from './WikitabNothingSavedYet.vue'
 import WikitabSavedItemSlot from './WikitabSavedItemSlot.vue'
 import WikitabSavedItemTabs from './WikitabSavedItemTabs.vue'
 import { savedItemRevealCard, type WikitabSaveArticleMenuLookup } from './data/savedCardHelpers'
@@ -19,6 +21,7 @@ import { useEqualRowHeights } from './useEqualRowHeights'
 import { usePreventHorizontalSwipeNavigation } from './usePreventHorizontalSwipeNavigation'
 import { useRevealOnScrollEnd } from './useRevealOnScrollEnd'
 import { useSectionReveal } from './useSectionReveal'
+import { wikitabShowMoreDisabled } from './wikitabShowMoreDisabled'
 import { useWikitabSavedItemTabFilter } from './useWikitabSavedItemTabFilter'
 
 const spec = WIKITAB_SAVED_MODULE_SPEC
@@ -39,6 +42,7 @@ const emit = defineEmits<{
   'hide-section': []
   'toggle-save': [id: string]
   'toggle-save-article': [id: string]
+  'open-screen': []
 }>()
 
 const savedItems = toRef(props, 'savedItems')
@@ -56,7 +60,12 @@ const { reserved, revealing, hasMore, revealMore, slotLoading, pendingCount } = 
 const skin = useSkin()
 const scroller = ref<HTMLElement | null>(null)
 const sentinel = ref<HTMLElement | null>(null)
-const observeScrollEnd = computed(() => skin.value === 'mobile' && hasMore.value)
+const observeScrollEnd = computed(
+  () =>
+    skin.value === 'mobile' &&
+    (filteredItems.value.length > 0 || hasMore.value) &&
+    !(filteredItems.value.length === 0 && props.loading),
+)
 
 useRevealOnScrollEnd({
   scroller,
@@ -111,7 +120,13 @@ const slots = computed(() =>
 const isEmpty = computed(() => !props.loading && props.savedItems.length === 0)
 
 const canShowMore = computed(() => props.loading || hasMore.value)
-const showMoreDisabled = computed(() => props.loading || revealing.value)
+const showMoreDisabled = computed(() =>
+  wikitabShowMoreDisabled({
+    itemCount: filteredItems.value.length,
+    loading: props.loading,
+    revealing: revealing.value,
+  }),
+)
 
 const selection = ref<string | number | null>(null)
 const menuItems = computed(() => [
@@ -146,28 +161,29 @@ watch(selection, (value) => {
 </script>
 
 <template>
-  <section class="wikitab-saved-section" :style="{ '--wikitab-card-height': `${spec.cardHeight}px` }">
-    <div class="wikitab-saved-section__head">
-      <div class="wikitab-saved-section__title">
-        <CdxIcon
-          v-if="pinned"
-          class="wikitab-saved-section__pin"
-          :icon="cdxIconPushPin"
-          icon-label="Pinned to top"
-        />
-        <h2 class="wikitab-saved-section__heading">{{ spec.heading }}</h2>
-      </div>
-      <CdxMenuButton
-        v-model:selected="selection"
-        class="wikitab-saved-section__menu"
-        weight="quiet"
-        :menu-items="menuItems"
-        :footer="footerItem"
-        :aria-label="`${spec.heading} options`"
-      >
-        <CdxIcon :icon="cdxIconEllipsis" />
-      </CdxMenuButton>
-    </div>
+  <section
+    :id="`wikitab-module-${spec.id}`"
+    class="wikitab-saved-section"
+    :style="{ '--wikitab-card-height': `${spec.cardHeight}px` }"
+  >
+    <WikitabModuleHead
+      :title="spec.heading"
+      :pinned="pinned"
+      @open-screen="emit('open-screen')"
+    >
+      <template #action>
+        <CdxMenuButton
+          v-model:selected="selection"
+          class="wikitab-saved-section__menu"
+          weight="quiet"
+          :menu-items="menuItems"
+          :footer="footerItem"
+          :aria-label="`${spec.heading} options`"
+        >
+          <CdxIcon :icon="cdxIconEllipsis" />
+        </CdxMenuButton>
+      </template>
+    </WikitabModuleHead>
 
     <WikitabSavedItemTabs
       v-if="showTabs && !isEmpty"
@@ -175,9 +191,7 @@ watch(selection, (value) => {
       :tabs="tabs"
     />
 
-    <p v-if="isEmpty" class="wikitab-saved-section__empty">
-      <small>Nothing to show right now.</small>
-    </p>
+    <WikitabNothingSavedYet v-if="isEmpty" />
 
     <div v-else ref="scroller" class="wikitab-saved-section__cards">
       <WikitabSavedItemSlot
@@ -215,48 +229,6 @@ watch(selection, (value) => {
 .wikitab-saved-section {
   display: flex;
   flex-direction: column;
-}
-
-.wikitab-saved-section__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--spacing-50);
-  margin-bottom: var(--spacing-50);
-}
-
-.wikitab-saved-section__head:has(+ .wikitab-saved-item-tabs) {
-  margin-bottom: 0;
-}
-
-.wikitab-saved-section__title {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-25);
-  min-width: 0;
-}
-
-.wikitab-saved-section__pin {
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-}
-
-.wikitab-saved-section__heading {
-  margin: 0;
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-large);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-large);
-  color: var(--color-base);
-}
-
-.wikitab-saved-section__empty {
-  display: flex;
-  align-items: center;
-  margin: 0;
-  min-height: var(--wikitab-card-height);
-  color: var(--color-subtle);
 }
 
 .wikitab-saved-section__sentinel {
@@ -307,7 +279,7 @@ watch(selection, (value) => {
   align-items: stretch;
   gap: var(--spacing-100);
   margin-inline: calc(var(--wikitab-page-gutter) * -1);
-  padding-inline: var(--wikitab-page-gutter);
+  padding-inline: var(--wikitab-page-gutter) 0;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;

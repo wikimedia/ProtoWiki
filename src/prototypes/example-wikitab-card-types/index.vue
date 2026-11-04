@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { CdxField, CdxInfoChip, CdxTab, CdxTabs, CdxTextInput } from '@wikimedia/codex'
+import { CdxField, CdxInfoChip, CdxTab, CdxTable, CdxTabs, CdxTextInput } from '@wikimedia/codex'
 
 import PlainWrapper from '@/components/PlainWrapper.vue'
 
@@ -13,12 +13,14 @@ import {
   type WikitabCardCatalogEntry,
   type WikitabCardPrimitiveEntry,
 } from '../wikitab/data/wikitabCardTypeLinks'
+import WikitabCacheStatusPanel from './WikitabCacheStatusPanel.vue'
 import WikitabCardComponentPreview from './WikitabCardComponentPreview.vue'
 import WikitabCardSeedInlinePreview from './WikitabCardSeedInlinePreview.vue'
 import WikitabCardTypePreview from './WikitabCardTypePreview.vue'
 import {
   formatSeedArticleDisplay,
   wikitabCardTypeSeedArticleRows,
+  type WikitabCardTypeSeedArticleRow,
 } from '../wikitab/data/wikitabCardTypeSeedArticle'
 
 definePage({
@@ -29,10 +31,10 @@ definePage({
   },
 })
 
-type TabId = 'card' | 'primitives' | 'loading' | 'seed-articles'
+type TabId = 'card' | 'primitives' | 'loading' | 'seed-articles' | 'caches'
 
 const DEFAULT_TAB: TabId = 'primitives'
-const VALID_TABS = new Set<TabId>(['card', 'primitives', 'loading', 'seed-articles'])
+const VALID_TABS = new Set<TabId>(['card', 'primitives', 'loading', 'seed-articles', 'caches'])
 
 interface LoadingCase {
   id: string
@@ -166,6 +168,34 @@ const filteredLoadingCases = computed(() =>
 
 const seedArticleRows = computed(() => wikitabCardTypeSeedArticleRows())
 
+const seedMetaColumns = [
+  { id: 'label', label: 'Property', width: '11.5rem' },
+  { id: 'value', label: 'Value' },
+]
+
+function seedMetaTableData(row: WikitabCardTypeSeedArticleRow) {
+  return [
+    {
+      id: `${row.catalogId}-examples`,
+      label: 'Examples',
+      kind: 'text' as const,
+      text: row.productionContext,
+    },
+    {
+      id: `${row.catalogId}-seed`,
+      label: 'Seed article',
+      kind: 'seed' as const,
+      seedDisplay: row.seed ? formatSeedArticleDisplay(row.seed) : null,
+    },
+    {
+      id: `${row.catalogId}-save-menu`,
+      label: 'Save article menu',
+      kind: 'flag' as const,
+      flag: row.saveArticleMenu,
+    },
+  ]
+}
+
 const filteredSeedArticleRows = computed(() =>
   seedArticleRows.value.filter((row) =>
     matchesFilter(
@@ -202,7 +232,11 @@ function primitiveAnchor(id: string): string {
             autocapitalize="off"
             autocorrect="off"
             spellcheck="false"
-            placeholder="Type, primitive, component…"
+            :placeholder="
+              activeTab === 'caches'
+                ? 'Module, key, freshness…'
+                : 'Type, primitive, component…'
+            "
           />
         </CdxField>
       </div>
@@ -260,23 +294,23 @@ function primitiveAnchor(id: string): string {
                 class="wikitab-card-types__seed-preview"
                 :catalog-id="row.catalogId"
               />
-              <dl class="wikitab-card-types__seed-meta">
-                <div class="wikitab-card-types__seed-meta-row">
-                  <dt>Examples</dt>
-                  <dd>{{ row.productionContext }}</dd>
-                </div>
-                <div class="wikitab-card-types__seed-meta-row">
-                  <dt>Seed article</dt>
-                  <dd>
-                    <code v-if="row.seed">{{ formatSeedArticleDisplay(row.seed) }}</code>
+              <CdxTable
+                class="wikitab-card-types__seed-meta"
+                caption="Seed article details"
+                hide-caption
+                :columns="seedMetaColumns"
+                :data="seedMetaTableData(row)"
+                :show-vertical-borders="false"
+              >
+                <template #item-value="{ row: meta }">
+                  <template v-if="meta.kind === 'text'">{{ meta.text }}</template>
+                  <template v-else-if="meta.kind === 'seed'">
+                    <code v-if="meta.seedDisplay">{{ meta.seedDisplay }}</code>
                     <span v-else class="wikitab-card-types__seed-none">—</span>
-                  </dd>
-                </div>
-                <div class="wikitab-card-types__seed-meta-row">
-                  <dt>Save article menu</dt>
-                  <dd>
+                  </template>
+                  <template v-else>
                     <CdxInfoChip
-                      v-if="row.saveArticleMenu"
+                      v-if="meta.flag"
                       status="success"
                       class="wikitab-card-types__seed-flag-chip"
                     >
@@ -289,9 +323,9 @@ function primitiveAnchor(id: string): string {
                     >
                       No
                     </CdxInfoChip>
-                  </dd>
-                </div>
-              </dl>
+                  </template>
+                </template>
+              </CdxTable>
             </article>
           </div>
           <p v-if="!filteredSeedArticleRows.length" class="wikitab-card-types__empty">
@@ -317,6 +351,10 @@ function primitiveAnchor(id: string): string {
               No matches.
             </p>
           </div>
+        </CdxTab>
+
+        <CdxTab name="caches" label="Caches">
+          <WikitabCacheStatusPanel :filter-text="filterText" />
         </CdxTab>
       </CdxTabs>
     </div>
@@ -352,6 +390,10 @@ function primitiveAnchor(id: string): string {
   margin-top: var(--spacing-50);
 }
 
+.wikitab-card-types__tabs :deep(.cdx-tabs__content) {
+  overflow: visible;
+}
+
 .wikitab-card-types__list {
   display: flex;
   flex-direction: column;
@@ -385,43 +427,20 @@ function primitiveAnchor(id: string): string {
 }
 
 .wikitab-card-types__seed-meta {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  column-gap: var(--spacing-100);
-  margin: 0;
-  width: fit-content;
+  width: 100%;
   max-width: 36rem;
   font-size: var(--font-size-small);
   line-height: var(--line-height-small);
 }
 
-.wikitab-card-types__seed-meta-row {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: subgrid;
-  align-items: baseline;
-  padding: var(--spacing-25) 0;
-  border-bottom: var(--border-width-base) solid var(--border-color-subtle);
+.wikitab-card-types__seed-meta :deep(thead) {
+  display: none;
 }
 
-.wikitab-card-types__seed-meta-row:last-child {
-  border-bottom: none;
-}
-
-@supports not (grid-template-columns: subgrid) {
-  .wikitab-card-types__seed-meta-row {
-    grid-template-columns: 11.5rem minmax(0, 1fr);
-  }
-}
-
-.wikitab-card-types__seed-meta dt {
-  margin: 0;
-  font-weight: var(--font-weight-bold);
-  color: var(--color-subtle);
-}
-
-.wikitab-card-types__seed-meta dd {
-  margin: 0;
+.wikitab-card-types__seed-meta :deep(th),
+.wikitab-card-types__seed-meta :deep(td) {
+  padding: var(--spacing-50) var(--spacing-75);
+  vertical-align: middle;
 }
 
 .wikitab-card-types__seed-flag-chip {

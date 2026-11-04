@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { CdxAccordion, CdxCheckbox, CdxSelect, CdxTextInput } from '@wikimedia/codex'
+import { CdxAccordion, CdxCheckbox, CdxSelect, CdxTable, CdxTextInput } from '@wikimedia/codex'
 
 import WikitabCard from '../wikitab/WikitabCard.vue'
 import WikitabSearchLoadingCard from '../wikitab/WikitabSearchLoadingCard.vue'
@@ -25,7 +25,7 @@ import {
   previewModelForEntry,
   runtimeFieldUsesSelect,
   schemaVariantKey,
-  type WikitabCardTypePreviewModel,
+  type WikitabCardTypeFieldRowKind,
 } from '../wikitab/data/wikitabCardTypePlayground'
 import '../wikitab/wikitab-surface.css'
 
@@ -90,6 +90,116 @@ const runtimeHardcodedRows = computed(() =>
   ),
 )
 
+type FieldEditorKind =
+  | 'payload'
+  | 'runtime-bind'
+  | 'runtime-readonly'
+  | 'presentation'
+
+interface FieldTableRow {
+  id: string
+  field: string
+  type: string
+  rowKind: WikitabCardTypeFieldRowKind
+  editor: FieldEditorKind
+  name: string
+  propType: string
+  optional?: boolean
+  runtimeValue?: string
+}
+
+const tableColumns = [
+  { id: 'field', label: 'Field', width: '28%' },
+  { id: 'type', label: 'Type', width: '28%' },
+  { id: 'value', label: 'Value', width: '44%' },
+]
+
+const tableData = computed((): FieldTableRow[] => {
+  const rows: FieldTableRow[] = []
+
+  for (const prop of optionPayloadProperties.value) {
+    rows.push({
+      id: `${variantKey.value}-options-${prop.name}`,
+      field: `${prop.name}${prop.optional ? '?' : ''}`,
+      type: prop.type,
+      rowKind: 'options',
+      editor: 'payload',
+      name: prop.name,
+      propType: prop.type,
+      optional: prop.optional,
+    })
+  }
+
+  for (const row of runtimeOptionRows.value) {
+    rows.push({
+      id: `${variantKey.value}-options-runtime-${row.name}`,
+      field: row.name,
+      type: row.type,
+      rowKind: 'options',
+      editor: playgroundRuntimeBindFieldEditable(
+        props.entry,
+        props.schema,
+        fields.value,
+        row.name,
+      )
+        ? 'runtime-bind'
+        : 'runtime-readonly',
+      name: row.name,
+      propType: row.type,
+      runtimeValue: row.value,
+    })
+  }
+
+  for (const prop of customPayloadProperties.value) {
+    rows.push({
+      id: `${variantKey.value}-custom-${prop.name}`,
+      field: `${prop.name}${prop.optional ? '?' : ''}`,
+      type: prop.type,
+      rowKind: 'custom',
+      editor: 'payload',
+      name: prop.name,
+      propType: prop.type,
+      optional: prop.optional,
+    })
+  }
+
+  for (const row of presentationFieldRows.value) {
+    rows.push({
+      id: `${variantKey.value}-presentation-${row.name}`,
+      field: `${row.name}${row.optional ? '?' : ''}`,
+      type: row.type,
+      rowKind: 'hardcoded',
+      editor: 'presentation',
+      name: row.name,
+      propType: row.type,
+      optional: row.optional,
+      runtimeValue: row.value,
+    })
+  }
+
+  for (const row of runtimeHardcodedRows.value) {
+    rows.push({
+      id: `${variantKey.value}-hardcoded-runtime-${row.name}`,
+      field: row.name,
+      type: row.type,
+      rowKind: 'hardcoded',
+      editor: playgroundRuntimeBindFieldEditable(
+        props.entry,
+        props.schema,
+        fields.value,
+        row.name,
+      )
+        ? 'runtime-bind'
+        : 'runtime-readonly',
+      name: row.name,
+      propType: row.type,
+      runtimeValue: row.value,
+    })
+  }
+
+  return rows
+})
+
 const previewComponent = computed(() => {
   switch (preview.value?.component) {
     case 'WikitabCard':
@@ -128,17 +238,16 @@ function onBindSelect(name: string, value: string | number | null) {
   bindFields.value[name] = String(value)
 }
 
-function runtimeBindFieldEditable(row: { name: string }) {
-  return playgroundRuntimeBindFieldEditable(
-    props.entry,
-    props.schema,
-    fields.value,
-    row.name,
-  )
-}
-
 function readonlyValueUsesTextarea(value: string, multiline?: boolean): boolean {
   return !!multiline && value.includes('\n')
+}
+
+function payloadProp(row: FieldTableRow) {
+  return { name: row.name, type: row.propType, optional: row.optional }
+}
+
+function runtimeSelectRow(row: FieldTableRow) {
+  return { name: row.name, type: row.propType, value: row.runtimeValue ?? '' }
 }
 </script>
 
@@ -158,224 +267,103 @@ function readonlyValueUsesTextarea(value: string, multiline?: boolean): boolean 
     <CdxAccordion separation="minimal" class="wikitab-card-type-preview__fields">
       <template #title>Fields</template>
       <div class="wikitab-card-type-preview__table-wrap">
-      <table class="wikitab-card-type-preview__table">
-        <thead>
-          <tr>
-            <th scope="col">Field</th>
-            <th scope="col">Type</th>
-            <th scope="col">Value</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="prop in optionPayloadProperties"
-            :key="`${variantKey}-options-${prop.name}`"
-            :class="playgroundFieldRowClass('options')"
-          >
-            <td>
-              <code>{{ prop.name }}{{ prop.optional ? '?' : '' }}</code>
-            </td>
-            <td>
-              <code class="wikitab-card-type-preview__type-cell">{{ prop.type }}</code>
-            </td>
-            <td>
+        <CdxTable
+          class="wikitab-card-type-preview__table"
+          caption="Card type fields"
+          hide-caption
+          :columns="tableColumns"
+          :data="tableData"
+          :show-vertical-borders="false"
+        >
+          <template #item-field="{ row }">
+            <code :class="playgroundFieldRowClass(row.rowKind)">{{ row.field }}</code>
+          </template>
+
+          <template #item-type="{ row }">
+            <code class="wikitab-card-type-preview__type-cell">{{ row.type }}</code>
+          </template>
+
+          <template #item-value="{ row }">
+            <template v-if="row.editor === 'payload'">
               <CdxCheckbox
-                v-if="fieldUsesCheckbox(prop)"
-                :model-value="fields[prop.name] === 'true'"
-                @update:model-value="onCheckbox(prop.name, $event)"
+                v-if="fieldUsesCheckbox(payloadProp(row))"
+                :model-value="fields[row.name] === 'true'"
+                @update:model-value="onCheckbox(row.name, $event)"
               />
               <textarea
-                v-else-if="fieldUsesTextarea(prop)"
+                v-else-if="fieldUsesTextarea(payloadProp(row))"
                 class="wikitab-card-type-preview__textarea"
-                :value="fields[prop.name] ?? ''"
-                :rows="playgroundFieldTextareaRows(fields[prop.name] ?? '')"
-                @input="onFieldInput(prop.name, ($event.target as HTMLTextAreaElement).value)"
+                :value="fields[row.name] ?? ''"
+                :rows="playgroundFieldTextareaRows(fields[row.name] ?? '')"
+                @input="onFieldInput(row.name, ($event.target as HTMLTextAreaElement).value)"
               />
               <CdxSelect
-                v-else-if="fieldUsesSelect(prop)"
-                :selected="fields[prop.name] ?? ''"
-                :menu-items="fieldSelectMenuItems(prop)"
-                @update:selected="onSelect(prop.name, $event)"
+                v-else-if="fieldUsesSelect(payloadProp(row))"
+                :selected="fields[row.name] ?? ''"
+                :menu-items="fieldSelectMenuItems(payloadProp(row))"
+                @update:selected="onSelect(row.name, $event)"
               />
               <CdxTextInput
                 v-else
-                :model-value="fields[prop.name] ?? ''"
-                @update:model-value="onFieldInput(prop.name, $event)"
+                :model-value="fields[row.name] ?? ''"
+                @update:model-value="onFieldInput(row.name, $event)"
               />
-            </td>
-          </tr>
-          <tr
-            v-for="row in runtimeOptionRows"
-            :key="`${variantKey}-options-runtime-${row.name}`"
-            :class="playgroundFieldRowClass('options')"
-          >
-            <td>
-              <code>{{ row.name }}</code>
-            </td>
-            <td>
-              <code class="wikitab-card-type-preview__type-cell">{{ row.type }}</code>
-            </td>
-            <td>
-              <template v-if="runtimeBindFieldEditable(row)">
-                <textarea
-                  v-if="playgroundBindFieldUsesTextarea(row.name)"
-                  class="wikitab-card-type-preview__textarea"
-                  :value="bindFields[row.name] ?? ''"
-                  :rows="playgroundFieldTextareaRows(bindFields[row.name] ?? '')"
-                  @input="onBindFieldInput(row.name, ($event.target as HTMLTextAreaElement).value)"
-                />
-                <CdxSelect
-                  v-else-if="playgroundBindFieldUsesSelect(row.name)"
-                  :selected="bindFields[row.name] ?? ''"
-                  :menu-items="fieldSelectMenuItems(row)"
-                  @update:selected="onBindSelect(row.name, $event)"
-                />
-                <CdxTextInput
-                  v-else
-                  :model-value="bindFields[row.name] ?? ''"
-                  @update:model-value="onBindFieldInput(row.name, $event)"
-                />
-              </template>
-              <template v-else>
-                <textarea
-                  v-if="readonlyValueUsesTextarea(row.value, true)"
-                  class="wikitab-card-type-preview__textarea wikitab-card-type-preview__textarea--readonly"
-                  :value="row.value"
-                  :rows="playgroundFieldTextareaRows(row.value)"
-                  readonly
-                />
-                <CdxSelect
-                  v-else-if="runtimeFieldUsesSelect(row)"
-                  class="wikitab-card-type-preview__readonly-select"
-                  :selected="row.value"
-                  :menu-items="fieldSelectMenuItems(row)"
-                  disabled
-                  @update:selected="() => {}"
-                />
-                <CdxTextInput
-                  v-else
-                  class="wikitab-card-type-preview__readonly-value"
-                  :model-value="row.value"
-                  @update:model-value="() => {}"
-                />
-              </template>
-            </td>
-          </tr>
-          <tr
-            v-for="prop in customPayloadProperties"
-            :key="`${variantKey}-custom-${prop.name}`"
-            :class="playgroundFieldRowClass('custom')"
-          >
-            <td>
-              <code>{{ prop.name }}{{ prop.optional ? '?' : '' }}</code>
-            </td>
-            <td>
-              <code class="wikitab-card-type-preview__type-cell">{{ prop.type }}</code>
-            </td>
-            <td>
-              <CdxCheckbox
-                v-if="fieldUsesCheckbox(prop)"
-                :model-value="fields[prop.name] === 'true'"
-                @update:model-value="onCheckbox(prop.name, $event)"
-              />
+            </template>
+
+            <template v-else-if="row.editor === 'runtime-bind'">
               <textarea
-                v-else-if="fieldUsesTextarea(prop)"
+                v-if="playgroundBindFieldUsesTextarea(row.name)"
                 class="wikitab-card-type-preview__textarea"
-                :value="fields[prop.name] ?? ''"
-                :rows="playgroundFieldTextareaRows(fields[prop.name] ?? '')"
-                @input="onFieldInput(prop.name, ($event.target as HTMLTextAreaElement).value)"
+                :value="bindFields[row.name] ?? ''"
+                :rows="playgroundFieldTextareaRows(bindFields[row.name] ?? '')"
+                @input="onBindFieldInput(row.name, ($event.target as HTMLTextAreaElement).value)"
               />
               <CdxSelect
-                v-else-if="fieldUsesSelect(prop)"
-                :selected="fields[prop.name] ?? ''"
-                :menu-items="fieldSelectMenuItems(prop)"
-                @update:selected="onSelect(prop.name, $event)"
+                v-else-if="playgroundBindFieldUsesSelect(row.name)"
+                :selected="bindFields[row.name] ?? ''"
+                :menu-items="fieldSelectMenuItems(payloadProp(row))"
+                @update:selected="onBindSelect(row.name, $event)"
               />
               <CdxTextInput
                 v-else
-                :model-value="fields[prop.name] ?? ''"
-                @update:model-value="onFieldInput(prop.name, $event)"
+                :model-value="bindFields[row.name] ?? ''"
+                @update:model-value="onBindFieldInput(row.name, $event)"
               />
-            </td>
-          </tr>
-          <tr
-            v-for="row in presentationFieldRows"
-            :key="`${variantKey}-presentation-${row.name}`"
-            :class="playgroundFieldRowClass('hardcoded')"
-          >
-            <td>
-              <code>{{ row.name }}{{ row.optional ? '?' : '' }}</code>
-            </td>
-            <td>
-              <code class="wikitab-card-type-preview__type-cell">{{ row.type }}</code>
-            </td>
-            <td>
+            </template>
+
+            <template v-else-if="row.editor === 'presentation'">
               <CdxTextInput
                 class="wikitab-card-type-preview__readonly-value"
-                :model-value="row.value"
+                :model-value="row.runtimeValue ?? ''"
                 @update:model-value="() => {}"
               />
-            </td>
-          </tr>
-          <tr
-            v-for="row in runtimeHardcodedRows"
-            :key="`${variantKey}-hardcoded-runtime-${row.name}`"
-            :class="playgroundFieldRowClass('hardcoded')"
-          >
-            <td>
-              <code>{{ row.name }}</code>
-            </td>
-            <td>
-              <code class="wikitab-card-type-preview__type-cell">{{ row.type }}</code>
-            </td>
-            <td>
-              <template v-if="runtimeBindFieldEditable(row)">
-                <textarea
-                  v-if="playgroundBindFieldUsesTextarea(row.name)"
-                  class="wikitab-card-type-preview__textarea"
-                  :value="bindFields[row.name] ?? ''"
-                  :rows="playgroundFieldTextareaRows(bindFields[row.name] ?? '')"
-                  @input="onBindFieldInput(row.name, ($event.target as HTMLTextAreaElement).value)"
-                />
-                <CdxSelect
-                  v-else-if="playgroundBindFieldUsesSelect(row.name)"
-                  :selected="bindFields[row.name] ?? ''"
-                  :menu-items="fieldSelectMenuItems(row)"
-                  @update:selected="onBindSelect(row.name, $event)"
-                />
-                <CdxTextInput
-                  v-else
-                  :model-value="bindFields[row.name] ?? ''"
-                  @update:model-value="onBindFieldInput(row.name, $event)"
-                />
-              </template>
-              <template v-else>
-                <textarea
-                  v-if="readonlyValueUsesTextarea(row.value, true)"
-                  class="wikitab-card-type-preview__textarea wikitab-card-type-preview__textarea--readonly"
-                  :value="row.value"
-                  :rows="playgroundFieldTextareaRows(row.value)"
-                  readonly
-                />
-                <CdxSelect
-                  v-else-if="runtimeFieldUsesSelect(row)"
-                  class="wikitab-card-type-preview__readonly-select"
-                  :selected="row.value"
-                  :menu-items="fieldSelectMenuItems(row)"
-                  disabled
-                  @update:selected="() => {}"
-                />
-                <CdxTextInput
-                  v-else
-                  class="wikitab-card-type-preview__readonly-value"
-                  :model-value="row.value"
-                  @update:model-value="() => {}"
-                />
-              </template>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            </template>
+
+            <template v-else>
+              <textarea
+                v-if="readonlyValueUsesTextarea(row.runtimeValue ?? '', true)"
+                class="wikitab-card-type-preview__textarea wikitab-card-type-preview__textarea--readonly"
+                :value="row.runtimeValue ?? ''"
+                :rows="playgroundFieldTextareaRows(row.runtimeValue ?? '')"
+                readonly
+              />
+              <CdxSelect
+                v-else-if="runtimeFieldUsesSelect(runtimeSelectRow(row))"
+                class="wikitab-card-type-preview__readonly-select"
+                :selected="row.runtimeValue ?? ''"
+                :menu-items="fieldSelectMenuItems(payloadProp(row))"
+                disabled
+                @update:selected="() => {}"
+              />
+              <CdxTextInput
+                v-else
+                class="wikitab-card-type-preview__readonly-value"
+                :model-value="row.runtimeValue ?? ''"
+                @update:model-value="() => {}"
+              />
+            </template>
+          </template>
+        </CdxTable>
       </div>
     </CdxAccordion>
   </div>
@@ -394,6 +382,11 @@ function readonlyValueUsesTextarea(value: string, multiline?: boolean): boolean 
   box-sizing: border-box;
   width: fit-content;
   max-width: 100%;
+  position: sticky;
+  top: var(--spacing-100);
+  align-self: flex-start;
+  z-index: 1;
+  background-color: var(--background-color-base);
 }
 
 /* Match ~one Wikitab feed column so thumbnail size reads like production. */
@@ -424,49 +417,24 @@ function readonlyValueUsesTextarea(value: string, multiline?: boolean): boolean 
 }
 
 .wikitab-card-type-preview__table-wrap {
-  overflow-x: auto;
   max-width: 100%;
+  overflow-x: hidden;
 }
 
 .wikitab-card-type-preview__table {
   width: 100%;
-  min-width: 32rem;
-  border-collapse: collapse;
-  table-layout: fixed;
+  max-width: 100%;
 }
 
-.wikitab-card-type-preview__table th,
-.wikitab-card-type-preview__table td {
+.wikitab-card-type-preview__table :deep(th),
+.wikitab-card-type-preview__table :deep(td) {
   padding: var(--spacing-50) var(--spacing-75);
-  border: var(--border-width-base) solid var(--border-color-subtle);
-  text-align: start;
   vertical-align: middle;
-}
-
-.wikitab-card-type-preview__table th {
-  background: var(--background-color-neutral-subtle);
-}
-
-.wikitab-card-type-preview__table th:nth-child(1),
-.wikitab-card-type-preview__table td:nth-child(1) {
-  width: 28%;
   word-break: break-word;
 }
 
-.wikitab-card-type-preview__table th:nth-child(2),
-.wikitab-card-type-preview__table td:nth-child(2) {
-  width: 28%;
-  word-break: break-word;
-}
-
-.wikitab-card-type-preview__table th:nth-child(3),
-.wikitab-card-type-preview__table td:nth-child(3) {
-  width: 44%;
-  min-width: 0;
-}
-
-.wikitab-card-type-preview__table td:last-child :deep(.cdx-text-input),
-.wikitab-card-type-preview__table td:last-child :deep(.cdx-select) {
+.wikitab-card-type-preview__table :deep(td:last-child) .cdx-text-input,
+.wikitab-card-type-preview__table :deep(td:last-child) .cdx-select {
   max-width: 100%;
 }
 
@@ -506,21 +474,20 @@ function readonlyValueUsesTextarea(value: string, multiline?: boolean): boolean 
   resize: none;
 }
 
-.wikitab-card-type-preview__row--options td {
+.wikitab-card-type-preview__table :deep(tr:has(.wikitab-card-type-preview__row--options)) td {
   background-color: var(--background-color-base, #fff);
 }
 
-.wikitab-card-type-preview__row--custom td {
+.wikitab-card-type-preview__table :deep(tr:has(.wikitab-card-type-preview__row--custom)) td {
   background-color: #dceeff;
 }
 
-.wikitab-card-type-preview__row--hardcoded td {
+.wikitab-card-type-preview__table :deep(tr:has(.wikitab-card-type-preview__row--hardcoded)) td {
   background-color: var(--background-color-neutral-subtle);
   color: var(--color-subtle);
 }
 
-.wikitab-card-type-preview__row--hardcoded td code {
+.wikitab-card-type-preview__table :deep(tr:has(.wikitab-card-type-preview__row--hardcoded)) td code {
   color: inherit;
 }
-
 </style>

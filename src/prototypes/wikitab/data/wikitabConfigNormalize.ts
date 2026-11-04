@@ -2,6 +2,7 @@ import {
   WIKITAB_CONFIGURE_MODULES,
   WIKITAB_DAILY_READS_MODULE_ID,
   WIKITAB_DEFAULT_HIDDEN_MODULE_IDS,
+  WIKITAB_DISCUSSIONS_MODULE_ID,
   WIKITAB_FEATURED_MODULE_ID,
   WIKITAB_NEARBY_MODULE_ID,
   WIKITAB_REVIEW_CHANGES_MODULE_ID,
@@ -46,6 +47,10 @@ export interface WikitabConfig {
   colorThemeId: WikitabColorThemeId | null
   reviewChangesShowSavedEdits: boolean
   reviewChangesShowRecentRiskyEdits: boolean
+  /** Active discussions — community noticeboards (Help desk + Village pumps). */
+  discussionsShowNoticeboards: boolean
+  /** Active discussions — talk pages of saved article seeds. */
+  discussionsShowSavedTalk: boolean
   /** Last successful Nearby geolocation — refetch without re-prompting when set. */
   nearbyLastCoord: WikitabNearbyLastCoord | null
   /** Full Nearby card list for `nearbyLastCoord` — paints with no network when fresh. */
@@ -65,6 +70,8 @@ export const DEFAULT_WIKITAB_CONFIG: WikitabConfig = {
   colorThemeId: null,
   reviewChangesShowSavedEdits: true,
   reviewChangesShowRecentRiskyEdits: true,
+  discussionsShowNoticeboards: true,
+  discussionsShowSavedTalk: true,
   nearbyLastCoord: null,
   nearbyCardsCache: null,
   savedItems: [],
@@ -83,6 +90,7 @@ const VALID_MODULE_IDS = new Set<WikitabModuleId>([
   WIKITAB_NEARBY_MODULE_ID,
   WIKITAB_SUGGESTED_EDITS_MODULE_ID,
   WIKITAB_REVIEW_CHANGES_MODULE_ID,
+  WIKITAB_DISCUSSIONS_MODULE_ID,
 ])
 
 function isModuleId(value: string): value is WikitabModuleId {
@@ -304,6 +312,11 @@ export function normalizeWikitabConfig(raw: unknown): WikitabConfig {
       record.reviewChangesShowRecentRiskyEdits,
       true,
     ),
+    discussionsShowNoticeboards: normalizeReviewChangesBool(
+      record.discussionsShowNoticeboards,
+      true,
+    ),
+    discussionsShowSavedTalk: normalizeReviewChangesBool(record.discussionsShowSavedTalk, true),
     nearbyLastCoord: normalizeNearbyLastCoord(record.nearbyLastCoord),
     nearbyCardsCache: normalizeNearbyCardsCache(record.nearbyCardsCache),
     savedItems: normalizeSavedItems(record.savedItems),
@@ -323,6 +336,8 @@ export function cloneWikitabConfig(config: WikitabConfig): WikitabConfig {
     colorThemeId: config.colorThemeId,
     reviewChangesShowSavedEdits: config.reviewChangesShowSavedEdits,
     reviewChangesShowRecentRiskyEdits: config.reviewChangesShowRecentRiskyEdits,
+    discussionsShowNoticeboards: config.discussionsShowNoticeboards,
+    discussionsShowSavedTalk: config.discussionsShowSavedTalk,
     nearbyLastCoord: config.nearbyLastCoord
       ? { ...config.nearbyLastCoord }
       : null,

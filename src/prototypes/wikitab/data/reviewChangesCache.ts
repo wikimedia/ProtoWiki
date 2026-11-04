@@ -25,6 +25,8 @@ interface CacheEntry {
 export interface CachedReviewChanges {
   items: WikitabSearchActivityItem[]
   hasMore: boolean
+  /** Fingerprint the cards were fetched under — may differ from live saves. */
+  savedFingerprint: string
   fetchedAtSaved?: number
   fetchedAtRisky?: number
 }
@@ -55,9 +57,13 @@ function dedupeCachedItems(items: WikitabSearchActivityItem[]): WikitabSearchAct
   return deduped
 }
 
+/**
+ * Read by UTC day + settings fingerprint. A saved-fingerprint mismatch is not a
+ * miss — callers keep the painted cards and surface a title refresh when live
+ * seeds diverge. Settings mismatch still misses (toggles change the feed shape).
+ */
 export function readCachedReviewChanges(
   day: string,
-  savedFingerprint: string,
   settingsFingerprint: string,
 ): CachedReviewChanges | null {
   if (isCacheBypassed()) return null
@@ -69,7 +75,7 @@ export function readCachedReviewChanges(
     const entry = JSON.parse(raw) as CacheEntry
     if (
       entry?.day !== day ||
-      entry.savedFingerprint !== savedFingerprint ||
+      typeof entry.savedFingerprint !== 'string' ||
       entry.settingsFingerprint !== settingsFingerprint ||
       !entry.items
     ) {
@@ -79,6 +85,7 @@ export function readCachedReviewChanges(
     return {
       items: dedupeCachedItems(entry.items.map((item) => ({ ...item }))),
       hasMore: entry.hasMore === true,
+      savedFingerprint: entry.savedFingerprint,
       fetchedAtSaved: entry.fetchedAtSaved,
       fetchedAtRisky: entry.fetchedAtRisky,
     }

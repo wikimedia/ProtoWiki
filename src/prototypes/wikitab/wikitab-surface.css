@@ -15,7 +15,8 @@
  *    under html[data-codex-patched] (set by src/theme.ts). The same
  *    --wikitab-card-transition-duration drives card ⋯ menu opacity fades.
  *
- * 3. `.wikitab-panel` — full-page overlays (Configure, Saved, Color theme, Recent edits settings).
+ * 3. `.wikitab-panel` — full-page overlays (Configure, Saved, Color theme, Recent edits /
+ *    Active discussions settings).
  */
 
 .wikitab {
@@ -296,19 +297,15 @@ html:not([data-codex-patched]) .wikitab.wikitab--themed .cdx-button.cdx-button--
 }
 
 .wikitab-card .wikitab-activity-description-block {
-  display: flex;
-  flex-direction: column;
   min-width: 0;
 }
 
 .wikitab-card .wikitab-activity-diff-size {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-50);
   margin: 0;
   font-size: var(--font-size-medium);
   font-weight: var(--font-weight-normal);
   line-height: var(--line-height-small);
+  flex-shrink: 0;
 }
 
 .wikitab-card .wikitab-activity-diff-size-added {
@@ -325,6 +322,7 @@ html:not([data-codex-patched]) .wikitab.wikitab--themed .cdx-button.cdx-button--
 
 .wikitab-card .wikitab-activity-description {
   margin: 0;
+  min-width: 0;
 }
 
 .wikitab-panel {
@@ -335,9 +333,51 @@ html:not([data-codex-patched]) .wikitab.wikitab--themed .cdx-button.cdx-button--
   z-index: 20;
   box-sizing: border-box;
   overflow-y: auto;
+  /*
+   * Always reserve the scrollbar lane so overflowing and short panels share the
+   * same content width (otherwise a scrollbar shunts the column left).
+   */
+  scrollbar-gutter: stable;
   overscroll-behavior: contain;
   padding-inline: var(--wikitab-page-gutter);
   padding-block: var(--spacing-100);
   background-color: var(--wikitab-theme-bg, var(--background-color-base));
   color: var(--wikitab-theme-fg, var(--color-base));
+}
+
+/*
+ * Home module promoted in place to fullscreen (`variant="screen"` + `.wikitab-panel`).
+ * Cards stay mounted — no Teleport / remount flash. Cap content like the home column.
+ */
+html.wikitab-module-screen-open {
+  overflow: hidden;
+  scrollbar-gutter: auto;
+}
+
+.wikitab-module-screen.wikitab-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.wikitab-module-screen.wikitab-panel > * {
+  width: 100%;
+}
+
+@media (max-width: 767px) {
+  .wikitab-module-screen.wikitab-panel {
+    padding: 0;
+    padding-top: var(--wikitab-chrome-inset, var(--spacing-100));
+    padding-inline: var(--spacing-100);
+  }
+}
+
+@media (min-width: 768px) {
+  [data-skin='desktop'] .wikitab-module-screen.wikitab-panel {
+    --wikitab-page-gutter: var(--spacing-400);
+  }
+
+  [data-skin='desktop'] .wikitab-module-screen.wikitab-panel > * {
+    max-width: 640px;
+    margin-inline: auto;
+  }
 }

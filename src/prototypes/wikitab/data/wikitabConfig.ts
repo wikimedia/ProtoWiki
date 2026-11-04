@@ -48,6 +48,7 @@ const WIKITAB_CACHE_KEY_PREFIXES = [
   'wikitab-daily-reads-cache-v',
   'wikitab-suggested-edits-cache-v',
   'wikitab-review-changes-cache-v',
+  'wikitab-active-discussions-cache-v',
   'wikitab-potd-cache-v',
   'wikitab-featured-cache-v',
   // Legacy Nearby standalone keys (cards now live in WikitabConfig.nearbyCardsCache).

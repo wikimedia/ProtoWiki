@@ -17,8 +17,10 @@ import {
   formatWikitabEditRelativeTime,
   type WikitabSearchActivityItem,
 } from './fetchWikitabSearchActivity'
+import { parseActivityEditSummaryDisplay } from './wikitabActivityEditSummary'
 import type { WikitabSearchActivityCardPayload } from './wikitabCardPayloadTypes'
 import { editorIconForKind } from './wikitabEditorKindIcons'
+import { articleSectionUrl } from './wikitabHtml'
 import { wikitabCardBindProps } from './wikitabCardPresentation'
 import {
   wikitabCardSaveArticleMenuItem,
@@ -37,29 +39,58 @@ function escapeAttr(text: string): string {
   return escapeHtml(text)
 }
 
+function nestedReadLink(href: string, label: string): string {
+  return `<a class="wikitab-card__nested-link" href="${escapeAttr(href)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>`
+}
+
+/** Linked article title, optional ` → section` for section-level edits. */
+export function searchActivityItemTitleHtml(item: WikitabSearchActivityItem): string {
+  const article = item.articleTitle.trim()
+  if (!article) return ''
+
+  const articleHref = item.articleUrl.trim()
+  const articlePart = articleHref
+    ? nestedReadLink(articleHref, article)
+    : escapeHtml(article)
+
+  const { section } = parseActivityEditSummaryDisplay(item.editSummary)
+  const sectionName = section?.trim()
+  if (!sectionName) return articlePart
+
+  const sectionPart = articleHref
+    ? nestedReadLink(articleSectionUrl(articleHref, sectionName), sectionName)
+    : escapeHtml(sectionName)
+  return `${articlePart} →${sectionPart}`
+}
+
 function activityDiffSizeHtml(item: WikitabSearchActivityItem): string {
   if (item.delta === undefined) return ''
   if (item.delta === 0) {
-    return '<span class="wikitab-activity-diff-size-neutral">±0</span>'
+    return '<span class="wikitab-activity-diff-size-neutral">(±0)</span>'
   }
   if (item.delta > 0) {
-    return `<span class="wikitab-activity-diff-size-added">+${item.delta}</span>`
+    return `<span class="wikitab-activity-diff-size-added">(+${item.delta})</span>`
   }
-  return `<span class="wikitab-activity-diff-size-removed">−${Math.abs(item.delta)}</span>`
+  return `<span class="wikitab-activity-diff-size-removed">(−${Math.abs(item.delta)})</span>`
 }
 
-/** `#description` html hook — diff size + edit summary. */
+/** `#description` html hook — parenthesized delta + quoted summary (section lives in the title). */
 export function searchActivityItemDescriptionHtml(item: WikitabSearchActivityItem): string {
   const diff = activityDiffSizeHtml(item)
-  const summary = item.editSummary?.trim()
+  const { editSummary } = parseActivityEditSummaryDisplay(item.editSummary)
+  const summary = editSummary?.trim()
   if (!diff && !summary) return ''
 
   const parts: string[] = ['<div class="wikitab-activity-description-block">']
   if (diff) {
-    parts.push(`<p class="wikitab-activity-diff-size">${diff}</p>`)
+    parts.push(`<span class="wikitab-activity-diff-size">${diff}</span>`)
+  }
+  if (diff && summary) {
+    parts.push(' ')
   }
   if (summary) {
-    parts.push(`<p class="wikitab-activity-description">${escapeHtml(summary)}</p>`)
+    const quoted = summary.startsWith('"') ? summary : `"${summary}"`
+    parts.push(`<span class="wikitab-activity-description">${escapeHtml(quoted)}</span>`)
   }
   parts.push('</div>')
   return parts.join('')
@@ -91,14 +122,14 @@ export function searchActivityChipsFromItem(
   item: WikitabSearchActivityItem,
   options: { omitLatestRevisionChip?: boolean } = {},
 ): WikitabCardChip[] {
+  if (item.reverted) {
+    return [{ text: 'Reverted', icon: cdxIconEditUndo, type: 'notice' }]
+  }
   if (item.highRevertRisk) {
     return [{ text: 'High revert risk', icon: cdxIconAlert, type: 'warning' }]
   }
   if (item.needsReview) {
     return [{ text: 'Needs review', icon: cdxIconFlag, type: 'notice' }]
-  }
-  if (item.reverted) {
-    return [{ text: 'Reverted', icon: cdxIconEditUndo, type: 'notice' }]
   }
   if (!options.omitLatestRevisionChip && item.isLatestRevision) {
     return [{ text: 'Latest revision', icon: cdxIconArticle, type: 'notice' }]
@@ -172,11 +203,13 @@ export function searchActivityItemToCardData(
   item: WikitabSearchActivityItem,
   options: { linkEditor?: boolean } = {},
 ): WikitabCardData {
+  const titleHtml = searchActivityItemTitleHtml(item)
   const description = searchActivityItemDescriptionHtml(item)
   const editedEnd = activityEditedRelativeLabel(item)
   return {
     key: `activity:${item.revisionId}`,
     title: item.articleTitle,
+    ...(titleHtml ? { titleHtml } : {}),
     url: item.diffUrl,
     ...(description ? { description } : {}),
     thumbnailUrl: item.thumbnailUrl,

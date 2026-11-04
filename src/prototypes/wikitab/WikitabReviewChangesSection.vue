@@ -25,56 +25,104 @@ import {
 import type { WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
 import { wikitabCardBindProps } from './data/wikitabCardPresentation'
 import { wikitabCardPropsForSearchActivityItem } from './data/wikitabSearchActivityWikitabCard'
+import { wikitabReservedSlotHeight } from './data/wikitabCardSlotHeights'
 import { WIKITAB_REVIEW_CHANGES_MODULE_SPEC } from './sections'
 import WikitabCard from './WikitabCard.vue'
+import WikitabModuleHead from './WikitabModuleHead.vue'
+import WikitabModuleMore from './WikitabModuleMore.vue'
+import WikitabModuleRefreshCard from './WikitabModuleRefreshCard.vue'
+import { useInfiniteScroll } from './useInfiniteScroll'
 import { usePreventHorizontalSwipeNavigation } from './usePreventHorizontalSwipeNavigation'
+import { useRestoreReservedOnScreenClose } from './useRestoreReservedOnScreenClose'
 import { useRevealOnScrollEnd } from './useRevealOnScrollEnd'
+import { wikitabShowMoreDisabled } from './wikitabShowMoreDisabled'
 
 const spec = WIKITAB_REVIEW_CHANGES_MODULE_SPEC
 
-const props = defineProps<{
-  items: WikitabSearchActivityItem[]
-  /** Revids whose editor kind is still being looked up. */
-  editorKindPending?: Set<number>
-  loading: boolean
-  fillingInitial: boolean
-  pending: boolean
-  loadingMore: boolean
-  hasMore: boolean
-  error: string | null
-  pinned: boolean
-  isCardSaved: (id: string) => boolean
-  saveArticleMenuLookup: WikitabSaveArticleMenuLookup
-}>()
+const props = withDefaults(
+  defineProps<{
+    items: WikitabSearchActivityItem[]
+    /** Revids whose editor kind is still being looked up. */
+    editorKindPending?: Set<number>
+    loading: boolean
+    fillingInitial: boolean
+    pending: boolean
+    loadingMore: boolean
+    hasMore: boolean
+    error: string | null
+    pinned: boolean
+    /** At least one Configure source (saved / recent risky) is on. */
+    sourcesEnabled: boolean
+    /** Configure: edits from saved articles. */
+    showSavedEdits: boolean
+    /** Configure: recent risky edits. */
+    showRecentRiskyEdits: boolean
+    /** Live saved-articles fingerprint differs from the last fetch. */
+    showSavedRefresh?: boolean
+    isCardSaved: (id: string) => boolean
+    saveArticleMenuLookup: WikitabSaveArticleMenuLookup
+    /** Home feed vs fullscreen module screen (`?screen=`). */
+    variant?: 'home' | 'screen'
+  }>(),
+  { variant: 'home' },
+)
 
 const emit = defineEmits<{
   'toggle-pin': []
   'refresh-section': []
   'hide-section': []
   'open-configure': []
+  'enable-sources': []
   'load-more': []
   dismiss: [revid: number]
   'toggle-save': [item: WikitabSearchActivityItem]
   'toggle-save-article': [item: WikitabSearchActivityItem]
+  'open-screen': []
+  'close-screen': []
 }>()
+
+const isScreen = computed(() => props.variant === 'screen')
 
 const skin = useSkin()
 const scroller = ref<HTMLElement | null>(null)
 const sentinel = ref<HTMLElement | null>(null)
+const panelRoot = computed(() => scroller.value?.closest('.wikitab-panel') ?? null)
 
 /** Slots on screen — grows with Show more / scroll-end, not tied to fetch batching. */
 const reserved = ref(spec.initialCount)
 
+useRestoreReservedOnScreenClose(
+  isScreen,
+  reserved,
+  computed(() => props.items.length),
+)
+
 const bufferedHasMore = computed(() => props.items.length > reserved.value)
+
+const showSourcesOffPanel = computed(() => {
+  if (!props.sourcesEnabled) return true
+  // Saved-only with nothing to show → same CTA as both-off (nudge to enable risky).
+  return (
+    props.showSavedEdits &&
+    !props.showRecentRiskyEdits &&
+    !props.loading &&
+    !props.pending &&
+    !props.fillingInitial &&
+    !props.error &&
+    props.items.length === 0
+  )
+})
 
 const isInitialLoading = computed(
   () =>
+    !showSourcesOffPanel.value &&
     props.items.length === 0 &&
     (props.loading || props.pending || props.fillingInitial),
 )
 
 const isEmpty = computed(
   () =>
+    !showSourcesOffPanel.value &&
     !props.loading &&
     !props.pending &&
     !props.fillingInitial &&
@@ -114,11 +162,13 @@ function syncReservedToItems(length: number): void {
 
 const observeScrollEnd = computed(
   () =>
+    !isScreen.value &&
     skin.value === 'mobile' &&
+    !props.showSavedRefresh &&
+    !showSourcesOffPanel.value &&
     !props.error &&
-    !isInitialLoading.value &&
-    !props.pending &&
-    (bufferedHasMore.value || props.items.length > 0),
+    !props.loadingMore &&
+    (props.items.length > 0 || (!isInitialLoading.value && bufferedHasMore.value)),
 )
 
 useRevealOnScrollEnd({
@@ -130,7 +180,7 @@ useRevealOnScrollEnd({
 
 usePreventHorizontalSwipeNavigation({
   scroller,
-  enabled: computed(() => skin.value === 'mobile'),
+  enabled: computed(() => !isScreen.value && skin.value === 'mobile'),
 })
 
 const slots = computed(() => {
@@ -191,19 +241,36 @@ const canShowMore = computed(
       props.loading ||
       props.pending ||
       props.fillingInitial ||
-      props.items.length > 0 ||
       props.loadingMore ||
+      bufferedHasMore.value ||
       props.hasMore),
 )
 
-const showMoreDisabled = computed(
-  () =>
-    props.loading ||
-    props.fillingInitial ||
-    props.pending ||
-    isInitialLoading.value ||
-    props.loadingMore,
+const showMoreDisabled = computed(() =>
+  wikitabShowMoreDisabled({
+    itemCount: props.items.length,
+    loading: props.loading,
+    pending: props.pending,
+    fillingInitial: props.fillingInitial,
+    loadingMore: props.loadingMore,
+  }),
 )
+
+const observeScreenInfinite = computed(
+  () =>
+    isScreen.value &&
+    canShowMore.value &&
+    !showSourcesOffPanel.value &&
+    !showMoreDisabled.value &&
+    !props.showSavedRefresh,
+)
+
+useInfiniteScroll({
+  sentinel,
+  root: panelRoot,
+  enabled: observeScreenInfinite,
+  onReach: revealMore,
+})
 
 const selection = ref<string | number | null>(null)
 const menuItems = computed((): (MenuButtonItemData | MenuGroupData)[] => [
@@ -266,81 +333,111 @@ function revealMore(): void {
 </script>
 
 <template>
-  <section class="wikitab-review-changes-section">
-    <div class="wikitab-review-changes-section__head">
-      <div class="wikitab-review-changes-section__title">
-        <CdxIcon
-          v-if="pinned"
-          class="wikitab-review-changes-section__pin"
-          :icon="cdxIconPushPin"
-          icon-label="Pinned to top"
-        />
-        <h2 class="wikitab-review-changes-section__heading">{{ spec.heading }}</h2>
-      </div>
-      <CdxMenuButton
-        v-model:selected="selection"
-        class="wikitab-review-changes-section__menu"
-        weight="quiet"
-        :menu-items="menuItems"
-        :footer="footerItem"
-        :aria-label="`${spec.heading} options`"
-      >
-        <CdxIcon :icon="cdxIconEllipsis" />
-      </CdxMenuButton>
-    </div>
-
-    <p v-if="error" class="wikitab-review-changes-section__error">
-      <small>{{ error }}</small>
-    </p>
-
-    <p v-else-if="isEmpty" class="wikitab-review-changes-section__empty">
-      <small>Nothing to show right now.</small>
-    </p>
-
-    <div v-else ref="scroller" class="wikitab-review-changes-section__cards">
-      <template v-for="slot in slots" :key="slot.key">
-        <WikitabCard
-          v-if="slot.item"
-          class="wikitab-review-changes-section__card"
-          v-bind="
-            wikitabCardPropsForSearchActivityItem(slot.item, {
-              includeSave: true,
-              isSaved: isCardSaved(changeSavedId(slot.item.revisionId)),
-              saveArticle: wikitabCardSaveArticleMenuOption(
-                slot.item.seedArticle,
-                saveArticleMenuLookup,
-              ),
-              loading: editorKindPending?.has(slot.item.revisionId)
-                ? { supporting: true }
-                : false,
-              showThumbnail: false,
-              omitLatestRevisionChip: true,
-            })
-          "
-          @menu-select="onReviewChangeMenuSelect($event, slot.item)"
-          @toggle-save-article="emit('toggle-save-article', slot.item)"
-        />
-        <WikitabCard
-          v-else-if="slot.loading"
-          class="wikitab-review-changes-section__card"
-          v-bind="wikitabCardBindProps('edit', { loading: true })"
-        />
+  <section
+    :id="`wikitab-module-${spec.id}`"
+    class="wikitab-review-changes-section"
+    :class="{
+      'wikitab-review-changes-section--screen': isScreen,
+      'wikitab-panel': isScreen,
+      'wikitab-module-screen': isScreen,
+    }"
+    :style="{ '--wikitab-card-height': `${wikitabReservedSlotHeight('edit')}px` }"
+  >
+    <WikitabModuleHead
+      :title="spec.heading"
+      :pinned="pinned"
+      :variant="isScreen ? 'screen' : 'home'"
+      @open-screen="emit('open-screen')"
+      @close="emit('close-screen')"
+    >
+      <template v-if="!isScreen" #action>
+        <CdxMenuButton
+          v-model:selected="selection"
+          class="wikitab-review-changes-section__menu"
+          weight="quiet"
+          :menu-items="menuItems"
+          :footer="footerItem"
+          :aria-label="`${spec.heading} options`"
+        >
+          <CdxIcon :icon="cdxIconEllipsis" />
+        </CdxMenuButton>
       </template>
-      <div ref="sentinel" class="wikitab-review-changes-section__sentinel" aria-hidden="true" />
-    </div>
+    </WikitabModuleHead>
 
-    <div class="wikitab-review-changes-section__more">
+    <div v-if="showSourcesOffPanel" class="wikitab-review-changes-section__sources-off">
       <CdxButton
-        v-if="canShowMore"
-        class="wikitab-review-changes-section__more-button"
+        class="wikitab-review-changes-section__sources-off-button"
         action="progressive"
-        weight="quiet"
-        :disabled="showMoreDisabled"
-        @click="revealMore"
+        weight="primary"
+        @click="emit('enable-sources')"
       >
-        Show more
+        Show recent edits
       </CdxButton>
     </div>
+
+    <template v-else>
+      <p v-if="error" class="wikitab-review-changes-section__error">
+        <small>{{ error }}</small>
+      </p>
+
+      <div v-else ref="scroller" class="wikitab-review-changes-section__cards">
+        <template v-for="slot in slots" :key="slot.key">
+          <WikitabCard
+            v-if="slot.item"
+            class="wikitab-review-changes-section__card"
+            v-bind="
+              wikitabCardPropsForSearchActivityItem(slot.item, {
+                includeSave: true,
+                isSaved: isCardSaved(changeSavedId(slot.item.revisionId)),
+                saveArticle: wikitabCardSaveArticleMenuOption(
+                  slot.item.seedArticle,
+                  saveArticleMenuLookup,
+                ),
+                loading: editorKindPending?.has(slot.item.revisionId)
+                  ? { supporting: true }
+                  : false,
+                showThumbnail: false,
+                omitLatestRevisionChip: true,
+              })
+            "
+            @menu-select="onReviewChangeMenuSelect($event, slot.item)"
+            @toggle-save-article="emit('toggle-save-article', slot.item)"
+          />
+          <WikitabCard
+            v-else-if="slot.loading"
+            class="wikitab-review-changes-section__card"
+            v-bind="wikitabCardBindProps('edit', { loading: true })"
+          />
+        </template>
+        <WikitabModuleRefreshCard
+          v-if="showSavedRefresh && skin === 'mobile' && !isScreen"
+          class="wikitab-review-changes-section__card"
+          @refresh="emit('refresh-section')"
+        />
+        <div
+          v-if="!isScreen"
+          ref="sentinel"
+          class="wikitab-review-changes-section__sentinel"
+          aria-hidden="true"
+        />
+      </div>
+
+      <div
+        v-if="isScreen"
+        ref="sentinel"
+        class="wikitab-review-changes-section__sentinel wikitab-review-changes-section__sentinel--screen"
+        aria-hidden="true"
+      />
+
+      <WikitabModuleMore
+        :can-show-more="canShowMore"
+        :show-more-disabled="showMoreDisabled"
+        :show-refresh="showSavedRefresh"
+        :screen="isScreen"
+        @show-more="revealMore"
+        @refresh="emit('refresh-section')"
+      />
+    </template>
   </section>
 </template>
 
@@ -350,38 +447,19 @@ function revealMore(): void {
   flex-direction: column;
 }
 
-.wikitab-review-changes-section__head {
+.wikitab-review-changes-section__sources-off {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--spacing-50);
-  margin-bottom: var(--spacing-50);
-}
-
-.wikitab-review-changes-section__title {
-  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--spacing-25);
-  min-width: 0;
+  justify-content: center;
+  gap: var(--spacing-100);
+  min-height: 140px;
+  padding: var(--spacing-150);
+  background-color: var(--background-color-neutral-subtle);
+  border-radius: var(--border-radius-base);
 }
 
-.wikitab-review-changes-section__pin {
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-}
-
-.wikitab-review-changes-section__heading {
-  margin: 0;
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-large);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-large);
-  color: var(--color-base);
-}
-
-.wikitab-review-changes-section__error,
-.wikitab-review-changes-section__empty {
+.wikitab-review-changes-section__error {
   display: flex;
   align-items: center;
   margin: 0;
@@ -389,16 +467,14 @@ function revealMore(): void {
   color: var(--color-subtle);
 }
 
+.wikitab-review-changes-section__empty {
+  margin: 0;
+  color: var(--color-subtle);
+}
+
 .wikitab-review-changes-section__sentinel {
   flex: 0 0 1px;
   width: 1px;
-}
-
-.wikitab-review-changes-section__more {
-  display: flex;
-  justify-content: center;
-  min-height: var(--line-height-small);
-  margin-top: var(--spacing-100);
 }
 
 .wikitab-review-changes-section__cards {
@@ -422,12 +498,12 @@ function revealMore(): void {
   min-height: 0;
 }
 
-[data-skin='mobile'] .wikitab-review-changes-section__cards {
+[data-skin='mobile'] .wikitab-review-changes-section:not(.wikitab-review-changes-section--screen) .wikitab-review-changes-section__cards {
   display: flex;
   align-items: stretch;
   gap: var(--spacing-100);
   margin-inline: calc(var(--wikitab-page-gutter) * -1);
-  padding-inline: var(--wikitab-page-gutter);
+  padding-inline: var(--wikitab-page-gutter) 0;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
@@ -435,22 +511,38 @@ function revealMore(): void {
   scrollbar-width: none;
 }
 
-[data-skin='mobile'] .wikitab-review-changes-section__cards::-webkit-scrollbar {
+[data-skin='mobile'] .wikitab-review-changes-section:not(.wikitab-review-changes-section--screen) .wikitab-review-changes-section__cards::-webkit-scrollbar {
   display: none;
 }
 
-[data-skin='mobile'] .wikitab-review-changes-section__card {
+[data-skin='mobile'] .wikitab-review-changes-section:not(.wikitab-review-changes-section--screen) .wikitab-review-changes-section__card {
   flex: 0 0 320px;
   align-self: stretch;
   scroll-snap-align: start;
 }
 
-[data-skin='desktop'] .wikitab-review-changes-section__sentinel {
+[data-skin='desktop']
+  .wikitab-review-changes-section__sentinel:not(
+    .wikitab-review-changes-section__sentinel--screen
+  ) {
   display: none;
 }
 
-[data-skin='mobile'] .wikitab-review-changes-section__more {
-  display: none;
+[data-skin='mobile'] .wikitab-review-changes-section--screen .wikitab-review-changes-section__cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: var(--spacing-100);
+}
+
+[data-skin='mobile'] .wikitab-review-changes-section--screen .wikitab-review-changes-section__card {
+  min-height: 0;
+}
+
+.wikitab-review-changes-section__sentinel--screen {
+  flex: none;
+  width: 100%;
+  height: 1px;
 }
 
 .wikitab-review-changes-section__card:has([aria-expanded='true']) {

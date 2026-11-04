@@ -37,10 +37,6 @@ function seenPageidsFromCards(cards: readonly WikitabCardData[]): Set<number> {
   return seen
 }
 
-function sessionCacheKey(day: string, savedFingerprint: string): string {
-  return `${day}:${savedFingerprint}`
-}
-
 function visibleDailyReadsCount(cards: readonly WikitabCardData[]): number {
   const hidden = loadWikitabConfig().hiddenArticleTitleKeys
   if (!hidden.length) return cards.length
@@ -62,12 +58,13 @@ export function useWikitabDailyReads() {
   const loadingMore = ref(false)
   const hasMore = ref(false)
   const error = ref<string | null>(null)
+  /** Saved-articles fingerprint of the cards currently painted (last fetch / cache). */
+  const fetchedSavedFingerprint = ref<string | null>(null)
 
   let controller: AbortController | null = null
   let activeFeed: DailyReadsFeed | null = null
   let cacheContext: { day: string; savedFingerprint: string } | null = null
   let savedItemsSnapshot: WikitabSavedItem[] = []
-  let loadedSessionKey: string | null = null
   let feedLock: Promise<void> = Promise.resolve()
 
   function withFeedLock<T>(operation: () => Promise<T>): Promise<T> {
@@ -143,8 +140,8 @@ export function useWikitabDailyReads() {
     savedFingerprint: string,
   ): void {
     items.value = cached
-    loadedSessionKey = sessionCacheKey(day, savedFingerprint)
     cacheContext = { day, savedFingerprint }
+    fetchedSavedFingerprint.value = savedFingerprint
     activeFeed = null
     loading.value = false
     loadingMore.value = false
@@ -160,10 +157,10 @@ export function useWikitabDailyReads() {
     loadingMore.value = false
     hasMore.value = false
     error.value = null
+    fetchedSavedFingerprint.value = null
     activeFeed = null
     cacheContext = null
     savedItemsSnapshot = []
-    loadedSessionKey = null
   }
 
   async function ensureActiveFeed(signal: AbortSignal | undefined): Promise<boolean> {
@@ -246,8 +243,9 @@ export function useWikitabDailyReads() {
   }
 
   /**
-   * Load Daily reads for the Saved-module snapshot. Uses session + localStorage
-   * cache keyed by `{ utcDay, savedFingerprint }`; network only on cache miss.
+   * Load Daily reads for the Saved-module snapshot. Session + localStorage are
+   * keyed by UTC day; a saved-fingerprint change keeps painted cards (callers
+   * show a title refresh). Network on day miss, empty cache, or `force`.
    */
   async function refresh(
     savedItems: readonly WikitabSavedItem[] = [],
@@ -265,19 +263,19 @@ export function useWikitabDailyReads() {
     const savedFingerprint = buildDailyReadsSavedFingerprint(
       articleSeeds.map((seed) => seed.titleKey),
     )
-    const key = sessionCacheKey(day, savedFingerprint)
 
-    savedItemsSnapshot = cloneSavedItems(savedItems)
-    cacheContext = { day, savedFingerprint }
-
+    // Same UTC day with cards already painted — keep them even if the saved
+    // fingerprint changed. Do not overwrite cacheContext (that would hide the
+    // title refresh) or snapshot (Show more continues the last fetch's feed).
     if (
       !force &&
       !isCacheBypassed() &&
-      loadedSessionKey === key &&
+      cacheContext?.day === day &&
       items.value.length > 0
     ) {
       hasMore.value = activeFeed?.hasPending() ?? hasMore.value
       error.value = null
+      fetchedSavedFingerprint.value = cacheContext.savedFingerprint
 
       if (visibleDailyReadsCount(items.value) < initialCount) {
         controller?.abort()
@@ -294,11 +292,12 @@ export function useWikitabDailyReads() {
     const { signal } = local
 
     activeFeed = null
+    savedItemsSnapshot = cloneSavedItems(savedItems)
 
     if (!force) {
-      const cached = readCachedDailyReads(day, savedFingerprint)
+      const cached = readCachedDailyReads(day)
       if (cached) {
-        applyCachedItems(cached.items, cached.hasMore, day, savedFingerprint)
+        applyCachedItems(cached.items, cached.hasMore, day, cached.savedFingerprint)
 
         if (visibleDailyReadsCount(cached.items) < initialCount) {
           await topUpInitialSlots(signal)
@@ -312,7 +311,8 @@ export function useWikitabDailyReads() {
     error.value = null
     items.value = []
     pendingByKey.value = new Map()
-    loadedSessionKey = key
+    cacheContext = { day, savedFingerprint }
+    fetchedSavedFingerprint.value = savedFingerprint
     hasMore.value = false
 
     try {
@@ -330,7 +330,8 @@ export function useWikitabDailyReads() {
       if (signal.aborted || (cause as Error)?.name === 'AbortError') return
       error.value = 'Could not load suggestions.'
       items.value = []
-      loadedSessionKey = null
+      fetchedSavedFingerprint.value = null
+      cacheContext = null
       activeFeed = null
     } finally {
       if (controller === local) loading.value = false
@@ -393,6 +394,7 @@ export function useWikitabDailyReads() {
     loadingMore,
     hasMore,
     error,
+    fetchedSavedFingerprint,
     refresh,
     loadMore,
     abort,

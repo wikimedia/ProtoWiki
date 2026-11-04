@@ -17,6 +17,8 @@ interface CacheEntry {
 export interface CachedDailyReads {
   items: WikitabCardData[]
   hasMore: boolean
+  /** Fingerprint the cards were fetched under — may differ from live saves. */
+  savedFingerprint: string
 }
 
 export function buildDailyReadsSavedFingerprint(titleKeys: readonly string[]): string {
@@ -25,10 +27,11 @@ export function buildDailyReadsSavedFingerprint(titleKeys: readonly string[]): s
 
 export { isCacheBypassed }
 
-export function readCachedDailyReads(
-  day: string,
-  savedFingerprint: string,
-): CachedDailyReads | null {
+/**
+ * Read by UTC day only. A saved-fingerprint mismatch is not a miss — callers
+ * keep the painted cards and surface a title refresh when live seeds diverge.
+ */
+export function readCachedDailyReads(day: string): CachedDailyReads | null {
   if (isCacheBypassed()) return null
 
   try {
@@ -36,13 +39,14 @@ export function readCachedDailyReads(
     if (!raw) return null
 
     const entry = JSON.parse(raw) as CacheEntry
-    if (entry?.day !== day || entry.savedFingerprint !== savedFingerprint || !entry.items) {
+    if (entry?.day !== day || typeof entry.savedFingerprint !== 'string' || !entry.items) {
       return null
     }
 
     return {
       items: entry.items.map((item) => ({ ...item })),
       hasMore: entry.hasMore === true,
+      savedFingerprint: entry.savedFingerprint,
     }
   } catch {
     return null

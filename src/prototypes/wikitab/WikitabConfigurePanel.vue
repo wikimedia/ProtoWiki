@@ -11,8 +11,6 @@ const props = defineProps<{
   moduleOrder: WikitabModuleId[]
   pinnedIds: WikitabModuleId[]
   isHidden: (id: WikitabModuleId) => boolean
-  hasSavedItems: boolean
-  hasSavedSeedArticles: boolean
 }>()
 
 const emit = defineEmits<{
@@ -61,8 +59,6 @@ onUnmounted(() => {
         :order="props.moduleOrder"
         :pinned-ids="props.pinnedIds"
         :is-hidden="props.isHidden"
-        :has-saved-items="props.hasSavedItems"
-        :has-saved-seed-articles="props.hasSavedSeedArticles"
         @show="emit('show', $event)"
         @hide="emit('hide', $event)"
         @reorder="emit('reorder', $event)"

@@ -18,7 +18,7 @@ export const WIKITAB_QUOTE_CARD_LEADING_ICON = cdxIconQuotes
 /** Codex Card `icon` for word-of-the-day cards (headword in title, gloss in description). */
 export const WIKITAB_WORD_CARD_LEADING_ICON = cdxIconLanguage
 
-export type WikitabSectionId = 'trending' | 'otd' | 'births' | 'dyk' | 'news' | 'discussions'
+export type WikitabSectionId = 'trending' | 'otd' | 'births' | 'dyk' | 'news'
 
 export const WIKITAB_SAVED_MODULE_ID = 'saved' as const
 export const WIKITAB_FEATURED_MODULE_ID = 'featured' as const
@@ -26,6 +26,7 @@ export const WIKITAB_DAILY_READS_MODULE_ID = 'daily-reads' as const
 export const WIKITAB_SUGGESTED_EDITS_MODULE_ID = 'suggested-edits' as const
 export const WIKITAB_REVIEW_CHANGES_MODULE_ID = 'review-changes' as const
 export const WIKITAB_NEARBY_MODULE_ID = 'nearby' as const
+export const WIKITAB_DISCUSSIONS_MODULE_ID = 'discussions' as const
 
 export type WikitabModuleId =
   | WikitabSectionId
@@ -35,17 +36,7 @@ export type WikitabModuleId =
   | typeof WIKITAB_NEARBY_MODULE_ID
   | typeof WIKITAB_SUGGESTED_EDITS_MODULE_ID
   | typeof WIKITAB_REVIEW_CHANGES_MODULE_ID
-
-/** Home modules that only render once the reader has saved articles. */
-const WIKITAB_SAVED_GATED_MODULE_IDS: ReadonlySet<WikitabModuleId> = new Set<WikitabModuleId>([
-  WIKITAB_SAVED_MODULE_ID,
-  WIKITAB_DAILY_READS_MODULE_ID,
-  WIKITAB_SUGGESTED_EDITS_MODULE_ID,
-])
-
-export function isWikitabSavedGatedModule(id: WikitabModuleId): boolean {
-  return WIKITAB_SAVED_GATED_MODULE_IDS.has(id)
-}
+  | typeof WIKITAB_DISCUSSIONS_MODULE_ID
 
 /** Spotlight kinds in the Featured module carousel (v1). */
 export type WikitabFeaturedSpotlightKind = 'tfa' | 'tfp' | 'potd' | 'wotd' | 'qotd' | 'tfl'
@@ -106,13 +97,6 @@ const FEED_SECTION_BASE: ReadonlyArray<Omit<WikitabSectionSpec, 'cardHeight'>> =
   },
   { id: 'news', heading: 'In the news', primitive: 'snippet', initialCount: 4, pageSize: 6 },
   { id: 'dyk', heading: 'Did you know', primitive: 'snippet', initialCount: 4, pageSize: 6 },
-  {
-    id: 'discussions',
-    heading: 'Active discussions',
-    primitive: 'discussion',
-    initialCount: 4,
-    pageSize: 6,
-  },
   { id: 'otd', heading: 'On this day', primitive: 'snippet', initialCount: 4, pageSize: 6 },
   {
     id: 'births',
@@ -134,12 +118,12 @@ export const WIKITAB_HOME_MODULE_ORDER: readonly WikitabModuleId[] = [
   WIKITAB_SAVED_MODULE_ID,
   'trending',
   WIKITAB_FEATURED_MODULE_ID,
-  WIKITAB_NEARBY_MODULE_ID,
   WIKITAB_DAILY_READS_MODULE_ID,
+  WIKITAB_SUGGESTED_EDITS_MODULE_ID,
   'dyk',
   'news',
-  WIKITAB_SUGGESTED_EDITS_MODULE_ID,
-  'discussions',
+  WIKITAB_NEARBY_MODULE_ID,
+  WIKITAB_DISCUSSIONS_MODULE_ID,
   WIKITAB_REVIEW_CHANGES_MODULE_ID,
   'otd',
   'births',
@@ -201,10 +185,10 @@ export const WIKITAB_NEARBY_MODULE_SPEC = {
   supportingIcon: cdxIconMapPin,
 }
 
-/** Home Help wanted module — quality-check tasks from daily-random saved seeds. */
+/** Home Suggested edits module — quality-check tasks from daily-random saved seeds. */
 export const WIKITAB_SUGGESTED_EDITS_MODULE_SPEC = {
   id: WIKITAB_SUGGESTED_EDITS_MODULE_ID,
-  heading: 'Help wanted',
+  heading: 'Suggested edits',
   initialCount: 2,
   pageSize: 4,
   primitive: 'suggestion' as const,
@@ -217,6 +201,16 @@ export const WIKITAB_REVIEW_CHANGES_MODULE_SPEC = {
   heading: 'Recent edits',
   initialCount: 2,
   pageSize: 4,
+}
+
+/** Home Active discussions module — noticeboards + saved-article talk pages. */
+export const WIKITAB_DISCUSSIONS_MODULE_SPEC = {
+  id: WIKITAB_DISCUSSIONS_MODULE_ID,
+  heading: 'Active discussions',
+  initialCount: 4,
+  pageSize: 6,
+  primitive: 'discussion' as const,
+  cardHeight: wikitabReservedSlotHeight('discussion'),
 }
 
 /** Configure-panel rows — same order as `WIKITAB_HOME_MODULE_ORDER`. */
@@ -241,6 +235,9 @@ export const WIKITAB_CONFIGURE_MODULES: ReadonlyArray<{
   }
   if (id === WIKITAB_REVIEW_CHANGES_MODULE_ID) {
     return { id, heading: WIKITAB_REVIEW_CHANGES_MODULE_SPEC.heading }
+  }
+  if (id === WIKITAB_DISCUSSIONS_MODULE_ID) {
+    return { id, heading: WIKITAB_DISCUSSIONS_MODULE_SPEC.heading }
   }
   const section = WIKITAB_SECTIONS.find((entry) => entry.id === id)
   return { id, heading: section!.heading }
@@ -306,6 +303,12 @@ export interface WikitabCardData {
   url?: string
   /** Article body: bold title, subtle description, supporting caption. */
   title?: string
+  /**
+   * HTML title — takes precedence over `title` when both are set (e.g. edit cards with
+   * nested article / section read-mode links). Keep plain `title` as the article name
+   * for menus, hide, and save identity.
+   */
+  titleHtml?: string
   /** Body under the title — plain text or HTML depending on presentation `descriptionFormat`. */
   description?: string
   /** Plain supporting line — pairs with presentation `supportingIcon` on `WikitabCard`. */
@@ -319,6 +322,10 @@ export interface WikitabCardData {
   thumbnailLookupComplete?: boolean
   /** Active discussions — comment count for saves. */
   commentCount?: number
+  /** Active discussions — ISO timestamp for All-tab chronological merge. */
+  latestReplyTimestamp?: string
+  /** Active discussions — which Configure source produced this card (for module tabs). */
+  discussionSource?: 'noticeboard' | 'article'
   /** Help wanted — page id and task id for saves (same as suggestion payload `task`). */
   pageid?: number
   task?: string

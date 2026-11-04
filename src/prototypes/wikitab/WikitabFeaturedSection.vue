@@ -13,6 +13,7 @@ import { useSkin } from '@/composables/useSkin'
 import type { SaveItemPayload, WikitabSaveArticleMenuLookup } from './data/savedCardHelpers'
 import { savedIdForSpotlight } from './data/savedItemIds'
 import WikitabCard from './WikitabCard.vue'
+import WikitabModuleHead from './WikitabModuleHead.vue'
 import { featuredSpotlightWikitabCardBindProps } from './data/wikitabFeaturedSpotlightCard'
 import { wikitabCardIsLoading } from './data/wikitabCardPresentation'
 import {
@@ -24,24 +25,34 @@ import {
   type WikitabFeaturedSpotlightKind,
 } from './sections'
 import { useEqualRowHeights } from './useEqualRowHeights'
+import { useInfiniteScroll } from './useInfiniteScroll'
 import { usePreventHorizontalSwipeNavigation } from './usePreventHorizontalSwipeNavigation'
+import { useRestoreReservedOnScreenClose } from './useRestoreReservedOnScreenClose'
 import { useRevealOnScrollEnd } from './useRevealOnScrollEnd'
+import { wikitabShowMoreDisabled } from './wikitabShowMoreDisabled'
 
 const spec = WIKITAB_FEATURED_MODULE_SPEC
 
 /** Fixed v1 spotlight catalog size — reserves skeleton slots during load. */
 const SPOTLIGHT_COUNT = 6
 
-const props = defineProps<{
-  items: WikitabFeaturedSpotlight[]
-  /** Per-spotlight fields still loading — items are pre-fetch shells until their fetch lands. */
-  loadingByKind?: Partial<Record<WikitabFeaturedSpotlightKind, WikitabCardLoading>>
-  loading: boolean
-  error: string | null
-  pinned: boolean
-  isCardSaved: (id: string) => boolean
-  saveArticleMenuLookup: WikitabSaveArticleMenuLookup
-}>()
+const props = withDefaults(
+  defineProps<{
+    items: WikitabFeaturedSpotlight[]
+    /** Per-spotlight fields still loading — items are pre-fetch shells until their fetch lands. */
+    loadingByKind?: Partial<Record<WikitabFeaturedSpotlightKind, WikitabCardLoading>>
+    loading: boolean
+    /** False until the first Featured fetch/cache settle — keep skeletons meanwhile. */
+    loaded?: boolean
+    error: string | null
+    pinned: boolean
+    isCardSaved: (id: string) => boolean
+    saveArticleMenuLookup: WikitabSaveArticleMenuLookup
+    /** Home feed vs fullscreen module screen (`?screen=`). */
+    variant?: 'home' | 'screen'
+  }>(),
+  { variant: 'home' },
+)
 
 const emit = defineEmits<{
   'toggle-pin': []
@@ -50,7 +61,11 @@ const emit = defineEmits<{
   'hide-article': [title: string]
   'toggle-save': [payload: SaveItemPayload]
   'toggle-save-article': [spotlight: WikitabFeaturedSpotlight]
+  'open-screen': []
+  'close-screen': []
 }>()
+
+const isScreen = computed(() => props.variant === 'screen')
 
 function canShowCardMenu(
   spotlight: WikitabFeaturedSpotlight | undefined,
@@ -78,15 +93,24 @@ function savePayloadForSpotlight(spot: WikitabFeaturedSpotlight): SaveItemPayloa
 const skin = useSkin()
 const scroller = ref<HTMLElement | null>(null)
 const sentinel = ref<HTMLElement | null>(null)
+const panelRoot = computed(() => scroller.value?.closest('.wikitab-panel') ?? null)
 
 const reserved = ref(spec.initialCount)
 
+useRestoreReservedOnScreenClose(
+  isScreen,
+  reserved,
+  computed(() => props.items.length),
+)
+
 const bufferedHasMore = computed(() => props.items.length > reserved.value)
 
-const isInitialLoading = computed(() => props.items.length === 0 && props.loading)
+const isInitialLoading = computed(
+  () => props.items.length === 0 && !props.error && (props.loading || !props.loaded),
+)
 
 const isEmpty = computed(
-  () => !props.loading && !props.error && props.items.length === 0,
+  () => props.loaded && !props.loading && !props.error && props.items.length === 0,
 )
 
 function shouldClampReserved(): boolean {
@@ -95,11 +119,11 @@ function shouldClampReserved(): boolean {
 
 const observeScrollEnd = computed(
   () =>
+    !isScreen.value &&
     skin.value === 'mobile' &&
     !props.error &&
-    !isEmpty.value &&
-    !isInitialLoading.value &&
-    (bufferedHasMore.value || props.items.length > 0),
+    (props.items.length > 0 ||
+      (!isInitialLoading.value && !isEmpty.value && bufferedHasMore.value)),
 )
 
 useRevealOnScrollEnd({
@@ -111,7 +135,7 @@ useRevealOnScrollEnd({
 
 usePreventHorizontalSwipeNavigation({
   scroller,
-  enabled: computed(() => skin.value === 'mobile'),
+  enabled: computed(() => !isScreen.value && skin.value === 'mobile'),
 })
 
 const rowColumns = computed(() => (skin.value === 'desktop' ? 2 : 1))
@@ -174,7 +198,23 @@ const canShowMore = computed(
   () => !props.error && !isEmpty.value && !isInitialLoading.value && bufferedHasMore.value,
 )
 
-const showMoreDisabled = computed(() => props.loading || isInitialLoading.value)
+const showMoreDisabled = computed(() =>
+  wikitabShowMoreDisabled({
+    itemCount: props.items.length,
+    loading: props.loading,
+  }),
+)
+
+const observeScreenInfinite = computed(
+  () => isScreen.value && canShowMore.value && !showMoreDisabled.value,
+)
+
+useInfiniteScroll({
+  sentinel,
+  root: panelRoot,
+  enabled: observeScreenInfinite,
+  onReach: revealMore,
+})
 
 const selection = ref<string | number | null>(null)
 const menuItems = computed(() => [
@@ -209,40 +249,41 @@ function revealMore(): void {
 
 <template>
   <section
+    :id="`wikitab-module-${spec.id}`"
     class="wikitab-featured-section"
+    :class="{
+      'wikitab-featured-section--screen': isScreen,
+      'wikitab-panel': isScreen,
+      'wikitab-module-screen': isScreen,
+    }"
     :style="{
       '--wikitab-card-height': `${spec.cardHeight}px`,
       '--wikitab-featured-portrait-height': `${spec.portraitCardHeight}px`,
     }"
   >
-    <div class="wikitab-featured-section__head">
-      <div class="wikitab-featured-section__title">
-        <CdxIcon
-          v-if="pinned"
-          class="wikitab-featured-section__pin"
-          :icon="cdxIconPushPin"
-          icon-label="Pinned to top"
-        />
-        <h2 class="wikitab-featured-section__heading">{{ spec.heading }}</h2>
-      </div>
-      <CdxMenuButton
-        v-model:selected="selection"
-        class="wikitab-featured-section__menu"
-        weight="quiet"
-        :menu-items="menuItems"
-        :footer="footerItem"
-        :aria-label="`${spec.heading} options`"
-      >
-        <CdxIcon :icon="cdxIconEllipsis" />
-      </CdxMenuButton>
-    </div>
+    <WikitabModuleHead
+      :title="spec.heading"
+      :pinned="pinned"
+      :variant="isScreen ? 'screen' : 'home'"
+      @open-screen="emit('open-screen')"
+      @close="emit('close-screen')"
+    >
+      <template v-if="!isScreen" #action>
+        <CdxMenuButton
+          v-model:selected="selection"
+          class="wikitab-featured-section__menu"
+          weight="quiet"
+          :menu-items="menuItems"
+          :footer="footerItem"
+          :aria-label="`${spec.heading} options`"
+        >
+          <CdxIcon :icon="cdxIconEllipsis" />
+        </CdxMenuButton>
+      </template>
+    </WikitabModuleHead>
 
     <p v-if="error" class="wikitab-featured-section__error">
       <small>{{ error }}</small>
-    </p>
-
-    <p v-else-if="isEmpty" class="wikitab-featured-section__empty">
-      <small>Nothing to show right now.</small>
     </p>
 
     <div v-else ref="scroller" class="wikitab-featured-section__cards">
@@ -276,10 +317,22 @@ function revealMore(): void {
           slot.spotlight && emit('toggle-save-article', slot.spotlight)
         "
       />
-      <div ref="sentinel" class="wikitab-featured-section__sentinel" aria-hidden="true" />
+      <div
+        v-if="!isScreen"
+        ref="sentinel"
+        class="wikitab-featured-section__sentinel"
+        aria-hidden="true"
+      />
     </div>
 
-    <div class="wikitab-featured-section__more">
+    <div
+      v-if="isScreen && !error && !isEmpty"
+      ref="sentinel"
+      class="wikitab-featured-section__sentinel wikitab-featured-section__sentinel--screen"
+      aria-hidden="true"
+    />
+
+    <div v-if="!isScreen" class="wikitab-featured-section__more">
       <CdxButton
         v-if="canShowMore"
         class="wikitab-featured-section__more-button"
@@ -300,42 +353,16 @@ function revealMore(): void {
   flex-direction: column;
 }
 
-.wikitab-featured-section__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--spacing-50);
-  margin-bottom: var(--spacing-50);
-}
-
-.wikitab-featured-section__title {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-25);
-  min-width: 0;
-}
-
-.wikitab-featured-section__pin {
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-}
-
-.wikitab-featured-section__heading {
-  margin: 0;
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-large);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-large);
-  color: var(--color-base);
-}
-
-.wikitab-featured-section__error,
-.wikitab-featured-section__empty {
+.wikitab-featured-section__error {
   display: flex;
   align-items: center;
   margin: 0;
   min-height: var(--wikitab-card-height);
+  color: var(--color-subtle);
+}
+
+.wikitab-featured-section__empty {
+  margin: 0;
   color: var(--color-subtle);
 }
 
@@ -371,12 +398,12 @@ function revealMore(): void {
   min-height: 0;
 }
 
-[data-skin='mobile'] .wikitab-featured-section__cards {
+[data-skin='mobile'] .wikitab-featured-section:not(.wikitab-featured-section--screen) .wikitab-featured-section__cards {
   display: flex;
   align-items: stretch;
   gap: var(--spacing-100);
   margin-inline: calc(var(--wikitab-page-gutter) * -1);
-  padding-inline: var(--wikitab-page-gutter);
+  padding-inline: var(--wikitab-page-gutter) 0;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
@@ -384,26 +411,45 @@ function revealMore(): void {
   scrollbar-width: none;
 }
 
-[data-skin='mobile'] .wikitab-featured-section__cards::-webkit-scrollbar {
+[data-skin='mobile'] .wikitab-featured-section:not(.wikitab-featured-section--screen) .wikitab-featured-section__cards::-webkit-scrollbar {
   display: none;
 }
 
-[data-skin='mobile'] .wikitab-featured-section__card {
+[data-skin='mobile'] .wikitab-featured-section:not(.wikitab-featured-section--screen) .wikitab-featured-section__card {
   flex: 0 0 320px;
   align-self: stretch;
   min-height: var(--wikitab-card-height);
   scroll-snap-align: start;
 }
 
-[data-skin='mobile'] .wikitab-featured-section__card--portrait {
+[data-skin='mobile'] .wikitab-featured-section:not(.wikitab-featured-section--screen) .wikitab-featured-section__card--portrait {
   min-height: var(--wikitab-featured-portrait-height);
 }
 
-[data-skin='desktop'] .wikitab-featured-section__sentinel {
+/* Home mobile uses the in-scroller sentinel; desktop home uses Show more. */
+[data-skin='desktop']
+  .wikitab-featured-section__sentinel:not(.wikitab-featured-section__sentinel--screen) {
   display: none;
 }
 
-[data-skin='mobile'] .wikitab-featured-section__more {
+[data-skin='mobile'] .wikitab-featured-section:not(.wikitab-featured-section--screen) .wikitab-featured-section__more {
   display: none;
+}
+
+[data-skin='mobile'] .wikitab-featured-section--screen .wikitab-featured-section__cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: var(--spacing-100);
+}
+
+[data-skin='mobile'] .wikitab-featured-section--screen .wikitab-featured-section__card {
+  min-height: 0;
+}
+
+.wikitab-featured-section__sentinel--screen {
+  flex: none;
+  width: 100%;
+  height: 1px;
 }
 </style>

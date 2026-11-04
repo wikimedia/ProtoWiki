@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { CdxToggleButton } from '@wikimedia/codex'
 
-import type { WikitabSavedItemTab } from './data/wikitabSavedItemTabs'
-
 defineProps<{
-  tabs: { name: WikitabSavedItemTab; label: string }[]
+  tabs: { name: string; label: string }[]
 }>()
 
-const activeTab = defineModel<WikitabSavedItemTab>('active', { required: true })
+const activeTab = defineModel<string>('active', { required: true })
 
-function onTabUpdate(name: WikitabSavedItemTab, selected: boolean): void {
+function onTabUpdate(name: string, selected: boolean): void {
   if (selected) {
     activeTab.value = name
   }
@@ -41,6 +39,12 @@ function onTabUpdate(name: WikitabSavedItemTab, selected: boolean): void {
   gap: var(--spacing-25);
   width: 100%;
   margin-bottom: var(--spacing-50);
+  /*
+   * Module fullscreen is a fixed-height flex column. `overflow` (needed for
+   * horizontal scroll) zeroes the automatic min-size, so without this the
+   * tablist shrinks to border-only height under card content.
+   */
+  flex-shrink: 0;
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;

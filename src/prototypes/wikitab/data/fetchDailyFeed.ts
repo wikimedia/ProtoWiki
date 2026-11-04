@@ -1,7 +1,6 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import { WIKITAB_SECTIONS, type WikitabCardData, type WikitabFeed, type WikitabSectionId } from '../sections'
-import { fetchActiveDiscussions } from './fetchActiveDiscussions'
 import { fetchBirthsOnThisDay } from './fetchBirthsOnThisDay'
 import {
   isFeedSliceStale,
@@ -89,7 +88,6 @@ function emptyFeed(): WikitabFeed {
     trending: [],
     news: [],
     dyk: [],
-    discussions: [],
     otd: [],
     births: [],
   }
@@ -197,7 +195,6 @@ function mapFeaturedFeed(payload: FeaturedFeedResponse, day: string): WikitabFee
     trending: mapTrending(payload),
     news: mapNews(payload),
     dyk: mapDyk(payload),
-    discussions: [],
     otd: [],
     births: [],
   }
@@ -249,9 +246,9 @@ async function resolveTrending(
 }
 
 /**
- * Phase 1: featured feed (Trending, In the news, Did you know). Phase 2: OTD,
- * Birthdays, and Active discussions in parallel, patching the feed as each
- * secondary request settles so lower sections can resolve independently.
+ * Phase 1: featured feed (Trending, In the news, Did you know). Phase 2: OTD
+ * and Birthdays in parallel, patching the feed as each secondary request
+ * settles so lower sections can resolve independently.
  */
 async function requestFeedProgressive(
   day: string,
@@ -301,21 +298,6 @@ async function requestFeedProgressive(
         },
         () => {
           feed.births = []
-          onUpdate({ ...feed })
-        },
-      ),
-    )
-  }
-
-  if (enabled.has('discussions')) {
-    secondaryTasks.push(
-      fetchActiveDiscussions(signal).then(
-        (discussions) => {
-          feed.discussions = discussions
-          onUpdate({ ...feed })
-        },
-        () => {
-          feed.discussions = []
           onUpdate({ ...feed })
         },
       ),
@@ -392,8 +374,6 @@ async function refetchSecondaryFeedSlice(
       return fetchMainPageOtd(signal).catch(() => [])
     case 'births':
       return fetchBirthsOnThisDay(day, signal).catch(() => [])
-    case 'discussions':
-      return fetchActiveDiscussions(signal).catch(() => [])
     default:
       return []
   }
@@ -471,8 +451,6 @@ export async function fetchWikitabSectionFeed(
       return fetchMainPageOtd(signal).catch(() => [])
     case 'births':
       return fetchBirthsOnThisDay(day, signal).catch(() => [])
-    case 'discussions':
-      return fetchActiveDiscussions(signal).catch(() => [])
     default:
       return []
   }
@@ -518,7 +496,7 @@ export function fetchDailyFeedProgressive(
     return pending.promise
   }
 
-  if (!needsFeaturedFetch(enabled) && !enabled.has('otd') && !enabled.has('births') && !enabled.has('discussions')) {
+  if (!needsFeaturedFetch(enabled) && !enabled.has('otd') && !enabled.has('births')) {
     const feed = emptyFeed()
     onUpdate(feed)
     return Promise.resolve(feed)

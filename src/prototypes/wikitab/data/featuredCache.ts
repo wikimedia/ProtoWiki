@@ -2,7 +2,7 @@ import type { WikitabFeaturedSpotlight } from '../sections'
 import { isCacheBypassed, utcDayKey } from './feedCache'
 import { FEATURED_MODULE_TTL_MS, isTimestampFresh } from './wikitabCacheTtl'
 
-export const CACHE_KEY = 'wikitab-featured-cache-v19'
+export const CACHE_KEY = 'wikitab-featured-cache-v20'
 
 interface CacheEntry {
   day: string
