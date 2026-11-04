@@ -237,9 +237,12 @@ export function useWikitabReviewChanges() {
     loading.value = false
     loadingMore.value = false
     error.value = null
-    hasMore.value = cachedHasMore || cached.length > initialCount
+    // Buffered cards past initialCount are revealed via the section's
+    // bufferedHasMore — do not treat them as pending API pages.
+    hasMore.value = cachedHasMore
     isLoaded.value = true
-    scheduleStaleReviewChangesRefresh()
+    // Do not schedule stale refresh here — callers on the ordered-load turn
+    // invoke SWR after paint so lower modules do not race modules above.
   }
 
   async function refreshStaleReviewChangesSources(signal: AbortSignal): Promise<void> {
@@ -457,6 +460,8 @@ export function useWikitabReviewChanges() {
       error.value = null
       fetchedSavedFingerprint.value = cacheContext.savedFingerprint
       isLoaded.value = true
+      // Ordered-load turn with cards already painted — SWR if TTL expired.
+      scheduleStaleReviewChangesRefresh()
       return
     }
 
@@ -473,7 +478,9 @@ export function useWikitabReviewChanges() {
 
     if (!force) {
       const cached = readCachedReviewChanges(day, settingsFingerprint)
-      if (cached) {
+      // Empty cache is a miss — otherwise overlay-close non-force refresh can
+      // re-settle an aborted force fetch onto a persisted [].
+      if (cached && cached.items.length > 0) {
         applyCachedItems(
           cached.items,
           cached.hasMore,
@@ -483,6 +490,7 @@ export function useWikitabReviewChanges() {
           cached.fetchedAtSaved,
           cached.fetchedAtRisky,
         )
+        scheduleStaleReviewChangesRefresh()
         return
       }
     }

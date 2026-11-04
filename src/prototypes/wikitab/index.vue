@@ -78,6 +78,7 @@ import { buildDailyReadsSavedFingerprint } from './data/dailyReadsCache'
 import { uniqueArticleSeedsFromSavedItems, type SaveItemPayload } from './data/savedCardHelpers'
 import { savedItemSeedArticle } from './data/wikitabSavedItems'
 import type { WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
+import { REVIEW_CHANGES_MAX_SEEDS } from './data/fetchWikitabReviewChanges'
 import type { WikitabSearchContributeItem } from './data/fetchWikitabSearchContribute'
 import {
   enrichSavedModuleItems,
@@ -358,60 +359,60 @@ function moduleNeedsSavedSnapshot(moduleId: WikitabModuleId): boolean {
   if (moduleId === WIKITAB_DAILY_READS_MODULE_ID || moduleId === WIKITAB_SUGGESTED_EDITS_MODULE_ID) {
     return configHasSavedSeedArticles()
   }
-  // Active discussions seeds from config saves directly — it does not need the
-  // enriched Saved-module snapshot (that wait was flashing skeletons on every load).
+  // Active discussions / Recent edits seed from config saves directly — they do
+  // not need the enriched Saved-module snapshot (that wait was flashing
+  // skeletons on every load).
   if (moduleId === WIKITAB_DISCUSSIONS_MODULE_ID) return false
-  if (moduleId === WIKITAB_REVIEW_CHANGES_MODULE_ID) {
-    return (
-      reviewChangesShowSavedEdits.value &&
-      loadWikitabConfig().savedItems.length > 0
-    )
-  }
+  if (moduleId === WIKITAB_REVIEW_CHANGES_MODULE_ID) return false
   return false
 }
 
-async function refreshSavedAdjacentModules(
-  batch: readonly WikitabModuleId[],
+async function refreshSavedAdjacentModule(
+  moduleId: WikitabModuleId,
 ): Promise<void> {
   const hasSeeds = configHasSavedSeedArticles()
-  const runsDailyReads = batch.includes(WIKITAB_DAILY_READS_MODULE_ID)
-  const runsSuggestedEdits = batch.includes(WIKITAB_SUGGESTED_EDITS_MODULE_ID)
-  const runsDiscussions = batch.includes(WIKITAB_DISCUSSIONS_MODULE_ID)
-  const runsReviewChanges = batch.includes(WIKITAB_REVIEW_CHANGES_MODULE_ID)
-  // No seed articles → clear without a pending/skeleton flash (placeholder shows immediately).
-  if (runsDailyReads && hasSeeds) dailyReadsPending.value = true
-  if (runsSuggestedEdits && hasSeeds) suggestedEditsPending.value = true
-  if (
-    runsDiscussions &&
-    !activeDiscussionsLoaded.value &&
-    activeDiscussionsNoticeboardItems.value.length === 0 &&
-    activeDiscussionsArticleItems.value.length === 0
-  ) {
-    activeDiscussionsPending.value = true
-  }
-  if (runsReviewChanges) reviewChangesPending.value = true
 
+  if (moduleId === WIKITAB_DAILY_READS_MODULE_ID) {
+    if (hasSeeds) dailyReadsPending.value = true
+    try {
+      await refreshDailyReads(hasSeeds ? savedModuleItems.value : [])
+    } finally {
+      if (hasSeeds) dailyReadsPending.value = false
+    }
+    return
+  }
+
+  if (moduleId === WIKITAB_SUGGESTED_EDITS_MODULE_ID) {
+    if (hasSeeds) suggestedEditsPending.value = true
+    try {
+      await refreshSuggestedEdits(hasSeeds ? savedModuleItems.value : [])
+    } finally {
+      if (hasSeeds) suggestedEditsPending.value = false
+    }
+    return
+  }
+
+  if (moduleId === WIKITAB_DISCUSSIONS_MODULE_ID) {
+    const needsPending =
+      !activeDiscussionsLoaded.value &&
+      activeDiscussionsNoticeboardItems.value.length === 0 &&
+      activeDiscussionsArticleItems.value.length === 0
+    if (needsPending) activeDiscussionsPending.value = true
+    try {
+      // Seed from authoritative saves — no need to wait for Saved-module enrich.
+      await refreshActiveDiscussions(savedItems.value)
+    } finally {
+      activeDiscussionsPending.value = false
+    }
+    return
+  }
+
+  // Same as discussions — config seeds, not Saved-module enrich.
+  reviewChangesPending.value = true
   try {
-    await Promise.all(
-      batch.map((moduleId) => {
-        if (moduleId === WIKITAB_DAILY_READS_MODULE_ID) {
-          return refreshDailyReads(hasSeeds ? savedModuleItems.value : [])
-        }
-        if (moduleId === WIKITAB_SUGGESTED_EDITS_MODULE_ID) {
-          return refreshSuggestedEdits(hasSeeds ? savedModuleItems.value : [])
-        }
-        if (moduleId === WIKITAB_DISCUSSIONS_MODULE_ID) {
-          // Seed from authoritative saves — no need to wait for Saved-module enrich.
-          return refreshActiveDiscussions(savedItems.value)
-        }
-        return refreshReviewChanges(savedModuleItems.value)
-      }),
-    )
+    await refreshReviewChanges(savedItems.value)
   } finally {
-    if (runsDailyReads && hasSeeds) dailyReadsPending.value = false
-    if (runsSuggestedEdits && hasSeeds) suggestedEditsPending.value = false
-    if (runsDiscussions) activeDiscussionsPending.value = false
-    if (runsReviewChanges) reviewChangesPending.value = false
+    reviewChangesPending.value = false
   }
 }
 
@@ -432,34 +433,41 @@ async function refreshHomeModulesInOrder(): Promise<void> {
 
   const order = computeHomeModuleLoadOrder()
 
-  // Seed-adjacent modules need the Saved-module snapshot before they refresh —
-  // otherwise they clear against []. Refresh Saved once up front when any
-  // dependent appears before it (or Saved is hidden — the default), then skip a
-  // second refresh when Saved's own slot arrives.
+  // Saved enrich is network — only on Saved's own slot. Seed modules only need
+  // a sync snapshot so Daily reads / Help wanted do not block Trending above.
   let savedModuleRefreshed = false
+  let savedSnapshotApplied = false
+
+  /** Sync config → `savedModuleItems` — no network. Skip if enrich already ran. */
+  function ensureSavedModuleSnapshot(): void {
+    if (savedSnapshotApplied || savedModuleRefreshed) return
+    const snapshot = snapshotSavedModuleItems()
+    if (!snapshot.length) {
+      savedModuleItems.value = []
+      savedModuleLoading.value = false
+      savedEnrichPending.value = new Map()
+    } else {
+      savedModuleItems.value = savedModuleDisplayItems(snapshot)
+    }
+    savedSnapshotApplied = true
+  }
+
   async function ensureSavedModuleRefreshed(): Promise<void> {
     if (savedModuleRefreshed) return
     await refreshSavedModule()
     if (generation !== homeLoadGeneration) return
     savedModuleRefreshed = true
+    savedSnapshotApplied = true
   }
 
-  // Active discussions only needs config seeds (not Saved-module enrich). Kick it
-  // off immediately so a cache hit paints before earlier modules finish loading.
-  let discussionsRefreshedEarly = false
-  if (order.includes(WIKITAB_DISCUSSIONS_MODULE_ID)) {
-    discussionsRefreshedEarly = true
-    void refreshActiveDiscussions(savedItems.value)
-  }
-
-  const savedIndex = order.indexOf(WIKITAB_SAVED_MODULE_ID)
-  const firstDependentIndex = order.findIndex(moduleNeedsSavedSnapshot)
-  if (
-    firstDependentIndex !== -1 &&
-    (savedIndex === -1 || firstDependentIndex < savedIndex)
-  ) {
-    await ensureSavedModuleRefreshed()
-    if (generation !== homeLoadGeneration) return
+  async function refreshSavedAdjacentModules(
+    batch: readonly WikitabModuleId[],
+  ): Promise<void> {
+    for (const moduleId of batch) {
+      if (generation !== homeLoadGeneration) return
+      if (moduleNeedsSavedSnapshot(moduleId)) ensureSavedModuleSnapshot()
+      await refreshSavedAdjacentModule(moduleId)
+    }
   }
 
   for (let index = 0; index < order.length; index++) {
@@ -485,18 +493,15 @@ async function refreshHomeModulesInOrder(): Promise<void> {
     if (isSavedAdjacentModuleId(id)) {
       const batch: WikitabModuleId[] = []
       while (index < order.length && isSavedAdjacentModuleId(order[index])) {
-        const nextId = order[index]
-        // Already started at the top of this load — don't refresh twice.
-        if (discussionsRefreshedEarly && nextId === WIKITAB_DISCUSSIONS_MODULE_ID) {
-          index++
-          continue
-        }
-        batch.push(nextId)
+        batch.push(order[index])
         index++
       }
       index--
 
-      if (batch.length) await refreshSavedAdjacentModules(batch)
+      if (batch.length) {
+        await refreshSavedAdjacentModules(batch)
+        if (generation !== homeLoadGeneration) return
+      }
       continue
     }
 
@@ -555,8 +560,7 @@ async function refreshHomeModule(moduleId: WikitabModuleId): Promise<void> {
   if (moduleId === WIKITAB_REVIEW_CHANGES_MODULE_ID) {
     reviewChangesPending.value = true
     try {
-      await refreshSavedModule()
-      await refreshReviewChanges(savedModuleItems.value, { force: true })
+      await refreshReviewChanges(savedItems.value, { force: true })
     } finally {
       reviewChangesPending.value = false
     }
@@ -672,7 +676,7 @@ async function onReviewChangesShowSavedEdits(value: boolean): Promise<void> {
   setReviewChangesShowSavedEdits(value)
   reviewChangesPending.value = true
   try {
-    await refreshReviewChanges(savedModuleItems.value, { force: true })
+    await refreshReviewChanges(savedItems.value, { force: true })
   } finally {
     reviewChangesPending.value = false
   }
@@ -682,7 +686,7 @@ async function onReviewChangesShowRecentRiskyEdits(value: boolean): Promise<void
   setReviewChangesShowRecentRiskyEdits(value)
   reviewChangesPending.value = true
   try {
-    await refreshReviewChanges(savedModuleItems.value, { force: true })
+    await refreshReviewChanges(savedItems.value, { force: true })
   } finally {
     reviewChangesPending.value = false
   }
@@ -693,7 +697,7 @@ async function onReviewChangesEnableSources(): Promise<void> {
   setReviewChangesShowRecentRiskyEdits(true)
   reviewChangesPending.value = true
   try {
-    await refreshReviewChanges(savedModuleItems.value, { force: true })
+    await refreshReviewChanges(savedItems.value, { force: true })
   } finally {
     reviewChangesPending.value = false
   }
@@ -989,13 +993,30 @@ const suggestedEditsPendingOnHome = computed(() => {
   )
 })
 
-const reviewChangesPendingOnHome = computed(
-  () =>
+/** Pending only when we have nothing to paint yet — never flash over cached cards. */
+const reviewChangesPendingOnHome = computed(() => {
+  if (reviewChangesItems.value.length > 0) return false
+  return (
     reviewChangesPending.value ||
     (reviewChangesShowSavedEdits.value &&
       hasSavedArticlesForModules.value &&
-      savedModuleLoading.value),
-)
+      savedModuleLoading.value)
+  )
+})
+
+/**
+ * Saved-only: one tip revision per seed, so seed count caps cards. Null when
+ * risky edits can grow the feed past that bound.
+ */
+const reviewChangesMaxKnownCards = computed(() => {
+  if (!reviewChangesShowSavedEdits.value || reviewChangesShowRecentRiskyEdits.value) {
+    return null
+  }
+  return Math.min(
+    uniqueArticleSeedsFromSavedItems(savedItems.value).length,
+    REVIEW_CHANGES_MAX_SEEDS,
+  )
+})
 
 const hasActiveDiscussionCards = computed(
   () =>
@@ -1184,6 +1205,26 @@ watch(
       suggestedEditsPending.value = false
       void refreshDailyReads([])
       void refreshSuggestedEdits([])
+      return
+    }
+    // Placeholder → seeded: auto-fetch so modules don't leave the empty prompt
+    // for blank slots (quiet Reload can't show while fetchedFingerprint is null).
+    if (prev === 0 && next > 0) {
+      if (isSearchMode.value) return
+      dailyReadsPending.value = true
+      suggestedEditsPending.value = true
+      void (async () => {
+        try {
+          await refreshSavedModule()
+          await Promise.all([
+            refreshDailyReads(savedModuleItems.value, { force: true }),
+            refreshSuggestedEdits(savedModuleItems.value, { force: true }),
+          ])
+        } finally {
+          dailyReadsPending.value = false
+          suggestedEditsPending.value = false
+        }
+      })()
     }
   },
 )
@@ -1216,6 +1257,15 @@ watch(overlayOpen, (open, wasOpen) => {
 
 watch(reviewChangesConfigureOpen, (open, wasOpen) => {
   if (!wasOpen || open) return
+  // Force-refetch so closing settings never re-settles an empty cache hit.
+  void (async () => {
+    reviewChangesPending.value = true
+    try {
+      await refreshReviewChanges(savedItems.value, { force: true })
+    } finally {
+      reviewChangesPending.value = false
+    }
+  })()
   // After the panel unmounts and scroll-lock clears, jump to the module (no animation).
   void nextTick(() => {
     scrollToModuleAfterSettingsClose(REVIEW_CHANGES_MODULE_ANCHOR)
@@ -1529,6 +1579,7 @@ watch(searchQuery, (next, prev) => {
             "
             :show-saved-edits="reviewChangesShowSavedEdits"
             :show-recent-risky-edits="reviewChangesShowRecentRiskyEdits"
+            :max-known-cards="reviewChangesMaxKnownCards"
             :show-saved-refresh="showReviewChangesSavedRefresh"
             @toggle-pin="togglePin(WIKITAB_REVIEW_CHANGES_MODULE_ID)"
             @refresh-section="refreshHomeModule(WIKITAB_REVIEW_CHANGES_MODULE_ID)"
@@ -1765,6 +1816,7 @@ watch(searchQuery, (next, prev) => {
           "
           :show-saved-edits="reviewChangesShowSavedEdits"
           :show-recent-risky-edits="reviewChangesShowRecentRiskyEdits"
+          :max-known-cards="reviewChangesMaxKnownCards"
           :show-saved-refresh="showReviewChangesSavedRefresh"
           :is-card-saved="isCardSaved"
           :save-article-menu-lookup="saveArticleMenuLookup"

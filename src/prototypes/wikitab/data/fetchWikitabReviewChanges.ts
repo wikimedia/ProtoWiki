@@ -14,7 +14,9 @@ import type { WikitabSavedItem } from './wikitabConfig'
 import { savedItemThumbnailUrl } from './wikitabSavedItems'
 import { articleTitleKey, EN_WIKI_HOST } from './wikitabHtml'
 
-const MAX_SEEDS = 6
+/** Cap on unique saved-article seeds (one tip revision each when saved-only). */
+export const REVIEW_CHANGES_MAX_SEEDS = 6
+const MAX_SEEDS = REVIEW_CHANGES_MAX_SEEDS
 const THUMBNAIL_SIZE = 96
 
 export interface ReviewChangesFeedOptions {

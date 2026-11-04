@@ -18,6 +18,7 @@ import {
 import type { WikitabSeedArticle } from './data/wikitabSeedArticle'
 import type { WikitabSearchImage } from './data/fetchWikitabSearchImages'
 import { fetchWikitabPageSummary } from './data/fetchWikitabPageSummary'
+import { wikitabPlainArticleDescription } from './data/wikitabCardDescription'
 import type { WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
 import type { WikitabSearchContributeItem } from './data/fetchWikitabSearchContribute'
 import {
@@ -43,7 +44,7 @@ export function snapshotSavedModuleItems(): WikitabSavedItem[] {
 }
 
 function savedArticleNeedsSummary(saved: WikitabSavedArticleItem): boolean {
-  return !saved.description || !saved.thumbnailUrl
+  return !wikitabPlainArticleDescription(saved.description) || !saved.thumbnailUrl
 }
 
 /** Saved article cards in the home module never show a supporting row. */
@@ -64,7 +65,7 @@ export function savedModuleDisplayItems(items: WikitabSavedItem[]): WikitabSaved
 export function savedModuleItemPendingLoading(saved: WikitabSavedItem): WikitabCardLoading {
   if (saved.type !== 'article' || !savedArticleNeedsSummary(saved)) return false
   return {
-    ...(saved.description ? {} : { description: true }),
+    ...(wikitabPlainArticleDescription(saved.description) ? {} : { description: true }),
     ...(saved.thumbnailUrl ? {} : { thumbnail: true }),
   }
 }
@@ -100,7 +101,8 @@ export async function enrichSavedModuleItems(
 
       const next: WikitabSavedArticleItem = {
         ...saved,
-        description: saved.description ?? summary?.description,
+        description:
+          wikitabPlainArticleDescription(saved.description) ?? summary?.description,
         thumbnailUrl: saved.thumbnailUrl ?? summary?.thumbnailUrl,
       }
       enriched[index] = next
@@ -123,7 +125,8 @@ function mergeMetadataIntoSavedItems(
     const patch = patchById.get(saved.id)
     if (!patch || saved.type !== 'article' || patch.type !== 'article') return saved
 
-    const description = saved.description ?? patch.description
+    const description =
+      wikitabPlainArticleDescription(saved.description) ?? patch.description
     const thumbnailUrl = saved.thumbnailUrl ?? patch.thumbnailUrl
     if (description === saved.description && thumbnailUrl === saved.thumbnailUrl) {
       return saved
@@ -154,7 +157,9 @@ function prependSavedItem(
   if (existing) {
     next.savedAt = Date.now()
     if (next.type === 'article' && existing.type === 'article') {
-      next.description = next.description ?? existing.description
+      next.description =
+        wikitabPlainArticleDescription(next.description) ??
+        wikitabPlainArticleDescription(existing.description)
       next.thumbnailUrl = next.thumbnailUrl ?? existing.thumbnailUrl
     }
     if (next.type === 'image' && existing.type === 'image') {

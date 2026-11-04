@@ -152,7 +152,8 @@ export function useWikitabActiveDiscussions() {
     error.value = null
     isLoaded.value = true
     syncHasMore(showSavedTalk)
-    scheduleStaleRefresh()
+    // Do not schedule stale refresh here — hydrate/cache paint must stay
+    // network-free so lower modules do not steal host slots from modules above.
   }
 
   function hydrateFromStorage(): void {
@@ -327,6 +328,8 @@ export function useWikitabActiveDiscussions() {
           cached.fetchedAtNoticeboards,
           cached.fetchedAtArticles,
         )
+        // Ordered-load turn: paint from cache, then SWR if TTL expired.
+        scheduleStaleRefresh()
         return
       }
     }

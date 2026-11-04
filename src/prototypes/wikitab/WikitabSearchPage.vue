@@ -98,8 +98,6 @@ const {
 } = useWikitabSearchActivity(searchQueryRef, knownTitles, loading, activityEnabled)
 
 function onSearchActivityMenuSelect(value: string, item: WikitabSearchActivityItem) {
-  if (value === 'save') emit('toggle-save-activity', item)
-  if (value === 'save-article') emit('toggle-save-activity-article', item)
   if (value === 'thank') {
     window.open(item.thankUrl, '_blank', 'noopener,noreferrer')
   }
@@ -291,6 +289,7 @@ const INITIAL_IMAGE_SKELETON_COUNT = 16
                 })
               "
               @menu-select="onSearchActivityMenuSelect($event, slot.item)"
+              @toggle-save="emit('toggle-save-activity', slot.item)"
               @toggle-save-article="emit('toggle-save-activity-article', slot.item)"
             />
           </template>

@@ -11,11 +11,11 @@ import {
 import {
   fetchDailyFeedProgressive,
   fetchWikitabSectionFeed,
-  listStaleEnabledFeedSections,
   refreshStaleFeedSections,
 } from './data/fetchDailyFeed'
 import {
   clearCachedSectionSlice,
+  isFeedSliceStale,
   persistPartialFeed,
   readCachedFeed,
   readCachedSectionSlice,
@@ -92,7 +92,6 @@ export function useWikitabFeed(
 
   let controller: AbortController | null = null
   let unhideController: AbortController | null = null
-  let staleFeedRefreshInFlight = false
 
   function currentEnabledSections(): Set<WikitabSectionId> {
     return enabledSectionsFromHidden(options.hiddenSectionIds?.value ?? [])
@@ -120,34 +119,46 @@ export function useWikitabFeed(
     }
   }
 
-  function scheduleStaleFeedRefresh(): void {
-    if (staleFeedRefreshInFlight || !feed.value) return
+  /**
+   * Stale-while-revalidate for one section on its ordered-load turn — never from
+   * prepare/hydrate, so lower slices cannot steal host slots from modules above.
+   */
+  async function refreshStaleSectionOnTurn(
+    sectionId: WikitabSectionId,
+    signal: AbortSignal,
+  ): Promise<void> {
+    if (!feed.value) return
 
     const day = utcDayKey()
+    if (!isFeedSliceStale(day, sectionId)) return
+
     const enabled = currentEnabledSections()
-    const stale = listStaleEnabledFeedSections(day, enabled)
-    if (!stale.length) return
+    loadingSectionIds.value = new Set([...loadingSectionIds.value, sectionId])
 
-    staleFeedRefreshInFlight = true
-    if (!controller) controller = new AbortController()
-    const { signal } = controller
-    const baseFeed = feed.value
-
-    void refreshStaleFeedSections(day, stale, enabled, signal, (updated) => {
+    try {
+      await refreshStaleFeedSections(
+        day,
+        [sectionId],
+        enabled,
+        signal,
+        (updated) => {
+          if (signal.aborted) return
+          feed.value = updated
+          triggerRef(feed)
+        },
+        feed.value,
+      )
+    } finally {
       if (signal.aborted) return
-      feed.value = updated
-      triggerRef(feed)
-    }, baseFeed)
-      .catch(() => undefined)
-      .finally(() => {
-        if (controller?.signal === signal) staleFeedRefreshInFlight = false
-      })
+      const next = new Set(loadingSectionIds.value)
+      next.delete(sectionId)
+      loadingSectionIds.value = next
+    }
   }
 
   function prepareForOrderedLoad(): void {
     controller?.abort()
     controller = new AbortController()
-    staleFeedRefreshInFlight = false
     feedPhase.value = 'idle'
     error.value = null
     fetchedSections.value = new Set()
@@ -164,7 +175,7 @@ export function useWikitabFeed(
       }
       fetchedSections.value = fetched
       feedPhase.value = [...enabled].every((id) => fetched.has(id)) ? 'complete' : 'featured'
-      scheduleStaleFeedRefresh()
+      // Stale refresh waits until each section's `loadSection` turn — not here.
     } else {
       feed.value = null
     }
@@ -207,14 +218,19 @@ export function useWikitabFeed(
   async function loadSection(sectionId: WikitabSectionId): Promise<void> {
     if (options.enabled && !options.enabled.value) return
     if (!currentEnabledSections().has(sectionId)) return
-    if (fetchedSections.value.has(sectionId)) return
 
     if (!controller) controller = new AbortController()
     const { signal } = controller
 
     try {
-      await fetchUnhiddenSection(sectionId, signal)
-      if (signal.aborted) return
+      if (fetchedSections.value.has(sectionId)) {
+        // Warm cache already painted — refresh on this turn only if TTL expired.
+        await refreshStaleSectionOnTurn(sectionId, signal)
+        if (signal.aborted) return
+      } else {
+        await fetchUnhiddenSection(sectionId, signal)
+        if (signal.aborted) return
+      }
 
       const enabled = currentEnabledSections()
       const allFetched = [...enabled].every((id) => fetchedSections.value.has(id))

@@ -36,7 +36,10 @@ import {
   discussionThreadIdFromUrl,
   noticeboardPageFromDiscussionUrl,
 } from './wikitabHtml'
-import { wikitabCardDescriptionText } from './wikitabCardDescription'
+import {
+  wikitabCardDescriptionText,
+  wikitabPlainArticleDescription,
+} from './wikitabCardDescription'
 import { wikitabCardMenuArticleTitle } from './wikitabCardLinkLabel'
 import {
   quoteSavedId,
@@ -194,7 +197,7 @@ export function buildSavedArticleFromCard(card: WikitabCardData): WikitabSavedAr
     seedArticle: card.seedArticle ?? seedArticle(articleTitle, 'self'),
     title: displayTitle(card.title ?? articleTitle),
     url: card.url ?? articleUrl(articleTitle),
-    description: card.description,
+    description: wikitabPlainArticleDescription(card.description),
     thumbnailUrl: card.thumbnailUrl,
   }
 }
@@ -241,7 +244,7 @@ export function buildSavedArticleFromHookCard(card: WikitabCardData): WikitabSav
     seedArticle: card.seedArticle ?? seedArticle(title, 'hook-link'),
     title,
     url: card.url,
-    description: card.description,
+    description: wikitabPlainArticleDescription(card.description),
     thumbnailUrl: card.thumbnailUrl,
   }
 }
@@ -365,7 +368,7 @@ export function buildSavedArticleFromSearch(input: {
     seedArticle: seedArticle(title, 'self'),
     title,
     url: articleUrl(title),
-    description: input.description,
+    description: wikitabPlainArticleDescription(input.description),
     thumbnailUrl: input.thumbnailUrl,
   }
 }
@@ -391,7 +394,7 @@ export function buildSavedArticleFromSeedArticle(
     seedArticle: seed,
     title,
     url: articleUrl(title),
-    description: hints.description,
+    description: wikitabPlainArticleDescription(hints.description),
     thumbnailUrl: hints.thumbnailUrl,
   }
 }

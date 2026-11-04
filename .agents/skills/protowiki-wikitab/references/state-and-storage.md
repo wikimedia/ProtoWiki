@@ -98,13 +98,16 @@ skeletons for known hooks.
 **Ordered home load** (`index.vue` → `refreshHomeModulesInOrder` →
 `useWikitabFeed.loadSection`) reads and writes through the same cache:
 
-- `prepareForOrderedLoad()` hydrates from `readCachedFeed()`, marks sections with
-  cached items as fetched, then `scheduleStaleFeedRefresh()` for TTL-expired slices.
+- `prepareForOrderedLoad()` hydrates from `readCachedFeed()` and marks sections
+  with cached items as fetched — **no** network / stale refresh here.
 - Cache miss → `loadSection` → network → `persistPartialFeed(..., [sectionId])`.
+- Cache hit that is TTL-stale → `loadSection` awaits a per-section stale refresh
+  on that module's turn (`refreshStaleFeedSections`), so lower slices cannot
+  race modules above.
 - `feed/featured` is deduped in-memory per UTC day when Trending, News, and DYK
   load separately on a miss (`getFeaturedPayload` in `fetchDailyFeed.ts`).
 - Stale featured slices share one `feed/featured` request when any of Trending /
-  News / DYK needs refresh.
+  News / DYK needs refresh on its turn.
 
 `?nocache=1` bypasses reads and writes.
 
@@ -146,7 +149,7 @@ saved-fingerprint mismatch keeps painted cards and surfaces the title reload
 only when the Saved articles source is on. Settings toggles still force
 refresh. Each item may carry `reviewChangesSource`: `'saved' | 'risky'`. TTL:
 seed-article pipeline **1 h**, Recent risky **10 min**. Stale-while-revalidate
-refreshes only expired sources in the background.
+runs on the module's ordered-load `refresh()` turn (expired sources only).
 
 ## Cache-only Active discussions storage (`wikitab-active-discussions-cache-v*`)
 
@@ -157,9 +160,10 @@ articleSeedOffset, fetchedAtNoticeboards, fetchedAtArticles }`
 Reads hit on **day + settings fingerprint**; saved-fingerprint mismatch keeps
 painted cards and surfaces the title reload only when Saved talk is on. Settings
 toggles still force refresh. Per-source TTL: noticeboards **10 min**, saved talk
-**1 h**. While home is mounted, a timer soft-refetches only the expired source(s)
-— paint stays; Show more does not reset either clock. Show more may still append
-further saved-talk seed batches via `loadMore()`.
+**1 h**. Hydrate-from-storage paints cache only (no network). Stale-while-
+revalidate runs on the module's ordered-load `refresh()` turn (and on the
+periodic timer while home stays mounted). Show more may still append further
+saved-talk seed batches via `loadMore()`.
 
 ## Transient component state
 

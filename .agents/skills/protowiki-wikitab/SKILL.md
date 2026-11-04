@@ -112,10 +112,15 @@ and shows the menu whenever `loading !== true`.
 | Recent edits | The revision row | `{ supporting }` while the editor-kind lookup runs (`editorKindPending`) |
 
 Chips that may not exist (high revert risk on Recent edits; **Latest** on
-Activity only) **pop in** rather than skeleton. Modules still load **in series**,
-top to bottom (`refreshHomeModulesInOrder`): API etiquette asks for serial
-requests, and `fetchWikimedia` caps each host at two in flight — granular loading
-paints sooner without adding parallel requests.
+Activity only) **pop in** rather than skeleton. Modules load **serially in
+visual order** (`refreshHomeModulesInOrder`) so the top of the page gets
+`fetchWikimedia`'s two-per-host slots first. Warm cache may paint anywhere
+immediately (no network). Seed modules (Daily reads / Help wanted) take a
+**sync** Saved snapshot before their turn — they never `await` Saved enrich,
+and lower modules never kick network ahead of modules above them. Stale-while-
+revalidate runs on that module's turn (or after higher modules), not at
+prepare/hydrate. Granular per-card loading paints sooner without parallel
+module requests.
 
 The strict rule for `thumbnailType: 'optional'`: when `loading.thumbnail` is set
 and the card has no `thumbnailUrl` yet, the **whole card** stays a skeleton
@@ -396,8 +401,9 @@ cached under one UTC-day blob (`wikitab-feed-cache-v*`); slices patch in via
 `persistPartialFeed()` as each section resolves during ordered home load.
 Per-slice refresh windows are centralized in `data/wikitabCacheTtl.ts` (Trending
 1 h, News/DYK 4 h, OTD UTC day + 4 h, Birthdays on UTC day rollover). Cached
-slices **always paint first**; TTL expiry triggers a background refetch without
-clearing cards (see [State and storage](references/state-and-storage.md)).
+slices **always paint first**; TTL expiry triggers a refetch on that section's
+ordered-load turn (not at prepare) without clearing cards (see
+[State and storage](references/state-and-storage.md)).
 
 **Phase 1 — featured (blocking):**
 
@@ -641,7 +647,9 @@ and all saved `articleTitleKey`s. Cards are thumbnail variant with
 `supportingText: "Related to {seed title}"`. Cached under
 `wikitab-daily-reads-cache-v5` by UTC day (`data/dailyReadsCache.ts`); the
 entry stores `savedFingerprint` but a fingerprint change does **not** auto-refetch —
-a quiet title reload appears instead (see below).
+a quiet title reload appears instead (see below). **Exception:** when the module
+is in the no-seed placeholder, the first seed (0→N) force-refreshes it
+automatically (same for Suggested edits).
 
 **Help wanted** (`suggested-edits`) — edit-opportunity cards from the same
 Microtask `POST /quality-check` pipeline as the search **Contribute** tab, seeded
@@ -744,19 +752,22 @@ the feed has no pending items (`bufferedHasMore` / `hasMore` / fetch-more).
 Active discussions also fetches further saved-talk seed batches on Show more
 when needed (noticeboards are one-shot).
 
-A render triggered on mount, search exit, or overlay close refreshes Featured
-(when visible), Nearby (when stored coords exist), Saved, Daily reads,
-Help wanted, Active discussions, and Recent edits from the
-**same snapshot** (Featured does not use the saved snapshot). Saved is first in
-the default Configure order but **hidden by default**, so
-`refreshHomeModulesInOrder` builds that snapshot **before** any seed-adjacent
-module when Saved is hidden or ordered below it — otherwise Daily reads would
-refresh against `[]` and stay hidden until a later overlay-close refresh. Cached
-modules paint immediately; network runs on day/settings miss, TTL expiry
-(background), or manual **Refresh**. A change to the saved-articles fingerprint
-keeps the last fetch painted and shows a quiet icon-only reload beside the
-module title until the user refreshes (title button or ⋯ → Refresh — both
-snapshot Saved first). `?nocache=1` bypasses caches.
+A render triggered on mount, search exit, or overlay close walks visible home
+modules **top-to-bottom** via `refreshHomeModulesInOrder` (pin + configure
+order, hidden skipped). Featured does not use the saved snapshot. Saved is first
+in the default Configure order but **hidden by default**; when Daily reads /
+Help wanted need seeds, the orchestrator applies a **sync** `savedModuleItems`
+snapshot on that module's turn (no enrich wait, so Trending above is not
+blocked). Saved enrich runs only on Saved's own slot. Consecutive seed-adjacent
+modules (Daily reads, Help wanted, Active discussions, Recent edits) refresh
+**serially** in list order — never `Promise.all`, never an early `void` kick.
+Cached modules paint immediately; network runs on day/settings miss, on that
+module's turn when TTL expired, or manual **Refresh**. A change to the
+saved-articles fingerprint keeps the last fetch painted and shows a quiet
+icon-only reload beside the module title until the user refreshes (title button
+or ⋯ → Refresh — both snapshot Saved first). **Exception:** Daily reads /
+Suggested edits in the no-seed placeholder auto force-refresh when the first
+seed article is saved (0→N). `?nocache=1` bypasses caches.
 
 ## State and storage
 

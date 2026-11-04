@@ -213,7 +213,12 @@ watch(
   },
 )
 
-const canShowMore = computed(() => !props.error && !isEmpty.value)
+const canShowMore = computed(
+  () =>
+    !props.error &&
+    !isEmpty.value &&
+    (props.items.length > 0 || props.loadingMore),
+)
 
 const showMoreDisabled = computed(() =>
   wikitabShowMoreDisabled({

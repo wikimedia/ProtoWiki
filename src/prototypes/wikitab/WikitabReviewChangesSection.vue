@@ -56,6 +56,11 @@ const props = withDefaults(
     showSavedEdits: boolean
     /** Configure: recent risky edits. */
     showRecentRiskyEdits: boolean
+    /**
+     * Saved-only upper bound on cards (seed count capped at REVIEW_CHANGES_MAX_SEEDS).
+     * Null when risky edits (or both) can grow the feed — keep the no-jump Show more row.
+     */
+    maxKnownCards?: number | null
     /** Live saved-articles fingerprint differs from the last fetch. */
     showSavedRefresh?: boolean
     isCardSaved: (id: string) => boolean
@@ -63,7 +68,7 @@ const props = withDefaults(
     /** Home feed vs fullscreen module screen (`?screen=`). */
     variant?: 'home' | 'screen'
   }>(),
-  { variant: 'home' },
+  { variant: 'home', maxKnownCards: null },
 )
 
 const emit = defineEmits<{
@@ -98,19 +103,7 @@ useRestoreReservedOnScreenClose(
 
 const bufferedHasMore = computed(() => props.items.length > reserved.value)
 
-const showSourcesOffPanel = computed(() => {
-  if (!props.sourcesEnabled) return true
-  // Saved-only with nothing to show → same CTA as both-off (nudge to enable risky).
-  return (
-    props.showSavedEdits &&
-    !props.showRecentRiskyEdits &&
-    !props.loading &&
-    !props.pending &&
-    !props.fillingInitial &&
-    !props.error &&
-    props.items.length === 0
-  )
-})
+const showSourcesOffPanel = computed(() => !props.sourcesEnabled)
 
 const isInitialLoading = computed(
   () =>
@@ -126,12 +119,11 @@ const isEmpty = computed(
     !props.pending &&
     !props.fillingInitial &&
     !props.error &&
-    props.items.length === 0,
+    props.items.length === 0 &&
+    !props.hasMore,
 )
 
 function onReviewChangeMenuSelect(value: string, item: WikitabSearchActivityItem) {
-  if (value === 'save') emit('toggle-save', item)
-  if (value === 'save-article') emit('toggle-save-article', item)
   if (value === 'thank') {
     window.open(item.thankUrl, '_blank', 'noopener,noreferrer')
   }
@@ -228,22 +220,31 @@ watch(
   },
 )
 
-/*
- * Row always reserved while skeletons or cards are on screen — disabled until we
- * know there is nothing more (same no-jump contract as feed sections).
+/**
+ * Cap known ≤ initialCount (saved-only, ≤2 seeds): never reserve Show more for
+ * loading optimism — the feed cannot grow past the first page. Otherwise keep
+ * the no-jump row while skeletons / pending / hasMore settle.
  */
-const canShowMore = computed(
-  () =>
-    !props.error &&
-    !isEmpty.value &&
-    (isInitialLoading.value ||
-      props.loading ||
-      props.pending ||
-      props.fillingInitial ||
-      props.loadingMore ||
-      bufferedHasMore.value ||
-      props.hasMore),
-)
+const canShowMore = computed(() => {
+  if (props.error || isEmpty.value) return false
+
+  const cappedAtInitial =
+    props.maxKnownCards != null && props.maxKnownCards <= spec.initialCount
+
+  if (cappedAtInitial) {
+    return bufferedHasMore.value || props.hasMore || props.loadingMore
+  }
+
+  return (
+    isInitialLoading.value ||
+    props.loading ||
+    props.pending ||
+    props.fillingInitial ||
+    props.loadingMore ||
+    bufferedHasMore.value ||
+    props.hasMore
+  )
+})
 
 const showMoreDisabled = computed(() =>
   wikitabShowMoreDisabled({
@@ -308,20 +309,22 @@ watch(selection, (value) => {
   if (value !== null) selection.value = null
 })
 
+/** Reveal the next page; fetch only when the buffer runs short and hasMore is true. */
 function revealMore(): void {
   if (showMoreDisabled.value) return
 
   const targetReserved = reserved.value + spec.pageSize
-  reserved.value = Math.min(targetReserved, props.items.length)
-
-  if (reserved.value < targetReserved) {
+  if (props.items.length >= targetReserved) {
     reserved.value = targetReserved
-    if (props.hasMore) {
-      emit('load-more')
-      return
-    }
-    reserved.value = props.items.length
+    return
   }
+
+  reserved.value = targetReserved
+  if (props.hasMore) {
+    emit('load-more')
+    return
+  }
+  reserved.value = props.items.length
 }
 </script>
 
@@ -372,6 +375,19 @@ function revealMore(): void {
         <small>{{ error }}</small>
       </p>
 
+      <div v-else-if="isEmpty" class="wikitab-review-changes-section__empty-panel">
+        <p class="wikitab-review-changes-section__empty">
+          <small>Recent edits will appear here.</small>
+        </p>
+        <CdxButton
+          class="wikitab-review-changes-section__empty-refresh"
+          weight="quiet"
+          @click="emit('refresh-section')"
+        >
+          Refresh
+        </CdxButton>
+      </div>
+
       <div v-else ref="scroller" class="wikitab-review-changes-section__cards">
         <template v-for="slot in slots" :key="slot.key">
           <WikitabCard
@@ -393,6 +409,7 @@ function revealMore(): void {
               })
             "
             @menu-select="onReviewChangeMenuSelect($event, slot.item)"
+            @toggle-save="emit('toggle-save', slot.item)"
             @toggle-save-article="emit('toggle-save-article', slot.item)"
           />
           <WikitabCard
@@ -457,6 +474,13 @@ function revealMore(): void {
   margin: 0;
   min-height: 120px;
   color: var(--color-subtle);
+}
+
+.wikitab-review-changes-section__empty-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-50);
 }
 
 .wikitab-review-changes-section__empty {

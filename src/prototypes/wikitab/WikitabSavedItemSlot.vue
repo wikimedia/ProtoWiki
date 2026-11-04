@@ -123,17 +123,13 @@ const bindProps = computed(() => {
   return wikitabCardBindProps(primitive.value, extra)
 })
 
-function onActivityMenuSelect(value: string) {
-  if (value === 'save') emit('toggle-save')
-  if (value === 'save-article') emit('toggle-save-article')
-}
 </script>
 
 <template>
   <WikitabCard
     v-if="activityItem && activityBindProps"
     v-bind="activityBindProps"
-    @menu-select="onActivityMenuSelect"
+    @toggle-save="emit('toggle-save')"
     @toggle-save-article="emit('toggle-save-article')"
   />
   <WikitabCard
