@@ -11,7 +11,6 @@ import {
   cdxIconConfigure,
   cdxIconEllipsis,
   cdxIconEyeClosed,
-  cdxIconHelpNotice,
   cdxIconPushPin,
   cdxIconReload,
 } from '@wikimedia/codex-icons'
@@ -301,12 +300,6 @@ const menuItems = computed((): (MenuButtonItemData | MenuGroupData)[] => [
     ],
   },
 ])
-const footerItem = computed(() => ({
-  value: 'about',
-  label: `About ${spec.heading}`,
-  icon: cdxIconHelpNotice,
-}))
-
 watch(selection, (value) => {
   if (value === 'configure') emit('open-configure')
   if (value === 'pin') emit('toggle-pin')
@@ -356,7 +349,6 @@ function revealMore(): void {
           class="wikitab-review-changes-section__menu"
           weight="quiet"
           :menu-items="menuItems"
-          :footer="footerItem"
           :aria-label="`${spec.heading} options`"
         >
           <CdxIcon :icon="cdxIconEllipsis" />

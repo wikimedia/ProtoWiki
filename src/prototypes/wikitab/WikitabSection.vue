@@ -4,7 +4,6 @@ import { CdxButton, CdxIcon, CdxMenuButton } from '@wikimedia/codex'
 import {
   cdxIconEllipsis,
   cdxIconEyeClosed,
-  cdxIconHelpNotice,
   cdxIconPushPin,
   cdxIconReload,
 } from '@wikimedia/codex-icons'
@@ -28,6 +27,7 @@ import {
 import { snippetSavedId } from './data/savedItemIds'
 import { wikitabCardDescriptionText } from './data/wikitabCardDescription'
 import type { WikitabSavedSnippetSource } from './data/wikitabSavedItems'
+import { wikitabModuleAboutFooter } from './data/wikitabModuleAbout'
 import type { WikitabCardData, WikitabSectionId, WikitabSectionSpec } from './sections'
 
 const ARTICLE_SECTION_IDS = new Set<WikitabSectionId>(['trending', 'births'])
@@ -205,11 +205,9 @@ const menuItems = computed(() => [
     icon: cdxIconEyeClosed,
   },
 ])
-const footerItem = computed(() => ({
-  value: 'about',
-  label: `About ${props.spec.heading}`,
-  icon: cdxIconHelpNotice,
-}))
+const footerItem = computed(() =>
+  wikitabModuleAboutFooter(props.spec.id, props.spec.heading),
+)
 
 watch(selection, (value) => {
   if (value === 'pin') emit('toggle-pin')
@@ -243,7 +241,7 @@ watch(selection, (value) => {
           class="wikitab-section__menu"
           weight="quiet"
           :menu-items="menuItems"
-          :footer="footerItem"
+          :footer="footerItem ?? undefined"
           :aria-label="`${spec.heading} options`"
         >
           <CdxIcon :icon="cdxIconEllipsis" />

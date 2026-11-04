@@ -2056,21 +2056,14 @@ watch(searchQuery, (next, prev) => {
   white-space: nowrap;
 }
 
-.wikitab :deep(.wikitab-section__menu .cdx-menu--has-footer .cdx-menu__listbox),
-.wikitab :deep(.wikitab-daily-reads-section__menu .cdx-menu--has-footer .cdx-menu__listbox),
-.wikitab :deep(.wikitab-saved-section__menu .cdx-menu--has-footer .cdx-menu__listbox),
-.wikitab :deep(.wikitab-suggested-edits-section__menu .cdx-menu--has-footer .cdx-menu__listbox),
-.wikitab :deep(.wikitab-active-discussions-section__menu .cdx-menu--has-footer .cdx-menu__listbox),
-.wikitab :deep(.wikitab-review-changes-section__menu .cdx-menu--has-footer .cdx-menu__listbox) {
+.wikitab :deep(.wikitab-section__menu .cdx-menu--has-footer .cdx-menu__listbox) {
   margin-bottom: 0 !important;
 }
 
-.wikitab :deep(.wikitab-section__menu .cdx-menu--has-footer .cdx-menu__listbox > .cdx-menu-item:last-of-type),
-.wikitab :deep(.wikitab-daily-reads-section__menu .cdx-menu--has-footer .cdx-menu__listbox > .cdx-menu-item:last-of-type),
-.wikitab :deep(.wikitab-saved-section__menu .cdx-menu--has-footer .cdx-menu__listbox > .cdx-menu-item:last-of-type),
-.wikitab :deep(.wikitab-suggested-edits-section__menu .cdx-menu--has-footer .cdx-menu__listbox > .cdx-menu-item:last-of-type),
-.wikitab :deep(.wikitab-active-discussions-section__menu .cdx-menu--has-footer .cdx-menu__listbox > .cdx-menu-item:last-of-type),
-.wikitab :deep(.wikitab-review-changes-section__menu .cdx-menu--has-footer .cdx-menu__listbox > .cdx-menu-item:last-of-type) {
+.wikitab
+  :deep(
+    .wikitab-section__menu .cdx-menu--has-footer .cdx-menu__listbox > .cdx-menu-item:last-of-type
+  ) {
   position: static;
   width: auto;
 }

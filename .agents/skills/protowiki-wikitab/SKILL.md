@@ -1158,12 +1158,24 @@ Implementation: `data/fetchWikitabSearchContribute.ts`,
 `data/editOpportunityIcons.ts`,
 `useWikitabSearchContribute.ts`, `WikitabSearchContributeCard.vue`.
 
-## What's inert
+## Module "About" footer
 
-"About {section}" is inert; its menu row clears its selection without acting.
+Only four Main Page–aligned feed sections expose an **About …** row on the
+section `…` menu (`CdxMenuButton` `footer` with `url` + `urlNewTab`). Mapping
+lives in `data/wikitabModuleAbout.ts` (`wikitabModuleAboutFooter()`):
 
-The `…` menu is a single `CdxMenuButton` — its `footer` prop renders the
-separated "About …" row, and the 2px ring on the open trigger is the underlying
-ToggleButton's toggled state, not hand-written CSS. Positioning is left to
-Codex's floating logic, which handles desktop (start-anchored, overflowing the
-column) and mobile (end-aligned to stay on screen) without per-skin CSS.
+| Module | enwiki destination |
+| ------ | ------------------ |
+| Did you know | `Wikipedia:Did you know` |
+| In the news | `Wikipedia:In the news` |
+| On this day | `Wikipedia:Selected anniversaries` |
+| Birthdays | `Wikipedia:Selected anniversaries` |
+
+All other modules omit the footer (no single suitable project page).
+
+The `…` menu is a single `CdxMenuButton` — the 2px ring on the open trigger is
+the underlying ToggleButton's toggled state, not hand-written CSS. Positioning
+is left to Codex's floating logic, which handles desktop (start-anchored,
+overflowing the column) and mobile (end-aligned to stay on screen) without
+per-skin CSS. Feed sections with About use scoped CSS in `index.vue` to unpin
+Codex's footer row so long labels are not clipped.

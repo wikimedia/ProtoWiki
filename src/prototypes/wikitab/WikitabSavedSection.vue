@@ -4,7 +4,6 @@ import { CdxButton, CdxIcon, CdxMenuButton } from '@wikimedia/codex'
 import {
   cdxIconEllipsis,
   cdxIconEyeClosed,
-  cdxIconHelpNotice,
   cdxIconPushPin,
   cdxIconReload,
 } from '@wikimedia/codex-icons'
@@ -146,12 +145,6 @@ const menuItems = computed(() => [
     icon: cdxIconEyeClosed,
   },
 ])
-const footerItem = computed(() => ({
-  value: 'about',
-  label: `About ${spec.heading}`,
-  icon: cdxIconHelpNotice,
-}))
-
 watch(selection, (value) => {
   if (value === 'pin') emit('toggle-pin')
   if (value === 'refresh') emit('refresh-section')
@@ -177,7 +170,6 @@ watch(selection, (value) => {
           class="wikitab-saved-section__menu"
           weight="quiet"
           :menu-items="menuItems"
-          :footer="footerItem"
           :aria-label="`${spec.heading} options`"
         >
           <CdxIcon :icon="cdxIconEllipsis" />
