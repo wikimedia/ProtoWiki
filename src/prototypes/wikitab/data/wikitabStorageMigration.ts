@@ -7,15 +7,11 @@
  * Wikitab reads the current shape only. When the shape changes, teach this file
  * to read the old form — never add a version step or a fallback elsewhere.
  */
-import { CACHE_KEY as ACTIVE_DISCUSSIONS_CACHE_KEY } from './activeDiscussionsCache'
-import { CACHE_KEY as DAILY_READS_CACHE_KEY } from './dailyReadsCache'
-import { CACHE_KEY as FEATURED_CACHE_KEY } from './featuredCache'
-import { CACHE_KEY as FEED_CACHE_KEY, utcDayKey } from './feedCache'
-import { CACHE_KEY as POTD_CACHE_KEY, wikipediaPotdPageUrl } from './fetchPictureOfTheDay'
-import { CACHE_KEY as REVIEW_CHANGES_CACHE_KEY } from './reviewChangesCache'
+import { utcDayKey } from './feedCache'
+import { wikipediaPotdPageUrl } from './fetchPictureOfTheDay'
 import { quoteSavedId, snippetSavedId, wordSavedId } from './savedItemIds'
-import { CACHE_KEY as SUGGESTED_EDITS_CACHE_KEY } from './suggestedEditsCache'
 import { wikitabCardMenuArticleTitle } from './wikitabCardLinkLabel'
+import { wikitabCurrentStorageKeys } from './wikitabCacheRegistry'
 import type { WikitabColorThemeId } from './wikitabColorThemes'
 import {
   nextWikitabConfigRevision,
@@ -45,20 +41,11 @@ const CONFIG_KEY_V2 = 'wikitab-config-v2'
 const CONFIG_KEY_V1 = 'wikitab-config-v1'
 
 /**
- * Live localStorage keys. Anything else starting with `wikitab-` is deleted on
- * migrate — when you add a cache module, register its `CACHE_KEY` here or every
- * page load will wipe it (and that module will refetch every time).
+ * Live localStorage keys come from `wikitabCacheRegistry` (+ config). Anything
+ * else starting with `wikitab-` is deleted on migrate — register new caches in
+ * the registry or every page load will wipe them.
  */
-const CURRENT_KEYS = new Set<string>([
-  WIKITAB_CONFIG_STORAGE_KEY,
-  FEED_CACHE_KEY,
-  DAILY_READS_CACHE_KEY,
-  SUGGESTED_EDITS_CACHE_KEY,
-  REVIEW_CHANGES_CACHE_KEY,
-  ACTIVE_DISCUSSIONS_CACHE_KEY,
-  POTD_CACHE_KEY,
-  FEATURED_CACHE_KEY,
-])
+const CURRENT_KEYS = wikitabCurrentStorageKeys()
 
 const THEME_ALIASES: Record<string, WikitabColorThemeId> = {
   'gray-bold': 'off-black',

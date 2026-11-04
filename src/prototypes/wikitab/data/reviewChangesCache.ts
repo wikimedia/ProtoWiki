@@ -1,5 +1,13 @@
 import type { WikitabSearchActivityItem } from './fetchWikitabSearchActivity'
-import { isCacheBypassed, utcDayKey } from './feedCache'
+import {
+  buildSavedFingerprint,
+  buildSettingsFingerprint,
+  isCacheBypassed,
+  readCacheJson,
+  readCacheJsonUnlessBypassed,
+  utcDayKey,
+  writeCacheJson,
+} from './wikitabCacheHelpers'
 import {
   isTimestampFresh,
   REVIEW_CHANGES_RISKY_TTL_MS,
@@ -31,18 +39,16 @@ export interface CachedReviewChanges {
   fetchedAtRisky?: number
 }
 
-export function buildReviewChangesSavedFingerprint(titleKeys: readonly string[]): string {
-  return [...titleKeys].sort().join('|')
-}
+export const buildReviewChangesSavedFingerprint = buildSavedFingerprint
 
 export function buildReviewChangesSettingsFingerprint(options: {
   showSavedEdits: boolean
   showRecentRiskyEdits: boolean
 }): string {
-  return `${options.showSavedEdits ? '1' : '0'}${options.showRecentRiskyEdits ? '1' : '0'}`
+  return buildSettingsFingerprint([options.showSavedEdits, options.showRecentRiskyEdits])
 }
 
-export { isCacheBypassed }
+export { isCacheBypassed, utcDayKey }
 
 function dedupeCachedItems(items: WikitabSearchActivityItem[]): WikitabSearchActivityItem[] {
   const seen = new Set<number>()
@@ -66,31 +72,23 @@ export function readCachedReviewChanges(
   day: string,
   settingsFingerprint: string,
 ): CachedReviewChanges | null {
-  if (isCacheBypassed()) return null
-
-  try {
-    const raw = window.localStorage.getItem(CACHE_KEY)
-    if (!raw) return null
-
-    const entry = JSON.parse(raw) as CacheEntry
-    if (
-      entry?.day !== day ||
-      typeof entry.savedFingerprint !== 'string' ||
-      entry.settingsFingerprint !== settingsFingerprint ||
-      !entry.items
-    ) {
-      return null
-    }
-
-    return {
-      items: dedupeCachedItems(entry.items.map((item) => ({ ...item }))),
-      hasMore: entry.hasMore === true,
-      savedFingerprint: entry.savedFingerprint,
-      fetchedAtSaved: entry.fetchedAtSaved,
-      fetchedAtRisky: entry.fetchedAtRisky,
-    }
-  } catch {
+  const entry = readCacheJsonUnlessBypassed(CACHE_KEY) as CacheEntry | null
+  if (
+    !entry ||
+    entry.day !== day ||
+    typeof entry.savedFingerprint !== 'string' ||
+    entry.settingsFingerprint !== settingsFingerprint ||
+    !entry.items
+  ) {
     return null
+  }
+
+  return {
+    items: dedupeCachedItems(entry.items.map((item) => ({ ...item }))),
+    hasMore: entry.hasMore === true,
+    savedFingerprint: entry.savedFingerprint,
+    fetchedAtSaved: entry.fetchedAtSaved,
+    fetchedAtRisky: entry.fetchedAtRisky,
   }
 }
 
@@ -116,42 +114,27 @@ export function writeCachedReviewChanges(
   hasMore: boolean,
   fetchedAt?: { saved?: number; risky?: number },
 ): void {
-  try {
-    const existingRaw = window.localStorage.getItem(CACHE_KEY)
-    let fetchedAtSaved = fetchedAt?.saved
-    let fetchedAtRisky = fetchedAt?.risky
+  let fetchedAtSaved = fetchedAt?.saved
+  let fetchedAtRisky = fetchedAt?.risky
 
-    if (existingRaw) {
-      try {
-        const existing = JSON.parse(existingRaw) as CacheEntry
-        if (
-          existing.day === day &&
-          existing.savedFingerprint === savedFingerprint &&
-          existing.settingsFingerprint === settingsFingerprint
-        ) {
-          if (fetchedAtSaved === undefined) fetchedAtSaved = existing.fetchedAtSaved
-          if (fetchedAtRisky === undefined) fetchedAtRisky = existing.fetchedAtRisky
-        }
-      } catch {
-        // ignore
-      }
-    }
-
-    window.localStorage.setItem(
-      CACHE_KEY,
-      JSON.stringify({
-        day,
-        savedFingerprint,
-        settingsFingerprint,
-        items,
-        hasMore,
-        fetchedAtSaved,
-        fetchedAtRisky,
-      } satisfies CacheEntry),
-    )
-  } catch {
-    // A full or unavailable localStorage must never break the page.
+  const existing = readCacheJson(CACHE_KEY) as CacheEntry | null
+  if (
+    existing &&
+    existing.day === day &&
+    existing.savedFingerprint === savedFingerprint &&
+    existing.settingsFingerprint === settingsFingerprint
+  ) {
+    if (fetchedAtSaved === undefined) fetchedAtSaved = existing.fetchedAtSaved
+    if (fetchedAtRisky === undefined) fetchedAtRisky = existing.fetchedAtRisky
   }
-}
 
-export { utcDayKey }
+  writeCacheJson(CACHE_KEY, {
+    day,
+    savedFingerprint,
+    settingsFingerprint,
+    items,
+    hasMore,
+    fetchedAtSaved,
+    fetchedAtRisky,
+  } satisfies CacheEntry)
+}

@@ -1,5 +1,12 @@
 import type { WikitabCardData } from '../sections'
-import { isCacheBypassed, utcDayKey } from './feedCache'
+import {
+  buildSavedFingerprint,
+  buildSettingsFingerprint,
+  isCacheBypassed,
+  readCacheJsonUnlessBypassed,
+  utcDayKey,
+  writeCacheJson,
+} from './wikitabCacheHelpers'
 import {
   DISCUSSIONS_NOTICEBOARDS_TTL_MS,
   DISCUSSIONS_SAVED_TALK_TTL_MS,
@@ -36,15 +43,13 @@ export interface CachedActiveDiscussions {
   fetchedAtArticles?: number
 }
 
-export function buildActiveDiscussionsSavedFingerprint(titleKeys: readonly string[]): string {
-  return [...titleKeys].sort().join('|')
-}
+export const buildActiveDiscussionsSavedFingerprint = buildSavedFingerprint
 
 export function buildActiveDiscussionsSettingsFingerprint(options: {
   showNoticeboards: boolean
   showSavedTalk: boolean
 }): string {
-  return `${options.showNoticeboards ? '1' : '0'}${options.showSavedTalk ? '1' : '0'}`
+  return buildSettingsFingerprint([options.showNoticeboards, options.showSavedTalk])
 }
 
 export { isCacheBypassed, utcDayKey }
@@ -72,38 +77,30 @@ export function readCachedActiveDiscussions(
   day: string,
   settingsFingerprint: string,
 ): CachedActiveDiscussions | null {
-  if (isCacheBypassed()) return null
-
-  try {
-    const raw = window.localStorage.getItem(CACHE_KEY)
-    if (!raw) return null
-
-    const entry = JSON.parse(raw) as CacheEntry
-    if (
-      entry?.day !== day ||
-      typeof entry.savedFingerprint !== 'string' ||
-      entry.settingsFingerprint !== settingsFingerprint ||
-      !Array.isArray(entry.noticeboards) ||
-      !Array.isArray(entry.articles) ||
-      typeof entry.articleSeedOffset !== 'number'
-    ) {
-      return null
-    }
-
-    const fetchedAtNoticeboards = resolveFetchedAt(entry, 'noticeboards')
-    const fetchedAtArticles = resolveFetchedAt(entry, 'articles')
-    if (fetchedAtNoticeboards == null && fetchedAtArticles == null) return null
-
-    return {
-      noticeboards: entry.noticeboards.map((item) => ({ ...item })),
-      articles: entry.articles.map((item) => ({ ...item })),
-      articleSeedOffset: entry.articleSeedOffset,
-      savedFingerprint: entry.savedFingerprint,
-      fetchedAtNoticeboards,
-      fetchedAtArticles,
-    }
-  } catch {
+  const entry = readCacheJsonUnlessBypassed(CACHE_KEY) as CacheEntry | null
+  if (
+    !entry ||
+    entry.day !== day ||
+    typeof entry.savedFingerprint !== 'string' ||
+    entry.settingsFingerprint !== settingsFingerprint ||
+    !Array.isArray(entry.noticeboards) ||
+    !Array.isArray(entry.articles) ||
+    typeof entry.articleSeedOffset !== 'number'
+  ) {
     return null
+  }
+
+  const fetchedAtNoticeboards = resolveFetchedAt(entry, 'noticeboards')
+  const fetchedAtArticles = resolveFetchedAt(entry, 'articles')
+  if (fetchedAtNoticeboards == null && fetchedAtArticles == null) return null
+
+  return {
+    noticeboards: entry.noticeboards.map((item) => ({ ...item })),
+    articles: entry.articles.map((item) => ({ ...item })),
+    articleSeedOffset: entry.articleSeedOffset,
+    savedFingerprint: entry.savedFingerprint,
+    fetchedAtNoticeboards,
+    fetchedAtArticles,
   }
 }
 
@@ -138,21 +135,14 @@ export function writeCachedActiveDiscussions(
   articleSeedOffset: number,
   fetchedAt?: { noticeboards?: number; articles?: number },
 ): void {
-  try {
-    window.localStorage.setItem(
-      CACHE_KEY,
-      JSON.stringify({
-        day,
-        savedFingerprint,
-        settingsFingerprint,
-        noticeboards,
-        articles,
-        articleSeedOffset,
-        fetchedAtNoticeboards: fetchedAt?.noticeboards,
-        fetchedAtArticles: fetchedAt?.articles,
-      } satisfies CacheEntry),
-    )
-  } catch {
-    // A full or unavailable localStorage must never break the page.
-  }
+  writeCacheJson(CACHE_KEY, {
+    day,
+    savedFingerprint,
+    settingsFingerprint,
+    noticeboards,
+    articles,
+    articleSeedOffset,
+    fetchedAtNoticeboards: fetchedAt?.noticeboards,
+    fetchedAtArticles: fetchedAt?.articles,
+  } satisfies CacheEntry)
 }

@@ -1,6 +1,10 @@
 import type { FeaturedFeedResponse } from './fetchDailyFeed'
 import { getFeaturedPayload } from './fetchDailyFeed'
-import { isCacheBypassed, utcDayKey } from './feedCache'
+import {
+  readCacheJsonUnlessBypassed,
+  utcDayKey,
+  writeCacheJson,
+} from './wikitabCacheHelpers'
 import { EN_WIKI_HOST, normalizeFeedHtml, unwrapLinksInHtml, wikiArticleUrl } from './wikitabHtml'
 
 export const CACHE_KEY = 'wikitab-potd-cache-v7'
@@ -33,31 +37,21 @@ const EMPTY_POTD: WikitabPotd = {
 let sessionEntry: { day: string; potd: WikitabPotd } | null = null
 
 function readCachedPotd(day: string): WikitabPotd | undefined {
-  if (isCacheBypassed()) return undefined
-
   if (sessionEntry?.day === day) return sessionEntry.potd
 
-  try {
-    const raw = window.localStorage.getItem(CACHE_KEY)
-    if (!raw) return undefined
+  const entry = readCacheJsonUnlessBypassed(CACHE_KEY) as {
+    day?: string
+    potd?: WikitabPotd
+  } | null
+  if (!entry || entry.day !== day || !entry.potd) return undefined
 
-    const entry = JSON.parse(raw) as { day?: string; potd?: WikitabPotd }
-    if (entry?.day !== day || !entry.potd) return undefined
-
-    sessionEntry = { day, potd: entry.potd }
-    return sessionEntry.potd
-  } catch {
-    return undefined
-  }
+  sessionEntry = { day, potd: entry.potd }
+  return sessionEntry.potd
 }
 
 function writeCachedPotd(day: string, potd: WikitabPotd): void {
   sessionEntry = { day, potd }
-  try {
-    window.localStorage.setItem(CACHE_KEY, JSON.stringify({ day, potd }))
-  } catch {
-    // Quota or private mode — session memory still holds the result.
-  }
+  writeCacheJson(CACHE_KEY, { day, potd })
 }
 
 function stripUrlQuery(url: string): string {

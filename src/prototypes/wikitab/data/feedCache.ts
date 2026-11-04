@@ -1,5 +1,12 @@
 import type { WikitabFeed, WikitabSectionId } from '../sections'
 import {
+  isCacheBypassed,
+  previousUtcDay,
+  readCacheJsonUnlessBypassed,
+  utcDayKey,
+  writeCacheJson,
+} from './wikitabCacheHelpers'
+import {
   feedSliceRequiresUtcDay,
   isFeedSliceFreshByTimestamp,
   type FeedSliceTtlSectionId,
@@ -19,38 +26,14 @@ interface CacheEntry {
   sliceFetchedAt?: FeedSliceFetchedAt
 }
 
-/** Re-export for modules that only need bypass / day key. */
+/** Re-export for modules that only need bypass / day key / TTL constants. */
 export { DISCUSSIONS_TTL_MS } from './wikitabCacheTtl'
-
-/** `YYYY-MM-DD` in UTC — the granularity of the featured feed itself. */
-export function utcDayKey(date = new Date()): string {
-  return date.toISOString().slice(0, 10)
-}
-
-/** Previous UTC calendar day as `YYYY-MM-DD`. */
-export function previousUtcDay(day: string): string {
-  const date = new Date(`${day}T00:00:00.000Z`)
-  date.setUTCDate(date.getUTCDate() - 1)
-  return date.toISOString().slice(0, 10)
-}
-
-/** `?nocache=1` forces a refetch, for when the day's content has gone stale. */
-export function isCacheBypassed(): boolean {
-  if (typeof window === 'undefined') return false
-  return new URLSearchParams(window.location.search).get('nocache') === '1'
-}
+export { isCacheBypassed, previousUtcDay, utcDayKey }
 
 function readRawCacheEntry(): CacheEntry | null {
-  if (isCacheBypassed()) return null
-  try {
-    const raw = window.localStorage.getItem(CACHE_KEY)
-    if (!raw) return null
-    const entry = JSON.parse(raw) as CacheEntry
-    if (!entry?.day || !entry.feed) return null
-    return entry
-  } catch {
-    return null
-  }
+  const entry = readCacheJsonUnlessBypassed(CACHE_KEY) as CacheEntry | null
+  if (!entry?.day || !entry.feed) return null
+  return entry
 }
 
 /**
@@ -137,11 +120,7 @@ export function readCachedFeed(day: string): WikitabFeed | null {
 
 /** Storing a single entry means writing today's feed evicts every older day. */
 function writeCacheEntry(entry: CacheEntry): void {
-  try {
-    window.localStorage.setItem(CACHE_KEY, JSON.stringify(entry satisfies CacheEntry))
-  } catch {
-    // A full or unavailable localStorage must never break the page.
-  }
+  writeCacheJson(CACHE_KEY, entry satisfies CacheEntry)
 }
 
 export function writeCachedFeed(

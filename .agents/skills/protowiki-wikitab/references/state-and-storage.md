@@ -58,6 +58,28 @@ and Active discussions (talk-page source) seed from items with `seedArticle` set
 Discussion, Change, and Image saves typically have no article seed (or a
 non-mainspace one) and do not feed those modules.
 
+## Many keys, one registry
+
+Disposable caches keep **separate** localStorage keys and TTLs on purpose
+(independent schemas, partial writes, mixed invalidation). Do **not** fold them
+into one mega-blob.
+
+What is unified:
+
+| File | Role |
+| ---- | ---- |
+| [`data/wikitabCacheRegistry.ts`](../../../../src/prototypes/wikitab/data/wikitabCacheRegistry.ts) | Single list of live `CACHE_KEY`s, eviction prefixes, migration whitelist, and playground row metadata |
+| [`data/wikitabCacheHelpers.ts`](../../../../src/prototypes/wikitab/data/wikitabCacheHelpers.ts) | Shared `utcDayKey` / `isCacheBypassed` / fingerprints / quota-safe JSON read-write |
+| [`data/wikitabCacheTtl.ts`](../../../../src/prototypes/wikitab/data/wikitabCacheTtl.ts) | Per-slice / per-module TTL constants |
+
+When you add a cache module: define `CACHE_KEY` next to its schema, add a
+registry row (`whitelist: true` unless the payload lives in config), and prefer
+the helpers for I/O. Migration whitelist, `evictWikitabCaches()`, and the
+playground Caches tab all read the registry — do not maintain a second key list.
+
+Nearby cards stay in `WikitabConfig.nearbyCardsCache` (coord + consent); only
+legacy `wikitab-nearby-cache-v*` keys are eviction prefixes.
+
 ## Cache-only feed storage (`wikitab-feed-cache-v*`)
 
 [`data/feedCache.ts`](../../../../src/prototypes/wikitab/data/feedCache.ts) caches
@@ -206,10 +228,12 @@ runs once per page load (via `loadWikitabConfig()` / `patchWikitabConfig()`):
   rows, renamed fields, theme aliases, missing `primitive` / `seedArticle`, old
   `?pinned=` when pins are empty.
 - Writes v3 if the normalized config changed; deletes legacy config keys and any
-  `wikitab-*` localStorage key that is not the config key or a current cache
-  `CACHE_KEY` (feed, daily reads, suggested edits, review changes, POTD, featured).
+  `wikitab-*` localStorage key that is not in
+  [`wikitabCurrentStorageKeys()`](../../../../src/prototypes/wikitab/data/wikitabCacheRegistry.ts)
+  (config + every registry entry with `whitelist: true`).
 
-Caches are disposable; config is not.
+Caches are disposable; config is not. Register new cache keys in
+`wikitabCacheRegistry.ts` or every page load will wipe them.
 
 ## Cross-tab sync
 

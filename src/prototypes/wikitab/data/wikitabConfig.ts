@@ -1,4 +1,5 @@
 import { WIKITAB_DEFAULT_HIDDEN_MODULE_IDS } from '../sections'
+import { WIKITAB_CACHE_EVICTION_PREFIXES } from './wikitabCacheRegistry'
 import { migrateWikitabStorage } from './wikitabStorageMigration'
 import {
   cloneWikitabConfig,
@@ -41,19 +42,6 @@ export {
   type WikitabNearbyCardsCache,
   type WikitabNearbyLastCoord,
 } from './wikitabConfigNormalize'
-
-/** Cache-only localStorage keys — safe to delete when config writes hit quota. */
-const WIKITAB_CACHE_KEY_PREFIXES = [
-  'wikitab-feed-cache-v',
-  'wikitab-daily-reads-cache-v',
-  'wikitab-suggested-edits-cache-v',
-  'wikitab-review-changes-cache-v',
-  'wikitab-active-discussions-cache-v',
-  'wikitab-potd-cache-v',
-  'wikitab-featured-cache-v',
-  // Legacy Nearby standalone keys (cards now live in WikitabConfig.nearbyCardsCache).
-  'wikitab-nearby-cache-v',
-] as const
 
 export interface WikitabConfigPatchResult {
   config: WikitabConfig
@@ -98,7 +86,7 @@ export function evictWikitabCaches(): number {
     for (let index = 0; index < window.localStorage.length; index++) {
       const key = window.localStorage.key(index)
       if (!key || key === WIKITAB_CONFIG_STORAGE_KEY) continue
-      if (WIKITAB_CACHE_KEY_PREFIXES.some((prefix) => key.startsWith(prefix))) {
+      if (WIKITAB_CACHE_EVICTION_PREFIXES.some((prefix) => key.startsWith(prefix))) {
         keysToRemove.push(key)
       }
     }

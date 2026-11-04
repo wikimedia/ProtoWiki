@@ -771,13 +771,14 @@ seed article is saved (0→N). `?nocache=1` bypasses caches.
 
 ## State and storage
 
-User preferences (`data/wikitabConfig.ts`), feed cache (`data/feedCache.ts`),
+User preferences (`data/wikitabConfig.ts`), disposable feed/module caches
+(separate keys via `data/wikitabCacheRegistry.ts` + helpers — not one mega-blob),
 feed orchestration phase (`useWikitabFeed` → `feedPhase` +
 `isSectionLoading`), and transient reveal counts (`useSectionReveal`) live in
 separate layers.
 See [references/state-and-storage.md](references/state-and-storage.md) for the
-full rules, the one-step **`wikitabStorageMigration.ts`** contract, and how to
-add future config fields without over-building a schema.
+full rules, the cache registry, the one-step **`wikitabStorageMigration.ts`**
+contract, and how to add future config fields without over-building a schema.
 
 **Pinning** — pinned sections move to the top. State is
 `WikitabConfig.pinnedSectionIds` in localStorage, wired through

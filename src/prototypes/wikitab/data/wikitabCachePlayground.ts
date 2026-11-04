@@ -1,39 +1,36 @@
 /**
  * Live cache rows for the card playground "Caches" tab.
+ *
+ * Storage keys and row metadata come from `wikitabCacheRegistry` — keep
+ * dual-source / Nearby status logic here; do not invent a second key list.
  */
+import { buildActiveDiscussionsSavedFingerprint } from './activeDiscussionsCache'
+import { buildDailyReadsSavedFingerprint } from './dailyReadsCache'
+import { isCacheBypassed, readCacheJson, utcDayKey } from './wikitabCacheHelpers'
 import {
-  buildActiveDiscussionsSavedFingerprint,
-  CACHE_KEY as ACTIVE_DISCUSSIONS_CACHE_KEY,
-} from './activeDiscussionsCache'
-import {
-  buildDailyReadsSavedFingerprint,
-  CACHE_KEY as DAILY_READS_CACHE_KEY,
-} from './dailyReadsCache'
-import { CACHE_KEY as FEATURED_CACHE_KEY } from './featuredCache'
-import { CACHE_KEY as FEED_CACHE_KEY, isCacheBypassed, utcDayKey } from './feedCache'
-import { CACHE_KEY as POTD_CACHE_KEY } from './fetchPictureOfTheDay'
-import {
-  buildReviewChangesSavedFingerprint,
-  CACHE_KEY as REVIEW_CHANGES_CACHE_KEY,
-} from './reviewChangesCache'
-import { uniqueArticleSeedsFromSavedItems } from './savedCardHelpers'
-import {
-  buildSuggestedEditsSavedFingerprint,
-  CACHE_KEY as SUGGESTED_EDITS_CACHE_KEY,
-} from './suggestedEditsCache'
-import { loadWikitabConfig } from './wikitabConfig'
+  WIKITAB_ACTIVE_DISCUSSIONS_PLAYGROUND_ROWS,
+  WIKITAB_FEED_PLAYGROUND_SLICES,
+  WIKITAB_NEARBY_PLAYGROUND,
+  WIKITAB_REVIEW_CHANGES_PLAYGROUND_ROWS,
+  WIKITAB_SIMPLE_PLAYGROUND_MODULES,
+  wikitabCacheStorageKey,
+  type WikitabDualSourcePlaygroundRow,
+  type WikitabSimplePlaygroundModule,
+} from './wikitabCacheRegistry'
 import {
   DISCUSSIONS_NOTICEBOARDS_TTL_MS,
-  DISCUSSIONS_SAVED_TALK_TTL_MS,
   FEATURED_MODULE_TTL_MS,
   NEARBY_TTL_MS,
   NEWS_TTL_MS,
-  OTD_TTL_MS,
   REVIEW_CHANGES_RISKY_TTL_MS,
   REVIEW_CHANGES_SAVED_TTL_MS,
   TRENDING_TTL_MS,
   isTimestampFresh,
 } from './wikitabCacheTtl'
+import { buildReviewChangesSavedFingerprint } from './reviewChangesCache'
+import { uniqueArticleSeedsFromSavedItems } from './savedCardHelpers'
+import { buildSuggestedEditsSavedFingerprint } from './suggestedEditsCache'
+import { loadWikitabConfig } from './wikitabConfig'
 import type { WikitabModuleId, WikitabSectionId } from '../sections'
 
 /** Cache-row status chips — prefer these four over legacy leftovers. */
@@ -88,19 +85,6 @@ export function formatCacheRemaining(remainingMs: number | null): string {
 export function formatCacheAge(fetchedAt: number | null, now = Date.now()): string {
   if (fetchedAt == null) return '—'
   return formatDuration(now - fetchedAt)
-}
-
-function readJson(key: string): Record<string, unknown> | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const raw = window.localStorage.getItem(key)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as unknown
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
-    return parsed as Record<string, unknown>
-  } catch {
-    return null
-  }
 }
 
 function ttlLabel(ttlMs: number | null): string {
@@ -262,6 +246,11 @@ function statusFromFetchedAt(
   }
 }
 
+function asCacheRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  return value as Record<string, unknown>
+}
+
 function feedSliceRow(
   sectionId: WikitabSectionId,
   module: string,
@@ -273,6 +262,7 @@ function feedSliceRow(
   },
   now: number,
   bypassed: boolean,
+  storageKey: string,
 ): WikitabCacheRow {
   const currentDay = utcDayKey()
   const day = typeof entry?.day === 'string' ? entry.day : undefined
@@ -293,232 +283,184 @@ function feedSliceRow(
   return {
     id: `feed-${sectionId}`,
     module,
-    storageKey: FEED_CACHE_KEY,
+    storageKey,
     invalidates: options.invalidates,
     ttlLabel: ttlLabel(options.ttlMs),
     ...status,
   }
 }
 
+function fingerprintBuilderForRegistry(
+  registryId: WikitabSimplePlaygroundModule['registryId'] | 'active-discussions' | 'review-changes',
+): ((titleKeys: readonly string[]) => string) | null {
+  switch (registryId) {
+    case 'daily-reads':
+      return buildDailyReadsSavedFingerprint
+    case 'suggested-edits':
+      return buildSuggestedEditsSavedFingerprint
+    case 'active-discussions':
+      return buildActiveDiscussionsSavedFingerprint
+    case 'review-changes':
+      return buildReviewChangesSavedFingerprint
+    default:
+      return null
+  }
+}
+
+function simpleModuleRow(
+  spec: WikitabSimplePlaygroundModule,
+  now: number,
+  bypassed: boolean,
+  currentDay: string,
+): WikitabCacheRow {
+  const storageKey = spec.storageKey ?? wikitabCacheStorageKey(spec.registryId) ?? ''
+  const entry = asCacheRecord(readCacheJson(storageKey))
+  const day = typeof entry?.day === 'string' ? entry.day : undefined
+  const items = Array.isArray(entry?.items) ? entry.items : []
+  const hasPayload =
+    spec.payload === 'potd'
+      ? entry?.potd != null && day != null
+      : spec.id === 'daily-reads' || spec.id === 'help-wanted'
+        ? entry != null && day != null
+        : items.length > 0
+
+  const fetchedAt =
+    typeof entry?.fetchedAt === 'number' ? entry.fetchedAt : undefined
+  const savedFingerprint =
+    typeof entry?.savedFingerprint === 'string' ? entry.savedFingerprint : undefined
+  const fingerprintBuild = spec.savedFingerprint
+    ? fingerprintBuilderForRegistry(spec.registryId)
+    : null
+
+  const status = statusFromFetchedAt(fetchedAt, spec.ttlMs, {
+    bypassed,
+    turnedOff: spec.moduleId ? isModuleHidden(spec.moduleId) : false,
+    savedFingerprint: spec.savedFingerprint ? savedFingerprint : undefined,
+    liveSavedFingerprint: fingerprintBuild
+      ? liveSavedArticleFingerprint(fingerprintBuild)
+      : undefined,
+    dayKeyed: spec.dayKeyed,
+    day,
+    currentDay,
+    hasPayload,
+  }, now)
+
+  return {
+    id: spec.id,
+    module: spec.module,
+    storageKey,
+    invalidates: spec.invalidates,
+    ttlLabel: ttlLabel(spec.ttlMs),
+    ...status,
+  }
+}
+
+function dualSourceRows(
+  registryId: 'active-discussions' | 'review-changes',
+  moduleId: WikitabModuleId,
+  specs: readonly WikitabDualSourcePlaygroundRow[],
+  now: number,
+  bypassed: boolean,
+): WikitabCacheRow[] {
+  const storageKey = wikitabCacheStorageKey(registryId) ?? ''
+  const entry = asCacheRecord(readCacheJson(storageKey))
+  const config = loadWikitabConfig()
+  const moduleOff = isModuleHidden(moduleId)
+  const items = Array.isArray(entry?.items) ? entry.items : []
+  const fingerprintBuild = fingerprintBuilderForRegistry(registryId)
+  const liveFingerprint = fingerprintBuild
+    ? liveSavedArticleFingerprint(fingerprintBuild)
+    : ''
+  const savedFingerprint =
+    typeof entry?.savedFingerprint === 'string' ? entry.savedFingerprint : undefined
+
+  return specs.map((spec) => {
+    const legacy =
+      spec.legacyFetchedAtField && typeof entry?.[spec.legacyFetchedAtField] === 'number'
+        ? (entry[spec.legacyFetchedAtField] as number)
+        : undefined
+    const fetchedAt =
+      typeof entry?.[spec.fetchedAtField] === 'number'
+        ? (entry[spec.fetchedAtField] as number)
+        : legacy
+
+    let hasPayload = fetchedAt != null
+    if (spec.payloadField === 'items') {
+      hasPayload = (entry != null && items.length > 0) || fetchedAt != null
+    } else if (spec.payloadField) {
+      const payload = entry?.[spec.payloadField]
+      hasPayload = (Array.isArray(payload) && payload.length > 0) || fetchedAt != null
+    }
+
+    const sourceOff = spec.sourceEnabled ? !spec.sourceEnabled(config) : false
+
+    return {
+      id: spec.id,
+      module: spec.module,
+      storageKey,
+      invalidates: spec.invalidates,
+      ttlLabel: ttlLabel(spec.ttlMs),
+      ...statusFromFetchedAt(fetchedAt, spec.ttlMs, {
+        bypassed,
+        turnedOff: moduleOff || sourceOff,
+        savedFingerprint: spec.savedFingerprint ? savedFingerprint : undefined,
+        liveSavedFingerprint: spec.savedFingerprint ? liveFingerprint : undefined,
+        dayKeyed: false,
+        hasPayload,
+      }, now),
+    }
+  })
+}
+
 export function snapshotWikitabCaches(now = Date.now()): WikitabCacheRow[] {
   const bypassed = isCacheBypassed()
   const currentDay = utcDayKey()
-  const feedEntry = readJson(FEED_CACHE_KEY)
+  const feedKey = wikitabCacheStorageKey('feed') ?? ''
+  const feedEntry = asCacheRecord(readCacheJson(feedKey))
   const rows: WikitabCacheRow[] = []
 
+  for (const slice of WIKITAB_FEED_PLAYGROUND_SLICES) {
+    rows.push(
+      feedSliceRow(
+        slice.sectionId,
+        slice.module,
+        feedEntry,
+        {
+          ttlMs: slice.ttlMs,
+          invalidates: slice.invalidates,
+          dayKeyed: slice.dayKeyed,
+        },
+        now,
+        bypassed,
+        feedKey,
+      ),
+    )
+  }
+
+  const simpleById = new Map(
+    WIKITAB_SIMPLE_PLAYGROUND_MODULES.map((spec) => [spec.id, spec] as const),
+  )
+  for (const id of ['featured', 'daily-reads', 'help-wanted'] as const) {
+    const spec = simpleById.get(id)
+    if (spec) rows.push(simpleModuleRow(spec, now, bypassed, currentDay))
+  }
+
   rows.push(
-    feedSliceRow(
-      'trending',
-      'Trending',
-      feedEntry,
-      { ttlMs: TRENDING_TTL_MS, invalidates: '1h TTL', dayKeyed: false },
+    ...dualSourceRows(
+      'active-discussions',
+      'discussions',
+      WIKITAB_ACTIVE_DISCUSSIONS_PLAYGROUND_ROWS,
       now,
       bypassed,
     ),
-    feedSliceRow(
-      'news',
-      'In the news',
-      feedEntry,
-      { ttlMs: NEWS_TTL_MS, invalidates: '4h TTL', dayKeyed: false },
-      now,
-      bypassed,
-    ),
-    feedSliceRow(
-      'dyk',
-      'Did you know',
-      feedEntry,
-      { ttlMs: NEWS_TTL_MS, invalidates: '4h TTL', dayKeyed: false },
-      now,
-      bypassed,
-    ),
-    feedSliceRow(
-      'otd',
-      'On this day',
-      feedEntry,
-      { ttlMs: OTD_TTL_MS, invalidates: 'UTC day · 4h TTL', dayKeyed: true },
-      now,
-      bypassed,
-    ),
-    feedSliceRow(
-      'births',
-      'Birthdays',
-      feedEntry,
-      { ttlMs: null, invalidates: 'UTC day', dayKeyed: true },
+    ...dualSourceRows(
+      'review-changes',
+      'review-changes',
+      WIKITAB_REVIEW_CHANGES_PLAYGROUND_ROWS,
       now,
       bypassed,
     ),
   )
-
-  {
-    const entry = readJson(FEATURED_CACHE_KEY)
-    const day = typeof entry?.day === 'string' ? entry.day : undefined
-    const fetchedAt = typeof entry?.fetchedAt === 'number' ? entry.fetchedAt : undefined
-    const items = Array.isArray(entry?.items) ? entry.items : []
-    const status = statusFromFetchedAt(fetchedAt, FEATURED_MODULE_TTL_MS, {
-      bypassed,
-      turnedOff: isModuleHidden('featured'),
-      dayKeyed: true,
-      day,
-      currentDay,
-      hasPayload: items.length > 0,
-    }, now)
-    rows.push({
-      id: 'featured',
-      module: 'Featured',
-      storageKey: FEATURED_CACHE_KEY,
-      invalidates: 'UTC day · 4h TTL',
-      ttlLabel: ttlLabel(FEATURED_MODULE_TTL_MS),
-      ...status,
-    })
-  }
-
-  {
-    const entry = readJson(DAILY_READS_CACHE_KEY)
-    const day = typeof entry?.day === 'string' ? entry.day : undefined
-    const items = Array.isArray(entry?.items) ? entry.items : []
-    const savedFingerprint =
-      typeof entry?.savedFingerprint === 'string' ? entry.savedFingerprint : undefined
-    const status = statusFromFetchedAt(undefined, null, {
-      bypassed,
-      turnedOff: isModuleHidden('daily-reads'),
-      savedFingerprint,
-      liveSavedFingerprint: liveSavedArticleFingerprint(buildDailyReadsSavedFingerprint),
-      dayKeyed: true,
-      day,
-      currentDay,
-      hasPayload: entry != null && day != null,
-    }, now)
-    rows.push({
-      id: 'daily-reads',
-      module: 'Daily reads',
-      storageKey: DAILY_READS_CACHE_KEY,
-      invalidates: 'UTC day · saved seeds (title reload)',
-      ttlLabel: ttlLabel(null),
-      ...status,
-    })
-    void items
-  }
-
-  {
-    const entry = readJson(SUGGESTED_EDITS_CACHE_KEY)
-    const day = typeof entry?.day === 'string' ? entry.day : undefined
-    const savedFingerprint =
-      typeof entry?.savedFingerprint === 'string' ? entry.savedFingerprint : undefined
-    const status = statusFromFetchedAt(undefined, null, {
-      bypassed,
-      turnedOff: isModuleHidden('suggested-edits'),
-      savedFingerprint,
-      liveSavedFingerprint: liveSavedArticleFingerprint(buildSuggestedEditsSavedFingerprint),
-      dayKeyed: true,
-      day,
-      currentDay,
-      hasPayload: entry != null && day != null,
-    }, now)
-    rows.push({
-      id: 'help-wanted',
-      module: 'Suggested edits',
-      storageKey: SUGGESTED_EDITS_CACHE_KEY,
-      invalidates: 'UTC day · saved seeds (title reload)',
-      ttlLabel: ttlLabel(null),
-      ...status,
-    })
-  }
-
-  {
-    const entry = readJson(ACTIVE_DISCUSSIONS_CACHE_KEY)
-    const config = loadWikitabConfig()
-    const moduleOff = isModuleHidden('discussions')
-    const noticeboards = Array.isArray(entry?.noticeboards) ? entry.noticeboards : []
-    const articles = Array.isArray(entry?.articles) ? entry.articles : []
-    const legacyFetchedAt =
-      typeof entry?.fetchedAt === 'number' ? entry.fetchedAt : undefined
-    const fetchedAtNoticeboards =
-      typeof entry?.fetchedAtNoticeboards === 'number'
-        ? entry.fetchedAtNoticeboards
-        : legacyFetchedAt
-    const fetchedAtArticles =
-      typeof entry?.fetchedAtArticles === 'number'
-        ? entry.fetchedAtArticles
-        : legacyFetchedAt
-    const savedFingerprint =
-      typeof entry?.savedFingerprint === 'string' ? entry.savedFingerprint : undefined
-    const liveTalkFingerprint = liveSavedArticleFingerprint(
-      buildActiveDiscussionsSavedFingerprint,
-    )
-
-    rows.push({
-      id: 'active-discussions-noticeboards',
-      module: 'Active discussions · noticeboards',
-      storageKey: ACTIVE_DISCUSSIONS_CACHE_KEY,
-      invalidates: 'settings',
-      ttlLabel: ttlLabel(DISCUSSIONS_NOTICEBOARDS_TTL_MS),
-      ...statusFromFetchedAt(fetchedAtNoticeboards, DISCUSSIONS_NOTICEBOARDS_TTL_MS, {
-        bypassed,
-        turnedOff: moduleOff || !config.discussionsShowNoticeboards,
-        dayKeyed: false,
-        hasPayload: noticeboards.length > 0 || fetchedAtNoticeboards != null,
-      }, now),
-    })
-    rows.push({
-      id: 'active-discussions-talk',
-      module: 'Active discussions · talk',
-      storageKey: ACTIVE_DISCUSSIONS_CACHE_KEY,
-      invalidates: 'settings · saved seeds (title reload)',
-      ttlLabel: ttlLabel(DISCUSSIONS_SAVED_TALK_TTL_MS),
-      ...statusFromFetchedAt(fetchedAtArticles, DISCUSSIONS_SAVED_TALK_TTL_MS, {
-        bypassed,
-        turnedOff: moduleOff || !config.discussionsShowSavedTalk,
-        savedFingerprint,
-        liveSavedFingerprint: liveTalkFingerprint,
-        dayKeyed: false,
-        hasPayload: articles.length > 0 || fetchedAtArticles != null,
-      }, now),
-    })
-  }
-
-  {
-    const entry = readJson(REVIEW_CHANGES_CACHE_KEY)
-    const config = loadWikitabConfig()
-    const moduleOff = isModuleHidden('review-changes')
-    const items = Array.isArray(entry?.items) ? entry.items : []
-    const fetchedAtSaved =
-      typeof entry?.fetchedAtSaved === 'number' ? entry.fetchedAtSaved : undefined
-    const fetchedAtRisky =
-      typeof entry?.fetchedAtRisky === 'number' ? entry.fetchedAtRisky : undefined
-    const hasPayload = entry != null && items.length > 0
-    const savedFingerprint =
-      typeof entry?.savedFingerprint === 'string' ? entry.savedFingerprint : undefined
-    const liveSavedFingerprint = liveSavedArticleFingerprint(buildReviewChangesSavedFingerprint)
-
-    rows.push({
-      id: 'recent-edits-saved',
-      module: 'Recent edits · saved',
-      storageKey: REVIEW_CHANGES_CACHE_KEY,
-      invalidates: 'settings · saved seeds (title reload)',
-      ttlLabel: ttlLabel(REVIEW_CHANGES_SAVED_TTL_MS),
-      ...statusFromFetchedAt(fetchedAtSaved, REVIEW_CHANGES_SAVED_TTL_MS, {
-        bypassed,
-        turnedOff: moduleOff || !config.reviewChangesShowSavedEdits,
-        savedFingerprint,
-        liveSavedFingerprint,
-        dayKeyed: false,
-        hasPayload: hasPayload || fetchedAtSaved != null,
-      }, now),
-    })
-    rows.push({
-      id: 'recent-edits-risky',
-      module: 'Recent edits · risky',
-      storageKey: REVIEW_CHANGES_CACHE_KEY,
-      invalidates: 'settings',
-      ttlLabel: ttlLabel(REVIEW_CHANGES_RISKY_TTL_MS),
-      ...statusFromFetchedAt(fetchedAtRisky, REVIEW_CHANGES_RISKY_TTL_MS, {
-        bypassed,
-        turnedOff: moduleOff || !config.reviewChangesShowRecentRiskyEdits,
-        dayKeyed: false,
-        hasPayload: hasPayload || fetchedAtRisky != null,
-      }, now),
-    })
-  }
 
   {
     let nearby: { fetchedAt?: number; items?: unknown[] } | null = null
@@ -529,41 +471,24 @@ export function snapshotWikitabCaches(now = Date.now()): WikitabCacheRow[] {
     }
     const fetchedAt = typeof nearby?.fetchedAt === 'number' ? nearby.fetchedAt : undefined
     const items = Array.isArray(nearby?.items) ? nearby.items : []
-    const status = statusFromFetchedAt(fetchedAt, NEARBY_TTL_MS, {
+    const status = statusFromFetchedAt(fetchedAt, WIKITAB_NEARBY_PLAYGROUND.ttlMs, {
       bypassed,
-      turnedOff: isModuleHidden('nearby'),
+      turnedOff: isModuleHidden(WIKITAB_NEARBY_PLAYGROUND.moduleId),
       dayKeyed: false,
       hasPayload: nearby != null && items.length > 0,
     }, now)
     rows.push({
-      id: 'nearby',
-      module: 'Nearby',
-      storageKey: 'config.nearbyCardsCache',
-      invalidates: 'coord change · 4h TTL',
-      ttlLabel: ttlLabel(NEARBY_TTL_MS),
+      id: WIKITAB_NEARBY_PLAYGROUND.id,
+      module: WIKITAB_NEARBY_PLAYGROUND.module,
+      storageKey: WIKITAB_NEARBY_PLAYGROUND.storageKey,
+      invalidates: WIKITAB_NEARBY_PLAYGROUND.invalidates,
+      ttlLabel: ttlLabel(WIKITAB_NEARBY_PLAYGROUND.ttlMs),
       ...status,
     })
   }
 
-  {
-    const entry = readJson(POTD_CACHE_KEY)
-    const day = typeof entry?.day === 'string' ? entry.day : undefined
-    const status = statusFromFetchedAt(undefined, null, {
-      bypassed,
-      dayKeyed: true,
-      day,
-      currentDay,
-      hasPayload: entry?.potd != null && day != null,
-    }, now)
-    rows.push({
-      id: 'potd',
-      module: 'Picture of the day',
-      storageKey: POTD_CACHE_KEY,
-      invalidates: 'UTC day',
-      ttlLabel: ttlLabel(null),
-      ...status,
-    })
-  }
+  const potdSpec = simpleById.get('potd')
+  if (potdSpec) rows.push(simpleModuleRow(potdSpec, now, bypassed, currentDay))
 
   return rows
 }

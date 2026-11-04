@@ -1,5 +1,11 @@
 import type { WikitabFeaturedSpotlight } from '../sections'
-import { isCacheBypassed, utcDayKey } from './feedCache'
+import {
+  isCacheBypassed,
+  readCacheJsonUnlessBypassed,
+  removeCacheJson,
+  utcDayKey,
+  writeCacheJson,
+} from './wikitabCacheHelpers'
 import { FEATURED_MODULE_TTL_MS, isTimestampFresh } from './wikitabCacheTtl'
 
 export const CACHE_KEY = 'wikitab-featured-cache-v20'
@@ -27,25 +33,18 @@ export function readCachedFeaturedEntry(day: string): CachedFeatured | null {
     }
   }
 
-  try {
-    const raw = window.localStorage.getItem(CACHE_KEY)
-    if (!raw) return null
-
-    const entry = JSON.parse(raw) as CacheEntry
-    if (entry?.day !== day || !Array.isArray(entry.items) || !entry.items.length) return null
-
-    const fetchedAt =
-      typeof entry.fetchedAt === 'number' && Number.isFinite(entry.fetchedAt)
-        ? entry.fetchedAt
-        : 0
-
-    sessionEntry = { day, items: entry.items, fetchedAt }
-    return {
-      items: entry.items.map((item) => ({ ...item })),
-      fetchedAt,
-    }
-  } catch {
+  const entry = readCacheJsonUnlessBypassed(CACHE_KEY) as CacheEntry | null
+  if (!entry || entry.day !== day || !Array.isArray(entry.items) || !entry.items.length) {
     return null
+  }
+
+  const fetchedAt =
+    typeof entry.fetchedAt === 'number' && Number.isFinite(entry.fetchedAt) ? entry.fetchedAt : 0
+
+  sessionEntry = { day, items: entry.items, fetchedAt }
+  return {
+    items: entry.items.map((item) => ({ ...item })),
+    fetchedAt,
   }
 }
 
@@ -63,23 +62,12 @@ export function writeCachedFeatured(
   fetchedAt = Date.now(),
 ): void {
   sessionEntry = { day, items, fetchedAt }
-  try {
-    window.localStorage.setItem(
-      CACHE_KEY,
-      JSON.stringify({ day, items, fetchedAt } satisfies CacheEntry),
-    )
-  } catch {
-    // Quota or private mode — session memory still holds the result.
-  }
+  writeCacheJson(CACHE_KEY, { day, items, fetchedAt } satisfies CacheEntry)
 }
 
 export function clearCachedFeatured(): void {
   sessionEntry = null
-  try {
-    window.localStorage.removeItem(CACHE_KEY)
-  } catch {
-    // ignore
-  }
+  removeCacheJson(CACHE_KEY)
 }
 
 export { isCacheBypassed, utcDayKey }
