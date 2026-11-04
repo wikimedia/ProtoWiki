@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconCheck, cdxIconClose } from '@wikimedia/codex-icons'
@@ -10,6 +10,7 @@ import {
   WIKITAB_COLOR_THEME_ITEMS,
   type WikitabColorThemeId,
 } from './data/wikitabColorThemes'
+import { useWikitabOverlayScrollLock } from './useWikitabOverlayScrollLock'
 
 const props = defineProps<{
   selectedId: WikitabColorThemeId | null
@@ -30,17 +31,15 @@ function selectTheme(id: WikitabColorThemeId): void {
   emit('close')
 }
 
-const SCROLL_LOCK_CLASS = 'wikitab-color-picker-open'
-
 onMounted(() => {
-  document.documentElement.classList.add(SCROLL_LOCK_CLASS)
   document.addEventListener('keydown', onKeydown)
 })
 
 onUnmounted(() => {
-  document.documentElement.classList.remove(SCROLL_LOCK_CLASS)
   document.removeEventListener('keydown', onKeydown)
 })
+
+useWikitabOverlayScrollLock('wikitab-color-picker-open', ref(true))
 </script>
 
 <template>

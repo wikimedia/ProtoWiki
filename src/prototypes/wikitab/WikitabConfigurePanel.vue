@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconClose } from '@wikimedia/codex-icons'
 
 import WikitabConfigureModuleList from './WikitabConfigureModuleList.vue'
 import type { WikitabModuleId } from './sections'
+import { useWikitabOverlayScrollLock } from './useWikitabOverlayScrollLock'
 
 const props = defineProps<{
   moduleOrder: WikitabModuleId[]
@@ -26,17 +27,15 @@ function onKeydown(event: KeyboardEvent): void {
   if (event.key === 'Escape') emit('close')
 }
 
-const SCROLL_LOCK_CLASS = 'wikitab-configure-open'
-
 onMounted(() => {
-  document.documentElement.classList.add(SCROLL_LOCK_CLASS)
   document.addEventListener('keydown', onKeydown)
 })
 
 onUnmounted(() => {
-  document.documentElement.classList.remove(SCROLL_LOCK_CLASS)
   document.removeEventListener('keydown', onKeydown)
 })
+
+useWikitabOverlayScrollLock('wikitab-configure-open', ref(true))
 </script>
 
 <template>

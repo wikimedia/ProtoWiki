@@ -1878,9 +1878,12 @@ watch(searchQuery, (next, prev) => {
 }
 
 /*
- * Top chrome (configure, saved) sits in document flow at the page top and scrolls
- * away. Sibling of __main (not inside it) so desktop `align-items: center` on
- * __main cannot shrink this row. Full-bleed to the viewport; tight corner inset.
+ * Top chrome (configure, saved). Sibling of __main (not inside it) so desktop
+ * `align-items: center` on __main cannot shrink this row. Full-bleed to the
+ * viewport; tight corner inset. Below 1120px it scrolls away with the page; at
+ * Codex desktop minimum (1120px — `--min-width-breakpoint-desktop`) it sticks
+ * to the top corners. Media queries cannot use `var()`; literal matches
+ * WikitabColorThemeButton / token value.
  */
 .wikitab__page-chrome {
   display: flex;
@@ -1893,6 +1896,20 @@ watch(searchQuery, (next, prev) => {
   margin-inline: calc(-1 * var(--wikitab-page-gutter));
   padding-top: var(--wikitab-chrome-inset);
   padding-inline: var(--wikitab-chrome-inset);
+}
+
+@media (min-width: 1120px) {
+  .wikitab__page-chrome {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    /* Full-bleed row must not block feed clicks through the empty middle. */
+    pointer-events: none;
+  }
+
+  .wikitab__page-chrome > * {
+    pointer-events: auto;
+  }
 }
 
 [data-skin='desktop'] .wikitab__main {
@@ -1973,6 +1990,13 @@ watch(searchQuery, (next, prev) => {
 .wikitab--potd-background > .wikitab__main {
   position: relative;
   z-index: 1;
+}
+
+/* Keep sticky (not relative) so chrome stays pinned over POTD at large desktop. */
+@media (min-width: 1120px) {
+  .wikitab--potd-background > .wikitab__page-chrome {
+    position: sticky;
+  }
 }
 
 .wikitab__search {
