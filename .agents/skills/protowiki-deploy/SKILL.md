@@ -107,15 +107,32 @@ https://<owner>.github.io/<RepoName>/
 
 ## PR preview deployments
 
-[`.github/workflows/preview.yml`](../../../.github/workflows/preview.yml) on
-`pull_request` (`opened`, `reopened`, `synchronize`, `closed`):
+Previews work for PRs from branches in the same repo **and** from forks. They
+run as two workflows, so a PR's code never runs with write access:
 
-1. Builds with
-   `PROTOWIKI_BASE=/<RepoName>/pr-preview/pr-<number>/` (trailing slash required).
-2. Deploys to `gh-pages` under `pr-preview/pr-<number>/` via
-   `rossjrw/pr-preview-action@v1`.
-3. Leaves a sticky comment on the PR with the preview link (and QR code).
-4. Removes the preview folder when the PR is closed.
+1. [`preview.yml`](../../../.github/workflows/preview.yml) (**Build PR
+   preview**) on `pull_request` (`opened`, `reopened`, `synchronize`, `closed`)
+   builds with `PROTOWIKI_BASE=/<RepoName>/pr-preview/pr-<number>/` (trailing
+   slash required) using a read-only token, and uploads `dist/` plus the PR
+   number as an artifact.
+2. [`preview-deploy.yml`](../../../.github/workflows/preview-deploy.yml)
+   (**Deploy PR preview**) on `workflow_run` downloads that artifact, checks the PR
+   number against the API (PR exists here, head commit matches the build), then:
+   - deploys to `gh-pages` under `pr-preview/pr-<number>/` via
+     `rossjrw/pr-preview-action@v1`, or removes that folder if the PR is closed;
+   - leaves or updates a sticky comment with the preview link (and QR code).
+
+Gotchas:
+
+- `workflow_run` workflows always run from the default branch's copy, so edits
+  to `preview-deploy.yml` only take effect once merged to `main`.
+- Fork PRs from first-time contributors wait for a maintainer to approve the
+  run (**Settings → Actions → General → Approval for running fork pull request
+  workflows from contributors**). Once approved and built, the preview is published on the
+  repo's `github.io` site, so review what a new contributor's PR does first.
+- Never add a checkout of PR code, `npm` commands or anything else that runs
+  artifact contents to `preview-deploy.yml`, and don't switch either workflow
+  back to `pull_request_target`.
 
 Preview URL:
 
@@ -233,8 +250,8 @@ Use this sentence starter in guided mode:
 | Scenario                                   | Workflow                                                | Result                                                                                                           |
 | ------------------------------------------ | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | Push to `main` in any ProtoWiki-based repo | [`deploy.yml`](../../../.github/workflows/deploy.yml)   | Updates production site root                                                                                     |
-| PR inside same repo                        | [`preview.yml`](../../../.github/workflows/preview.yml) | Creates/removes `pr-preview/pr-<number>/` (plus a `codex/stock/` subfolder when a Codex patch is committed)     |
-| External fork PR into upstream             | Not enabled by default in this strategy                 | Use template-first repo previews; upstream path is collaborator-only unless extra fork-preview workflow is added |
+| PR inside same repo                        | [`preview.yml`](../../../.github/workflows/preview.yml) → [`preview-deploy.yml`](../../../.github/workflows/preview-deploy.yml) | Creates/removes `pr-preview/pr-<number>/` (plus a `codex/stock/` subfolder when a Codex patch is committed)     |
+| Fork PR into upstream                      | Same two workflows                                      | Same as above; first-time contributors need a maintainer to approve the run first                              |
 
 ## Codex patches in deploys
 

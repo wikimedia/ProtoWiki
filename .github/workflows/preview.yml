@@ -1,20 +1,23 @@
-name: Deploy PR previews
+name: Build PR preview
+
+# Step 1 of 2 for PR previews. Builds every pull request, including ones from
+# forks, with a read-only token, so the PR's code can't write to the repo.
+# preview-deploy.yml then publishes the build to gh-pages.
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, reopened, synchronize, closed]
 
+permissions:
+  contents: read
+
 concurrency:
-  group: preview-${{ github.event.pull_request.number }}
+  group: preview-build-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  deploy-preview:
-    if: github.event.pull_request.head.repo.full_name == github.repository
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
     steps:
       - name: Checkout PR head
         uses: actions/checkout@v5
@@ -34,9 +37,15 @@ jobs:
         env:
           PROTOWIKI_BASE: /${{ github.event.repository.name }}/pr-preview/pr-${{ github.event.number }}/
 
-      - name: Deploy preview
-        uses: rossjrw/pr-preview-action@v1
+      # The deploy workflow can't tell which PR a fork's run belongs to, so the
+      # number goes along with the build. Closed PRs upload only the number.
+      - name: Record PR number
+        run: echo ${{ github.event.number }} > pr-number
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
         with:
-          source-dir: dist
-          preview-branch: gh-pages
-          umbrella-dir: pr-preview
+          name: preview
+          path: |
+            pr-number
+            dist
