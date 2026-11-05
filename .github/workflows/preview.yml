@@ -1,9 +1,8 @@
 name: Build PR preview
 
 # Step 1 of 2 for PR previews. Builds every pull request, including ones from
-# forks, with a read-only token and no secrets, so the PR's code can't write
-# to the repo. The built site is uploaded as an artifact; preview-deploy.yml
-# then publishes it to gh-pages.
+# forks, with a read-only token, so the PR's code can't write to the repo.
+# preview-deploy.yml then publishes the build to gh-pages.
 
 on:
   pull_request:
@@ -21,14 +20,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR head
-        if: github.event.action != 'closed'
         uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          persist-credentials: false
 
       - name: Setup Node
-        if: github.event.action != 'closed'
         uses: actions/setup-node@v5
         with:
           node-version: 22
@@ -39,27 +35,17 @@ jobs:
         if: github.event.action != 'closed'
         run: npm ci && npm run build
         env:
-          PROTOWIKI_BASE: /${{ github.event.repository.name }}/pr-preview/pr-${{ github.event.pull_request.number }}/
+          PROTOWIKI_BASE: /${{ github.event.repository.name }}/pr-preview/pr-${{ github.event.number }}/
 
-      - name: Upload site
-        if: github.event.action != 'closed'
-        uses: actions/upload-artifact@v4
-        with:
-          name: preview-site
-          path: dist
-          include-hidden-files: true
-          retention-days: 3
-
-      # The deploy workflow can't see which PR a fork run belongs to, so pass
-      # the number along. It re-checks it against the GitHub API before use.
+      # The deploy workflow can't tell which PR a fork's run belongs to, so the
+      # number goes along with the build. Closed PRs upload only the number.
       - name: Record PR number
-        run: echo "$PR_NUMBER" > pr-number
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: echo ${{ github.event.number }} > pr-number
 
-      - name: Upload PR number
+      - name: Upload build
         uses: actions/upload-artifact@v4
         with:
-          name: preview-meta
-          path: pr-number
-          retention-days: 3
+          name: preview
+          path: |
+            pr-number
+            dist

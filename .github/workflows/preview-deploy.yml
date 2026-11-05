@@ -1,14 +1,14 @@
 name: Deploy PR preview
 
 # Step 2 of 2 for PR previews. Runs after "Build PR preview" finishes and
-# publishes the built site to gh-pages under pr-preview/pr-<number>/.
+# publishes the build to gh-pages under pr-preview/pr-<number>/.
 #
-# This workflow has write access, so it must never check out or run code from
-# the PR. It only copies the built files, and it treats everything it reads
-# from the build's artifacts as untrusted.
+# This workflow has write access, so it must never check out or run the PR's
+# code. It only copies the built files, and treats the build's artifact as
+# untrusted.
 #
-# GitHub only runs workflow_run workflows from the default branch, so edits to
-# this file take effect after they are merged to main.
+# GitHub runs workflow_run workflows from the default branch, so edits to
+# this file take effect only once merged to main.
 
 on:
   workflow_run:
@@ -20,54 +20,50 @@ permissions:
   contents: write
   pull-requests: write
 
+# One deploy at a time per PR branch, so a deploy can't land after the
+# removal that follows a PR being closed.
 concurrency:
   group: preview-deploy-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
-  cancel-in-progress: false
 
 jobs:
   deploy:
-    if: >-
-      github.event.workflow_run.event == 'pull_request' &&
-      github.event.workflow_run.conclusion == 'success'
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
-      - name: Download PR number
+      - name: Download build
         uses: actions/download-artifact@v5
         with:
-          name: preview-meta
-          path: ${{ runner.temp }}/meta
+          name: preview
+          path: preview
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
 
-      # Check the PR number against the API: the PR must exist in this repo and
-      # its current head must be the commit that was built. That stops a build
-      # from claiming another PR's preview, and skips builds of old commits.
-      # An open PR gets deployed, a closed one has its preview removed.
+      # The PR number comes from the PR's own build, so check it: the PR must
+      # be in this repo and its latest commit must be the one that was built.
+      # That stops a build from taking over another PR's preview, and skips
+      # builds of commits that have since been replaced.
       - name: Check PR
         id: pr
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          RUN_ID: ${{ github.event.workflow_run.id }}
           RUN_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
-          number=$(head -c 16 "$RUNNER_TEMP/meta/pr-number" | tr -d '[:space:]')
+          number=$(head -c 16 preview/pr-number | tr -d '[:space:]')
           if ! [[ "$number" =~ ^[0-9]+$ ]]; then
-            echo "::error::The build artifact did not contain a valid PR number."
+            echo "::error::The build did not contain a valid PR number."
             exit 1
           fi
 
           read -r state head_sha <<< "$(gh api "repos/$REPO/pulls/$number" --jq '"\(.state) \(.head.sha)"')"
-          has_site=$(gh api "repos/$REPO/actions/runs/$RUN_ID/artifacts" \
-            --jq '[.artifacts[] | select(.name == "preview-site")] | length')
 
           if [ "$head_sha" != "$RUN_SHA" ]; then
             echo "PR #$number has moved on to $head_sha; skipping the build of $RUN_SHA."
             action=none
           elif [ "$state" = closed ]; then
             action=remove
-          elif [ "$has_site" -gt 0 ]; then
+          elif [ -d preview/dist ]; then
             action=deploy
           else
             action=none
@@ -77,15 +73,6 @@ jobs:
           echo "number=$number" >> "$GITHUB_OUTPUT"
           echo "action=$action" >> "$GITHUB_OUTPUT"
 
-      - name: Download site
-        if: steps.pr.outputs.action == 'deploy'
-        uses: actions/download-artifact@v5
-        with:
-          name: preview-site
-          path: site
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ github.token }}
-
       - name: Publish preview
         id: preview
         if: steps.pr.outputs.action != 'none'
@@ -93,17 +80,19 @@ jobs:
         with:
           action: ${{ steps.pr.outputs.action }}
           pr-number: ${{ steps.pr.outputs.number }}
-          source-dir: site
+          source-dir: preview/dist
           preview-branch: gh-pages
           umbrella-dir: pr-preview
-          # The action's own comment step only works on pull_request events,
+          # The action's comment can only find the PR on pull_request events,
           # so the comment is posted below instead.
           comment: false
+          # The default messages read the PR number from the event, which is
+          # empty here.
           deploy-commit-message: Deploy preview for PR ${{ steps.pr.outputs.number }} 🛫
           remove-commit-message: Remove preview for PR ${{ steps.pr.outputs.number }} 🛬
 
-      # Same layout as the action's own comment, so existing PRs keep one
-      # sticky comment (header "pr-preview") that gets updated in place.
+      # Same text as the action's own comment, under the same "pr-preview"
+      # header, so each PR keeps one comment that gets updated in place.
       - name: Write comment
         id: comment
         if: steps.pr.outputs.action != 'none'

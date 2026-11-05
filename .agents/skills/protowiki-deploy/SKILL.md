@@ -114,9 +114,9 @@ run as two workflows, so a PR's code never runs with write access:
    preview**) on `pull_request` (`opened`, `reopened`, `synchronize`, `closed`)
    builds with `PROTOWIKI_BASE=/<RepoName>/pr-preview/pr-<number>/` (trailing
    slash required) using a read-only token, and uploads `dist/` plus the PR
-   number as artifacts.
+   number as an artifact.
 2. [`preview-deploy.yml`](../../../.github/workflows/preview-deploy.yml)
-   (**Deploy PR preview**) on `workflow_run` takes the artifacts, checks the PR
+   (**Deploy PR preview**) on `workflow_run` downloads that artifact, checks the PR
    number against the API (PR exists here, head commit matches the build), then:
    - deploys to `gh-pages` under `pr-preview/pr-<number>/` via
      `rossjrw/pr-preview-action@v1`, or removes that folder if the PR is closed;
@@ -128,7 +128,7 @@ Gotchas:
   to `preview-deploy.yml` only take effect once merged to `main`.
 - Fork PRs from first-time contributors wait for a maintainer to approve the
   run (**Settings → Actions → General → Approval for running fork pull request
-  workflows**). Once approved and built, the preview is published on the
+  workflows from contributors**). Once approved and built, the preview is published on the
   repo's `github.io` site, so review what a new contributor's PR does first.
 - Never add a checkout of PR code, `npm` commands or anything else that runs
   artifact contents to `preview-deploy.yml`, and don't switch either workflow
