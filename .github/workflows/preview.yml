@@ -1,27 +1,34 @@
-name: Deploy PR previews
+name: Build PR preview
+
+# Step 1 of 2 for PR previews. Builds every pull request, including ones from
+# forks, with a read-only token and no secrets, so the PR's code can't write
+# to the repo. The built site is uploaded as an artifact; preview-deploy.yml
+# then publishes it to gh-pages.
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, reopened, synchronize, closed]
 
+permissions:
+  contents: read
+
 concurrency:
-  group: preview-${{ github.event.pull_request.number }}
+  group: preview-build-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  deploy-preview:
-    if: github.event.pull_request.head.repo.full_name == github.repository
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
     steps:
       - name: Checkout PR head
+        if: github.event.action != 'closed'
         uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
 
       - name: Setup Node
+        if: github.event.action != 'closed'
         uses: actions/setup-node@v5
         with:
           node-version: 22
@@ -32,11 +39,27 @@ jobs:
         if: github.event.action != 'closed'
         run: npm ci && npm run build
         env:
-          PROTOWIKI_BASE: /${{ github.event.repository.name }}/pr-preview/pr-${{ github.event.number }}/
+          PROTOWIKI_BASE: /${{ github.event.repository.name }}/pr-preview/pr-${{ github.event.pull_request.number }}/
 
-      - name: Deploy preview
-        uses: rossjrw/pr-preview-action@v1
+      - name: Upload site
+        if: github.event.action != 'closed'
+        uses: actions/upload-artifact@v4
         with:
-          source-dir: dist
-          preview-branch: gh-pages
-          umbrella-dir: pr-preview
+          name: preview-site
+          path: dist
+          include-hidden-files: true
+          retention-days: 3
+
+      # The deploy workflow can't see which PR a fork run belongs to, so pass
+      # the number along. It re-checks it against the GitHub API before use.
+      - name: Record PR number
+        run: echo "$PR_NUMBER" > pr-number
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+
+      - name: Upload PR number
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-meta
+          path: pr-number
+          retention-days: 3

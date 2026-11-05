@@ -21,8 +21,9 @@ just orients you.
   `.cursor/rules/` folder, and no `CLAUDE.md`.
 - **`public/`** — static assets served as-is.
 - **`.github/workflows/`** — `deploy.yml` publishes production to the
-  `gh-pages` branch on push to `main`; `preview.yml` deploys PR previews
-  under `pr-preview/pr-<n>/` on the same site.
+  `gh-pages` branch on push to `main`; `preview.yml` builds every PR
+  (forks included) and `preview-deploy.yml` publishes it under
+  `pr-preview/pr-<n>/` on the same site.
 
 ## How to use the skills
 
