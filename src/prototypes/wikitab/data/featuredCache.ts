@@ -8,7 +8,7 @@ import {
 } from './wikitabCacheHelpers'
 import { FEATURED_MODULE_TTL_MS, isTimestampFresh } from './wikitabCacheTtl'
 
-export const CACHE_KEY = 'wikitab-featured-cache-v20'
+export const CACHE_KEY = 'wikitab-featured-cache-v21'
 
 interface CacheEntry {
   day: string

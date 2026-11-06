@@ -1,6 +1,8 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 
+import { WIKITAB_LANGUAGE } from './wikitabLanguage'
+
 const REVERT_RISK_URL =
   'https://api.wikimedia.org/service/lw/inference/v1/models/revertrisk-language-agnostic:predict'
 
@@ -36,7 +38,7 @@ export async function fetchHighRevertRisk(
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
-    body: JSON.stringify({ rev_id: revid, lang: 'en' }),
+    body: JSON.stringify({ rev_id: revid, lang: WIKITAB_LANGUAGE }),
   })
 
   if (!response.ok) return false

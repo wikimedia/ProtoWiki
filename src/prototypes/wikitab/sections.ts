@@ -12,6 +12,7 @@ import {
 import { wikitabReservedSlotHeight } from './data/wikitabCardSlotHeights'
 import type { WikitabCardPrimitiveId } from './data/wikitabCardTypeLinks'
 import type { WikitabSeedArticle } from './data/wikitabSeedArticle'
+import { WIKITAB_LANGUAGE } from './data/wikitabLanguage'
 /** Codex Card `icon` for quote-of-the-day cards (quote in title, attributee in description). */
 export const WIKITAB_QUOTE_CARD_LEADING_ICON = cdxIconQuotes
 
@@ -41,15 +42,23 @@ export type WikitabModuleId =
 /** Spotlight kinds in the Featured module carousel (v1). */
 export type WikitabFeaturedSpotlightKind = 'tfa' | 'tfp' | 'potd' | 'wotd' | 'qotd' | 'tfl'
 
-/** Fixed v1 catalog order for Featured spotlights (fetch + skeleton slots). */
-export const WIKITAB_FEATURED_SPOTLIGHT_KINDS: readonly WikitabFeaturedSpotlightKind[] = [
-  'tfa',
+/**
+ * Spotlights sourced from English-only pages (enwiki Main Page / TFL subpages,
+ * en.wiktionary WOTD, en.wikiquote QOTD) — no equivalent on other wikis.
+ */
+export const WIKITAB_FEATURED_ENGLISH_ONLY_KINDS: readonly WikitabFeaturedSpotlightKind[] = [
   'tfl',
   'tfp',
-  'potd',
   'qotd',
   'wotd',
 ]
+
+/** Fixed v1 catalog order for Featured spotlights (fetch + skeleton slots). */
+export const WIKITAB_FEATURED_SPOTLIGHT_KINDS: readonly WikitabFeaturedSpotlightKind[] = (
+  ['tfa', 'tfl', 'tfp', 'potd', 'qotd', 'wotd'] as const
+).filter(
+  (kind) => WIKITAB_LANGUAGE === 'en' || !WIKITAB_FEATURED_ENGLISH_ONLY_KINDS.includes(kind),
+)
 
 export type {
   WikitabCardDescriptionFormat,

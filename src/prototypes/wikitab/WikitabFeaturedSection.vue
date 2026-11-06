@@ -33,7 +33,7 @@ import { wikitabShowMoreDisabled } from './wikitabShowMoreDisabled'
 const spec = WIKITAB_FEATURED_MODULE_SPEC
 
 /** Fixed v1 spotlight catalog size — reserves skeleton slots during load. */
-const SPOTLIGHT_COUNT = 6
+const SPOTLIGHT_COUNT = WIKITAB_FEATURED_SPOTLIGHT_KINDS.length
 
 const props = withDefaults(
   defineProps<{

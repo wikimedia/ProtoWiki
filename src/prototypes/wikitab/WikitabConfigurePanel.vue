@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 
-import { CdxButton, CdxIcon } from '@wikimedia/codex'
+import { CdxButton, CdxField, CdxIcon, CdxSelect } from '@wikimedia/codex'
 import { cdxIconClose } from '@wikimedia/codex-icons'
 
 import WikitabConfigureModuleList from './WikitabConfigureModuleList.vue'
+import { evictWikitabCaches, patchWikitabConfig } from './data/wikitabConfig'
+import {
+  setWikitabLanguage,
+  WIKITAB_LANGUAGE,
+  WIKITAB_LANGUAGE_OPTIONS,
+} from './data/wikitabLanguage'
 import type { WikitabModuleId } from './sections'
 import { useWikitabOverlayScrollLock } from './useWikitabOverlayScrollLock'
 
@@ -36,10 +42,29 @@ onUnmounted(() => {
 })
 
 useWikitabOverlayScrollLock('wikitab-configure-open', ref(true))
+
+const languageMenuItems = WIKITAB_LANGUAGE_OPTIONS.some((o) => o.value === WIKITAB_LANGUAGE)
+  ? [...WIKITAB_LANGUAGE_OPTIONS]
+  : [{ value: WIKITAB_LANGUAGE, label: WIKITAB_LANGUAGE }, ...WIKITAB_LANGUAGE_OPTIONS]
+const selectedLanguage = ref(WIKITAB_LANGUAGE)
+
+/** Cached feeds are in the old language — drop them, then reload. */
+function onLanguageChange(lang: string): void {
+  const ok = setWikitabLanguage(lang, () => {
+    evictWikitabCaches()
+    patchWikitabConfig({ nearbyCardsCache: null })
+  })
+  if (!ok) selectedLanguage.value = WIKITAB_LANGUAGE
+}
 </script>
 
 <template>
-  <div class="wikitab-configure-panel wikitab-panel" role="dialog" aria-modal="true" aria-label="Modules">
+  <div
+    class="wikitab-configure-panel wikitab-panel"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Modules"
+  >
     <div class="wikitab-configure-panel__column">
       <header class="wikitab-configure-panel__head">
         <h2 class="wikitab-configure-panel__title">Modules</h2>
@@ -54,6 +79,16 @@ useWikitabOverlayScrollLock('wikitab-configure-open', ref(true))
         </CdxButton>
       </header>
 
+      <CdxField class="wikitab-configure-panel__language">
+        <template #label>Wikipedia language</template>
+        <template #help-text>The page reloads in the language you pick.</template>
+        <CdxSelect
+          v-model:selected="selectedLanguage"
+          :menu-items="languageMenuItems"
+          @update:selected="onLanguageChange"
+        />
+      </CdxField>
+
       <WikitabConfigureModuleList
         :order="props.moduleOrder"
         :pinned-ids="props.pinnedIds"
@@ -65,9 +100,7 @@ useWikitabOverlayScrollLock('wikitab-configure-open', ref(true))
       />
 
       <div class="wikitab-configure-panel__footer">
-        <CdxButton class="wikitab-configure-panel__reset" @click="emit('reset')">
-          Reset
-        </CdxButton>
+        <CdxButton class="wikitab-configure-panel__reset" @click="emit('reset')"> Reset </CdxButton>
       </div>
     </div>
   </div>
@@ -111,6 +144,12 @@ useWikitabOverlayScrollLock('wikitab-configure-open', ref(true))
   color: var(--wikitab-theme-fg, var(--color-base));
 }
 
+.wikitab-configure-panel__language {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+}
+
 .wikitab-configure-panel__footer {
   box-sizing: border-box;
   width: 100%;
@@ -136,7 +175,8 @@ useWikitabOverlayScrollLock('wikitab-configure-open', ref(true))
     max-width: none;
   }
 
-  .wikitab-configure-panel__head {
+  .wikitab-configure-panel__head,
+  .wikitab-configure-panel__language {
     padding-inline: var(--spacing-100);
   }
 }
