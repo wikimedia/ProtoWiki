@@ -18,7 +18,7 @@ import {
   wikiArticleUrl,
 } from './wikitabHtml'
 import { seedArticle } from './wikitabSeedArticle'
-import { wikitabSisterHost } from './wikitabLanguage'
+import { WIKITAB_LANGUAGE, wikitabSisterHost } from './wikitabLanguage'
 import { commonsPotdPageUrl, wikipediaPotdPageUrl } from './fetchPictureOfTheDay'
 import {
   WIKITAB_FEATURED_SPOTLIGHT_KINDS,
@@ -27,6 +27,9 @@ import {
   type WikitabFeaturedSpotlight,
   type WikitabFeaturedSpotlightKind,
 } from '../sections'
+
+/** Off-English, only TFA + POTD (REST `feed/featured`) exist — see `WIKITAB_FEATURED_ENGLISH_ONLY_KINDS`. */
+const ENGLISH_SPOTLIGHTS = WIKITAB_LANGUAGE === 'en'
 
 const WIKTIONARY_HOST = wikitabSisterHost('wiktionary')
 const WIKIQUOTE_HOST = wikitabSisterHost('wikiquote')
@@ -66,7 +69,7 @@ function featuredImageThumbWidth(): number {
 }
 
 function metaFor(kind: WikitabFeaturedSpotlightKind): SpotlightMeta {
-  return SPOTLIGHT_CATALOG.find((entry) => entry.kind === kind)!
+  return { kind, ...SPOTLIGHT_META[kind] }
 }
 
 function supportingText(meta: SpotlightMeta): string {
@@ -417,8 +420,8 @@ function assembleFeaturedSpotlights(
   mapped: Partial<Record<WikitabFeaturedSpotlightKind, WikitabFeaturedSpotlight>>,
 ): WikitabFeaturedSpotlight[] {
   return SPOTLIGHT_CATALOG.flatMap((meta) => {
-    if (meta.kind === 'tfl') {
-      return mapped.tfl ? [mapped.tfl] : []
+    if (meta.kind === 'tfl' || !ENGLISH_SPOTLIGHTS) {
+      return mapped[meta.kind] ? [mapped[meta.kind]] : []
     }
     return [mapped[meta.kind] ?? unavailableSpotlight(meta)]
   })
@@ -690,6 +693,15 @@ async function fetchSpotlightsForDay(
   }
 
   const mapped: Partial<Record<WikitabFeaturedSpotlightKind, WikitabFeaturedSpotlight>> = {}
+
+  if (!ENGLISH_SPOTLIGHTS) {
+    const payload = await getFeaturedPayload(day, signal)
+    mapped.tfa = mapTfa(payload) ?? undefined
+    mapped.potd = mapPotd(payload, day) ?? undefined
+    if (mapped.tfa) report(mapped.tfa)
+    if (mapped.potd) report(mapped.potd)
+    return assembleFeaturedSpotlights(mapped)
+  }
 
   const [, mainPageHtml, wotdHtml, qotdHtml, tflHtml] = await Promise.all([
     getFeaturedPayload(day, signal).then((payload) => {
