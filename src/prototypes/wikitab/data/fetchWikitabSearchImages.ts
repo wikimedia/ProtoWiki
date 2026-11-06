@@ -10,6 +10,7 @@ import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import { normalizeFeedHtml, unwrapLinksInHtml } from './wikitabHtml'
 import type { WikitabSeedArticle } from './wikitabSeedArticle'
+import { WIKITAB_LANGUAGE } from './wikitabLanguage'
 
 const COMMONS_HOST = 'commons.wikimedia.org'
 const COMMONS_API = `https://${COMMONS_HOST}/w/api.php`
@@ -219,7 +220,7 @@ export async function fetchWikitabSearchImages(
     gsrlimit: String(WIKITAB_SEARCH_IMAGES_BATCH_SIZE),
     prop: 'imageinfo',
     iiprop: 'url|size|mime|extmetadata',
-    iiextmetadatalanguage: 'en',
+    iiextmetadatalanguage: WIKITAB_LANGUAGE,
     iiextmetadatafilter: 'LicenseShortName|Artist|LicenseUrl|ImageDescription|ObjectName',
     iiurlwidth: String(THUMB_WIDTH),
   })

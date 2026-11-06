@@ -22,6 +22,7 @@ import {
   visualEditorUrl,
 } from './wikitabHtml'
 import { seedArticle, type WikitabSeedArticle } from './wikitabSeedArticle'
+import { WIKITAB_LANGUAGE } from './wikitabLanguage'
 
 export { fetchWikitabSearchTopTitles, type WikitabSearchTopTitle }
 
@@ -125,7 +126,7 @@ async function fetchQualityCheck(
       method: 'POST',
       signal,
       headers: microtaskFetchHeaders('wikitab-contribute-quality-check'),
-      body: JSON.stringify({ lang: 'en', titles: [title] }),
+      body: JSON.stringify({ lang: WIKITAB_LANGUAGE, titles: [title] }),
     })
     if (!response.ok) return null
 

@@ -18,6 +18,7 @@ import {
   wikiArticleUrl,
 } from './wikitabHtml'
 import { seedArticle } from './wikitabSeedArticle'
+import { wikitabSisterHost } from './wikitabLanguage'
 import { commonsPotdPageUrl, wikipediaPotdPageUrl } from './fetchPictureOfTheDay'
 import {
   WIKITAB_FEATURED_SPOTLIGHT_KINDS,
@@ -27,8 +28,8 @@ import {
   type WikitabFeaturedSpotlightKind,
 } from '../sections'
 
-const WIKTIONARY_HOST = 'en.wiktionary.org'
-const WIKIQUOTE_HOST = 'en.wikiquote.org'
+const WIKTIONARY_HOST = wikitabSisterHost('wiktionary')
+const WIKIQUOTE_HOST = wikitabSisterHost('wikiquote')
 
 /** UTC days to try for TFL (today + walkback when subpages are missing or not yet published). */
 const TFL_FALLBACK_MAX_DAYS = 14

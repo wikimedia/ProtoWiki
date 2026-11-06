@@ -53,7 +53,7 @@ import type {
   WikitabSavedWordItem,
 } from './wikitabSavedItems'
 import { formatSearchArticleRelationRationaleHtml } from './formatSearchArticleRelation'
-import { articleUrl } from './wikitabHtml'
+import { articleUrl, EN_WIKI_HOST } from './wikitabHtml'
 import {
   formatImageAttribution,
   imageCardTitle,
@@ -762,7 +762,7 @@ export function savedChangeItemToCardPayload(
     highRevertRisk: item.highRevertRisk ?? false,
     isLatestRevision: item.isLatestRevision ?? false,
     editorName: item.editorName,
-    editorUrl: `https://en.wikipedia.org/wiki/User:${encodeURIComponent(item.editorName.replace(/ /g, '_'))}`,
+    editorUrl: `https://${EN_WIKI_HOST}/wiki/User:${encodeURIComponent(item.editorName.replace(/ /g, '_'))}`,
     editedTimestamp: item.editedTimestamp?.trim() || '',
     editorKind: item.editorKind,
   }

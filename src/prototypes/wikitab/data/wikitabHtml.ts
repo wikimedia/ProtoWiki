@@ -1,4 +1,12 @@
-export const EN_WIKI_HOST = 'en.wikipedia.org'
+import { wikiHostFromLang } from '@/config'
+
+import { WIKITAB_LANGUAGE } from './wikitabLanguage'
+
+/**
+ * Wikipedia host for this page load — follows the language setting
+ * (`wikitabLanguage.ts`). Name kept for a small diff; it is no longer always `en`.
+ */
+export const EN_WIKI_HOST = wikiHostFromLang(WIKITAB_LANGUAGE)
 
 export function articleUrl(title: string): string {
   return wikiArticleUrl(EN_WIKI_HOST, title)
