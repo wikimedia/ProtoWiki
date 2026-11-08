@@ -19,6 +19,7 @@ import {
   shuffledActiveDiscussionArticleSeeds,
 } from './data/fetchActiveDiscussions'
 import { loadWikitabConfig, type WikitabSavedItem } from './data/wikitabConfig'
+import { isWikitabFeatureAvailable } from './data/wikitabLanguageSupport'
 import { cloneSavedItems, uniqueArticleSeedsFromSavedItems } from './data/savedCardHelpers'
 import type { WikitabCardData } from './sections'
 
@@ -28,7 +29,8 @@ function readActiveDiscussionsSettings(): {
   settingsFingerprint: string
 } {
   const config = loadWikitabConfig()
-  const showNoticeboards = config.discussionsShowNoticeboards
+  const showNoticeboards =
+    config.discussionsShowNoticeboards && isWikitabFeatureAvailable('discussions-noticeboards')
   const showSavedTalk = config.discussionsShowSavedTalk
   return {
     showNoticeboards,

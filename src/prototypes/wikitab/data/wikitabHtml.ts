@@ -159,6 +159,8 @@ export function normalizeFeedHtml(html: string): string {
 
 /** Wikifeeds DYK hooks start with `...`; Main Page shows "Did you know" instead. */
 export function expandDykSnippetHtml(html: string): string {
+  // Other wikis' hooks are in their own language; an English lead-in would mix scripts.
+  if (WIKITAB_LANGUAGE !== 'en') return html
   return html.replace(/^\.\.\.\s*/, 'Did you know ')
 }
 

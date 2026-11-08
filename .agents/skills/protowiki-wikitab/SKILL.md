@@ -393,6 +393,29 @@ per section. Home modules use the same empty pattern with module-specific copy
 (Saved / Daily reads / Help wanted / Nearby / Recent edits / Active discussions —
 see each module below); never the old generic `"Nothing to show right now."` line.
 
+## Wikipedia language
+
+The Modules panel has a **Wikipedia language** select (`data/wikitabLanguage.ts`).
+`WIKITAB_LANGUAGE` is read once at load; changing it clears feed caches and
+reloads. Every fetcher builds its host from it (`EN_WIKI_HOST` in `wikitabHtml.ts`
+is a legacy name — it follows the setting).
+
+Not every wiki has every feature. **`data/wikitabLanguageSupport.ts`** is a
+hard-coded table of which languages support each one; anything unsupported is
+hidden rather than rendered empty or mis-parsed:
+
+| Feature | Effect when unsupported |
+| ------- | ----------------------- |
+| `news`, `dyk`, `otd`, `births` | Module is implicitly hidden (`useWikitabHiddenSections` merges it into `hiddenIds` without persisting) and left out of the Modules list; its stored order slot is kept for when the language changes back. |
+| `featured-tfa`, `featured-english-spotlights` | Kind dropped from `WIKITAB_FEATURED_SPOTLIGHT_KINDS`, so Featured fetches and reserves only what exists (POTD is everywhere). |
+| `discussions-noticeboards` | Active discussions uses saved-article talk pages only; the toggle is hidden. |
+| `review-changes-risky` | Recent edits uses saved-article edits only (`rcshow=oresreview` is silently ignored where ORES isn't deployed); the toggle is hidden. |
+| `module-about-pages` | No About footer (the titles are enwiki pages). |
+
+The table was probed against the live APIs — the header comment says how. Re-probe
+before adding a language to a list; "the feed has the key" isn't enough (several
+wikis return date-led, stale or archive-length `news`).
+
 ## Daily feed sources
 
 `data/fetchDailyFeed.ts` loads the feed in **two phases** so top sections can

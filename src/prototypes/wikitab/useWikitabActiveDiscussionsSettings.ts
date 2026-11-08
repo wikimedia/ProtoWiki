@@ -5,18 +5,25 @@ import {
   patchWikitabConfig,
   WIKITAB_CONFIG_STORAGE_KEY,
 } from './data/wikitabConfig'
+import { isWikitabFeatureAvailable } from './data/wikitabLanguageSupport'
+
+/** enwiki noticeboards only — off (and its toggle hidden) on other wikis. */
+const NOTICEBOARDS_AVAILABLE = isWikitabFeatureAvailable('discussions-noticeboards')
 
 export function useWikitabActiveDiscussionsSettings() {
-  const showNoticeboards = ref(loadWikitabConfig().discussionsShowNoticeboards)
+  const showNoticeboards = ref(
+    NOTICEBOARDS_AVAILABLE && loadWikitabConfig().discussionsShowNoticeboards,
+  )
   const showSavedTalk = ref(loadWikitabConfig().discussionsShowSavedTalk)
 
   function syncFromStorage(): void {
     const config = loadWikitabConfig()
-    showNoticeboards.value = config.discussionsShowNoticeboards
+    showNoticeboards.value = NOTICEBOARDS_AVAILABLE && config.discussionsShowNoticeboards
     showSavedTalk.value = config.discussionsShowSavedTalk
   }
 
   function setShowNoticeboards(value: boolean): void {
+    if (!NOTICEBOARDS_AVAILABLE) return
     showNoticeboards.value = value
     patchWikitabConfig({ discussionsShowNoticeboards: value })
   }

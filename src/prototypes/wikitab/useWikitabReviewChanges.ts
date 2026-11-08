@@ -22,6 +22,7 @@ import {
   writeCachedReviewChanges,
 } from './data/reviewChangesCache'
 import { loadWikitabConfig, type WikitabSavedItem } from './data/wikitabConfig'
+import { isWikitabFeatureAvailable } from './data/wikitabLanguageSupport'
 import { articleTitleKey } from './data/wikitabHtml'
 import { cloneSavedItems, uniqueArticleSeedsFromSavedItems } from './data/savedCardHelpers'
 import { WIKITAB_REVIEW_CHANGES_MODULE_SPEC } from './sections'
@@ -40,7 +41,8 @@ function readReviewChangesSettings(): {
 } {
   const config = loadWikitabConfig()
   const showSavedEdits = config.reviewChangesShowSavedEdits
-  const showRecentRiskyEdits = config.reviewChangesShowRecentRiskyEdits
+  const showRecentRiskyEdits =
+    config.reviewChangesShowRecentRiskyEdits && isWikitabFeatureAvailable('review-changes-risky')
   return {
     showSavedEdits,
     showRecentRiskyEdits,

@@ -18,7 +18,8 @@ import {
   wikiArticleUrl,
 } from './wikitabHtml'
 import { seedArticle } from './wikitabSeedArticle'
-import { WIKITAB_LANGUAGE, wikitabSisterHost } from './wikitabLanguage'
+import { wikitabSisterHost } from './wikitabLanguage'
+import { isWikitabFeatureAvailable } from './wikitabLanguageSupport'
 import { commonsPotdPageUrl, wikipediaPotdPageUrl } from './fetchPictureOfTheDay'
 import {
   WIKITAB_FEATURED_SPOTLIGHT_KINDS,
@@ -28,8 +29,8 @@ import {
   type WikitabFeaturedSpotlightKind,
 } from '../sections'
 
-/** Off-English, only TFA + POTD (REST `feed/featured`) exist — see `WIKITAB_FEATURED_ENGLISH_ONLY_KINDS`. */
-const ENGLISH_SPOTLIGHTS = WIKITAB_LANGUAGE === 'en'
+/** Off-English, only TFA (some wikis) + POTD (REST `feed/featured`) exist — see `wikitabLanguageSupport.ts`. */
+const ENGLISH_SPOTLIGHTS = isWikitabFeatureAvailable('featured-english-spotlights')
 
 const WIKTIONARY_HOST = wikitabSisterHost('wiktionary')
 const WIKIQUOTE_HOST = wikitabSisterHost('wikiquote')
@@ -696,7 +697,7 @@ async function fetchSpotlightsForDay(
 
   if (!ENGLISH_SPOTLIGHTS) {
     const payload = await getFeaturedPayload(day, signal)
-    mapped.tfa = mapTfa(payload) ?? undefined
+    if (WIKITAB_FEATURED_SPOTLIGHT_KINDS.includes('tfa')) mapped.tfa = mapTfa(payload) ?? undefined
     mapped.potd = mapPotd(payload, day) ?? undefined
     if (mapped.tfa) report(mapped.tfa)
     if (mapped.potd) report(mapped.potd)

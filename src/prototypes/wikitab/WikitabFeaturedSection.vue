@@ -35,6 +35,9 @@ const spec = WIKITAB_FEATURED_MODULE_SPEC
 /** Fixed v1 spotlight catalog size — reserves skeleton slots during load. */
 const SPOTLIGHT_COUNT = WIKITAB_FEATURED_SPOTLIGHT_KINDS.length
 
+/** Off-English the catalog can be shorter than `initialCount` — never reserve slots it can't fill. */
+const INITIAL_RESERVED = Math.min(spec.initialCount, SPOTLIGHT_COUNT)
+
 const props = withDefaults(
   defineProps<{
     items: WikitabFeaturedSpotlight[]
@@ -94,7 +97,7 @@ const scroller = ref<HTMLElement | null>(null)
 const sentinel = ref<HTMLElement | null>(null)
 const panelRoot = computed(() => scroller.value?.closest('.wikitab-panel') ?? null)
 
-const reserved = ref(spec.initialCount)
+const reserved = ref(INITIAL_RESERVED)
 
 useRestoreReservedOnScreenClose(
   isScreen,
@@ -189,7 +192,7 @@ watch(
 watch(
   () => props.loading,
   (isRefreshing) => {
-    if (isRefreshing) reserved.value = spec.initialCount
+    if (isRefreshing) reserved.value = INITIAL_RESERVED
   },
 )
 

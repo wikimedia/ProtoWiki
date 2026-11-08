@@ -12,7 +12,7 @@ import {
 import { wikitabReservedSlotHeight } from './data/wikitabCardSlotHeights'
 import type { WikitabCardPrimitiveId } from './data/wikitabCardTypeLinks'
 import type { WikitabSeedArticle } from './data/wikitabSeedArticle'
-import { WIKITAB_LANGUAGE } from './data/wikitabLanguage'
+import { isWikitabFeatureAvailable } from './data/wikitabLanguageSupport'
 /** Codex Card `icon` for quote-of-the-day cards (quote in title, attributee in description). */
 export const WIKITAB_QUOTE_CARD_LEADING_ICON = cdxIconQuotes
 
@@ -53,12 +53,19 @@ export const WIKITAB_FEATURED_ENGLISH_ONLY_KINDS: readonly WikitabFeaturedSpotli
   'wotd',
 ]
 
-/** Fixed v1 catalog order for Featured spotlights (fetch + skeleton slots). */
+/**
+ * Fixed v1 catalog order for Featured spotlights (fetch + skeleton slots),
+ * limited to what the chosen wiki has — see `wikitabLanguageSupport.ts`.
+ */
 export const WIKITAB_FEATURED_SPOTLIGHT_KINDS: readonly WikitabFeaturedSpotlightKind[] = (
   ['tfa', 'tfl', 'tfp', 'potd', 'qotd', 'wotd'] as const
-).filter(
-  (kind) => WIKITAB_LANGUAGE === 'en' || !WIKITAB_FEATURED_ENGLISH_ONLY_KINDS.includes(kind),
-)
+).filter((kind) => {
+  if (kind === 'tfa') return isWikitabFeatureAvailable('featured-tfa')
+  if (WIKITAB_FEATURED_ENGLISH_ONLY_KINDS.includes(kind)) {
+    return isWikitabFeatureAvailable('featured-english-spotlights')
+  }
+  return true
+})
 
 export type {
   WikitabCardDescriptionFormat,
