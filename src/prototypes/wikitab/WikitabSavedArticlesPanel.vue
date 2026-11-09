@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { savedItemKey } from './data/wikitabSavedItems'
 import { computed, ref, toRef, watch } from 'vue'
 
 import { useSkin } from '@/composables/useSkin'
@@ -19,14 +20,15 @@ const CARD_HEIGHT = 122
 
 const props = defineProps<{
   savedItems: WikitabSavedItem[]
-  isCardSaved: (id: string) => boolean
+  isCardSaved: (id: string, lang?: string) => boolean
   saveArticleMenuLookup: WikitabSaveArticleMenuLookup
 }>()
 
 const emit = defineEmits<{
   close: []
-  'toggle-save': [id: string]
-  'toggle-save-article': [id: string]
+  /** Saved identity is `lang` + id — ids are only unique within one wiki. */
+  'toggle-save': [id: string, lang: string]
+  'toggle-save-article': [id: string, lang: string]
 }>()
 
 const skin = useSkin()
@@ -99,15 +101,15 @@ useWikitabOverlayScrollLock('wikitab-saved-panel-open', ref(true))
         <div ref="scroller" class="wikitab-saved-articles-panel__cards">
           <WikitabSavedItemSlot
             v-for="saved in visibleItems"
-            :key="saved.id"
+            :key="savedItemKey(saved)"
             class="wikitab-saved-articles-panel__card wikitab-section__card"
             :saved="saved"
             :show-article-menu="true"
-            :is-saved="isCardSaved(saved.id)"
+            :is-saved="isCardSaved(saved.id, saved.lang)"
             :is-card-saved="isCardSaved"
             :save-article-menu-lookup="saveArticleMenuLookup"
-            @toggle-save="emit('toggle-save', saved.id)"
-            @toggle-save-article="emit('toggle-save-article', saved.id)"
+            @toggle-save="emit('toggle-save', saved.id, saved.lang)"
+            @toggle-save-article="emit('toggle-save-article', saved.id, saved.lang)"
           />
         </div>
 

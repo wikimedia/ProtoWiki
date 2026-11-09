@@ -1,12 +1,13 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 
 import { filterDisambiguationPageIds } from './filterDisambiguationPages'
+import { WIKI_HOST } from './wikitabHtml'
 import {
   WIKITAB_SEARCH_POPOVER_THUMB_WIDTH,
   wikimediaThumbnailAtLeast,
 } from './wikimediaThumbnailUrl'
 
-const SEARCH_HOST = 'en.wikipedia.org'
+const SEARCH_HOST = WIKI_HOST
 export const WIKITAB_SEARCH_LIMIT = 6
 const OVERFETCH_BUFFER = 4
 const REST_SEARCH_MAX = 50

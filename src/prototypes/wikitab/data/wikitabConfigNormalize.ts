@@ -40,8 +40,10 @@ export interface WikitabConfig {
   pinnedSectionIds: WikitabModuleId[]
   hiddenSectionIds: WikitabModuleId[]
   moduleOrderIds: WikitabModuleId[]
-  hiddenArticleTitleKeys: string[]
-  dismissedActivityRevids: number[]
+  /** Hidden article title keys per wiki language — titles are only unique per wiki. */
+  hiddenArticleTitleKeys: Record<string, string[]>
+  /** Dismissed edit revision ids per wiki language — every wiki numbers its own revisions. */
+  dismissedActivityRevids: Record<string, number[]>
   hiddenCommonsImagePageIds: number[]
   potdAttributionExpandedDay: string | null
   colorThemeId: WikitabColorThemeId | null
@@ -53,8 +55,12 @@ export interface WikitabConfig {
   discussionsShowSavedTalk: boolean
   /** Last successful Nearby geolocation — refetch without re-prompting when set. */
   nearbyLastCoord: WikitabNearbyLastCoord | null
-  /** Full Nearby card list for `nearbyLastCoord` — paints with no network when fresh. */
-  nearbyCardsCache: WikitabNearbyCardsCache | null
+  /**
+   * Full Nearby card list for `nearbyLastCoord`, per wiki language — paints with
+   * no network when fresh. Keyed by language so tabs on different wikis never
+   * overwrite each other's cards.
+   */
+  nearbyCardsCache: Record<string, WikitabNearbyCardsCache>
   savedItems: WikitabSavedItem[]
   configRevision: number
 }
@@ -63,8 +69,8 @@ export const DEFAULT_WIKITAB_CONFIG: WikitabConfig = {
   pinnedSectionIds: [],
   hiddenSectionIds: [...WIKITAB_DEFAULT_HIDDEN_MODULE_IDS],
   moduleOrderIds: [],
-  hiddenArticleTitleKeys: [],
-  dismissedActivityRevids: [],
+  hiddenArticleTitleKeys: {},
+  dismissedActivityRevids: {},
   hiddenCommonsImagePageIds: [],
   potdAttributionExpandedDay: null,
   colorThemeId: null,
@@ -73,7 +79,7 @@ export const DEFAULT_WIKITAB_CONFIG: WikitabConfig = {
   discussionsShowNoticeboards: true,
   discussionsShowSavedTalk: true,
   nearbyLastCoord: null,
-  nearbyCardsCache: null,
+  nearbyCardsCache: {},
   savedItems: [],
   configRevision: 0,
 }
@@ -153,6 +159,35 @@ export function normalizeHiddenSectionIds(raw: unknown): WikitabModuleId[] {
   }
 
   return ids
+}
+
+/**
+ * `{ [lang]: list }`. A bare array is the pre-language shape — always enwiki —
+ * and becomes `{ en: list }`.
+ */
+function normalizePerLanguage<T>(
+  raw: unknown,
+  normalizeList: (list: unknown) => T[],
+): Record<string, T[]> {
+  if (Array.isArray(raw)) {
+    const list = normalizeList(raw)
+    return list.length ? { en: list } : {}
+  }
+  if (typeof raw !== 'object' || raw === null) return {}
+  const byLang: Record<string, T[]> = {}
+  for (const [lang, list] of Object.entries(raw as Record<string, unknown>)) {
+    const normalized = normalizeList(list)
+    if (lang.trim() && normalized.length) byLang[lang.trim().toLowerCase()] = normalized
+  }
+  return byLang
+}
+
+export function normalizeHiddenArticleTitleKeysByLang(raw: unknown): Record<string, string[]> {
+  return normalizePerLanguage(raw, normalizeHiddenArticleTitleKeys)
+}
+
+export function normalizeDismissedActivityRevidsByLang(raw: unknown): Record<string, number[]> {
+  return normalizePerLanguage(raw, normalizeDismissedActivityRevids)
 }
 
 export function normalizeHiddenArticleTitleKeys(raw: unknown): string[] {
@@ -286,6 +321,27 @@ export function normalizeNearbyCardsCache(raw: unknown): WikitabNearbyCardsCache
   }
 }
 
+/**
+ * `{ [lang]: cache }`. The pre-language single-object shape (it has `lat`) was
+ * always enwiki, so it becomes `{ en: … }`.
+ */
+export function normalizeNearbyCardsCacheByLang(
+  raw: unknown,
+): Record<string, WikitabNearbyCardsCache> {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return {}
+  const record = raw as Record<string, unknown>
+  if ('lat' in record) {
+    const legacy = normalizeNearbyCardsCache(record)
+    return legacy ? { en: legacy } : {}
+  }
+  const byLang: Record<string, WikitabNearbyCardsCache> = {}
+  for (const [lang, entry] of Object.entries(record)) {
+    const normalized = normalizeNearbyCardsCache(entry)
+    if (normalized) byLang[lang] = normalized
+  }
+  return byLang
+}
+
 export function normalizeWikitabConfig(raw: unknown): WikitabConfig {
   if (typeof raw !== 'object' || raw === null) {
     return cloneWikitabConfig(DEFAULT_WIKITAB_CONFIG)
@@ -297,8 +353,10 @@ export function normalizeWikitabConfig(raw: unknown): WikitabConfig {
     pinnedSectionIds: normalizePinnedSectionIds(record.pinnedSectionIds),
     hiddenSectionIds: normalizeHiddenSectionIds(record.hiddenSectionIds),
     moduleOrderIds: normalizeModuleOrderIds(record.moduleOrderIds),
-    hiddenArticleTitleKeys: normalizeHiddenArticleTitleKeys(record.hiddenArticleTitleKeys),
-    dismissedActivityRevids: normalizeDismissedActivityRevids(record.dismissedActivityRevids),
+    hiddenArticleTitleKeys: normalizeHiddenArticleTitleKeysByLang(record.hiddenArticleTitleKeys),
+    dismissedActivityRevids: normalizeDismissedActivityRevidsByLang(
+      record.dismissedActivityRevids,
+    ),
     hiddenCommonsImagePageIds: normalizeHiddenCommonsImagePageIds(record.hiddenCommonsImagePageIds),
     potdAttributionExpandedDay: normalizePotdAttributionExpandedDay(
       record.potdAttributionExpandedDay,
@@ -318,7 +376,7 @@ export function normalizeWikitabConfig(raw: unknown): WikitabConfig {
     ),
     discussionsShowSavedTalk: normalizeReviewChangesBool(record.discussionsShowSavedTalk, true),
     nearbyLastCoord: normalizeNearbyLastCoord(record.nearbyLastCoord),
-    nearbyCardsCache: normalizeNearbyCardsCache(record.nearbyCardsCache),
+    nearbyCardsCache: normalizeNearbyCardsCacheByLang(record.nearbyCardsCache),
     savedItems: normalizeSavedItems(record.savedItems),
     configRevision: normalizeConfigRevision(record.configRevision),
   }
@@ -329,8 +387,12 @@ export function cloneWikitabConfig(config: WikitabConfig): WikitabConfig {
     pinnedSectionIds: [...config.pinnedSectionIds],
     hiddenSectionIds: [...config.hiddenSectionIds],
     moduleOrderIds: [...config.moduleOrderIds],
-    hiddenArticleTitleKeys: [...config.hiddenArticleTitleKeys],
-    dismissedActivityRevids: [...config.dismissedActivityRevids],
+    hiddenArticleTitleKeys: Object.fromEntries(
+      Object.entries(config.hiddenArticleTitleKeys).map(([lang, keys]) => [lang, [...keys]]),
+    ),
+    dismissedActivityRevids: Object.fromEntries(
+      Object.entries(config.dismissedActivityRevids).map(([lang, ids]) => [lang, [...ids]]),
+    ),
     hiddenCommonsImagePageIds: [...config.hiddenCommonsImagePageIds],
     potdAttributionExpandedDay: config.potdAttributionExpandedDay,
     colorThemeId: config.colorThemeId,
@@ -341,12 +403,12 @@ export function cloneWikitabConfig(config: WikitabConfig): WikitabConfig {
     nearbyLastCoord: config.nearbyLastCoord
       ? { ...config.nearbyLastCoord }
       : null,
-    nearbyCardsCache: config.nearbyCardsCache
-      ? {
-          ...config.nearbyCardsCache,
-          items: config.nearbyCardsCache.items.map((item) => ({ ...item })),
-        }
-      : null,
+    nearbyCardsCache: Object.fromEntries(
+      Object.entries(config.nearbyCardsCache).map(([lang, entry]) => [
+        lang,
+        { ...entry, items: entry.items.map((item) => ({ ...item })) },
+      ]),
+    ),
     savedItems: cloneSavedItems(config.savedItems),
     configRevision: config.configRevision,
   }

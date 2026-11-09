@@ -13,12 +13,17 @@ import {
   writeCachedSuggestedEdits,
 } from './data/suggestedEditsCache'
 import type { WikitabSavedItem } from './data/wikitabConfig'
-import { cloneSavedItems, uniqueArticleSeedsFromSavedItems } from './data/savedCardHelpers'
+import {
+  cloneSavedItems,
+  savedArticleSeedFingerprintKey,
+  uniqueArticleSeedsFromSavedItems,
+} from './data/savedCardHelpers'
 import {
   WIKITAB_SUGGESTED_EDITS_MODULE_SPEC,
   type WikitabCardData,
   type WikitabCardLoading,
 } from './sections'
+import { WIKITAB_LANGUAGE } from './data/wikitabLanguage'
 
 const { initialCount, pageSize } = WIKITAB_SUGGESTED_EDITS_MODULE_SPEC
 
@@ -106,6 +111,7 @@ export function useWikitabSuggestedEdits() {
   function persistCache(): void {
     if (!cacheContext) return
     writeCachedSuggestedEdits(
+      WIKITAB_LANGUAGE,
       cacheContext.day,
       cacheContext.savedFingerprint,
       items.value,
@@ -150,7 +156,7 @@ export function useWikitabSuggestedEdits() {
     if (activeFeed) return true
     if (!cacheContext || !savedItemsSnapshot.length) return false
 
-    activeFeed = createSuggestedEditsFeed(
+    activeFeed = await createSuggestedEditsFeed(
       savedItemsSnapshot,
       cacheContext.day,
       signal,
@@ -214,7 +220,7 @@ export function useWikitabSuggestedEdits() {
     const day = utcDayKey()
     const articleSeeds = uniqueArticleSeedsFromSavedItems(savedItems)
     const savedFingerprint = buildSuggestedEditsSavedFingerprint(
-      articleSeeds.map((seed) => seed.titleKey),
+      articleSeeds.map(savedArticleSeedFingerprintKey),
     )
 
     // Same UTC day with cards already painted — keep them even if the saved
@@ -242,7 +248,7 @@ export function useWikitabSuggestedEdits() {
     savedItemsSnapshot = cloneSavedItems(savedItems)
 
     if (!force) {
-      const cached = readCachedSuggestedEdits(day)
+      const cached = readCachedSuggestedEdits(WIKITAB_LANGUAGE, day)
       if (cached) {
         applyCachedItems(cached.items, cached.hasMore, day, cached.savedFingerprint)
         return
@@ -261,7 +267,7 @@ export function useWikitabSuggestedEdits() {
 
     try {
       await withFeedLock(async () => {
-        activeFeed = createSuggestedEditsFeed(savedItemsSnapshot, day, signal)
+        activeFeed = await createSuggestedEditsFeed(savedItemsSnapshot, day, signal)
         if (!activeFeed) return
 
         loading.value = false

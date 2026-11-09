@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 
-import { CdxButton, CdxIcon } from '@wikimedia/codex'
+import { CdxButton, CdxField, CdxIcon, CdxSelect } from '@wikimedia/codex'
 import { cdxIconClose } from '@wikimedia/codex-icons'
 
 import WikitabConfigureModuleList from './WikitabConfigureModuleList.vue'
+import {
+  setWikitabLanguage,
+  WIKITAB_LANGUAGE,
+  WIKITAB_LANGUAGE_OPTIONS,
+} from './data/wikitabLanguage'
 import type { WikitabModuleId } from './sections'
 import { useWikitabOverlayScrollLock } from './useWikitabOverlayScrollLock'
 
@@ -36,13 +41,31 @@ onUnmounted(() => {
 })
 
 useWikitabOverlayScrollLock('wikitab-configure-open', ref(true))
+
+const languageMenuItems = WIKITAB_LANGUAGE_OPTIONS.some((o) => o.value === WIKITAB_LANGUAGE)
+  ? [...WIKITAB_LANGUAGE_OPTIONS]
+  : [{ value: WIKITAB_LANGUAGE, label: WIKITAB_LANGUAGE }, ...WIKITAB_LANGUAGE_OPTIONS]
+const selectedLanguage = ref(WIKITAB_LANGUAGE)
+
+/**
+ * Caches are keyed by language, so nothing needs clearing — the old language's
+ * entries stay valid for any tab still on it, and the reload reads the new one's.
+ */
+function onLanguageChange(lang: string): void {
+  if (!setWikitabLanguage(lang)) selectedLanguage.value = WIKITAB_LANGUAGE
+}
 </script>
 
 <template>
-  <div class="wikitab-configure-panel wikitab-panel" role="dialog" aria-modal="true" aria-label="Modules">
+  <div
+    class="wikitab-configure-panel wikitab-panel"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Settings"
+  >
     <div class="wikitab-configure-panel__column">
       <header class="wikitab-configure-panel__head">
-        <h2 class="wikitab-configure-panel__title">Modules</h2>
+        <h2 class="wikitab-configure-panel__title">Settings</h2>
         <CdxButton
           class="wikitab-configure-panel__close"
           weight="quiet"
@@ -54,19 +77,31 @@ useWikitabOverlayScrollLock('wikitab-configure-open', ref(true))
         </CdxButton>
       </header>
 
-      <WikitabConfigureModuleList
-        :order="props.moduleOrder"
-        :pinned-ids="props.pinnedIds"
-        :is-hidden="props.isHidden"
-        @show="emit('show', $event)"
-        @hide="emit('hide', $event)"
-        @reorder="emit('reorder', $event)"
-        @unpin="emit('unpin', $event)"
-      />
+      <CdxField class="wikitab-configure-panel__language">
+        <template #label>Wiki</template>
+        <CdxSelect
+          v-model:selected="selectedLanguage"
+          :menu-items="languageMenuItems"
+          @update:selected="onLanguageChange"
+        />
+      </CdxField>
+
+      <CdxField class="wikitab-configure-panel__modules" :is-fieldset="true">
+        <template #label>Modules</template>
+        <WikitabConfigureModuleList
+          :order="props.moduleOrder"
+          :pinned-ids="props.pinnedIds"
+          :is-hidden="props.isHidden"
+          @show="emit('show', $event)"
+          @hide="emit('hide', $event)"
+          @reorder="emit('reorder', $event)"
+          @unpin="emit('unpin', $event)"
+        />
+      </CdxField>
 
       <div class="wikitab-configure-panel__footer">
         <CdxButton class="wikitab-configure-panel__reset" @click="emit('reset')">
-          Reset
+          Reset modules
         </CdxButton>
       </div>
     </div>
@@ -111,10 +146,24 @@ useWikitabOverlayScrollLock('wikitab-configure-open', ref(true))
   color: var(--wikitab-theme-fg, var(--color-base));
 }
 
+.wikitab-configure-panel__language,
+.wikitab-configure-panel__modules {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+}
+
+/* A little more room between the "Modules" legend and its first row. */
+.wikitab-configure-panel__modules :deep(legend.cdx-label) {
+  padding-bottom: var(--spacing-75);
+}
+
 .wikitab-configure-panel__footer {
   box-sizing: border-box;
   width: 100%;
-  padding: var(--spacing-200) var(--spacing-100) var(--spacing-400);
+  /* Sits closer to the module list than the column gap: 12px instead of 24px. */
+  margin-top: calc(var(--spacing-75) - var(--spacing-150));
+  padding: 0 var(--spacing-100) var(--spacing-400);
 }
 
 .wikitab-configure-panel__close {
@@ -136,7 +185,9 @@ useWikitabOverlayScrollLock('wikitab-configure-open', ref(true))
     max-width: none;
   }
 
-  .wikitab-configure-panel__head {
+  .wikitab-configure-panel__head,
+  .wikitab-configure-panel__language,
+  .wikitab-configure-panel__modules :deep(legend.cdx-label) {
     padding-inline: var(--spacing-100);
   }
 }

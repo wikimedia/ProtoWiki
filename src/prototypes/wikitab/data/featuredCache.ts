@@ -4,11 +4,12 @@ import {
   readCacheJsonUnlessBypassed,
   removeCacheJson,
   utcDayKey,
+  wikitabCacheKey,
   writeCacheJson,
 } from './wikitabCacheHelpers'
 import { FEATURED_MODULE_TTL_MS, isTimestampFresh } from './wikitabCacheTtl'
 
-export const CACHE_KEY = 'wikitab-featured-cache-v20'
+export const CACHE_KEY = 'wikitab-featured-cache-v21'
 
 interface CacheEntry {
   day: string
@@ -21,19 +22,20 @@ export interface CachedFeatured {
   fetchedAt: number
 }
 
-let sessionEntry: CacheEntry | null = null
+/** In-memory copy for this page load — tagged with its language like the stored key. */
+let sessionEntry: (CacheEntry & { lang: string }) | null = null
 
-export function readCachedFeaturedEntry(day: string): CachedFeatured | null {
+export function readCachedFeaturedEntry(lang: string, day: string): CachedFeatured | null {
   if (isCacheBypassed()) return null
 
-  if (sessionEntry?.day === day && sessionEntry.items.length) {
+  if (sessionEntry?.lang === lang && sessionEntry.day === day && sessionEntry.items.length) {
     return {
       items: sessionEntry.items.map((item) => ({ ...item })),
       fetchedAt: sessionEntry.fetchedAt,
     }
   }
 
-  const entry = readCacheJsonUnlessBypassed(CACHE_KEY) as CacheEntry | null
+  const entry = readCacheJsonUnlessBypassed(wikitabCacheKey(CACHE_KEY, lang)) as CacheEntry | null
   if (!entry || entry.day !== day || !Array.isArray(entry.items) || !entry.items.length) {
     return null
   }
@@ -41,15 +43,15 @@ export function readCachedFeaturedEntry(day: string): CachedFeatured | null {
   const fetchedAt =
     typeof entry.fetchedAt === 'number' && Number.isFinite(entry.fetchedAt) ? entry.fetchedAt : 0
 
-  sessionEntry = { day, items: entry.items, fetchedAt }
+  sessionEntry = { lang, day, items: entry.items, fetchedAt }
   return {
     items: entry.items.map((item) => ({ ...item })),
     fetchedAt,
   }
 }
 
-export function readCachedFeatured(day: string): WikitabFeaturedSpotlight[] | null {
-  return readCachedFeaturedEntry(day)?.items ?? null
+export function readCachedFeatured(lang: string, day: string): WikitabFeaturedSpotlight[] | null {
+  return readCachedFeaturedEntry(lang, day)?.items ?? null
 }
 
 export function isFeaturedCacheFresh(fetchedAt: number, now = Date.now()): boolean {
@@ -57,17 +59,18 @@ export function isFeaturedCacheFresh(fetchedAt: number, now = Date.now()): boole
 }
 
 export function writeCachedFeatured(
+  lang: string,
   day: string,
   items: WikitabFeaturedSpotlight[],
   fetchedAt = Date.now(),
 ): void {
-  sessionEntry = { day, items, fetchedAt }
-  writeCacheJson(CACHE_KEY, { day, items, fetchedAt } satisfies CacheEntry)
+  sessionEntry = { lang, day, items, fetchedAt }
+  writeCacheJson(wikitabCacheKey(CACHE_KEY, lang), { day, items, fetchedAt } satisfies CacheEntry)
 }
 
-export function clearCachedFeatured(): void {
-  sessionEntry = null
-  removeCacheJson(CACHE_KEY)
+export function clearCachedFeatured(lang: string): void {
+  if (sessionEntry?.lang === lang) sessionEntry = null
+  removeCacheJson(wikitabCacheKey(CACHE_KEY, lang))
 }
 
 export { isCacheBypassed, utcDayKey }

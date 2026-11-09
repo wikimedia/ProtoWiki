@@ -19,8 +19,13 @@ import {
   shuffledActiveDiscussionArticleSeeds,
 } from './data/fetchActiveDiscussions'
 import { loadWikitabConfig, type WikitabSavedItem } from './data/wikitabConfig'
-import { cloneSavedItems, uniqueArticleSeedsFromSavedItems } from './data/savedCardHelpers'
+import {
+  cloneSavedItems,
+  savedArticleSeedFingerprintKey,
+  uniqueArticleSeedsFromSavedItems,
+} from './data/savedCardHelpers'
 import type { WikitabCardData } from './sections'
+import { WIKITAB_LANGUAGE } from './data/wikitabLanguage'
 
 function readActiveDiscussionsSettings(): {
   showNoticeboards: boolean
@@ -113,6 +118,7 @@ export function useWikitabActiveDiscussions() {
     }
 
     writeCachedActiveDiscussions(
+      WIKITAB_LANGUAGE,
       cacheContext.day,
       cacheContext.savedFingerprint,
       cacheContext.settingsFingerprint,
@@ -168,7 +174,7 @@ export function useWikitabActiveDiscussions() {
       }
 
       const day = utcDayKey()
-      const cached = readCachedActiveDiscussions(day, settingsFingerprint)
+      const cached = readCachedActiveDiscussions(WIKITAB_LANGUAGE, day, settingsFingerprint)
       if (!cached) return
 
       savedItemsSnapshot = cloneSavedItems(loadWikitabConfig().savedItems)
@@ -285,7 +291,7 @@ export function useWikitabActiveDiscussions() {
     const day = utcDayKey()
     const articleSeeds = showSavedTalk ? uniqueArticleSeedsFromSavedItems(savedItems) : []
     const savedFingerprint = buildActiveDiscussionsSavedFingerprint(
-      articleSeeds.map((seed) => seed.titleKey),
+      articleSeeds.map(savedArticleSeedFingerprintKey),
     )
 
     // Same UTC day + settings with cards already painted — keep them even if
@@ -315,7 +321,7 @@ export function useWikitabActiveDiscussions() {
       : 0
 
     if (!force && !isCacheBypassed()) {
-      const cached = readCachedActiveDiscussions(day, settingsFingerprint)
+      const cached = readCachedActiveDiscussions(WIKITAB_LANGUAGE, day, settingsFingerprint)
       if (cached) {
         controller?.abort()
         applyCachedItems(

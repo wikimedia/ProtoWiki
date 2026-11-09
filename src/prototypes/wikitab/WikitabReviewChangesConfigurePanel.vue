@@ -4,6 +4,10 @@ import { onMounted, onUnmounted } from 'vue'
 import { CdxButton, CdxIcon, CdxToggleSwitch } from '@wikimedia/codex'
 import { cdxIconClose } from '@wikimedia/codex-icons'
 
+import { isWikitabFeatureAvailable } from './data/wikitabLanguageSupport'
+
+const riskyEditsAvailable = isWikitabFeatureAvailable('review-changes-risky')
+
 const props = defineProps<{
   showSavedEdits: boolean
   showRecentRiskyEdits: boolean
@@ -62,6 +66,7 @@ onUnmounted(() => {
           Show edits from saved articles
         </CdxToggleSwitch>
         <CdxToggleSwitch
+          v-if="riskyEditsAvailable"
           class="wikitab-review-changes-configure-panel__toggle"
           :model-value="props.showRecentRiskyEdits"
           @update:model-value="emit('update:showRecentRiskyEdits', $event)"

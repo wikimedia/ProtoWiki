@@ -4,6 +4,7 @@ import {
   isCacheBypassed,
   readCacheJsonUnlessBypassed,
   utcDayKey,
+  wikitabCacheKey,
   writeCacheJson,
 } from './wikitabCacheHelpers'
 
@@ -35,8 +36,8 @@ export { isCacheBypassed, utcDayKey }
  * Read by UTC day only. A saved-fingerprint mismatch is not a miss — callers
  * keep the painted cards and surface a title refresh when live seeds diverge.
  */
-export function readCachedDailyReads(day: string): CachedDailyReads | null {
-  const entry = readCacheJsonUnlessBypassed(CACHE_KEY) as CacheEntry | null
+export function readCachedDailyReads(lang: string, day: string): CachedDailyReads | null {
+  const entry = readCacheJsonUnlessBypassed(wikitabCacheKey(CACHE_KEY, lang)) as CacheEntry | null
   if (!entry || entry.day !== day || typeof entry.savedFingerprint !== 'string' || !entry.items) {
     return null
   }
@@ -49,10 +50,16 @@ export function readCachedDailyReads(day: string): CachedDailyReads | null {
 }
 
 export function writeCachedDailyReads(
+  lang: string,
   day: string,
   savedFingerprint: string,
   items: WikitabCardData[],
   hasMore: boolean,
 ): void {
-  writeCacheJson(CACHE_KEY, { day, savedFingerprint, items, hasMore } satisfies CacheEntry)
+  writeCacheJson(wikitabCacheKey(CACHE_KEY, lang), {
+    day,
+    savedFingerprint,
+    items,
+    hasMore,
+  } satisfies CacheEntry)
 }

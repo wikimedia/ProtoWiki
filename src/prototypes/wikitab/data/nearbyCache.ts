@@ -9,9 +9,10 @@ import {
 } from './wikitabConfig'
 
 /**
- * Nearby card cache lives in `WikitabConfig.nearbyCardsCache` (same durable
+ * Nearby card cache lives in `WikitabConfig.nearbyCardsCache[lang]` (same durable
  * store as `nearbyLastCoord`) — not a separate localStorage key that
- * `evictWikitabCaches()` deletes whenever a config write hits quota.
+ * `evictWikitabCaches()` deletes whenever a config write hits quota. Every read
+ * and write names the wiki language, like the other Wikitab caches.
  *
  * Warm cache → paint on first tick, no network.
  */
@@ -61,7 +62,10 @@ function entryToCached(entry: WikitabNearbyCardsCache): CachedNearby {
   }
 }
 
-function migrateLegacyCacheIfNeeded(coord: WikitabNearbyLastCoord): CachedNearby | null {
+function migrateLegacyCacheIfNeeded(
+  lang: string,
+  coord: WikitabNearbyLastCoord,
+): CachedNearby | null {
   if (typeof window === 'undefined') return null
 
   try {
@@ -86,9 +90,10 @@ function migrateLegacyCacheIfNeeded(coord: WikitabNearbyLastCoord): CachedNearby
       fetchedAt: typeof entry.fetchedAt === 'number' ? entry.fetchedAt : Date.now(),
     }
 
-    if (!coordMatches(coord, normalized)) return null
+    // The standalone key predates the language setting — it was always enwiki.
+    if (lang !== 'en' || !coordMatches(coord, normalized)) return null
 
-    patchWikitabConfig({ nearbyCardsCache: normalized })
+    patchNearbyCache('en', normalized)
     return entryToCached(normalized)
   } catch {
     try {
@@ -101,15 +106,23 @@ function migrateLegacyCacheIfNeeded(coord: WikitabNearbyLastCoord): CachedNearby
 }
 
 /** Read cached cards for a stored location. Null when missing / wrong place / bypassed. */
-export function readCachedNearby(coord: WikitabNearbyLastCoord): CachedNearby | null {
+export function readCachedNearby(lang: string, coord: WikitabNearbyLastCoord): CachedNearby | null {
   if (isCacheBypassed()) return null
 
-  const stored = loadWikitabConfig().nearbyCardsCache
+  const stored = loadWikitabConfig().nearbyCardsCache[lang]
   if (stored?.items.length && coordMatches(coord, stored)) {
     return entryToCached(stored)
   }
 
-  return migrateLegacyCacheIfNeeded(coord)
+  return migrateLegacyCacheIfNeeded(lang, coord)
+}
+
+/** Read-modify-write one language's entry so other languages' cards survive. */
+function patchNearbyCache(lang: string, entry: WikitabNearbyCardsCache | null): void {
+  const next = { ...loadWikitabConfig().nearbyCardsCache }
+  if (entry) next[lang] = entry
+  else delete next[lang]
+  patchWikitabConfig({ nearbyCardsCache: next })
 }
 
 /**
@@ -117,6 +130,7 @@ export function readCachedNearby(coord: WikitabNearbyLastCoord): CachedNearby | 
  * Call at stable points (after fetch / after enrichment) — not on every card patch.
  */
 export function writeCachedNearby(
+  lang: string,
   coord: WikitabNearbyLastCoord,
   items: WikitabCardData[],
   hasMore: boolean,
@@ -130,11 +144,17 @@ export function writeCachedNearby(
     hasMore,
     fetchedAt,
   }
-  patchWikitabConfig({ nearbyCardsCache: entry })
+  patchNearbyCache(lang, entry)
 }
 
-export function clearCachedNearby(): void {
-  patchWikitabConfig({ nearbyCardsCache: null })
+/** Drop one language's cards (forced refresh / new location on this wiki). */
+export function clearCachedNearby(lang: string): void {
+  patchNearbyCache(lang, null)
+}
+
+/** Drop every language's cards — the location itself is gone (permission denied). */
+export function clearAllCachedNearby(): void {
+  patchWikitabConfig({ nearbyCardsCache: {} })
   try {
     window.localStorage.removeItem(LEGACY_CACHE_KEY)
   } catch {

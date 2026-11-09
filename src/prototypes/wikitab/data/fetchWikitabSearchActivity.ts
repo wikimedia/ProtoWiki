@@ -8,7 +8,7 @@ import {
 } from './fetchWikitabSearchArticles'
 import { fetchWikitabPageSummaryThumbnails } from './fetchWikitabPageSummary'
 import { formatActivityEditSummary } from './wikitabActivityEditSummary'
-import { articleUrl, EN_WIKI_HOST } from './wikitabHtml'
+import { articleUrl, WIKI_HOST } from './wikitabHtml'
 import { seedArticle, type WikitabSeedArticle } from './wikitabSeedArticle'
 import { formatWikitabEditRelativeTime } from './wikitabRelativeTime'
 
@@ -139,7 +139,7 @@ function wikiActionUrl(params: Record<string, string>): string {
     origin: '*',
     ...params,
   })
-  return `https://${EN_WIKI_HOST}/w/api.php?${query.toString()}`
+  return `https://${WIKI_HOST}/w/api.php?${query.toString()}`
 }
 
 function parseRevisionRow(revision: RevisionApiRow): RevisionRow | null {
@@ -238,17 +238,21 @@ async function ensureParentSizes(
   }
 }
 
-export function wikitabRevisionDiffUrl(title: string, revisionId: number): string {
+export function wikitabRevisionDiffUrl(
+  title: string,
+  revisionId: number,
+  host: string = WIKI_HOST,
+): string {
   const params = new URLSearchParams({
     title: title.replace(/ /g, '_'),
     diff: 'prev',
     oldid: String(revisionId),
   })
-  return `https://${EN_WIKI_HOST}/w/index.php?${params.toString()}`
+  return `https://${host}/w/index.php?${params.toString()}`
 }
 
-export function wikitabRevisionThankUrl(revisionId: number): string {
-  return `https://${EN_WIKI_HOST}/wiki/Special:Thanks/${revisionId}`
+export function wikitabRevisionThankUrl(revisionId: number, host: string = WIKI_HOST): string {
+  return `https://${host}/wiki/Special:Thanks/${revisionId}`
 }
 
 function editorDisplayName(user: string): string {
@@ -258,15 +262,15 @@ function editorDisplayName(user: string): string {
 function editorUrl(user: string, userid: number): string {
   const name = user.trim()
   if (!name) {
-    return `https://${EN_WIKI_HOST}/wiki/Special:Contributions`
+    return `https://${WIKI_HOST}/wiki/Special:Contributions`
   }
 
   const encoded = encodeURIComponent(name.replace(/ /g, '_'))
   if (userid === 0) {
-    return `https://${EN_WIKI_HOST}/wiki/Special:Contributions/${encoded}`
+    return `https://${WIKI_HOST}/wiki/Special:Contributions/${encoded}`
   }
 
-  return `https://${EN_WIKI_HOST}/wiki/User:${encoded}`
+  return `https://${WIKI_HOST}/wiki/User:${encoded}`
 }
 
 function isSystemEditSummary(doc: Document, text: string): boolean {

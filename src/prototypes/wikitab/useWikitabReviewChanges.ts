@@ -22,10 +22,16 @@ import {
   writeCachedReviewChanges,
 } from './data/reviewChangesCache'
 import { loadWikitabConfig, type WikitabSavedItem } from './data/wikitabConfig'
+import { isWikitabFeatureAvailable } from './data/wikitabLanguageSupport'
 import { articleTitleKey } from './data/wikitabHtml'
-import { cloneSavedItems, uniqueArticleSeedsFromSavedItems } from './data/savedCardHelpers'
+import {
+  cloneSavedItems,
+  savedArticleSeedFingerprintKey,
+  uniqueArticleSeedsFromSavedItems,
+} from './data/savedCardHelpers'
 import { WIKITAB_REVIEW_CHANGES_MODULE_SPEC } from './sections'
 import { useWikitabDismissedActivity } from './useWikitabDismissedActivity'
+import { WIKITAB_LANGUAGE } from './data/wikitabLanguage'
 
 const { initialCount, pageSize } = WIKITAB_REVIEW_CHANGES_MODULE_SPEC
 
@@ -40,7 +46,8 @@ function readReviewChangesSettings(): {
 } {
   const config = loadWikitabConfig()
   const showSavedEdits = config.reviewChangesShowSavedEdits
-  const showRecentRiskyEdits = config.reviewChangesShowRecentRiskyEdits
+  const showRecentRiskyEdits =
+    config.reviewChangesShowRecentRiskyEdits && isWikitabFeatureAvailable('review-changes-risky')
   return {
     showSavedEdits,
     showRecentRiskyEdits,
@@ -210,6 +217,7 @@ export function useWikitabReviewChanges() {
     if (fetchedAtOverride?.risky !== undefined) cacheFetchedAtRisky = fetchedAtOverride.risky
 
     writeCachedReviewChanges(
+      WIKITAB_LANGUAGE,
       cacheContext.day,
       cacheContext.savedFingerprint,
       cacheContext.settingsFingerprint,
@@ -443,7 +451,7 @@ export function useWikitabReviewChanges() {
     const day = utcDayKey()
     const articleSeeds = uniqueArticleSeedsFromSavedItems(savedItems)
     const savedFingerprint = buildReviewChangesSavedFingerprint(
-      articleSeeds.map((seed) => seed.titleKey),
+      articleSeeds.map(savedArticleSeedFingerprintKey),
     )
 
     // Same UTC day + settings with cards already painted — keep them even if
@@ -477,7 +485,7 @@ export function useWikitabReviewChanges() {
     savedItemsSnapshot = cloneSavedItems(savedItems)
 
     if (!force) {
-      const cached = readCachedReviewChanges(day, settingsFingerprint)
+      const cached = readCachedReviewChanges(WIKITAB_LANGUAGE, day, settingsFingerprint)
       // Empty cache is a miss — otherwise overlay-close non-force refresh can
       // re-settle an aborted force fetch onto a persisted [].
       if (cached && cached.items.length > 0) {

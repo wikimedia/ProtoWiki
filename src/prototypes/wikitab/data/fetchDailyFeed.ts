@@ -26,13 +26,14 @@ import type {
   WikitabFeedTrendingCardPayload,
 } from './wikitabCardPayloadTypes'
 import {
-  EN_WIKI_HOST,
+  WIKI_HOST,
   articleUrl,
   expandDykSnippetHtml,
   normalizeFeedHtml,
   primaryLinkTitle,
 } from './wikitabHtml'
 import { seedArticle } from './wikitabSeedArticle'
+import { WIKITAB_LANGUAGE } from './wikitabLanguage'
 
 interface FeedThumbnail {
   source?: string
@@ -103,7 +104,7 @@ function needsFeaturedFetch(enabled: ReadonlySet<WikitabSectionId>): boolean {
 
 function feedUrl(day: string): string {
   const [year, month, date] = day.split('-')
-  return `https://${EN_WIKI_HOST}/api/rest_v1/feed/featured/${year}/${month}/${date}`
+  return `https://${WIKI_HOST}/api/rest_v1/feed/featured/${year}/${month}/${date}`
 }
 
 function summaryUrl(summary: FeedSummary): string | undefined {
@@ -338,7 +339,7 @@ export function listStaleEnabledFeedSections(
   enabled: ReadonlySet<WikitabSectionId>,
 ): WikitabSectionId[] {
   return WIKITAB_SECTIONS.map((section) => section.id).filter(
-    (id) => enabled.has(id) && isFeedSliceStale(day, id),
+    (id) => enabled.has(id) && isFeedSliceStale(WIKITAB_LANGUAGE, day, id),
   )
 }
 
@@ -401,7 +402,7 @@ export async function refreshStaleFeedSections(
     const enabledFeatured = FEATURED_SECTION_IDS.filter((id) => enabled.has(id))
     const slices = await refetchFeaturedFeedSlices(day, enabledFeatured, signal)
     feed = { ...feed, ...slices }
-    persistPartialFeed(day, feed, Date.now(), enabledFeatured)
+    persistPartialFeed(WIKITAB_LANGUAGE, day, feed, Date.now(), enabledFeatured)
     onUpdate(feed)
   }
 
@@ -409,7 +410,7 @@ export async function refreshStaleFeedSections(
     if (signal?.aborted) break
     const items = await refetchSecondaryFeedSlice(sectionId, day, signal)
     feed = { ...feed, [sectionId]: items }
-    persistPartialFeed(day, feed, Date.now(), [sectionId])
+    persistPartialFeed(WIKITAB_LANGUAGE, day, feed, Date.now(), [sectionId])
     onUpdate(feed)
   }
 
@@ -432,7 +433,7 @@ export async function fetchWikitabSectionFeed(
         return pending.lastFeed[sectionId]
       }
 
-      const cachedSlice = readCachedSectionSlice(day, sectionId)
+      const cachedSlice = readCachedSectionSlice(WIKITAB_LANGUAGE, day, sectionId)
       if (cachedSlice) return cachedSlice
     } else {
       featuredPayloadByDay.delete(day)
@@ -442,7 +443,7 @@ export async function fetchWikitabSectionFeed(
   }
 
   if (!force) {
-    const cachedSlice = readCachedSectionSlice(day, sectionId)
+    const cachedSlice = readCachedSectionSlice(WIKITAB_LANGUAGE, day, sectionId)
     if (cachedSlice) return cachedSlice
   }
 
@@ -475,7 +476,7 @@ export function fetchDailyFeedProgressive(
   const day = utcDayKey()
   const enabled = resolveEnabledSections(options)
 
-  const cached = readCachedFeed(day)
+  const cached = readCachedFeed(WIKITAB_LANGUAGE, day)
   if (cached) {
     onUpdate(cached)
 
@@ -515,7 +516,7 @@ export function fetchDailyFeedProgressive(
     options,
   )
     .then((feed) => {
-      persistPartialFeed(day, feed)
+      persistPartialFeed(WIKITAB_LANGUAGE, day, feed)
       inFlight.delete(day)
       return feed
     })

@@ -28,6 +28,7 @@ import {
   type WikitabSectionId,
   type WikitabSectionSpec,
 } from './sections'
+import { WIKITAB_LANGUAGE } from './data/wikitabLanguage'
 
 export type WikitabFeedPhase = 'idle' | 'featured' | 'complete' | 'error'
 
@@ -110,7 +111,7 @@ export function useWikitabFeed(
 
       fetchedSections.value = new Set([...fetchedSections.value, id])
       patchFeedSlice(feed, id, items)
-      persistPartialFeed(utcDayKey(), feed.value!, Date.now(), [id])
+      persistPartialFeed(WIKITAB_LANGUAGE, utcDayKey(), feed.value!, Date.now(), [id])
     } finally {
       if (signal.aborted) return
       const next = new Set(loadingSectionIds.value)
@@ -130,7 +131,7 @@ export function useWikitabFeed(
     if (!feed.value) return
 
     const day = utcDayKey()
-    if (!isFeedSliceStale(day, sectionId)) return
+    if (!isFeedSliceStale(WIKITAB_LANGUAGE, day, sectionId)) return
 
     const enabled = currentEnabledSections()
     loadingSectionIds.value = new Set([...loadingSectionIds.value, sectionId])
@@ -165,13 +166,18 @@ export function useWikitabFeed(
     loadingSectionIds.value = new Set()
 
     const day = utcDayKey()
-    const cached = readCachedFeed(day)
+    const cached = readCachedFeed(WIKITAB_LANGUAGE, day)
     if (cached) {
       feed.value = cached
       const enabled = currentEnabledSections()
       const fetched = new Set<WikitabSectionId>()
       for (const id of ALL_SECTION_IDS) {
-        if (enabled.has(id) && (readCachedSectionSlice(day, id)?.length ?? 0) > 0) fetched.add(id)
+        if (
+          enabled.has(id) &&
+          (readCachedSectionSlice(WIKITAB_LANGUAGE, day, id)?.length ?? 0) > 0
+        ) {
+          fetched.add(id)
+        }
       }
       fetchedSections.value = fetched
       feedPhase.value = [...enabled].every((id) => fetched.has(id)) ? 'complete' : 'featured'
@@ -187,7 +193,7 @@ export function useWikitabFeed(
     if (!currentEnabledSections().has(sectionId)) return
 
     const day = utcDayKey()
-    clearCachedSectionSlice(day, sectionId)
+    clearCachedSectionSlice(WIKITAB_LANGUAGE, day, sectionId)
 
     const nextFetched = new Set(fetchedSections.value)
     nextFetched.delete(sectionId)

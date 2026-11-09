@@ -1,7 +1,7 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 import { fetchWikimedia } from '@/lib/fetchWikimedia'
 
-import { EN_WIKI_HOST } from './wikitabHtml'
+import { WIKI_HOST } from './wikitabHtml'
 
 /** Action API batch size for pageprops lookups. */
 const PAGEIDS_PER_FETCH = 50
@@ -36,7 +36,7 @@ export async function filterDisambiguationPageIds(
     })
 
     const response = await fetchWikimedia(
-      `https://${EN_WIKI_HOST}/w/api.php?${params.toString()}`,
+      `https://${WIKI_HOST}/w/api.php?${params.toString()}`,
       {
         signal: options.signal,
         headers: wikimediaApiFetchHeaders('wikitab-search'),

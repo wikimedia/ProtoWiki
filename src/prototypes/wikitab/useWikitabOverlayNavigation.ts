@@ -1,7 +1,12 @@
 import { computed, ref, watch, type ComputedRef, type Ref } from 'vue'
 import { useRoute, useRouter, type LocationQuery } from 'vue-router'
 
-import { WIKITAB_HOME_MODULE_ORDER, type WikitabModuleId } from './sections'
+import { isWikitabModuleAvailable } from './data/wikitabLanguageSupport'
+import {
+  WIKITAB_DISCUSSIONS_MODULE_ID,
+  WIKITAB_HOME_MODULE_ORDER,
+  type WikitabModuleId,
+} from './sections'
 import { snapshotWikitabOverlayScrollY } from './useWikitabOverlayScrollLock'
 
 /** Query key for the active full-screen overlay. */
@@ -25,8 +30,22 @@ export const WIKITAB_SCREEN_VALUES = [
 
 export type WikitabScreen = (typeof WIKITAB_SCREEN_VALUES)[number]
 
-const VALID_SCREENS = new Set<string>(WIKITAB_SCREEN_VALUES)
 const MODULE_SCREENS = new Set<string>(WIKITAB_HOME_MODULE_ORDER)
+
+/**
+ * Screens this wiki can show. A deep link to a module the language doesn't have
+ * (`?screen=news` on frwiki) — or to its settings — is treated as unknown and
+ * lands on home, instead of opening an empty or mis-parsed module screen.
+ */
+function isScreenAvailable(screen: WikitabScreen): boolean {
+  if (screen === 'active-discussions-settings') {
+    return isWikitabModuleAvailable(WIKITAB_DISCUSSIONS_MODULE_ID)
+  }
+  if (MODULE_SCREENS.has(screen)) return isWikitabModuleAvailable(screen as WikitabModuleId)
+  return true
+}
+
+const VALID_SCREENS = new Set<string>(WIKITAB_SCREEN_VALUES.filter(isScreenAvailable))
 
 function isModuleId(value: string): value is WikitabModuleId {
   return MODULE_SCREENS.has(value)

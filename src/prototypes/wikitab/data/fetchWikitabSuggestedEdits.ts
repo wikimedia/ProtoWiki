@@ -1,6 +1,8 @@
 import { pickSavedArticleSeeds } from './pickSavedArticleSeeds'
 import { uniqueArticleSeedsFromSavedItems } from './savedCardHelpers'
 import type { WikitabSavedItem } from './wikitabConfig'
+import { WIKITAB_LANGUAGE } from './wikitabLanguage'
+import { resolveSeedsForWiki } from './resolveSeedsForWiki'
 import {
   contributeItemToCard,
   createContributeFeedFromSeeds,
@@ -29,16 +31,19 @@ export class SuggestedEditsFeed {
   }
 }
 
-export function createSuggestedEditsFeed(
+export async function createSuggestedEditsFeed(
   savedItems: readonly WikitabSavedItem[],
   day: string,
   signal?: AbortSignal,
   seenPageids?: Iterable<number>,
-): SuggestedEditsFeed | null {
-  void signal
-
+): Promise<SuggestedEditsFeed | null> {
   const articleSeeds = uniqueArticleSeedsFromSavedItems(savedItems)
-  const seeds = pickSavedArticleSeeds(articleSeeds, day, MAX_SEEDS, 'suggested-edits')
+  // Seeds saved on another wiki are swapped for this wiki's article (or dropped).
+  const seeds = await resolveSeedsForWiki(
+    pickSavedArticleSeeds(articleSeeds, day, MAX_SEEDS, 'suggested-edits'),
+    WIKITAB_LANGUAGE,
+    signal,
+  )
   if (!seeds.length) return null
 
   const contributeSeeds: WikitabContributeSeed[] = seeds.map((seed) => ({

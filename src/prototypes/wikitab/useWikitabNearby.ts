@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { fetchWikitabNearbyArticles } from './data/fetchWikitabNearby'
 import {
   buildNearbyCoordKey,
+  clearAllCachedNearby,
   clearCachedNearby,
   isCacheBypassed,
   isNearbyCacheFresh,
@@ -16,6 +17,7 @@ import {
   persistNearbyLastCoord,
   type WikitabNearbyLastCoord,
 } from './data/wikitabConfig'
+import { WIKITAB_LANGUAGE } from './data/wikitabLanguage'
 import {
   WIKITAB_NEARBY_MODULE_SPEC,
   type WikitabCardData,
@@ -87,7 +89,7 @@ export function useWikitabNearby() {
   const initialStoredCoord = readStoredCoord()
   const initialCached =
     initialStoredCoord && !isCacheBypassed()
-      ? readCachedNearby(initialStoredCoord)
+      ? readCachedNearby(WIKITAB_LANGUAGE, initialStoredCoord)
       : null
 
   const items = ref<WikitabCardData[]>(initialCached?.items ?? [])
@@ -128,7 +130,7 @@ export function useWikitabNearby() {
   function persistItems(cards: WikitabCardData[] = items.value): void {
     if (!activeCoord) return
     const fetchedAt = cacheFetchedAt ?? Date.now()
-    writeCachedNearby(activeCoord, cards, false, fetchedAt)
+    writeCachedNearby(WIKITAB_LANGUAGE, activeCoord, cards, false, fetchedAt)
   }
 
   function setPending(key: string, loadingState: WikitabCardLoading): void {
@@ -307,7 +309,7 @@ export function useWikitabNearby() {
 
     if (force) {
       controller?.abort()
-      clearCachedNearby()
+      clearCachedNearby(WIKITAB_LANGUAGE)
       cacheFetchedAt = null
       loadedCoordKey = null
       items.value = []
@@ -330,14 +332,14 @@ export function useWikitabNearby() {
     if (loadedCoordKey === coordKey && items.value.length > 0) {
       error.value = null
       consentPhase.value = 'ready'
-      const cached = readCachedNearby(stored)
+      const cached = readCachedNearby(WIKITAB_LANGUAGE, stored)
       if (cached && !isNearbyCacheFresh(cached.fetchedAt)) {
         scheduleStaleRefresh(stored)
       }
       return
     }
 
-    const cached = readCachedNearby(stored)
+    const cached = readCachedNearby(WIKITAB_LANGUAGE, stored)
     if (cached?.items.length) {
       paintFromCache(cached, stored)
       // Complete cards from storage — do not re-backfill. Network only if TTL expired.
@@ -372,7 +374,7 @@ export function useWikitabNearby() {
         updatedAt: Date.now(),
       }
       persistNearbyLastCoord(stored)
-      clearCachedNearby()
+      clearCachedNearby(WIKITAB_LANGUAGE)
       cacheFetchedAt = null
       loadedCoordKey = null
       await fetchArticlesForCoord(stored, signal)
@@ -381,7 +383,7 @@ export function useWikitabNearby() {
 
       if (cause instanceof GeolocationPositionError && cause.code === cause.PERMISSION_DENIED) {
         persistNearbyLastCoord(null)
-        clearCachedNearby()
+        clearAllCachedNearby()
         loadedCoordKey = null
         activeCoord = null
       }

@@ -12,7 +12,7 @@ import {
   type WikitabSearchActivityItem,
 } from './fetchWikitabSearchActivity'
 import { fetchWikitabPageSummaryThumbnails } from './fetchWikitabPageSummary'
-import { articleTitleKey, articleUrl, EN_WIKI_HOST } from './wikitabHtml'
+import { articleTitleKey, articleUrl, WIKI_HOST } from './wikitabHtml'
 
 const RC_LIMIT = 50
 
@@ -36,7 +36,7 @@ function wikiActionUrl(params: Record<string, string>): string {
     origin: '*',
     ...params,
   })
-  return `https://${EN_WIKI_HOST}/w/api.php?${query.toString()}`
+  return `https://${WIKI_HOST}/w/api.php?${query.toString()}`
 }
 
 function userKey(user: string): string {
@@ -50,15 +50,15 @@ function editorDisplayName(user: string): string {
 function editorUrl(user: string, userid: number): string {
   const name = user.trim()
   if (!name) {
-    return `https://${EN_WIKI_HOST}/wiki/Special:Contributions`
+    return `https://${WIKI_HOST}/wiki/Special:Contributions`
   }
 
   const encoded = encodeURIComponent(name.replace(/ /g, '_'))
   if (userid === 0) {
-    return `https://${EN_WIKI_HOST}/wiki/Special:Contributions/${encoded}`
+    return `https://${WIKI_HOST}/wiki/Special:Contributions/${encoded}`
   }
 
-  return `https://${EN_WIKI_HOST}/wiki/User:${encoded}`
+  return `https://${WIKI_HOST}/wiki/User:${encoded}`
 }
 
 function mapRecentChangeRow(row: RecentChangeRow): WikitabSearchActivityItem | null {

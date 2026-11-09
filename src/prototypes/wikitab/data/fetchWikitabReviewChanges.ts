@@ -12,7 +12,9 @@ import { pickSavedArticleSeeds } from './pickSavedArticleSeeds'
 import { uniqueArticleSeedsFromSavedItems, type WikitabSavedArticleSeed } from './savedCardHelpers'
 import type { WikitabSavedItem } from './wikitabConfig'
 import { savedItemThumbnailUrl } from './wikitabSavedItems'
-import { articleTitleKey, EN_WIKI_HOST } from './wikitabHtml'
+import { articleTitleKey, WIKI_HOST } from './wikitabHtml'
+import { WIKITAB_LANGUAGE } from './wikitabLanguage'
+import { resolveSeedsForWiki } from './resolveSeedsForWiki'
 
 /** Cap on unique saved-article seeds (one tip revision each when saved-only). */
 export const REVIEW_CHANGES_MAX_SEEDS = 6
@@ -56,7 +58,7 @@ async function resolveTitlesForActivity(
     titles: seeds.map((seed) => seed.title).join('|'),
   })
 
-  const response = await fetchWikimedia(`https://${EN_WIKI_HOST}/w/api.php?${query.toString()}`, {
+  const response = await fetchWikimedia(`https://${WIKI_HOST}/w/api.php?${query.toString()}`, {
     signal,
     headers: wikimediaApiFetchHeaders('wikitab-review-changes'),
   })
@@ -131,11 +133,18 @@ export async function createSavedArticleReviewChangesFeed(
   seenRevids?: Iterable<number>,
 ): Promise<ReviewChangesFeed | null> {
   const articleSeeds = uniqueArticleSeedsFromSavedItems(savedItems)
-  const seeds = pickSavedArticleSeeds(articleSeeds, day, MAX_SEEDS, 'review-changes')
+  // Seeds saved on another wiki are swapped for this wiki's article (or dropped).
+  const seeds = await resolveSeedsForWiki(
+    pickSavedArticleSeeds(articleSeeds, day, MAX_SEEDS, 'review-changes'),
+    WIKITAB_LANGUAGE,
+    signal,
+  )
   if (!seeds.length) return null
 
   const thumbnailByTitleKey = new Map<string, string>()
   for (const saved of savedItems) {
+    // Saved thumbnails only describe the same wiki's article.
+    if (saved.lang !== WIKITAB_LANGUAGE) continue
     const url = normalizeThumbnailUrl(savedItemThumbnailUrl(saved))
     if (url && saved.articleTitleKey) {
       thumbnailByTitleKey.set(saved.articleTitleKey, url)

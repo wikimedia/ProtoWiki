@@ -25,6 +25,7 @@ import {
   wikitabCardWideLinkAriaLabel,
 } from './data/wikitabCardLinkLabel'
 import { WIKITAB_SUPPORTING_ICON_TEXT_LEADING } from './data/wikitabSupportingIconText'
+import { WIKITAB_LANGUAGE, wikitabDir } from './data/wikitabLanguage'
 
 const props = withDefaults(
   defineProps<{
@@ -39,6 +40,8 @@ const props = withDefaults(
   thumbnailLayout?: WikitabCardThumbnailLayout
   card?: WikitabCardData
   supportingIcon?: Icon
+  /** Icon ahead of `card.supportingTextEnd` (e.g. the language icon on saved cards from another wiki). */
+  supportingEndIcon?: Icon
   /** Codex Card `icon` prop (word / quote when no thumbnail column). */
   icon?: Icon
   /** `true` — whole-card skeleton. `{ description: true }` — only those fields skeleton. */
@@ -47,6 +50,11 @@ const props = withDefaults(
   chips?: WikitabCardChip[]
   /** Overflow ⋯ menu items (`save` / `save-article` / `hide` emit legacy events). */
   menu?: WikitabCardMenuItem[]
+  /**
+   * Language of the card's wiki text (title, description, supporting HTML).
+   * Defaults to this page load's wiki; saved cards pass the wiki they came from.
+   */
+  contentLang?: string
   }>(),
   {
     thumbnailSize: WIKITAB_CARD_THUMBNAIL_SIZE_DEFAULT,
@@ -62,6 +70,15 @@ const emit = defineEmits<{
 }>()
 
 const selection = ref<string | number | null>(null)
+
+/**
+ * `lang` + `dir` on the whole card, so a right-to-left wiki's card mirrors (Codex
+ * bidi CSS flips the thumbnail, text and menu). Module chrome around it stays LTR.
+ */
+const contentAttrs = computed(() => {
+  const lang = props.contentLang ?? WIKITAB_LANGUAGE
+  return { lang, dir: wikitabDir(lang) }
+})
 
 const articleTitle = computed(() => wikitabCardMenuArticleTitle(props.card))
 const wideLinkAriaLabel = computed(() =>
@@ -214,6 +231,7 @@ const textIsClamped = computed(
   <div
     v-else
     class="wikitab-card"
+    v-bind="contentAttrs"
     :aria-busy="isLoading || undefined"
     :class="{
       'wikitab-card--full-hook': !textIsClamped,
@@ -249,7 +267,8 @@ const textIsClamped = computed(
     />
 
     <div v-if="showCardMenu" class="wikitab-card__menu">
-      <div class="wikitab-card__menu-surface">
+      <!-- Positioned with the card (mirrors on RTL); its items are Wikitab UI, English / LTR. -->
+      <div class="wikitab-card__menu-surface" lang="en" dir="ltr">
         <CdxMenuButton
           v-model:selected="selection"
           class="wikitab-card__menu-button"
@@ -341,16 +360,21 @@ const textIsClamped = computed(
             ><CdxIcon v-if="supportingIcon" :icon="supportingIcon" size="x-small" /><span
               class="wikitab-card__supporting-label"
               ><template v-if="supportingIcon">{{ WIKITAB_SUPPORTING_ICON_TEXT_LEADING }}</template
-              ><!-- eslint-disable-next-line vue/no-v-html --><span v-html="card.supportingHtml" /></span
+              ><!-- eslint-disable-next-line vue/no-v-html --><span
+                v-html="card.supportingHtml"
+            /></span
           ></span>
           <span
             v-if="loadingFlags.supportingEnd"
             class="wikitab-card__skeleton-line wikitab-card__skeleton-end"
             aria-hidden="true"
           />
-          <span v-else-if="card.supportingTextEnd" class="wikitab-card__supporting-end">{{
-            card.supportingTextEnd
-          }}</span>
+          <span v-else-if="card.supportingTextEnd" class="wikitab-card__supporting-end"
+            ><CdxIcon v-if="supportingEndIcon" :icon="supportingEndIcon" size="x-small" /><template
+              v-if="supportingEndIcon"
+              >{{ WIKITAB_SUPPORTING_ICON_TEXT_LEADING }}</template
+            >{{ card.supportingTextEnd }}</span
+          >
         </span>
       </template>
       <template v-else-if="card?.supportingText || hasSupportingEnd" #supporting-text>
@@ -371,7 +395,12 @@ const textIsClamped = computed(
               class="wikitab-card__skeleton-line wikitab-card__skeleton-end"
               aria-hidden="true"
             />
-            <span v-else class="wikitab-card__supporting-end">{{ card.supportingTextEnd }}</span>
+            <span v-else class="wikitab-card__supporting-end"
+              ><CdxIcon v-if="supportingEndIcon" :icon="supportingEndIcon" size="x-small" /><template
+                v-if="supportingEndIcon"
+                >{{ WIKITAB_SUPPORTING_ICON_TEXT_LEADING }}</template
+              >{{ card.supportingTextEnd }}</span
+            >
           </template>
           <template v-else-if="card.supportingText">
             <span class="wikitab-card__supporting-start"
@@ -832,6 +861,10 @@ const textIsClamped = computed(
   flex-shrink: 0;
 }
 
+.wikitab-card__supporting-end > :deep(.cdx-icon) {
+  vertical-align: middle;
+}
+
 /* 12×12 — scoped so previews work; `display: inline` ignores width/height and blows up SVGs. */
 .wikitab-card__supporting.wikitab-supporting-icon-row :deep(.cdx-icon) {
   display: inline-flex;
@@ -902,8 +935,34 @@ const textIsClamped = computed(
   text-decoration: underline;
 }
 
+/*
+ * Right-to-left cards (`dir="rtl"` on the root). Flex rows already mirror; ProtoWiki
+ * loads Codex's LTR stylesheet (its bidi build can't nest an RTL subtree inside an
+ * LTR page), so swap the few physical margins Codex sets — the same swap its
+ * `codex.style-rtl.css` makes.
+ */
+.wikitab-card[dir='rtl'] :deep(.cdx-card__thumbnail.cdx-thumbnail) {
+  margin-right: 0;
+  margin-left: var(--spacing-75);
+}
+
+.wikitab-card[dir='rtl'] :deep(.cdx-card--thumbnail-position-inline-end .cdx-card__thumbnail.cdx-thumbnail) {
+  margin-left: 0;
+  margin-right: var(--spacing-75);
+}
+
+.wikitab-card[dir='rtl'] :deep(.cdx-card .cdx-card__icon) {
+  margin-right: 0;
+  margin-left: var(--spacing-50);
+}
+
 .wikitab-card__description-plain {
   margin: 0;
+}
+
+/* Short descriptions are lowercase on many wikis (fr: "acteur franco-espagnol"). */
+.wikitab-card__description-plain::first-letter {
+  text-transform: uppercase;
 }
 
 /*

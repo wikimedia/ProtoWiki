@@ -4,7 +4,7 @@ import type { WikitabCardData } from '../sections'
 import { feedBirthsPayloadToCardData } from './wikitabCardPayloadMappers'
 import type { WikitabFeedBirthsCardPayload } from './wikitabCardPayloadTypes'
 import { WIKITAB_FEED_CARD_THUMB_WIDTH, wikimediaThumbnailAtLeast } from './wikimediaThumbnailUrl'
-import { EN_WIKI_HOST, articleUrl } from './wikitabHtml'
+import { WIKI_HOST, articleUrl } from './wikitabHtml'
 
 interface FeedThumbnail {
   source?: string
@@ -71,7 +71,7 @@ function mapBirthItem(
 
 function birthsUrl(day: string): string {
   const [, month, date] = day.split('-')
-  return `https://${EN_WIKI_HOST}/api/rest_v1/feed/onthisday/births/${month}/${date}`
+  return `https://${WIKI_HOST}/api/rest_v1/feed/onthisday/births/${month}/${date}`
 }
 
 /** Wikifeeds births for today's month/day (~294 items, newest first). */

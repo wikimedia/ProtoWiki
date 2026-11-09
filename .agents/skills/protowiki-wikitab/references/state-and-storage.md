@@ -34,10 +34,12 @@ Current fields:
 - `hiddenSectionIds` — section ids hidden from the home feed and skipped for
   fetching (`useWikitabHiddenSections.ts`); defaults to
   `WIKITAB_DEFAULT_HIDDEN_MODULE_IDS` (Saved off)
-- `hiddenArticleTitleKeys` — normalized article titles hidden from Trending on
-  the home feed (`useWikitabHiddenArticles.ts`)
-- `dismissedActivityRevids` — Activity-tab revision ids permanently dismissed
-  via the card ellipsis menu (`useWikitabDismissedActivity.ts`)
+- `hiddenArticleTitleKeys` — `{ [lang]: titleKey[] }`, normalized article titles
+  hidden from the home feed, per wiki (`useWikitabHiddenArticles.ts`). A legacy
+  bare array normalizes to `{ en: … }`.
+- `dismissedActivityRevids` — `{ [lang]: revid[] }`, Activity-tab revision ids
+  permanently dismissed via the card ellipsis menu, per wiki — revision ids are
+  per-wiki (`useWikitabDismissedActivity.ts`). Legacy array → `{ en: … }`.
 - `reviewChangesShowSavedEdits` / `reviewChangesShowRecentRiskyEdits` — Recent
   edits home module feed sources (both default on); section **Configure** menu
   → full-screen panel (`useWikitabReviewChangesSettings.ts`)
@@ -47,14 +49,17 @@ Current fields:
 - `savedItems` — typed saved entries (`WikitabSavedItem` discriminated union in
   `data/wikitabSavedItems.ts`): **article**, **snippet**, **word**, **quote**,
   **suggestion**, **change**, **discussion**, **image**. Each row carries
-  `primitive` and optional `seedArticle`. Most recently saved first (`savedAt`).
+  `primitive`, `lang` (the wiki it was saved on — inferred from its URL, else
+  `en`, for older rows) and optional `seedArticle`. Identity is `lang|id`
+  (`savedItemKey`). Most recently saved first (`savedAt`).
   No cross-source dedup — each source keeps its own stable id. Composable:
   `useWikitabSavedArticles.ts`. Legacy `type: 'list'` / `list:{titleKey}` rows
   migrate to **article** / `search:{titleKey}` in `wikitabStorageMigration.ts`.
 
 **Article seeds for recommendations** — Daily reads, Help wanted, Recent edits,
 and Active discussions (talk-page source) seed from items with `seedArticle` set
-(`uniqueArticleSeedsFromSavedItems` in `savedCardHelpers.ts`). Word, Quote,
+(`uniqueArticleSeedsFromSavedItems` in `savedCardHelpers.ts`), resolved to the
+current wiki by `resolveSeedsForWiki.ts` (Wikidata sitelinks). Word, Quote,
 Discussion, Change, and Image saves typically have no article seed (or a
 non-mainspace one) and do not feed those modules.
 
@@ -74,10 +79,13 @@ What is unified:
 
 When you add a cache module: define `CACHE_KEY` next to its schema, add a
 registry row (`whitelist: true` unless the payload lives in config), and prefer
-the helpers for I/O. Migration whitelist, `evictWikitabCaches()`, and the
+the helpers for I/O. **Every cache is per wiki language**: read/write functions
+take `lang` first and store under `wikitabCacheKey(CACHE_KEY, lang)`
+(`wikitab-feed-cache-v22:fr`); callers pass `WIKITAB_LANGUAGE`. The migration
+sweep keeps only `base:<lang>` keys (`isWikitabCurrentStorageKey`) — a bare `base` is pre-language and dropped. Migration whitelist, `evictWikitabCaches()`, and the
 playground Caches tab all read the registry — do not maintain a second key list.
 
-Nearby cards stay in `WikitabConfig.nearbyCardsCache` (coord + consent); only
+Nearby cards stay in `WikitabConfig.nearbyCardsCache[lang]` (coord + consent); only
 legacy `wikitab-nearby-cache-v*` keys are eviction prefixes.
 
 ## Cache-only feed storage (`wikitab-feed-cache-v*`)

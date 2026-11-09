@@ -1,16 +1,29 @@
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import {
   loadWikitabConfig,
   patchWikitabConfig,
   WIKITAB_CONFIG_STORAGE_KEY,
 } from './data/wikitabConfig'
-import type { WikitabModuleId } from './sections'
+import { isWikitabModuleAvailable } from './data/wikitabLanguageSupport'
+import { WIKITAB_HOME_MODULE_ORDER, type WikitabModuleId } from './sections'
+
+/** Modules the current wiki has no data for — always hidden, never persisted. */
+const UNAVAILABLE_MODULE_IDS = WIKITAB_HOME_MODULE_ORDER.filter(
+  (id) => !isWikitabModuleAvailable(id),
+)
 
 export function useWikitabHiddenSections() {
-  const hiddenIds = ref<WikitabModuleId[]>(loadWikitabConfig().hiddenSectionIds)
+  /** What the reader chose in Modules — kept intact across language switches. */
+  const storedHiddenIds = ref<WikitabModuleId[]>(loadWikitabConfig().hiddenSectionIds)
+
+  /** Stored choice plus modules the current language can't show. */
+  const hiddenIds = computed<WikitabModuleId[]>(() => [
+    ...storedHiddenIds.value,
+    ...UNAVAILABLE_MODULE_IDS.filter((id) => !storedHiddenIds.value.includes(id)),
+  ])
 
   function syncFromStorage(): void {
-    hiddenIds.value = loadWikitabConfig().hiddenSectionIds
+    storedHiddenIds.value = loadWikitabConfig().hiddenSectionIds
   }
 
   function isHidden(id: WikitabModuleId): boolean {
@@ -18,17 +31,17 @@ export function useWikitabHiddenSections() {
   }
 
   function hideSection(id: WikitabModuleId): void {
-    if (isHidden(id)) return
+    if (storedHiddenIds.value.includes(id)) return
 
-    hiddenIds.value = [...hiddenIds.value, id]
-    patchWikitabConfig({ hiddenSectionIds: hiddenIds.value })
+    storedHiddenIds.value = [...storedHiddenIds.value, id]
+    patchWikitabConfig({ hiddenSectionIds: storedHiddenIds.value })
   }
 
   function showSection(id: WikitabModuleId): void {
-    if (!isHidden(id)) return
+    if (!storedHiddenIds.value.includes(id)) return
 
-    hiddenIds.value = hiddenIds.value.filter((hiddenId) => hiddenId !== id)
-    patchWikitabConfig({ hiddenSectionIds: hiddenIds.value })
+    storedHiddenIds.value = storedHiddenIds.value.filter((hiddenId) => hiddenId !== id)
+    patchWikitabConfig({ hiddenSectionIds: storedHiddenIds.value })
   }
 
   function toggleSection(id: WikitabModuleId): void {

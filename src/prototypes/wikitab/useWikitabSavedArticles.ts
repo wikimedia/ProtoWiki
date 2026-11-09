@@ -1,4 +1,5 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { wikiHostFromLang } from '@/config'
 import { mapWithConcurrency } from '@/lib/mapWithConcurrency'
 
 import {
@@ -29,7 +30,8 @@ import {
   type WikitabSavedArticleItem,
   type WikitabSavedItem,
 } from './data/wikitabConfig'
-import { cloneSavedItems } from './data/wikitabSavedItems'
+import { cloneSavedItems, savedItemKey, savedItemKeyFor } from './data/wikitabSavedItems'
+import { WIKITAB_LANGUAGE } from './data/wikitabLanguage'
 import type { WikitabCardLoading } from './sections'
 
 export interface SaveSearchArticleInput {
@@ -80,7 +82,7 @@ export async function enrichSavedModuleItems(
   onItem?: (saved: WikitabSavedItem) => void,
 ): Promise<WikitabSavedItem[]> {
   const enriched = savedModuleDisplayItems(items)
-  const indexById = new Map(enriched.map((saved, index) => [saved.id, index]))
+  const indexById = new Map(enriched.map((saved, index) => [savedItemKey(saved), index]))
   const pending = enriched.filter(
     (saved): saved is WikitabSavedArticleItem =>
       saved.type === 'article' && savedArticleNeedsSummary(saved),
@@ -91,12 +93,14 @@ export async function enrichSavedModuleItems(
     pending,
     2,
     async (saved) => {
+      // Summaries come from the wiki the item was saved on, not this page's.
       const summary = await fetchWikitabPageSummary(
         saved.articleTitle,
         signal,
         'wikitab-saved-module',
+        wikiHostFromLang(saved.lang),
       )
-      const index = indexById.get(saved.id)
+      const index = indexById.get(savedItemKey(saved))
       if (index === undefined) return
 
       const next: WikitabSavedArticleItem = {
@@ -118,11 +122,11 @@ function mergeMetadataIntoSavedItems(
   enriched: WikitabSavedItem[],
   persistSavedItems: (items: WikitabSavedItem[], rollback: WikitabSavedItem[]) => boolean,
 ): void {
-  const patchById = new Map(enriched.map((saved) => [saved.id, saved]))
+  const patchById = new Map(enriched.map((saved) => [savedItemKey(saved), saved]))
   let changed = false
 
   const next = loadWikitabConfig().savedItems.map((saved) => {
-    const patch = patchById.get(saved.id)
+    const patch = patchById.get(savedItemKey(saved))
     if (!patch || saved.type !== 'article' || patch.type !== 'article') return saved
 
     const description =
@@ -153,7 +157,8 @@ function prependSavedItem(
   items: WikitabSavedItem[],
   next: WikitabSavedItem,
 ): WikitabSavedItem[] {
-  const existing = items.find((saved) => saved.id === next.id)
+  const nextKey = savedItemKey(next)
+  const existing = items.find((saved) => savedItemKey(saved) === nextKey)
   if (existing) {
     next.savedAt = Date.now()
     if (next.type === 'article' && existing.type === 'article') {
@@ -171,7 +176,7 @@ function prependSavedItem(
     }
   }
 
-  return [next, ...items.filter((saved) => saved.id !== next.id)]
+  return [next, ...items.filter((saved) => savedItemKey(saved) !== nextKey)]
 }
 
 export function useWikitabSavedArticles() {
@@ -182,7 +187,8 @@ export function useWikitabSavedArticles() {
 
   const savedItems = ref<WikitabSavedItem[]>(cloneSavedItems(initialConfig.savedItems))
 
-  const savedIdSet = computed(() => new Set(savedItems.value.map((saved) => saved.id)))
+  /** `lang|id` — ids are only unique within one wiki (see `savedItemKey`). */
+  const savedIdSet = computed(() => new Set(savedItems.value.map(savedItemKey)))
 
   function syncFromStorage(items: WikitabSavedItem[]): void {
     savedItems.value = cloneSavedItems(items)
@@ -215,13 +221,14 @@ export function useWikitabSavedArticles() {
     })
   }
 
-  function isSaved(id: string): boolean {
-    return id ? savedIdSet.value.has(id) : false
+  /** Saved on `lang`'s wiki — defaults to this page load's wiki, where cards come from. */
+  function isSaved(id: string, lang: string = WIKITAB_LANGUAGE): boolean {
+    return id ? savedIdSet.value.has(savedItemKeyFor(id, lang)) : false
   }
 
   /** @deprecated Use isSaved */
-  function isCardSaved(id: string): boolean {
-    return isSaved(id)
+  function isCardSaved(id: string, lang: string = WIKITAB_LANGUAGE): boolean {
+    return isSaved(id, lang)
   }
 
   function saveItem(next: WikitabSavedItem): void {
@@ -263,11 +270,12 @@ export function useWikitabSavedArticles() {
     saveItem(next)
   }
 
-  function unsaveItem(id: string): void {
-    if (!id || !savedIdSet.value.has(id)) return
+  function unsaveItem(id: string, lang: string = WIKITAB_LANGUAGE): void {
+    const key = savedItemKeyFor(id, lang)
+    if (!id || !savedIdSet.value.has(key)) return
 
     const rollback = cloneSavedItems(savedItems.value)
-    const updated = savedItems.value.filter((saved) => saved.id !== id)
+    const updated = savedItems.value.filter((saved) => savedItemKey(saved) !== key)
     savedItems.value = updated
 
     if (!persistSavedItems(updated, rollback)) return

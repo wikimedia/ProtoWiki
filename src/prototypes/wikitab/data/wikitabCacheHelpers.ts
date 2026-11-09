@@ -77,3 +77,22 @@ export function removeCacheJson(key: string): void {
     // ignore
   }
 }
+
+/**
+ * Per-language storage key — `wikitab-feed-cache-v22:fr`.
+ *
+ * Every Wikitab cache holds one wiki's content, so the key always names the
+ * wiki's language explicitly. A tab still on the old language (or a late write
+ * just before a language-switch reload) then only ever touches its own entry.
+ */
+export function wikitabCacheKey(base: string, lang: string): string {
+  return `${base}:${lang}`
+}
+
+/**
+ * True for a per-language `base:<lang>` key. The bare `base` key predates the
+ * language setting — nothing reads it any more, so it doesn't count.
+ */
+export function isWikitabCacheKeyFor(key: string, base: string): boolean {
+  return key.startsWith(`${base}:`)
+}

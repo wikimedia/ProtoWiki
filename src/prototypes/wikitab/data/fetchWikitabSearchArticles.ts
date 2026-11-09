@@ -6,7 +6,7 @@ import { fetchWikitabSearch, type WikitabSearchResult } from './fetchWikitabSear
 import { fetchWikitabPageSummary } from './fetchWikitabPageSummary'
 import { filterDisambiguationPageIds } from './filterDisambiguationPages'
 import { formatSearchArticleRelationRationaleHtml } from './formatSearchArticleRelation'
-import { EN_WIKI_HOST, articleUrl } from './wikitabHtml'
+import { WIKI_HOST, articleUrl } from './wikitabHtml'
 
 const GENERATOR_BATCH_SIZE = 20
 const INITIAL_MORELIKE_BATCH_SIZE = 5
@@ -194,7 +194,7 @@ async function fetchActionApiPages(
     ...params,
   })
 
-  const response = await fetchWikimedia(`https://${EN_WIKI_HOST}/w/api.php?${query.toString()}`, {
+  const response = await fetchWikimedia(`https://${WIKI_HOST}/w/api.php?${query.toString()}`, {
     signal,
     headers: wikimediaApiFetchHeaders('wikitab-search-results'),
   })

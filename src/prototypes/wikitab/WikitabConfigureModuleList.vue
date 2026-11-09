@@ -4,6 +4,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { CdxButton, CdxIcon, CdxToggleSwitch } from '@wikimedia/codex'
 import { cdxIconDraggableVertical, cdxIconPushPin } from '@wikimedia/codex-icons'
 
+import { isWikitabModuleAvailable } from './data/wikitabLanguageSupport'
 import { wikitabModuleHeading, type WikitabModuleId } from './sections'
 
 /**
@@ -33,11 +34,14 @@ const emit = defineEmits<{
   unpin: [id: WikitabModuleId]
 }>()
 
-const pinnedOrder = computed(() => [...props.pinnedIds].reverse())
+/** Modules the current language can't show aren't listed (see `wikitabLanguageSupport.ts`). */
+const pinnedOrder = computed(() =>
+  [...props.pinnedIds].reverse().filter((id) => isWikitabModuleAvailable(id)),
+)
 
 function unpinnedOrder(): WikitabModuleId[] {
   const pinned = new Set(props.pinnedIds)
-  return props.order.filter((id) => !pinned.has(id))
+  return props.order.filter((id) => !pinned.has(id) && isWikitabModuleAvailable(id))
 }
 
 const listEl = ref<HTMLElement | null>(null)
@@ -54,12 +58,15 @@ watch(
 
 /**
  * Drops the reordered unpinned rows back into the slots unpinned modules held
- * in the full order, so each pinned module keeps the slot it returns to on unpin.
+ * in the full order, so each pinned module keeps the slot it returns to on unpin
+ * (and modules unlisted for this language keep theirs for when it changes back).
  */
 function mergeUnpinnedOrder(unpinnedNext: readonly WikitabModuleId[]): WikitabModuleId[] {
   const pinned = new Set(props.pinnedIds)
   const queue = [...unpinnedNext]
-  return props.order.map((id) => (pinned.has(id) ? id : queue.shift()!))
+  return props.order.map((id) =>
+    pinned.has(id) || !isWikitabModuleAvailable(id) ? id : queue.shift()!,
+  )
 }
 
 function onToggle(id: WikitabModuleId, visible: boolean): void {
@@ -193,6 +200,7 @@ onBeforeUnmount(() => setGrabbingCursor(false))
         v-for="moduleId in pinnedOrder"
         :key="moduleId"
         class="wikitab-configure-module-list__item"
+        :class="{ 'wikitab-configure-module-list__item--off': isHidden(moduleId) }"
         :data-module-id="moduleId"
       >
         <CdxButton
@@ -223,6 +231,7 @@ onBeforeUnmount(() => setGrabbingCursor(false))
         class="wikitab-configure-module-list__item"
         :class="{
           'wikitab-configure-module-list__item--dragging': draggingIndex === index,
+          'wikitab-configure-module-list__item--off': isHidden(moduleId),
         }"
         :data-module-id="moduleId"
       >
@@ -255,7 +264,7 @@ onBeforeUnmount(() => setGrabbingCursor(false))
 .wikitab-configure-module-list__group {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-100);
+  gap: var(--spacing-50);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -332,6 +341,13 @@ onBeforeUnmount(() => setGrabbingCursor(false))
 
 .wikitab-configure-module-list__toggle :deep(.cdx-toggle-switch__switch) {
   flex-shrink: 0;
+}
+
+/* Hidden modules: dim the name and the drag / pin icon. */
+.wikitab-configure-module-list__item--off :deep(.cdx-toggle-switch__label),
+.wikitab-configure-module-list__item--off .wikitab-configure-module-list__handle :deep(.cdx-icon),
+.wikitab-configure-module-list__item--off .wikitab-configure-module-list__pin :deep(.cdx-icon) {
+  color: var(--color-disabled);
 }
 
 @media (max-width: 767px) {

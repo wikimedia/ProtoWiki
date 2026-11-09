@@ -10,7 +10,9 @@ import { filterDisambiguationPageIds } from './filterDisambiguationPages'
 import type { WikitabCardData } from '../sections'
 import { feedDailyReadsPayloadToCardData } from './wikitabCardPayloadMappers'
 import type { WikitabFeedDailyReadsCardPayload } from './wikitabCardPayloadTypes'
-import { EN_WIKI_HOST, articleTitleKey, articleUrl } from './wikitabHtml'
+import { WIKI_HOST, articleTitleKey, articleUrl } from './wikitabHtml'
+import { WIKITAB_LANGUAGE } from './wikitabLanguage'
+import { resolveSeedForWiki } from './resolveSeedsForWiki'
 
 const MAX_SEEDS = 4
 const MORELIKE_BATCH_SIZE = 12
@@ -125,7 +127,7 @@ async function fetchMorelikePages(
     query.set('gsroffset', String(offset))
   }
 
-  const response = await fetchWikimedia(`https://${EN_WIKI_HOST}/w/api.php?${query.toString()}`, {
+  const response = await fetchWikimedia(`https://${WIKI_HOST}/w/api.php?${query.toString()}`, {
     signal,
     headers: wikimediaApiFetchHeaders('wikitab-daily-reads-morelike'),
   })
@@ -206,7 +208,7 @@ export class DailyReadsFeed {
     for (const titleKey of excludedTitleKeys) {
       this.excludedTitleKeys.add(titleKey)
     }
-    for (const titleKey of loadWikitabConfig().hiddenArticleTitleKeys) {
+    for (const titleKey of loadWikitabConfig().hiddenArticleTitleKeys[WIKITAB_LANGUAGE] ?? []) {
       this.excludedTitleKeys.add(titleKey)
     }
 
@@ -419,7 +421,16 @@ export class DailyReadsFeed {
     const queue = this.queues[queueIndex]
     if (!queue) return
 
-    const { pages, nextOffset } = await fetchMorelikePages(seed.title, 0, signal)
+    // The seed may be saved from another wiki — use this wiki's article instead.
+    const resolved = await resolveSeedForWiki(seed, WIKITAB_LANGUAGE, signal)
+    if (!resolved) {
+      queue.nextOffset = null
+      return
+    }
+    queue.seedTitle = resolved.title
+    queue.searchTitle = resolved.title
+
+    const { pages, nextOffset } = await fetchMorelikePages(resolved.title, 0, signal)
     queue.nextOffset = nextOffset
 
     const hits = await this.mapEligibleHits(pages, signal)
