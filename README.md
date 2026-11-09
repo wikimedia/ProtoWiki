@@ -218,6 +218,3 @@ To craft a static hand-written article page, use the `ArticleCustom` component.
 
 There are other components that you can use within the prototyping system. Explore the `components` folder to discover them all.
 
-### App prototyping
-
-TODO
