@@ -6,6 +6,7 @@ import {
   readCacheJson,
   readCacheJsonUnlessBypassed,
   utcDayKey,
+  wikitabCacheKey,
   writeCacheJson,
 } from './wikitabCacheHelpers'
 import {
@@ -69,10 +70,11 @@ function dedupeCachedItems(items: WikitabSearchActivityItem[]): WikitabSearchAct
  * seeds diverge. Settings mismatch still misses (toggles change the feed shape).
  */
 export function readCachedReviewChanges(
+  lang: string,
   day: string,
   settingsFingerprint: string,
 ): CachedReviewChanges | null {
-  const entry = readCacheJsonUnlessBypassed(CACHE_KEY) as CacheEntry | null
+  const entry = readCacheJsonUnlessBypassed(wikitabCacheKey(CACHE_KEY, lang)) as CacheEntry | null
   if (
     !entry ||
     entry.day !== day ||
@@ -107,6 +109,7 @@ export function isReviewChangesRiskyCacheFresh(
 }
 
 export function writeCachedReviewChanges(
+  lang: string,
   day: string,
   savedFingerprint: string,
   settingsFingerprint: string,
@@ -117,7 +120,7 @@ export function writeCachedReviewChanges(
   let fetchedAtSaved = fetchedAt?.saved
   let fetchedAtRisky = fetchedAt?.risky
 
-  const existing = readCacheJson(CACHE_KEY) as CacheEntry | null
+  const existing = readCacheJson(wikitabCacheKey(CACHE_KEY, lang)) as CacheEntry | null
   if (
     existing &&
     existing.day === day &&
@@ -128,7 +131,7 @@ export function writeCachedReviewChanges(
     if (fetchedAtRisky === undefined) fetchedAtRisky = existing.fetchedAtRisky
   }
 
-  writeCacheJson(CACHE_KEY, {
+  writeCacheJson(wikitabCacheKey(CACHE_KEY, lang), {
     day,
     savedFingerprint,
     settingsFingerprint,

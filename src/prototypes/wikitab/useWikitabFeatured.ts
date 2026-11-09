@@ -15,6 +15,7 @@ import {
   type WikitabFeaturedSpotlight,
   type WikitabFeaturedSpotlightKind,
 } from './sections'
+import { WIKITAB_LANGUAGE } from './data/wikitabLanguage'
 
 export type WikitabFeaturedLoadingByKind = Partial<
   Record<WikitabFeaturedSpotlightKind, WikitabCardLoading>
@@ -68,7 +69,7 @@ export function useWikitabFeatured() {
 
     items.value = spotlights
     loadingByKind.value = {}
-    writeCachedFeatured(day, spotlights)
+    writeCachedFeatured(WIKITAB_LANGUAGE, day, spotlights)
     loadedDay = day
     loaded.value = true
     error.value = null
@@ -100,7 +101,7 @@ export function useWikitabFeatured() {
     }
 
     if (!options.force) {
-      const cached = readCachedFeaturedEntry(day)
+      const cached = readCachedFeaturedEntry(WIKITAB_LANGUAGE, day)
       if (cached?.items.length) {
         items.value = cached.items
         loadingByKind.value = {}
@@ -115,7 +116,7 @@ export function useWikitabFeatured() {
         return
       }
     } else {
-      clearCachedFeatured()
+      clearCachedFeatured(WIKITAB_LANGUAGE)
     }
 
     abortFeatured()

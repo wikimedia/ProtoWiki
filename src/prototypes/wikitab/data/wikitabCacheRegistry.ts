@@ -16,7 +16,9 @@ import { CACHE_KEY as FEATURED_CACHE_KEY } from './featuredCache'
 import { CACHE_KEY as FEED_CACHE_KEY } from './feedCache'
 import { CACHE_KEY as POTD_CACHE_KEY } from './fetchPictureOfTheDay'
 import { CACHE_KEY as REVIEW_CHANGES_CACHE_KEY } from './reviewChangesCache'
+import { CACHE_KEY as SEED_RESOLVE_CACHE_KEY } from './resolveSeedsForWiki'
 import { CACHE_KEY as SUGGESTED_EDITS_CACHE_KEY } from './suggestedEditsCache'
+import { isWikitabCacheKeyFor, wikitabCacheKey } from './wikitabCacheHelpers'
 import { WIKITAB_CONFIG_STORAGE_KEY } from './wikitabConfigNormalize'
 import {
   DISCUSSIONS_NOTICEBOARDS_TTL_MS,
@@ -39,6 +41,8 @@ export type WikitabCacheRegistryId =
   | 'active-discussions'
   | 'review-changes'
   | 'potd'
+  /** Saved-seed → current-wiki title lookups (Wikidata sitelinks). */
+  | 'seed-resolve'
   /** Legacy standalone Nearby keys — cards now live in config. */
   | 'nearby-legacy'
 
@@ -46,7 +50,7 @@ export interface WikitabCacheRegistryEntry {
   id: WikitabCacheRegistryId
   /**
    * Current localStorage key. Null when the live payload is not a standalone
-   * key (Nearby → `config.nearbyCardsCache`; nearby-legacy has no current key).
+   * key (Nearby → `config.nearbyCardsCache[lang]`; nearby-legacy has no current key).
    */
   storageKey: string | null
   /** Prefix matched by `evictWikitabCaches()`. */
@@ -99,6 +103,12 @@ export const WIKITAB_CACHE_REGISTRY: readonly WikitabCacheRegistryEntry[] = [
     whitelist: true,
   },
   {
+    id: 'seed-resolve',
+    storageKey: SEED_RESOLVE_CACHE_KEY,
+    evictionPrefix: 'wikitab-seed-resolve-cache-v',
+    whitelist: true,
+  },
+  {
     id: 'nearby-legacy',
     storageKey: null,
     evictionPrefix: 'wikitab-nearby-cache-v',
@@ -118,13 +128,27 @@ export const WIKITAB_CURRENT_CACHE_KEYS: ReadonlySet<string> = new Set(
   ),
 )
 
-/** Config + current cache keys — anything else starting with `wikitab-` is stale. */
+/** Config + current cache base keys — anything else starting with `wikitab-` is stale. */
 export function wikitabCurrentStorageKeys(): Set<string> {
   return new Set<string>([WIKITAB_CONFIG_STORAGE_KEY, ...WIKITAB_CURRENT_CACHE_KEYS])
 }
 
-export function wikitabCacheStorageKey(id: WikitabCacheRegistryId): string | null {
-  return WIKITAB_CACHE_REGISTRY.find((entry) => entry.id === id)?.storageKey ?? null
+/**
+ * True for the config key and for any current cache's per-language
+ * `base:<lang>` key (see `wikitabCacheKey`). Survives the sweep.
+ */
+export function isWikitabCurrentStorageKey(key: string): boolean {
+  if (key === WIKITAB_CONFIG_STORAGE_KEY) return true
+  for (const base of WIKITAB_CURRENT_CACHE_KEYS) {
+    if (isWikitabCacheKeyFor(key, base)) return true
+  }
+  return false
+}
+
+/** Per-language storage key for a registry cache (e.g. `wikitab-feed-cache-v22:fr`). */
+export function wikitabCacheStorageKey(id: WikitabCacheRegistryId, lang: string): string | null {
+  const base = WIKITAB_CACHE_REGISTRY.find((entry) => entry.id === id)?.storageKey
+  return base ? wikitabCacheKey(base, lang) : null
 }
 
 /** Playground / docs: feed slices that share `feed` storage. */
@@ -305,7 +329,7 @@ export const WIKITAB_REVIEW_CHANGES_PLAYGROUND_ROWS: readonly WikitabDualSourceP
 export const WIKITAB_NEARBY_PLAYGROUND = {
   id: 'nearby',
   module: 'Nearby',
-  storageKey: 'config.nearbyCardsCache',
+  storageKey: 'config.nearbyCardsCache[lang]',
   moduleId: 'nearby' as WikitabModuleId,
   invalidates: 'coord change · 4h TTL',
   ttlMs: NEARBY_TTL_MS,

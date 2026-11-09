@@ -4,9 +4,10 @@ import {
   isCacheBypassed,
   readCacheJsonUnlessBypassed,
   utcDayKey,
+  wikitabCacheKey,
   writeCacheJson,
 } from './wikitabCacheHelpers'
-import { isEnWikiMainNamespaceArticleTitle } from './wikitabHtml'
+import { isMainNamespaceArticleTitle } from './wikitabHtml'
 
 /**
  * Cache only — nothing here is authoritative. Clearing it costs one refetch and
@@ -48,7 +49,7 @@ function dedupeCachedItems(items: WikitabCardData[]): WikitabCardData[] {
       seen.add(pageid)
     }
     const title = item.title ?? ''
-    if (title && !isEnWikiMainNamespaceArticleTitle(title)) continue
+    if (title && !isMainNamespaceArticleTitle(title)) continue
 
     deduped.push(item)
   }
@@ -60,8 +61,8 @@ function dedupeCachedItems(items: WikitabCardData[]): WikitabCardData[] {
  * Read by UTC day only. A saved-fingerprint mismatch is not a miss — callers
  * keep the painted cards and surface a title refresh when live seeds diverge.
  */
-export function readCachedSuggestedEdits(day: string): CachedSuggestedEdits | null {
-  const entry = readCacheJsonUnlessBypassed(CACHE_KEY) as CacheEntry | null
+export function readCachedSuggestedEdits(lang: string, day: string): CachedSuggestedEdits | null {
+  const entry = readCacheJsonUnlessBypassed(wikitabCacheKey(CACHE_KEY, lang)) as CacheEntry | null
   if (!entry || entry.day !== day || typeof entry.savedFingerprint !== 'string' || !entry.items) {
     return null
   }
@@ -74,10 +75,16 @@ export function readCachedSuggestedEdits(day: string): CachedSuggestedEdits | nu
 }
 
 export function writeCachedSuggestedEdits(
+  lang: string,
   day: string,
   savedFingerprint: string,
   items: WikitabCardData[],
   hasMore: boolean,
 ): void {
-  writeCacheJson(CACHE_KEY, { day, savedFingerprint, items, hasMore } satisfies CacheEntry)
+  writeCacheJson(wikitabCacheKey(CACHE_KEY, lang), {
+    day,
+    savedFingerprint,
+    items,
+    hasMore,
+  } satisfies CacheEntry)
 }

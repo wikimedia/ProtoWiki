@@ -4,6 +4,7 @@ import {
   patchWikitabConfig,
   WIKITAB_CONFIG_STORAGE_KEY,
 } from './data/wikitabConfig'
+import { WIKITAB_LANGUAGE } from './data/wikitabLanguage'
 import type { WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
 import { articleTitleKey } from './data/wikitabHtml'
 import type { WikitabCardData } from './sections'
@@ -27,13 +28,19 @@ function invalidateFilterCache(): void {
   filterCacheEpoch++
 }
 
-export function useWikitabHiddenArticles() {
-  const hiddenKeys = ref<string[]>(loadWikitabConfig().hiddenArticleTitleKeys)
+/**
+ * Hidden articles on this page load's wiki. Stored per language
+ * (`config.hiddenArticleTitleKeys[lang]`) because titles are per-wiki.
+ */
+export function useWikitabHiddenArticles(lang: string = WIKITAB_LANGUAGE) {
+  const readHidden = (): string[] => loadWikitabConfig().hiddenArticleTitleKeys[lang] ?? []
+
+  const hiddenKeys = ref<string[]>(readHidden())
 
   const hiddenSet = computed(() => new Set(hiddenKeys.value))
 
   function syncFromStorage(): void {
-    hiddenKeys.value = loadWikitabConfig().hiddenArticleTitleKeys
+    hiddenKeys.value = readHidden()
     invalidateFilterCache()
   }
 
@@ -42,7 +49,12 @@ export function useWikitabHiddenArticles() {
     if (!key || hiddenSet.value.has(key)) return
 
     hiddenKeys.value = [...hiddenKeys.value, key]
-    patchWikitabConfig({ hiddenArticleTitleKeys: hiddenKeys.value })
+    patchWikitabConfig({
+      hiddenArticleTitleKeys: {
+        ...loadWikitabConfig().hiddenArticleTitleKeys,
+        [lang]: hiddenKeys.value,
+      },
+    })
     invalidateFilterCache()
   }
 

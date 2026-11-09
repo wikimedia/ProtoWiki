@@ -31,7 +31,11 @@ export type WikitabLanguageFeature =
   | 'otd'
   /** Birthdays (`feed/onthisday/births`). */
   | 'births'
-  /** Active discussions: enwiki Village pump / Help desk noticeboards. */
+  /**
+   * Active discussions — its noticeboards are enwiki pages (Village pump / Help
+   * desk). Without them the module would only show saved-article talk, so the
+   * whole module is hidden off-English.
+   */
   | 'discussions-noticeboards'
   /** Recent edits: Recent changes filtered by `rcshow=oresreview`. */
   | 'review-changes-risky'
@@ -40,8 +44,8 @@ export type WikitabLanguageFeature =
 
 /**
  * Languages that support each feature. Features not listed here (Trending,
- * Picture of the day, Daily reads, Nearby, Help wanted, saved-article talk
- * and edits) work on every supported wiki.
+ * Picture of the day, Daily reads, Nearby, Help wanted, saved-article edits)
+ * work on every supported wiki.
  */
 const FEATURE_LANGUAGES: Record<WikitabLanguageFeature, readonly string[]> = {
   'featured-tfa': ['de', 'en', 'he', 'ja', 'sv', 'vi', 'zh'],
@@ -64,6 +68,10 @@ const FEATURE_LANGUAGES: Record<WikitabLanguageFeature, readonly string[]> = {
 
 /** Home modules that exist only through one language-limited feature. */
 const MODULE_FEATURE: Partial<Record<WikitabModuleId, WikitabLanguageFeature>> = {
+  // Off-English, Featured is TFA + Picture of the day. Without TFA it would be a
+  // lone POTD card, so it's hidden. (English has TFA too, so this covers it.)
+  featured: 'featured-tfa',
+  discussions: 'discussions-noticeboards',
   news: 'news',
   dyk: 'dyk',
   otd: 'otd',

@@ -17,8 +17,8 @@ import {
 import { fetchWikitabPageSummary } from './fetchWikitabPageSummary'
 import {
   articleTitleKey,
-  EN_WIKI_HOST,
-  isEnWikiMainNamespaceArticleTitle,
+  WIKI_HOST,
+  isMainNamespaceArticleTitle,
   visualEditorUrl,
 } from './wikitabHtml'
 import { seedArticle, type WikitabSeedArticle } from './wikitabSeedArticle'
@@ -154,7 +154,7 @@ async function fetchMorelikeTitles(
     sroffset: String(offset),
   })
 
-  const response = await fetchWikimedia(`https://${EN_WIKI_HOST}/w/api.php?${query.toString()}`, {
+  const response = await fetchWikimedia(`https://${WIKI_HOST}/w/api.php?${query.toString()}`, {
     signal,
     headers: wikimediaApiFetchHeaders('wikitab-contribute-morelike'),
   })
@@ -187,7 +187,7 @@ async function resolveContributeItem(
   relatedToTitle: string | undefined,
   signal: AbortSignal | undefined,
 ): Promise<WikitabSearchContributeItem | null> {
-  if (!isEnWikiMainNamespaceArticleTitle(page.title)) {
+  if (!isMainNamespaceArticleTitle(page.title)) {
     const titleKey = articleTitleKey(page.title)
     if (titleKey) setCachedContribute(page.pageid, titleKey, 'none')
     return null
@@ -227,7 +227,7 @@ async function resolveContributeItem(
     }
   }
 
-  if (!isEnWikiMainNamespaceArticleTitle(title)) {
+  if (!isMainNamespaceArticleTitle(title)) {
     setCachedContribute(pageid, articleTitleKey(title), 'none')
     return null
   }
@@ -358,7 +358,7 @@ export class WikitabSearchContributeFeed {
       this.directIndex++
 
       if (seed.pageid != null && this.emittedPageids.has(seed.pageid)) continue
-      if (!isEnWikiMainNamespaceArticleTitle(seed.title)) continue
+      if (!isMainNamespaceArticleTitle(seed.title)) continue
 
       const item = await resolveContributeItem(
         {
@@ -425,7 +425,7 @@ export class WikitabSearchContributeFeed {
         let added = 0
         for (const title of titles) {
           if (added >= perSeed) break
-          if (!isEnWikiMainNamespaceArticleTitle(title)) continue
+          if (!isMainNamespaceArticleTitle(title)) continue
 
           const key = articleTitleKey(title)
           if (!key || this.seenTitles.has(key) || this.excludedTitleKeys.has(key)) continue

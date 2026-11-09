@@ -15,7 +15,9 @@ import {
 import { feedDiscussionPayloadToCardData } from './wikitabCardPayloadMappers'
 import type { WikitabFeedDiscussionCardPayload } from './wikitabCardPayloadTypes'
 import type { WikitabSavedItem } from './wikitabSavedItems'
-import { EN_WIKI_HOST, articleUrl } from './wikitabHtml'
+import { WIKI_HOST, articleUrl } from './wikitabHtml'
+import { WIKITAB_LANGUAGE } from './wikitabLanguage'
+import { resolveSeedsForWiki } from './resolveSeedsForWiki'
 import { seedArticle } from './wikitabSeedArticle'
 
 /** Production enwiki noticeboards from wgPersonalDashboardActiveDiscussionsPages (T420785). */
@@ -81,7 +83,7 @@ function discussionToolsUrl(page: string): string {
     format: 'json',
     origin: '*',
   })
-  return `https://${EN_WIKI_HOST}/w/api.php?${params.toString()}`
+  return `https://${WIKI_HOST}/w/api.php?${params.toString()}`
 }
 
 function discussionPageUrl(sourcePage: string, fragment?: string): string {
@@ -277,7 +279,9 @@ async function fetchSavedTalkForSeeds(
 ): Promise<ActiveDiscussion[]> {
   if (!seeds.length) return []
 
-  const talkPages = seeds.map((seed) => talkPageTitleFromArticle(seed.title))
+  // Seeds saved on another wiki are swapped for this wiki's article (or dropped).
+  const resolved = await resolveSeedsForWiki(seeds, WIKITAB_LANGUAGE, signal)
+  const talkPages = resolved.map((seed) => talkPageTitleFromArticle(seed.title))
   const batches = await mapWithConcurrency(
     talkPages,
     FETCH_CONCURRENCY,

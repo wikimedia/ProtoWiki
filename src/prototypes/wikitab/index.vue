@@ -75,8 +75,13 @@ import {
 } from './data/wikitabConfig'
 import { wikitabCardDescriptionText } from './data/wikitabCardDescription'
 import { buildDailyReadsSavedFingerprint } from './data/dailyReadsCache'
-import { uniqueArticleSeedsFromSavedItems, type SaveItemPayload } from './data/savedCardHelpers'
-import { savedItemSeedArticle } from './data/wikitabSavedItems'
+import {
+  savedArticleSeedFingerprintKey,
+  uniqueArticleSeedsFromSavedItems,
+  type SaveItemPayload,
+} from './data/savedCardHelpers'
+import { savedItemKey, savedItemSeedArticle } from './data/wikitabSavedItems'
+import { isWikitabModuleAvailable } from './data/wikitabLanguageSupport'
 import type { WikitabSearchActivityItem } from './data/fetchWikitabSearchActivity'
 import { REVIEW_CHANGES_MAX_SEEDS } from './data/fetchWikitabReviewChanges'
 import type { WikitabSearchContributeItem } from './data/fetchWikitabSearchContribute'
@@ -292,17 +297,18 @@ async function refreshSavedModule(): Promise<void> {
   savedEnrichPending.value = new Map(
     display.flatMap((saved) => {
       const pending = savedModuleItemPendingLoading(saved)
-      return pending ? [[saved.id, pending] as const] : []
+      return pending ? [[savedItemKey(saved), pending] as const] : []
     }),
   )
 
   try {
     const enriched = await enrichSavedModuleItems(snapshot, signal, (saved) => {
+      const key = savedItemKey(saved)
       savedModuleItems.value = savedModuleItems.value.map((item) =>
-        item.id === saved.id ? saved : item,
+        savedItemKey(item) === key ? saved : item,
       )
       const pending = new Map(savedEnrichPending.value)
-      pending.delete(saved.id)
+      pending.delete(key)
       savedEnrichPending.value = pending
     })
     if (signal.aborted) return
@@ -791,11 +797,13 @@ function toggleSaveFromCard(payload: SaveItemPayload): void {
   void toggleSaveFromPayload(payload)
 }
 
-function toggleSaveFromSavedModule(id: string): void {
-  if (!id || !isCardSaved(id)) return
+function toggleSaveFromSavedModule(id: string, lang: string): void {
+  if (!id || !isCardSaved(id, lang)) return
 
-  unsaveItem(id)
-  savedModuleItems.value = savedModuleItems.value.filter((saved) => saved.id !== id)
+  unsaveItem(id, lang)
+  savedModuleItems.value = savedModuleItems.value.filter(
+    (saved) => !(saved.id === id && saved.lang === lang),
+  )
 }
 
 function toggleSaveFromActivity(item: WikitabSearchActivityItem): void {
@@ -847,8 +855,8 @@ function toggleSaveArticleFromContribute(item: WikitabSearchContributeItem): voi
   })
 }
 
-function toggleSaveArticleFromSavedModule(id: string): void {
-  const saved = savedItems.value.find((item) => item.id === id)
+function toggleSaveArticleFromSavedModule(id: string, lang: string): void {
+  const saved = savedItems.value.find((item) => item.id === id && item.lang === lang)
   if (!saved) return
   const articleSeed = savedItemSeedArticle(saved)
   if (!articleSeed) return
@@ -1033,7 +1041,7 @@ const activeDiscussionsPendingOnHome = computed(() => {
 /** Live seed-article fingerprint from authoritative saves (not the home snapshot). */
 const liveSavedArticlesFingerprint = computed(() =>
   buildDailyReadsSavedFingerprint(
-    uniqueArticleSeedsFromSavedItems(savedItems.value).map((seed) => seed.titleKey),
+    uniqueArticleSeedsFromSavedItems(savedItems.value).map(savedArticleSeedFingerprintKey),
   ),
 )
 
@@ -1307,6 +1315,9 @@ watch(
     if (!id) return
     if (id === WIKITAB_SAVED_MODULE_ID) return
     if (isSearchMode.value) return
+    // This wiki has no data for the module — never fetch it (deep links to
+    // unavailable modules are also dropped in `useWikitabOverlayNavigation`).
+    if (!isWikitabModuleAvailable(id)) return
     // Visible home modules are already covered by ordered load; refresh when the
     // module is hidden (deep link) so the screen still has data.
     if (!isHidden(id)) return

@@ -200,6 +200,7 @@ onBeforeUnmount(() => setGrabbingCursor(false))
         v-for="moduleId in pinnedOrder"
         :key="moduleId"
         class="wikitab-configure-module-list__item"
+        :class="{ 'wikitab-configure-module-list__item--off': isHidden(moduleId) }"
         :data-module-id="moduleId"
       >
         <CdxButton
@@ -230,6 +231,7 @@ onBeforeUnmount(() => setGrabbingCursor(false))
         class="wikitab-configure-module-list__item"
         :class="{
           'wikitab-configure-module-list__item--dragging': draggingIndex === index,
+          'wikitab-configure-module-list__item--off': isHidden(moduleId),
         }"
         :data-module-id="moduleId"
       >
@@ -262,7 +264,7 @@ onBeforeUnmount(() => setGrabbingCursor(false))
 .wikitab-configure-module-list__group {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-100);
+  gap: var(--spacing-50);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -339,6 +341,13 @@ onBeforeUnmount(() => setGrabbingCursor(false))
 
 .wikitab-configure-module-list__toggle :deep(.cdx-toggle-switch__switch) {
   flex-shrink: 0;
+}
+
+/* Hidden modules: dim the name and the drag / pin icon. */
+.wikitab-configure-module-list__item--off :deep(.cdx-toggle-switch__label),
+.wikitab-configure-module-list__item--off .wikitab-configure-module-list__handle :deep(.cdx-icon),
+.wikitab-configure-module-list__item--off .wikitab-configure-module-list__pin :deep(.cdx-icon) {
+  color: var(--color-disabled);
 }
 
 @media (max-width: 767px) {

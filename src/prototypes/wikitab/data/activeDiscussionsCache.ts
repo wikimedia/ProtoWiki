@@ -5,6 +5,7 @@ import {
   isCacheBypassed,
   readCacheJsonUnlessBypassed,
   utcDayKey,
+  wikitabCacheKey,
   writeCacheJson,
 } from './wikitabCacheHelpers'
 import {
@@ -74,10 +75,11 @@ function resolveFetchedAt(
  * seeds diverge. Settings mismatch still misses (toggles change the feed shape).
  */
 export function readCachedActiveDiscussions(
+  lang: string,
   day: string,
   settingsFingerprint: string,
 ): CachedActiveDiscussions | null {
-  const entry = readCacheJsonUnlessBypassed(CACHE_KEY) as CacheEntry | null
+  const entry = readCacheJsonUnlessBypassed(wikitabCacheKey(CACHE_KEY, lang)) as CacheEntry | null
   if (
     !entry ||
     entry.day !== day ||
@@ -127,6 +129,7 @@ export function isActiveDiscussionsCacheFresh(
 }
 
 export function writeCachedActiveDiscussions(
+  lang: string,
   day: string,
   savedFingerprint: string,
   settingsFingerprint: string,
@@ -135,7 +138,7 @@ export function writeCachedActiveDiscussions(
   articleSeedOffset: number,
   fetchedAt?: { noticeboards?: number; articles?: number },
 ): void {
-  writeCacheJson(CACHE_KEY, {
+  writeCacheJson(wikitabCacheKey(CACHE_KEY, lang), {
     day,
     savedFingerprint,
     settingsFingerprint,

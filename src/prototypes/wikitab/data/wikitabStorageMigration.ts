@@ -11,7 +11,7 @@ import { utcDayKey } from './feedCache'
 import { wikipediaPotdPageUrl } from './fetchPictureOfTheDay'
 import { quoteSavedId, snippetSavedId, wordSavedId } from './savedItemIds'
 import { wikitabCardMenuArticleTitle } from './wikitabCardLinkLabel'
-import { wikitabCurrentStorageKeys } from './wikitabCacheRegistry'
+import { isWikitabCurrentStorageKey } from './wikitabCacheRegistry'
 import type { WikitabColorThemeId } from './wikitabColorThemes'
 import {
   nextWikitabConfigRevision,
@@ -20,13 +20,17 @@ import {
   WIKITAB_CONFIG_STORAGE_KEY,
   writeWikitabConfig,
 } from './wikitabConfigNormalize'
-import {
-  articleTitleKey,
-  articleUrl,
-  discussionThreadIdFromUrl,
-  EN_WIKI_HOST,
-  wikiArticleUrl,
-} from './wikitabHtml'
+import { articleTitleKey, discussionThreadIdFromUrl, wikiArticleUrl } from './wikitabHtml'
+
+/**
+ * Every legacy row predates the language setting, so it came from enwiki —
+ * never build its URLs from this page load's wiki.
+ */
+const LEGACY_WIKI_HOST = 'en.wikipedia.org'
+
+function legacyArticleUrl(title: string): string {
+  return wikiArticleUrl(LEGACY_WIKI_HOST, title)
+}
 import {
   isWikitabSavedItemPrimitive,
   mergeSavedItemsById,
@@ -40,12 +44,12 @@ import { parseSeedArticle, seedArticle } from './wikitabSeedArticle'
 const CONFIG_KEY_V2 = 'wikitab-config-v2'
 const CONFIG_KEY_V1 = 'wikitab-config-v1'
 
-/**
- * Live localStorage keys come from `wikitabCacheRegistry` (+ config). Anything
- * else starting with `wikitab-` is deleted on migrate — register new caches in
- * the registry or every page load will wipe them.
+/*
+ * Live localStorage keys come from `wikitabCacheRegistry` (+ config), including
+ * their per-language `base:<lang>` variants. Anything else starting with
+ * `wikitab-` is deleted on migrate — register new caches in the registry or
+ * every page load will wipe them.
  */
-const CURRENT_KEYS = wikitabCurrentStorageKeys()
 
 const THEME_ALIASES: Record<string, WikitabColorThemeId> = {
   'gray-bold': 'off-black',
@@ -356,7 +360,7 @@ function hookToArticle(base: Row, card: LegacyCard): Row | null {
     articleTitleKey: key,
     articleTitle: title,
     title,
-    url: card.url || articleUrl(title),
+    url: card.url || legacyArticleUrl(title),
     description: card.description,
     thumbnailUrl: card.thumbnailUrl,
   }
@@ -366,7 +370,7 @@ function hookToSnippet(base: Row, source: 'dyk' | 'news', card: LegacyCard): Row
   const snippetHtml = card.description
   const title = wikitabCardMenuArticleTitle(card)
   const key = articleTitleKey(title)
-  const url = card.url || (title ? articleUrl(title) : '')
+  const url = card.url || (title ? legacyArticleUrl(title) : '')
   const id = snippetHtml ? snippetSavedId(source, snippetHtml) : ''
   if (!snippetHtml || !key || !id || !url) return null
 
@@ -385,7 +389,7 @@ function hookToSnippet(base: Row, source: 'dyk' | 'news', card: LegacyCard): Row
   }
 }
 
-const POTD_PORTAL_URL = wikiArticleUrl(EN_WIKI_HOST, 'Wikipedia:Picture of the day')
+const POTD_PORTAL_URL = wikiArticleUrl(LEGACY_WIKI_HOST, 'Wikipedia:Picture of the day')
 
 /** Undated portal link used before saved cards kept a per-day TFP target. */
 function isPotdPortalUrl(href: string | undefined): boolean {
@@ -393,7 +397,7 @@ function isPotdPortalUrl(href: string | undefined): boolean {
   if (href === POTD_PORTAL_URL) return true
   try {
     const url = new URL(href)
-    if (url.hostname !== EN_WIKI_HOST) return false
+    if (url.hostname !== LEGACY_WIKI_HOST) return false
     const path = decodeURIComponent(url.pathname.replace(/^\/wiki\//, '')).replace(/_/g, ' ')
     return path === 'Wikipedia:Picture of the day' && !url.hash
   } catch {
@@ -628,7 +632,7 @@ function upgradeV1ArticleRow(raw: Row): Row | null {
     articleTitleKey: key,
     articleTitle: title,
     title,
-    url: articleUrl(title),
+    url: legacyArticleUrl(title),
     description: str(raw, 'description'),
     thumbnailUrl: str(raw, 'thumbnailUrl'),
   }
@@ -674,7 +678,7 @@ function removeStaleKeys(): void {
     const stale: string[] = []
     for (let index = 0; index < window.localStorage.length; index++) {
       const key = window.localStorage.key(index)
-      if (key?.startsWith('wikitab-') && !CURRENT_KEYS.has(key)) stale.push(key)
+      if (key?.startsWith('wikitab-') && !isWikitabCurrentStorageKey(key)) stale.push(key)
     }
     for (const key of stale) window.localStorage.removeItem(key)
   } catch {

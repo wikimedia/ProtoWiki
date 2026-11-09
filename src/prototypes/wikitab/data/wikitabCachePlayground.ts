@@ -28,9 +28,13 @@ import {
   isTimestampFresh,
 } from './wikitabCacheTtl'
 import { buildReviewChangesSavedFingerprint } from './reviewChangesCache'
-import { uniqueArticleSeedsFromSavedItems } from './savedCardHelpers'
+import {
+  savedArticleSeedFingerprintKey,
+  uniqueArticleSeedsFromSavedItems,
+} from './savedCardHelpers'
 import { buildSuggestedEditsSavedFingerprint } from './suggestedEditsCache'
 import { loadWikitabConfig } from './wikitabConfig'
+import { WIKITAB_LANGUAGE } from './wikitabLanguage'
 import type { WikitabModuleId, WikitabSectionId } from '../sections'
 
 /** Cache-row status chips — prefer these four over legacy leftovers. */
@@ -119,7 +123,7 @@ function liveSavedArticleFingerprint(
 ): string {
   try {
     const seeds = uniqueArticleSeedsFromSavedItems(loadWikitabConfig().savedItems)
-    return build(seeds.map((seed) => seed.titleKey))
+    return build(seeds.map(savedArticleSeedFingerprintKey))
   } catch {
     return ''
   }
@@ -313,7 +317,8 @@ function simpleModuleRow(
   bypassed: boolean,
   currentDay: string,
 ): WikitabCacheRow {
-  const storageKey = spec.storageKey ?? wikitabCacheStorageKey(spec.registryId) ?? ''
+  const storageKey =
+    spec.storageKey ?? wikitabCacheStorageKey(spec.registryId, WIKITAB_LANGUAGE) ?? ''
   const entry = asCacheRecord(readCacheJson(storageKey))
   const day = typeof entry?.day === 'string' ? entry.day : undefined
   const items = Array.isArray(entry?.items) ? entry.items : []
@@ -362,7 +367,7 @@ function dualSourceRows(
   now: number,
   bypassed: boolean,
 ): WikitabCacheRow[] {
-  const storageKey = wikitabCacheStorageKey(registryId) ?? ''
+  const storageKey = wikitabCacheStorageKey(registryId, WIKITAB_LANGUAGE) ?? ''
   const entry = asCacheRecord(readCacheJson(storageKey))
   const config = loadWikitabConfig()
   const moduleOff = isModuleHidden(moduleId)
@@ -415,7 +420,7 @@ function dualSourceRows(
 export function snapshotWikitabCaches(now = Date.now()): WikitabCacheRow[] {
   const bypassed = isCacheBypassed()
   const currentDay = utcDayKey()
-  const feedKey = wikitabCacheStorageKey('feed') ?? ''
+  const feedKey = wikitabCacheStorageKey('feed', WIKITAB_LANGUAGE) ?? ''
   const feedEntry = asCacheRecord(readCacheJson(feedKey))
   const rows: WikitabCacheRow[] = []
 
@@ -465,7 +470,7 @@ export function snapshotWikitabCaches(now = Date.now()): WikitabCacheRow[] {
   {
     let nearby: { fetchedAt?: number; items?: unknown[] } | null = null
     try {
-      nearby = loadWikitabConfig().nearbyCardsCache
+      nearby = loadWikitabConfig().nearbyCardsCache[WIKITAB_LANGUAGE] ?? null
     } catch {
       nearby = null
     }

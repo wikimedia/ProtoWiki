@@ -6,6 +6,7 @@ import '@wikimedia/codex/dist/modules/CdxTypeaheadSearch.css'
 import { globalTheme } from '@/theme'
 
 import { useWikitabSearch, WIKITAB_SEARCH_FOR_VALUE } from './useWikitabSearch'
+import { WIKITAB_LANGUAGE, wikitabDir } from './data/wikitabLanguage'
 
 const props = defineProps<{
   initialQuery?: string
@@ -79,6 +80,7 @@ function onKeydown(event: KeyboardEvent): void {
       ref="searchInputRef"
       :model-value="query"
       class="wikitab-search__input"
+      dir="auto"
       :use-button="true"
       button-label="Search"
       role="combobox"
@@ -92,7 +94,12 @@ function onKeydown(event: KeyboardEvent): void {
       @submit-click="onSubmit"
       @keydown="onKeydown"
     >
-      <div v-show="menuExpanded" class="wikitab-search__panel">
+      <div
+        v-show="menuExpanded"
+        class="wikitab-search__panel"
+        :lang="WIKITAB_LANGUAGE"
+        :dir="wikitabDir(WIKITAB_LANGUAGE)"
+      >
         <CdxMenu
           :id="menuId"
           ref="menuRef"
@@ -110,8 +117,10 @@ function onKeydown(event: KeyboardEvent): void {
             <span
               v-if="menuItem.value === WIKITAB_SEARCH_FOR_VALUE"
               class="cdx-menu-item__content wikitab-search__search-for"
+              lang="en"
+              dir="ltr"
             >
-              Search for<strong>&nbsp;"{{ query }}"</strong>
+              Search for<strong>&nbsp;"<bdi :lang="WIKITAB_LANGUAGE">{{ query }}</bdi>"</strong>
             </span>
           </template>
         </CdxMenu>
@@ -124,6 +133,21 @@ function onKeydown(event: KeyboardEvent): void {
 .wikitab-search {
   position: relative;
   width: 100%;
+}
+
+/*
+ * Suggestions are this wiki's titles, so the menu takes its direction. Codex's
+ * LTR stylesheet sets physical margins on menu items — mirror them for RTL wikis.
+ */
+.wikitab-search__panel[dir='rtl'] :deep(.cdx-menu-item__thumbnail.cdx-thumbnail),
+.wikitab-search__panel[dir='rtl'] :deep(.cdx-menu-item__icon) {
+  margin-right: 0;
+  margin-left: var(--spacing-50);
+}
+
+.wikitab-search__panel[dir='rtl'] :deep(.cdx-menu-item__selected-icon) {
+  margin-left: 0;
+  margin-right: auto;
 }
 
 /*

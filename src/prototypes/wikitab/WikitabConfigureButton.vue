@@ -27,7 +27,7 @@ defineExpose({
     class="wikitab-configure-button"
     weight="quiet"
     :icon-only="true"
-    aria-label="Configure modules"
+    aria-label="Settings"
     :aria-expanded="ariaExpanded"
     @click="emit('open')"
   >

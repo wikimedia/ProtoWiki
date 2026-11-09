@@ -53,7 +53,8 @@ import type {
   WikitabSavedWordItem,
 } from './wikitabSavedItems'
 import { formatSearchArticleRelationRationaleHtml } from './formatSearchArticleRelation'
-import { articleUrl, EN_WIKI_HOST } from './wikitabHtml'
+import { wikiArticleUrl } from './wikitabHtml'
+import { wikiHostFromLang } from '@/config'
 import {
   formatImageAttribution,
   imageCardTitle,
@@ -751,18 +752,22 @@ export function savedChangeItemToCardPayload(
   item: WikitabSavedChangeItem,
 ): WikitabSearchActivityCardPayload {
   const { section, editSummary } = parseActivityEditSummaryDisplay(item.editSummary)
+  // Links point at the wiki the edit was saved from, whatever this page's language.
+  const host = wikiHostFromLang(item.lang)
   return {
     title: item.articleTitle,
     section,
     editSummary,
     delta: item.delta,
-    articleUrl: articleUrl(item.articleTitle),
+    articleUrl: wikiArticleUrl(host, item.articleTitle),
     revisionId: item.revisionId,
     reverted: item.reverted ?? false,
     highRevertRisk: item.highRevertRisk ?? false,
     isLatestRevision: item.isLatestRevision ?? false,
     editorName: item.editorName,
-    editorUrl: `https://${EN_WIKI_HOST}/wiki/User:${encodeURIComponent(item.editorName.replace(/ /g, '_'))}`,
+    editorUrl: `https://${host}/wiki/User:${encodeURIComponent(
+      item.editorName.replace(/ /g, '_'),
+    )}`,
     editedTimestamp: item.editedTimestamp?.trim() || '',
     editorKind: item.editorKind,
   }

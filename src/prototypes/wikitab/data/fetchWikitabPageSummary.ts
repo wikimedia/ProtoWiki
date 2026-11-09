@@ -6,7 +6,7 @@ import {
   WIKITAB_FEED_CARD_THUMB_WIDTH,
   wikimediaThumbnailAtLeast,
 } from './wikimediaThumbnailUrl'
-import { articleTitleKey, EN_WIKI_HOST } from './wikitabHtml'
+import { articleTitleKey, WIKI_HOST } from './wikitabHtml'
 
 const SUMMARY_CONCURRENCY = 2
 
@@ -26,17 +26,21 @@ interface PageSummaryResponse {
 
 const pageSummaryByTitleKey = new Map<string, WikitabPageSummary>()
 
-/** REST page summary with session cache keyed by article title. */
+/**
+ * REST page summary with session cache keyed by wiki host + article title.
+ * `host` defaults to this page load's wiki; pass another for items saved elsewhere.
+ */
 export async function fetchWikitabPageSummary(
   title: string,
   signal: AbortSignal | undefined,
   purpose = 'wikitab-page-summary',
+  host: string = WIKI_HOST,
 ): Promise<WikitabPageSummary | null> {
-  const key = articleTitleKey(title)
+  const key = `${host}|${articleTitleKey(title)}`
   const cached = pageSummaryByTitleKey.get(key)
   if (cached) return cached
 
-  const url = `https://${EN_WIKI_HOST}/api/rest_v1/page/summary/${encodeURIComponent(
+  const url = `https://${host}/api/rest_v1/page/summary/${encodeURIComponent(
     title.replace(/ /g, '_'),
   )}?redirect=true`
 
@@ -59,7 +63,7 @@ export async function fetchWikitabPageSummary(
         WIKITAB_FEED_CARD_THUMB_WIDTH,
       ),
     }
-    pageSummaryByTitleKey.set(articleTitleKey(data.title), data)
+    pageSummaryByTitleKey.set(`${host}|${articleTitleKey(data.title)}`, data)
     pageSummaryByTitleKey.set(key, data)
     return data
   } catch (err) {

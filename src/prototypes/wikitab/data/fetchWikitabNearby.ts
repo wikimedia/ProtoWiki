@@ -7,7 +7,7 @@ import {
   wikimediaThumbnailAtLeast,
 } from './wikimediaThumbnailUrl'
 import type { WikitabCardData } from '../sections'
-import { EN_WIKI_HOST, articleUrl } from './wikitabHtml'
+import { WIKI_HOST, articleUrl } from './wikitabHtml'
 
 function displayTitle(title: string): string {
   return title.trim().replace(/_/g, ' ')
@@ -37,7 +37,7 @@ function wikiActionUrl(params: Record<string, string>): string {
     origin: '*',
     ...params,
   })
-  return `https://${EN_WIKI_HOST}/w/api.php?${query.toString()}`
+  return `https://${WIKI_HOST}/w/api.php?${query.toString()}`
 }
 
 export function formatNearbyDistanceMeters(dist: number): string {
@@ -65,7 +65,7 @@ async function fetchGeosearchHits(
   })
 
   const response = await fetchWikimedia(
-    `https://${EN_WIKI_HOST}/w/api.php?${params.toString()}`,
+    `https://${WIKI_HOST}/w/api.php?${params.toString()}`,
     {
       signal,
       headers: wikimediaApiFetchHeaders('wikitab-nearby-geosearch'),

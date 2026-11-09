@@ -13,13 +13,18 @@ import {
 } from './data/fetchWikitabDailyReads'
 import { fetchWikitabPageSummary } from './data/fetchWikitabPageSummary'
 import { loadWikitabConfig, type WikitabSavedItem } from './data/wikitabConfig'
-import { cloneSavedItems, uniqueArticleSeedsFromSavedItems } from './data/savedCardHelpers'
+import {
+  cloneSavedItems,
+  savedArticleSeedFingerprintKey,
+  uniqueArticleSeedsFromSavedItems,
+} from './data/savedCardHelpers'
 import { articleTitleKey } from './data/wikitabHtml'
 import {
   WIKITAB_DAILY_READS_MODULE_SPEC,
   type WikitabCardData,
   type WikitabCardLoading,
 } from './sections'
+import { WIKITAB_LANGUAGE } from './data/wikitabLanguage'
 
 const { initialCount, pageSize } = WIKITAB_DAILY_READS_MODULE_SPEC
 
@@ -38,7 +43,7 @@ function seenPageidsFromCards(cards: readonly WikitabCardData[]): Set<number> {
 }
 
 function visibleDailyReadsCount(cards: readonly WikitabCardData[]): number {
-  const hidden = loadWikitabConfig().hiddenArticleTitleKeys
+  const hidden = loadWikitabConfig().hiddenArticleTitleKeys[WIKITAB_LANGUAGE] ?? []
   if (!hidden.length) return cards.length
 
   const hiddenSet = new Set(hidden)
@@ -126,6 +131,7 @@ export function useWikitabDailyReads() {
   function persistCache(): void {
     if (!cacheContext) return
     writeCachedDailyReads(
+      WIKITAB_LANGUAGE,
       cacheContext.day,
       cacheContext.savedFingerprint,
       items.value,
@@ -261,7 +267,7 @@ export function useWikitabDailyReads() {
     const day = utcDayKey()
     const articleSeeds = uniqueArticleSeedsFromSavedItems(savedItems)
     const savedFingerprint = buildDailyReadsSavedFingerprint(
-      articleSeeds.map((seed) => seed.titleKey),
+      articleSeeds.map(savedArticleSeedFingerprintKey),
     )
 
     // Same UTC day with cards already painted — keep them even if the saved
@@ -295,7 +301,7 @@ export function useWikitabDailyReads() {
     savedItemsSnapshot = cloneSavedItems(savedItems)
 
     if (!force) {
-      const cached = readCachedDailyReads(day)
+      const cached = readCachedDailyReads(WIKITAB_LANGUAGE, day)
       if (cached) {
         applyCachedItems(cached.items, cached.hasMore, day, cached.savedFingerprint)
 

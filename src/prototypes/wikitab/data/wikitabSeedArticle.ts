@@ -1,4 +1,4 @@
-import { articleTitleKey, isEnWikiMainNamespaceArticleTitle } from './wikitabHtml'
+import { articleTitleKey, isMainNamespaceArticleTitle } from './wikitabHtml'
 
 export type WikitabSeedArticleVia =
   | 'self'
@@ -37,7 +37,7 @@ export function seedArticle(
   via: WikitabSeedArticleVia,
 ): WikitabSeedArticle | undefined {
   const display = title?.trim().replace(/_/g, ' ')
-  if (!display || !isEnWikiMainNamespaceArticleTitle(display)) return undefined
+  if (!display || !isMainNamespaceArticleTitle(display)) return undefined
   const titleKey = articleTitleKey(display)
   if (!titleKey) return undefined
   return { title: display, titleKey, via }

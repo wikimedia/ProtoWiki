@@ -5,7 +5,6 @@ import { CdxButton, CdxField, CdxIcon, CdxSelect } from '@wikimedia/codex'
 import { cdxIconClose } from '@wikimedia/codex-icons'
 
 import WikitabConfigureModuleList from './WikitabConfigureModuleList.vue'
-import { evictWikitabCaches, patchWikitabConfig } from './data/wikitabConfig'
 import {
   setWikitabLanguage,
   WIKITAB_LANGUAGE,
@@ -48,13 +47,12 @@ const languageMenuItems = WIKITAB_LANGUAGE_OPTIONS.some((o) => o.value === WIKIT
   : [{ value: WIKITAB_LANGUAGE, label: WIKITAB_LANGUAGE }, ...WIKITAB_LANGUAGE_OPTIONS]
 const selectedLanguage = ref(WIKITAB_LANGUAGE)
 
-/** Cached feeds are in the old language — drop them, then reload. */
+/**
+ * Caches are keyed by language, so nothing needs clearing — the old language's
+ * entries stay valid for any tab still on it, and the reload reads the new one's.
+ */
 function onLanguageChange(lang: string): void {
-  const ok = setWikitabLanguage(lang, () => {
-    evictWikitabCaches()
-    patchWikitabConfig({ nearbyCardsCache: null })
-  })
-  if (!ok) selectedLanguage.value = WIKITAB_LANGUAGE
+  if (!setWikitabLanguage(lang)) selectedLanguage.value = WIKITAB_LANGUAGE
 }
 </script>
 
@@ -63,11 +61,11 @@ function onLanguageChange(lang: string): void {
     class="wikitab-configure-panel wikitab-panel"
     role="dialog"
     aria-modal="true"
-    aria-label="Modules"
+    aria-label="Settings"
   >
     <div class="wikitab-configure-panel__column">
       <header class="wikitab-configure-panel__head">
-        <h2 class="wikitab-configure-panel__title">Modules</h2>
+        <h2 class="wikitab-configure-panel__title">Settings</h2>
         <CdxButton
           class="wikitab-configure-panel__close"
           weight="quiet"
@@ -80,8 +78,7 @@ function onLanguageChange(lang: string): void {
       </header>
 
       <CdxField class="wikitab-configure-panel__language">
-        <template #label>Wikipedia language</template>
-        <template #help-text>The page reloads in the language you pick.</template>
+        <template #label>Wiki</template>
         <CdxSelect
           v-model:selected="selectedLanguage"
           :menu-items="languageMenuItems"
@@ -89,18 +86,23 @@ function onLanguageChange(lang: string): void {
         />
       </CdxField>
 
-      <WikitabConfigureModuleList
-        :order="props.moduleOrder"
-        :pinned-ids="props.pinnedIds"
-        :is-hidden="props.isHidden"
-        @show="emit('show', $event)"
-        @hide="emit('hide', $event)"
-        @reorder="emit('reorder', $event)"
-        @unpin="emit('unpin', $event)"
-      />
+      <CdxField class="wikitab-configure-panel__modules" :is-fieldset="true">
+        <template #label>Modules</template>
+        <WikitabConfigureModuleList
+          :order="props.moduleOrder"
+          :pinned-ids="props.pinnedIds"
+          :is-hidden="props.isHidden"
+          @show="emit('show', $event)"
+          @hide="emit('hide', $event)"
+          @reorder="emit('reorder', $event)"
+          @unpin="emit('unpin', $event)"
+        />
+      </CdxField>
 
       <div class="wikitab-configure-panel__footer">
-        <CdxButton class="wikitab-configure-panel__reset" @click="emit('reset')"> Reset </CdxButton>
+        <CdxButton class="wikitab-configure-panel__reset" @click="emit('reset')">
+          Reset modules
+        </CdxButton>
       </div>
     </div>
   </div>
@@ -144,16 +146,24 @@ function onLanguageChange(lang: string): void {
   color: var(--wikitab-theme-fg, var(--color-base));
 }
 
-.wikitab-configure-panel__language {
+.wikitab-configure-panel__language,
+.wikitab-configure-panel__modules {
   box-sizing: border-box;
   width: 100%;
   margin: 0;
 }
 
+/* A little more room between the "Modules" legend and its first row. */
+.wikitab-configure-panel__modules :deep(legend.cdx-label) {
+  padding-bottom: var(--spacing-75);
+}
+
 .wikitab-configure-panel__footer {
   box-sizing: border-box;
   width: 100%;
-  padding: var(--spacing-200) var(--spacing-100) var(--spacing-400);
+  /* Sits closer to the module list than the column gap: 12px instead of 24px. */
+  margin-top: calc(var(--spacing-75) - var(--spacing-150));
+  padding: 0 var(--spacing-100) var(--spacing-400);
 }
 
 .wikitab-configure-panel__close {
@@ -176,7 +186,8 @@ function onLanguageChange(lang: string): void {
   }
 
   .wikitab-configure-panel__head,
-  .wikitab-configure-panel__language {
+  .wikitab-configure-panel__language,
+  .wikitab-configure-panel__modules :deep(legend.cdx-label) {
     padding-inline: var(--spacing-100);
   }
 }

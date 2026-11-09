@@ -12,7 +12,7 @@ import {
 import { fetchWikitabPageSummary } from './fetchWikitabPageSummary'
 import { quoteHookHtml } from './wikitabCardPayloadMappers'
 import {
-  EN_WIKI_HOST,
+  WIKI_HOST,
   articleTitleFromWikiUrl,
   normalizeFeedHtml,
   wikiArticleUrl,
@@ -28,6 +28,7 @@ import {
   type WikitabFeaturedSpotlight,
   type WikitabFeaturedSpotlightKind,
 } from '../sections'
+import { WIKITAB_LANGUAGE } from './wikitabLanguage'
 
 /** Off-English, only TFA (some wikis) + POTD (REST `feed/featured`) exist — see `wikitabLanguageSupport.ts`. */
 const ENGLISH_SPOTLIGHTS = isWikitabFeatureAvailable('featured-english-spotlights')
@@ -207,7 +208,7 @@ function mapTfa(payload: FeaturedFeedResponse): WikitabFeaturedSpotlight | null 
   return {
     key: 'featured:tfa',
     kind: 'tfa',
-    url: wikiArticleUrl(EN_WIKI_HOST, raw.title),
+    url: wikiArticleUrl(WIKI_HOST, raw.title),
     title: displayTitle,
     description,
     thumbnailUrl: thumbnailUrl ?? undefined,
@@ -311,7 +312,7 @@ async function resolveTfpSpotlight(
 
   const tryTemplateForDay = async (templateDay: string): Promise<WikitabFeaturedSpotlight | null> => {
     const html = await fetchParseHtml(
-      EN_WIKI_HOST,
+      WIKI_HOST,
       `Template:POTD/${templateDay}`,
       'wikitab-featured-tfp-template',
       signal,
@@ -350,7 +351,7 @@ function parseTflHtml(html: string): ParsedTflBase | null {
     listTitle: titleAttr,
     spotlight: {
       key: 'featured:tfl',
-      url: wikiArticleUrl(EN_WIKI_HOST, titleAttr),
+      url: wikiArticleUrl(WIKI_HOST, titleAttr),
       title: displayTitle,
       thumbnailUrl: wikimediaThumbnailAtLeast(normalizeImageUrl(thumb), WIKITAB_FEED_CARD_THUMB_WIDTH),
       supportingText: supportingText(meta),
@@ -387,7 +388,7 @@ async function fetchTflSpotlightForDay(
   report?: (spotlight: WikitabFeaturedSpotlight, loading: WikitabCardLoading) => void,
 ): Promise<WikitabFeaturedSpotlight | null> {
   const page = spotlightDates(candidateDay).tflPage
-  const html = await fetchParseHtml(EN_WIKI_HOST, page, purpose, signal)
+  const html = await fetchParseHtml(WIKI_HOST, page, purpose, signal)
   const parsed = html ? parseTflHtml(html) : null
   if (parsed) {
     report?.({ ...parsed.spotlight, kind: 'tfl' }, { description: true })
@@ -469,7 +470,7 @@ function firstEnWikiLinkTitle(html: string): string | undefined {
   for (const anchor of anchors) {
     const href = anchor.getAttribute('href') ?? ''
     const absolute = href.startsWith('//') ? `https:${href}` : href
-    if (!absolute.startsWith(`https://${EN_WIKI_HOST}/wiki/`)) continue
+    if (!absolute.startsWith(`https://${WIKI_HOST}/wiki/`)) continue
     const title = articleTitleFromWikiUrl(absolute)
     if (title && !isInterwikiPrefixedTitle(title)) return title
   }
@@ -718,7 +719,7 @@ async function fetchSpotlightsForDay(
       }
       return payload
     }),
-    fetchParseHtml(EN_WIKI_HOST, 'Main_Page', 'wikitab-featured-main-page', signal),
+    fetchParseHtml(WIKI_HOST, 'Main_Page', 'wikitab-featured-main-page', signal),
     fetchParseHtml(WIKTIONARY_HOST, dates.wotdPage, 'wikitab-featured-wotd', signal).then(
       (html) => {
         const wotd = html ? parseWotdHtml(html) : null
@@ -733,7 +734,7 @@ async function fetchSpotlightsForDay(
         return html
       },
     ),
-    fetchParseHtml(EN_WIKI_HOST, dates.tflPage, 'wikitab-featured-tfl', signal).then((html) => {
+    fetchParseHtml(WIKI_HOST, dates.tflPage, 'wikitab-featured-tfl', signal).then((html) => {
       const parsed = html ? parseTflHtml(html) : null
       if (parsed) report({ ...parsed.spotlight, kind: 'tfl' }, { description: true })
       return html
@@ -805,11 +806,11 @@ export async function fetchWikitabFeatured(
   options?: FetchWikitabFeaturedOptions,
 ): Promise<WikitabFeaturedSpotlight[]> {
   if (!options?.skipCache) {
-    const cached = readCachedFeatured(day)
+    const cached = readCachedFeatured(WIKITAB_LANGUAGE, day)
     if (cached) return cached
   }
 
   const items = await fetchSpotlightsForDay(day, signal, onSpotlight)
-  writeCachedFeatured(day, items)
+  writeCachedFeatured(WIKITAB_LANGUAGE, day, items)
   return items.map((item) => ({ ...item }))
 }

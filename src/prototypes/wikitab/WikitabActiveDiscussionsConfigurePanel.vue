@@ -4,10 +4,6 @@ import { onMounted, onUnmounted } from 'vue'
 import { CdxButton, CdxIcon, CdxToggleSwitch } from '@wikimedia/codex'
 import { cdxIconClose } from '@wikimedia/codex-icons'
 
-import { isWikitabFeatureAvailable } from './data/wikitabLanguageSupport'
-
-const noticeboardsAvailable = isWikitabFeatureAvailable('discussions-noticeboards')
-
 const props = defineProps<{
   showNoticeboards: boolean
   showSavedTalk: boolean
@@ -59,7 +55,6 @@ onUnmounted(() => {
 
       <div class="wikitab-active-discussions-configure-panel__toggles">
         <CdxToggleSwitch
-          v-if="noticeboardsAvailable"
           class="wikitab-active-discussions-configure-panel__toggle"
           :model-value="props.showNoticeboards"
           @update:model-value="emit('update:showNoticeboards', $event)"

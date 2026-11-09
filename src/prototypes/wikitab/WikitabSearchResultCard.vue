@@ -20,11 +20,15 @@ import { formatSearchArticleRelationRationaleHtml } from './data/formatSearchArt
 import { highlightSearchQuery } from './data/highlightSearchQuery'
 import type { WikitabSearchArticle } from './data/fetchWikitabSearchArticles'
 import { articleUrl } from './data/wikitabHtml'
+import { WIKITAB_LANGUAGE, wikitabDir } from './data/wikitabLanguage'
 import type { AttributionTrustAndRelevance } from '@/components/attribution/types'
 
 import { WIKITAB_SUPPORTING_ICON_TEXT_LEADING } from './data/wikitabSupportingIconText'
 import { useThumbnailSlotReady } from './useThumbnailSlotReady'
 import { useWikitabSearchArticleAttribution } from './useWikitabSearchArticleAttribution'
+
+/** Search results are this wiki's text — `lang` / `dir` on the card, so right-to-left wikis mirror it. */
+const contentAttrs = { lang: WIKITAB_LANGUAGE, dir: wikitabDir(WIKITAB_LANGUAGE) }
 
 const props = defineProps<{
   article: WikitabSearchArticle
@@ -115,17 +119,20 @@ const thumbnail = computed(() =>
 </script>
 
 <template>
-  <div class="wikitab-search-result-card">
+  <div class="wikitab-search-result-card" v-bind="contentAttrs">
+    <!-- Positioned with the card (mirrors on RTL); its items are Wikitab UI, English / LTR. -->
     <div class="wikitab-search-result-card__menu">
-      <CdxMenuButton
-        v-model:selected="selection"
-        class="wikitab-search-result-card__menu-button"
-        weight="quiet"
-        :menu-items="menuItems"
-        :aria-label="`${article.title} options`"
-      >
-        <CdxIcon :icon="cdxIconEllipsis" />
-      </CdxMenuButton>
+      <div lang="en" dir="ltr">
+        <CdxMenuButton
+          v-model:selected="selection"
+          class="wikitab-search-result-card__menu-button"
+          weight="quiet"
+          :menu-items="menuItems"
+          :aria-label="`${article.title} options`"
+        >
+          <CdxIcon :icon="cdxIconEllipsis" />
+        </CdxMenuButton>
+      </div>
     </div>
 
     <CdxDialog
@@ -162,16 +169,19 @@ const thumbnail = computed(() =>
       <p
         v-if="descriptionHtml"
         class="wikitab-search-result-card__description cdx-card__text__description"
+       
         v-html="descriptionHtml"
       />
       <p
         v-if="article.matchSnippetHtml"
         class="wikitab-search-result-card__extract cdx-card__text__description"
+       
         v-html="article.matchSnippetHtml"
       />
       <p
         v-else-if="extractHtml"
         class="wikitab-search-result-card__extract cdx-card__text__description"
+       
         v-html="extractHtml"
       />
       <p
@@ -316,6 +326,11 @@ const thumbnail = computed(() =>
 .wikitab-search-result-card__description,
 .wikitab-search-result-card__extract {
   margin: 0;
+}
+
+/* Short descriptions are lowercase on many wikis (fr: "acteur franco-espagnol"). */
+.wikitab-search-result-card__description::first-letter {
+  text-transform: uppercase;
 }
 
 .wikitab-search-result-card__extract {

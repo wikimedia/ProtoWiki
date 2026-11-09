@@ -49,8 +49,49 @@ export interface WikitabSavedItemBase {
   /** Identity for dedupe / hide — not necessarily an article. See {@link seedArticle}. */
   articleTitleKey: string
   articleTitle: string
-  /** The enwiki article this save contributes to saved-driven modules, if any. */
+  /**
+   * Language of the wiki the item was saved from (`en`, `fr`, …). Ids are only
+   * unique within one wiki, so saved identity is `lang` + `id` — see
+   * {@link savedItemKey}. Rows saved before the language setting are `en`.
+   */
+  lang: string
+  /**
+   * The article (on the `lang` wiki) this save contributes to saved-driven
+   * modules, if any. Other wikis resolve it via Wikidata — `resolveSeedsForWiki.ts`.
+   */
   seedArticle?: WikitabSeedArticle
+}
+
+/** Saved identity across wikis — the same `id` can be saved once per wiki language. */
+export function savedItemKeyFor(id: string, lang: string): string {
+  return `${lang}|${id}`
+}
+
+export function savedItemKey(item: Pick<WikitabSavedItemBase, 'id' | 'lang'>): string {
+  return savedItemKeyFor(item.id, item.lang)
+}
+
+const WIKI_URL_LANG =
+  /^https?:\/\/([a-z][a-z0-9-]*)\.(?:m\.)?(?:wikipedia|wiktionary|wikiquote)\.org\//i
+
+/** `fr` from `https://fr.wikipedia.org/wiki/…`; undefined for Commons / other hosts. */
+export function wikiLangFromUrl(url: string | undefined): string | undefined {
+  const match = url?.match(WIKI_URL_LANG)
+  return match ? match[1].toLowerCase() : undefined
+}
+
+/**
+ * Stored `lang`, else inferred from the item's wiki URL. Rows saved before the
+ * language setting existed carry no `lang` and were always enwiki.
+ */
+function savedItemLang(record: Record<string, unknown>): string {
+  const stored = str(record, 'lang')
+  if (stored) return stored.toLowerCase()
+  for (const field of ['url', 'diffUrl', 'editUrl']) {
+    const lang = wikiLangFromUrl(str(record, field))
+    if (lang) return lang
+  }
+  return 'en'
 }
 
 export interface WikitabSavedArticleItem extends WikitabSavedItemBase {
@@ -197,6 +238,7 @@ function normalizeSavedItemBase(record: Record<string, unknown>): WikitabSavedIt
     savedAt,
     articleTitleKey: articleTitleKeyValue,
     articleTitle,
+    lang: savedItemLang(record),
     seedArticle: parseSeedArticle(record.seedArticle),
   }
 }
@@ -425,7 +467,7 @@ function normalizeSingleSavedItem(raw: unknown): WikitabSavedItem | null {
   }
 }
 
-/** Unknown and duplicate entries are dropped; most recent `savedAt` wins per id. */
+/** Unknown and duplicate entries are dropped; most recent `savedAt` wins per `lang` + id. */
 export function normalizeSavedItems(raw: unknown): WikitabSavedItem[] {
   if (!Array.isArray(raw)) return []
 
@@ -439,10 +481,11 @@ export function normalizeSavedItems(raw: unknown): WikitabSavedItem[] {
       continue
     }
 
-    const existing = byId.get(normalized.id)
+    const key = savedItemKey(normalized)
+    const existing = byId.get(key)
     if (existing && existing.savedAt >= normalized.savedAt) continue
 
-    byId.set(normalized.id, normalized)
+    byId.set(key, normalized)
   }
 
   if (import.meta.env.DEV && dropped > 0) {
@@ -452,7 +495,7 @@ export function normalizeSavedItems(raw: unknown): WikitabSavedItem[] {
   return [...byId.values()].sort((a, b) => b.savedAt - a.savedAt)
 }
 
-/** Merge lists; duplicate ids keep the entry with the latest `savedAt`. */
+/** Merge lists; duplicate `lang` + id keep the entry with the latest `savedAt`. */
 export function mergeSavedItemsById(
   ...lists: readonly (readonly WikitabSavedItem[])[]
 ): WikitabSavedItem[] {
@@ -460,9 +503,10 @@ export function mergeSavedItemsById(
 
   for (const list of lists) {
     for (const item of list) {
-      const existing = byId.get(item.id)
+      const key = savedItemKey(item)
+      const existing = byId.get(key)
       if (!existing || existing.savedAt < item.savedAt) {
-        byId.set(item.id, item)
+        byId.set(key, item)
       }
     }
   }
@@ -502,4 +546,18 @@ export function savedItemThumbnailUrl(item: WikitabSavedItem): string | undefine
 /** The article this save feeds into saved-driven modules. */
 export function savedItemSeedArticle(item: WikitabSavedItem): WikitabSeedArticle | undefined {
   return item.seedArticle
+}
+
+/** The item's link on its own wiki — tells Wikipedia / Wiktionary / Wikiquote apart. */
+export function savedItemSourceUrl(item: WikitabSavedItem): string | undefined {
+  switch (item.type) {
+    case 'change':
+      return item.diffUrl
+    case 'suggestion':
+      return item.editUrl
+    case 'image':
+      return undefined
+    default:
+      return item.url
+  }
 }

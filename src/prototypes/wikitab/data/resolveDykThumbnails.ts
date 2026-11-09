@@ -6,7 +6,8 @@ import { wikitabCardDescriptionHasHtmlMarkup, wikitabCardDescriptionText } from 
 import { wikitabCardMenuArticleTitle } from './wikitabCardLinkLabel'
 import { WIKITAB_FEED_CARD_THUMB_WIDTH, wikimediaThumbnailAtLeast } from './wikimediaThumbnailUrl'
 import { patchCachedFeedCardThumbnails, utcDayKey } from './feedCache'
-import { EN_WIKI_HOST, isEnWikiMainNamespaceArticleTitle } from './wikitabHtml'
+import { WIKI_HOST, isMainNamespaceArticleTitle } from './wikitabHtml'
+import { WIKITAB_LANGUAGE } from './wikitabLanguage'
 
 const CONCURRENCY = 3
 
@@ -14,7 +15,7 @@ const CONCURRENCY = 3
 const thumbnailByTitle = new Map<string, string | null>()
 
 async function fetchThumbnail(title: string, signal?: AbortSignal): Promise<string | null> {
-  const url = `https://${EN_WIKI_HOST}/api/rest_v1/page/summary/${encodeURIComponent(
+  const url = `https://${WIKI_HOST}/api/rest_v1/page/summary/${encodeURIComponent(
     title.replace(/ /g, '_'),
   )}?redirect=true`
 
@@ -37,7 +38,7 @@ function hookThumbnailSubject(card: WikitabCardData): string | null {
   const body = wikitabCardDescriptionText(card)
   if (!body || !wikitabCardDescriptionHasHtmlMarkup(body)) return null
   const subject = wikitabCardMenuArticleTitle(card).trim()
-  if (!subject || !isEnWikiMainNamespaceArticleTitle(subject)) return null
+  if (!subject || !isMainNamespaceArticleTitle(subject)) return null
   return subject
 }
 
@@ -65,7 +66,7 @@ export async function resolveDykThumbnails(
 
   function persistCardResult(card: WikitabCardData, thumbnailUrl: string | null): void {
     if (!persistDay || !persistSectionId) return
-    patchCachedFeedCardThumbnails(persistDay, persistSectionId, card.key, {
+    patchCachedFeedCardThumbnails(WIKITAB_LANGUAGE, persistDay, persistSectionId, card.key, {
       ...(thumbnailUrl ? { thumbnailUrl } : {}),
       thumbnailLookupComplete: true,
     })

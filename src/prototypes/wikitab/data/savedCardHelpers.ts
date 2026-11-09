@@ -1,5 +1,7 @@
 import type { Icon } from '@wikimedia/codex-icons'
 
+import { wikiHostFromLang } from '@/config'
+
 import {
   WIKITAB_SAVED_MODULE_SPEC,
   type WikitabCardData,
@@ -7,7 +9,11 @@ import {
   type WikitabFeaturedSpotlightKind,
 } from '../sections'
 import { resolveEditOpportunityCopy } from './editOpportunityCopy'
-import type { WikitabSearchActivityItem } from './fetchWikitabSearchActivity'
+import {
+  wikitabRevisionDiffUrl,
+  wikitabRevisionThankUrl,
+  type WikitabSearchActivityItem,
+} from './fetchWikitabSearchActivity'
 import type { WikitabSearchContributeItem } from './fetchWikitabSearchContribute'
 import type { WikitabSearchImage } from './fetchWikitabSearchImages'
 import {
@@ -90,11 +96,15 @@ export {
   wordSavedId,
 } from './savedItemIds'
 
+import { WIKITAB_LANGUAGE } from './wikitabLanguage'
+
 export { cloneSavedItems } from './wikitabSavedItems'
 
 export interface WikitabSavedArticleSeed {
   titleKey: string
   title: string
+  /** Wiki the title belongs to — resolve it for another wiki with `resolveSeedsForWiki.ts`. */
+  lang: string
 }
 
 function displayTitle(title: string): string {
@@ -192,6 +202,7 @@ export function buildSavedArticleFromCard(card: WikitabCardData): WikitabSavedAr
     type: 'article',
     primitive: 'article',
     savedAt: Date.now(),
+    lang: WIKITAB_LANGUAGE,
     articleTitleKey: articleTitleKeyValue,
     articleTitle,
     seedArticle: card.seedArticle ?? seedArticle(articleTitle, 'self'),
@@ -218,6 +229,7 @@ export function buildSavedSnippetFromCard(
     type: 'snippet',
     primitive: 'snippet',
     savedAt: Date.now(),
+    lang: WIKITAB_LANGUAGE,
     articleTitleKey: key,
     articleTitle: title,
     seedArticle: card.seedArticle ?? seedArticle(title, 'hook-link'),
@@ -239,6 +251,7 @@ export function buildSavedArticleFromHookCard(card: WikitabCardData): WikitabSav
     type: 'article',
     primitive: 'article',
     savedAt: Date.now(),
+    lang: WIKITAB_LANGUAGE,
     articleTitleKey: key,
     articleTitle: title,
     seedArticle: card.seedArticle ?? seedArticle(title, 'hook-link'),
@@ -261,6 +274,7 @@ export function buildSavedWordFromSpotlight(
     type: 'word',
     primitive: 'word',
     savedAt: Date.now(),
+    lang: WIKITAB_LANGUAGE,
     articleTitleKey: key,
     articleTitle: word,
     seedArticle: spot.seedArticle,
@@ -283,6 +297,7 @@ export function buildSavedQuoteFromSpotlight(
     type: 'quote',
     primitive: 'quote',
     savedAt: Date.now(),
+    lang: WIKITAB_LANGUAGE,
     articleTitleKey: key,
     articleTitle: personName ?? displayTitle(quoteText.slice(0, 80)),
     seedArticle: spot.seedArticle,
@@ -313,6 +328,7 @@ export async function buildSavedImageFromFeaturedSpotlight(
       type: 'image',
       primitive: 'image',
       savedAt: Date.now(),
+      lang: WIKITAB_LANGUAGE,
       articleTitleKey: key,
       articleTitle: title,
       seedArticle: spot.seedArticle,
@@ -333,6 +349,7 @@ export async function buildSavedImageFromFeaturedSpotlight(
     type: 'image',
     primitive: 'image',
     savedAt: Date.now(),
+    lang: WIKITAB_LANGUAGE,
     articleTitleKey: stableId,
     articleTitle: fallbackTitle,
     seedArticle: spot.seedArticle,
@@ -363,6 +380,7 @@ export function buildSavedArticleFromSearch(input: {
     type: 'article',
     primitive: 'article',
     savedAt: Date.now(),
+    lang: WIKITAB_LANGUAGE,
     articleTitleKey: articleTitleKeyValue,
     articleTitle: title,
     seedArticle: seedArticle(title, 'self'),
@@ -389,6 +407,7 @@ export function buildSavedArticleFromSeedArticle(
     type: 'article',
     primitive: 'article',
     savedAt: Date.now(),
+    lang: WIKITAB_LANGUAGE,
     articleTitleKey: articleTitleKeyValue,
     articleTitle: title,
     seedArticle: seed,
@@ -413,6 +432,7 @@ export function buildSavedSuggestionFromCard(card: WikitabCardData): WikitabSave
     type: 'suggestion',
     primitive: 'suggestion',
     savedAt: Date.now(),
+    lang: WIKITAB_LANGUAGE,
     articleTitleKey: articleTitleKeyValue,
     articleTitle,
     seedArticle: card.seedArticle ?? seedArticle(articleTitle, 'self'),
@@ -438,6 +458,7 @@ export function buildSavedSuggestion(
     type: 'suggestion',
     primitive: 'suggestion',
     savedAt: Date.now(),
+    lang: WIKITAB_LANGUAGE,
     articleTitleKey: articleTitleKeyValue,
     articleTitle,
     seedArticle: seedArticle(articleTitle, 'self'),
@@ -463,6 +484,7 @@ export function buildSavedImage(image: WikitabSearchImage): WikitabSavedImageIte
     type: 'image',
     primitive: 'image',
     savedAt: Date.now(),
+    lang: WIKITAB_LANGUAGE,
     articleTitleKey: articleTitleKeyValue,
     articleTitle: title,
     seedArticle: image.seedArticle,
@@ -486,6 +508,7 @@ export function buildSavedChange(item: WikitabSearchActivityItem): WikitabSavedC
     type: 'change',
     primitive: 'edit',
     savedAt: Date.now(),
+    lang: WIKITAB_LANGUAGE,
     articleTitleKey: articleTitleKeyValue,
     articleTitle,
     seedArticle: seedArticle(articleTitle, 'edited-page'),
@@ -518,6 +541,7 @@ export function buildSavedDiscussion(card: WikitabCardData): WikitabSavedDiscuss
     type: 'discussion',
     primitive: 'discussion',
     savedAt: Date.now(),
+    lang: WIKITAB_LANGUAGE,
     articleTitleKey: noticeboardKey,
     articleTitle: noticeboardPage || card.title,
     title: card.title,
@@ -537,7 +561,13 @@ function parseCommentCountFromSupportingText(supportingText: string | undefined)
 }
 
 export function savedItemToActivityItem(item: WikitabSavedChangeItem): WikitabSearchActivityItem {
-  const activity = searchActivityCardPayloadToItem(savedChangeItemToCardPayload(item))
+  // Revision ids belong to the wiki the edit was saved from.
+  const host = wikiHostFromLang(item.lang)
+  const activity = {
+    ...searchActivityCardPayloadToItem(savedChangeItemToCardPayload(item)),
+    diffUrl: item.diffUrl || wikitabRevisionDiffUrl(item.articleTitle, item.revisionId, host),
+    thankUrl: wikitabRevisionThankUrl(item.revisionId, host),
+  }
   if (!item.editedTimestamp?.trim() && item.editedRelative) {
     return { ...activity, editedRelative: item.editedRelative, editedTimestamp: '' }
   }
@@ -602,6 +632,13 @@ export function savedDiscussionToWikitabCard(item: WikitabSavedDiscussionItem): 
   return savedDiscussionPayloadToCardData(savedDiscussionItemToCardPayload(item))
 }
 
+/** Fingerprint part for one seed — names its wiki, since titles are per-wiki. */
+export function savedArticleSeedFingerprintKey(
+  seed: Pick<WikitabSavedArticleSeed, 'lang' | 'titleKey'>,
+): string {
+  return `${seed.lang}:${seed.titleKey}`
+}
+
 export function uniqueArticleSeedsFromSavedItems(
   items: readonly WikitabSavedItem[],
 ): WikitabSavedArticleSeed[] {
@@ -609,8 +646,11 @@ export function uniqueArticleSeedsFromSavedItems(
 
   for (const saved of items) {
     const seed = savedItemSeedArticle(saved)
-    if (seed && !byKey.has(seed.titleKey)) {
-      byKey.set(seed.titleKey, { titleKey: seed.titleKey, title: seed.title })
+    if (!seed) continue
+    // Titles are only unique within one wiki.
+    const key = `${saved.lang}:${seed.titleKey}`
+    if (!byKey.has(key)) {
+      byKey.set(key, { titleKey: seed.titleKey, title: seed.title, lang: saved.lang })
     }
   }
 

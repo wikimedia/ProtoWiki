@@ -4,12 +4,12 @@ import { WIKITAB_LANGUAGE } from './wikitabLanguage'
 
 /**
  * Wikipedia host for this page load — follows the language setting
- * (`wikitabLanguage.ts`). Name kept for a small diff; it is no longer always `en`.
+ * (`wikitabLanguage.ts`).
  */
-export const EN_WIKI_HOST = wikiHostFromLang(WIKITAB_LANGUAGE)
+export const WIKI_HOST = wikiHostFromLang(WIKITAB_LANGUAGE)
 
 export function articleUrl(title: string): string {
-  return wikiArticleUrl(EN_WIKI_HOST, title)
+  return wikiArticleUrl(WIKI_HOST, title)
 }
 
 /** Read-mode URL for an article section (MediaWiki fragment: spaces → `_`). */
@@ -66,7 +66,7 @@ export function articleTitleKey(title: string): string {
 }
 
 /** False for project / talk / file titles — e.g. `Wikipedia:Picture of the day`. */
-export function isEnWikiMainNamespaceArticleTitle(title: string): boolean {
+export function isMainNamespaceArticleTitle(title: string): boolean {
   const normalized = title.trim().replace(/_/g, ' ')
   if (!normalized) return false
 
@@ -139,9 +139,9 @@ export function normalizeFeedHtml(html: string): string {
   for (const anchor of Array.from(root.querySelectorAll('a'))) {
     const href = anchor.getAttribute('href') ?? ''
     if (href.startsWith('./')) {
-      anchor.setAttribute('href', `https://${EN_WIKI_HOST}/wiki/${href.slice(2)}`)
+      anchor.setAttribute('href', `https://${WIKI_HOST}/wiki/${href.slice(2)}`)
     } else if (href.startsWith('/wiki/')) {
-      anchor.setAttribute('href', `https://${EN_WIKI_HOST}${href}`)
+      anchor.setAttribute('href', `https://${WIKI_HOST}${href}`)
     }
     anchor.setAttribute('target', '_blank')
     anchor.setAttribute('rel', 'noreferrer')

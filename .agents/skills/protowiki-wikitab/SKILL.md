@@ -393,12 +393,54 @@ per section. Home modules use the same empty pattern with module-specific copy
 (Saved / Daily reads / Help wanted / Nearby / Recent edits / Active discussions —
 see each module below); never the old generic `"Nothing to show right now."` line.
 
-## Wikipedia language
+## Wiki (language)
 
-The Modules panel has a **Wikipedia language** select (`data/wikitabLanguage.ts`).
-`WIKITAB_LANGUAGE` is read once at load; changing it clears feed caches and
-reloads. Every fetcher builds its host from it (`EN_WIKI_HOST` in `wikitabHtml.ts`
-is a legacy name — it follows the setting).
+The Settings panel has a **Wiki** select (options are each Wikipedia's own name, e.g. "Wikipédia en français") (`data/wikitabLanguage.ts`).
+`WIKITAB_LANGUAGE` is read once at load; changing it stores the new language and
+reloads — nothing is cleared. Every fetcher builds its host from it (`WIKI_HOST`
+in `wikitabHtml.ts`).
+
+**Language is explicit everywhere state is stored.** A second tab still on the old
+language must keep working, and a late write just before the reload must not
+leak into the new language:
+
+- **Caches** — every cache read/write takes `lang` first and stores under
+  `wikitabCacheKey(CACHE_KEY, lang)` (`wikitab-feed-cache-v22:fr`). Nearby lives in
+  `config.nearbyCardsCache[lang]`. Never read `WIKITAB_LANGUAGE` inside a cache
+  module — callers pass it. `removeStaleKeys()` keeps only `base:<lang>` keys.
+- **Saved items** — every row has `lang` (stamped by the `buildSaved*` builders;
+  old rows infer it from their URL, else `en`). Ids are only unique per wiki, so
+  saved identity is **`savedItemKey()` = `lang|id`**: `isSaved(id, lang?)`,
+  `unsaveItem(id, lang?)`, dedupe and merges all use it (`lang` defaults to this
+  page's wiki, where cards come from). Items from another wiki keep linking to
+  their own wiki and show **"French Wikipedia"** with the language icon at the end of the
+  supporting row (`wikitabSavedFromWikiName`); **Save article** isn't offered on them.
+- **Seeds** — `uniqueArticleSeedsFromSavedItems` returns `{ title, titleKey, lang }`.
+  Saved-driven feeds pass them through **`resolveSeedsForWiki()`**
+  (`data/resolveSeedsForWiki.ts`) before fetching: other-wiki seeds become this
+  wiki's article via the Wikidata sitelink (dropped when there is none);
+  same-wiki titles containing `:` are checked against the wiki (`ns === 0`), which
+  catches localized namespaces. Cached per target language
+  (`wikitab-seed-resolve-cache-v1:<lang>`). Seed fingerprints are
+  `savedArticleSeedFingerprintKey()` = `lang:titleKey`.
+- **Hidden articles / dismissed edits** — `config.hiddenArticleTitleKeys` and
+  `config.dismissedActivityRevids` are `{ [lang]: list }` (titles and revision ids
+  are per-wiki); the composables read and write the current language's list.
+
+**Right-to-left wikis** (`ar`, `fa`, `he` — `wikitabDir()`): Wikitab's UI copy is
+English, so the page and module chrome stay LTR. Content surfaces take the wiki's
+direction as a whole, so they mirror like Codex does on that wiki:
+
+- **Cards** — `lang` / `dir` on the `WikitabCard` root (`contentLang`, defaulting to
+  this wiki; saved slots pass the item's `lang`) and the `WikitabSearchResultCard`
+  root. The ⋯ menu moves with the card but its surface is `lang="en" dir="ltr"`.
+- **Search suggestions** — the typeahead panel takes the wiki's `dir`; the
+  "Search for" row is English / LTR with the query in a `<bdi>`. The input is
+  `dir="auto"`.
+- **Codex CSS** — ProtoWiki loads the LTR `codex.style.css`. Codex's bidi build
+  can't nest an RTL subtree in an LTR page (`[dir=ltr]` and `[dir=rtl]` rules
+  both match), so `WikitabCard` / `WikitabSearch` mirror the few physical margins
+  Codex sets (card thumbnail / icon, menu item thumbnail / icon) under `[dir='rtl']`.
 
 Not every wiki has every feature. **`data/wikitabLanguageSupport.ts`** is a
 hard-coded table of which languages support each one; anything unsupported is
@@ -406,9 +448,8 @@ hidden rather than rendered empty or mis-parsed:
 
 | Feature | Effect when unsupported |
 | ------- | ----------------------- |
-| `news`, `dyk`, `otd`, `births` | Module is implicitly hidden (`useWikitabHiddenSections` merges it into `hiddenIds` without persisting) and left out of the Modules list; its stored order slot is kept for when the language changes back. |
-| `featured-tfa`, `featured-english-spotlights` | Kind dropped from `WIKITAB_FEATURED_SPOTLIGHT_KINDS`, so Featured fetches and reserves only what exists (POTD is everywhere). |
-| `discussions-noticeboards` | Active discussions uses saved-article talk pages only; the toggle is hidden. |
+| `news`, `dyk`, `otd`, `births`, `discussions-noticeboards` | Module (News, DYK, OTD, Birthdays, **Active discussions**) is implicitly hidden (`useWikitabHiddenSections` merges it into `hiddenIds` without persisting) and left out of the Modules list; its stored order slot is kept for when the language changes back. `?screen=<module>` deep links to it land on home (`useWikitabOverlayNavigation`). |
+| `featured-tfa`, `featured-english-spotlights` | Kind dropped from `WIKITAB_FEATURED_SPOTLIGHT_KINDS`, so Featured fetches and reserves only what exists (POTD is everywhere). Without `featured-tfa` the whole module is hidden — a lone POTD card isn't worth a module. |
 | `review-changes-risky` | Recent edits uses saved-article edits only (`rcshow=oresreview` is silently ignored where ORES isn't deployed); the toggle is hidden. |
 | `module-about-pages` | No About footer (the titles are enwiki pages). |
 
@@ -552,7 +593,9 @@ Recent edits is the optional **`seedArticle`** (`{ title, titleKey, via }`,
 `data/wikitabSeedArticle.ts`). It is resolved **when the card is fetched** and
 set on `WikitabCardData` / `WikitabFeaturedSpotlight` / `WikitabSearchImage`.
 `buildSaved*` copies it onto the saved item, so saving never fetches. Only
-mainspace enwiki titles seed (`seedArticle()` returns `undefined` otherwise).
+mainspace titles seed (`seedArticle()` returns `undefined` otherwise). The seed
+belongs to the item's `lang` wiki; feeds resolve it for the current wiki (see
+**Wiki** select).
 
 | Saved from | `seedArticle` source | `via` |
 | ---------- | -------------------- | ----- |
@@ -632,7 +675,7 @@ Sources (`data/fetchWikitabFeatured.ts`, parallel per UTC day):
 
 Quote of the day cards omit `descriptionLineClamp` (no line clamp) and link to the dated
 `Wikiquote:Quote of the day/{Month}_{day}` page, not the subject article.
-Cached under `wikitab-featured-cache-v20` (`data/featuredCache.ts`) with
+Cached under `wikitab-featured-cache-v21:<lang>` (`data/featuredCache.ts`) with
 `fetchedAt` and a **4-hour TTL** (stale-while-revalidate). Composable:
 `useWikitabFeatured.ts`; section: `WikitabFeaturedSection.vue`. **Color of the
 day** is reserved for a future spotlight kind — no v1 source.
@@ -647,7 +690,7 @@ filtered. Cards are `article` primitive with `supportingText` distance
 ordered home load (no re-prompt). Menu **Refresh** reuses stored coords.
 Paging: **4 initial**, **+6 per reveal** — all hits buffered client-side
 (geosearch has no offset). Full card payloads live in
-`WikitabConfig.nearbyCardsCache` (with `nearbyLastCoord`) — **not** a standalone
+`WikitabConfig.nearbyCardsCache[lang]` (with `nearbyLastCoord`) — **not** a standalone
 cache key that `evictWikitabCaches()` can wipe. Warm cache paints on the first
 tick with **no network**. Primary invalidation is **coord change** (epsilon
 ~0.002° ≈ 200 m); **4-hour TTL** (`NEARBY_TTL_MS`) is a safety net — fresh →
@@ -686,7 +729,8 @@ Paging: **2 initial cards**, **+4 per reveal**. Cached under
 `wikitab-suggested-edits-cache-v2` (`data/suggestedEditsCache.ts`) — same day-keyed /
 signature-gated refresh as Daily reads.
 
-**Active discussions** (`discussions`) — discussion cards merged from up to two
+**Active discussions** (`discussions`) — **English Wikipedia only** (its noticeboards
+are enwiki pages; the module is hidden on other wikis). Discussion cards merged from up to two
 sources (section ellipsis → **Configure** → full-screen panel at
 `?screen=active-discussions-settings`, same `wikitab-panel` chrome as Recent
 edits / Modules / Color theme):

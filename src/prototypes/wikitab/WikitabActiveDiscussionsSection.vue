@@ -27,7 +27,6 @@ import WikitabCard from './WikitabCard.vue'
 import WikitabModuleHead from './WikitabModuleHead.vue'
 import WikitabModuleMore from './WikitabModuleMore.vue'
 import WikitabModuleRefreshCard from './WikitabModuleRefreshCard.vue'
-import WikitabNothingSavedYet from './WikitabNothingSavedYet.vue'
 import WikitabSavedItemTabs from './WikitabSavedItemTabs.vue'
 import { useEqualRowHeights } from './useEqualRowHeights'
 import { useInfiniteScroll } from './useInfiniteScroll'
@@ -362,13 +361,6 @@ function savePayloadForCard(card: WikitabCardData): SaveItemPayload {
       <p v-if="error" class="wikitab-active-discussions-section__error">
         <small>{{ error }}</small>
       </p>
-
-      <!-- Saved-talk only (e.g. noticeboards unavailable off-English) and nothing saved. -->
-      <WikitabNothingSavedYet
-        v-else-if="isEmpty && !showNoticeboards"
-        message="Save an article to see discussions on its talk page."
-        reserve-card-height
-      />
 
       <div v-else ref="scroller" class="wikitab-active-discussions-section__cards">
         <WikitabCard

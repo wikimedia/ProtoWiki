@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { savedItemKey } from './data/wikitabSavedItems'
 import { computed, ref, toRef, watch } from 'vue'
 import { CdxButton, CdxIcon, CdxMenuButton } from '@wikimedia/codex'
 import {
@@ -28,10 +29,11 @@ const spec = WIKITAB_SAVED_MODULE_SPEC
 const props = defineProps<{
   savedItems: WikitabSavedItem[]
   /** Saved id → fields still being enriched (description / thumbnail). */
+  /** Keyed by `savedItemKey` (`lang|id`). */
   itemLoading?: Map<string, WikitabCardLoading>
   loading: boolean
   pinned: boolean
-  isCardSaved: (id: string) => boolean
+  isCardSaved: (id: string, lang?: string) => boolean
   saveArticleMenuLookup: WikitabSaveArticleMenuLookup
 }>()
 
@@ -39,8 +41,9 @@ const emit = defineEmits<{
   'toggle-pin': []
   'refresh-section': []
   'hide-section': []
-  'toggle-save': [id: string]
-  'toggle-save-article': [id: string]
+  /** Saved identity is `lang` + id — ids are only unique within one wiki. */
+  'toggle-save': [id: string, lang: string]
+  'toggle-save-article': [id: string, lang: string]
   'open-screen': []
 }>()
 
@@ -111,7 +114,7 @@ const slots = computed(() =>
     const saved = filteredItems.value[index]!
     const revealLoading = slotLoading(index)
     const loading: WikitabCardLoading =
-      revealLoading === true ? true : (props.itemLoading?.get(saved.id) ?? revealLoading)
+      revealLoading === true ? true : (props.itemLoading?.get(savedItemKey(saved)) ?? revealLoading)
     return { saved, loading }
   }),
 )
@@ -188,16 +191,16 @@ watch(selection, (value) => {
     <div v-else ref="scroller" class="wikitab-saved-section__cards">
       <WikitabSavedItemSlot
         v-for="slot in slots"
-        :key="slot.saved.id"
+        :key="savedItemKey(slot.saved)"
         class="wikitab-saved-section__card wikitab-section__card"
         :saved="slot.saved"
         :loading="slot.loading"
         :show-article-menu="slot.loading !== true"
-        :is-saved="isCardSaved(slot.saved.id)"
+        :is-saved="isCardSaved(slot.saved.id, slot.saved.lang)"
         :is-card-saved="isCardSaved"
         :save-article-menu-lookup="saveArticleMenuLookup"
-        @toggle-save="emit('toggle-save', slot.saved.id)"
-        @toggle-save-article="emit('toggle-save-article', slot.saved.id)"
+        @toggle-save="emit('toggle-save', slot.saved.id, slot.saved.lang)"
+        @toggle-save-article="emit('toggle-save-article', slot.saved.id, slot.saved.lang)"
       />
       <div ref="sentinel" class="wikitab-saved-section__sentinel" aria-hidden="true" />
     </div>

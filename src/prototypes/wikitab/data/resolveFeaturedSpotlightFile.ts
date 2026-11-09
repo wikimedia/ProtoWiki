@@ -3,7 +3,7 @@ import { fetchWikimedia } from '@/lib/fetchWikimedia'
 
 import type { WikitabFeaturedSpotlight } from '../sections'
 import { wikitabCardDescriptionText } from './wikitabCardDescription'
-import { EN_WIKI_HOST } from './wikitabHtml'
+import { WIKI_HOST } from './wikitabHtml'
 
 const COMMONS_HOST = 'commons.wikimedia.org'
 

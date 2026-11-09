@@ -3,7 +3,7 @@ import { fetchWikimedia } from '@/lib/fetchWikimedia'
 import type { WikitabCardData } from '../sections'
 import { feedOtdPayloadToCardData } from './wikitabCardPayloadMappers'
 import type { WikitabFeedOtdCardPayload } from './wikitabCardPayloadTypes'
-import { EN_WIKI_HOST, articleUrl, normalizeFeedHtml, primaryLinkTitle } from './wikitabHtml'
+import { WIKI_HOST, articleUrl, normalizeFeedHtml, primaryLinkTitle } from './wikitabHtml'
 import { seedArticle } from './wikitabSeedArticle'
 
 interface ParseResponse {
@@ -19,7 +19,7 @@ function mainPageParseUrl(): string {
     format: 'json',
     origin: '*',
   })
-  return `https://${EN_WIKI_HOST}/w/api.php?${params.toString()}`
+  return `https://${WIKI_HOST}/w/api.php?${params.toString()}`
 }
 
 function normalizeImageUrl(src: string | null | undefined): string | undefined {
