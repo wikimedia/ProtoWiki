@@ -27,12 +27,10 @@ jobs:
           node-version: 22
           cache: npm
 
-      # build:variants deploys patched Codex (patches/codex/) at the preview root and
-      # stock Codex under codex/stock/. With no patch committed it is a single
-      # ordinary build.
+      # Same as production: patched at preview root, stock under codex/stock/ when patched.
       - name: Install dependencies and build
         if: github.event.action != 'closed'
-        run: npm ci && npm run build:variants
+        run: npm ci && npm run build
         env:
           PROTOWIKI_BASE: /${{ github.event.repository.name }}/pr-preview/pr-${{ github.event.number }}/
 

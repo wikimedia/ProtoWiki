@@ -41,7 +41,7 @@ when the URL forces a value).
 ## How CSS skins work
 
 Skin affects layout via **`data-skin="desktop"`** vs **`data-skin="mobile"`**
-on component roots (`ChromeWrapper`, `ArticleLive`, `ArticleSnapshot`, `ArticleCustom`, `ChromeHeader`, etc.).
+on component roots (`ChromeWrapper`, `ArticleLive`, `ArticleCustom`, `ChromeHeader`, etc.).
 Desktop vs mobile rules live **next to those components** in scoped `<style>`
 blocks (e.g. `.article[data-skin='mobile'] { … }` for tighter article padding).
 
@@ -114,7 +114,7 @@ so they include rules like `a { padding: 0 !important }`, `a:hover { text-decora
 underline }`, and `body { font-family: … }`. Without scoping, they squash Cdx buttons
 that render as `<a>`, underline Cdx cards on hover, and override our chrome styling
 generally. We draw chrome with Codex; we only need RL for article HTML rendered
-through **`ArticleRenderer`** (**`ArticleLive`** / **`ArticleSnapshot`** / **`ArticleCustom`** nest **`ArticleRenderer`** under **`ArticleWrapper`**).
+through **`ArticleRenderer`** (**`ArticleLive`** / **`ArticleCustom`** nest **`ArticleRenderer`** under **`ArticleWrapper`**).
 
 `scripts/scope-wiki-skin-css.mjs` runs in two passes:
 

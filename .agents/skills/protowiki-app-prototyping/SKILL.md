@@ -138,9 +138,8 @@ Omit `article` and you get a random article on each load — `source`, `langs` a
 fills in once the title resolves. `template-app-article/` reads `?article=` when
 it is there and goes random otherwise.
 
-`ArticleSnapshot` and `ArticleCustom` take the same `app` prop (plus
-`description` / `leadImageUrl`, which `ArticleLive` fetches for itself) when a
-committed fixture or hand-authored markup suits the prototype better.
+`ArticleCustom` accepts the same `app` prop (plus `description` / `leadImageUrl`, which
+`ArticleLive` fetches for itself) for hand-authored in-app screens.
 
 Article content stays in **one document** — REST `page/html`, never
 `page/mobile-html` / PCS — so `<Teleport>` and Codex components can reach into
@@ -153,7 +152,8 @@ behaviour matrix live in
 | Goal                                    | Composition                                                                                   |
 | --------------------------------------- | --------------------------------------------------------------------------------------------- |
 | App shell with header + bottom nav      | `<AppChromeWrapper>…</AppChromeWrapper>` — starter: `template-app-chrome/`                     |
-| In-app article reader                   | `<AppChromeWrapper><ArticleLive app article="…"/></AppChromeWrapper>` (omit `article` for a random one) — starter: `template-app-article/` |
+| In-app article reader (live)            | `<AppChromeWrapper><ArticleLive app article="…"/></AppChromeWrapper>` (omit `article` for a random one) — starter: `template-app-article/` |
+| In-app article (hand-authored body)     | `<AppChromeWrapper><ArticleCustom app title="…">…</ArticleCustom></AppChromeWrapper>` — pass **`description`** / **`leadImageUrl`** as needed |
 | Screen with header but no bottom bar    | `<AppChromeWrapper :show-bottom-menu="false">` (keyboard-heavy screens like search)            |
 | Fully custom app shell                  | `MobileWrapper` + `AppChromeHeader` / `AppBottomMenu` directly — see `template-app-search/`     |
 | Screen title instead of a logo          | `:left="[{ type: 'title', text: 'Saved' }]"`                                                   |

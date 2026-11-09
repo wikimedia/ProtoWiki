@@ -3,6 +3,7 @@ import { cdxIconSpecialPages } from '@wikimedia/codex-icons'
 
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
+import { SAVED_PAGES_TEMPLATE_PATH } from '@/composables/webTemplatePaths'
 
 definePage({
   meta: {
@@ -17,8 +18,8 @@ definePage({
 </script>
 
 <template>
-  <ChromeWrapper :last-edited-notice="false">
-    <SpecialPageWrapper title="Special page wrapper" help>
+  <ChromeWrapper :last-edited-notice="false" :saved-pages-route="SAVED_PAGES_TEMPLATE_PATH">
+    <SpecialPageWrapper title="Special page wrapper">
       <p>Starter template — empty special page wrapper.</p>
     </SpecialPageWrapper>
   </ChromeWrapper>

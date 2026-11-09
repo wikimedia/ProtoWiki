@@ -94,26 +94,19 @@
 }
 
 /*
- * Main Page portal boxes — Codex Heading 2 is normal weight, so `h2.mp-h2`
- * titles read too light. Use Codex Heading 4 for box titles. Minerva also
- * applies section-heading padding to every `h2` (`padding-top: 0.5em`,
- * `padding-bottom: 0.17em`, no inline gutter), which breaks mp-h2 bars.
+ * Main Page portal boxes. Their titles (`h2.mp-h2`) get ProtoWiki's article
+ * Heading 2 (24px, normal weight, Minerva's section padding) over the Main
+ * Page's own TemplateStyles. Restore those, as production renders them on both
+ * skins: bold sans at 120%, line-height 1.375, 0.2em / 0.4em inside the bar and
+ * 0.5em above and below it.
  */
 .article .mw-parser-output .mp-h2 {
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-large);
+  margin: 0.5em 0;
+  padding: 0.2em 0.4em;
+  font-family: var(--font-family-system-sans);
+  font-size: 120%;
   font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-large);
-  color: var(--color-base);
-}
-
-.article[data-skin='mobile'] .mw-parser-output .mp-h2 {
-  box-sizing: border-box;
-  margin-block: var(--spacing-50, 8px);
-  margin-inline: 0;
-  padding: var(--spacing-35, 6px) var(--spacing-75, 12px);
-  border-bottom: 1px solid var(--border-color-muted, #a2a9b1);
-  display: block;
+  line-height: 1.375;
 }
 
 .article[data-skin='mobile'] .mw-parser-output .mp-contains-float > ul,
@@ -183,18 +176,37 @@
   }
 }
 
+/*
+ * Re-apply the two-column layout. These repeat the `:has(#mp-upper)` qualifier
+ * from the resets above: `:has()` takes the specificity of its argument, so the
+ * reset scores an id more than a plain `.article .mw-parser-output #mp-upper`
+ * would, and a lower-specificity rule here would lose no matter the order.
+ */
 @container wikipedia-main-page (min-width: 875px) {
-  .article .mw-parser-output #mp-upper {
+  .article .mw-parser-output:has(#mp-upper) #mp-upper {
     display: flex;
   }
 
-  .article .mw-parser-output #mp-left {
+  .article .mw-parser-output:has(#mp-upper) #mp-left {
     flex: 1 1 55%;
     margin-right: 2px;
   }
 
-  .article .mw-parser-output #mp-right {
+  .article .mw-parser-output:has(#mp-upper) #mp-right {
     flex: 1 1 45%;
     margin-left: 2px;
   }
+}
+
+/*
+ * Long unbreakable tokens. Minerva hangs `word-wrap: break-word` off `.content`
+ * — a class MediaWiki puts on its body wrapper and Parsoid HTML doesn't carry —
+ * so nothing here lets a token like Earth's infobox mass,
+ * `(5.97217±0.00028)×10^24`, break. The mobile infobox is `table-layout: fixed`,
+ * so the table itself stays in the column but the token spills out of its cell,
+ * widening the document: the page scrolls sideways and the viewport-fixed Home
+ * button is dragged off screen with it. Breaking the token fixes both.
+ */
+.article[data-skin='mobile'] .mw-parser-output {
+  overflow-wrap: break-word;
 }

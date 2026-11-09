@@ -26,7 +26,8 @@ Do not require a fork or upstream write access for the standard deploy flow.
 | Command           | When                                                                                 |
 | ----------------- | ------------------------------------------------------------------------------------ |
 | `npm run dev`     | **Default** — HMR at `http://localhost:5173`, Vite `base: '/'`.                      |
-| `npm run build`   | **Optional** — CI runs this. Locally only to reproduce Pages or debug deploy issues. |
+| `npm run build`   | **Optional** — CI runs this (patched + stock sibling when a Codex patch is committed). Locally only to reproduce Pages or debug deploy issues. |
+| `npm run build:vite` | Single Vite bundle only — faster local debug without the `codex/stock/` sibling. |
 | `npm run preview` | **After** a local build — serves `dist/` with the same base path as the build.       |
 
 ## Reproducing GitHub Pages locally
@@ -240,11 +241,12 @@ Use this sentence starter in guided mode:
 If `patches/codex/` holds an unmerged Codex change, `npm ci` applies it and both
 workflows build with it:
 
-- **Production** builds patched Codex. Merging a branch with a committed patch
-  ships it; run `npm run codex:reset` first if you don't want that.
-- **Pull request previews** run `npm run build:variants`: patched at
-  `pr-preview/pr-N/`, stock at `pr-preview/pr-N/codex/stock/`. A message on the
-  home screen shows which Codex you're on and links to the other build.
+- **Production and PR previews** both run `npm run build`. With a committed patch:
+  patched at the deploy root, stock at `codex/stock/` (under `pr-preview/pr-N/`
+  for previews). The home-screen Codex settings popover shows which Codex you're
+  on and toggles to the sibling build.
+- Merging a branch with a committed patch ships patched Codex to production; run
+  `npm run codex:reset` first if you don't want that.
 
 See [`protowiki-codex-patching` → deploying](../protowiki-codex-patching/references/deploying-patches.md).
 

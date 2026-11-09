@@ -30,6 +30,10 @@ interface Props {
   description?: string
   /** Lead image — app shell only; the frame stays as a placeholder without one. */
   leadImageUrl?: string
+  /** Forwarded to **`ArticleHeader`**: which page-action tab is selected. */
+  activeView?: 'read' | 'edit'
+  /** Forwarded to **`ArticleHeader`** — save toast link target. */
+  savedPagesRoute?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -43,7 +47,15 @@ const props = withDefaults(defineProps<Props>(), {
   app: false,
   description: undefined,
   leadImageUrl: undefined,
+  activeView: 'read',
+  savedPagesRoute: undefined,
 })
+
+const emit = defineEmits<{
+  /** Forwarded from **`ArticleHeader`** page actions. */
+  readClick: []
+  editClick: []
+}>()
 
 const inheritedSkin = inject(PROTOWIKI_CHROME_SKIN)
 const inheritedTheme = inject(PROTOWIKI_CHROME_THEME)
@@ -57,6 +69,9 @@ const effectiveTheme = computed<Theme>(
 )
 
 const derivedHeader = computed(() => (props.title ?? '').replace(/_/g, ' ').trim())
+
+/** English Wikipedia's Main Page gets production's Main Page header. */
+const isMainPage = computed(() => derivedHeader.value === 'Main Page')
 
 /** Title as given — empty until a live surface resolves one (e.g. a random article). */
 const leadTitle = computed(() => props.header?.trim() || derivedHeader.value)
@@ -94,6 +109,11 @@ const chromeHeaderLabel = computed(() => leadTitle.value || 'Article')
       :title="chromeHeaderLabel"
       :languages-count="props.languagesCount"
       :skin="props.skin"
+      :active-view="props.activeView"
+      @read-click="emit('readClick')"
+      @edit-click="emit('editClick')"
+      :main-page="isMainPage"
+      :saved-pages-route="props.savedPagesRoute"
     />
 
     <slot />
@@ -114,6 +134,30 @@ const chromeHeaderLabel = computed(() => leadTitle.value || 'Article')
   /* 984px content column; padding-inline sits inside max-width (border-box). */
   max-width: calc(984px + 2 * var(--spacing-100, 16px));
   margin-inline: auto;
+}
+
+.article :deep(.mw-editsection) {
+  margin-inline-start: 13px;
+  font-family: var(--font-family-base, sans-serif);
+  font-size: 0.8125rem;
+  font-weight: var(--font-weight-normal, 400);
+  line-height: 1;
+  white-space: nowrap;
+  vertical-align: baseline;
+  unicode-bidi: isolate;
+}
+
+.article :deep(.mw-editsection-bracket) {
+  color: var(--color-base, #202122);
+}
+
+.article :deep(.mw-editsection a) {
+  color: var(--color-progressive, #36c);
+  text-decoration: none;
+}
+
+.article :deep(.mw-editsection a:hover) {
+  text-decoration: underline;
 }
 
 .article[data-skin='mobile'] {

@@ -13,10 +13,11 @@ definePage({
 })
 
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
+import { SAVED_PAGES_TEMPLATE_PATH } from '@/composables/webTemplatePaths'
 </script>
 
 <template>
-  <ChromeWrapper>
+  <ChromeWrapper :saved-pages-route="SAVED_PAGES_TEMPLATE_PATH">
     <main>
       <h1>Chrome wrapper</h1>
       <p>Starter template — empty chrome wrapper.</p>

@@ -8,11 +8,10 @@
 // Prettier, apply the committed diff, check content hashes) — never a Codex
 // build — so CI and PR previews stay fast. Authoring lives in patch-codex.mjs.
 
-import { wantsPatch } from './lib-codex-patch.mjs'
-import { ensureCodex } from './lib-codex-state.mjs'
+import { reconcileCodexInstall } from './reconcile-codex-install.mjs'
 
 try {
-  await ensureCodex(wantsPatch())
+  await reconcileCodexInstall()
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error))
   process.exit(1)

@@ -5,6 +5,101 @@ export type ConfigAppPlatform = 'auto' | AppPlatform
 export type ConfigWebSkin = 'auto' | 'desktop' | 'mobile'
 export type ConfigUser = 'logged-out' | 'new' | 'experienced' | 'real'
 
+/** Mock editor total edit count (Visual Editor / Suggestion Mode prototypes). */
+export type ConfigMockEditorEditCount = 'none' | 'new' | 'intermediate' | 'experienced'
+
+export const CONFIG_MOCK_EDITOR_EDIT_COUNT_ITEMS: {
+  value: ConfigMockEditorEditCount
+  label: string
+}[] = [
+  { value: 'none', label: '0 edits' },
+  { value: 'new', label: '10 edits or fewer' },
+  { value: 'intermediate', label: '11–999 edits' },
+  { value: 'experienced', label: '1,000 edits or more' },
+]
+
+/** Edits dropdown for mock presets (new / experienced). */
+export const CONFIG_MOCK_EDITOR_EDIT_COUNT_SELECT_ITEMS = CONFIG_MOCK_EDITOR_EDIT_COUNT_ITEMS
+
+export interface MockEditorEditCountByUser {
+  new: ConfigMockEditorEditCount
+  experienced: ConfigMockEditorEditCount
+}
+
+export const DEFAULT_MOCK_EDITOR_EDIT_COUNT_BY_USER: MockEditorEditCountByUser = {
+  new: 'none',
+  experienced: 'experienced',
+}
+
+/** Default mock Edits value when a preset is reset. */
+export function defaultMockEditorEditCountForUser(user: ConfigUser): ConfigMockEditorEditCount | null {
+  if (user === 'new') return DEFAULT_MOCK_EDITOR_EDIT_COUNT_BY_USER.new
+  if (user === 'experienced') return DEFAULT_MOCK_EDITOR_EDIT_COUNT_BY_USER.experienced
+  return null
+}
+
+export function isDefaultMockEditorEditCountByUser(
+  user: ConfigUser,
+  byUser: MockEditorEditCountByUser,
+): boolean {
+  if (user === 'new') return byUser.new === DEFAULT_MOCK_EDITOR_EDIT_COUNT_BY_USER.new
+  if (user === 'experienced') {
+    return byUser.experienced === DEFAULT_MOCK_EDITOR_EDIT_COUNT_BY_USER.experienced
+  }
+  return true
+}
+
+function mergeMockEditorEditCountByUser(stored: unknown, legacySingle?: unknown): MockEditorEditCountByUser {
+  const base = { ...DEFAULT_MOCK_EDITOR_EDIT_COUNT_BY_USER }
+  if (typeof stored === 'object' && stored !== null) {
+    const record = stored as Record<string, unknown>
+    if (isConfigMockEditorEditCount(record.new)) base.new = record.new
+    if (isConfigMockEditorEditCount(record.experienced)) base.experienced = record.experienced
+  }
+  if (isConfigMockEditorEditCount(legacySingle)) {
+    base.experienced = legacySingle
+    if (legacySingle === 'experienced') base.new = 'none'
+  }
+  return base
+}
+
+const VALID_MOCK_EDITOR_EDIT_COUNTS = new Set<ConfigMockEditorEditCount>(
+  CONFIG_MOCK_EDITOR_EDIT_COUNT_ITEMS.map((item) => item.value),
+)
+
+export function isConfigMockEditorEditCount(value: unknown): value is ConfigMockEditorEditCount {
+  return typeof value === 'string' && VALID_MOCK_EDITOR_EDIT_COUNTS.has(value as ConfigMockEditorEditCount)
+}
+
+/** Representative edit count for a mock bucket (Suggestion Mode gates). */
+export function mockBucketToEditCount(bucket: ConfigMockEditorEditCount): number {
+  switch (bucket) {
+    case 'none':
+      return 0
+    case 'new':
+      return 10
+    case 'intermediate':
+      return 500
+    case 'experienced':
+      return 1000
+  }
+}
+
+/** ≥1,000 edits — unlocks "Add a link" suggestions. */
+export function editorIsExperienced(edits: number): boolean {
+  return edits >= 1000
+}
+
+/** ≥25 edits — unlocks experimental lead-length suggestions. */
+export function editorHasAtLeast25Edits(edits: number): boolean {
+  return edits >= 25
+}
+
+/** ≤10 edits — first completed suggestion can offer the publish path. */
+export function editorShowsPublishPath(edits: number): boolean {
+  return edits <= 10
+}
+
 export type PageListKey = 'watchlist' | 'readingList' | 'editedPages'
 
 export interface UserPageLists {
@@ -46,6 +141,8 @@ export interface Config {
   /** Wiki language codes the user can translate into (e.g. `fr`, `de`). */
   knownLanguages: string[]
   userPageLists: Record<ConfigUser, UserPageLists>
+  /** Mock Edits dropdown value per preset (New user / Experienced editor). */
+  mockEditorEditCountByUser: MockEditorEditCountByUser
 }
 
 export const DEFAULT_USER_PAGE_LISTS: Record<ConfigUser, UserPageLists> = {
@@ -106,6 +203,7 @@ export const DEFAULT_CONFIG: Config = {
   apiContact: '',
   knownLanguages: [...DEFAULT_KNOWN_LANGUAGES],
   userPageLists: cloneUserPageListsMap(DEFAULT_USER_PAGE_LISTS),
+  mockEditorEditCountByUser: { ...DEFAULT_MOCK_EDITOR_EDIT_COUNT_BY_USER },
 }
 
 export const PROTOWIKI_API_USER_AGENT = 'ProtoWiki/0.4'
@@ -115,8 +213,8 @@ export const DEFAULT_API_CONTACT = 'lwilson-ctr@wikimedia.org'
 
 export const CONFIG_USER_DISPLAY_NAMES: Partial<Record<ConfigUser, string>> = {
   'logged-out': 'LoggedOut',
-  new: 'NewEditor',
-  experienced: 'ExperiencedEditor',
+  new: 'New user',
+  experienced: 'Experienced editor',
 }
 
 export const CONFIG_USER_MENU_ITEMS: { value: ConfigUser; label: string; description?: string }[] =
@@ -218,6 +316,42 @@ export function formatLangList(codes: string[]): string {
   return codes.map((code) => normalizeLang(code)).join(', ')
 }
 
+/** Trim and treat underscores like spaces — same as article chrome titles. */
+export function normalizeWikiPageTitleInput(raw: string): string {
+  return raw.trim().replace(/_/g, ' ')
+}
+
+/** @deprecated Use {@link normalizeWikiPageTitleInput}. */
+export const normalizePageListTitle = normalizeWikiPageTitleInput
+
+export function pageListContains(pages: string[], pageTitle: string): boolean {
+  const key = normalizeWikiPageTitleInput(pageTitle)
+  if (!key.length) return false
+  return pages.includes(key)
+}
+
+export function togglePageInList(
+  pages: string[],
+  pageTitle: string,
+  options: { prepend?: boolean } = {},
+): string[] {
+  const key = normalizeWikiPageTitleInput(pageTitle)
+  if (!key.length) return [...pages]
+  const index = pages.indexOf(key)
+  if (index >= 0) {
+    return pages.filter((_, i) => i !== index)
+  }
+  return options.prepend ? [key, ...pages] : [...pages, key]
+}
+
+/** Add or move a page to the front (canonical title). */
+export function prependPageInList(pages: string[], pageTitle: string): string[] {
+  const key = normalizeWikiPageTitleInput(pageTitle)
+  if (!key.length) return [...pages]
+  const rest = pages.filter((page) => normalizeWikiPageTitleInput(page) !== key)
+  return [key, ...rest]
+}
+
 export function resetUserPageLists(user: ConfigUser): UserPageLists {
   return cloneUserPageLists(DEFAULT_USER_PAGE_LISTS[user])
 }
@@ -238,7 +372,17 @@ function userPageListsEqual(a: UserPageLists, b: UserPageLists): boolean {
 
 /** Whether a preset's page lists still match its shipped defaults (i.e. nothing to reset). */
 export function isDefaultUserPageLists(user: ConfigUser, lists: UserPageLists): boolean {
-  return userPageListsEqual(lists, DEFAULT_USER_PAGE_LISTS[user])
+  const defaults = DEFAULT_USER_PAGE_LISTS[user]
+  if (user === 'real') {
+    const arraysEqual = (x: string[], y: string[]) =>
+      x.length === y.length && x.every((v, i) => v === y[i])
+    return (
+      lists.lang === defaults.lang &&
+      arraysEqual(lists.watchlist, defaults.watchlist) &&
+      arraysEqual(lists.readingList, defaults.readingList)
+    )
+  }
+  return userPageListsEqual(lists, defaults)
 }
 
 function resolveApiContact(rawContact: string): string {
@@ -267,7 +411,9 @@ const VALID_THEMES: ConfigTheme[] = ['light', 'dark', 'system']
 const VALID_CONFIG_APP_PLATFORMS: ConfigAppPlatform[] = ['auto', 'ios', 'android']
 const VALID_WEB_SKINS: ConfigWebSkin[] = ['auto', 'desktop', 'mobile']
 const VALID_USERS: ConfigUser[] = ['logged-out', 'new', 'experienced', 'real']
-const PAGE_LIST_KEYS: PageListKey[] = ['watchlist', 'readingList', 'editedPages']
+export const PAGE_LIST_FIELD_KEYS: PageListKey[] = ['watchlist', 'readingList', 'editedPages']
+
+const PAGE_LIST_KEYS = PAGE_LIST_FIELD_KEYS
 
 function isConfigTheme(value: unknown): value is ConfigTheme {
   return typeof value === 'string' && VALID_THEMES.includes(value as ConfigTheme)
@@ -388,17 +534,24 @@ export function normalizeConfig(input: unknown): Config {
     }
   }
 
+  const user = isConfigUser(record.user) ? record.user : DEFAULT_CONFIG.user
+  const mockEditorEditCountByUser = mergeMockEditorEditCountByUser(
+    record.mockEditorEditCountByUser,
+    record.mockEditorEditCount,
+  )
+
   return {
     theme: isConfigTheme(record.theme) ? record.theme : DEFAULT_CONFIG.theme,
     appPlatform: isConfigAppPlatform(record.appPlatform)
       ? record.appPlatform
       : DEFAULT_CONFIG.appPlatform,
     webSkin: isConfigWebSkin(record.webSkin) ? record.webSkin : DEFAULT_CONFIG.webSkin,
-    user: isConfigUser(record.user) ? record.user : DEFAULT_CONFIG.user,
+    user,
     realUsername,
     apiContact,
     knownLanguages,
     userPageLists,
+    mockEditorEditCountByUser,
   }
 }
 
@@ -451,6 +604,7 @@ function cloneConfig(config: Config): Config {
     apiContact: config.apiContact,
     knownLanguages: [...config.knownLanguages],
     userPageLists: cloneUserPageListsMap(config.userPageLists),
+    mockEditorEditCountByUser: { ...config.mockEditorEditCountByUser },
   }
 }
 

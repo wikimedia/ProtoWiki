@@ -2,7 +2,7 @@
 
 `ChromeWrapper`, `SpecialPageWrapper`, `PlainWrapper`, `MobileWrapper`.
 Each is a layout shell with one concern. Compose by nesting — there is no
-chrome-bundled convenience wrapper. **`ArticleLive`**, **`ArticleSnapshot`**, and **`ArticleCustom`**
+chrome-bundled convenience wrapper. **`ArticleLive`** and **`ArticleCustom`**
 (reader surfaces) live in [`article.md`](article.md).
 
 ## Defaults, props, and slots
@@ -24,9 +24,8 @@ Components **emit** that class from their templates — you pass a **prop** or
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `PlainWrapper`       | `heading?`                                                                                                                           | `#heading`                                      | Omit both when there is no primary title                                                                                     |
 | `ArticleWrapper`     | `title?`, **`header?`**, **`languagesCount?`**, **`lang?`, `dir?`**, … chrome only                                                   | **default**                                     | Always **`ArticleHeader`**; **`ArticleRenderer`** (or bespoke markup) in **default**.                                        |
-| `ArticleRenderer`    | **`lang?`/`dir?`/`skin?`/`theme?`**                                                                                                  | **default**                                     | **`.article-content`** + **`.mw-parser-output`** + keyed slot root; **`ArticleLive`** / **`ArticleSnapshot`** gate mounting. |
+| `ArticleRenderer`    | **`lang?`/`dir?`/`skin?`/`theme?`**                                                                                                  | **default**                                     | **`.article-content`** + **`.mw-parser-output`** + keyed slot root; **`ArticleLive`** gates mounting. |
 | `ArticleLive`        | **`article`** (REST title) + chrome keys (same **`ArticleWrapper`**) + **`host`**                                                    | **default** → **`ArticleRenderer`**             | Fetches **`page/html`**; progress/errors ship in **default** before **`ArticleRenderer`**.                                   |
-| `ArticleSnapshot`    | **`article`** + chrome (no **`host`**)                                                                                            | **default** → **`ArticleRenderer`**             | Snapshot HTML; **`Cdx`** load/error UI **default** before **`ArticleRenderer`**.                                             |
 | `ArticleCustom`      | **`title?`**, **`header?`**, **`languagesCount?`**, **`lang`**, **`dir`**, **`skin`**, **`theme`** (no **`article`**, no **`host`**) | **default** → **`ArticleRenderer`**             | Hand-authored parser body only.                                                                                              |
 | `SpecialPageWrapper` | `title?` (`null` hides default **`h1`** unless `#title`); `#header` replaces cluster                                                 | `title` / `#title` (inner), `#header` (cluster) | Scoped special-page title typography (not **`mw-first-heading`**)                                                            |
 
@@ -56,11 +55,12 @@ footer mock last-edited chrome, username, and header logo / nav-tool configurati
 | `taglineSrc`        | `string`                | `undefined`      | Forwarded to **`ChromeHeader`** — desktop tagline image under the wordmark                                                                                                                                          |
 | `mobileWordmarkSrc` | `string`                | `undefined`      | Forwarded to **`ChromeHeader`** — Minerva bar wordmark; defaults to **`wordmarkSrc`** then EN constant                                                                                                              |
 | `navTools`          | `ChromeNavTool[]`       | full desktop set | Forwarded to **`ChromeHeader`** — which mocked Vector tool icons appear (**desktop**); **`#nav`** still replaces the cluster                                                                                        |
+| `prototypingSettings` | `boolean`             | `true`           | Forwarded to **`ChromeHeader`**: when **`true`**, default appearance/user tools open prototyping popovers and wordmarks link to the **Main Page**; when **`false`**, mock-only tools and static wordmarks                                                                                  |
 
-`ChromeNavTool` literals: `'appearance' \| 'notifications' \| 'notices' \| 'bookmarks' \| 'watchlist' \| 'user'` (see `src/components/chrome/headerNavTools.ts`). In the chrome header, `'appearance'` renders as a static, non-interactive icon button (like `'notifications'` / `'notices'`) — the working Appearance settings popover lives only on the prototype gallery home page (`src/prototypes/index.vue`). `'user'` renders as avatar + dropdown chevron in one button.
+`ChromeNavTool` literals: `'appearance' \| 'notifications' \| 'notices' \| 'bookmarks' \| 'watchlist' \| 'user'` (see `src/components/chrome/headerNavTools.ts`). When **`prototypingSettings`** and logged in, **`appearance`** opens web appearance settings (Color + Web skin); **`user`** opens mock user settings (avatar + chevron on desktop). Other tools stay mock-only. The prototype gallery home page (`src/prototypes/index.vue`) also exposes appearance, user, and Codex build settings in its toolbar.
 
 `lang` and `dir` are the usual top-of-tree handles: primitives inside don't need their
-own `lang` prop because the value is inherited via the DOM. **`ArticleLive`**, **`ArticleSnapshot`**, and **`ArticleCustom`** also accept
+own `lang` prop because the value is inherited via the DOM. **`ArticleLive`** and **`ArticleCustom`** also accept
 `lang` / `dir` when you need them on the article subtree only.
 
 ### Slots
@@ -262,7 +262,7 @@ one bundled columns, which one was a presentation device.
 The current set covers:
 
 - chrome (`ChromeWrapper`)
-- article reader surface (`ArticleLive` / `ArticleSnapshot` / `ArticleCustom`; see [`article.md`](article.md))
+- article reader surface (`ArticleLive` / `ArticleCustom`; see [`article.md`](article.md))
 - special-page shell (`SpecialPageWrapper`)
 - newcomer homepage grid (`Dashboard` + `DashboardModule`; see [`dashboard.md`](dashboard.md) and **`src/prototypes/template-homepage/`**)
 - plain centred column (`PlainWrapper`)

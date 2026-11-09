@@ -11,8 +11,8 @@ import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 
 definePage({
   meta: {
-    title: 'Dashboard',
-    description: 'Template for dashboard prototypes that contain "box modules".',
+    title: 'Personal Dashboard',
+    description: 'Template for prototyping the Personal Dashboard.',
     category: 'template',
     platform: 'web',
     order: 6,
@@ -37,7 +37,7 @@ const MODULE = {
 
 <template>
   <ChromeWrapper :last-edited-notice="false">
-    <SpecialPageWrapper :title="pageTitle" help>
+    <SpecialPageWrapper :title="pageTitle">
       <div class="template-dashboard-shell">
         <Dashboard>
           <template #banner>

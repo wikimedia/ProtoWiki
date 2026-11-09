@@ -10,6 +10,14 @@ import {
 
 import './settingsPanel.css'
 
+const props = withDefaults(
+  defineProps<{
+    /** When false, hide App OS (web chrome appearance menu). */
+    showAppPlatform?: boolean
+  }>(),
+  { showAppPlatform: true },
+)
+
 const { theme, appPlatform, webSkin } = useConfig()
 </script>
 
@@ -48,7 +56,7 @@ const { theme, appPlatform, webSkin } = useConfig()
         </CdxRadio>
       </CdxField>
 
-      <CdxField :is-fieldset="true">
+      <CdxField v-if="props.showAppPlatform" :is-fieldset="true">
         <template #label>App OS</template>
         <CdxRadio
           v-for="item in CONFIG_APP_PLATFORM_MENU_ITEMS"

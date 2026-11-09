@@ -93,7 +93,7 @@ trailing **Inside ProtoWiki** section.
 | [`wiki-attribution`](.agents/skills/wiki-attribution/SKILL.md)               | Attribution Framework + Attribution API (beta): signals, scenarios, levels, fetch pathways          |
 | [`wiki-signals`](.agents/skills/wiki-signals/SKILL.md)                       | Catalog of signals (inference, analytics, links, curation, attribution, edit suggestions)           |
 | [`wiki-snapshot-data`](.agents/skills/wiki-snapshot-data/SKILL.md)           | Snapshotting article HTML and skin CSS — universal pattern                                          |
-| [`protowiki-snapshot-data`](.agents/skills/protowiki-snapshot-data/SKILL.md) | ProtoWiki integration: `public/snapshots/`, `src/styles/wiki-skins/`, `ArticleSnapshot` consumption |
+| [`protowiki-snapshot-data`](.agents/skills/protowiki-snapshot-data/SKILL.md) | ProtoWiki integration: `public/snapshots/`, `src/styles/wiki-skins/` (fixtures; no snapshot article component) |
 
 Edit Check-style suggestion overlays are split between two skills: see
 [`wiki-signals` → `edit-suggestions.md`](.agents/skills/wiki-signals/edit-suggestions.md)
@@ -115,8 +115,8 @@ mirrors [FakeMediaWiki `wiki-signals`](https://github.com/TodePond/FakeMediaWiki
 - Plain CSS. No preprocessor. Per-component styles in scoped blocks.
   Skin/theme overrides via `[data-skin]` / `[data-theme]` selectors.
 - Codex first. If a Codex component / token / icon exists, use it — and
- override only the delta, so prototypes follow Codex patches and upgrades
- (see [`protowiki-codex-patching`](.agents/skills/protowiki-codex-patching/SKILL.md)).
+  override only the delta, so prototypes follow Codex patches and upgrades
+  (see [`protowiki-codex-patching`](.agents/skills/protowiki-codex-patching/SKILL.md)).
 - Data fetching uses native `fetch` with `AbortController` for debouncing.
 - Prototype gallery **title** and **description** must not be AI-generated;
   agents ask the author or omit — see
@@ -125,7 +125,7 @@ mirrors [FakeMediaWiki `wiki-signals`](https://github.com/TodePond/FakeMediaWiki
   (not `ChromeWrapper`); in-app articles are **`<ArticleLive app>`**, not a
   separate component. See
   [`protowiki-app-prototyping`](.agents/skills/protowiki-app-prototyping/SKILL.md).
-- **Hand-authored article pages** (no `ArticleLive` / `ArticleSnapshot`): prefer **`ChromeWrapper` → `ArticleCustom`** (default slot = parser body); or compose **`ChromeWrapper` → `ArticleWrapper` → `ArticleRenderer`** when you need finer control. Put markup in the renderer slot. See [`protowiki-components` → `article.md`](.agents/skills/protowiki-components/references/article.md) and **`src/prototypes/template-article-custom/`**.
+- **Article pages:** default **`ChromeWrapper` → `ArticleLive`** (read starter **`src/prototypes/template-article/`**; Visual Editor starter **`src/prototypes/template-visual-editor/`** — linked via **`editRoute`** / **`readRoute`** and shared **`?title=`**). For hand-authored / fine-grained body markup without live fetch, use **`ChromeWrapper` → `ArticleCustom`** or **`ArticleWrapper` → `ArticleRenderer`** — see [`protowiki-components` → `article.md`](.agents/skills/protowiki-components/references/article.md) and **`src/prototypes/example-custom-article/`**.
 
 ## What this repo is not
 

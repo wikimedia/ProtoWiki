@@ -17,7 +17,7 @@ interface Props {
    */
   title?: string | null
   /**
-   * When **`true`**, show the default Help link (**desktop**): **"Help"** + icon, fixed Codex-docs URL (**`#help`** overrides markup).
+   * When **`true`**, show the default Help icon link (**desktop**); fixed Codex-docs URL (**`#help`** overrides markup).
    */
   help?: boolean
   /**
@@ -104,9 +104,9 @@ const showHeaderNav = computed(
               class="special-page-wrapper__help-link"
               :href="HELP_LINK_HREF"
               rel="noopener noreferrer"
+              :aria-label="DEFAULT_HELP_LABEL"
             >
-              <CdxIcon size="small" :icon="cdxIconHelpNotice" />
-              <span>{{ DEFAULT_HELP_LABEL }}</span>
+              <CdxIcon size="small" :icon="cdxIconHelpNotice" aria-hidden="true" />
             </a>
           </slot>
         </span>

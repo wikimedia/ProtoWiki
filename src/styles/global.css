@@ -9,7 +9,7 @@
  * This file holds **site-wide** defaults only: a tiny reset, semantic HTML
  * typography from the Codex style guide (`h1`–`h6`, `p`, lists, `blockquote`, …),
  * links / focus, and reader-only `.mw-first-heading` underline. Layout shells
- * (`ChromeWrapper`, `ArticleLive`, `ArticleSnapshot`, `ArticleCustom`, `ArticleWrapper`, `ArticleRenderer`, `SpecialPageWrapper`, etc.) live next to those
+ * (`ChromeWrapper`, `ArticleLive`, `ArticleCustom`, `ArticleWrapper`, `ArticleRenderer`, `SpecialPageWrapper`, etc.) live next to those
  * components as `<style scoped>`.
  *
  * Theme-specific tweaks for shared classes live in `dark.css`.
@@ -30,6 +30,23 @@ html {
   text-rendering: optimizeLegibility;
   /* Reserve scrollbar width so Codex overlays (dialogs, bottom sheets) don't shift layout. */
   scrollbar-gutter: stable;
+}
+
+/*
+ * Codex `useScrollLock` also sets body padding-right when a dialog or bottom
+ * sheet opens. With scrollbar-gutter on html that is double reservation and
+ * leaves an unpainted strip on the right. Span backdrops with inset edges
+ * instead of 100vw so they match the layout width when the gutter is stable.
+ */
+body:has(.cdx-dialog-backdrop),
+body:has(.cdx-popover__backdrop--bottom-sheet) {
+  padding-right: 0 !important;
+}
+
+.cdx-dialog-backdrop,
+.cdx-popover__backdrop--bottom-sheet {
+  width: auto;
+  right: 0;
 }
 
 body {

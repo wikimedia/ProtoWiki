@@ -28,8 +28,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Builds patched Codex when patches/codex/ holds a patch, stock otherwise.
-      # PR previews use build:variants to add a stock copy side by side.
+      # Patched at site root + stock under codex/stock/ when patches/codex/ holds a patch.
       - name: Build
         run: npm run build
         env:

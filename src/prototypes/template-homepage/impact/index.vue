@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed } from 'vue'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import { cdxIconReload } from '@wikimedia/codex-icons'
 
@@ -11,22 +11,12 @@ import ImpactModule from '../ImpactModule.vue'
 import MobileSubpageHeader from '../MobileSubpageHeader.vue'
 import { HOMEPAGE, IMPACT_DESKTOP } from '../dashpage-fixtures'
 
-const { user, realUsername, realLang, setCurrentUserPageList } = useConfig()
+const { user, realUsername, realLang } = useConfig()
 const realImpact = useRealUserImpact(realUsername, realLang)
 
 function shouldShowLoadPrompt(hasStarted: boolean, hasRenderableData: boolean): boolean {
   return !hasStarted && !hasRenderableData
 }
-
-watch(
-  [() => user.value, realImpact.editedPageTitles],
-  ([activeUser, titles]) => {
-    if (activeUser === 'real' && titles.length > 0) {
-      setCurrentUserPageList('editedPages', [...titles])
-    }
-  },
-  { immediate: true },
-)
 
 const impactProps = computed(() => {
   if (user.value === 'experienced') {

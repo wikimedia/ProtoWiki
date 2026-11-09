@@ -4,8 +4,11 @@
 
 | Workflow | Command | Result |
 | --- | --- | --- |
-| Production (`deploy.yml`, push to `main`) | `npm ci && npm run build` | Patched Codex if `patches/codex/` holds a patch, stock otherwise |
-| Pull request preview (`preview.yml`) | `npm ci && npm run build:variants` | Patched at `pr-preview/pr-N/`, stock at `pr-preview/pr-N/codex/stock/` |
+| Production (`deploy.yml`, push to `main`) | `npm ci && npm run build` | Patched at site root + stock under `codex/stock/` when `patches/codex/` holds a patch; single stock build otherwise |
+| Pull request preview (`preview.yml`) | `npm ci && npm run build` | Same layout under `pr-preview/pr-N/` (patched root, `pr-preview/pr-N/codex/stock/` when patched) |
+
+`npm run build` runs `scripts/build-codex-variants.mjs`. For a fast single-bundle
+local debug only, use `npm run build:vite`.
 
 So **production follows `patches/codex/`**. Merging a branch with a committed
 patch ships patched Codex to production, and the on-page label says so. To stop
@@ -13,12 +16,15 @@ deploying it, run `npm run codex:reset` and commit the deletion.
 
 ## Side by side
 
-`npm run build:variants` builds patched Codex at the base path and stock under
-`codex/stock/`:
+When a patch is committed, `npm run build` produces patched Codex at the base
+path and stock under `codex/stock/`:
 
 ```
-pr-preview/pr-7/               patched (e.g. Gerrit 1304941)
-pr-preview/pr-7/codex/stock/   published Codex
+/                              patched (e.g. Gerrit 1304941)
+/codex/stock/                  published Codex
+
+pr-preview/pr-7/               patched (preview)
+pr-preview/pr-7/codex/stock/   published Codex (preview)
 ```
 
 Both come from one `npm ci`: stock is restored from the snapshot, then each is a
@@ -28,7 +34,7 @@ job summary lists the paths.
 Reproduce locally:
 
 ```bash
-PROTOWIKI_BASE=/protowiki/pr-preview/pr-7/ npm run build:variants
+PROTOWIKI_BASE=/protowiki/pr-preview/pr-7/ npm run build
 PROTOWIKI_BASE=/protowiki/pr-preview/pr-7/ npm run preview
 # open http://localhost:4173/protowiki/pr-preview/pr-7/
 ```
@@ -41,20 +47,58 @@ deep links work via `404.html`.
 
 `src/components/CodexPatchMessage.vue` is a notice `CdxMessage` on the
 **ProtoWiki home screen only**, below the page heading (never inside a
-prototype). It shows whenever
-the build is patched or has a stock sibling:
+prototype). It shows whenever the build is patched or has a stock sibling.
 
-- patched: ProtoWiki is running with a modified version of Codex. “tokens: Update
-  color values” (subject linked), plus “View with stock Codex” in previews;
-- the stock preview build: "ProtoWiki is running stock Codex." with a link to
-  the patched build.
+It states whether this bundle runs stock or a modified Codex (with version).
+Variant switching is in the **Codex settings** popover (toolbar Codex icon), not
+in this message.
 
 It can be dismissed for the current page visit only (nothing is stored). Stock-only
-builds show nothing.
+builds with no sibling show nothing.
 
-It reads `__CODEX_BUILD__`, which `vite.config.ts` assembles from the patch
-marker, the installed `@wikimedia/codex` version, and
-`PROTOWIKI_CODEX_VARIANTS` (set by `build-codex-variants.mjs`).
+It reads build info via `useCodexBuild()` (`__CODEX_BUILD__` at build time, or
+the dev build-info endpoint after a local toggle).
+
+## The Codex settings menu
+
+On the same **ProtoWiki home screen**, the toolbar Codex icon (left of
+Appearance) opens `CodexSettingsPanel` in a popover. Shared logic lives in
+`src/composables/useCodexBuild.ts`.
+
+**Dev and deployed builds show the same core UI:**
+
+- A status line: installed `@wikimedia/codex` version and whether this bundle is
+  stock or patched.
+- When `patches/codex/` holds a committed patch: a toggle to enable or disable
+  the patch for this session (Gerrit subject link when applicable, and
+  `+N stacked changes` when the manifest records a submitted-together stack).
+
+**How the toggle works:**
+
+- **GitHub Pages (production and PR previews):** navigates to the sibling static
+  bundle (`PROTOWIKI_CODEX_VARIANTS` from `build-codex-variants.mjs` — e.g. root
+  ↔ `codex/stock/`).
+- **Local `npm run dev`:** `POST /__protowiki/codex/switch` mutates
+  `node_modules`, then the page reloads.
+
+Before navigation or reload, the popover sets `sessionStorage` so it reopens after
+boot.
+
+**Local dev only** (`import.meta.env.DEV`): instructions and copyable commands to
+install a patch (`npm run codex:patch [ID]`) or uninstall (`npm run codex:reset`).
+Deployed builds omit those blocks.
+
+## Local dev switch
+
+When `patches/codex/` holds a patch and you run **`npm run dev`**, Vite
+synthesizes stock/patched siblings (see `scripts/lib-codex-build-info.mjs`) and
+registers dev-only routes:
+
+- `GET /__protowiki/codex/build-info` — fresh `CodexBuildInfo` from disk
+- `POST /__protowiki/codex/switch` — `ensureCodex`, clear the Vite dep cache,
+  invalidate `@wikimedia/codex` modules; the client then reloads the page on success
+
+Deploy previews use URL siblings only; they do not use the dev switch endpoint.
 
 ## Deep links into the stock build
 

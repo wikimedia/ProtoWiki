@@ -8,7 +8,7 @@
 // install: stock is restored from the local snapshot, the patch is a fast text
 // apply. node_modules is put back on patched afterwards.
 //
-//   PROTOWIKI_BASE=/protowiki/pr-preview/pr-7/ npm run build:variants
+//   PROTOWIKI_BASE=/protowiki/pr-preview/pr-7/ npm run build
 
 import fs from 'node:fs'
 import path from 'node:path'
@@ -18,9 +18,16 @@ import { ensureCodex } from './lib-codex-state.mjs'
 
 const base = (process.env.PROTOWIKI_BASE ?? '/protowiki/').replace(/\/?$/, '/')
 
-const variants = hasPatch()
+const manifest = hasPatch() ? readManifest() : null
+const variants = manifest
   ? [
-      { id: 'patched', label: patchLabel(readManifest()), base },
+      {
+        id: 'patched',
+        label: patchLabel(manifest),
+        base,
+        patchSubject: manifest.subject ?? null,
+        patchChange: manifest.change != null ? String(manifest.change) : null,
+      },
       { id: 'stock', label: 'Stock', base: `${base}codex/stock/` },
     ]
   : [{ id: 'stock', label: 'Stock', base }]
@@ -39,6 +46,8 @@ try {
         PROTOWIKI_BASE: variant.base,
         PROTOWIKI_CODEX_VARIANTS: JSON.stringify(variants),
         PROTOWIKI_CODEX_VARIANT_SUBPATH: isRoot ? '0' : '1',
+        // Vite startup reconciles node_modules; must not re-apply the patch for stock.
+        CODEX_PATCH: variant.id === 'patched' ? process.env.CODEX_PATCH : 'off',
       },
     })
   }

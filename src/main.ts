@@ -12,6 +12,7 @@ import './styles/wiki-skins/mobile-wiki-overrides.css'
 import './styles/dark.css'
 
 import { bootAppearance, mergedLocationQuery, wireAppearanceRouter } from '@/appearance'
+import { loadCodexBuildInfoForDev } from '@/codex-build'
 
 /** Path under `import.meta.env.BASE_URL` (e.g. `/template-chrome`). */
 function githubPagesSubpathAfterBase(baseUrl: string): string | null {
@@ -41,16 +42,6 @@ function syncGithubPagesPreviewRoute(router: ReturnType<typeof createRouter>): v
     hash: window.location.hash,
   })
 }
-
-bootAppearance()
-
-const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-  routes,
-})
-
-wireAppearanceRouter(router)
-syncGithubPagesPreviewRoute(router)
 
 const DEFAULT_FAVICON = `${import.meta.env.BASE_URL}images/ProtoWiki.svg`
 
@@ -88,13 +79,31 @@ function applyDocumentMeta(route: RouteLocationNormalizedLoaded) {
   applyDocumentFavicon(route)
 }
 
-router.afterEach((to) => {
-  applyDocumentMeta(to)
-})
-applyDocumentMeta(router.currentRoute.value)
+async function bootstrap(): Promise<void> {
+  if (import.meta.env.DEV) {
+    await loadCodexBuildInfoForDev()
+  }
 
-if (import.meta.hot) {
-  handleHotUpdate(router)
+  bootAppearance()
+
+  const router = createRouter({
+    history: createWebHistory(import.meta.env.BASE_URL),
+    routes,
+  })
+
+  wireAppearanceRouter(router)
+  syncGithubPagesPreviewRoute(router)
+
+  router.afterEach((to) => {
+    applyDocumentMeta(to)
+  })
+  applyDocumentMeta(router.currentRoute.value)
+
+  if (import.meta.hot) {
+    handleHotUpdate(router)
+  }
+
+  createApp(App).use(router).mount('#app')
 }
 
-createApp(App).use(router).mount('#app')
+void bootstrap()

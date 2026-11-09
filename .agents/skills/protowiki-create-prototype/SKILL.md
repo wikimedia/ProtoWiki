@@ -74,7 +74,7 @@ Android, app chrome, which `template-app-*` to copy — see
 ## Conventions
 
 - **Folder naming by kind.** The folder name is the URL path (`src/prototypes/<name>/index.vue`):
-  - **Templates** (starters to copy): `template-<name>/` — e.g. `template-chrome`, `template-article-live`. Set `meta.category: 'template'` so the home gallery groups them below regular prototypes.
+  - **Templates** (starters to copy): `template-<name>/` — e.g. `template-chrome`, `template-article`. Set `meta.category: 'template'` so the home gallery groups them below regular prototypes.
   - **Examples** (worked demos): `example-<name>/` — e.g. `example-event-worklist`. Set `meta.category: 'example'`.
   - **Feature prototypes** (real work in progress): unprefixed kebab-case — e.g. `edit-check`, `related-strip`. Omit `category` (defaults to `'prototype'`).
 - **One folder per prototype.** Keep names short and unique.
@@ -148,9 +148,9 @@ Full field reference, layout rules, and examples:
 
 | Goal | Composition |
 | --- | --- |
-| Article-style page with chrome (live) | `<ChromeWrapper><ArticleLive article="…"/></ChromeWrapper>` |
-| Article-style page with committed snapshot fixture | `<ChromeWrapper><ArticleSnapshot article="…"/></ChromeWrapper>` |
-| Article-style page with **hand-written** body HTML (no REST, no snapshot file) | `<ChromeWrapper><ArticleCustom>…</ArticleCustom></ChromeWrapper>` — canonical: **`src/prototypes/template-article-custom/`**; see [`protowiki-components` → `article.md`](../protowiki-components/references/article.md) (infobox classes, lead markup order) |
+| Article-style page with chrome | `<ChromeWrapper><ArticleLive article="…"/></ChromeWrapper>` — starter: **`template-article/`** |
+| English Wikipedia Main Page (live) | `<ChromeWrapper><ArticleLive article="Main Page" /></ChromeWrapper>` — starter: **`template-main-page/`**; see [`protowiki-components` → `article.md`](../protowiki-components/references/article.md#main-page) |
+| Article-style page with **hand-written** body HTML (no REST) | `<ChromeWrapper><ArticleCustom>…</ArticleCustom></ChromeWrapper>` — example: **`src/prototypes/example-custom-article/`**; see [`protowiki-components` → `article.md`](../protowiki-components/references/article.md#hand-authored-article-markup-no-live-fetch) |
 | Special-page-style page | `<ChromeWrapper><SpecialPageWrapper title="…">…</SpecialPageWrapper></ChromeWrapper>` |
 | Newcomer homepage / dashboard | `<ChromeWrapper :last-edited-notice="false"><SpecialPageWrapper title="Dashboard" help><Dashboard>…</Dashboard></SpecialPageWrapper></ChromeWrapper>` — starter: **`template-dashboard/`**; full modules: **`template-homepage/`** |
 | Bare canvas with chrome | `<ChromeWrapper>…</ChromeWrapper>` |

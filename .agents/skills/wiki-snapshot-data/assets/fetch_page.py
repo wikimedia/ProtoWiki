@@ -7,10 +7,8 @@ Usage:
     python3 fetch_page.py "Confidence Man (band)" -o public/snapshots/confidence-man-band.html
     python3 fetch_page.py "Corsica Studios" --revision 1234567890
 
-The output file contains the inner <body>…</body> HTML — drop it into
-ProtoWiki via:
-
-    <ArticleSnapshot article="Corsica Studios" />
+The output file contains the inner <body>…</body> HTML — copy markup into
+`ArticleCustom` or reference it from `public/snapshots/` in ProtoWiki.
 
 The filename stem (e.g. corsica-studios) should match `articleSnapshotSlug()`
 in `src/components/article/shared/articleSnapshotSlug.ts` and `-o public/snapshots/<stem>.html`.

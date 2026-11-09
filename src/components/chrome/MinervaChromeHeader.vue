@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 
 import { resolveHeaderIcon } from '@/components/header/headerIcons'
 import type { HeaderItem } from '@/components/header/headerItems'
+import MobileSearchOverlay from '@/components/search/MobileSearchOverlay.vue'
+import { MINERVA_DEFAULT_RIGHT } from './minervaHeaderDefaults'
+import { useWordmarkMainPageLink } from '@/composables/useWordmarkMainPageLink'
 import { globalTheme } from '@/theme'
 import type { Theme } from '@/theme'
 
@@ -17,11 +20,16 @@ const MAX_FLANK_ITEMS = 4
 
 const DEFAULT_LEFT: HeaderItem[] = [{ type: 'button', icon: 'menu', label: 'Main menu' }]
 
-const DEFAULT_RIGHT: HeaderItem[] = [
-  { type: 'button', icon: 'search', label: 'Search' },
-  { type: 'button', icon: 'bell-outline', label: 'Notifications' },
-  { type: 'button', icon: 'user-avatar-outline', label: 'User menu' },
-]
+/** Default search opens Minerva's full-screen overlay unless `right` overrides it. */
+const searchOpen = ref(false)
+
+function withDefaultSearchHandler(items: HeaderItem[]): HeaderItem[] {
+  return items.map((item) =>
+    item.type === 'button' && item.icon === 'search' && !item.onClick
+      ? { ...item, onClick: () => (searchOpen.value = true) }
+      : item,
+  )
+}
 
 interface Props {
   theme?: Theme
@@ -32,8 +40,8 @@ interface Props {
   wordmarkSrc?: string
   /** Minerva wordmark; defaults to **`wordmarkSrc`** then EN constant. */
   mobileWordmarkSrc?: string
-  /** When false, the default wordmark is decorative (not a link). */
-  brandLink?: boolean
+  /** When true, default wordmark links to the Main Page. */
+  prototypingSettings?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -43,10 +51,11 @@ const props = withDefaults(defineProps<Props>(), {
   right: undefined,
   wordmarkSrc: undefined,
   mobileWordmarkSrc: undefined,
-  brandLink: true,
+  prototypingSettings: true,
 })
 
 const effectiveTheme = computed<Theme>(() => props.theme ?? globalTheme.value)
+const wordmarkMainPageLink = useWordmarkMainPageLink()
 
 const wordmarkResolved = computed(
   () => props.mobileWordmarkSrc ?? props.wordmarkSrc ?? WIKIPEDIA_WORDMARK_EN,
@@ -61,7 +70,9 @@ function clampFlank(items: HeaderItem[], side: 'left' | 'right'): HeaderItem[] {
 }
 
 const effectiveLeft = computed(() => clampFlank(props.left ?? DEFAULT_LEFT, 'left'))
-const effectiveRight = computed(() => clampFlank(props.right ?? DEFAULT_RIGHT, 'right'))
+const effectiveRight = computed(() =>
+  clampFlank(withDefaultSearchHandler(props.right ?? MINERVA_DEFAULT_RIGHT), 'right'),
+)
 const effectiveMiddle = computed(() => props.middle ?? [])
 
 const useDefaultWordmark = computed(() => props.middle === undefined)
@@ -133,25 +144,22 @@ function isExternalHref(href: string): boolean {
       </div>
 
       <div v-if="showMiddle" class="minerva-chrome-header__middle">
-        <RouterLink
-          v-if="useDefaultWordmark && brandLink"
+        <component
+          :is="props.prototypingSettings ? RouterLink : 'span'"
+          v-if="useDefaultWordmark"
           class="minerva-chrome-header__brand"
-          to="/"
-          aria-label="Visit the main page"
+          v-bind="
+            props.prototypingSettings
+              ? { to: wordmarkMainPageLink, 'aria-label': 'Visit the main page' }
+              : {}
+          "
         >
           <img
             class="minerva-chrome-header__wordmark-img"
             :src="wordmarkResolved"
             alt="Wikipedia"
           />
-        </RouterLink>
-        <span v-else-if="useDefaultWordmark" class="minerva-chrome-header__brand">
-          <img
-            class="minerva-chrome-header__wordmark-img"
-            :src="wordmarkResolved"
-            alt="Wikipedia"
-          />
-        </span>
+        </component>
         <template v-else v-for="(item, index) in effectiveMiddle" :key="`middle-${index}`">
           <component
             v-if="item.type === 'component'"
@@ -225,6 +233,8 @@ function isExternalHref(href: string): boolean {
       </div>
     </nav>
   </header>
+
+  <MobileSearchOverlay v-if="searchOpen" :theme="effectiveTheme" @close="searchOpen = false" />
 </template>
 
 <style scoped>

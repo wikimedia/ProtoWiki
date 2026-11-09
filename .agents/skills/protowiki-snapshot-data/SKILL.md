@@ -1,6 +1,6 @@
 ---
 name: protowiki-snapshot-data
-description: ProtoWiki-specific integration of the snapshotting pattern — the npm scripts that wrap the agnostic fetchers, where snapshots land in this repo (public/snapshots/, src/styles/wiki-skins/), how `ArticleSnapshot` consumes a pre-baked HTML body, and how the skin CSS gets scoped to [data-skin]. Use when adding a new article snapshot to ProtoWiki, refreshing the Wikipedia skin CSS, or wiring `ArticleSnapshot` up to a static fixture.
+description: ProtoWiki-specific integration of the snapshotting pattern — the npm scripts that wrap the agnostic fetchers, where snapshots land in this repo (public/snapshots/, src/styles/wiki-skins/), and how the skin CSS gets scoped to [data-skin]. Use when adding committed HTML fixtures, refreshing the Wikipedia skin CSS, or copying Parsoid markup into ArticleCustom prototypes.
 ---
 
 # Snapshotting Wikipedia data — Inside ProtoWiki
@@ -11,8 +11,7 @@ recipes), see
 [`wiki-snapshot-data`](../wiki-snapshot-data/SKILL.md).
 
 This skill is the ProtoWiki-specific layer on top of that pattern —
-the wrapped npm scripts, the committed paths, and the consumer
-component.
+the wrapped npm scripts, and the committed paths.
 
 ## Where snapshots live in this repo
 
@@ -33,8 +32,7 @@ Current state on disk:
 
 - `src/styles/wiki-skins/{vector-2022,minerva}.{css,rl.css}` — already
   committed and imported globally in `src/main.ts`.
-- `public/snapshots/` — HTML fixtures referenced by **`article`** on **`ArticleSnapshot`**
-  (filename stem must match **`articleSnapshotSlug()`** in `src/components/article/shared/articleSnapshotSlug.ts`):
+- `public/snapshots/` — committed HTML fixtures (filename stem from **`articleSnapshotSlug()`** in `src/components/article/shared/articleSnapshotSlug.ts` — for scripts and copying markup, not a Vue consumer):
   - `wet-leg.html`
   - `corsica-studios.html`
   - `confidence-man-band.html`
@@ -81,35 +79,27 @@ python3 .agents/skills/wiki-snapshot-data/assets/fetch_page.py \
 ```
 
 Match **`-o public/snapshots/<slug>.html`** to the slug **`articleSnapshotSlug()`** produces
-for the same title string you pass **`ArticleSnapshot`** (**`article="…"`**).
+for the wiki title you snapshot.
 
 Update the `UA` string in that script to ProtoWiki's contact when
 running it server-side — anonymous UAs are rate-limited or blocked.
 
-## Consuming a snapshot from `ArticleSnapshot`
+## Using snapshot HTML in prototypes
 
-Use a committed **`public/snapshots/&lt;slug&gt;.html`** by passing **`article`** with the
-same wiki title you used when snapshotting:
+There is **no** snapshot article component. Committed **`public/snapshots/`** files are for diffing, offline reference, and **copying Parsoid markup** into **`ArticleCustom`** (or **`ArticleWrapper` + `ArticleRenderer`**) when you need frozen HTML without wiring a fetch.
 
-```vue
-<ArticleSnapshot article="Corsica Studios" />
+For interactive article prototypes, default to **`ArticleLive`** (**`page/html`**). See [`protowiki-components` → `article.md`](../protowiki-components/references/article.md).
 
-<ArticleSnapshot article="Confidence Man (band)" />
-```
+## Hand-authored markup vs fixtures
 
-If **`public/snapshots/&lt;slug&gt;.html`** is missing (`404`), **`ArticleSnapshot`**
-shows a **`Codex`** error with a repo-root-relative **`fetch_page.py`** command to add it.
-
-## Hand-authored markup vs snapshots
-
-Use committed HTML when you want **full Parsoid fidelity** and a **frozen** page. Use **`ArticleLive`** when you want **always-current** **`page/html`**. When you need **partial content**, **fixture-free** setup, or markup that is **easier to edit in Vue** than in a snapshot file, use **`ArticleCustom`** (or compose **`ArticleWrapper`** + **`ArticleRenderer`**) with a hand-filled slot — canonical example **`src/prototypes/template-article-custom/`**, documented in [`protowiki-components` → `article.md`](../protowiki-components/references/article.md#hand-authored-article-markup-no-fetch-no-snapshot).
+Use committed HTML when you want **full Parsoid fidelity** to copy from. Use **`ArticleLive`** when you want **always-current** **`page/html`**. When you need **partial content** or markup **easier to edit in Vue**, use **`ArticleCustom`** — documented in [`protowiki-components` → `article.md`](../protowiki-components/references/article.md#hand-authored-article-markup-no-live-fetch) (**`example-custom-article/`**).
 
 ## See also
 
 - [`wiki-snapshot-data`](../wiki-snapshot-data/SKILL.md) — the universal
   pattern and the underlying fetch scripts.
 - [`protowiki-components`](../protowiki-components/SKILL.md) —
-  **`ArticleSnapshot`**, **`ArticleLive`**, **`ArticleCustom`**, **`ArticleWrapper`**, and **`ArticleRenderer`** APIs.
+  **`ArticleLive`**, **`ArticleCustom`**, **`ArticleWrapper`**, and **`ArticleRenderer`** APIs.
 - [`protowiki-skins`](../protowiki-skins/SKILL.md) — the `[data-skin]`
   cascade that the scoped CSS plugs into.
 - [`wiki-apis`](../wiki-apis/SKILL.md) — fetching live data, the

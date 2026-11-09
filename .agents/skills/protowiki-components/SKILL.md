@@ -1,6 +1,6 @@
 ---
 name: protowiki-components
-description: Catalog of every shipped component in src/components/ — the single-concern layout wrappers (ChromeWrapper, SpecialPageWrapper, PlainWrapper, MobileWrapper), web chrome primitives (ChromeHeader, VectorChromeHeader, MinervaChromeHeader, ChromeFooter), app chrome (AppChromeWrapper, AppChromeHeader, AppBottomMenu), Article surfaces (`ArticleWrapper` + `ArticleRenderer`, ArticleLive, ArticleSnapshot, ArticleCustom, ArticleHeader — all three surfaces take an `app` prop for in-app screens), dashboard layout (`Dashboard`, `DashboardModule`), attribution (`AttributionCard`, `useAttributionSignals`), and Search — including hand-authored article HTML in `ArticleRenderer`'s default slot (see `src/prototypes/template-article-custom/`) and newcomer homepage templates (`template-dashboard`, `template-homepage`). Use when picking a wrapper, composing a page, looking up props/slots/events for any ProtoWiki component, or asking "what components does ProtoWiki ship?".
+description: Catalog of every shipped component in src/components/ — the single-concern layout wrappers (ChromeWrapper, SpecialPageWrapper, PlainWrapper, MobileWrapper), web chrome primitives (ChromeHeader, VectorChromeHeader, MinervaChromeHeader, ChromeFooter), app chrome (AppChromeWrapper, AppChromeHeader, AppBottomMenu), Article surfaces (`ArticleWrapper` + `ArticleRenderer`, ArticleLive, ArticleCustom, ArticleHeader — article surfaces take an `app` prop for in-app screens), dashboard layout (`Dashboard`, `DashboardModule`), attribution (`AttributionCard`, `useAttributionSignals`), and Search — default article starter `src/prototypes/template-article/`; hand-authored markup via `ArticleCustom` or `ArticleWrapper` + `ArticleRenderer` (example `example-custom-article/`). Use when picking a wrapper, composing a page, looking up props/slots/events for any ProtoWiki component, or asking "what components does ProtoWiki ship?".
 ---
 
 # ProtoWiki components
@@ -19,7 +19,7 @@ This skill is the cross-cutting guide. Per-component depth lives in
 - [`references/app-chrome.md`](references/app-chrome.md) —
   `AppChromeWrapper`, `AppChromeHeader`, `AppBottomMenu`
 - [`references/article.md`](references/article.md) — `ArticleWrapper`, `ArticleRenderer`,
-  `ArticleLive`, `ArticleSnapshot`, `ArticleCustom`, `ArticleHeader`
+  `ArticleLive`, `ArticleCustom`, `ArticleHeader`
 - [`references/search.md`](references/search.md)
 - [`references/editors.md`](references/editors.md) —
   Visual editor prototyping **outside** ProtoWiki (fork Bárbara Martínez Calvo’s article template + suggestion-mode repos)
@@ -48,8 +48,7 @@ This skill is the cross-cutting guide. Per-component depth lives in
 | `ArticleWrapper`      | Reader outer **`<article>`**: **`ArticleHeader`** (web) or the apps' lead block (**`app`**) + **default slot** (**main column** — usually **`ArticleRenderer`**) — no **`v-html`** by itself                                                                                                     | No              | No               |
 | `ArticleRenderer`     | Parser column (**`.article-content`**, **`.mw-parser-output`**, **`#default`** only); mobile **`section > h2`** on mobile skin, in-app affordances with **`app`** — title chrome lives elsewhere                                                                                                 | No              | No               |
 | `ArticleLive`         | **`ArticleWrapper`** + nested **`ArticleRenderer`** for REST **`page/html`** (+ cache); progress/errors in **default slot** before **`ArticleRenderer`**. **Omit `article` → random article each load** (**`source`** = `'random'` \| `'vital'`, **`langs`**); **`app`** → in-app screen with lead block | No              | No               |
-| `ArticleSnapshot`     | **`ArticleWrapper`** + **`ArticleRenderer`** (omitted until snapshot load succeeds or **`#default`**) + **`public/snapshots/`**                                                                                                                               | No              | No               |
-| `ArticleCustom`       | **`ArticleWrapper`** + **`ArticleRenderer`**: **`#default`** is the parser body — no **`page/html`**, no snapshot file                                                                                                                                        | No              | No               |
+| `ArticleCustom`       | **`ArticleWrapper`** + **`ArticleRenderer`**: **`#default`** is the parser body — no **`page/html`** — hand-authored / fine-grained markup                                                                                                                                        | No              | No               |
 | `ArticleHeader`       | Title row, tabs, read/edit/history, tools (used inside **`ArticleWrapper`**, web only)                                                                                                                                                                              | No              | No               |
 | `Search`              | `CdxTypeaheadSearch` wired to opensearch (default in VectorChromeHeader)                                                                                                                                                                                      | n/a             | n/a              |
 | `Dashboard`           | Newcomer homepage grid — `#banner`, `#mobile`, `#primary`, `#sidebar` slots                                                                                                                                                                                   | No              | Yes (desktop)    |
@@ -79,7 +78,7 @@ page, you nest:
 </ChromeWrapper>
 ```
 
-Two lines, top-down: chrome → article surface. **`ArticleLive`** and **`ArticleSnapshot`** each compose **`ArticleWrapper`** with an **`ArticleRenderer`** in its default slot (plus fetch or snapshot UI). **`ArticleCustom`** is the same **`ArticleRenderer`** slot without fetching — use for hand-authored markup (**`src/prototypes/template-article-custom/`**).
+Two lines, top-down: chrome → article surface. Starter: **`src/prototypes/template-article/`** (**`ArticleLive`**). For hand-authored markup, use **`ArticleCustom`** or nest **`ArticleWrapper` + `ArticleRenderer`** (see [`references/article.md`](references/article.md), example **`example-custom-article/`**).
 
 The app shell nests the same way — swap the chrome, add **`app`** to the article surface:
 
@@ -91,11 +90,21 @@ The app shell nests the same way — swap the chrome, add **`app`** to the artic
 
 See [`protowiki-app-prototyping`](../protowiki-app-prototyping/SKILL.md) for the app side end to end.
 
+### Article prototypes (web)
+
+| Goal | Surface | Starter |
+| --- | --- | --- |
+| Live Wikipedia article (`page/html`, random or fixed title) | **`ArticleLive`** | **`src/prototypes/template-article/`** |
+| Hand-authored / fine-grained body markup (no fetch) | **`ArticleCustom`** | **`src/prototypes/example-custom-article/`** |
+| Lower-level control (same as custom, explicit composition) | **`ArticleWrapper`** + **`ArticleRenderer`** | — |
+
+There is **no** **`ArticleSnapshot`** component. Committed HTML under **`public/snapshots/`** is for fixtures and copying Parsoid markup into **`ArticleCustom`** — see [`protowiki-snapshot-data`](../protowiki-snapshot-data/SKILL.md). Depth: [`references/article.md`](references/article.md).
+
 ### 2. Shared `skin` / `theme` on every themable component; `lang` / `dir` on layout shells + article surfaces
 
 Every component in this list (`ChromeWrapper`,
 `SpecialPageWrapper`, `PlainWrapper`, `ArticleWrapper`, `ArticleRenderer`,
-`ArticleLive`, `ArticleSnapshot`, `ArticleCustom`, `Search`) accepts the same two theming props:
+`ArticleLive`, `ArticleCustom`, `Search`) accepts the same two theming props:
 
 | Prop    | Type                    | Effect                                                            |
 | ------- | ----------------------- | ----------------------------------------------------------------- |
@@ -103,7 +112,7 @@ Every component in this list (`ChromeWrapper`,
 | `theme` | `'light' \| 'dark'`     | Sets `data-theme="…"` on the root, locally re-theming the subtree |
 
 The **layout wrappers** (`ChromeWrapper`, `SpecialPageWrapper`,
-`PlainWrapper`), **`ArticleWrapper`**, **`ArticleRenderer`**, **`ArticleLive`**, **`ArticleSnapshot`**, **`ArticleCustom`** accept:
+`PlainWrapper`), **`ArticleWrapper`**, **`ArticleRenderer`**, **`ArticleLive`**, **`ArticleCustom`** accept:
 
 | Prop   | Type              | Effect                                                                                             |
 | ------ | ----------------- | -------------------------------------------------------------------------------------------------- |
@@ -115,7 +124,7 @@ Usually you set `lang` / `dir` once on `ChromeWrapper` (or `<html>`); use **`Art
 
 When `skin` / `theme` props are omitted, components resolve **effective**
 skin/theme from the nearest `ChromeWrapper` (Vue provide/inject for **`ArticleLive`**
-/ **`ArticleSnapshot`** / **`ArticleCustom`** / **`SpecialPageWrapper`**), then from global boot state on
+/ **`ArticleCustom`** / **`SpecialPageWrapper`**), then from global boot state on
 `<html>`. Roots set `data-skin` / `data-theme` from that resolution so `[data-skin]` CSS stays aligned with nested previews.
 
 **App prototypes are the exception.** `AppChromeWrapper` provides `theme` but no
@@ -147,7 +156,6 @@ import MobileWrapper from '@/components/MobileWrapper.vue'
 import ArticleWrapper from '@/components/article/ArticleWrapper.vue'
 import ArticleRenderer from '@/components/article/ArticleRenderer.vue'
 import ArticleLive from '@/components/article/ArticleLive.vue'
-import ArticleSnapshot from '@/components/article/ArticleSnapshot.vue'
 import ArticleCustom from '@/components/article/ArticleCustom.vue'
 import ArticleHeader from '@/components/article/ArticleHeader.vue'
 import Search from '@/components/Search.vue'
@@ -161,21 +169,20 @@ The `@/` prefix resolves to `src/`.
 
 | Component             | Key props                                                                                                                                                                                                                              | Notable slots                                                                                                                       |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `ChromeWrapper`       | `lang?`, `dir?`, `skin?`, `theme?`, **`lastEditedNotice?`**, **`username?`**, **`wordmarkSrc?`**, **`taglineSrc?`**, **`mobileWordmarkSrc?`**, **`navTools?`** (`ChromeNavTool[]`, forwarded to default header)                        | default, `#header`, `#footer`                                                                                                       |
+| `ChromeWrapper`       | `lang?`, `dir?`, `skin?`, `theme?`, **`lastEditedNotice?`**, **`username?`**, **`wordmarkSrc?`**, **`taglineSrc?`**, **`mobileWordmarkSrc?`**, **`navTools?`** (`ChromeNavTool[]`), **`prototypingSettings?`** (forwarded to default header) | default, `#header`, `#footer`                                                                                                       |
 | `AppChromeWrapper`    | `lang?`, `dir?`, `theme?`, **`showBottomMenu?`**, **`left?`**, **`middle?`**, **`right?`**, **`bottomNavItems?`**                                                                                                                      | default, `#header`, `#bottomMenu`                                                                                                   |
 | `SpecialPageWrapper`  | `title?`, **`help?`** (**`boolean`**), **`actions?`**, `lang?`, `dir?`, `skin?`, `theme?`                                                                                                                                              | default, **`#header`**, **`#title`**, `#help`, `#actions`                                                                           |
 | `PlainWrapper`        | `heading?`, `lang?`, `dir?`                                                                                                                                                                                                            | default, `#heading`                                                                                                                 |
 | `MobileWrapper`       | `maxWidth?` (default `360px`), `lang?`, `dir?`                                                                                                                                                                                         | default                                                                                                                             |
-| `ChromeHeader`     | `skin?`, `theme?`, **`username?`**, **`wordmarkSrc?`**, **`taglineSrc?`**, **`mobileWordmarkSrc?`**, **`navTools?`**, **`left?`**, **`middle?`**, **`right?`** (mobile)                                                                | `#menu`, `#logo`, `#username`, `#nav`                                                                                               |
-| `VectorChromeHeader`  | `theme?`, **`username?`**, **`wordmarkSrc?`**, **`taglineSrc?`**, **`navTools?`**                                                                                                                                                      | `#menu`, `#logo`, `#username`, `#nav`                                                                                               |
-| `MinervaChromeHeader` | `theme?`, **`left?`**, **`middle?`**, **`right?`**, **`wordmarkSrc?`**, **`mobileWordmarkSrc?`**                                                                                                                                       | —                                                                                                                                   |
+| `ChromeHeader`     | `skin?`, `theme?`, **`username?`**, **`wordmarkSrc?`**, **`taglineSrc?`**, **`mobileWordmarkSrc?`**, **`navTools?`**, **`prototypingSettings?`**, **`left?`**, **`middle?`**, **`right?`** (mobile)                                     | `#menu`, `#logo`, `#username`, `#nav`, `#user-menu`                                                                                 |
+| `VectorChromeHeader`  | `theme?`, **`username?`**, **`wordmarkSrc?`**, **`taglineSrc?`**, **`navTools?`**, **`prototypingSettings?`**                                                                                                                         | `#menu`, `#logo`, `#username`, `#nav`, `#user-menu`                                                                                 |
+| `MinervaChromeHeader` | `theme?`, **`left?`**, **`middle?`**, **`right?`**, **`wordmarkSrc?`**, **`mobileWordmarkSrc?`**, **`prototypingSettings?`**                                                                                                          | —                                                                                                                                   |
 | `ChromeFooter`        | `skin?`, `theme?`, **`lastEditedNotice?`**, **`username?`**                                                                                                                                                                            | default                                                                                                                             |
 | `AppChromeHeader`     | `theme?`, **`left?`**, **`middle?`**, **`right?`**                                                                                                                                                                                     | —                                                                                                                                   |
 | `AppBottomMenu`       | `theme?`, **`items?`**                                                                                                                                                                                                                 | default, `#item-{id}`                                                                                                               |
 | `ArticleWrapper`      | **`title?`**, **`header?`**, **`languagesCount?`**, **`lang`**, **`dir`**, **`skin`**, **`theme`**, **`app?`** / **`description?`** / **`leadImageUrl?`** (app lead block)                                                                                                                                     | **default**                                                                                                                         |
-| `ArticleRenderer`     | **`lang`/`dir`/`skin`/`theme`**, **`app?`** (pins `skin` to `mobile`)                                                                                                                                                                                                        | **default** — parser subtree ( **`ArticleLive`** / **`ArticleSnapshot`** use **`v-html`** here unless **`#default`** is forwarded ) |
-| `ArticleLive`         | Same **`ArticleWrapper`** chrome **`+`** **`article`** (**`page/html`** title; **omit for random**) **`+`** **`host`** **`+`** **`app?`** **`+`** random-mode **`source?`** (`'random'`\|`'vital'`) / **`langs?`** / **`vitalLevel?`** (`source="vital"`); emits **`parserReady`** | **default** → **`ArticleRenderer`** (**`ArticleLive`** injects **`Cdx`** progress/errors before **`ArticleRenderer`**)              |
-| `ArticleSnapshot`     | **`article`** (snapshot key **`+`** **`ArticleWrapper`** **`title`**) **`+`** chrome passthroughs (no **`host`** / **`header`**) **`+`** **`app?`**                                                                                                   | **default** → **`ArticleRenderer`** (**`ArticleSnapshot`** injects **`Cdx`** UI before **`ArticleRenderer`**)                       |
+| `ArticleRenderer`     | **`lang`/`dir`/`skin`/`theme`**, **`app?`** (pins `skin` to `mobile`)                                                                                                                                                                                                        | **default** — parser subtree ( **`ArticleLive`** uses **`v-html`** here unless **`#default`** is forwarded ) |
+| `ArticleLive`         | Same **`ArticleWrapper`** chrome **`+`** **`article`** (**`page/html`** title; **omit for random**) **`+`** **`host`** **`+`** **`app?`** **`+`** random-mode **`source?`** (`'random'`\|`'vital'`) / **`langs?`** / **`vitalLevel?`** (`source="vital"`); emits **`parserReady`**, **`titleResolved`** | **default** → **`ArticleRenderer`** (**`ArticleLive`** injects **`Cdx`** progress/errors before **`ArticleRenderer`**)              |
 | `ArticleCustom`       | Same **`ArticleWrapper`** chrome keys as manual composition (**`title`**, **`header`**, **`app?`**, …) — **no `article` / `host`**                                                                                                                 | **default** → **`ArticleRenderer`** (your **`#default`** is the parser subtree)                                                     |
 | `ArticleHeader`       | **`title`** (required), **`languagesCount?`** (default 18), **`skin?`**                                                                                                                                                                | **`#title`**, emits (`languageSelect`, `languageSettingsClick`, tab/action clicks)                                                  |
 | `Search`              | `host?`, `placeholder?`, `limit?`, `skin?`, `theme?`                                                                                                                                                                                   | none                                                                                                                                |

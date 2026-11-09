@@ -5,14 +5,21 @@ import {
   configUserPageTitle,
   DEFAULT_CONFIG,
   formatLangList,
+  defaultMockEditorEditCountForUser,
+  DEFAULT_MOCK_EDITOR_EDIT_COUNT_BY_USER,
+  isDefaultMockEditorEditCountByUser,
   isDefaultUserPageLists,
   langForUser,
+  prependPageInList,
   resetUserPageLists,
   saveConfig,
+  normalizeWikiPageTitleInput,
+  togglePageInList,
   type ConfigAppPlatform,
   type Config,
   type ConfigTheme,
   type ConfigWebSkin,
+  type ConfigMockEditorEditCount,
   type ConfigUser,
   type PageListKey,
   type UserPageLists,
@@ -28,7 +35,7 @@ import {
 const config = protowikiConfig
 
 watch(
-  config,
+  () => config.value,
   (value) => {
     saveConfig(value)
   },
@@ -74,7 +81,14 @@ export function useConfig(): {
   isCurrentUserPageListsModified: ComputedRef<boolean>
   setCurrentUserPageList: (field: PageListKey, pages: string[]) => void
   setReadingListWithTimestamps: (titles: string[], savedAt: number[]) => void
+  toggleCurrentUserPageInList: (
+    field: PageListKey,
+    pageTitle: string,
+    options?: { prepend?: boolean },
+  ) => void
+  prependCurrentUserPageInList: (field: PageListKey, pageTitle: string) => void
   resetCurrentUserPageLists: () => void
+  mockEditorEditCount: Ref<ConfigMockEditorEditCount>
 } {
   const theme = computed({
     get: () => config.value.theme,
@@ -166,18 +180,31 @@ export function useConfig(): {
     if (user.value === 'real') {
       return config.value.realUsername !== DEFAULT_CONFIG.realUsername
     }
+    if (!isDefaultMockEditorEditCountByUser(user.value, config.value.mockEditorEditCountByUser)) {
+      return true
+    }
     return false
   })
 
   function setCurrentUserPageList(field: PageListKey, pages: string[]) {
     const activeUser = user.value
+    const lists = config.value.userPageLists[activeUser]
+    // Keep each saved-at time with its title when the reading list is reordered.
+    const savedAt =
+      field === 'readingList'
+        ? pages.map((title) => {
+            const index = lists.readingList.indexOf(title)
+            return index >= 0 ? lists.readingListSavedAt[index] : Date.now()
+          })
+        : lists.readingListSavedAt
     config.value = {
       ...config.value,
       userPageLists: {
         ...config.value.userPageLists,
         [activeUser]: {
-          ...config.value.userPageLists[activeUser],
+          ...lists,
           [field]: [...pages],
+          readingListSavedAt: [...savedAt],
         },
       },
     }
@@ -198,8 +225,29 @@ export function useConfig(): {
     }
   }
 
+  function toggleCurrentUserPageInList(
+    field: PageListKey,
+    pageTitle: string,
+    options: { prepend?: boolean } = {},
+  ) {
+    if (user.value === 'logged-out') return
+    const key = normalizeWikiPageTitleInput(pageTitle)
+    if (!key.length) return
+    const current = config.value.userPageLists[user.value][field]
+    setCurrentUserPageList(field, togglePageInList(current, key, options))
+  }
+
+  function prependCurrentUserPageInList(field: PageListKey, pageTitle: string) {
+    if (user.value === 'logged-out') return
+    const key = normalizeWikiPageTitleInput(pageTitle)
+    if (!key.length) return
+    const current = config.value.userPageLists[user.value][field]
+    setCurrentUserPageList(field, prependPageInList(current, key))
+  }
+
   function resetCurrentUserPageLists() {
     const activeUser = user.value
+    const editsDefault = defaultMockEditorEditCountForUser(activeUser)
     config.value = {
       ...config.value,
       realUsername: activeUser === 'real' ? DEFAULT_CONFIG.realUsername : config.value.realUsername,
@@ -207,8 +255,37 @@ export function useConfig(): {
         ...config.value.userPageLists,
         [activeUser]: resetUserPageLists(activeUser),
       },
+      ...(editsDefault
+        ? {
+            mockEditorEditCountByUser: {
+              ...config.value.mockEditorEditCountByUser,
+              [activeUser]: DEFAULT_MOCK_EDITOR_EDIT_COUNT_BY_USER[activeUser],
+            },
+          }
+        : {}),
     }
   }
+
+  const mockEditorEditCount = computed({
+    get: () => {
+      const activeUser = user.value
+      if (activeUser === 'new' || activeUser === 'experienced') {
+        return config.value.mockEditorEditCountByUser[activeUser]
+      }
+      return DEFAULT_MOCK_EDITOR_EDIT_COUNT_BY_USER.new
+    },
+    set: (value: ConfigMockEditorEditCount) => {
+      const activeUser = user.value
+      if (activeUser !== 'new' && activeUser !== 'experienced') return
+      config.value = {
+        ...config.value,
+        mockEditorEditCountByUser: {
+          ...config.value.mockEditorEditCountByUser,
+          [activeUser]: value,
+        },
+      }
+    },
+  })
 
   return {
     config: readonly(config),
@@ -228,6 +305,9 @@ export function useConfig(): {
     isCurrentUserPageListsModified,
     setCurrentUserPageList,
     setReadingListWithTimestamps,
+    toggleCurrentUserPageInList,
+    prependCurrentUserPageInList,
     resetCurrentUserPageLists,
+    mockEditorEditCount,
   }
 }

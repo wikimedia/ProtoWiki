@@ -1,20 +1,18 @@
-# Article surface — `ArticleWrapper`, `ArticleRenderer`, `ArticleLive`, `ArticleSnapshot`, `ArticleCustom`, `ArticleHeader`
+# Article surface — `ArticleWrapper`, `ArticleRenderer`, `ArticleLive`, `ArticleCustom`, `ArticleHeader`
 
-**Web or app is one prop.** All three article surfaces (**`ArticleLive`**, **`ArticleSnapshot`**, **`ArticleCustom`**) take **`app?: boolean`** and forward it to **`ArticleWrapper`** + **`ArticleRenderer`**; there are no separate **`App…`** article components. See [In-app articles](#in-app-articles-app).
+**Web or app is one prop.** **`ArticleLive`** is the default article surface (**`src/prototypes/template-article/`**). Use **`ArticleCustom`** when you need fine-grained, hand-authored body markup without live fetch. Both take **`app?: boolean`** and forward it to **`ArticleWrapper`** + **`ArticleRenderer`**; there are no separate **`App…`** article components. See [In-app articles](#in-app-articles-app).
 
 ## Composition model
 
-- **`ArticleWrapper`** — reader layout shell **only**: outer semantic **`<article>`**, then **`ArticleHeader`** (web) or the apps' lead block (**`app`**), and a **default slot** for the reader column (**`ArticleLive`** / **`ArticleSnapshot`** put progress/errors **first**, then **`ArticleRenderer`** — typically **`ArticleRenderer`**).
+- **`ArticleWrapper`** — reader layout shell **only**: outer semantic **`<article>`**, then **`ArticleHeader`** (web) or the apps' lead block (**`app`**), and a **default slot** for the reader column (**`ArticleLive`** puts progress/errors **first**, then **`ArticleRenderer`** — typically **`ArticleRenderer`**).
 
 - **`ArticleRenderer`** — parser column (**`.article-content`** shell): **`#default`** is the sole parser subtree (wraps **`<slot />`** in **`.mw-parser-output`** + inner **`:key="effectiveSkin"`** remount for Minerva accordion DOM). Caller supplies authored markup or **`v-html`** wrappers in the slot. Mobile **`section > h2`** affordances apply whenever **`effectiveSkin`** is **`mobile`**. Skin-scoped RL CSS. Title chrome is **`ArticleHeader`** only (not **`ArticleRenderer`**).
 
 - **`ArticleLive`** — **`ArticleWrapper`** + inline progress/error (**`CdxProgressBar`** / **`CdxMessage`**) **`+`** **`ArticleRenderer`**: **`ArticleRenderer`** mounts when **`liveHtml !== null`** or the consumer overrides **`#default`**; fetched body renders as default slot **`v-html`** unless **`#default`** is passed through.
 
-- **`ArticleSnapshot`** — same gate (**`snapshotHtml !== null`** or **`#default`**) with snapshot load / error **`Cdx`** UI before **`ArticleRenderer`**.
+- **`ArticleCustom`** — **`ArticleWrapper`** + **`ArticleRenderer`** with **no fetch**: you supply **`.mw-parser-output`** contents in **`#default`**. Same chrome passthroughs as **`ArticleWrapper`** (**`title`**, **`header`**, **`languagesCount`**, **`lang`**, **`dir`**, **`skin`**, **`theme`**) — use when hand-authored markup is easier than **`page/html`**.
 
-- **`ArticleCustom`** — **`ArticleWrapper`** + **`ArticleRenderer`** with **no fetch**: you supply **`.mw-parser-output`** contents in **`#default`**. Same chrome passthroughs as **`ArticleWrapper`** (**`title`**, **`header`**, **`languagesCount`**, **`lang`**, **`dir`**, **`skin`**, **`theme`**) — use when hand-authored markup is easier than **`page/html`** or a snapshot file.
-
-**`ArticleLive`**, **`ArticleSnapshot`**, and **`ArticleCustom`** are independent — none imports the others; **`ArticleLive`** and **`ArticleSnapshot`** each compose **`ArticleWrapper`** and **`ArticleRenderer`** with loading UI; **`ArticleCustom`** is the thin **`ArticleWrapper` → `ArticleRenderer`** shell.
+**`ArticleLive`** and **`ArticleCustom`** are independent — neither imports the other; **`ArticleLive`** composes **`ArticleWrapper`** and **`ArticleRenderer`** with fetch UI; **`ArticleCustom`** is the thin **`ArticleWrapper` → `ArticleRenderer`** shell.
 
 For a **standalone parser embed** without **`ArticleHeader`** (advanced), nest **`ChromeWrapper`** (or **`PlainWrapper`**) + **`ArticleRenderer`**.
 
@@ -26,37 +24,43 @@ When any of these roots sit inside **`ChromeWrapper`**, they **inherit** effecti
 
 - **`ArticleLive.article`** selects the **`page/html/{title}`** page and forwards the same string to **`ArticleWrapper`** as **`title`** (optional **`header`** overrides **`ArticleHeader`**). **When `article` is omitted, a random title is selected each load** (see **Random mode** below) and that resolved title feeds **`ArticleWrapper`**.
 
-- **`ArticleSnapshot.article`** picks **`public/snapshots/&lt;slug&gt;.html`** via **`articleSnapshotSlug`** and is forwarded to **`ArticleWrapper`** **`title`** (**`ArticleHeader`** label — underscores → spaces the same as **`ArticleLive`**).
-
 - **`header`** (**`ArticleLive`** on **`ArticleWrapper`**, and **`ArticleCustom`**) overrides the derived chrome title; **`ArticleRenderer`** does **not** consume **`title`** or **`header`**.
 
 - With **`app`**, that same title becomes the lead-block **`h1`** instead of the **`ArticleHeader`** label, and **`ArticleLive`** upgrades it to the canonical title once **`fetchArticleView()`** answers.
 
+### Main Page
+
+When the derived chrome title is exactly **`Main Page`** (English Wikipedia’s main page title), **`ArticleWrapper`** enables production’s Main Page **`ArticleHeader`** — hidden desktop **`h1`**, **Main Page** tab, no languages control or tagline; on mobile web, a bare header (logged-in users see a **Welcome, …!** greeting). Portal box typography and the two-column **`#mp-upper`** layout are handled in **`src/styles/wiki-skins/mobile-wiki-overrides.css`** (container queries on the parser column).
+
+**Starter:** **`src/prototypes/template-main-page/`** — static **`ChromeWrapper`** + **`ArticleLive article="Main Page"`** (no **`?title=`**; search and in-article wiki links open **`/template-article?title=…`**). Surfaces do not take a **`mainPage`** flag; title detection is automatic. For hand-authored portal markup, **`ArticleCustom title="Main Page"`** (or **`ArticleWrapper`** + slot) gets the same header chrome.
+
+Other wikis use different main-page titles; pass the correct **`article`** / **`lang`** (and **`host`** if needed) to **`ArticleLive`**.
+
 ## `ArticleWrapper`
 
-| Concern      | Notes                                                                                                                                          |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Chrome props | **`title?`**, **`header`**, **`languagesCount?`**, **`lang`**, **`dir`**, **`skin`**, **`theme`**, …                                            |
+| Concern      | Notes                                                                                                                                         |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chrome props | **`title?`**, **`header`**, **`languagesCount?`**, **`lang`**, **`dir`**, **`skin`**, **`theme`**, …                                          |
 | App props    | **`app?`** (lead block instead of **`ArticleHeader`**, skin pinned to **`mobile`**), **`description?`**, **`leadImageUrl?`** — **`app`** only |
-| Slots        | **default** (**main reader column** — **`ArticleRenderer`** or bespoke markup)                                                                  |
+| Slots        | **default** (**main reader column** — **`ArticleRenderer`** or bespoke markup)                                                                |
 
 In **`app`** mode the wrapper drops its own inline padding — the app chrome already pads the screen edges — and the lead image bleeds back out through that gutter.
 
 ## `ArticleRenderer`
 
-| Concern | Notes                                                                                                                                                                                   |
-| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Props   | **`lang`/`dir`/`skin`/`theme`** (no parser string prop — use **`#default`**), **`app?`**                                                                                |
-| Slots   | **`#default`** — contents appear inside **`.mw-parser-output`**; omit **`ArticleRenderer`** when there is nothing to render ( **`ArticleLive`** / **`ArticleSnapshot`** gate mounting). |
+| Concern | Notes                                                                                                                                                           |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Props   | **`lang`/`dir`/`skin`/`theme`** (no parser string prop — use **`#default`**), **`app?`**                                                                        |
+| Slots   | **`#default`** — contents appear inside **`.mw-parser-output`**; omit **`ArticleRenderer`** when there is nothing to render (**`ArticleLive`** gates mounting). |
 
 **`app`** (default **`false`**) switches the mobile reading affordances from web to in-app, and **pins the skin to `mobile`** (app chrome provides no **`data-skin`** to inherit). The article surfaces forward their own **`app`** prop, so you only pass it here when composing **`ArticleRenderer`** by hand.
 
-| Behaviour            | **`app: false`** (web mobile)                     | **`app: true`** (in-app)                                                                                                                                                                                           |
-| -------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **`section > h2`**   | every section collapsible, all starting **open**  | only **References** / **External links** collapse, starting **closed**; every other heading is static (same look, no chevron, no toggle)                                                                            |
-| Heading rule         | rule under each **`h2`**                          | no rule; the boundary is drawn once as a **top border** on the first end-matter **`section`** (**`.protowiki-mobile-end-matter-start`**, absent when neither section exists)                                          |
-| Tables               | styled in place                                   | folded into **Quick facts** / **More information** widgets — see below                                                                                                                                              |
-| Navboxes             | rendered                                          | hidden (**`.navbox`**, **`.vertical-navbox`** — authority control is a navbox too), matching the apps' article HTML; hatnotes and sister-site boxes stay                                                             |
+| Behaviour          | **`app: false`** (web mobile)                    | **`app: true`** (in-app)                                                                                                                                                     |
+| ------------------ | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`section > h2`** | every section collapsible, all starting **open** | only **References** / **External links** collapse, starting **closed**; every other heading is static (same look, no chevron, no toggle)                                     |
+| Heading rule       | rule under each **`h2`**                         | no rule; the boundary is drawn once as a **top border** on the first end-matter **`section`** (**`.protowiki-mobile-end-matter-start`**, absent when neither section exists) |
+| Tables             | styled in place                                  | folded into **Quick facts** / **More information** widgets — see below                                                                                                       |
+| Navboxes           | rendered                                         | hidden (**`.navbox`**, **`.vertical-navbox`** — authority control is a navbox too), matching the apps' article HTML; hatnotes and sister-site boxes stay                     |
 
 App-mode CSS keys off **`.article-content--app`** on the renderer root, and **`.article--app`** on the wrapper root.
 
@@ -64,27 +68,27 @@ End-matter headings match by text or anchor id, so **`External links`** matches 
 
 **Collapsed table widgets** come from **`shared/collapseArticleTables.ts`**, a port of the apps' **`CollapseTable`** page-library transform (which can't be used directly — it only runs inside a PCS **`mobile-html`** document). Each eligible table is wrapped in **`.protowiki-collapse-table-container`** with a header button (**`Quick facts`** for **`.infobox`**, **`More information`** otherwise, plus a caption made of the first two usable **`th`** texts and an ellipsis), the table in a scrolling **`.protowiki-collapse-table__content`**, and a **`Close`** footer button. All start collapsed. **`navbox`**, **`vertical-navbox`**, **`navbox-inner`**, **`metadata`** and **`mbox-small`** tables are left alone, as are non-infobox tables with no usable headers. Re-running is a no-op, so hot reloads and re-renders are safe.
 
-Companion CSS (**`mobile-wiki-overrides.css`**, **`ArticleRenderer.vue`** unscoped block: wide tables, mobile infobox / lead order, hatnotes) keys off **`.article[data-skin] .mw-parser-output`**, so **`ArticleWrapper`** + bare **`div.mw-parser-output`** behaves like **`ArticleRenderer`** for those rules (the **`.article-content`** wrapper still adds its own padding / **`min-width: 0`**). Prefer **`ArticleRenderer`** for **`ArticleLive`**, **`ArticleSnapshot`**, **`page/html`**, snapshots, and mobile **`innerHTML`** **`section > h2`** affordances. Fetched **`page/html`** emits **`section[data-mw-section-id=&quot;0&quot;]`**; on mobile, **`enhanceMobileLeadInfoboxOrder()`** in **`ArticleRenderer.vue`** reorders that section’s DOM so lead prose stacks above the infobox.
+Companion CSS (**`mobile-wiki-overrides.css`**, **`ArticleRenderer.vue`** unscoped block: wide tables, mobile infobox / lead order, hatnotes) keys off **`.article[data-skin] .mw-parser-output`**, so **`ArticleWrapper`** + bare **`div.mw-parser-output`** behaves like **`ArticleRenderer`** for those rules (the **`.article-content`** wrapper still adds its own padding / **`min-width: 0`**). Prefer **`ArticleRenderer`** for **`ArticleLive`**, **`page/html`**, and mobile **`innerHTML`** **`section > h2`** affordances. Fetched **`page/html`** emits **`section[data-mw-section-id=&quot;0&quot;]`**; on mobile, **`enhanceMobileLeadInfoboxOrder()`** in **`ArticleRenderer.vue`** reorders that section’s DOM so lead prose stacks above the infobox.
 
-### Hand-authored article markup (no fetch, no snapshot)
+### Hand-authored article markup (no live fetch)
 
-When you want full control over article HTML (fixture-free demos, selectively copied sections, UX experiments that must not depend on network or committed Parsoid bundles):
+When you want full control over article HTML (fixture-free demos, selectively copied sections, UX experiments that must not depend on network):
 
 1. **`ChromeWrapper`** → **`ArticleCustom`** (or **`ArticleWrapper`** → **`ArticleRenderer`** for full control).
 2. Put all reader body markup in **`ArticleRenderer`’s default slot** — it lands inside **`.mw-parser-output`**, so vendored wiki skin CSS applies.
-3. **Lead + infobox on mobile:** put hatnote and first lead paragraph **before** the infobox in source order (see **`src/prototypes/template-article-custom/`**). Live/snapshot Parsoid HTML uses the opposite order; **`ArticleRenderer`** reorders **`section[data-mw-section-id=&quot;0&quot;]`** at runtime — hand-authored markup has no equivalent hook, so author the desired visual order directly.
-4. **Infoboxes:** match English Wikipedia’s **Infobox musical artist**-shaped table for familiar chrome: **`table.infobox.vcard.plainlist`**, **`th.infobox-above`** (title), **`td.infobox-image`** + **`div.infobox-caption`**, **`th.infobox-header`** (e.g. “Background information” and empty separator rows), **`th.infobox-label`** / **`td.infobox-data`** for fields. **Pale blue header bands** on enwiki come from **inline `style` on those cells** (`background-color: #b0c4de`, etc.) emitted by the infobox **template** — ProtoWiki’s ResourceLoader skin CSS does **not** ship **`Module:Infobox`** / per-template colours, so copy that markup from **Parsoid HTML** or a committed snapshot (e.g. **`public/snapshots/wet-leg.html`**) if you want parity. **`Module:Infobox/styles.css`** in live pages is mostly layout; do not expect class-only headers to pick up the blue without those template inlines.
+3. **Lead + infobox on mobile:** put hatnote and first lead paragraph **before** the infobox in source order (see **`src/prototypes/example-custom-article/`**). Live Parsoid HTML uses the opposite order; **`ArticleRenderer`** reorders **`section[data-mw-section-id=&quot;0&quot;]`** at runtime — hand-authored markup has no equivalent hook, so author the desired visual order directly.
+4. **Infoboxes:** match English Wikipedia’s **Infobox musical artist**-shaped table for familiar chrome: **`table.infobox.vcard.plainlist`**, **`th.infobox-above`** (title), **`td.infobox-image`** + **`div.infobox-caption`**, **`th.infobox-header`** (e.g. “Background information” and empty separator rows), **`th.infobox-label`** / **`td.infobox-data`** for fields. **Pale blue header bands** on enwiki come from **inline `style` on those cells** (`background-color: #b0c4de`, etc.) emitted by the infobox **template** — ProtoWiki’s ResourceLoader skin CSS does **not** ship **`Module:Infobox`** / per-template colours, so copy that markup from **Parsoid HTML** or a committed fixture under **`public/snapshots/`** (e.g. **`wet-leg.html`**) if you want parity. **`Module:Infobox/styles.css`** in live pages is mostly layout; do not expect class-only headers to pick up the blue without those template inlines.
 5. **Lists inside infoboxes:** enwiki often uses **`plainlist`** + **`<ul>`**; Plainlist **TemplateStyles** are not bundled in **`src/styles/wiki-skins/`**, so unordered lists can show default bullets — use comma-separated links, **`<br>`**-separated lines, or co-locate minimal list reset CSS only if the prototype demands it.
 
-**Canonical example:** **`src/prototypes/template-article-custom/`** (`Template: Article (custom)` on the gallery via `category: 'template'`) — Wet Leg lead + History authored in Vue, local infobox image via **`import.meta.env.BASE_URL`**.
+**Worked example:** **`src/prototypes/example-custom-article/`** (gallery **Custom article**) — Wet Leg lead + History via **`ArticleCustom`**, local infobox image via **`import.meta.env.BASE_URL`**, inline **`sup.reference`** footnotes and an **`ol.references`** block (Vector skin styles).
 
 **Attribution:** if prose is copied from Wikipedia, keep licences in mind ([CC BY-SA](https://creativecommons.org/licenses/by-sa/4.0/)) and cite the source in the prototype (the hand-written Wet Leg demo links the article).
 
-See also [`composition-recipes.md`](composition-recipes.md#hand-authored-article-no-live-fetch-or-snapshot).
+See also [`composition-recipes.md`](composition-recipes.md#hand-authored-article-no-live-fetch).
 
 ## `ArticleCustom`
 
-**`ArticleWrapper`** + **`ArticleRenderer`**: hand-filled **`#default`** only — no network, no snapshot file.
+**`ArticleWrapper`** + **`ArticleRenderer`**: hand-filled **`#default`** only — no network.
 
 ### Example
 
@@ -96,7 +100,11 @@ See also [`composition-recipes.md`](composition-recipes.md#hand-authored-article
 
 ### Props (`ArticleCustom`)
 
-Same chrome / i18n / theme surface as **`ArticleWrapper`** — **`title?`**, **`header?`**, **`languagesCount?`**, **`lang`**, **`dir`**, **`skin`**, **`theme`**, plus **`app?`** / **`description?`** / **`leadImageUrl?`** for a hand-authored in-app screen. There is no **`article`** prop (unlike **`ArticleLive`** / **`ArticleSnapshot`**).
+Same chrome / i18n / theme surface as **`ArticleWrapper`** — **`title?`**, **`header?`**, **`languagesCount?`**, **`lang`**, **`dir`**, **`skin`**, **`theme`**, plus **`app?`** / **`description?`** / **`leadImageUrl?`** for a hand-authored in-app screen. There is no **`article`** prop (unlike **`ArticleLive`**).
+
+Web-only **`editable?`** and **`startInEditMode?`** mirror **`ArticleLive`**: once the default slot is rendered, body HTML is captured from **`.mw-parser-output`** and fed to the Visual Editor prototype. Set **`title`** (or **`header`**) so the editor has page identity for suggestions and Citoid. **`v-model:editing`** and **`v-model:suggestion-count`** match the **`ArticleLive`** VE wiring. **`editable`** is ignored when **`app`** is true.
+
+**Worked demo with Edit tab:** **`src/prototypes/example-custom-article/`** — **`<ArticleCustom editable title="Wet Leg">`**.
 
 ### Slots
 
@@ -107,6 +115,27 @@ Same chrome / i18n / theme surface as **`ArticleWrapper`** — **`title?`**, **`
 ## `ArticleLive`
 
 Live fetch via **`page/html`** (in-memory cache + **`localStorage`**). Single import for **`ChromeWrapper` → live reader** demos.
+
+On web **`ArticleLive`**, in-article links to the same wiki (**`/wiki/…`**) update **`?title=`** on the current prototype route instead of leaving ProtoWiki (see **`useInArticleWikiLinks`** / **`ArticleRenderer`**). Footnote / citation anchors (**`#cite_note`**, **`#cite_ref`**) are excluded from that hijacking; Parsoid **`./Page#cite_note-…`** hrefs are normalized to same-document fragments so superscripts jump to the references block.
+
+### Visual Editor (`editable`, `editRoute`, `readRoute`)
+
+Gallery **read** and **edit** are split across two templates over the same **`?title=`**:
+
+- **`template-article/`** — read-only **`ArticleLive`**; **`editRoute="/template-visual-editor"`** so **`ArticleHeader`** Edit navigates to the Visual Editor template.
+- **`template-visual-editor/`** — **`editable`** + **`startInEditMode`** + **`readRoute="/template-article"`** so Read, toolbar back, and publish navigate back to the article template.
+
+For a **single route** with in-place read ↔ edit (e.g. hand-authored bodies), set **`editable`** without **`editRoute`** / **`readRoute`** — see **`example-custom-article/`**.
+
+Set **`editable`** on web templates so **`ArticleHeader`**’s Edit tab opens the in-place Visual Editor prototype (implementation under **`src/components/visual-editor/`**). **`startInEditMode`** opens edit mode automatically once the body has loaded.
+
+- **`editable`** is ignored when **`app`** is true (in-app articles stay read-only).
+- **`editRoute?`** — when **`!editable`**, header Edit calls **`useWikiPrototypeNavigation()`** to push the path with the resolved title and preserved appearance query params.
+- **`readRoute?`** — when **`editable`**, the route is **editor-only** (no inline read surface); Read tab, VE exit, and publish navigate to that path.
+- **`v-model:editing`** and **`v-model:suggestion-count`** support VE-template chrome (footer/header while editing, settings panel counts).
+- **Suggestion mode settings UI** (`SuggestionSettingsPanel` in **`src/components/settings/`**) opens from the **gallery home** toolbar (lightbulb) and the Visual Editor template **main menu**; a master **Suggestion mode** toggle at the top of the panel turns off detection, Edit Check, and the VE toolbar lightbulb (`enabled` in **`src/components/visual-editor/settings.ts`**). Other **`editable`** templates share the same persisted store.
+
+**Starters:** **`template-main-page/`** and **`template-article/`** — **`ChromeWrapper`** + read **`ArticleLive`**; **`template-visual-editor/`** adds **`editable`**, **`start-in-edit-mode`**, **`read-route`**, and a custom **`#menu`** slot.
 
 ### Random mode (omit `article`)
 
@@ -140,26 +169,28 @@ Selection only resolves a **title** (a lightweight, title-only request for the r
 
 ### Props (`ArticleLive`)
 
-**`host`** (**wiki hostname** for **`page/html`** and cache keys; default derived from **`lang`** via **`wikiHostFromLang()`**, so **`en.wikipedia.org`** unless you set **`lang`** — random mode derives it from the chosen `langs` instead), **`article`** (REST page title → **`ArticleWrapper`** **`title`**; **omit for random mode**), **`app?`** (in-app reading screen — see [In-app articles](#in-app-articles-app)), **`source?`** (**`'random'`** | **`'vital'`**, random mode only), **`langs?`** (**`string[]`**, random mode only), **`vitalLevel?`** (**`number`**, default **`2`**, `source="vital"` only), **`header`**, **`languagesCount?`**, **`lang`**, **`dir`**, **`skin`**, **`theme`**.
+**`host`** (**wiki hostname** for **`page/html`** and cache keys; default derived from **`lang`** via **`wikiHostFromLang()`**, so **`en.wikipedia.org`** unless you set **`lang`** — random mode derives it from the chosen `langs` instead), **`article`** (REST page title → **`ArticleWrapper`** **`title`**; **omit for random mode**), **`app?`** (in-app reading screen — see [In-app articles](#in-app-articles-app)), **`editable?`** (web Visual Editor — see [Visual Editor](#visual-editor-editable-editroute-readroute)), **`startInEditMode?`** (**`editable`** only), **`editRoute?`** / **`readRoute?`** (cross-prototype read/edit navigation — see [Visual Editor](#visual-editor-editable-editroute-readroute)), **`source?`** (**`'random'`** | **`'vital'`**, random mode only), **`langs?`** (**`string[]`**, random mode only), **`vitalLevel?`** (**`number`**, default **`2`**, `source="vital"` only), **`header`**, **`languagesCount?`**, **`lang`**, **`dir`**, **`skin`**, **`theme`**.
 
-Emits **`parserReady`** with the rendered article root once the body is in the DOM (see [Putting your own components in the article](#putting-your-own-components-in-the-article)).
+**`v-model:editing`** and **`v-model:suggestion-count`** are optional bindings for templates that adjust chrome while editing.
+
+Emits **`parserReady`** with the rendered article root once the body is in the DOM (see [Putting your own components in the article](#putting-your-own-components-in-the-article)). Emits **`titleResolved`** after a successful body load (used by **`template-article/`** to sync **`?title=`**).
 
 ### Slots
 
-| Slot    | Notes                                                                                                                                                                         |
-| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| default | Forwarded inside **`ArticleRenderer`** when passed — replaces the **`v-html`** wrapper **`ArticleLive`** / **`ArticleSnapshot`** emit for **`page/html`** / snapshot bundles. |
+| Slot    | Notes                                                                                                                               |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| default | Forwarded inside **`ArticleRenderer`** when passed — replaces the **`v-html`** wrapper **`ArticleLive`** emits for **`page/html`**. |
 
 ## In-app articles (`app`)
 
 **`app`** turns any article surface into an in-app reading screen for **`AppChromeWrapper`** prototypes. Same one-document path as the web article components — app chrome around it instead of web chrome, no separate component.
 
-| Concern | Notes                                                                                                                                      |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Fetch   | REST **`page/html`** via **`fetchArticleBody()`** — the same fetch the web path uses                                                        |
-| Chrome  | **`ArticleWrapper`** lead block: lead image, title, description. **`ArticleLive`** fills those from **`fetchArticleView()`** (Action API **`query`** + **`pageimages\|description`**); **`ArticleSnapshot`** / **`ArticleCustom`** take **`description`** / **`leadImageUrl`** as props |
-| Render  | **`ArticleRenderer`** with **`app`**, which pins **`skin="mobile"`** inside **`.article[data-skin="mobile"]`**                              |
-| Styling | Vendored Minerva snapshot + **`mobile-wiki-overrides.css`**, exactly as the web mobile skin                                                 |
+| Concern | Notes                                                                                                                                                                                                                                                            |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fetch   | REST **`page/html`** via **`fetchArticleBody()`** — the same fetch the web path uses (**`ArticleLive`** only)                                                                                                                                                    |
+| Chrome  | **`ArticleWrapper`** lead block: lead image, title, description. **`ArticleLive`** fills those from **`fetchArticleView()`** (Action API **`query`** + **`pageimages\|description`**); **`ArticleCustom`** takes **`description`** / **`leadImageUrl`** as props |
+| Render  | **`ArticleRenderer`** with **`app`**, which pins **`skin="mobile"`** inside **`.article[data-skin="mobile"]`**                                                                                                                                                   |
+| Styling | Vendored Minerva snapshot + **`mobile-wiki-overrides.css`**, exactly as the web mobile skin                                                                                                                                                                      |
 
 The in-app reading behaviour itself lives in **`ArticleRenderer`**: static **`h2`** headings with an edit button, collapsed **References** / **External links** end matter behind a single divider, and **Quick facts** / **More information** table widgets (see **`ArticleRenderer`** above). **`ArticleWrapper`** adds the app's own lead block on top — lead image, title, description, then the short 60px rule closing it off.
 
@@ -208,24 +239,6 @@ function onParserReady(root) {
 
 Reference: **`src/prototypes/template-app-article/`**.
 
-## `ArticleSnapshot`
-
-Loads **`public/snapshots/{slug}.html`** where **`slug`** comes from **`articleSnapshotSlug(article)`** (see **`src/components/article/shared/articleSnapshotSlug.ts`**). **`404`** shows **`CdxMessage`** pull instructions — no REST round-trip.
-
-### Example
-
-```vue
-<ArticleSnapshot article="Wet Leg" />
-```
-
-### Props (`ArticleSnapshot`)
-
-**`article`** (**required**) — **`articleSnapshotSlug(article)`** → **`public/snapshots/&lt;slug&gt;.html`**, and the same string seeds **`ArticleWrapper`** **`title`**. Same **`ArticleWrapper`** chrome passthroughs as **`ArticleLive`** except **`host`** and **`header`** (no title override prop on snapshots), plus **`app?`** / **`description?`** / **`leadImageUrl?`** for an in-app snapshot screen.
-
-### Slots
-
-Same as **`ArticleLive`**.
-
 ## `ArticleHeader`
 
 Vector-like **page** chrome above the parser output (not the site **`ChromeHeader`**).
@@ -236,7 +249,7 @@ Vector-like **page** chrome above the parser output (not the site **`ChromeHeade
 | **`languagesCount?`** | Number for the interlanguage control label (default **18** → “18 languages”). Language rows in the popover are fixed mock data. |
 | **`skin?`**           | Desktop vs mobile layout.                                                                                                       |
 
-Fixed copy: desktop tagline **“From Wikipedia, the free encyclopedia”**; Article / Read tabs are visually active (not prop-driven). **`#title`** slot replaces the **`h1`** inner markup. Emits language pick / settings and tab/tool clicks.
+Fixed copy: desktop tagline **“From Wikipedia, the free encyclopedia”**; Article / Read tabs are visually active (not prop-driven). **`#title`** slot replaces the **`h1`** inner markup. Emits language pick / settings and tab/tool clicks. **Watch** and **Save** (logged-in only) toggle the active mock user’s **`watchlist`** and **`readingList`** in prototype config (persisted via **`useConfig`**).
 
 ## Styling notes
 
@@ -246,9 +259,9 @@ Fixed copy: desktop tagline **“From Wikipedia, the free encyclopedia”**; Art
 
 ## Tips
 
-- Prefer **`<ArticleCustom>`** for hand-authored / fixture-free article body HTML (**`ChromeWrapper` → `ArticleCustom`**).
-- Prefer **`<ArticleLive>`** inside **`ChromeWrapper`** for live read-mode demos.
+- Prefer **`<ArticleLive>`** inside **`ChromeWrapper`** for live article demos — starter **`template-article/`**.
 - Prefer **`<ArticleLive app>`** inside **`AppChromeWrapper`** for in-app live articles — same **`page/html`** path, app chrome instead of web chrome.
-- Prefer **`<ArticleSnapshot>`** for committed HTML snapshots.
-- Compose **`ArticleWrapper`** + **`ArticleRenderer`** manually when **`ArticleLive`** / **`ArticleSnapshot`** / **`ArticleCustom`** are too opinionated — including **fully hand-authored** **`#default`** (see **Hand-authored article markup** above; reference **`src/prototypes/template-article-custom/`**).
+- Prefer **`<ArticleCustom>`** for hand-authored / fine-grained body HTML (**`ChromeWrapper` → `ArticleCustom`**); start from **`example-custom-article/`**.
+- Compose **`ArticleWrapper`** + **`ArticleRenderer`** manually when you need the same hand-authored body without the **`ArticleCustom`** convenience wrapper.
+- Committed HTML under **`public/snapshots/`** is for fixtures and copying markup — there is no **`ArticleSnapshot`** component; use **`ArticleLive`** or paste into **`ArticleCustom`**.
 - REST / CORS: **`/api/rest_v1/`** remains **`origin=*`**-friendly.

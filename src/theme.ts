@@ -4,6 +4,7 @@ import lightTokensRaw from '@wikimedia/codex-design-tokens/theme-wikimedia-ui.cs
 import darkTokensRaw from '@wikimedia/codex-design-tokens/theme-wikimedia-ui-mode-dark.css?raw'
 
 import { protowikiConfig } from '@/appearance'
+import { getCodexPatchChangeId } from '@/codex-build'
 import type { ConfigTheme, ConfigWebSkin } from '@/config'
 
 import codexTokenExtensions from '@/styles/codex-token-extensions.css?inline'
@@ -12,7 +13,7 @@ export type Skin = 'desktop' | 'mobile'
 export type Theme = 'light' | 'dark'
 
 /**
- * When **`ArticleLive`**, **`ArticleSnapshot`**, **`ArticleCustom`**, **`ArticleWrapper`**, **`ArticleRenderer`**, or **`SpecialPageWrapper`** sit inside **`ChromeWrapper`**,
+ * When **`ArticleLive`**, **`ArticleCustom`**, **`ArticleWrapper`**, **`ArticleRenderer`**, or **`SpecialPageWrapper`** sit inside **`ChromeWrapper`**,
  * they inherit `effectiveSkin` via Vue inject so columns match chrome without
  * repeating `skin` on every child (embedded mobile previews still work).
  */
@@ -239,16 +240,23 @@ export function applyThemePreference(preference: ConfigTheme): void {
  *
  * Call this once, before mounting the app.
  */
+/** Sync `html[data-codex-patched]` from installed Codex (including dev toggles). */
+export function syncCodexPatchHtmlAttribute(): void {
+  if (typeof document === 'undefined') return
+  const codexPatchChangeId = getCodexPatchChangeId()
+  if (codexPatchChangeId) {
+    document.documentElement.setAttribute('data-codex-patched', codexPatchChangeId)
+  } else {
+    document.documentElement.removeAttribute('data-codex-patched')
+  }
+}
+
 export function initTheming(): void {
   if (typeof window === 'undefined') return
 
   injectThemedTokens()
 
-  // Lets prototype CSS gate overrides that only make sense on stock Codex:
-  // `html:not([data-codex-patched]) …`.
-  if (__CODEX_PATCH__) {
-    document.documentElement.setAttribute('data-codex-patched', __CODEX_PATCH__)
-  }
+  syncCodexPatchHtmlAttribute()
 
   const config = protowikiConfig.value
   applyWebSkinPreference(config.webSkin)

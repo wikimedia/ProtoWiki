@@ -1,6 +1,6 @@
 ---
 name: protowiki-codex-patching
-description: Trial an unmerged Codex (Gerrit) change in ProtoWiki and build UI that follows it automatically — the single committed patch in patches/codex/ (pure Gerrit output from npm run codex:patch only), switching node_modules between stock and patched (npm run codex:use-stock / codex:use-patch), side-by-side stock/patched deploys and PR previews (npm run build:variants), the home-screen Codex patch message, the html[data-codex-patched] gate, and the rules for writing prototype CSS that inherits from Codex instead of copying it. Use when adding or switching a Codex patch, comparing stock vs patched, deploying a patch, debugging "the patch isn't showing up", or styling anything that should track Codex changes.
+description: Trial an unmerged Codex (Gerrit) change in ProtoWiki and build UI that follows it automatically — the single committed patch in patches/codex/ (pure Gerrit output from npm run codex:patch only), switching node_modules between stock and patched (npm run codex:use-stock / codex:use-patch), side-by-side stock/patched deploys via npm run build (patched root + codex/stock/), the home-screen Codex settings popover and patch message, the html[data-codex-patched] gate, and the rules for writing prototype CSS that inherits from Codex instead of copying it. Use when adding or switching a Codex patch, comparing stock vs patched, deploying a patch, debugging "the patch isn't showing up", or styling anything that should track Codex changes.
 ---
 
 # Codex patches in ProtoWiki
@@ -19,7 +19,7 @@ design, and nobody notices until someone compares side by side.
 
 ```
 patches/codex/
-  manifest.json   change, patchset, subject, hashes
+  manifest.json   change, patchset, subject, stackedChanges, hashes
   *.patch         one small diff per changed Codex file
 ```
 
@@ -44,12 +44,16 @@ patches/codex/
 | `npm run codex:use-patch` | Install the committed patch |
 | `npm run codex:patch -- <gerrit-url>` | Build a Gerrit change locally and write it to `patches/codex/`, replacing any previous patch |
 | `npm run codex:reset` | Delete the patch; everything goes back to stock |
-| `npm run build:variants` | One deploy with patched at the root and stock under `codex/stock/` |
+| `npm run build` | Patched at deploy root and stock under `codex/stock/` when a patch is committed; one stock build otherwise |
+| `npm run build:vite` | Single Vite bundle only (local debug; skips the stock sibling) |
 
 Switching is fast: stock is restored from a snapshot in
 `node_modules/.cache/protowiki-codex-stock/`, and applying the patch is a text
-pass. **Restart `npm run dev` after every switch.** Vite pre-bundles Codex and
-reads the marker only at startup. The scripts clear `node_modules/.vite` for you.
+pass. With a committed patch, **`npm run dev` exposes stock/patched toggle** on
+the home screen (Codex toolbar popover and patch message) via the dev-server
+switch endpoint — no manual restart. CLI `codex:use-stock` / `codex:use-patch`
+still works when the dev server is not running. The scripts clear
+`node_modules/.vite` when switching.
 
 Details: [making patches](references/making-patches.md) ·
 [deploying patches](references/deploying-patches.md).
@@ -58,6 +62,14 @@ Details: [making patches](references/making-patches.md) ·
 
 Applies to every prototype, not only ones being tested against a patch. The rules
 are ordered: reach for the first one that works.
+
+**Surface stylesheet.** Alias tokens (`--my-card-border-color--hover`, …) and
+rules that target a **child component's root** (e.g. `CdxMenu` thumbnails) go
+in an unscoped `<prototype>-surface.css` imported from the route entry, with
+every selector prefixed by a prototype root class (e.g. `.my-prototype`).
+Overlay-link card hover uses aliases in the surface file plus `:deep(.cdx-card)`
+on the wrapper in the card SFC. Layout and `:deep()` on **direct-child** Codex
+nodes can stay scoped. See [building-for-patches](references/building-for-patches.md).
 
 1. **Use the Codex component, not a lookalike.** If a design is "almost
    `CdxToggleButton`", render `CdxToggleButton` and override only the delta
@@ -88,7 +100,8 @@ are ordered: reach for the first one that works.
    a stock block plus an `html[data-codex-patched]` block. Gates are the last
    resort: each one is a copy you must update when the patch changes.
 
-Worked examples (thumbnails, Saved tabs, search hover, card hover aliases):
+Worked examples (surface file layout, filter tabs, thumbnails, search hover,
+overlay-link card hover with stock/patched alias blocks):
 [references/building-for-patches.md](references/building-for-patches.md).
 
 ## Verify on both
@@ -100,12 +113,22 @@ npm run codex:use-stock   && npm run dev   # check, screenshot
 npm run codex:use-patch && npm run dev   # check, screenshot, compare
 ```
 
-Or deploy a preview (or run `npm run build:variants` + `npm run preview`) and
-open each build from the Codex patch message on the home screen (stock lives under
+Or deploy a preview (or run `npm run build` + `npm run preview`) and switch
+stock/patched from the Codex settings popover on the home screen (stock lives under
 `codex/stock/`).
 
 ## Pitfalls (each has bitten us)
 
+- **Patch drift after `git checkout`.** Git updates tracked files under
+  `patches/codex/` but does not touch `node_modules`. ProtoWiki reconciles
+  installed Codex with the manifest on `npm install`, on git checkout/merge
+  (via `githooks/`, wired on `npm install` when `core.hooksPath` is unset), and
+  at the start of `npm run dev` / `npm run build`. Restart the dev server after
+  a switch so Vite re-reads the patch marker. **Untracked** `patches/codex/`
+  survives every branch change — run `npm run codex:reset` before switching if
+  you do not want a local patch on `main`. **`codex:reset`** deletes patch files
+  and restores stock; **`codex:use-stock`** keeps patch files but runs published
+  Codex in `node_modules`.
 - **"The patch isn't showing."** Run `npm run codex:use-patch`, then restart the
   dev server. `npm install` re-applies the patch, so a stray install undoes a
   manual `codex:use-stock`.
@@ -116,8 +139,8 @@ open each build from the Codex patch message on the home screen (stock lives und
   `patches/codex/`.
 - **Scoped CSS doesn't reach child component roots.** A `<style scoped>` rule
   like `.my-menu :deep(...)` only matches if `.my-menu` carries your scope id.
-  A Codex child component's root (e.g. `CdxMenu`) doesn't. Put such rules in a
-  global stylesheet under a prototype class (Wikitab: `wikitab-surface.css`).
+  A Codex child component's root (e.g. `CdxMenu`) doesn't. Put such rules in the
+  prototype surface stylesheet (see [building-for-patches](references/building-for-patches.md)).
 - **`data-theme` islands reset tokens.** A subtree with its own `data-theme`
   gets fresh Codex tokens, so remaps from outside don't reach it. Re-apply them
   inside the island.
@@ -133,7 +156,5 @@ open each build from the Codex patch message on the home screen (stock lives und
   published Codex version (regenerate the patch afterwards).
 - [`protowiki-deploy`](../protowiki-deploy/SKILL.md) — GitHub Pages, base paths,
   previews.
-- [`protowiki-wikitab`](../protowiki-wikitab/SKILL.md#codex-agnostic-styling) —
-  the prototype these rules were worked out on.
 - [`codex-usage`](../codex-usage/SKILL.md) — components first, tokens second,
   custom CSS last.

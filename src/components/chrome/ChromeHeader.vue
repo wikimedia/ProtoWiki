@@ -1,10 +1,17 @@
 <script setup lang="ts">
-import { computed, defineComponent, h, useSlots } from 'vue'
+import { computed, defineComponent, h, markRaw, useSlots } from 'vue'
 import { RouterLink } from 'vue-router'
+import { CdxButton, CdxIcon } from '@wikimedia/codex'
+import { cdxIconUserAvatarOutline } from '@wikimedia/codex-icons'
 
+import SettingsPopover from '@/components/settings/SettingsPopover.vue'
+import UserSettingsPanel from '@/components/settings/UserSettingsPanel.vue'
+import { useWordmarkMainPageLink } from '@/composables/useWordmarkMainPageLink'
 import type { HeaderItem } from '@/components/header/headerItems'
 import type { ChromeNavTool } from './headerNavTools'
 import MinervaChromeHeader from './MinervaChromeHeader.vue'
+import MinervaChromeMainMenu from './MinervaChromeMainMenu.vue'
+import { MINERVA_DEFAULT_RIGHT } from './minervaHeaderDefaults'
 import VectorChromeHeader from './VectorChromeHeader.vue'
 import { globalSkin, globalTheme } from '@/theme'
 import type { Skin, Theme } from '@/theme'
@@ -32,8 +39,12 @@ interface Props {
   middle?: HeaderItem[]
   /** Minerva bar only — override default **`right`** item array. */
   right?: HeaderItem[]
-  /** Minerva bar only — when false, the default wordmark is decorative (not a link). */
-  brandLink?: boolean
+  /**
+   * When true, default tool controls open prototyping settings; wordmarks link to the Main Page.
+   */
+  prototypingSettings?: boolean
+  /** Forwarded to Vector chrome — bookmark links to saved pages template. */
+  savedPagesRoute?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -47,28 +58,70 @@ const props = withDefaults(defineProps<Props>(), {
   left: undefined,
   middle: undefined,
   right: undefined,
-  brandLink: true,
+  prototypingSettings: true,
+  savedPagesRoute: undefined,
 })
 
 const slots = useSlots()
+const wordmarkMainPageLink = useWordmarkMainPageLink()
 
 const effectiveSkin = computed<Skin>(() => props.skin ?? globalSkin.value)
 const effectiveTheme = computed<Theme>(() => props.theme ?? globalTheme.value)
 const isDesktop = computed(() => effectiveSkin.value === 'desktop')
 
-function slotBridgeComponent(slotName: 'menu' | 'logo') {
+function slotBridgeComponent(slotName: 'menu' | 'logo' | 'user-menu') {
   return defineComponent({
-    name: `ChromeHeader${slotName === 'menu' ? 'Menu' : 'Logo'}Slot`,
+    name: `ChromeHeader${slotName === 'menu' ? 'Menu' : slotName === 'logo' ? 'Logo' : 'UserMenu'}Slot`,
     setup() {
       return () => slots[slotName]?.() ?? null
     },
   })
 }
 
+const minervaUserSettingsComponent = defineComponent({
+  name: 'ChromeHeaderMinervaUserSettings',
+  setup() {
+    return () =>
+      h(SettingsPopover, null, {
+        default: ({ toggle, open }: { toggle: () => void; open: boolean }) =>
+          h(
+            CdxButton,
+            {
+              weight: 'quiet',
+              size: 'large',
+              'aria-label': 'Mock user settings',
+              'aria-haspopup': 'dialog',
+              'aria-expanded': open,
+              onClick: toggle,
+            },
+            {
+              default: () =>
+                h(CdxIcon, { icon: cdxIconUserAvatarOutline, size: 'medium' }),
+            },
+          ),
+        panel: ({ open }: { open: boolean }) =>
+          h(UserSettingsPanel, { settingsOpen: open }),
+      })
+  },
+})
+
+const minervaDefaultMainMenuComponent = defineComponent({
+  name: 'ChromeHeaderMinervaDefaultMainMenu',
+  setup() {
+    return () =>
+      h(MinervaChromeMainMenu, { prototypingSettings: props.prototypingSettings })
+  },
+})
+
 const minervaLeft = computed((): HeaderItem[] | undefined => {
   if (props.left !== undefined) return props.left
   if (slots.menu) return [{ type: 'component', component: slotBridgeComponent('menu') }]
-  return undefined
+  return [
+    {
+      type: 'component',
+      component: markRaw(minervaDefaultMainMenuComponent),
+    },
+  ]
 })
 
 const minervaMiddle = computed((): HeaderItem[] | undefined => {
@@ -82,18 +135,18 @@ const minervaMiddle = computed((): HeaderItem[] | undefined => {
           setup() {
             return () => {
               const logo = () => slots.logo?.() ?? null
-              if (!props.brandLink) {
-                return h('span', { class: 'minerva-chrome-header__brand' }, logo)
+              if (props.prototypingSettings) {
+                return h(
+                  RouterLink,
+                  {
+                    class: 'minerva-chrome-header__brand',
+                    to: wordmarkMainPageLink.value,
+                    'aria-label': 'Visit the main page',
+                  },
+                  logo,
+                )
               }
-              return h(
-                RouterLink,
-                {
-                  class: 'minerva-chrome-header__brand',
-                  to: '/',
-                  'aria-label': 'Visit the main page',
-                },
-                logo,
-              )
+              return h('span', { class: 'minerva-chrome-header__brand' }, logo)
             }
           },
         }),
@@ -103,7 +156,25 @@ const minervaMiddle = computed((): HeaderItem[] | undefined => {
   return undefined
 })
 
-const minervaRight = computed((): HeaderItem[] | undefined => props.right)
+const minervaRight = computed((): HeaderItem[] | undefined => {
+  if (props.right !== undefined) return props.right
+  // `#user-menu` replaces the default user button, keeping the rest of the bar.
+  if (slots['user-menu']) {
+    return MINERVA_DEFAULT_RIGHT.map((item) =>
+      item.type === 'button' && item.label === 'User menu'
+        ? { type: 'component', component: slotBridgeComponent('user-menu') }
+        : item,
+    )
+  }
+  if (props.prototypingSettings) {
+    return MINERVA_DEFAULT_RIGHT.map((item) =>
+      item.type === 'button' && item.label === 'User menu'
+        ? { type: 'component', component: minervaUserSettingsComponent }
+        : item,
+    )
+  }
+  return undefined
+})
 </script>
 
 <template>
@@ -114,6 +185,8 @@ const minervaRight = computed((): HeaderItem[] | undefined => props.right)
     :wordmark-src="props.wordmarkSrc"
     :tagline-src="props.taglineSrc"
     :nav-tools="props.navTools"
+    :prototyping-settings="props.prototypingSettings"
+    :saved-pages-route="props.savedPagesRoute"
   >
     <template v-if="slots.menu" #menu>
       <slot name="menu" />
@@ -127,6 +200,9 @@ const minervaRight = computed((): HeaderItem[] | undefined => props.right)
     <template v-if="slots.nav" #nav>
       <slot name="nav" />
     </template>
+    <template v-if="slots['user-menu']" #user-menu>
+      <slot name="user-menu" />
+    </template>
   </VectorChromeHeader>
 
   <MinervaChromeHeader
@@ -137,6 +213,6 @@ const minervaRight = computed((): HeaderItem[] | undefined => props.right)
     :right="minervaRight"
     :wordmark-src="props.wordmarkSrc"
     :mobile-wordmark-src="props.mobileWordmarkSrc"
-    :brand-link="props.brandLink"
+    :prototyping-settings="props.prototypingSettings"
   />
 </template>

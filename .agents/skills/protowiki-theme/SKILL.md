@@ -76,7 +76,7 @@ Instead ProtoWiki uses:
 
 Per-subtree dark previews (`theme="dark"` on a wrapper while `<html>` stays light)
 still get (2) via `data-theme` on **`ArticleWrapper`** / **`ArticleRenderer`** /
-**`ArticleLive`** / **`ArticleSnapshot`** / **`ArticleCustom`**; they do **not**
+**`ArticleLive`** / **`ArticleCustom`**; they do **not**
 toggle the RL night class on `<html>`, so RL’s `html.skin-theme-clientpref-night …`
 rules stay dormant unless you also use `?theme=dark` globally.
 

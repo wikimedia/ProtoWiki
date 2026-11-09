@@ -200,8 +200,7 @@ format of each file, and how to navigate them.
 ## Inside ProtoWiki
 
 `ArticleLive` calls REST **`page/html/{title}`**; **`Search`** wraps Action **`opensearch`**
-(with debouncing and **`AbortController`** cancellation). **`ArticleSnapshot`** loads **`public/snapshots/`**
-HTML only (no **`page/html`** hit). Typical usage already covers UA etiquette and sane defaults.
+(with debouncing and **`AbortController`** cancellation). Committed HTML under **`public/snapshots/`** is for fixtures and copying markup — not loaded by a shipped article component. Typical usage already covers UA etiquette and sane defaults.
 
 **Attribution API:** Core REST under `/w/rest.php/attribution/v0-beta/…` (not `/api/rest_v1/`).
 CORS `*` — browser-fetchable. Use `expand=trust_and_relevance,calls_to_action`. See

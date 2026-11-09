@@ -1,6 +1,12 @@
 <script setup lang="ts">
-import { computed, inject, nextTick, onUpdated, ref, watch } from 'vue'
+import { computed, inject, nextTick, onBeforeUnmount, onUpdated, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
+import { attachInArticleWikiLinks } from './shared/attachInArticleWikiLinks'
+import {
+  PROTOWIKI_ARTICLE_WIKI_HOST,
+  PROTOWIKI_IN_ARTICLE_WIKI_LINK,
+} from '@/composables/useInArticleWikiLinks'
 import { globalSkin, globalTheme, PROTOWIKI_CHROME_SKIN, PROTOWIKI_CHROME_THEME } from '@/theme'
 import type { Skin, Theme } from '@/theme'
 import { collapseArticleTables } from './shared/collapseArticleTables'
@@ -45,6 +51,40 @@ const effectiveTheme = computed<Theme>(
 )
 
 const mwParserOutputRef = ref<HTMLElement | null>(null)
+
+const route = useRoute()
+const inArticleWikiLinkHandler = inject(PROTOWIKI_IN_ARTICLE_WIKI_LINK, null)
+const articleWikiHost = inject(PROTOWIKI_ARTICLE_WIKI_HOST, null)
+
+let detachInArticleWikiLinks: (() => void) | null = null
+
+function syncInArticleWikiLinks() {
+  detachInArticleWikiLinks?.()
+  detachInArticleWikiLinks = null
+  const root = mwParserOutputRef.value
+  const host = articleWikiHost?.value
+  if (!root || !host || !inArticleWikiLinkHandler) return
+  detachInArticleWikiLinks = attachInArticleWikiLinks(root, host, inArticleWikiLinkHandler)
+}
+
+watch(
+  [
+    mwParserOutputRef,
+    () => articleWikiHost?.value,
+    () => inArticleWikiLinkHandler,
+    () => route.fullPath,
+  ],
+  () => {
+    syncInArticleWikiLinks()
+  },
+  { flush: 'post' },
+)
+
+onUpdated(() => {
+  syncInArticleWikiLinks()
+})
+
+onBeforeUnmount(() => detachInArticleWikiLinks?.())
 
 /** Matches a heading by its visible text or its anchor id (`External_links`). */
 function sectionHeadingMatches(h2: HTMLHeadingElement, names: string[]): boolean {

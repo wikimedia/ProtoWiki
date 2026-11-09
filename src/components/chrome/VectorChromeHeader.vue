@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
+import { computed, nextTick, ref } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import {
   cdxIconAppearance,
   cdxIconBell,
-  cdxIconBookmark,
+  cdxIconBookmarkList,
   cdxIconDownTriangle,
   cdxIconMenu,
   cdxIconSearch,
@@ -14,14 +14,20 @@ import {
   cdxIconWatchlist,
 } from '@wikimedia/codex-icons'
 
+import AppearanceSettingsPanel from '@/components/settings/AppearanceSettingsPanel.vue'
+import SettingsPopover from '@/components/settings/SettingsPopover.vue'
+import UserSettingsPanel from '@/components/settings/UserSettingsPanel.vue'
 import { useChromeSearchHandlers } from '@/composables/useChromeSearch'
 import { useConfig } from '@/composables/useConfig'
+import { useWordmarkMainPageLink } from '@/composables/useWordmarkMainPageLink'
 import { DEFAULT_CHROME_NAV_TOOLS, type ChromeNavTool } from './headerNavTools'
 import { globalTheme } from '@/theme'
 import type { Theme } from '@/theme'
+import { preservedQueryFromLocationQuery } from '@/appearance/url-query'
 import Search, { type SearchSubmitPayload } from '../Search.vue'
 
 const chromeSearchHandlers = useChromeSearchHandlers()
+const wordmarkMainPageLink = useWordmarkMainPageLink()
 
 const { user } = useConfig()
 
@@ -47,6 +53,12 @@ interface Props {
    * **`#nav`** replaces the whole cluster regardless.
    */
   navTools?: ChromeNavTool[]
+  /**
+   * When true, appearance and user tools open prototyping settings; wordmark links to the Main Page.
+   */
+  prototypingSettings?: boolean
+  /** When set, desktop bookmark tool links here (web template cluster). */
+  savedPagesRoute?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -55,9 +67,32 @@ const props = withDefaults(defineProps<Props>(), {
   wordmarkSrc: undefined,
   taglineSrc: undefined,
   navTools: undefined,
+  prototypingSettings: true,
+  savedPagesRoute: undefined,
 })
 
+const route = useRoute()
+const router = useRouter()
+
 const effectiveTheme = computed<Theme>(() => props.theme ?? globalTheme.value)
+
+/*
+ * Below 1120px the search box folds into an icon. Like Vector 2022, the icon
+ * opens the box in place of the menu and wordmark, and it folds again on
+ * Escape or when focus leaves it.
+ */
+const searchOpen = ref(false)
+const inlineSearch = ref<HTMLElement | null>(null)
+
+async function openSearch(): Promise<void> {
+  searchOpen.value = true
+  await nextTick()
+  inlineSearch.value?.querySelector('input')?.focus()
+}
+
+function onSearchFocusOut(event: FocusEvent): void {
+  if (!inlineSearch.value?.contains(event.relatedTarget as Node | null)) searchOpen.value = false
+}
 const trimmedUsername = computed(() => (props.username ?? '').trim())
 const showChromeUsernameLink = computed(() => trimmedUsername.value.length > 0)
 const isLoggedOut = computed(() => user.value === 'logged-out')
@@ -80,10 +115,29 @@ function handleSearchSelect(title: string) {
 function handleSearchSubmit(payload: SearchSubmitPayload) {
   chromeSearchHandlers?.onSubmit?.(payload)
 }
+
+const savedPagesTo = computed(() => {
+  if (!props.savedPagesRoute?.length) return null
+  return {
+    path: props.savedPagesRoute,
+    query: preservedQueryFromLocationQuery(route.query),
+  }
+})
+
+function goToSavedPages(): void {
+  const location = savedPagesTo.value
+  if (!location) return
+  void router.push(location)
+}
 </script>
 
 <template>
-  <header class="vector-chrome-header" data-skin="desktop" :data-theme="effectiveTheme">
+  <header
+    class="vector-chrome-header"
+    :class="{ 'vector-chrome-header--search-open': searchOpen }"
+    data-skin="desktop"
+    :data-theme="effectiveTheme"
+  >
     <nav class="vector-chrome-header__nav" aria-label="Site">
       <div class="vector-chrome-header__start">
         <slot name="menu">
@@ -93,7 +147,15 @@ function handleSearchSubmit(payload: SearchSubmitPayload) {
           </span>
         </slot>
 
-        <RouterLink class="vector-chrome-header__brand-link" to="/" aria-label="Visit the main page">
+        <component
+          :is="props.prototypingSettings ? RouterLink : 'span'"
+          class="vector-chrome-header__brand-link"
+          v-bind="
+            props.prototypingSettings
+              ? { to: wordmarkMainPageLink, 'aria-label': 'Visit the main page' }
+              : {}
+          "
+        >
           <slot name="logo">
             <span class="vector-chrome-header__wordmarks">
               <img
@@ -112,10 +174,15 @@ function handleSearchSubmit(payload: SearchSubmitPayload) {
               />
             </span>
           </slot>
-        </RouterLink>
+        </component>
       </div>
 
-      <div class="vector-chrome-header__inline-search">
+      <div
+        ref="inlineSearch"
+        class="vector-chrome-header__inline-search"
+        @focusout="onSearchFocusOut"
+        @keydown.esc="searchOpen = false"
+      >
         <div class="vector-chrome-header__search">
           <Search
             use-button
@@ -131,31 +198,53 @@ function handleSearchSubmit(payload: SearchSubmitPayload) {
           class="vector-chrome-header__search-icon-toggle"
           weight="quiet"
           aria-label="Search"
-          @click.prevent
+          :aria-expanded="searchOpen"
+          @click="openSearch"
         >
           <CdxIcon :icon="cdxIconSearch" />
         </CdxButton>
         <slot name="username">
-          <div v-if="isLoggedOut" class="vector-chrome-header__logged-out-toolbar">
-            <a
-              class="vector-chrome-header__text-link"
-              href="https://donate.wikimedia.org/"
-              rel="noopener noreferrer"
-            >
+          <SettingsPopover v-if="isLoggedOut && props.prototypingSettings">
+            <template #default="{ openPopover }">
+              <span class="vector-chrome-header__logged-out-toolbar">
+                <a
+                  class="vector-chrome-header__text-link"
+                  href="#"
+                  @click.prevent
+                >
+                  Donate
+                </a>
+                <a
+                  class="vector-chrome-header__text-link"
+                  href="#"
+                  @click.prevent="openPopover($event)"
+                >
+                  Create account
+                </a>
+                <a
+                  class="vector-chrome-header__text-link"
+                  href="#"
+                  @click.prevent="openPopover($event)"
+                >
+                  Log in
+                </a>
+              </span>
+            </template>
+            <template #panel="{ open: settingsOpen }">
+              <UserSettingsPanel :settings-open="settingsOpen" />
+            </template>
+          </SettingsPopover>
+          <div
+            v-else-if="isLoggedOut"
+            class="vector-chrome-header__logged-out-toolbar"
+          >
+            <a class="vector-chrome-header__text-link" href="#" @click.prevent>
               Donate
             </a>
-            <a
-              class="vector-chrome-header__text-link"
-              href="https://en.wikipedia.org/w/index.php?title=Special:CreateAccount"
-              rel="noopener noreferrer"
-            >
+            <a class="vector-chrome-header__text-link" href="#" @click.prevent>
               Create account
             </a>
-            <a
-              class="vector-chrome-header__text-link"
-              href="https://en.wikipedia.org/w/index.php?title=Special:UserLogin"
-              rel="noopener noreferrer"
-            >
+            <a class="vector-chrome-header__text-link" href="#" @click.prevent>
               Log in
             </a>
           </div>
@@ -169,7 +258,27 @@ function handleSearchSubmit(payload: SearchSubmitPayload) {
           </a>
         </slot>
         <slot v-if="!isLoggedOut" name="nav">
-          <CdxButton v-if="navHas('appearance')" weight="quiet" aria-label="Appearance">
+          <SettingsPopover v-if="navHas('appearance') && props.prototypingSettings">
+            <template #default="{ toggle, open }">
+              <CdxButton
+                weight="quiet"
+                aria-label="Appearance"
+                aria-haspopup="dialog"
+                :aria-expanded="open"
+                @click="toggle"
+              >
+                <CdxIcon :icon="cdxIconAppearance" />
+              </CdxButton>
+            </template>
+            <template #panel>
+              <AppearanceSettingsPanel :show-app-platform="false" />
+            </template>
+          </SettingsPopover>
+          <CdxButton
+            v-else-if="navHas('appearance')"
+            weight="quiet"
+            aria-label="Appearance"
+          >
             <CdxIcon :icon="cdxIconAppearance" />
           </CdxButton>
           <CdxButton
@@ -182,21 +291,49 @@ function handleSearchSubmit(payload: SearchSubmitPayload) {
           <CdxButton v-if="navHas('notices')" weight="quiet" aria-label="Notices">
             <CdxIcon :icon="cdxIconTray" />
           </CdxButton>
-          <CdxButton v-if="navHas('bookmarks')" weight="quiet" aria-label="Bookmarks">
-            <CdxIcon :icon="cdxIconBookmark" />
+          <CdxButton
+            v-if="navHas('bookmarks')"
+            weight="quiet"
+            :aria-label="savedPagesTo ? 'Saved pages' : 'Bookmarks'"
+            @click="goToSavedPages"
+          >
+            <CdxIcon :icon="cdxIconBookmarkList" />
           </CdxButton>
           <CdxButton v-if="navHas('watchlist')" weight="quiet" aria-label="Watchlist">
             <CdxIcon :icon="cdxIconWatchlist" />
           </CdxButton>
           <div v-if="navHas('user')" class="vector-chrome-header__user-menu">
-            <CdxButton weight="quiet" aria-label="User menu" aria-haspopup="menu">
-              <CdxIcon :icon="cdxIconUserAvatar" />
-              <CdxIcon
-                class="vector-chrome-header__user-menu-caret"
-                :icon="cdxIconDownTriangle"
-                size="small"
-              />
-            </CdxButton>
+            <slot name="user-menu">
+              <SettingsPopover v-if="props.prototypingSettings">
+                <template #default="{ toggle, open }">
+                  <CdxButton
+                    weight="quiet"
+                    aria-label="Mock user settings"
+                    aria-haspopup="dialog"
+                    :aria-expanded="open"
+                    @click="toggle"
+                  >
+                    <CdxIcon :icon="cdxIconUserAvatar" />
+                    <CdxIcon
+                      class="vector-chrome-header__user-menu-caret"
+                      :icon="cdxIconDownTriangle"
+                      size="small"
+                    />
+                  </CdxButton>
+                </template>
+                <template #panel="{ open: settingsOpen }">
+                  <UserSettingsPanel :settings-open="settingsOpen" />
+                </template>
+              </SettingsPopover>
+              <CdxButton v-else weight="quiet" aria-label="User menu" aria-haspopup="menu">
+                <CdxIcon :icon="cdxIconUserAvatar" />
+                <CdxIcon
+                  class="vector-chrome-header__user-menu-caret"
+                  :icon="cdxIconDownTriangle"
+                  size="small"
+                />
+              </CdxButton>
+            </slot>
           </div>
         </slot>
       </div>
@@ -333,7 +470,7 @@ function handleSearchSubmit(payload: SearchSubmitPayload) {
 
 .vector-chrome-header__text-link {
   color: var(--color-progressive, #36c);
-  font-size: var(--font-size-medium, 1rem);
+  font-size: var(--font-size-small, 14px);
   font-weight: normal;
   line-height: 1.4;
   text-decoration: none;
@@ -373,6 +510,46 @@ a.vector-chrome-header__text-link:hover {
 
 @media (max-width: 1120px) {
   .vector-chrome-header__inline-search {
+    display: none;
+  }
+
+  /*
+   * Opened from the icon: like Vector 2022, the search box takes the place of
+   * the menu and wordmark (and its own icon); the user tools stay.
+   */
+  .vector-chrome-header--search-open .vector-chrome-header__inline-search {
+    display: flex;
+  }
+
+  /* Ends where the icon was and grows leftwards over all the freed space. */
+  .vector-chrome-header--search-open .vector-chrome-header__inline-search,
+  .vector-chrome-header--search-open .vector-chrome-header__inline-search .vector-chrome-header__search {
+    max-width: none;
+  }
+
+  /* A zero basis, so the box takes what the tools leave rather than pushing them to a new row. */
+  .vector-chrome-header--search-open .vector-chrome-header__inline-search {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-inline-start: 0;
+  }
+
+  /*
+   * CODEX+ CdxTextInput has a 256px min-width; in a narrow header the field
+   * would run under the Search button. Let it shrink with the box.
+   */
+  .vector-chrome-header--search-open :deep(.cdx-search-input__input-wrapper),
+  .vector-chrome-header--search-open :deep(.cdx-search-input__text-input) {
+    min-width: 0;
+  }
+
+  /* The tools' own gap, so the box's end lines up with the icon's. */
+  .vector-chrome-header--search-open .vector-chrome-header__nav {
+    column-gap: 0.2rem;
+  }
+
+  .vector-chrome-header--search-open .vector-chrome-header__start,
+  .vector-chrome-header--search-open .vector-chrome-header__search-icon-toggle {
     display: none;
   }
 

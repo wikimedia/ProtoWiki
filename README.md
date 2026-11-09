@@ -196,9 +196,14 @@ Alternatively, load a specific article by passing the article name to the `Artic
 </template>
 ```
 
-To craft a static hand-written article page, use the `ArticleCustom` component.
+To craft a static hand-written article page, use `ArticleCustom` (or compose `ArticleWrapper` and `ArticleRenderer` directly). See [`protowiki-components` → `article.md`](.agents/skills/protowiki-components/references/article.md) and the **`example-custom-article`** gallery route for a worked demo.
 
 ```vue
+<script setup>
+import ArticleCustom from '@/components/article/ArticleCustom.vue'
+import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
+</script>
+
 <template>
   <ChromeWrapper>
     <ArticleCustom title="My custom article">
@@ -218,6 +223,26 @@ To craft a static hand-written article page, use the `ArticleCustom` component.
 
 There are other components that you can use within the prototyping system. Explore the `components` folder to discover them all.
 
-### App prototyping
+## Contributing
 
-TODO
+> [!TIP]
+> Either follow these instructions yourself, or ask an AI agent to follow them for you.
+
+### Setting up
+
+To begin contributing to ProtoWiki, first create a fork of the repo by clicking the **Fork** button near the top right of the page. You'll use this fork to do all of your contributions.
+
+When you've done that, clone your fork locally.
+
+### Making a contribution
+
+In your local fork, create a new branch for your contribution. You can name the branch whatever you want.\
+Make any changes you want in your branch. Then push up your changes to your fork.
+
+When you've done that, go to the [ProtoWiki repo page](https://github.com/wikimedia/protowiki).\
+Click on **[Pull requests](https://github.com/wikimedia/ProtoWiki/pulls)**.\
+Then click on **[New pull request](https://github.com/wikimedia/ProtoWiki/compare)**.
+
+In the **compare** dropdown, pick your branch from your fork.\
+Then click **Create pull request**.
+Fill in some details and submit!

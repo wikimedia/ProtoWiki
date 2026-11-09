@@ -73,9 +73,10 @@ read and that AI agents auto-discover.
 | Prototype the iOS / Android apps rather than the website | [`protowiki-app-prototyping`](../protowiki-app-prototyping/SKILL.md) |
 | Customize home gallery listing | [`protowiki-create-prototype` → `gallery-meta.md`](../protowiki-create-prototype/references/gallery-meta.md) |
 | Look up a component (wrappers, article surfaces, search bar…) | [`protowiki-components`](../protowiki-components/SKILL.md) |
+| Build an article page (live vs hand-authored) | [`protowiki-components`](../protowiki-components/SKILL.md) — **`ArticleLive`** (default) or **`ArticleCustom`**; **`template-article/`**, **`example-custom-article/`** |
 | Use a Codex component, token, or icon | [`codex-usage`](../codex-usage/SKILL.md) |
 | Fetch real data from Wikipedia | [`wiki-apis`](../wiki-apis/SKILL.md) |
-| Snapshot an article + its skin CSS into the repo | [`protowiki-snapshot-data`](../protowiki-snapshot-data/SKILL.md) |
+| Snapshot article HTML + skin CSS into the repo (fixtures; copy markup into **`ArticleCustom`**) | [`protowiki-snapshot-data`](../protowiki-snapshot-data/SKILL.md) |
 | Prototype VisualEditor-style editing (article template, suggestion mode) | [`protowiki-components` → `editors.md`](../protowiki-components/references/editors.md) |
 | Make light/dark or desktop/mobile previews | [`protowiki-skins`](../protowiki-skins/SKILL.md) + [`protowiki-theme`](../protowiki-theme/SKILL.md) |
 | Deploy to GitHub Pages | [`protowiki-deploy`](../protowiki-deploy/SKILL.md) |

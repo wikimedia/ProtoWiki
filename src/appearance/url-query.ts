@@ -1,6 +1,6 @@
 import type { LocationQuery, RouteLocationNormalized, Router } from 'vue-router'
 
-/** Appearance query params carried across navigations when already present. */
+/** Appearance query params carried across route changes (`?title=` is per-prototype, not preserved). */
 export const PRESERVED_URL_QUERY_PARAMS = ['theme', 'skin', 'os'] as const
 
 export type PreservedUrlQueryParam = (typeof PRESERVED_URL_QUERY_PARAMS)[number]
@@ -163,10 +163,22 @@ export function replaceRouteQueryUpdates(
 export function preserveAppearanceQueryOnNavigation(instance: Router): void {
   instance.beforeEach((to, from) => {
     const missing = preservedQueryMissingFromRoute(to, from)
-    if (Object.keys(missing).length === 0) return true
+    let query: Record<string, string | string[]> = { ...to.query, ...missing }
+
+    if (to.path === '/' && query.title !== undefined) {
+      const { title: _title, ...rest } = query
+      query = rest
+    }
+
+    const changed =
+      Object.keys(missing).length > 0 ||
+      (to.path === '/' && to.query.title !== undefined)
+
+    if (!changed) return true
+
     return {
       path: to.path,
-      query: { ...to.query, ...missing },
+      query,
       hash: to.hash,
     }
   })

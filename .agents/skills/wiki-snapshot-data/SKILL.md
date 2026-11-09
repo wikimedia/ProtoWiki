@@ -61,7 +61,7 @@ unstyled text.
 
 The two halves are independent:
 
-- HTML fixtures are loaded at runtime by an article-renderer:
+- HTML fixtures are typically **inlined or pasted** into your UI (e.g. **`v-html`**, or copy sections into hand-authored markup). Some apps fetch them at runtime:
 
   ```ts
   const res = await fetch(`/snapshots/<slug>.html`)
@@ -243,4 +243,7 @@ that revision id in your snapshotter.
 ProtoWiki has a dedicated companion skill,
 [`protowiki-snapshot-data`](../protowiki-snapshot-data/SKILL.md), that
 covers the repo-specific paths, the wrapped npm scripts that wire the
-fetch + scoping into one command, and how **`ArticleSnapshot`** consumes a snapshot.
+fetch + scoping into one command, and how **`public/snapshots/`** fixtures are used
+(**copy markup into [`ArticleCustom`](../protowiki-components/references/article.md)** —
+there is no snapshot article Vue component). Default interactive articles use
+**[`ArticleLive`](../protowiki-components/references/article.md)** and live **`page/html`**.

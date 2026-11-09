@@ -2,6 +2,7 @@
 import { computed, provide } from 'vue'
 
 import { useConfig } from '@/composables/useConfig'
+import { SAVED_PAGES_TEMPLATE_PATH } from '@/composables/webTemplatePaths'
 import type { ChromeNavTool } from './headerNavTools'
 import { globalSkin, globalTheme, PROTOWIKI_CHROME_SKIN, PROTOWIKI_CHROME_THEME } from '@/theme'
 import type { Skin, Theme } from '@/theme'
@@ -46,8 +47,13 @@ interface Props {
   mobileWordmarkSrc?: string
   /** Forwarded to **`ChromeHeader`** (desktop tools only). */
   navTools?: ChromeNavTool[]
-  /** Forwarded to **`ChromeHeader`** — when false, the Minerva wordmark is decorative. */
-  brandLink?: boolean
+  /** Forwarded to **`ChromeHeader`**. */
+  prototypingSettings?: boolean
+  /**
+   * Forwarded to **`ChromeHeader`** — Vector bookmark → saved pages route.
+   * Defaults to **`SAVED_PAGES_TEMPLATE_PATH`**; pass **`''`** to disable navigation.
+   */
+  savedPagesRoute?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -63,7 +69,8 @@ const props = withDefaults(defineProps<Props>(), {
   taglineSrc: undefined,
   mobileWordmarkSrc: undefined,
   navTools: undefined,
-  brandLink: true,
+  prototypingSettings: true,
+  savedPagesRoute: SAVED_PAGES_TEMPLATE_PATH,
 })
 
 const { displayName } = useConfig()
@@ -94,10 +101,14 @@ provide(PROTOWIKI_CHROME_THEME, effectiveTheme)
           :tagline-src="props.taglineSrc"
           :mobile-wordmark-src="props.mobileWordmarkSrc"
           :nav-tools="props.navTools"
-          :brand-link="props.brandLink"
+          :prototyping-settings="props.prototypingSettings"
+          :saved-pages-route="props.savedPagesRoute"
         >
           <template v-if="$slots.menu" #menu>
             <slot name="menu" />
+          </template>
+          <template v-if="$slots['user-menu']" #user-menu>
+            <slot name="user-menu" />
           </template>
         </ChromeHeader>
       </slot>

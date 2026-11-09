@@ -1,0 +1,3 @@
+#!/bin/sh
+# Reconcile node_modules Codex with patches/codex/ after branch switches.
+node scripts/apply-codex-patch.mjs || exit 1

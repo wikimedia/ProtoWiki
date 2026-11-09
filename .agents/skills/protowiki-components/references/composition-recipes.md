@@ -58,14 +58,13 @@ definePage({ meta: { platform: 'app' } })
 [`protowiki-app-prototyping`](../../protowiki-app-prototyping/SKILL.md) for the
 app platform as a whole.
 
-## Hand-authored article (no live fetch or snapshot)
+## Hand-authored article (no live fetch)
 
-Use when the prototype needs **Vue-authored** article markup (infobox + sections) without **`page/html`** or **`public/snapshots/`**. Content goes in **`ArticleRenderer`** so **`.mw-parser-output`** and skin CSS apply.
+Use when the prototype needs **Vue-authored** article markup (infobox + sections) without **`page/html`**. Prefer **`ArticleCustom`**; content lands in **`ArticleRenderer`** (**`.mw-parser-output`**) with skin CSS applied.
 
 ```vue
 <script setup lang="ts">
-import ArticleRenderer from '@/components/article/ArticleRenderer.vue'
-import ArticleWrapper from '@/components/article/ArticleWrapper.vue'
+import ArticleCustom from '@/components/article/ArticleCustom.vue'
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 
 definePage({
@@ -75,26 +74,24 @@ definePage({
 
 <template>
   <ChromeWrapper>
-    <ArticleWrapper title="Example band">
-      <ArticleRenderer>
-        <section>
-          <!-- table.infobox… + lead paragraphs -->
-        </section>
-        <section>
-          <h2>History</h2>
-          <!-- … -->
-        </section>
-      </ArticleRenderer>
-    </ArticleWrapper>
+    <ArticleCustom title="Example band">
+      <section>
+        <!-- table.infobox… + lead paragraphs -->
+      </section>
+      <section>
+        <h2>History</h2>
+        <!-- … -->
+      </section>
+    </ArticleCustom>
   </ChromeWrapper>
 </template>
 ```
 
-**Reference implementation:** **`src/prototypes/template-article-custom/`** (Wet Leg intro + History, enwiki-shaped infobox). Infobox header colours, lead markup order, and RL vs template styles are documented in [`article.md`](article.md#hand-authored-article-markup-no-fetch-no-snapshot).
+**Reference implementation:** **`src/prototypes/example-custom-article/`** (gallery **Custom article** — Wet Leg intro + History, infobox, footnotes + References, **`editable`**). Infobox header colours, lead markup order, and RL vs template styles are documented in [`article.md`](article.md#hand-authored-article-markup-no-live-fetch).
 
 ## Article page with extra markup beside the parser output
 
-Place experiments as siblings before or after `<ArticleLive>` or `<ArticleSnapshot>` in the padded article region.
+Place experiments as siblings before or after `<ArticleLive>` or `<ArticleCustom>` in the padded article region.
 
 ```vue
 <ChromeWrapper>
@@ -125,6 +122,8 @@ Special pages usually **omit** the mock last-edited notice (desktop block **and*
   </SpecialPageWrapper>
 </ChromeWrapper>
 ```
+
+**Saved pages (web):** starter **`src/prototypes/template-saved-pages/`** — mock reading list cards, responsive grid/list. Wire the cluster with path constants in **`src/composables/webTemplatePaths.ts`**, **`ChromeWrapper`** **`savedPagesRoute`**, **`ArticleLive`** **`wikiLinkRoute`** / **`savedPagesRoute`**, and **`useWikiPrototypeNavigation`** for **`?title=`** + appearance query preservation (see **`template-article`**, **`template-main-page`**).
 
 ## Bare canvas with chrome (no columns)
 

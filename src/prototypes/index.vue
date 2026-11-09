@@ -9,13 +9,21 @@ definePage({
 import { useRoute, useRouter } from 'vue-router'
 
 import { CdxButton, CdxCard, CdxIcon, CdxTab, CdxTabs } from '@wikimedia/codex'
-import { cdxIconAppearance, cdxIconUserAvatar } from '@wikimedia/codex-icons'
+import {
+  cdxIconAppearance,
+  cdxIconLightbulb,
+  cdxIconLogoCodex,
+  cdxIconUserAvatar,
+} from '@wikimedia/codex-icons'
 
 import CodexPatchMessage from '@/components/CodexPatchMessage.vue'
 import PlainWrapper from '@/components/PlainWrapper.vue'
 import AppearanceSettingsPanel from '@/components/settings/AppearanceSettingsPanel.vue'
+import CodexSettingsPanel from '@/components/settings/CodexSettingsPanel.vue'
 import SettingsPopover from '@/components/settings/SettingsPopover.vue'
+import SuggestionSettingsPanel from '@/components/settings/SuggestionSettingsPanel.vue'
 import UserSettingsPanel from '@/components/settings/UserSettingsPanel.vue'
+import { CODEX_SETTINGS_POPOVER_OPEN_KEY } from '@/composables/useCodexBuild'
 import { useGalleryTab } from '@/composables/useGalleryTab'
 import { usePrototypeGallery } from '@/composables/usePrototypeGallery'
 import { PROTOWIKI_API_PROJECT_URL, PROTOWIKI_LICENSE_URL } from '@/config'
@@ -41,6 +49,38 @@ const docsUrl = `${PROTOWIKI_API_PROJECT_URL}#prototyping-system`
   <PlainWrapper heading="ProtoWiki">
     <template #actions>
       <div class="prototype-index__settings-toolbar">
+        <SettingsPopover :restore-open-key="CODEX_SETTINGS_POPOVER_OPEN_KEY">
+          <template #default="{ toggle, open }">
+            <CdxButton
+              weight="quiet"
+              :icon-only="true"
+              aria-label="Codex settings"
+              :aria-expanded="open"
+              @click="toggle"
+            >
+              <CdxIcon :icon="cdxIconLogoCodex" />
+            </CdxButton>
+          </template>
+          <template #panel>
+            <CodexSettingsPanel />
+          </template>
+        </SettingsPopover>
+        <SettingsPopover>
+          <template #default="{ toggle, open }">
+            <CdxButton
+              weight="quiet"
+              :icon-only="true"
+              aria-label="Suggestion mode settings"
+              :aria-expanded="open"
+              @click="toggle"
+            >
+              <CdxIcon :icon="cdxIconLightbulb" />
+            </CdxButton>
+          </template>
+          <template #panel>
+            <SuggestionSettingsPanel />
+          </template>
+        </SettingsPopover>
         <SettingsPopover>
           <template #default="{ toggle, open }">
             <CdxButton
@@ -69,8 +109,8 @@ const docsUrl = `${PROTOWIKI_API_PROJECT_URL}#prototyping-system`
               <CdxIcon :icon="cdxIconUserAvatar" />
             </CdxButton>
           </template>
-          <template #panel>
-            <UserSettingsPanel />
+          <template #panel="{ open: settingsOpen }">
+            <UserSettingsPanel :settings-open="settingsOpen" />
           </template>
         </SettingsPopover>
       </div>

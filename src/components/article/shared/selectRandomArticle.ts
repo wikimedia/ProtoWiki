@@ -17,6 +17,11 @@ export interface SelectRandomArticleOptions {
   langs?: string[]
   /** Vital articles level to draw from (only used when `source` is `'vital'`). */
   vitalLevel?: number
+  /**
+   * Skip the remembered selection and draw a new title (it then becomes the
+   * remembered one) — e.g. to re-roll an article that doesn't fit a prototype.
+   */
+  fresh?: boolean
 }
 
 export interface SelectedArticle {
@@ -97,7 +102,7 @@ export async function selectRandomArticle(
   const level = options.vitalLevel ?? VITAL_ARTICLES_LEVEL
   const cacheKey = selectionCacheKey(source, options.langs, level)
 
-  const remembered = selectionCache.get(cacheKey)
+  const remembered = options.fresh ? undefined : selectionCache.get(cacheKey)
   if (remembered) return remembered
 
   const lang = pickRandomLang(options.langs)
