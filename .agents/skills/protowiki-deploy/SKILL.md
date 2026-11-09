@@ -133,6 +133,9 @@ Gotchas:
 - Never add a checkout of PR code, `npm` commands or anything else that runs
   artifact contents to `preview-deploy.yml`, and don't switch either workflow
   back to `pull_request_target`.
+- `preview-deploy.yml` does need a checkout of the **default branch** (its
+  first step): the Pages deploy action inside `pr-preview-action` fails with
+  `git ... exit code 128` when the workspace isn't a git repo.
 
 Preview URL:
 
