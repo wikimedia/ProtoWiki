@@ -26,8 +26,30 @@ concurrency:
   group: preview-deploy-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
 
 jobs:
-  deploy:
+  # Builds of pushed branches with no open PR upload nothing, so check for
+  # the artifact before deploying.
+  check:
     if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      found: ${{ steps.artifact.outputs.found }}
+    steps:
+      - name: Find build
+        id: artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          count=$(gh api "repos/$REPO/actions/runs/$RUN_ID/artifacts" --jq '[.artifacts[] | select(.name == "preview")] | length')
+          if [ "$count" -gt 0 ]; then found=true; else found=false; fi
+          echo "Build found: $found"
+          echo "found=$found" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: check
+    if: needs.check.outputs.found == 'true'
     runs-on: ubuntu-latest
     steps:
       # The deploy action needs a git checkout to work in. This is the
