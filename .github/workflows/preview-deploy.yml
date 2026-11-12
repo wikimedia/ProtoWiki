@@ -1,0 +1,134 @@
+name: Deploy PR preview
+
+# Step 2 of 2 for PR previews. Runs after "Build PR preview" finishes and
+# publishes the build to gh-pages under pr-preview/pr-<number>/.
+#
+# This workflow has write access, so it must never check out or run the PR's
+# code. It only copies the built files, and treats the build's artifact as
+# untrusted.
+#
+# GitHub runs workflow_run workflows from the default branch, so edits to
+# this file take effect only once merged to main.
+
+on:
+  workflow_run:
+    workflows: [Build PR preview]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+
+# One deploy at a time per PR branch, so a deploy can't land after the
+# removal that follows a PR being closed.
+concurrency:
+  group: preview-deploy-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      # The deploy action needs a git checkout to work in. This is the
+      # default branch (trusted code), never the PR's code. It runs first
+      # because checkout cleans the workspace.
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Download build
+        uses: actions/download-artifact@v5
+        with:
+          name: preview
+          path: preview
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      # The PR number comes from the PR's own build, so check it: the PR must
+      # be in this repo and its latest commit must be the one that was built.
+      # That stops a build from taking over another PR's preview, and skips
+      # builds of commits that have since been replaced.
+      - name: Check PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          number=$(head -c 16 preview/pr-number | tr -d '[:space:]')
+          if ! [[ "$number" =~ ^[0-9]+$ ]]; then
+            echo "::error::The build did not contain a valid PR number."
+            exit 1
+          fi
+
+          read -r state head_sha <<< "$(gh api "repos/$REPO/pulls/$number" --jq '"\(.state) \(.head.sha)"')"
+
+          if [ "$head_sha" != "$RUN_SHA" ]; then
+            echo "PR #$number has moved on to $head_sha; skipping the build of $RUN_SHA."
+            action=none
+          elif [ "$state" = closed ]; then
+            action=remove
+          elif [ -d preview/dist ]; then
+            action=deploy
+          else
+            action=none
+          fi
+
+          echo "PR #$number: $action"
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+          echo "action=$action" >> "$GITHUB_OUTPUT"
+
+      - name: Publish preview
+        id: preview
+        if: steps.pr.outputs.action != 'none'
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          action: ${{ steps.pr.outputs.action }}
+          pr-number: ${{ steps.pr.outputs.number }}
+          source-dir: preview/dist
+          preview-branch: gh-pages
+          umbrella-dir: pr-preview
+          # The action's comment can only find the PR on pull_request events,
+          # so the comment is posted below instead.
+          comment: false
+          # The default messages read the PR number from the event, which is
+          # empty here.
+          deploy-commit-message: Deploy preview for PR ${{ steps.pr.outputs.number }} 🛫
+          remove-commit-message: Remove preview for PR ${{ steps.pr.outputs.number }} 🛬
+
+      # Same text as the action's own comment, under the same "pr-preview"
+      # header, so each PR keeps one comment that gets updated in place.
+      - name: Write comment
+        id: comment
+        if: steps.pr.outputs.action != 'none'
+        env:
+          ACTION: ${{ steps.pr.outputs.action }}
+          URL: ${{ steps.preview.outputs.preview-url }}
+          VERSION: ${{ steps.preview.outputs.action-version }}
+          TIME: ${{ steps.preview.outputs.action-start-time }}
+          SITE: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          {
+            echo "content<<EOF"
+            echo "[PR Preview Action](https://github.com/rossjrw/pr-preview-action) $VERSION"
+            echo ":---:"
+            if [ "$ACTION" = deploy ]; then
+              echo "| <p><img src=\"https://qr.rossjrw.com/?color.dark=0d1117&url=$URL\" height=\"100\" align=\"right\" alt=\"QR code for preview link\"></p> :rocket: View preview at <br> $URL <br><br>"
+              echo "| <h6>Built to branch [\`gh-pages\`]($SITE/tree/gh-pages) at $TIME. <br> Preview will be ready when the [GitHub Pages deployment]($SITE/deployments) is complete. <br><br> </h6>"
+            else
+              echo "Preview removed because the pull request was closed."
+              echo "$TIME"
+            fi
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Comment on PR
+        if: steps.pr.outputs.action != 'none'
+        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db # v2.9.2
+        with:
+          header: pr-preview
+          number: ${{ steps.pr.outputs.number }}
+          message: ${{ steps.comment.outputs.content }}
