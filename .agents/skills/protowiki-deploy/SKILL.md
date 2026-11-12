@@ -115,11 +115,16 @@ run as two workflows, so a PR's code never runs with write access:
    (trailing slash required) using a read-only token, and uploads `dist/` plus
    the PR number as an artifact. It runs on:
    - `push` to any branch in this repo except `main` / `gh-pages`, looking up
-     the branch's open PR (no PR → nothing uploaded). GitHub skips
-     `pull_request` runs while a PR conflicts with `main`; push runs don't, so
-     same-repo PRs keep getting previews with conflicts.
-   - `pull_request` for fork PRs (all of `opened`, `reopened`, `synchronize`,
-     `closed`), and for opening, reopening and closing same-repo PRs.
+     the branch's open PR into the default branch (no PR → nothing uploaded).
+     GitHub skips `pull_request` runs while a PR conflicts with `main`; push
+     runs don't, so same-repo PRs keep getting previews with conflicts.
+   - `pull_request` for everything else: fork PRs and same-repo PRs into
+     other branches (all of `opened`, `reopened`, `synchronize`, `closed`),
+     and opening, reopening and closing same-repo PRs into `main`.
+
+   Its `concurrency` is set on the job, not the workflow, so runs the job's
+   `if` skips (same-repo `synchronize`, branch deletions) don't cancel the
+   real build. Push and `pull_request` runs use separate groups.
 2. [`preview-deploy.yml`](../../../.github/workflows/preview-deploy.yml)
    (**Deploy PR preview**) on `workflow_run` downloads that artifact, checks the PR
    number against the API (PR exists here, head commit matches the build), then:
@@ -143,8 +148,8 @@ Gotchas:
   appears on the next push), and closing an unmerged PR that conflicts (its
   preview isn't removed). A branch also needs this `preview.yml` (merge
   `main` in once) before its pushes build.
-- `preview-deploy.yml` does need a checkout of the **default branch** (its
-  first step): the Pages deploy action inside `pr-preview-action` fails with
+- `preview-deploy.yml` does need a checkout of the **default branch** (right
+  after it checks the build uploaded anything): the Pages deploy action inside `pr-preview-action` fails with
   `git ... exit code 128` when the workspace isn't a git repo.
 
 Preview URL:

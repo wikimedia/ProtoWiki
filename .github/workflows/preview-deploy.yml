@@ -26,14 +26,13 @@ concurrency:
   group: preview-deploy-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
 
 jobs:
-  # Builds of pushed branches with no open PR upload nothing, so check for
-  # the artifact before deploying.
-  check:
+  deploy:
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    outputs:
-      found: ${{ steps.artifact.outputs.found }}
     steps:
+      # Builds of pushed branches with no open PR upload nothing, so check for
+      # the artifact first; every later step runs only if it's there. This
+      # writes nothing to the workspace, so it's safe before the checkout.
       - name: Find build
         id: artifact
         env:
@@ -47,20 +46,17 @@ jobs:
           echo "Build found: $found"
           echo "found=$found" >> "$GITHUB_OUTPUT"
 
-  deploy:
-    needs: check
-    if: needs.check.outputs.found == 'true'
-    runs-on: ubuntu-latest
-    steps:
       # The deploy action needs a git checkout to work in. This is the
-      # default branch (trusted code), never the PR's code. It runs first
-      # because checkout cleans the workspace.
+      # default branch (trusted code), never the PR's code. It runs before
+      # the download because checkout cleans the workspace.
       - name: Checkout
+        if: steps.artifact.outputs.found == 'true'
         uses: actions/checkout@v5
         with:
           persist-credentials: false
 
       - name: Download build
+        if: steps.artifact.outputs.found == 'true'
         uses: actions/download-artifact@v5
         with:
           name: preview
@@ -74,6 +70,7 @@ jobs:
       # builds of commits that have since been replaced.
       - name: Check PR
         id: pr
+        if: steps.artifact.outputs.found == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -105,7 +102,7 @@ jobs:
 
       - name: Publish preview
         id: preview
-        if: steps.pr.outputs.action != 'none'
+        if: steps.pr.outputs.action == 'deploy' || steps.pr.outputs.action == 'remove'
         uses: rossjrw/pr-preview-action@v1
         with:
           action: ${{ steps.pr.outputs.action }}
@@ -125,7 +122,7 @@ jobs:
       # header, so each PR keeps one comment that gets updated in place.
       - name: Write comment
         id: comment
-        if: steps.pr.outputs.action != 'none'
+        if: steps.pr.outputs.action == 'deploy' || steps.pr.outputs.action == 'remove'
         env:
           ACTION: ${{ steps.pr.outputs.action }}
           URL: ${{ steps.preview.outputs.preview-url }}
@@ -148,7 +145,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Comment on PR
-        if: steps.pr.outputs.action != 'none'
+        if: steps.pr.outputs.action == 'deploy' || steps.pr.outputs.action == 'remove'
         uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db # v2.9.2
         with:
           header: pr-preview
