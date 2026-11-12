@@ -1,0 +1,15 @@
+Index: dist/modules/CdxDialog.cjs
+===================================================================
+--- dist/modules/CdxDialog.cjs
++++ dist/modules/CdxDialog.cjs
+@@ -156,9 +156,9 @@
+       )
+     },
+   }),
+   v = () => {
+-    e.useCssVars((o) => ({ '17e0a1f0': o.fixedHeightRem }))
++    e.useCssVars((o) => ({ '6345fe62': o.fixedHeightRem }))
+   },
+   T = p.setup
+ p.setup = T ? (o, t) => (v(), T(o, t)) : v
+ const U = ['aria-label', 'aria-labelledby'],

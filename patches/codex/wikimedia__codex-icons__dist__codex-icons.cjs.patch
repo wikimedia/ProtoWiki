@@ -1,0 +1,341 @@
+Index: dist/codex-icons.cjs
+===================================================================
+--- dist/codex-icons.cjs
++++ dist/codex-icons.cjs
+@@ -23,11 +23,11 @@
+   T =
+     '<path d="M11 16H9v-2h2zM10 4c1.015 0 1.794.425 2.302 1.031.48.575.698 1.287.698 1.892 0 .915-.36 1.525-.799 1.984-.19.2-.408.382-.56.514a4 4 0 00-.403.389c-.159.185-.238.519-.238 1.164V12H9v-1.026c0-.645.04-1.671.72-2.465.21-.246.432-.444.61-.598.193-.168.316-.271.426-.386.162-.17.244-.306.244-.602 0-.164-.07-.415-.232-.609C10.63 6.152 10.41 6 10 6c-.604 0-1 .476-1 1v.5H7V7c0-1.476 1.144-3 3-3"/><path d="M18 20H2V0h16zM4 18h12V2H4z"/>',
+   B =
+     '<path d="M18 20H2V0h16zM4 2c0 2.393.483 4.507 1.661 6.007 1.002 1.274 2.605 2.229 5.188 2.445L8.896 8.5l1.414-1.414 3.708 3.707v1.414l-3.708 3.707L8.896 14.5l2.038-2.038c-3.16-.211-5.396-1.374-6.845-3.219L4 9.123V18h12V2z"/>',
+-  q =
+-    '<path d="M12 17H4v-1h8zm0-2H4v-1h8zm-5-3H4v-1h3zm5 0H8V7h4zm-5-2H4V9h3zm0-2H4V7h3z"/><path d="M15 20H1V4h14zM3 18h10V6H3z"/><path d="M19 16h-2V2H5V0h14z"/>',
+   U =
++    '<path d="M12 17H4v-1h8zm0-2H4v-1h8zm-5-3H4v-1h3zm5 0H8V7h4zm-5-2H4V9h3zm0-2H4V7h3z"/><path d="M15 20H1V4h14zM3 18h10V6H3z"/><path d="M19 16h-2V2H5V0h14z"/>',
++  q =
+     '<path d="M18 20H2V0h16zM4 18h10.969l-3.343-4.347a4 4 0 111.565-1.244L16 16.06V2H4zm6-10a2 2 0 100 4 2 2 0 000-4"/>',
+   w =
+     '<path d="M15 20H1V4h14zM3 18h9.586L9.29 14.704A3 3 0 018 15a3 3 0 113-3c0 .463-.109.899-.296 1.29L13 15.586V6H3zm5-7a1 1 0 100 2 1 1 0 000-2"/><path d="M19 16h-2V2H5V0h14z"/>',
+   D =
+@@ -124,10 +124,10 @@
+     '<path d="M9.417 4.707 4.124 10l5.293 5.293-1.414 1.414-6-6V9.293l6-6zm8 0L12.124 10l5.293 5.293-1.414 1.414-6-6V9.293l6-6z"/>',
+   T1 = '<path d="M5 8h10v1l-5 5-5-5z"/>',
+   B1 =
+     '<path d="M19 19H1v-2h18zm-8-7.104 3.5-3.5 1.414 1.414-5.207 5.208H9.293L4.086 9.81 5.5 8.396l3.5 3.5V1h2z"/>',
+-  q1 = '<path d="M7 2v16h2V2zm4 0v16h2V2zM.5 10l3 3H4V7h-.5zm19 0-3 3H16V7h.5z"/>',
+-  U1 = '<path d="M2 7h16v2H2zm0 4h16v2H2zM10 .5l3 3V4H7v-.5zm0 19 3-3V16H7v.5z"/>',
++  U1 = '<path d="M7 2v16h2V2zm4 0v16h2V2zM.5 10l3 3H4V7h-.5zm19 0-3 3H16V7h.5z"/>',
++  q1 = '<path d="M2 7h16v2H2zm0 4h16v2H2zM10 .5l3 3V4H7v-.5zm0 19 3-3V16H7v.5z"/>',
+   w1 =
+     '<path d="m10 .5 3 3V4H7v-.5zM8 8h4v4H8zm2 11.5 3-3V16H7v.5zM.5 10l3 3H4V7h-.5zm19 0-3 3H16V7h.5z"/>',
+   D1 =
+     '<path d="m15.4.4 4.2 4.2-3.2 3.2-4.2-4.2zM10.8 5 15 9.2l-8.6 8.6-4.5 1.5-1.2-1.2 1.5-4.5z"/>',
+@@ -136,10 +136,10 @@
+   R1 =
+     '<path d="m11.76 12.463-5.213 5.216a1 1 0 01-.394.242L1.91 19.335.64 18.076l1.413-4.243c.049-.146.133-.28.242-.39l5.222-5.222zM14.124 1.5l-3 3H14a6 6 0 016 6V14h-2v-3.5a4 4 0 00-4-4h-2.876l3 3-1.414 1.414-4.707-4.707V4.793L12.71.086z"/>',
+   P1 =
+     '<path d="m15.024 9.2-8.477 8.479a1 1 0 01-.394.242L1.91 19.335.64 18.076l.702-2.11 3.716.024 8.373-8.375zm-3.027-4.407v1.414L7.29 10.914 5.876 9.5l3-3H6a4 4 0 00-4 4V14H0v-3.5a6 6 0 016-6h2.876l-3-3L7.29.086zm7.626-.193-3.184 3.185-4.255-4.23L15.38.359l4.243 4.243Z"/>',
+-  Z1 = '<path d="M4 11.5H1v-3h3zm7.5 0h-3v-3h3zm7.5 0h-3v-3h3z"/>',
+-  E1 = '<path d="M11.5 19h-3v-3h3zm0-7.5h-3v-3h3zm0-7.5h-3V1h3z"/>',
++  Z1 = '<path d="M1 8.5h3v3H1zm7.5 0h3v3h-3zm7.5 0h3v3h-3z"/>',
++  E1 = '<path d="M8.5 1h3v3h-3zm0 15h3v3h-3zm0-7.5h3v3h-3z"/>',
+   O1 = '<path d="M19 6.4v7.199L13.6 19H6.4L1 13.599v-7.2L6.4 1h7.2zM9 14v2h2v-2zm0-9v7h2V5z"/>',
+   N1 = '<path d="M7 19H5v-4H1v-2h6zm12-4h-4v4h-2v-6h6zM7 7H1V5h4V1h2zm8-2h4v2h-6V1h2z"/>',
+   G1 = '<path d="m16.7 8-6 6H9.3l-6-6 1.4-1.4 5.3 5.3 5.3-5.3z"/>',
+   Q1 =
+@@ -220,10 +220,10 @@
+   f0 = '<path d="M12 19H6v-2h2V3H6V1h6v2h-2v14h2zM5 7H3v6h2v2H1V5h4zm14 8h-6v-2h4V7h-4V5h6z"/>',
+   T0 =
+     '<path d="M11 13h1v2H8v-2h1v-2H8V9h3zm0-6H9V5h2z"/><path d="M10 1a9 9 0 110 18 9 9 0 010-18m0 2a7 7 0 100 14 7 7 0 000-14"/>',
+   B0 = '<path d="M10 1a9 9 0 110 18 9 9 0 010-18M8 9v2h1v2H8v2h4v-2h-1V9zm1-4v2h2V5z"/>',
+-  q0 = '<path d="M15 2v16h-2v-5.5H8.69L5.292 18h-2.35l9.882-16zm-5.075 8.5H13V5.521z"/>',
+-  U0 =
++  U0 = '<path d="M15 2v16h-2v-5.5H8.69L5.292 18h-2.35l9.882-16zm-5.075 8.5H13V5.521z"/>',
++  q0 =
+     '<path d="M10.7 11.8h-1l-1.1-.5a2 2 0 01-.7-1V8.8a10.7 10.7 0 00-3 1.5l-1 1a3 3 0 00-.6 1.3v1c.1.4.3.6.5.8l.9.4 1.1.1c.6 0 1 0 1.6-.2.6 0 1.1-.2 1.7-.4l.3 1.8a11 11 0 01-4.1.9c-.7 0-1.4 0-2-.3-.5-.1-1-.4-1.3-.8a2 2 0 01-.8-1.2C1 14 1 13.6 1 12.9a5 5 0 01.6-1.7c.3-.6.7-1 1.1-1.5a9.6 9.6 0 014.7-2.3 25 25 0 00-2-.4 6.7 6.7 0 00-2 0h-.8V5a10.4 10.4 0 011.9-.2 6.7 6.7 0 012.5.4l1 .4 1 .3.9.2h.6l-.2 2.2-1 .1V9h.1c0 .3.2.5.4.6l.7.2H14a.8.8 0 00.5-.2l.1-.3-.1-.6-.6-.9a31 31 0 00-1.4-1.4V6a4.7 4.7 0 01.2-1l.2-.3.9-.6a23 23 0 012.9-1.4l1.7-.7.5 1.8a188 188 0 00-4 1.8 8.8 8.8 0 001.5 2c.2.4.4.7.4 1v1l-.3.7-.7.8-1.3.5-1.8.2h-2.1Zm-5.4 1.6c.1.2.4.3.7.3s.5-.1.8-.3l.4-.7c0-.3 0-.6-.2-.8a.8.8 0 00-.6-.3l-.9.3-.4.8c0 .2 0 .5.2.7"/>',
+   w0 =
+     '<path d="M6.29 19a54 54 0 01-.73-2.88 31 31 0 01-.42-2.47A15 15 0 015 11.79q0-1.455.54-2.43a4.2 4.2 0 011.43-1.57 6 6 0 011.99-.84 9.3 9.3 0 012.2-.22c.74.01 1.45.08 2.1.22a4 4 0 00-.12-1.3 2.8 2.8 0 00-.46-1.07 2.1 2.1 0 00-.75-.7 1.9 1.9 0 00-.99-.27 2.2 2.2 0 00-.96.22 3 3 0 00-.89.66c-.28.3-.54.67-.79 1.1L6.17 4.48c.42-.85.9-1.53 1.43-2.03.54-.5 1.11-.86 1.7-1.09A4.9 4.9 0 0111.1 1c.89 0 1.64.18 2.27.53a4.2 4.2 0 011.52 1.4c.39.55.67 1.16.84 1.8A6.5 6.5 0 0116 6.58a6.8 6.8 0 01-.89 3.23 20 20 0 00-2.41-.48 9.8 9.8 0 00-2.04-.1 4.2 4.2 0 00-1.54.36 2.16 2.16 0 00-1 .86c-.24.39-.36.87-.36 1.46 0 .55.05 1.18.14 1.9.1.73.23 1.48.4 2.26s.37 1.55.58 2.32l-2.6.62Z"/>',
+   D0 =
+@@ -325,11 +325,11 @@
+   T2 =
+     '<path d="m18.664 15.25-1.5 1.5 1.5 1.5-1.414 1.414-1.5-1.5-1.5 1.5-1.414-1.414 1.5-1.5-1.5-1.5 1.414-1.414 1.5 1.5 1.5-1.5z"/><circle cx="12.5" cy="1" r="1"/><circle cx="3" cy="4" r="1"/><circle cx="9.5" cy="4" r="1"/><circle cx="16" cy="4" r="1"/><circle cx="3" cy="8" r="1"/><circle cx="9.5" cy="8" r="1"/><circle cx="16" cy="8" r="1"/><circle cx="3" cy="12" r="1"/><circle cx="9.5" cy="12" r="1"/><circle cx="16" cy="12" r="1"/><circle cx="3" cy="16" r="1"/><circle cx="9.5" cy="16" r="1"/><circle cx="6.25" cy="19" r="1"/>',
+   B2 =
+     '<path d="m13.937 2.352-6 16-1.874-.704 6-16 1.873.704ZM5.52 6.507l-3.5 3.5 3.5 3.5-1.414 1.414L0 10.714V9.3l4.106-4.207 1.415 1.414ZM20 9.3v1.414l-4.293 4.207-1.414-1.414 3.5-3.5-3.5-3.5 1.414-1.414z"/>',
+-  q2 =
+-    '<path d="M17 8h-2V4H5.174l4.585 5.35v1.3L5.174 16H15v-4h2v6H3v-2.536L7.684 10 3 4.536V2h14z"/>',
+   U2 =
++    '<path d="M17 8h-2V4H5.174l4.585 5.35v1.3L5.174 16H15v-4h2v6H3v-2.536L7.684 10 3 4.536V2h14z"/>',
++  q2 =
+     '<path d="M18 19H2v-2h16zM14 8.929h-2V7H8.204l2.049 2.342v1.316L8.204 13H12v-2.071h2V15H6v-2.519L8.17 10 6 7.519V5h8zM18 3H2V1h16z"/>',
+   w2 =
+     '<path d="M16 5.929h-2v-2H6.932l3.884 5.494-.006 1.162-3.856 5.344H14v-2h2v4H5V15.22l3.77-5.226L5 4.661V1.929h11z"/><path d="M6 11H1V9h5zm13 0h-5V9h5z"/>',
+   D2 =
+@@ -419,11 +419,11 @@
+   T4 =
+     '<path d="M15.729 6.876a3.43 3.43 0 012.619.186l.102.05A2.81 2.81 0 0120 9.622v6.384h-2v-.558l-1.303.49a2.597 2.597 0 01-3.234-3.593l.09-.18a3 3 0 012.683-1.66H18v-.884a.81.81 0 00-.444-.72l-.103-.05a1.43 1.43 0 00-1.652.268l-.594.594-1.414-1.414.594-.594c.376-.376.836-.66 1.341-.829Zm.507 5.63a1 1 0 00-.894.553l-.09.18a.597.597 0 00.743.825L18 13.313v-.806h-1.764ZM12.325 16h-2.172l-1.268-3H3.44l-1.27 3H0L5.242 3.61h1.842zm-8.038-5H8.04L6.163 6.565z"/>',
+   B4 =
+     '<path d="M8.729 8.37a3.43 3.43 0 012.619.186l.102.05a2.8 2.8 0 011.55 2.51V17.5h-2v-.557l-1.303.489a2.597 2.597 0 01-3.234-3.593l.09-.18A3 3 0 019.236 12H11v-.884a.8.8 0 00-.444-.72l-.103-.051a1.43 1.43 0 00-1.652.269l-.594.593-1.414-1.414.594-.593a3.4 3.4 0 011.342-.83M9.236 14a1 1 0 00-.894.553l-.09.18a.597.597 0 00.743.826L11 14.807V14zM6.673 3.913a2.3 2.3 0 013.538.35l.243.365A.299.299 0 0011 4.462V3.5h2v.962a2.3 2.3 0 01-4.21 1.276l-.244-.366A.298.298 0 008 5.538V6.5H6v-.962a2.3 2.3 0 01.673-1.625"/>',
+-  q4 =
+-    '<path d="M17.864 2.797a15 15 0 01-.392 15.234l-.624 1-1.695-1.061.623-.998a13 13 0 00.34-13.203l-.99-1.784 1.748-.97zM4.848 2.03l-.624.998a13 13 0 00-.34 13.203l.99 1.784-1.748.97-.99-1.782A15 15 0 012.528 1.97l.625-1zM8 16H6v-2h2zm3.995-8.709L14 6.134l1 1.732-2 1.155 1.928 1.113-1 1.732-1.93-1.115.001 2.248-1.999.002-.002-2.248-1.927 1.113-1-1.732L9 9.02 7 7.866l1-1.732 1.995 1.152V5.001l2-.002z"/>',
+   U4 =
++    '<path d="M17.864 2.797a15 15 0 01-.392 15.234l-.624 1-1.695-1.061.623-.998a13 13 0 00.34-13.203l-.99-1.784 1.748-.97zM4.848 2.03l-.624.998a13 13 0 00-.34 13.203l.99 1.784-1.748.97-.99-1.782A15 15 0 012.528 1.97l.625-1zM8 16H6v-2h2zm3.995-8.709L14 6.134l1 1.732-2 1.155 1.928 1.113-1 1.732-1.93-1.115.001 2.248-1.999.002-.002-2.248-1.927 1.113-1-1.732L9 9.02 7 7.866l1-1.732 1.995 1.152V5.001l2-.002z"/>',
++  q4 =
+     '<path d="M11.835 3.505a6.7 6.7 0 011.46.603l2.362-1.18 1.414 1.415-1.18 2.361a6.7 6.7 0 01.603 1.46L19 9v2l-2.506.835a6.7 6.7 0 01-.603 1.46l1.18 2.362-1.414 1.414-2.362-1.18a6.7 6.7 0 01-1.46.603L11 19H9l-.836-2.506a6.7 6.7 0 01-1.46-.603l-2.361 1.18-1.414-1.414 1.18-2.362a6.7 6.7 0 01-.604-1.46L1 11V9l2.505-.836a6.7 6.7 0 01.603-1.46l-1.18-2.361 1.415-1.414 2.361 1.18a6.7 6.7 0 011.46-.604L9 1h2zM10 7a3 3 0 100 6 3 3 0 000-6"/>',
+   w4 =
+     '<path d="M19.053 7.33v1.34L13.347 15H11v-3.862c-1.453.393-2.914 1.593-4.307 3.182-1.456 1.662-2.58 3.424-3.46 4.68H1c0-1.489.535-4.898 2.115-7.965C4.583 8.185 7.063 5.451 11 5.052V1h2.347zM13 7h-1c-3.467 0-5.694 2.207-7.107 4.951C4.41 12.885 3.782 14.077 3.5 15c.449-.598 1.187-1.425 1.688-1.998C6.93 11.015 9.271 9 12 9h1v3.396L16.963 8 13 3.604z"/>',
+   D4 =
+@@ -464,9 +464,9 @@
+   t3 = '<path d="M18 11H2V9h16z"/>',
+   h3 =
+     '<path d="M10 1a9 9 0 110 18 9 9 0 010-18M8.823 11.118 6.8 9.6l-1.2 1.6 2.8 2.1h1.1l4.905-5.956-1.561-1.25z"/>',
+   a3 =
+-    '<path d="M3.5 17a1.5 1.5 0 110 3 1.5 1.5 0 010-3M12 6a2 2 0 11-1.678 3.086l-2.33.776q.006.069.008.138a2 2 0 11-.323-1.087l2.33-.776Q10 8.068 10 8a2 2 0 012-2"/><path d="M9 1a8 8 0 016.324 12.896L20 18.5l-1.414 1.414-4.675-4.603A7.96 7.96 0 019 17 8 8 0 119 1m0 2a6 6 0 100 12A6 6 0 009 3"/><path d="M18.5 2a1.5 1.5 0 110 3 1.5 1.5 0 010-3m-17-2a1.5 1.5 0 110 3 1.5 1.5 0 010-3"/>',
++    '<path d="m10.4 8 .2 1-3 1-.2-1zM20 18.5 18.5 20l-4.6-4.6a8 8 0 111.5-1.5M9 3a6 6 0 100 12A6 6 0 009 3"/><circle cx="1.5" cy="1.5" r="1.5"/><circle cx="18.5" cy="3.5" r="1.5"/><circle cx="3.5" cy="18.5" r="1.5"/><circle cx="6" cy="10" r="2"/><circle cx="12" cy="8" r="2"/>',
+   n3 =
+     '<path d="M20 9h-6V7h2V3h-2V1h6v2h-2v4h2zm-7.53-4-4.168 5 4.167 5H9.864L7 11.562 4.136 15H1.53l4.166-5.001L1.532 5h2.603L7 8.438 9.865 5z"/>',
+   l3 = '<path d="M19 19H1V1h18zM3 17h6v-4H3zm8 0h6v-4h-6zM3 7v4h6V7zm8 0v4h6V7z"/>',
+   s3 =
+@@ -516,11 +516,11 @@
+   T3 =
+     '<path d="m19.254 17.84-1.414 1.414-5.59-5.59-.277.07a4.35 4.35 0 01-4.002-1.175l-.707-.707 1.535-1.64-1.432-1.43q-.045.038-.088.08L4.353 11.81a2.726 2.726 0 003.842 3.867l.046-.046.715-.7 1.4 1.43-.761.744A4.726 4.726 0 012.934 10.4L5.86 7.453l.09-.088-5.08-5.08L2.285.871zm-8.85-14.944A4.725 4.725 0 0117.065 9.6l-1.606 1.616-1.414-1.414 1.601-1.612a2.726 2.726 0 00-3.842-3.867l-.047.045-.714.7-1.4-1.428.714-.7.047-.045Z"/>',
+   B3 =
+     '<path d="M11 15H9v-3h2z"/><path d="M10 1a4 4 0 014 4v3h3v11H3V8h9V5a2 2 0 10-4 0v.5H6V5a4 4 0 014-4M5 17h10v-7H5z"/>',
+-  q3 =
+-    '<path d="M12.9 7H19v1.588l-4.593 3.589L16.5 19h-2L10 15.5 5.5 19h-2l2.092-6.823L1 8.587V7h6.1l1.945-5.995h1.91z"/>',
+   U3 =
++    '<path d="M12.9 7H19v1.588l-4.593 3.589L16.5 19h-2L10 15.5 5.5 19h-2l2.092-6.823L1 8.587V7h6.1l1.945-5.995h1.91z"/>',
++  q3 =
+     '<path d="M17 19H3v-2h14zm-2.3-4-2.127-5H7.427l-2.128 5H3.126L9.08 1.009h1.84L16.874 15zM8.279 8h3.444L10 3.953z"/>',
+   s = '<path d="M17 19H3v-2h14zM7 10a3 3 0 106 0V1h2v9a5 5 0 01-10 0V1h2z"/>',
+   w3 =
+     '<path d="m9.124 4-3 3H11a6 6 0 016 6v5h-2v-5a4 4 0 00-4-4H6.124l3 3-1.414 1.414-4.707-4.707V7.293L7.71 2.586z"/>',
+@@ -595,15 +595,15 @@
+   k5 = S,
+   C5 = { ltr: f, shouldFlip: !0 },
+   y5 = { ltr: T, shouldFlip: !0, shouldFlipExceptions: ['he', 'yi'] },
+   F5 = { ltr: B, shouldFlip: !0 },
+-  b5 = { ltr: q, shouldFlip: !0 },
+-  S5 = U,
++  b5 = { ltr: U, shouldFlip: !0 },
++  S5 = q,
+   f5 = { ltr: w, rtl: D },
+   T5 = W,
+   B5 = R,
+-  q5 = P,
+-  U5 = Z,
++  U5 = P,
++  q5 = Z,
+   w5 = E,
+   D5 = O,
+   W5 = N,
+   R5 = {
+@@ -675,10 +675,10 @@
+   i6 = { ltr: S1, shouldFlip: !0 },
+   H6 = { ltr: f1, shouldFlip: !0 },
+   x6 = T1,
+   M6 = B1,
+-  V6 = q1,
+-  V = U1,
++  V6 = U1,
++  V = q1,
+   p6 = V,
+   I6 = w1,
+   m6 = D1,
+   g6 = W1,
+@@ -693,10 +693,10 @@
+   S6 = { ltr: J1, shouldFlip: !0 },
+   f6 = Y1,
+   T6 = { ltr: X1, shouldFlip: !0 },
+   B6 = { ltr: j1, shouldFlip: !0 },
+-  q6 = _1,
+-  U6 = { ltr: $1, shouldFlip: !0 },
++  U6 = _1,
++  q6 = { ltr: $1, shouldFlip: !0 },
+   w6 = c0,
+   D6 = o0,
+   W6 = { ltr: t0, shouldFlip: !0 },
+   R6 = h0,
+@@ -758,16 +758,16 @@
+       gl: e,
+       it: e,
+       nl: e,
+       eu: P0,
+-      fa: U0,
++      fa: q0,
+       hu: R0,
+       hy: W0,
+       ksh: E0,
+       ka: Z0,
+       ur: D0,
+     },
+-    default: q0,
++    default: U0,
+   },
+   M7 = { ltr: O0, shouldFlip: !0 },
+   V7 = N0,
+   p7 = G0,
+@@ -785,10 +785,10 @@
+   S7 = { ltr: h2, shouldFlip: !0 },
+   f7 = { ltr: a2, rtl: n2 },
+   T7 = l2,
+   B7 = s2,
+-  q7 = { ltr: d2, shouldFlip: !0 },
+-  U7 = { ltr: e2, shouldFlip: !0 },
++  U7 = { ltr: d2, shouldFlip: !0 },
++  q7 = { ltr: e2, shouldFlip: !0 },
+   w7 = v2,
+   D7 = r2,
+   W7 = z2,
+   R7 = i2,
+@@ -811,10 +811,10 @@
+   tc = S2,
+   hc = f2,
+   ac = T2,
+   nc = B2,
+-  lc = q2,
+-  sc = U2,
++  lc = U2,
++  sc = q2,
+   dc = w2,
+   ec = D2,
+   vc = W2,
+   rc = { ltr: R2, shouldFlip: !0 },
+@@ -839,10 +839,10 @@
+   Sc = { ltr: a4, shouldFlip: !0 },
+   fc = n4,
+   Tc = l4,
+   Bc = { ltr: s4, shouldFlip: !0 },
+-  qc = { ltr: d4, shouldFlip: !0 },
+-  Uc = e4,
++  Uc = { ltr: d4, shouldFlip: !0 },
++  qc = e4,
+   wc = v4,
+   Dc = r4,
+   Wc = { ltr: z4, shouldFlip: !0 },
+   Rc = i4,
+@@ -864,10 +864,10 @@
+   o8 = S4,
+   t8 = f4,
+   h8 = T4,
+   a8 = B4,
+-  n8 = q4,
+-  l8 = U4,
++  n8 = U4,
++  l8 = q4,
+   s8 = w4,
+   d8 = D4,
+   e8 = W4,
+   v8 = { ltr: R4, shouldFlip: !0 },
+@@ -893,10 +893,10 @@
+   S8 = l3,
+   f8 = { ltr: s3, shouldFlip: !0 },
+   T8 = { ltr: d3, shouldFlip: !0 },
+   B8 = e3,
+-  q8 = v3,
+-  U8 = r3,
++  U8 = v3,
++  q8 = r3,
+   w8 = z3,
+   D8 = { ltr: i3, shouldFlip: !0 },
+   W8 = { ltr: H3, shouldFlip: !0 },
+   R8 = x3,
+@@ -916,10 +916,10 @@
+   $8 = { ltr: b3, rtl: S3 },
+   c9 = f3,
+   o9 = T3,
+   t9 = B3,
+-  h9 = q3,
+-  a9 = { langCodeMap: { en: s, de: s, nb: s, nn: s, no: s, sv: s }, default: U3 },
++  h9 = U3,
++  a9 = { langCodeMap: { en: s, de: s, nb: s, nn: s, no: s, sv: s }, default: q3 },
+   n9 = { ltr: w3, shouldFlip: !0 },
+   l9 = { ltr: D3, shouldFlip: !0 },
+   s9 = W3,
+   d9 = R3,
+@@ -947,10 +947,10 @@
+   S9 = { ltr: d5, shouldFlip: !0 },
+   f9 = e5,
+   T9 = { ltr: v5, shouldFlip: !0 },
+   B9 = r5,
+-  q9 = z5
+-function U9(c, n, a) {
++  U9 = z5
++function q9(c, n, a) {
+   if (typeof c == 'string' || 'path' in c) return c
+   if ('shouldFlip' in c) return c.ltr
+   if ('rtl' in c) return a === 'rtl' ? c.rtl : c.ltr
+   const d = n in c.langCodeMap ? c.langCodeMap[n] : c.default
+@@ -989,10 +989,10 @@
+ exports.cdxIconArticles = b5
+ exports.cdxIconArticlesSearch = f5
+ exports.cdxIconAsterisk = T5
+ exports.cdxIconAttachment = B5
+-exports.cdxIconBell = q5
+-exports.cdxIconBellOutline = U5
++exports.cdxIconBell = U5
++exports.cdxIconBellOutline = q5
+ exports.cdxIconBigger = w5
+ exports.cdxIconBlock = D5
+ exports.cdxIconBlockOutline = W5
+ exports.cdxIconBold = R5
+@@ -1044,10 +1044,10 @@
+ exports.cdxIconFilter = f6
+ exports.cdxIconFlag = T6
+ exports.cdxIconFolderPlaceholder = B6
+ exports.cdxIconFullscreen = w6
+-exports.cdxIconFunction = q6
+-exports.cdxIconFunctionArgument = U6
++exports.cdxIconFunction = U6
++exports.cdxIconFunctionArgument = q6
+ exports.cdxIconFunnel = D6
+ exports.cdxIconFunnelMatch = W6
+ exports.cdxIconGlobe = R6
+ exports.cdxIconHalfBright = P6
+@@ -1097,10 +1097,10 @@
+ exports.cdxIconListNumbered = f7
+ exports.cdxIconLiteral = z7
+ exports.cdxIconLive = T7
+ exports.cdxIconLock = B7
+-exports.cdxIconLogIn = q7
+-exports.cdxIconLogOut = U7
++exports.cdxIconLogIn = U7
++exports.cdxIconLogOut = q7
+ exports.cdxIconLogoCC = w7
+ exports.cdxIconLogoCodex = D7
+ exports.cdxIconLogoMediaWiki = W7
+ exports.cdxIconLogoMetaWiki = R7
+@@ -1151,10 +1151,10 @@
+ exports.cdxIconOutdent = Sc
+ exports.cdxIconOutline = fc
+ exports.cdxIconPageSettings = Tc
+ exports.cdxIconPalette = Bc
+-exports.cdxIconPaste = qc
+-exports.cdxIconPause = Uc
++exports.cdxIconPaste = Uc
++exports.cdxIconPause = qc
+ exports.cdxIconPictureInPicture = wc
+ exports.cdxIconPlay = Dc
+ exports.cdxIconPower = Rc
+ exports.cdxIconPrevious = Wc
+@@ -1205,10 +1205,10 @@
+ exports.cdxIconTable = S8
+ exports.cdxIconTableAddColumnAfter = f8
+ exports.cdxIconTableAddColumnBefore = T8
+ exports.cdxIconTableAddRowAfter = B8
+-exports.cdxIconTableAddRowBefore = q8
+-exports.cdxIconTableCaption = U8
++exports.cdxIconTableAddRowBefore = U8
++exports.cdxIconTableCaption = q8
+ exports.cdxIconTableMergeCells = w8
+ exports.cdxIconTableMoveColumnAfter = D8
+ exports.cdxIconTableMoveColumnBefore = W8
+ exports.cdxIconTableMoveRowAfter = R8
+@@ -1260,7 +1260,7 @@
+ exports.cdxIconWatchlist = S9
+ exports.cdxIconWikitext = f9
+ exports.cdxIconWindow = T9
+ exports.cdxIconZoomIn = B9
+-exports.cdxIconZoomOut = q9
+-exports.resolveIcon = U9
++exports.cdxIconZoomOut = U9
++exports.resolveIcon = q9
+ exports.shouldIconFlip = w9
