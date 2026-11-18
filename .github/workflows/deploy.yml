@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  pages: read # lets the last step check that Pages is serving gh-pages
 
 concurrency:
   group: pages
@@ -41,3 +42,38 @@ jobs:
           folder: dist
           clean-exclude: pr-preview/
           force: false
+
+      # Repos made with "Use this template" don't inherit Pages settings, so the
+      # push above can succeed while nothing is published. Fail loudly instead.
+      - name: Check GitHub Pages is serving gh-pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SETTINGS_URL: ${{ github.server_url }}/${{ github.repository }}/settings/pages
+        run: |
+          fix="Open $SETTINGS_URL and under 'Build and deployment' set Source = 'Deploy from a branch', Branch = 'gh-pages', folder = '/ (root)', then Save. No re-run needed: the site appears about a minute later."
+
+          if ! pages=$(gh api "repos/$REPO/pages" 2>err.txt); then
+            if grep -q "HTTP 404" err.txt; then
+              echo "::error title=GitHub Pages is not turned on::The build was pushed to the gh-pages branch, but GitHub Pages is off for this repo, so nothing is published. $fix"
+            else
+              echo "::error title=Could not check GitHub Pages settings::$(cat err.txt)"
+            fi
+            exit 1
+          fi
+
+          build_type=$(jq -r '.build_type' <<<"$pages")
+          branch=$(jq -r '.source.branch // ""' <<<"$pages")
+          path=$(jq -r '.source.path // ""' <<<"$pages")
+
+          if [ "$build_type" != "legacy" ] || [ "$branch" != "gh-pages" ] || [ "$path" != "/" ]; then
+            if [ "$build_type" = "workflow" ]; then
+              current="'GitHub Actions'"
+            else
+              current="branch '$branch', folder '$path'"
+            fi
+            echo "::error title=GitHub Pages is serving the wrong source::Pages is set to $current, so this deploy (and pull request previews) won't show up. $fix"
+            exit 1
+          fi
+
+          echo "::notice title=Deployed::$(jq -r '.html_url' <<<"$pages")"
