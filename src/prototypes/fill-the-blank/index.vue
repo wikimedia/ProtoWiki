@@ -125,6 +125,12 @@ const progress = computed(() => {
   return ((index.value + (checked.value ? 1 : 0)) / total) * 100
 })
 
+/** Picking an article in the dropdown goes straight to the questions. */
+function onArticleSelected(title: string | null) {
+  topic.value = title
+  if (title) void start()
+}
+
 async function start() {
   const query = topic.value
   if (!query) return
@@ -186,13 +192,14 @@ function next() {
         <div class="fill-the-blank__body">
           <h3>Pick a topic</h3>
           <CdxLookup
-            v-model:selected="topic"
+            :selected="topic"
             v-model:input-value="lookupInput"
             :menu-items="menuItems"
             :menu-config="{ showThumbnail: true }"
             :lang="QUIZ_LANG"
             aria-label="Search Wikipedia"
             @input="onLookupInput"
+            @update:selected="onArticleSelected"
           >
             <template #no-results>No articles found</template>
           </CdxLookup>
@@ -361,6 +368,12 @@ function next() {
   overflow-y: auto;
   /* Room for the chunky option edges and focus rings at the scroll edges. */
   padding-bottom: var(--spacing-25);
+  /* Still scrollable, but no visible scrollbar (the article panel keeps its own). */
+  scrollbar-width: none;
+}
+
+.fill-the-blank__screen--question .fill-the-blank__body::-webkit-scrollbar {
+  display: none;
 }
 
 .fill-the-blank__body h3 {
