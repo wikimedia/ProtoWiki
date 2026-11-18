@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="156" height="156" viewBox="0 0 156 156">
+  <defs>
+    <filter id="a" width="130.22" height="128.42" x="13" y="12" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" result="hardAlpha" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"/>
+      <feOffset/>
+      <feGaussianBlur stdDeviation="2"/>
+      <feColorMatrix values="0 0 0 0 0.2 0 0 0 0 0.4 0 0 0 0 0.8 0 0 0 0.15 0"/>
+      <feBlend in2="BackgroundImageFix" result="effect1_dropShadow_3328_139160"/>
+      <feBlend in="SourceGraphic" in2="effect1_dropShadow_3328_139160" result="shape"/>
+    </filter>
+  </defs>
+  <g filter="url(#a)">
+    <path fill="#fff" fill-rule="evenodd" d="m17 53.29.3-35.3a2 2 0 0 1 2-1.99h117.92a2 2 0 0 1 2 2v112.84c0 1.96-3.06 2.87-5.01 2.67l-.33-.02c-2.74 0-2.5 2.15-4.91 2.83-2.42.67-2.43-2.83-5.02-2.83-2.6 0-2.74 2.83-5.2 2.83s-2.31-2.83-5-2.83-2.97 2.83-5.34 2.83-2.3-2.83-5.07-2.83-2.76 2.83-5.21 2.83-2.29-2.83-4.88-2.83c-2.6 0-2.5 2.16-5 2.83s-2.95-2.83-5.46-2.83-2.7 2.83-5.1 2.83c-2.42 0-2.03-2.83-4.71-2.83s-2.98 2.83-5.49 2.83c-2.5 0-2.72-2.83-5.32-2.83s-2.33 2.83-4.9 2.83-2.66-2.83-5.22-2.83-2.52 2.83-5.03 2.83-2.4-2.83-5.1-2.83-2.8 2.83-5.34 2.83c-2.53 0-2.3-2.83-4.52-2.83-2.2 0-3.13 3.58-5.54 2.83-2.42-.76-2.14-2.83-4.83-2.83-1.63 0-4.69-.89-4.69-2.5z" clip-rule="evenodd"/>
+  </g>
+  <rect width="25.48" height="25.48" x="28.58" y="28.74" fill="#f1f4fd" rx="4"/>
+  <mask id="b" width="27" height="27" x="28" y="28" maskUnits="userSpaceOnUse" style="mask-type:alpha">
+    <rect width="25.48" height="25.48" x="28.58" y="28.74" fill="#fff" rx="4"/>
+  </mask>
+  <g mask="url(#b)">
+    <ellipse cx="36.72" cy="35.82" fill="#c8ccd1" rx="4.07" ry="4.12"/>
+    <path fill="#a2a9b1" fill-rule="evenodd" d="M45.4 43.69s4.58 6.4 5.61 4.05 0 3.42 0 3.42h-9.04M28.58 47.2s3.74 5.63 8.96 5.63 1.28 3.6 1.28 3.6H28.59" clip-rule="evenodd"/>
+    <path fill="#c8ccd1" fill-rule="evenodd" d="M29.45 55.99s18.6-20.65 16.27-10.26c-2.33 10.4 8.34-2.44 8.34-2.44V56" clip-rule="evenodd"/>
+  </g>
+  <rect width="25.48" height="25.48" x="28.58" y="63.49" fill="#f1f4fd" rx="4"/>
+  <mask id="c" width="27" height="26" x="28" y="63" maskUnits="userSpaceOnUse" style="mask-type:alpha">
+    <rect width="25.48" height="25.48" x="28.58" y="63.49" fill="#fff" rx="4"/>
+  </mask>
+  <g mask="url(#c)">
+    <ellipse cx="36.72" cy="70.57" fill="#c8ccd1" rx="4.07" ry="4.12"/>
+    <path fill="#a2a9b1" fill-rule="evenodd" d="M45.4 78.44s4.58 6.4 5.61 4.05 0 3.42 0 3.42h-9.04m-13.39-3.96s3.75 5.62 8.96 5.62 1.28 3.6 1.28 3.6H28.59" clip-rule="evenodd"/>
+    <path fill="#c8ccd1" fill-rule="evenodd" d="M29.45 90.74s18.6-20.65 16.27-10.26c-2.33 10.4 8.34-2.44 8.34-2.44v12.7" clip-rule="evenodd"/>
+  </g>
+  <rect width="25.48" height="25.48" x="28.58" y="98.23" fill="#f1f4fd" rx="4"/>
+  <mask id="d" width="27" height="26" x="28" y="98" maskUnits="userSpaceOnUse" style="mask-type:alpha">
+    <rect width="25.48" height="25.48" x="28.58" y="98.23" fill="#fff" rx="4"/>
+  </mask>
+  <g mask="url(#d)">
+    <ellipse cx="36.72" cy="105.31" fill="#c8ccd1" rx="4.07" ry="4.12"/>
+    <path fill="#a2a9b1" fill-rule="evenodd" d="M45.4 113.18s4.58 6.4 5.61 4.05 0 3.42 0 3.42h-9.04m-13.39-3.95s3.74 5.62 8.96 5.62 1.28 3.6 1.28 3.6H28.59" clip-rule="evenodd"/>
+    <path fill="#c8ccd1" fill-rule="evenodd" d="M29.45 125.49s18.6-20.65 16.27-10.26c-2.33 10.4 8.34-2.44 8.34-2.44v12.7" clip-rule="evenodd"/>
+  </g>
+  <path stroke="#c8ccd1" stroke-linecap="round" stroke-width="2" d="M63.17 101.87H78.3"/>
+  <path stroke="#72777d" stroke-linecap="round" stroke-width="2" d="M63.17 109.98h45.73"/>
+  <path stroke="#c8ccd1" stroke-linecap="round" stroke-width="2" d="M63.17 118.08h62.86"/>
+  <path stroke="#a2a9b1" stroke-linecap="round" stroke-width="2" d="M63.17 67.12H78.3"/>
+  <path stroke="#72777d" stroke-linecap="round" stroke-width="2" d="M63.17 75.23h45.73"/>
+  <path stroke="#a2a9b1" stroke-linecap="round" stroke-width="2" d="M63.17 83.34h62.86M63.17 32.37H78.3"/>
+  <path stroke="#72777d" stroke-linecap="round" stroke-width="2" d="M63.17 40.48h45.73"/>
+  <path stroke="#a2a9b1" stroke-linecap="round" stroke-width="2" d="M63.17 48.59h62.86"/>
+</svg>
