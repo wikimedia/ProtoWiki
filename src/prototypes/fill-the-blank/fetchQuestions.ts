@@ -10,6 +10,20 @@ export interface Question {
   options: string[]
   /** Article the sentence came from. */
   sourceTitle: string
+  /** The whole source article, for "See in context". Shared between questions. */
+  article: ArticleBlock[]
+  /** Where the question's sentence sits in `article`. */
+  blockIndex: number
+  sentenceIndex: number
+}
+
+/** A section heading, or a paragraph split into the same sentences the quiz uses. */
+export interface ArticleBlock {
+  type: 'heading' | 'paragraph'
+  /** Heading level (2 = top-level section). Headings only. */
+  level?: number
+  /** Paragraph: its sentences. Heading: one entry, the heading text. */
+  sentences: string[]
 }
 
 export interface ArticleSuggestion {
@@ -167,7 +181,8 @@ async function fetchArticleText(title: string, signal: AbortSignal): Promise<str
         action: 'query',
         prop: 'extracts',
         explaintext: '1',
-        exsectionformat: 'plain',
+        // `== Heading ==` markers, so headings can't be mistaken for paragraphs.
+        exsectionformat: 'wiki',
         redirects: '1',
         titles: title,
       },
@@ -190,6 +205,9 @@ interface Candidate {
   sentence: string
   tokens: Token[]
   sourceTitle: string
+  article: ArticleBlock[]
+  blockIndex: number
+  sentenceIndex: number
 }
 
 /**
@@ -210,20 +228,47 @@ const WORD = /[a-zà-öø-ÿœæ]+(?:-[a-zà-öø-ÿœæ]+)*/gi
  */
 const WIKI_CLUTTER = /[[\]]|\((?:[a-z]{2,3}|[a-z]{2}-[a-z]+)\)/
 
-function splitSentences(text: string): string[] {
-  return text
-    .split('\n')
-    .flatMap((paragraph) => paragraph.split(SENTENCE_END))
-    .map((s) => s.trim().replace(/\s+/g, ' '))
-    .filter(
-      (s) =>
-        s.length >= 40 &&
-        s.length <= 220 &&
-        /[.!?…]$/.test(s) &&
-        !WIKI_CLUTTER.test(s) &&
-        // A fragment left by a missed abbreviation split, e.g. "J.-C., César est…"
-        !/^[A-ZÀ-Þ]\./.test(s),
-    )
+/** Sentences that make a good quiz question. */
+function isQuizSentence(s: string): boolean {
+  return (
+    s.length >= 40 &&
+    s.length <= 220 &&
+    /[.!?…]$/.test(s) &&
+    !WIKI_CLUTTER.test(s) &&
+    // A fragment left by a missed abbreviation split, e.g. "J.-C., César est…"
+    !/^[A-ZÀ-Þ]\./.test(s)
+  )
+}
+
+const HEADING = /^(={2,6})\s*(.+?)\s*\1$/
+/** End matter: references, links, bibliography — not prose, so stop there. */
+const END_MATTER = /^(notes?( et références)?|références|voir aussi|bibliographie|liens externes|articles connexes|annexes)$/i
+
+/** Parse a plain-text extract (with `== Heading ==` markers) into headings and paragraphs. */
+function parseArticle(text: string): ArticleBlock[] {
+  const blocks: ArticleBlock[] = []
+  for (const raw of text.split('\n')) {
+    const line = raw.trim()
+    if (!line) continue
+    const heading = line.match(HEADING)
+    if (heading) {
+      if (END_MATTER.test(heading[2])) break
+      blocks.push({ type: 'heading', level: heading[1].length, sentences: [heading[2]] })
+      continue
+    }
+    const sentences = line
+      .split(SENTENCE_END)
+      .map((s) => s.trim().replace(/\s+/g, ' '))
+      .filter(Boolean)
+    if (sentences.length) blocks.push({ type: 'paragraph', sentences })
+  }
+  // Drop headings with nothing under them (empty sections, or tables/lists the
+  // extract left out): keep one only if a paragraph or a subsection follows.
+  return blocks.filter((block, i) => {
+    if (block.type === 'paragraph') return true
+    const next = blocks[i + 1]
+    return next !== undefined && (next.type === 'paragraph' || (next.level ?? 0) > (block.level ?? 0))
+  })
 }
 
 /**
@@ -287,12 +332,19 @@ export async function fetchQuestions(seed: string, signal: AbortSignal): Promise
   const titles = [seed, ...related.slice(0, RELATED_ARTICLES + 2)]
   const texts = await Promise.all(titles.map((t) => fetchArticleText(t, signal)))
 
-  const candidatesFor = (title: string, text: string): Candidate[] =>
-    shuffle(
-      splitSentences(text)
-        .map((sentence) => ({ sentence, tokens: blankableTokens(sentence, title), sourceTitle: title }))
-        .filter((c) => c.tokens.length),
-    )
+  const candidatesFor = (title: string, text: string): Candidate[] => {
+    const article = parseArticle(text)
+    const candidates: Candidate[] = []
+    article.forEach((block, blockIndex) => {
+      if (block.type !== 'paragraph') return
+      block.sentences.forEach((sentence, sentenceIndex) => {
+        if (!isQuizSentence(sentence)) return
+        const tokens = blankableTokens(sentence, title)
+        if (tokens.length) candidates.push({ sentence, tokens, sourceTitle: title, article, blockIndex, sentenceIndex })
+      })
+    })
+    return shuffle(candidates)
+  }
 
   const seedCandidates = candidatesFor(seed, texts[0])
   const relatedCandidates = titles
@@ -327,6 +379,9 @@ export async function fetchQuestions(seed: string, signal: AbortSignal): Promise
         answer: token.word,
         options: shuffle([token.word, ...distractors]),
         sourceTitle: c.sourceTitle,
+        article: c.article,
+        blockIndex: c.blockIndex,
+        sentenceIndex: c.sentenceIndex,
       }
     })
     .filter((q): q is Question => q !== null)

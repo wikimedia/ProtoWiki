@@ -13,6 +13,10 @@ import { CdxButton, CdxIcon, CdxLookup, CdxMessage, CdxProgressBar, CdxToggleBut
 import { cdxIconClose } from '@wikimedia/codex-icons'
 
 import MobileWrapper from '@/components/MobileWrapper.vue'
+import ContextPanel from './ContextPanel.vue'
+import SourceAttribution from './SourceAttribution.vue'
+import { useAttributionSignals } from '@/components/attribution/useAttributionSignals'
+import { wikiHostFromLang } from '@/config'
 import {
   articleUrl,
   fetchQuestions,
@@ -63,6 +67,8 @@ const index = ref(0)
 const selected = ref<string | null>(null)
 const checked = ref(false)
 const score = ref(0)
+/** "See in context" — show the whole source article instead of the speech bubble. */
+const contextOpen = ref(false)
 
 let controller: AbortController | null = null
 let searchController: AbortController | null = null
@@ -106,6 +112,14 @@ function onLookupInput(value: string) {
 
 const current = computed(() => questions.value[index.value])
 const isCorrect = computed(() => selected.value === current.value?.answer)
+
+// Attribution for the current question's source article, fetched as soon as the
+// question shows so it's ready by the time the feedback panel appears.
+const quizHost = wikiHostFromLang(QUIZ_LANG)
+const { signals: attributionSignals } = useAttributionSignals(
+  computed(() => current.value?.sourceTitle ?? ''),
+  { host: quizHost, backfillContributorCount: false },
+)
 const progress = computed(() => {
   const total = questions.value.length || 1
   return ((index.value + (checked.value ? 1 : 0)) / total) * 100
@@ -126,6 +140,7 @@ async function start() {
     score.value = 0
     selected.value = null
     checked.value = false
+    contextOpen.value = false
     screen.value = 'question'
   } catch (error) {
     if (signal.aborted) return
@@ -159,6 +174,7 @@ function next() {
   index.value++
   selected.value = null
   checked.value = false
+  contextOpen.value = false
 }
 </script>
 
@@ -203,7 +219,7 @@ function next() {
       </div>
 
       <!-- Question -->
-      <div v-else-if="screen === 'question' && current" class="fill-the-blank__screen">
+      <div v-else-if="screen === 'question' && current" class="fill-the-blank__screen fill-the-blank__screen--question">
         <div class="fill-the-blank__body">
           <div class="fill-the-blank__top">
             <CdxButton weight="quiet" aria-label="Close" @click="newTopic">
@@ -222,7 +238,15 @@ function next() {
 
           <h3>Fill in the blank</h3>
 
-          <div class="fill-the-blank__passage">
+          <ContextPanel
+            v-if="contextOpen"
+            :question="current"
+            :selected="selected"
+            :lang="QUIZ_LANG"
+            :duolingo="duolingo"
+            @close="contextOpen = false"
+          />
+          <div v-else class="fill-the-blank__passage">
             <img
               class="fill-the-blank__character"
               :src="CHARACTER_SRC"
@@ -245,6 +269,11 @@ function next() {
               </p>
             </div>
           </div>
+          <div v-if="!contextOpen" class="fill-the-blank__see-context">
+            <CdxButton weight="quiet" action="progressive" size="small" @click="contextOpen = true">
+              See in context
+            </CdxButton>
+          </div>
 
           <div class="fill-the-blank__options" :lang="QUIZ_LANG">
             <CdxToggleButton
@@ -265,6 +294,7 @@ function next() {
             <template v-else>
               Correct answer: <strong :lang="QUIZ_LANG">{{ current.answer }}</strong>
             </template>
+            <SourceAttribution :title="current.sourceTitle" :host="quizHost" :signals="attributionSignals" />
           </CdxMessage>
           <CdxButton v-if="!checked" action="progressive" weight="primary" size="large" :disabled="!selected" @click="check">
             Check
@@ -290,8 +320,10 @@ function next() {
 
 <style scoped>
 .fill-the-blank {
-  min-height: 100vh;
-  min-height: 100dvh;
+  /* Exactly one screen tall: the footer (Check / feedback / attribution) never
+     pushes the page past the bottom — the question body scrolls instead. */
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   padding: var(--spacing-150) var(--spacing-100);
@@ -302,6 +334,7 @@ function next() {
 
 .fill-the-blank__screen {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -313,6 +346,21 @@ function next() {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-100);
+}
+
+.fill-the-blank__footer {
+  flex: none;
+}
+
+/* Question body takes whatever height the footer leaves, scrolling if it must.
+   (Not on the topic screen: the lookup's dropdown would get clipped.) */
+.fill-the-blank__screen--question .fill-the-blank__body {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* Room for the chunky option edges and focus rings at the scroll edges. */
+  padding-bottom: var(--spacing-25);
 }
 
 .fill-the-blank__body h3 {
@@ -344,6 +392,12 @@ function next() {
   display: flex;
   align-items: flex-start;
   gap: var(--spacing-75);
+}
+
+.fill-the-blank__see-context {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: calc(-1 * var(--spacing-75));
 }
 
 .fill-the-blank__character {
@@ -422,6 +476,7 @@ function next() {
   --duo-success-text: #58a700;
   --duo-error-bg: #ffdfe0;
   --duo-error-text: #ea2b2b;
+  --duo-highlight: #fbeeab;
 
   --font-family-base: 'Nunito', system-ui, sans-serif;
   --font-family-serif: 'Nunito', system-ui, sans-serif;
@@ -672,5 +727,6 @@ function next() {
   --duo-success-text: #79b933;
   --duo-error-bg: #202f36;
   --duo-error-text: #ee5555;
+  --duo-highlight: #4a4320;
 }
 </style>
