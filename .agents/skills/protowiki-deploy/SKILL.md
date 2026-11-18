@@ -214,7 +214,10 @@ Use plain language. One step at a time; ask the user to confirm before the next.
    permissions** → **Save**.
 2. **First production deploy** — Push or merge to `main` (or walk them through
    their first commit to `main`). In **Actions**, wait until **Deploy to GitHub
-   Pages** finishes successfully. That run creates the `gh-pages` branch.
+   Pages** finishes. That run creates the `gh-pages` branch. On a new repo it
+   ends with a red ✗ saying **GitHub Pages is not turned on** — that's
+   expected until step 3 is done (repos made with **Use this template** don't
+   copy Pages settings).
 3. **GitHub Pages source** — **Settings** → **Pages**:
    - Under **Build and deployment**, **Source**: **Deploy from a branch** (not
      “GitHub Actions”).
@@ -321,6 +324,10 @@ saved App OS preference without changing it.
 - **The dev server works but the deployed build is broken.** Run
   `npm run preview` locally after a production build — see
   [Reproducing GitHub Pages locally](#reproducing-github-pages-locally).
+- **Deploy run fails at "Check GitHub Pages is serving gh-pages".** The build
+  and push to `gh-pages` worked; Pages is off or pointed at the wrong source.
+  Fix the Pages source (above) — no re-run needed. Repos made with **Use this
+  template** start with Pages off.
 - **PR preview comment but 404 at the URL.** Pages source must be **Deploy
   from branch** `gh-pages`, not “GitHub Actions”. Wait a minute for Pages
   to rebuild after the action commits.
