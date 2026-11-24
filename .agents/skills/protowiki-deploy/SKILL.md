@@ -17,7 +17,11 @@ Default recommendation for designers/PMs:
 1. Use `wikimedia/ProtoWiki` as a **template** (copy into your own repo).
 2. Build locally with `npm run dev`.
 3. Push to `main` in your copied repo to deploy production.
-4. Use branch + PR previews only when you want parallel in-progress links or review.
+4. First deploy only: turn on Pages — **Settings → Pages → Deploy from a
+   branch** → `gh-pages` / `/ (root)`. Template copies don't inherit Pages
+   settings, and CI can't turn Pages on with the built-in token. See
+   [GitHub Pages setup](#github-pages-setup-one-time-per-deployed-repo).
+5. Use branch + PR previews only when you want parallel in-progress links or review.
 
 Do not require a fork or upstream write access for the standard deploy flow.
 
@@ -86,6 +90,20 @@ previews deploy to the `gh-pages` branch via
 `main` once so `deploy.yml` creates `gh-pages` → set Pages to **Deploy from a
 branch** as above. Until `gh-pages` exists, that branch will not appear in the
 Pages dropdown.
+
+**Why this can't be automated:** repos made with **Use this template** never
+inherit settings, so Pages always starts off. Turning it on needs an
+admin-level token — the workflow's `GITHUB_TOKEN` can push to `gh-pages` but
+can't enable Pages (`actions/configure-pages`' `enablement` option requires a
+PAT or GitHub App token). Rather than asking users for a PAT, `deploy.yml`'s
+last step fails with **GitHub Pages is not turned on** (or **serving the wrong
+source**) plus a direct settings link, until the source is set as above.
+
+**Linking to the settings page:** give users
+`https://github.com/<owner>/<repo>/settings/pages`, taking `<owner>/<repo>`
+from `git remote get-url origin` or the repo URL they shared. In Markdown that
+renders on GitHub (like the README), the relative link `../../settings/pages`
+opens the current copy's own settings.
 
 ## Production deploy
 
@@ -218,7 +236,10 @@ Use plain language. One step at a time; ask the user to confirm before the next.
    ends with a red ✗ saying **GitHub Pages is not turned on** — that's
    expected until step 3 is done (repos made with **Use this template** don't
    copy Pages settings).
-3. **GitHub Pages source** — **Settings** → **Pages**:
+3. **GitHub Pages source** — give them the direct link
+   `https://github.com/<owner>/<repo>/settings/pages` (see
+   [Linking to the settings page](#github-pages-setup-one-time-per-deployed-repo)),
+   or **Settings** → **Pages**:
    - Under **Build and deployment**, **Source**: **Deploy from a branch** (not
      “GitHub Actions”).
    - **Branch**: `gh-pages`, folder **/ (root)** → **Save**.
