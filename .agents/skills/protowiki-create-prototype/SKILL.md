@@ -153,6 +153,7 @@ Full field reference, layout rules, and examples:
 | Article-style page with **hand-written** body HTML (no REST) | `<ChromeWrapper><ArticleCustom>…</ArticleCustom></ChromeWrapper>` — example: **`src/prototypes/example-custom-article/`**; see [`protowiki-components` → `article.md`](../protowiki-components/references/article.md#hand-authored-article-markup-no-live-fetch) |
 | Special-page-style page | `<ChromeWrapper><SpecialPageWrapper title="…">…</SpecialPageWrapper></ChromeWrapper>` |
 | Newcomer homepage / dashboard | `<ChromeWrapper :last-edited-notice="false"><SpecialPageWrapper title="Dashboard" help><Dashboard>…</Dashboard></SpecialPageWrapper></ChromeWrapper>` — starter: **`template-dashboard/`**; full modules: **`template-homepage/`** |
+| Community Configuration dashboard + feature forms | `CommunityConfigurationDashboard` / `CommunityConfigurationEditor` in `ChromeWrapper` — starter: **`template-community-configuration/`**; see [`protowiki-components` → `community-configuration.md`](../protowiki-components/references/community-configuration.md) |
 | Bare canvas with chrome | `<ChromeWrapper>…</ChromeWrapper>` |
 | A/B preview, two themes side by side | Two `<ChromeWrapper>`s, one `theme="light"`, one `theme="dark"` |
 | Mobile-web preview embedded in a desktop page | `<MobileWrapper><ChromeWrapper skin="mobile">…</ChromeWrapper></MobileWrapper>` |
