@@ -45,19 +45,19 @@ jobs:
 
       # Repos made with "Use this template" don't inherit Pages settings, so the
       # push above can succeed while nothing is published. Fail loudly instead.
-      - name: Check GitHub Pages is serving gh-pages
+      - name: Check GitHub Pages is on
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           SETTINGS_URL: ${{ github.server_url }}/${{ github.repository }}/settings/pages
         run: |
-          fix="Open $SETTINGS_URL and under 'Build and deployment' set Source = 'Deploy from a branch', Branch = 'gh-pages', folder = '/ (root)', then Save. No re-run needed: the site appears about a minute later."
+          fix="Go to $SETTINGS_URL, choose 'Deploy from a branch', pick 'gh-pages', and press Save. Your site will be live in a minute."
 
           if ! pages=$(gh api "repos/$REPO/pages" 2>err.txt); then
             if grep -q "HTTP 404" err.txt; then
-              echo "::error title=GitHub Pages is not turned on::The build was pushed to the gh-pages branch, but GitHub Pages is off for this repo, so nothing is published. $fix"
+              echo "::error title=Turn on GitHub Pages to publish your site::$fix"
             else
-              echo "::error title=Could not check GitHub Pages settings::$(cat err.txt)"
+              echo "::error title=Couldn't check GitHub Pages::$(cat err.txt)"
             fi
             exit 1
           fi
@@ -67,13 +67,8 @@ jobs:
           path=$(jq -r '.source.path // ""' <<<"$pages")
 
           if [ "$build_type" != "legacy" ] || [ "$branch" != "gh-pages" ] || [ "$path" != "/" ]; then
-            if [ "$build_type" = "workflow" ]; then
-              current="'GitHub Actions'"
-            else
-              current="branch '$branch', folder '$path'"
-            fi
-            echo "::error title=GitHub Pages is serving the wrong source::Pages is set to $current, so this deploy (and pull request previews) won't show up. $fix"
+            echo "::error title=Change your GitHub Pages setting to publish your site::$fix"
             exit 1
           fi
 
-          echo "::notice title=Deployed::$(jq -r '.html_url' <<<"$pages")"
+          echo "::notice title=Your site is live::$(jq -r '.html_url' <<<"$pages")"

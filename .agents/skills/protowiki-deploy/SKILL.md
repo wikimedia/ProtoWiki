@@ -96,8 +96,9 @@ inherit settings, so Pages always starts off. Turning it on needs an
 admin-level token — the workflow's `GITHUB_TOKEN` can push to `gh-pages` but
 can't enable Pages (`actions/configure-pages`' `enablement` option requires a
 PAT or GitHub App token). Rather than asking users for a PAT, `deploy.yml`'s
-last step fails with **GitHub Pages is not turned on** (or **serving the wrong
-source**) plus a direct settings link, until the source is set as above.
+last step fails with **Turn on GitHub Pages to publish your site** (or **Change
+your GitHub Pages setting to publish your site**) plus a direct settings link,
+until the source is set as above.
 
 **Linking to the settings page:** give users
 `https://github.com/<owner>/<repo>/settings/pages`, taking `<owner>/<repo>`
@@ -233,7 +234,7 @@ Use plain language. One step at a time; ask the user to confirm before the next.
 2. **First production deploy** — Push or merge to `main` (or walk them through
    their first commit to `main`). In **Actions**, wait until **Deploy to GitHub
    Pages** finishes. That run creates the `gh-pages` branch. On a new repo it
-   ends with a red ✗ saying **GitHub Pages is not turned on** — that's
+   ends with a red ✗ saying **Turn on GitHub Pages to publish your site** — that's
    expected until step 3 is done (repos made with **Use this template** don't
    copy Pages settings).
 3. **GitHub Pages source** — give them the direct link
@@ -345,7 +346,7 @@ saved App OS preference without changing it.
 - **The dev server works but the deployed build is broken.** Run
   `npm run preview` locally after a production build — see
   [Reproducing GitHub Pages locally](#reproducing-github-pages-locally).
-- **Deploy run fails at "Check GitHub Pages is serving gh-pages".** The build
+- **Deploy run fails at "Check GitHub Pages is on".** The build
   and push to `gh-pages` worked; Pages is off or pointed at the wrong source.
   Fix the Pages source (above) — no re-run needed. Repos made with **Use this
   template** start with Pages off.
