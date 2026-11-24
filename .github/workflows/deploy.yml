@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  pages: read # lets the last step check that Pages is serving gh-pages
 
 concurrency:
   group: pages
@@ -41,3 +42,33 @@ jobs:
           folder: dist
           clean-exclude: pr-preview/
           force: false
+
+      # Repos made with "Use this template" don't inherit Pages settings, so the
+      # push above can succeed while nothing is published. Fail loudly instead.
+      - name: Check GitHub Pages is on
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SETTINGS_URL: ${{ github.server_url }}/${{ github.repository }}/settings/pages
+        run: |
+          fix="Go to $SETTINGS_URL, choose 'Deploy from a branch', pick 'gh-pages', and press Save. Your site will be live in a minute."
+
+          if ! pages=$(gh api "repos/$REPO/pages" 2>err.txt); then
+            if grep -q "HTTP 404" err.txt; then
+              echo "::error title=Turn on GitHub Pages to publish your site::$fix"
+            else
+              echo "::error title=Couldn't check GitHub Pages::$(cat err.txt)"
+            fi
+            exit 1
+          fi
+
+          build_type=$(jq -r '.build_type' <<<"$pages")
+          branch=$(jq -r '.source.branch // ""' <<<"$pages")
+          path=$(jq -r '.source.path // ""' <<<"$pages")
+
+          if [ "$build_type" != "legacy" ] || [ "$branch" != "gh-pages" ] || [ "$path" != "/" ]; then
+            echo "::error title=Change your GitHub Pages setting to publish your site::$fix"
+            exit 1
+          fi
+
+          echo "::notice title=Your site is live::$(jq -r '.html_url' <<<"$pages")"

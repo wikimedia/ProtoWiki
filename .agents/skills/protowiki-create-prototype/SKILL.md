@@ -190,7 +190,8 @@ for more recipes.
 When the design review is local: `npm run dev`, share the URL.
 
 When you want a stable URL on GitHub Pages: push to `main` (CI builds and
-deploys). Open a PR in your fork for an automatic preview URL on the PR.
+deploys). The first time, Pages has to be turned on once in the repo's
+settings — see the one-time setup in `protowiki-deploy`. Open a PR in your fork for an automatic preview URL on the PR.
 See [`protowiki-deploy`](../protowiki-deploy/SKILL.md).
 
 ## When to break the conventions

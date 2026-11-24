@@ -8,7 +8,7 @@ ProtoWiki contains two things:
 1. [A big list](#resources) of links to many resources and tools that you can use.
 2. [A prototyping system](#prototyping-system) for making minimal prototypes.
 
-We'd love to hear from you. Have some feedback? Have a suggestion? Found a bug?\
+We'd love to hear from you. Have some feedback? Have a suggestion? Found a bug?  
 In all cases, please feel free to [let us know](https://github.com/wikimedia/ProtoWiki/issues/new).
 
 ## Resources
@@ -84,10 +84,12 @@ Trouble-shooting: If it doesn't appear at first or you see a blank screen, try r
 
 ### Deploying a prototype
 
+To enable deployments, set **Deploy from a branch** to `gh-pages` in your repo's [settings](../../settings/pages).\
+You might need to enable actions within the [actions tab](../../actions) too.
+
 ProtoWiki gets deployed when you commit to the `main` branch.\
-It's available at `[your-username].github.io/[your-copy-name]`\
-For example: [wikimedia.github.io/ProtoWiki](https://wikimedia.github.io/ProtoWiki).\
-You might need to enable actions within the actions tab of your repo to get this to work.
+It's available at `[your-username].github.io/[your-copy-name]`.\  
+For example: [wikimedia.github.io/ProtoWiki](https://wikimedia.github.io/ProtoWiki).
 
 Alternatively, when you create a pull request on your copy, a preview gets deployed. Here's an [example](https://github.com/wikimedia/ProtoWiki/pull/3#issuecomment-4488446669).\
 This is great because it also creates a QR code that people can use to try the prototype on their phone.
@@ -196,7 +198,7 @@ Alternatively, load a specific article by passing the article name to the `Artic
 </template>
 ```
 
-To craft a static hand-written article page, use `ArticleCustom` (or compose `ArticleWrapper` and `ArticleRenderer` directly). See [`protowiki-components` → `article.md`](.agents/skills/protowiki-components/references/article.md) and the **`example-custom-article`** gallery route for a worked demo.
+To craft a static hand-written article page, use `ArticleCustom` (or compose `ArticleWrapper` and `ArticleRenderer` directly). See `protowiki-components` [→](.agents/skills/protowiki-components/references/article.md) `article.md` and the `example-custom-article` gallery route for a worked demo.
 
 ```vue
 <script setup>
@@ -236,13 +238,13 @@ When you've done that, clone your fork locally.
 
 ### Making a contribution
 
-In your local fork, create a new branch for your contribution. You can name the branch whatever you want.\
+In your local fork, create a new branch for your contribution. You can name the branch whatever you want.  
 Make any changes you want in your branch. Then push up your changes to your fork.
 
-When you've done that, go to the [ProtoWiki repo page](https://github.com/wikimedia/protowiki).\
-Click on **[Pull requests](https://github.com/wikimedia/ProtoWiki/pulls)**.\
+When you've done that, go to the [ProtoWiki repo page](https://github.com/wikimedia/protowiki).  
+Click on **[Pull requests](https://github.com/wikimedia/ProtoWiki/pulls)**.  
 Then click on **[New pull request](https://github.com/wikimedia/ProtoWiki/compare)**.
 
-In the **compare** dropdown, pick your branch from your fork.\
+In the **compare** dropdown, pick your branch from your fork.  
 Then click **Create pull request**.
 Fill in some details and submit!
