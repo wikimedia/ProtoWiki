@@ -30,6 +30,8 @@ interface Props {
   description?: string
   /** Lead image — app shell only; the frame stays as a placeholder without one. */
   leadImageUrl?: string
+  /** App shell only: **`false`** drops the lead image frame entirely (title leads the block). */
+  leadImage?: boolean
   /** Forwarded to **`ArticleHeader`**: which page-action tab is selected. */
   activeView?: 'read' | 'edit'
   /** Forwarded to **`ArticleHeader`** — save toast link target. */
@@ -47,6 +49,7 @@ const props = withDefaults(defineProps<Props>(), {
   app: false,
   description: undefined,
   leadImageUrl: undefined,
+  leadImage: true,
   activeView: 'read',
   savedPagesRoute: undefined,
 })
@@ -90,7 +93,7 @@ const chromeHeaderLabel = computed(() => leadTitle.value || 'Article')
     :dir="props.dir"
   >
     <template v-if="props.app">
-      <div class="article__lead-image">
+      <div v-if="props.leadImage" class="article__lead-image">
         <img
           v-if="props.leadImageUrl"
           class="article__lead-image-img"
@@ -194,6 +197,10 @@ const chromeHeaderLabel = computed(() => leadTitle.value || 'Article')
   font-size: var(--font-size-xxx-large, 1.75rem);
   font-weight: var(--font-weight-normal, 400);
   color: var(--color-base, #202122);
+}
+
+.article__lead-title:first-child {
+  margin-block-start: var(--spacing-150, 24px);
 }
 
 .article__lead-description {
