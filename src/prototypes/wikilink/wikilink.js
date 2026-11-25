@@ -1,7 +1,8 @@
 /*
- * wikilink.js — turn [[Wikilinks]] in any page into real links.
+ * wikilink.js — turn [[Wikilinks]] in an element into real links.
  *
- *   <script src="wikilink.js"></script>
+ *   const wikilink = mountWikilink(element, { check: true })
+ *   // later: wikilink.destroy()
  *
  * Supported syntax (same as MediaWiki):
  *   [[Wet Leg]]              → link to the "Wet Leg" article
@@ -9,12 +10,22 @@
  *   [[Wet Leg#Career]]       → link to a section
  *   [[wiki]]s                → trailing letters join the label ("wikis")
  *
- * Options (attributes on the <script> tag):
- *   data-wiki="https://fr.wikipedia.org"  which wiki to link to (default: English Wikipedia)
- *   data-check                            look up each title and mark missing pages as red links
- *   data-no-style                         don't inject the default CSS (dotted underline,
- *                                         red links); style a.wikilink yourself
- *   data-no-previews                      turn off hover previews
+ * Options:
+ *   wiki: 'https://fr.wikipedia.org'  which wiki to link to (default: English Wikipedia)
+ *   check: true                       look up each title and mark missing pages as red links
+ *   style: false                      don't inject the default CSS (dotted underline,
+ *                                     red links); style a.wikilink yourself
+ *   previews: false                   turn off hover previews
+ *   customPreview: () => handler      called on each hover; return null for the native
+ *                                     preview, or { load(title, signal, section), show(link, data),
+ *                                     hide() } to render your own. section is the link's
+ *                                     #fragment ('' if none). load resolves to data (or
+ *                                     null for no preview); show returns the preview element.
+ *                                     Optional startDelay / dwellDelay / abandonDelay (ms)
+ *                                     override the native preview's 150 / 350 / 300ms timing.
+ *   onClick: (link, title, event) => … plain left-clicks on blue wikilinks call this instead of
+ *                                     navigating. Red links and modifier/middle clicks still
+ *                                     follow the link to the wiki.
  *
  * Hovering (or keyboard-focusing) a wikilink shows a page preview, ported
  * from English Wikipedia's Page Previews. Red links get no preview, as on
@@ -23,21 +34,13 @@
  * Text inside <a>, <code>, <pre>, <script>, <style>, <textarea> and any
  * element with [data-no-wikilink] is left alone.
  *
- * For content added later: window.Wikilink.convert(element)
+ * For content added later: wikilink.convert(element)
  */
-;(function () {
-  'use strict'
+export function mountWikilink(mountRoot, options) {
+  options = options || {}
 
-  var script = document.currentScript
-  var attr = function (name) {
-    return script ? script.getAttribute(name) : null
-  }
-  var has = function (name) {
-    return !!script && script.hasAttribute(name)
-  }
-
-  var wiki = (attr('data-wiki') || 'https://en.wikipedia.org').replace(/\/+$/, '')
-  var check = has('data-check')
+  var wiki = (options.wiki || 'https://en.wikipedia.org').replace(/\/+$/, '')
+  var check = !!options.check
 
   var SKIP = 'a, code, pre, script, style, textarea, [data-no-wikilink]'
   // [[target]] or [[target|label]], followed by an optional link trail of letters.
@@ -66,6 +69,7 @@
     a.title = section ? title + ' § ' + section.trim() : title
     a.textContent = (label != null && label.trim() !== '' ? label : target.trim()) + trail
     a.setAttribute('data-wikilink-title', title)
+    if (section.trim()) a.setAttribute('data-wikilink-section', section.trim())
     return a
   }
 
@@ -92,7 +96,7 @@
   }
 
   function convert(root) {
-    root = root || document.body
+    root = root || mountRoot
     var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
       acceptNode: function (node) {
         if (node.nodeValue.indexOf('[[') === -1) return NodeFilter.FILTER_REJECT
@@ -464,12 +468,13 @@
   }
 
   var root = null
+  var host = null
 
   function getRoot() {
     if (root) return root
     // Attached to <html> and absolutely positioned at the document origin, so
     // popup coordinates are page coordinates even if <body> is positioned.
-    var host = document.createElement('div')
+    host = document.createElement('div')
     host.setAttribute('data-wikilink-previews', '')
     host.style.cssText = 'position:absolute;top:0;left:0;width:0;height:0;z-index:110;'
     document.documentElement.appendChild(host)
@@ -508,7 +513,7 @@
 
   // --- Behaviour (src/actions.js, src/index.js, src/changeListeners/linkTitle.js)
 
-  var active = { link: null, token: 0, preview: null, abandonTimer: null, controller: null, savedTitle: null }
+  var active = { link: null, token: 0, preview: null, custom: null, abandonTimer: null, controller: null, savedTitle: null }
   var tokens = 0
 
   function eligibleLink(target) {
@@ -542,8 +547,9 @@
     cancelAbandon()
     if (active.controller) active.controller.abort()
     if (active.preview) hide(active.preview)
+    if (active.custom) active.custom.hide()
     if (active.link && active.savedTitle) active.link.setAttribute('title', active.savedTitle)
-    active = { link: null, token: ++tokens, preview: null, abandonTimer: null, controller: null, savedTitle: null }
+    active = { link: null, token: ++tokens, preview: null, custom: null, abandonTimer: null, controller: null, savedTitle: null }
   }
 
   function linkDwell(link, event) {
@@ -561,29 +567,58 @@
     active.savedTitle = link.getAttribute('title')
     link.setAttribute('title', '')
 
-    wait(FETCH_START_DELAY)
+    var custom = options.customPreview ? options.customPreview() : null
+    active.abandonDelay = custom && custom.abandonDelay != null ? custom.abandonDelay : ABANDON_END_DELAY
+
+    function listen(el) {
+      el.addEventListener('mouseenter', function () {
+        if (active.token === token) cancelAbandon()
+      })
+      el.addEventListener('mouseleave', function () {
+        if (active.token === token) abandon()
+      })
+    }
+
+    // Native: listen after 200ms, as production does. Custom: listen straight away, and catch
+    // a pointer that's already on the preview, so moving onto it quickly can't close it.
+    function keepOpenWhileHovered(el) {
+      if (!custom) return wait(200).then(function () { listen(el) })
+      listen(el)
+      if (el.matches(':hover')) cancelAbandon()
+    }
+
+    var startDelay = custom && custom.startDelay != null ? custom.startDelay : FETCH_START_DELAY
+    var dwellDelay = custom && custom.dwellDelay != null ? custom.dwellDelay : PAGE_DWELL_DELAY
+
+    wait(startDelay)
       .then(function () {
         if (active.token !== token) return null
         active.controller = typeof AbortController === 'function' ? new AbortController() : null
         var title = link.getAttribute('data-wikilink-title')
+        var signal = active.controller && active.controller.signal
         return Promise.all([
-          fetchModel(title, active.controller && active.controller.signal),
-          wait(PAGE_DWELL_DELAY),
+          custom
+            ? Promise.resolve(
+                custom.load(title, signal, link.getAttribute('data-wikilink-section') || ''),
+              ).catch(function () {
+                return null
+              })
+            : fetchModel(title, signal),
+          wait(dwellDelay),
         ])
       })
       .then(function (result) {
         if (!result || !result[0] || active.token !== token) return
+        if (custom) {
+          active.custom = custom
+          return Promise.resolve(custom.show(link, result[0])).then(function (el) {
+            if (el && active.token === token) return keepOpenWhileHovered(el)
+          })
+        }
         var preview = createPreview(result[0])
         active.preview = preview
         show(preview, measures)
-        return wait(200).then(function () {
-          preview.el.addEventListener('mouseenter', function () {
-            if (active.preview === preview) cancelAbandon()
-          })
-          preview.el.addEventListener('mouseleave', function () {
-            if (active.preview === preview) abandon()
-          })
-        })
+        return keepOpenWhileHovered(preview.el)
       })
   }
 
@@ -593,8 +628,10 @@
     cancelAbandon()
     active.abandonTimer = setTimeout(function () {
       if (active.token === token) endInteraction()
-    }, ABANDON_END_DELAY)
+    }, active.abandonDelay || ABANDON_END_DELAY)
   }
+
+  var listeners = []
 
   function initPreviews() {
     function onHover(event) {
@@ -604,10 +641,15 @@
     function onHoverOut(event) {
       if (eligibleLink(event.target)) abandon()
     }
-    document.addEventListener('mouseover', onHover)
-    document.addEventListener('keyup', onHover)
-    document.addEventListener('mouseout', onHoverOut)
-    document.addEventListener('focusout', onHoverOut)
+    listeners = [
+      ['mouseover', onHover],
+      ['keyup', onHover],
+      ['mouseout', onHoverOut],
+      ['focusout', onHoverOut],
+    ]
+    listeners.forEach(function (l) {
+      document.addEventListener(l[0], l[1])
+    })
   }
 
   // Production CSS for ext.popups.main (Vector 2022, light theme), trimmed to
@@ -683,8 +725,10 @@
     '.popups-icon--preview-disambiguation{-webkit-mask-image:' + DISAMBIGUATION_ICON + ';mask-image:' + DISAMBIGUATION_ICON + ';background-color:#202122}',
   ].join('\n')
 
+  var injectedStyle = null
+
   function injectStyle() {
-    var style = document.createElement('style')
+    var style = (injectedStyle = document.createElement('style'))
     // Wikilinks get a dotted underline so they read
     // differently from the page's own links. Override any of this in your CSS.
     style.textContent = [
@@ -700,14 +744,33 @@
     document.head.insertBefore(style, document.head.firstChild)
   }
 
-  function start() {
-    if (!has('data-no-style')) injectStyle()
-    convert(document.body)
-    if (!has('data-no-previews')) initPreviews()
+  function onLinkClick(event) {
+    if (event.defaultPrevented || event.button !== 0) return
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    var link = event.target.closest && event.target.closest('a.wikilink[href]')
+    if (!link || link.classList.contains('new') || !mountRoot.contains(link)) return
+    event.preventDefault()
+    endInteraction()
+    options.onClick(link, link.getAttribute('data-wikilink-title'), event)
   }
 
-  window.Wikilink = { convert: convert }
+  function destroy() {
+    endInteraction()
+    mountRoot.removeEventListener('click', onLinkClick)
+    listeners.forEach(function (l) {
+      document.removeEventListener(l[0], l[1])
+    })
+    listeners = []
+    if (host) host.remove()
+    host = root = null
+    if (injectedStyle) injectedStyle.remove()
+    injectedStyle = null
+  }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start)
-  else start()
-})()
+  if (options.style !== false) injectStyle()
+  convert(mountRoot)
+  if (options.previews !== false) initPreviews()
+  if (options.onClick) mountRoot.addEventListener('click', onLinkClick)
+
+  return { convert: convert, destroy: destroy }
+}
