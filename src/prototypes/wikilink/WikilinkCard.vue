@@ -1,12 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
-import { CdxIcon } from '@wikimedia/codex'
-import { cdxIconLinkExternal } from '@wikimedia/codex-icons'
 
 import type { WikilinkCardData } from './fetchCardData'
 import WikilinkBadge from './WikilinkBadge.vue'
-import SectionExcerpt from './SectionExcerpt.vue'
-import WikilinkSignals from './WikilinkSignals.vue'
+import WikilinkPreview from './WikilinkPreview.vue'
 
 /**
  * Custom link preview card — Figma "Lu: popover" (Codex Attribution file, node 214:335).
@@ -27,13 +24,6 @@ const emit = defineEmits<{
   /** Image or "Read full article" clicked: open the article panel. */
   open: [title: string, section?: string]
 }>()
-
-/** Plain left-clicks open the panel; modifier/middle clicks keep the link to Wikipedia. */
-function onOpenClick(event: MouseEvent): void {
-  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
-  event.preventDefault()
-  emit('open', props.data.title, props.data.section?.anchor)
-}
 
 const root = ref<HTMLElement | null>(null)
 type Placement = 'below' | 'above' | 'right' | 'left'
@@ -100,8 +90,7 @@ async function place(): Promise<void> {
     const line = placement === 'right' ? last : rect
     const centred = line.top + line.height / 2 - height / 2
     top = window.scrollY + Math.max(EDGE, Math.min(centred, viewportHeight - EDGE - height))
-    left =
-      window.scrollX + (placement === 'right' ? last.right + GAP : rect.left - GAP - width)
+    left = window.scrollX + (placement === 'right' ? last.right + GAP : rect.left - GAP - width)
   } else {
     top =
       placement === 'above'
@@ -135,7 +124,6 @@ defineExpose({ el: root, settle })
       'wikilink-card--placed': placed,
       'wikilink-styled': styled,
       [`wikilink-card--${position.placement}`]: true,
-      'wikilink-card--no-image': !data.image,
     }"
     :style="{
       top: `${position.top}px`,
@@ -146,55 +134,7 @@ defineExpose({ el: root, settle })
   >
     <!-- Everything but the W bar, so the white border goes around it and not the bar. -->
     <div class="wikilink-card__frame">
-      <!-- Same destination as "Read full article", so kept out of the tab order (like the native preview). -->
-      <a
-        v-if="data.image"
-        class="wikilink-card__image-link"
-        :href="data.url"
-        target="_blank"
-        rel="noopener"
-        tabindex="-1"
-        aria-hidden="true"
-        @click="onOpenClick"
-      >
-        <img class="wikilink-card__image" :src="data.image" alt="" />
-      </a>
-      <div class="wikilink-card__body">
-        <!-- Plain text: the image and "Read full article" are the ways in. -->
-        <h2 class="wikilink-card__title">
-          {{ data.section ? `${data.title} → ${data.section.heading}` : data.title }}
-        </h2>
-        <div class="wikilink-card__content">
-          <!-- HTML from Wikipedia's REST summary, as the native preview uses (wikilink.js). -->
-          <!-- Section links show the linked section's opening instead of the article summary. -->
-          <SectionExcerpt
-            v-if="data.section"
-            :heading="data.section.heading"
-            :excerpt="data.section.excerpt"
-          />
-          <div
-            v-else-if="data.extractHtml"
-            class="wikilink-card__extract"
-            v-html="data.extractHtml"
-          />
-          <p v-else class="wikilink-card__extract">{{ data.extract }}</p>
-          <WikilinkSignals
-            :created-at="data.createdAt"
-            :edits-this-week="data.editsThisWeek"
-            :history-url="data.historyUrl"
-          />
-          <a
-            class="wikilink-card__link"
-            :href="data.url"
-            target="_blank"
-            rel="noopener"
-            @click="onOpenClick"
-          >
-            Read full article
-            <CdxIcon :icon="cdxIconLinkExternal" size="small" />
-          </a>
-        </div>
-      </div>
+      <WikilinkPreview :data="data" @open="(title, section) => emit('open', title, section)" />
     </div>
     <WikilinkBadge ref="badge" :href="wikiHome" />
   </div>
@@ -254,22 +194,13 @@ defineExpose({ el: root, settle })
   animation: wikilink-card-in-up 0.2s ease;
 }
 
-/* No image: a little room above the title. */
 /* White border on three sides; the W bar closes the bottom. Top corners follow the card's. */
 .wikilink-card__frame {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-75);
-  padding-bottom: var(--spacing-75);
   border: var(--border-width-base) var(--border-style-base) var(--border-color-inverted);
   border-bottom: 0;
   border-top-left-radius: inherit;
   border-top-right-radius: inherit;
   overflow: hidden;
-}
-
-.wikilink-card--no-image .wikilink-card__frame {
-  padding-top: var(--spacing-50);
 }
 
 .wikilink-card--placed.wikilink-card--above {
@@ -320,93 +251,5 @@ defineExpose({ el: root, settle })
 
 .wikilink-card--placed.wikilink-card--left {
   animation-name: wikilink-card-in-from-left;
-}
-
-.wikilink-card__image {
-  display: block;
-  width: 100%;
-  /* Shorter than the design's 500 / 373 so the card isn't mostly image. */
-  aspect-ratio: 2 / 1;
-  object-fit: cover;
-}
-
-.wikilink-card__body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-75);
-  padding: 0 var(--spacing-100);
-}
-
-.wikilink-card__title {
-  margin: 0;
-  padding: 0 0 var(--spacing-50);
-  border: 0;
-  border-bottom: var(--border-width-base) var(--border-style-base) var(--background-color-inverted);
-  font-family: var(--font-family-serif);
-  font-size: var(--font-size-xx-large);
-  font-weight: var(--font-weight-normal);
-  line-height: var(--line-height-xx-large);
-  color: var(--color-base);
-  overflow-wrap: break-word;
-}
-
-.wikilink-card__image-link {
-  display: block;
-}
-
-.wikilink-card__content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-75);
-}
-
-.wikilink-card__extract :deep(p) {
-  margin: 0;
-}
-
-/*
- * Type is one Codex step smaller than the Figma token names: the design file uses a 14px
- * base, Codex here uses 16px. That puts the extract at 14px, like the native preview.
- */
-.wikilink-card__extract {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: var(--wikilink-card-extract-lines);
-  overflow: hidden;
-  margin: 0;
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-small);
-  line-height: var(--line-height-small);
-}
-
-.wikilink-card__link {
-  display: inline-flex;
-  align-items: center;
-  align-self: flex-start;
-  gap: var(--spacing-25);
-  border-radius: var(--border-radius-base);
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-small);
-  line-height: var(--line-height-small);
-  color: var(--color-progressive);
-  text-decoration: none;
-}
-
-/* Codex icons default to the base text colour; follow the link's progressive colour instead. */
-.wikilink-card__link .cdx-icon {
-  color: inherit;
-}
-
-.wikilink-card__link:hover {
-  color: var(--color-progressive--hover);
-  text-decoration: underline;
-}
-
-.wikilink-card__link:active {
-  color: var(--color-progressive--active);
-}
-
-.wikilink-card__link:focus-visible {
-  outline: var(--border-width-thick) var(--border-style-base) var(--outline-color-progressive--focus);
 }
 </style>

@@ -87,12 +87,20 @@ const customPreview = {
 const panelTitle = ref<string | null>(null)
 /** Section to scroll to, for `[[Blog#History]]`-style links. */
 const panelSection = ref('')
+/** Mobile: a tapped link opens as a preview sheet first, then expands into the article. */
+const panelPreview = ref(false)
 let panelOpener: HTMLElement | null = null
 
-function openPanel(title: string, opener: HTMLElement | null, section = ''): void {
+function openPanel(
+  title: string,
+  opener: HTMLElement | null,
+  section = '',
+  preview = false,
+): void {
   panelOpener = opener
   panelTitle.value = title
   panelSection.value = section
+  panelPreview.value = preview
   card.value = null
 }
 
@@ -109,7 +117,7 @@ onMounted(() => {
     check: true,
     customPreview: () => (popoverStyle.value === 'native' ? null : customPreview),
     onClick: (link: HTMLElement, title: string) =>
-      openPanel(title, link, link.dataset.wikilinkSection ?? ''),
+      openPanel(title, link, link.dataset.wikilinkSection ?? '', true),
   })
 })
 
@@ -265,10 +273,12 @@ onBeforeUnmount(() => {
       <Transition name="article-panel-slide" :duration="250">
         <ArticlePanel
           v-if="panelTitle"
+          :key="panelTitle"
           :styled="styled"
           :wiki="WIKI"
           :title="panelTitle"
           :section="panelSection"
+          :preview="panelPreview"
           @close="closePanel"
         />
       </Transition>

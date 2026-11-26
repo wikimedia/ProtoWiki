@@ -11,12 +11,16 @@ import {
 } from '@/composables/useInArticleWikiLinks'
 import { useSkin } from '@/composables/useSkin'
 
+import { fetchCardData, type WikilinkCardData } from './fetchCardData'
 import WikilinkBadge from './WikilinkBadge.vue'
+import WikilinkPreview from './WikilinkPreview.vue'
 
 /**
  * The full article, in the custom card's design: serif title (with bookmark and edit on its
  * rule), then the whole article body, with the W bar along the bottom.
- * Desktop: a panel overlaid on the right. Mobile: a bottom sheet at 90% height.
+ * Desktop: a panel overlaid on the right. Mobile: a bottom sheet at 90% height. With `preview`,
+ * the sheet first shows just the link preview at its natural height; "Read full article" or
+ * scrolling on past its end expands it into the full article.
  * Clicking anywhere outside closes it; links inside open in the panel. A `section` (from a
  * `[[Blog#History]]` link) scrolls straight to that section.
  */
@@ -28,6 +32,8 @@ const props = defineProps<{
   section?: string
   /** "Styled": recoloured in todepond.com's palette (styled.css). */
   styled?: boolean
+  /** Sheet only: start as the link preview rather than the full article. */
+  preview?: boolean
 }>()
 
 const emit = defineEmits<{ close: [] }>()
@@ -67,6 +73,16 @@ provide(PROTOWIKI_IN_ARTICLE_WIKI_LINK, {
 const skin = useSkin()
 const isSheet = computed(() => skin.value === 'mobile')
 
+// Preview (sheet only): the link preview at its natural height, until expanded.
+const expanded = ref(!isSheet.value || !props.preview)
+const cardData = ref<WikilinkCardData | null>(null)
+if (!expanded.value) {
+  fetchCardData(props.wiki, props.title, props.section ?? '').then((data) => {
+    if (data) cardData.value = data
+    else expand()
+  })
+}
+
 // Data for the current article.
 const liveTitle = ref<string | null>(null)
 const bodyHtml = ref<string | null>(null)
@@ -99,7 +115,7 @@ watch(
       if (token !== loadToken) return
       liveTitle.value = body.liveTitle
       bodyHtml.value = body.html
-      if (section) {
+      if (section && expanded.value) {
         // Two ticks: our v-html, then ArticleRenderer's mobile section reshaping.
         await nextTick()
         await nextTick()
@@ -111,6 +127,55 @@ watch(
   },
   { immediate: true },
 )
+
+/** Grow the preview sheet to full height and show the article in place of the preview. */
+async function expand(): Promise<void> {
+  if (expanded.value) return
+  const el = panel.value
+  if (el) {
+    // Animate from the preview's height (auto, so not animatable) to the full 90vh, then hand
+    // the height back to the stylesheet.
+    el.style.height = `${el.offsetHeight}px`
+    void el.offsetHeight
+    el.style.height = '90vh'
+    el.addEventListener(
+      'transitionend',
+      (event) => {
+        if (event.target === el) el.style.height = ''
+      },
+      { once: true },
+    )
+  }
+  expanded.value = true
+  await nextTick()
+  scroller.value?.scrollTo({ top: 0 })
+  if (target.value.section && bodyHtml.value !== null) {
+    // Two ticks: our v-html, then ArticleRenderer's mobile section reshaping.
+    await nextTick()
+    scrollToSection(target.value.section)
+  }
+}
+
+// Scrolling on past the end of the preview expands it (wheel, or a swipe up).
+function atBottom(): boolean {
+  const frame = scroller.value
+  return !frame || frame.scrollTop + frame.clientHeight >= frame.scrollHeight - 1
+}
+function onPreviewWheel(event: WheelEvent): void {
+  if (event.deltaY > 0 && atBottom()) expand()
+}
+let touchStartY: number | null = null
+function onPreviewTouchStart(event: TouchEvent): void {
+  touchStartY = atBottom() ? event.touches[0].clientY : null
+}
+function onPreviewTouchMove(event: TouchEvent): void {
+  if (touchStartY === null) return
+  if (touchStartY - event.touches[0].clientY > 24) {
+    touchStartY = null
+    event.preventDefault()
+    expand()
+  }
+}
 
 /** The title after redirects, once the body has loaded. */
 const heading = computed(() => liveTitle.value ?? current.value)
@@ -158,7 +223,7 @@ onBeforeUnmount(() => {
       class="article-panel article"
       :class="[
         isSheet ? 'article-panel--sheet' : 'article-panel--side',
-        { 'wikilink-styled': styled },
+        { 'wikilink-styled': styled, 'article-panel--expanded': expanded },
       ]"
       data-skin="mobile"
       :role="isSheet ? 'dialog' : 'complementary'"
@@ -167,47 +232,65 @@ onBeforeUnmount(() => {
       tabindex="-1"
     >
       <!-- Everything but the W bar scrolls, inside the card's white border. -->
-      <div ref="scroller" class="article-panel__frame">
-        <span v-if="isSheet" class="article-panel__handle" aria-hidden="true" />
-        <div class="article-panel__head">
-          <!-- Placeholder until saving is designed: for now it opens the article on the wiki. -->
-          <a
-            class="article-panel__action cdx-button cdx-button--fake-button cdx-button--fake-button--enabled cdx-button--weight-quiet cdx-button--icon-only"
-            :href="articleUrl(current)"
-            target="_blank"
-            rel="noopener"
-            aria-label="Bookmark"
-            title="Bookmark"
-          >
-            <CdxIcon :icon="cdxIconBookmarkOutline" />
-          </a>
-          <h2 class="article-panel__title">{{ heading }}</h2>
-          <div class="article-panel__actions">
+      <div
+        ref="scroller"
+        class="article-panel__frame"
+        @wheel="expanded || onPreviewWheel($event)"
+        @touchstart="expanded || onPreviewTouchStart($event)"
+        @touchmove="expanded || onPreviewTouchMove($event)"
+      >
+        <template v-if="!expanded">
+          <WikilinkPreview
+            v-if="cardData"
+            class="article-panel__preview"
+            :data="cardData"
+            expand-icon
+            @open="expand"
+          />
+          <p v-else class="article-panel__status article-panel__status--preview">Loading…</p>
+        </template>
+        <template v-else>
+          <div class="article-panel__head">
+            <!-- Placeholder until saving is designed: for now it opens the article on the wiki. -->
             <a
-              class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled cdx-button--weight-quiet cdx-button--icon-only"
-              :href="actionUrl(current, 'edit')"
+              class="article-panel__action cdx-button cdx-button--fake-button cdx-button--fake-button--enabled cdx-button--weight-quiet cdx-button--icon-only"
+              :href="articleUrl(current)"
               target="_blank"
               rel="noopener"
-              aria-label="Edit"
-              title="Edit"
+              aria-label="Bookmark"
+              title="Bookmark"
             >
-              <CdxIcon :icon="cdxIconEdit" />
+              <CdxIcon :icon="cdxIconBookmarkOutline" />
             </a>
+            <h2 class="article-panel__title">{{ heading }}</h2>
+            <div class="article-panel__actions">
+              <a
+                class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled cdx-button--weight-quiet cdx-button--icon-only"
+                :href="actionUrl(current, 'edit')"
+                target="_blank"
+                rel="noopener"
+                aria-label="Edit"
+                title="Edit"
+              >
+                <CdxIcon :icon="cdxIconEdit" />
+              </a>
+            </div>
           </div>
-        </div>
 
-        <div class="article-panel__body">
-          <p v-if="bodyError" class="article-panel__status">
-            Couldn't load this article.
-            <a :href="articleUrl(current)" target="_blank" rel="noopener">Open it on Wikipedia</a>.
-          </p>
-          <p v-else-if="bodyHtml === null" class="article-panel__status">Loading article…</p>
-          <!-- Styled: dark theme, so Wikipedia content gets ProtoWiki's dark patches; styled.css
+          <div class="article-panel__body">
+            <p v-if="bodyError" class="article-panel__status">
+              Couldn't load this article.
+              <a :href="articleUrl(current)" target="_blank" rel="noopener">Open it on Wikipedia</a
+              >.
+            </p>
+            <p v-else-if="bodyHtml === null" class="article-panel__status">Loading article…</p>
+            <!-- Styled: dark theme, so Wikipedia content gets ProtoWiki's dark patches; styled.css
                then repaints the dark tokens in todepond.com's colours. -->
-          <ArticleRenderer v-else skin="mobile" :theme="styled ? 'dark' : undefined">
-            <div v-html="bodyHtml" />
-          </ArticleRenderer>
-        </div>
+            <ArticleRenderer v-else skin="mobile" :theme="styled ? 'dark' : undefined">
+              <div v-html="bodyHtml" />
+            </ArticleRenderer>
+          </div>
+        </template>
       </div>
 
       <WikilinkBadge :href="wikiHome" />
@@ -256,8 +339,29 @@ onBeforeUnmount(() => {
   right: 0;
   bottom: 0;
   left: 0;
-  height: 90vh;
+  /* Preview: as tall as its content. Expanded: the full 90vh (see expand()). */
+  max-height: 90vh;
   border-radius: 16px 16px 0 0;
+  transition: height 250ms ease;
+}
+
+.article-panel--sheet.article-panel--expanded {
+  height: 90vh;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .article-panel--sheet {
+    transition: none;
+  }
+}
+
+/* The preview's summary is clamped like the hover card's. */
+.article-panel__preview {
+  --wikilink-card-extract-lines: 6;
+}
+
+.article-panel__status--preview {
+  margin: var(--spacing-150) var(--spacing-100);
 }
 
 /* White border on three sides (the W bar closes the bottom); clips inside the border. */
@@ -303,19 +407,6 @@ onBeforeUnmount(() => {
     scrollbar-width: thin;
     scrollbar-color: var(--border-color-base) transparent;
   }
-}
-
-.article-panel__handle {
-  position: absolute;
-  top: var(--spacing-50);
-  left: 50%;
-  z-index: 1;
-  width: 36px;
-  height: 4px;
-  border-radius: 2px;
-  background-color: var(--background-color-base);
-  box-shadow: var(--box-shadow-medium);
-  transform: translateX(-50%);
 }
 
 /* Title and its actions share the black rule underneath. */
@@ -364,9 +455,13 @@ onBeforeUnmount(() => {
  * Section heading chevrons and pencils: base colour at full strength (the mobile skin fades
  * them). The extra `.article-panel.article[data-skin]` outranks the skin's own heading rules.
  */
-.article-panel.article[data-skin='mobile'] .article-panel__body :deep(.protowiki-mobile-h2__chevron),
+.article-panel.article[data-skin='mobile']
+  .article-panel__body
+  :deep(.protowiki-mobile-h2__chevron),
 .article-panel.article[data-skin='mobile'] .article-panel__body :deep(.protowiki-mobile-h2__edit),
-.article-panel.article[data-skin='mobile'] .article-panel__body :deep(.protowiki-mobile-h2__edit:hover) {
+.article-panel.article[data-skin='mobile']
+  .article-panel__body
+  :deep(.protowiki-mobile-h2__edit:hover) {
   color: var(--color-base);
   opacity: 1;
 }
@@ -383,12 +478,16 @@ onBeforeUnmount(() => {
   transition-duration: var(--transition-duration-base);
 }
 
-.article-panel.article[data-skin='mobile'] .article-panel__body :deep(.protowiki-mobile-h2__edit:hover) {
+.article-panel.article[data-skin='mobile']
+  .article-panel__body
+  :deep(.protowiki-mobile-h2__edit:hover) {
   background-color: var(--background-color-interactive-subtle--hover);
   mix-blend-mode: var(--mix-blend-mode-blend);
 }
 
-.article-panel.article[data-skin='mobile'] .article-panel__body :deep(.protowiki-mobile-h2__edit:active) {
+.article-panel.article[data-skin='mobile']
+  .article-panel__body
+  :deep(.protowiki-mobile-h2__edit:active) {
   background-color: var(--background-color-interactive-subtle--active);
 }
 

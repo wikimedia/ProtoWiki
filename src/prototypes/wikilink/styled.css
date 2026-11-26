@@ -69,6 +69,7 @@
  * The title rules (normally black, `--background-color-inverted`) are --best-colour. The doubled class outranks the components' own scoped `border-bottom` rules.
  */
 .wikilink-styled.wikilink-card .wikilink-card__title,
+.wikilink-styled.article-panel .wikilink-card__title,
 .wikilink-styled.article-panel .article-panel__head {
   border-bottom-color: #9faeee;
 }
