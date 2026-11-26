@@ -1,6 +1,6 @@
 ---
 name: protowiki-components
-description: Catalog of every shipped component in src/components/ — the single-concern layout wrappers (ChromeWrapper, SpecialPageWrapper, PlainWrapper, MobileWrapper), web chrome primitives (ChromeHeader, VectorChromeHeader, MinervaChromeHeader, ChromeFooter), app chrome (AppChromeWrapper, AppChromeHeader, AppBottomMenu), Article surfaces (`ArticleWrapper` + `ArticleRenderer`, ArticleLive, ArticleCustom, ArticleHeader — article surfaces take an `app` prop for in-app screens), dashboard layout (`Dashboard`, `DashboardModule`), attribution (`AttributionCard`, `useAttributionSignals`), and Search — default article starter `src/prototypes/template-article/`; hand-authored markup via `ArticleCustom` or `ArticleWrapper` + `ArticleRenderer` (example `example-custom-article/`). Use when picking a wrapper, composing a page, looking up props/slots/events for any ProtoWiki component, or asking "what components does ProtoWiki ship?".
+description: Catalog of every shipped component in src/components/ — the single-concern layout wrappers (ChromeWrapper, SpecialPageWrapper, PlainWrapper, MobileWrapper), web chrome primitives (ChromeHeader, VectorChromeHeader, MinervaChromeHeader, ChromeFooter), app chrome (AppChromeWrapper, AppChromeHeader, AppBottomMenu), Article surfaces (`ArticleWrapper` + `ArticleRenderer`, ArticleLive, ArticleCustom, ArticleHeader — article surfaces take an `app` prop for in-app screens), dashboard layout (`Dashboard`, `DashboardModule`), Community Configuration (`CommunityConfigurationDashboard`, `CommunityConfigurationEditor`, starter `template-community-configuration/`), attribution (`AttributionCard`, `useAttributionSignals`), and Search — default article starter `src/prototypes/template-article/`; hand-authored markup via `ArticleCustom` or `ArticleWrapper` + `ArticleRenderer` (example `example-custom-article/`). Use when picking a wrapper, composing a page, looking up props/slots/events for any ProtoWiki component, or asking "what components does ProtoWiki ship?".
 ---
 
 # ProtoWiki components
@@ -27,6 +27,7 @@ This skill is the cross-cutting guide. Per-component depth lives in
   Edit Check-style suggestion stream alongside **your** editing surface (payload
   shape, side-by-side layout, `SuggestionCard`, publish interception)
 - [`references/dashboard.md`](references/dashboard.md) — `Dashboard`, `DashboardModule`
+- [`references/community-configuration.md`](references/community-configuration.md) — `CommunityConfigurationDashboard`, `CommunityConfigurationEditor`, the administrator toggle; starter `template-community-configuration/`
 - [`references/attribution.md`](references/attribution.md) — `AttributionCard`, `useAttributionSignals`, off-wiki attribution fetch helpers
 - [`references/composition-recipes.md`](references/composition-recipes.md)
 
