@@ -1,0 +1,86 @@
+/*
+ * "Styled" popover style: the custom card and article panel recoloured in todepond.com's
+ * palette. Both are built on Codex tokens, so this re-points the tokens rather than restyling
+ * each element. Applied by the `wikilink-styled` class on the card / panel root.
+ *
+ * Also set on `[data-theme]` descendants: the panel's article renders with `data-theme="dark"`
+ * (for ProtoWiki's dark patches to Wikipedia content, src/styles/dark.css), and the injected
+ * `[data-theme]` token sets would otherwise win there. `.wikilink-styled [data-theme]` (0,2,0)
+ * outranks them (0,1,0).
+ *
+ * `--background-color-inverted` is deliberately left alone, so the W bar stays black.
+ *
+ * Colours are todepond.com's (its style.css): --shade-4 / --shade-5 surfaces, white text,
+ * --best-colour (#9faeee) for borders and quiet text, its main link green, a.danger red.
+ */
+.wikilink-styled,
+.wikilink-styled [data-theme] {
+  /* Card / panel: --shade-4, a step up from the blog's navy so they read as raised. */
+  --background-color-base: rgb(47, 56, 75);
+  /* Boxes inside (excerpt, infoboxes, notices): --shade-5, todepond's summary/pre background. */
+  --background-color-neutral: #374362;
+  --background-color-neutral-subtle: #374362;
+  --background-color-interactive-subtle: #374362;
+  --background-color-interactive-subtle--hover: #374362;
+  --background-color-interactive-subtle--active: rgb(87, 101, 147);
+  --background-color-button-quiet--hover: #374362;
+  --background-color-button-quiet--active: rgb(87, 101, 147);
+  /*
+   * Codex quiet buttons multiply their hover background into the page, which only works on
+   * light pages; on navy it goes near-black and darkens the icon. Plain fill instead.
+   */
+  --mix-blend-mode-blend: normal;
+
+  --color-base: #fff;
+  --color-emphasized: #fff;
+  --color-subtle: #9faeee;
+  --color-placeholder: #9faeee;
+
+  /* Links: todepond.com's main link green; missing pages: its red (a.danger). */
+  --color-progressive: #46ff80;
+  --color-progressive--hover: #46ff80;
+  --color-progressive--active: #46ff80;
+  --color-visited: #46ff80;
+  --color-link: #46ff80;
+  --color-link--visited: #46ff80;
+  --color-destructive: #ff4346;
+  --color-link-red: #ff4346;
+  --color-link-red--visited: #ff4346;
+
+  /* Lines: --shade-6 for quiet ones. The card/panel frame matches the card/panel itself. */
+  --border-color-base: rgb(87, 101, 147);
+  --border-color-subtle: rgb(87, 101, 147);
+  --border-color-muted: rgb(87, 101, 147);
+  --border-color-inverted: rgb(47, 56, 75);
+}
+
+/*
+ * Every link the same green: Wikipedia's skin CSS hard-codes its own blue for external,
+ * interwiki and numbered external links instead of using the link token.
+ */
+.wikilink-styled .mw-parser-output a.external,
+.wikilink-styled .mw-parser-output a.external:visited,
+.wikilink-styled .mw-parser-output a.extiw,
+.wikilink-styled .mw-parser-output a.extiw:visited {
+  color: #46ff80;
+}
+
+/*
+ * The title rules (normally black, `--background-color-inverted`) are --best-colour. The doubled class outranks the components' own scoped `border-bottom` rules.
+ */
+.wikilink-styled.wikilink-card .wikilink-card__title,
+.wikilink-styled.article-panel .wikilink-card__title,
+.wikilink-styled.article-panel .article-panel__head {
+  border-bottom-color: #9faeee;
+}
+
+/*
+ * Transparent images (diagrams, logos) sit on white, as they would on a light page, rather
+ * than showing the navy through. Only real pictures: the card's image and the article's
+ * figures and infobox images, not inline icons (notice-box icons, flags).
+ */
+.wikilink-styled .wikilink-card__image,
+.wikilink-styled .mw-parser-output figure img,
+.wikilink-styled .mw-parser-output .infobox img {
+  background-color: var(--background-color-base-fixed);
+}

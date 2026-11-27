@@ -6,6 +6,8 @@ import { CdxPopover } from '@wikimedia/codex'
 const props = defineProps<{
   /** When set, reopen after `sessionStorage` was written before a navigation. */
   restoreOpenKey?: string
+  /** Codex popover placement (default `bottom-end`). */
+  placement?: 'bottom-start' | 'bottom-end' | 'bottom' | 'top-start' | 'top-end' | 'top'
 }>()
 
 const open = ref(false)
@@ -86,7 +88,7 @@ onMounted(() => {
     <CdxPopover
       v-model:open="open"
       :anchor="popoverAnchor ?? triggerEl"
-      placement="bottom-end"
+      :placement="props.placement ?? 'bottom-end'"
       use-bottom-sheet="responsive"
       class="settings-popover__overlay"
     >
