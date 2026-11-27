@@ -1,0 +1,47 @@
+Index: dist/modules/CdxSearchInput.cjs
+===================================================================
+--- dist/modules/CdxSearchInput.cjs
++++ dist/modules/CdxSearchInput.cjs
+@@ -65,9 +65,9 @@
+         otherAttrs: n,
+         handleSubmit: () => {
+           o('submit-click', s.value)
+         },
+-        searchIcon: m.t9,
++        searchIcon: m.$8,
+         translatedSearchButtonLabel: p,
+         useButtonOrLabel: c,
+       }
+     },
+@@ -76,10 +76,10 @@
+         this.$refs.textInput.focus()
+       },
+     },
+   }),
+-  g = { class: 'cdx-search-input__input-wrapper' }
+-function $(e, o, r, s, l, i) {
++  $ = { class: 'cdx-search-input__input-wrapper' }
++function g(e, o, r, s, l, i) {
+   const a = t.resolveComponent('cdx-text-input'),
+     u = t.resolveComponent('cdx-button')
+   return (
+     t.openBlock(),
+@@ -89,9 +89,9 @@
+         class: t.normalizeClass(['cdx-search-input', e.rootClasses]),
+         style: t.normalizeStyle(e.rootStyle),
+       },
+       [
+-        t.createElementVNode('div', g, [
++        t.createElementVNode('div', $, [
+           t.createVNode(
+             a,
+             t.mergeProps(
+               {
+@@ -147,6 +147,6 @@
+       6,
+     )
+   )
+ }
+-const v = B._export_sfc(V, [['render', $]])
++const v = B._export_sfc(V, [['render', g]])
+ module.exports = v

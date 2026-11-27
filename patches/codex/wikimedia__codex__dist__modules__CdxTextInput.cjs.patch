@@ -1,0 +1,15 @@
+Index: dist/modules/CdxTextInput.cjs
+===================================================================
+--- dist/modules/CdxTextInput.cjs
++++ dist/modules/CdxTextInput.cjs
+@@ -116,9 +116,9 @@
+         onInvalid: (e, y) => {
+           ;(y && e.preventDefault(), o('invalid', e), (m.value = !0))
+         },
+         shouldPreventDefault: m,
+-        cdxIconClear: v.t6,
++        cdxIconClear: v.c6,
+       }
+     },
+     methods: {
+       focus() {

@@ -1,0 +1,15 @@
+Index: dist/modules/CdxMultiselectLookup.css
+===================================================================
+--- dist/modules/CdxMultiselectLookup.css
++++ dist/modules/CdxMultiselectLookup.css
+@@ -6,9 +6,9 @@
+ .cdx-multiselect-lookup--pending
+   .cdx-chip-input:not(.cdx-chip-input--has-separate-input)
+   .cdx-chip-input__chips,
+ .cdx-multiselect-lookup--pending .cdx-chip-input .cdx-chip-input__separate-input {
+-  background-color: var(--background-color-interactive, #eaecf0);
++  background-color: var(--background-color-interactive, #ebebeb);
+   background-image: linear-gradient(
+     135deg,
+     var(--background-color-base, #fff) 25%,
+     var(--background-color-transparent, transparent) 25%,

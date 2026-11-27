@@ -1,0 +1,15 @@
+Index: dist/modules/CdxTypeaheadSearch.cjs
+===================================================================
+--- dist/modules/CdxTypeaheadSearch.cjs
++++ dist/modules/CdxTypeaheadSearch.cjs
+@@ -236,9 +236,9 @@
+           onSearchFooterClick: z,
+           onSubmit: H,
+           onKeydown: O,
+           MenuFooterValue: m.MenuFooterValue,
+-          articleIcon: N.f5,
++          articleIcon: N.k5,
+           translatedSearchResultsLabel: w,
+         }
+       )
+     },

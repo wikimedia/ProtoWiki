@@ -1,0 +1,26 @@
+Index: dist/modules/CdxDialog.cjs
+===================================================================
+--- dist/modules/CdxDialog.cjs
++++ dist/modules/CdxDialog.cjs
+@@ -134,9 +134,9 @@
+         {
+           close: b,
+           onBackdropClick: H,
+           onBackdropMouseDown: D,
+-          cdxIconClose: k.o6,
++          cdxIconClose: k.t6,
+           labelId: m,
+           rootClasses: V,
+           backdrop: d,
+           dialogElement: c,
+@@ -156,9 +156,9 @@
+       )
+     },
+   }),
+   v = () => {
+-    e.useCssVars((o) => ({ '17e0a1f0': o.fixedHeightRem }))
++    e.useCssVars((o) => ({ '6345fe62': o.fixedHeightRem }))
+   },
+   T = p.setup
+ p.setup = T ? (o, t) => (v(), T(o, t)) : v
+ const U = ['aria-label', 'aria-labelledby'],

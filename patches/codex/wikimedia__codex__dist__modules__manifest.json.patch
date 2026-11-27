@@ -1,0 +1,14 @@
+Index: dist/modules/manifest.json
+===================================================================
+--- dist/modules/manifest.json
++++ dist/modules/manifest.json
+@@ -130,9 +130,8 @@
+     "isEntry": true,
+     "imports": [
+       "_Icon.js",
+       "src/components/thumbnail/Thumbnail.vue",
+-      "_constants.js",
+       "__plugin-vue_export-helper.js"
+     ],
+     "css": ["CdxCard.css"]
+   },
