@@ -55,10 +55,10 @@ The build:
    `_plugin-vue_export-helper-….js`).
 4. **Copies `dist/index.html` to `dist/404.html`** and prepends
    [`public/gh-pages-preview-404.js`](../../../public/gh-pages-preview-404.js)
-   so GitHub Pages can serve the SPA shell for production deep links and redirect
-   `…/pr-preview/pr-N/…` deep links into the preview base. **`public/gh-pages-restore.js`**
-   is injected at the top of `<head>` on every build so the preview index can
-   restore the stashed path before Vue Router starts.
+   so GitHub Pages can serve the SPA shell for production deep links. For
+   `…/pr-preview/pr-N/…` (and `…/codex/<variant>/…`) deep links, the preamble
+   fetches that base's own `index.html` and renders it in place — no redirect,
+   so the URL (path, query, hash) never changes.
 
 ## Base path
 
@@ -145,11 +145,12 @@ https://<owner>.github.io/<RepoName>/pr-preview/pr-<number>/
 
 **Preview deep links** (e.g. `…/pr-preview/pr-3/template-chrome`) work after a
 **main** deploy: GitHub only reads **root** `404.html`, which preview CI does not
-update. The root file redirects into the preview base via `sessionStorage`; the
-preview `index.html` restores the path before the router boots. Merging preview-only
-changes without deploying `main` leaves deep links broken until the next production
-deploy. Hard-refreshing a preview deep URL briefly hops through the gallery (no
-server-side SPA rewrite on GitHub Pages).
+update. The root file fetches the preview's `index.html` and writes it into the
+page in place, so the preview app boots on the original deep URL. Nothing is
+carried across a navigation (no `sessionStorage`), so it works in in-app webviews
+and privacy browsers too. Changes to the 404 script only take effect after the
+next production deploy. The response status stays HTTP 404 (no server-side SPA
+rewrite on GitHub Pages); browsers render it normally.
 
 ### Deploy path decision tree
 
@@ -305,9 +306,9 @@ saved App OS preference without changing it.
 - **404 or blank page on a route inside a PR preview.** Root `gh-pages/404.html`
   must come from a recent **main** deploy (preview workflows do not update it).
   Push or merge to `main`, wait for Pages, then hard-refresh the preview deep link.
-- **Preview deep link shows the gallery with `?template-…` in the URL.** That was
-  an older `?/` redirect experiment; current builds use `sessionStorage` and should
-  end on `…/pr-N/template-…` with no query hack.
+- **Preview deep link lands on the gallery at `…/pr-N/`.** The root `404.html` is
+  from an older `main` deploy that redirected via `sessionStorage` (lost in some
+  webviews / privacy browsers). Deploy `main` to get the in-place loader.
 - **Preview deep link always lands on the gallery (URL is only `…/pr-N/`).** Check that
   root `404.html` includes the pr-preview preamble and that restore skips deep paths on
   the 404 page (so `sessionStorage` survives). The preamble must also stop the

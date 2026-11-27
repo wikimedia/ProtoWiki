@@ -148,7 +148,7 @@ stock/patched from the Codex settings popover on the home screen (stock lives un
   refuses the file. Re-run `npm run codex:patch -- <url>` instead.
 - **Deep links into a variant** (`…/codex/stock/some-route`) depend on the
   site-root `404.html`, which only `main` deploys write. Deploy `main` once after
-  changing the redirect scripts.
+  changing the 404 script.
 
 ## Related skills
 

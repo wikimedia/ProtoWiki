@@ -104,9 +104,9 @@ Deploy previews use URL siblings only; they do not use the dev switch endpoint.
 
 GitHub Pages serves only the **site-root** `404.html` for unknown paths.
 `public/gh-pages-preview-404.js` (prepended to it) recognises `…/pr-preview/pr-N/`,
-`…/pr-preview/pr-N/codex/stock/` and `…/codex/stock/`. It stashes the remaining
-path and redirects to that base's index, where `public/gh-pages-restore.js`
-restores it before Vue Router starts. Keep the regex identical in both files.
+`…/pr-preview/pr-N/codex/stock/` and `…/codex/stock/`. It fetches that base's
+`index.html` and renders it in place, so the URL never changes and the variant's
+router boots on the deep path.
 
 The `codex/stock/` build skips writing `404.html` (only the root one is ever
 served). Previews never update the root file, so after changing these scripts,

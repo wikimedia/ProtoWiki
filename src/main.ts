@@ -28,8 +28,8 @@ function githubPagesSubpathAfterBase(baseUrl: string): string | null {
 }
 
 /**
- * After gh-pages-restore.js updates the URL, ensure Vue Router matches the deep
- * path (replaceState alone is not always enough on first paint).
+ * On a GitHub Pages deep link (served via 404.html), ensure Vue Router matches
+ * the deep path on first paint.
  */
 function syncGithubPagesPreviewRoute(router: ReturnType<typeof createRouter>): void {
   const subPath = githubPagesSubpathAfterBase(import.meta.env.BASE_URL)

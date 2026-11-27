@@ -16,10 +16,6 @@ import { protowikiCodexDevSwitch } from './scripts/vite-plugin-codex-dev-switch.
 // Override locally, e.g. PROTOWIKI_BASE='/ProtoWiki/' npm run build
 const buildBase = process.env.PROTOWIKI_BASE ?? '/protowiki/'
 
-const ghPagesRestoreScript = readFileSync(
-  new URL('./public/gh-pages-restore.js', import.meta.url),
-  'utf8',
-)
 const ghPagesPreview404Script = readFileSync(
   new URL('./public/gh-pages-preview-404.js', import.meta.url),
   'utf8',
@@ -57,25 +53,9 @@ export default defineConfig(async ({ command, isPreview }) => {
       }),
       vue(),
       ...(isDevServer ? [protowikiCodexDevSwitch()] : []),
-      {
-        name: 'protowiki-gh-pages-restore',
-        apply: 'build',
-        transformIndexHtml: {
-          order: 'pre',
-          handler() {
-            return [
-              {
-                tag: 'script',
-                children: ghPagesRestoreScript,
-                injectTo: 'head-prepend',
-              },
-            ]
-          },
-        },
-      },
       // GitHub Pages serves a static 404.html for unknown paths. Copy index.html,
-      // then prepend a script so pr-preview and codex/<variant> deep links redirect
-      // into their base (sessionStorage + restore in index). Production deep links
+      // then prepend a script so pr-preview and codex/<variant> deep links render
+      // their own base's index.html in place (no redirect). Production deep links
       // unchanged. Pages only reads the site-root 404.html, so variant subpath
       // builds skip this.
       {
