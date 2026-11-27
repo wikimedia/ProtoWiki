@@ -112,6 +112,8 @@ interface Props {
    * once the title resolves.
    */
   app?: boolean
+  /** With **`app`**: **`false`** removes the lead image frame (default **`true`**). */
+  leadImage?: boolean
   /**
    * Random-mode pool — only meaningful when **`article`** is omitted.
    * **`'random'`** (default) draws a live random page; **`'vital'`** draws a Wikipedia Vital article.
@@ -147,6 +149,7 @@ const props = withDefaults(defineProps<Props>(), {
   header: undefined,
   host: undefined,
   app: false,
+  leadImage: true,
   source: undefined,
   langs: undefined,
   vitalLevel: undefined,
@@ -430,6 +433,7 @@ function onEditNavigate() {
       :app="props.app"
       :description="view?.description"
       :lead-image-url="view?.thumbnailUrl ?? undefined"
+      :lead-image="props.leadImage"
       :active-view="headerActiveView"
       :saved-pages-route="props.savedPagesRoute"
       @edit-click="onEditClick()"
@@ -467,6 +471,7 @@ function onEditNavigate() {
     :app="props.app"
     :description="view?.description"
     :lead-image-url="view?.thumbnailUrl ?? undefined"
+    :lead-image="props.leadImage"
     :saved-pages-route="props.savedPagesRoute"
     @edit-click="onEditNavigate()"
   >
